@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_aps_resources_user,aps.resources.user,model_aps_resources,base.group_user,1,1,1,1
+access_aps_resource_types_user,aps.resource.types.user,model_aps_resource_types,base.group_user,1,1,1,1

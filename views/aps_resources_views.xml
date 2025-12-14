@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- APS Resources list & Form Views -->
+    <record id="view_aps_resources_list" model="ir.ui.view">
+        <field name="name">aps.resources.list</field>
+        <field name="model">aps.resources</field>
+        <field name="arch" type="xml">
+            <list editable="top">
+                <field name="url" widget="url"/>
+                <field name="type_id"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_resources_form" model="ir.ui.view">
+        <field name="name">aps.resources.form</field>
+        <field name="model">aps.resources</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="url" widget="url"/>
+                        <field name="type_id"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- APS Resource Types list & Form Views -->
+    <record id="view_aps_resource_types_list" model="ir.ui.view">
+        <field name="name">aps.resource.types.list</field>
+        <field name="model">aps.resource.types</field>
+        <field name="arch" type="xml">
+            <list editable="top">
+                <field name="name"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_resource_types_form" model="ir.ui.view">
+        <field name="name">aps.resource.types.form</field>
+        <field name="model">aps.resource.types</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_aps_resources" model="ir.actions.act_window">
+        <field name="name">Resources</field>
+        <field name="res_model">aps.resources</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_aps_resources_list"/>
+    </record>
+
+    <record id="action_aps_resource_types" model="ir.actions.act_window">
+        <field name="name">Resource Types</field>
+        <field name="res_model">aps.resource.types</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_aps_resource_types_list"/>
+    </record>
+
+    <!-- Menus -->
+    <menuitem id="menu_aps_root" name="APS SIS" sequence="10"/>
+    <menuitem id="menu_aps_resources" name="Resources" parent="menu_aps_root" action="action_aps_resources" sequence="10"/>
+    <menuitem id="menu_aps_resource_types" name="Resource Types" parent="menu_aps_root" action="action_aps_resource_types" sequence="20"/>
+</odoo>
