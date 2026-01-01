@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Inherit and modify the Subject form view to add teachers field -->
+    <record id="view_op_subject_form_inherit" model="ir.ui.view">
+        <field name="name">op.subject.form.inherit.aps</field>
+        <field name="model">op.subject</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_subject_form"/>
+        <field name="arch" type="xml">
+            <!-- Add the teachers field somewhere appropriate, e.g., after the name or in a specific tab -->
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="faculty_ids" widget="many2many_tags"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

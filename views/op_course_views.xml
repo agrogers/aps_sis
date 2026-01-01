@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Inherit and modify the Course list view -->
+    <record id="view_op_course_tree_inherit" model="ir.ui.view">
+        <field name="name">op.course.list.inherit.aps</field>
+        <field name="model">op.course</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_course_tree"/>
+        <field name="arch" type="xml">
+            <list position="attributes">
+                <attribute name="string">Academic Level</attribute>
+                <attribute name="default_order">sequence, name</attribute>
+            </list>
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="sequence" widget="handle"/>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="short_name" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='parent_id']" position="attributes">
+                <attribute name="string">Parent Level</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit and modify the Course form view -->
+    <record id="view_op_course_form_inherit" model="ir.ui.view">
+        <field name="name">op.course.form.inherit.aps</field>
+        <field name="model">op.course</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_course_form"/>
+        <field name="arch" type="xml">
+            <form position="attributes">
+                <attribute name="string">Academic Level</attribute>
+            </form>
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="placeholder">e.g. "Year 7", "Year 8"</attribute>
+            </xpath>
+            <xpath expr="//field[@name='code']" position="after">
+                <field name="short_name" placeholder="e.g. Y7, Y8"/>
+            </xpath>
+            <xpath expr="//field[@name='parent_id']" position="attributes">
+                <attribute name="string">Parent Level</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit subject tree view to add faculty column -->
+    <record id="view_op_subject_tree_inherit" model="ir.ui.view">
+        <field name="name">op.subject.tree.inherit.aps</field>
+        <field name="model">op.subject</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_subject_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="faculty_ids" string="Teachers" widget="many2many_tags" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit search view -->
+    <record id="view_op_course_search_inherit" model="ir.ui.view">
+        <field name="name">op.course.search.inherit.aps</field>
+        <field name="model">op.course</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_course_search"/>
+        <field name="arch" type="xml">
+            <search position="attributes">
+                <attribute name="string">Academic Level</attribute>
+            </search>
+            <xpath expr="//field[@name='parent_id']" position="attributes">
+                <attribute name="string">Parent Level</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='group_by_partner_course']" position="attributes">
+                <attribute name="string">Parent Level</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Make fees_term_id optional in list view -->
+    <record id="view_op_course_tree_fees_optional" model="ir.ui.view">
+        <field name="name">op.course.list.fees.optional.aps</field>
+        <field name="model">op.course</field>
+        <field name="inherit_id" ref="openeducat_fees.view_op_course_tree_pt_inherit"/>
+        <field name="priority" eval="20"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='fees_term_id']" position="attributes">
+                <attribute name="required">0</attribute>
+                <attribute name="optional">hide</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Make fees_term_id optional in form view -->
+    <record id="view_op_course_form_fees_optional" model="ir.ui.view">
+        <field name="name">op.course.form.fees.optional.aps</field>
+        <field name="model">op.course</field>
+        <field name="inherit_id" ref="openeducat_fees.view_op_course_form_pt_inherit"/>
+        <field name="priority" eval="20"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='fees_term_id']" position="attributes">
+                <attribute name="required">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+
+</odoo>

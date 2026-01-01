@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Inherit and modify the Faculty form view to move emp_id field -->
+    <record id="view_op_faculty_form_inherit" model="ir.ui.view">
+        <field name="name">op.faculty.form.inherit.aps</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_form"/>
+        <field name="arch" type="xml">
+            <!-- Move emp_id to be after first_name field -->
+            <xpath expr="//notebook" position="before">
+                <group>
+                    <field name="emp_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

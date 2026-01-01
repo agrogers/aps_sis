@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Inherit the search view to add state filter -->
+    <record id="view_op_student_course_search_inherit" model="ir.ui.view">
+        <field name="name">op.student.course.search.inherit.aps</field>
+        <field name="model">op.student.course</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_course_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='roll_number']" position="after">
+                <field name="state"/>
+            </xpath>
+            <xpath expr="//newline" position="before">
+                <filter string="Running" name="filter_running" domain="[('state', '=', 'running')]"/>
+            </xpath>
+            <xpath expr="//group[@expand='0']" position="inside">
+                <filter string="Student" name="group_by_student" domain="[]" context="{'group_by':'student_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Override the action to set default filter -->
+    <record model="ir.actions.act_window" id="openeducat_core.act_open_op_student_course_view">
+        <field name="context">{'search_default_filter_running': True}</field>
+    </record>
+
+    <!-- Add Course Details tab to student form -->
+    <record id="view_op_student_form_course_tab" model="ir.ui.view">
+        <field name="name">op.student.form.course.tab.aps</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+        <field name="priority" eval="1"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="course_details" string="Course Details">
+                    <group col="3">
+                        <field name="show_all_courses" string="Show all courses"/>
+                    </group>
+                    <field name="course_detail_ids_filtered"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Make state field a dropdown in student course form -->
+    <record id="view_op_student_course_form_state_dropdown" model="ir.ui.view">
+        <field name="name">op.student.course.form.state.dropdown.aps</field>
+        <field name="model">op.student.course</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_course_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='academic_term_id']" position="after">
+                <field name="state"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
