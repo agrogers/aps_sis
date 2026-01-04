@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- APS Assign Students Wizard View -->
+    <record id="view_aps_assign_students_wizard" model="ir.ui.view">
+        <field name="name">aps.assign.students.wizard</field>
+        <field name="model">aps.assign.students.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group string="Task Details">
+                            <field name="resource_id"/>
+                            <field name="assigned_by"/>
+                            <field name="submission_label"/>
+                            <field name="date_assigned"/>
+                            <field name="date_due"/>
+                        </group>
+                        <group string="Students">
+                            <field name="student_ids" widget="many2many" nolabel="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="category_id" widget="many2many_tags" optional="show"/>
+                                    <field name="user_id" optional="hide"/>
+                                    <field name="email" optional="hide"/>
+                                    <field name="phone" optional="hide"/>
+                                </list>
+                            </field>
+                        </group>
+                    </group>
+                    <group string="Affected Resources">
+                        <field name="affected_resource_line_ids" nolabel="1">
+                            <list editable="bottom" create="0" delete="0">
+                                <field name="selected"/>
+                                <field name="display_name" readonly="1"/>
+                                <field name="description" readonly="1"/>
+                                <field name="resource_id" invisible="1"/>
+                            </list>
+                        </field>
+                    </group>
+                    <footer>
+                        <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

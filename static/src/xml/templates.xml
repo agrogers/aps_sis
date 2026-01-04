@@ -4,4 +4,9 @@
             <script type="module" src="/aps_sis/static/src/js/url_icon_widget.js"/>
         </xpath>
     </template>
+    <template id="assets_backend" inherit_id="web.assets_backend" name="Recent Submissions Widget">
+        <xpath expr="." position="inside">
+            <script type="module" src="/aps_sis/static/src/js/recent_submissions_widget.js"/>
+        </xpath>
+    </template>
 </odoo>

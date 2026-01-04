@@ -74,31 +74,10 @@
     </record>
 
     <!-- Make fees_term_id optional in list view -->
-    <record id="view_op_course_tree_fees_optional" model="ir.ui.view">
-        <field name="name">op.course.list.fees.optional.aps</field>
-        <field name="model">op.course</field>
-        <field name="inherit_id" ref="openeducat_fees.view_op_course_tree_pt_inherit"/>
-        <field name="priority" eval="20"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='fees_term_id']" position="attributes">
-                <attribute name="required">0</attribute>
-                <attribute name="optional">hide</attribute>
-            </xpath>
-        </field>
-    </record>
+    <!-- This view is now created conditionally in Python if fees module is installed -->
 
     <!-- Make fees_term_id optional in form view -->
-    <record id="view_op_course_form_fees_optional" model="ir.ui.view">
-        <field name="name">op.course.form.fees.optional.aps</field>
-        <field name="model">op.course</field>
-        <field name="inherit_id" ref="openeducat_fees.view_op_course_form_pt_inherit"/>
-        <field name="priority" eval="20"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='fees_term_id']" position="attributes">
-                <attribute name="required">0</attribute>
-            </xpath>
-        </field>
-    </record>
+    <!-- This view is now created conditionally in Python if fees module is installed -->
 
 
 </odoo>

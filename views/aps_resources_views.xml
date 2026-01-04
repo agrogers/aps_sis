@@ -5,38 +5,45 @@
         <field name="name">aps.resources.list</field>
         <field name="model">aps.resources</field>
         <field name="arch" type="xml">
-            <list default_order="parent_path">
-                <field name="thumbnail" widget="image" options="{'size': [50, 50]}"/>
-                <field name="name"/>
-                <field name="display_name" string="Name" optional="show"/>
-                <field name="type_icon" widget="image" options="{'size': [24, 24]}" string=""/>
-                <field name="type_id"/>
-                <field name="category"/>
-                <field name="relevance" optional="hide"/>
-                <field name="parent_id" optional="hide"/>
-                <field name="child_count" string="Children"/>
-                <field name="description"/>
-                <field name="url" widget="url_icon"  options="{'html': true}"/>                
+            <list default_order="sequence,name">
+                <field name="sequence" widget="handle"/>
+                <field name="thumbnail" widget="image" options="{'size': [50, 50]}" optional="hide"/>
+                <field name="name" optional="hide"/>
+                <field name="display_name" string="Display Name" optional="show"/>
+                <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
+                <field name="type_id" optional="hide"/>
+                <field name="category" optional="hide"/>
+                <field name="marks" optional="hide"/>
+                <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                <field name="parent_ids" optional="hide"/>
+                <field name="child_count" string="Children" optional="hide"/>
+                <field name="description" optional="hide"/>
+                <field name="url" widget="url_icon"  options="{'html': true}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
+                <field name="write_date" optional="hide"/>
             </list>
         </field>
     </record>
 
-    <!-- Hierarchy view: shows parent/child as expandable tree -->
+    <!-- Hierarchy view: now a flat list since multiple parents don't form a tree -->
+    <!-- used for searching for resources -->
     <record id="view_aps_resources_hierarchy" model="ir.ui.view">
         <field name="name">aps.resources.hierarchy</field>
         <field name="model">aps.resources</field>
         <field name="arch" type="xml">
-            <list default_order="parent_path" expand="1">
-                <field name="parent_id" column_invisible="1"/>
-                <field name="display_name"/>
-                <field name="name"/>
-                <field name="type_id"/>
-                <field name="category"/>
-                <field name="relevance"/>
-                <field name="child_count" string="Children"/>
-                <field name="description"/>
+            <list default_order="sequence,name">
+                <field name="sequence" widget="handle"/>
+                <field name="display_name" optional="show"/>
+                <field name="name" optional="hide"/>
+                <field name="type_id" optional="hide"/>
+                <field name="category" optional="hide"/>
+                <field name="marks" optional="hide"/>
+                <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                <field name="child_count" string="Children" optional="hide"/>
+                <field name="description" optional="hide"/>
                 <field name="url" widget="url_icon"  options="{'html': true}"/>
+                <field name="create_date" optional="hide"/>
+                <field name="write_date" optional="hide"/>
             </list>
         </field>
     </record>
@@ -47,7 +54,7 @@
         <field name="arch" type="xml">
             <form
                 context="{
-                    'tree_view_ref': 'view_aps_resources_form_brief', 
+                    'tree_view_ref': 'view_aps_resources_form_brief',
                     'form_view_ref': 'view_aps_resources_form_brief'}">
                 <header>
                     <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary"/>
@@ -55,63 +62,90 @@
                 <sheet>
                     <div class="aps_ribbon" invisible="not type_id">
                         <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1"/>
-                        <field name="type_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                        <field name="display_name"/>
                     </div>
-                    <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
-                    <group>
-                        <group string="Details">
-                            <field name="name"/>
-                            <field name="parent_id"/>
-                            <field name="url" widget="url_icon"/>
-                            <label for="type_id"/>
-                            <div class="d-flex align-items-center">
-                                <field name="type_icon" widget="image" options="{'size': [24, 24]}" class="me-2 flex-shrink-0" style="width: 24px;" nolabel="1"/>
-                                <field name="type_id" nolabel="1" class="flex-grow-1"/>
-                            </div>
-                            <field name="category"/>
-                            <field name="relevance"/>
-                            <field name="child_count"/>
-                        </group>
-                        <group string="Description">
-                            <field name="display_name"/>
-                            <field name="parent_path"/>
-                            <field name="description" nolabel="0"/>
-                        </group>
-                    </group>
                     <notebook>
-                        <page string="Child Resources">
-                            <field name="child_ids" widget="many2many" context="{'default_parent_id': id}">
-                                <list>
-                                    <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1"/>
+                        <page string="Basic Information">
+                            <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
+                            <group>
+                                <group string="Details">
                                     <field name="name"/>
-                                    <field name="type_id"/>                                    
+                                    <label for="type_id"/>
+                                    <div class="d-flex align-items-center">
+                                        <field name="type_icon" widget="image" options="{'size': [24, 24]}" class="me-2 flex-shrink-0" style="width: 24px;" nolabel="1"/>
+                                        <field name="type_id" nolabel="1" class="flex-grow-1"/>
+                                    </div>
                                     <field name="category"/>
-                                    <field name="relevance"/>
-                                    <field name="description"/>   
-                                    <field name="child_count"/>                                 
-                                    <field name="url" widget="url_icon" options='{"html": true}'/>                                
-                                    </list>
-                            </field>
+                                    <field name="marks" widget="float_sentinel"/>
+                                    <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
+                                </group>
+                                <group string="Technical">
+                                    <field name="url" widget="url_icon"/>
+                                    <field name="description" nolabel="0"/>
+                                    <field name="parent_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                                    <field name="has_multiple_parents" invisible="1"/>
+                                    <div class="o_row" invisible="not has_multiple_parents" style="margin-left: 15px;">
+                                        <label for="primary_parent_id" string="Display Parent:" class="text-muted" style="font-size: 0.8em !important;"/>
+                                        <field name="primary_parent_id" options="{'no_create': True, 'no_open': True}" class="text-muted" style="font-size: 0.9em;" nolabel="1"/>
+                                    </div>
+                                    <field name="child_count"/>
+                            </group>
+                            </group>
                         </page>
-                        <page string="Assignments">
-                            <field name="assignment_ids">
-                                <list>
-                                    <field name="student_id"/>
-                                    <field name="state"/>
-                                    <field name="due_date"/>
-                                    <field name="last_score"/>
-                                    <field name="attempt_count"/>
+                        <page string="Question">
+                            <field name="question" nolabel="1" placeholder="Enter the question for this resource."/>
+                        </page>
+                        <page string="Model Answer">
+                            <field name="answer" nolabel="1" placeholder="Enter the answer or solution for this resource."/>
+                        </page>
+                        <page string="Child Resources">
+                            <field name="child_ids" widget="many2many" context="{'default_parent_ids': [(6, 0, [id])], 'default_primary_parent_id': id, 'default_subjects': subjects}">
+                                <list default_order="sequence,name">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
+                                    <field name="name" optional="show"/>
+                                    <field name="display_name" optional="hide"/>
+                                    <field name="type_id" optional="show"/>
+                                    <field name="category" optional="hide"/>
+                                    <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                                    <field name="description" optional="show"/>
+                                    <field name="child_count" optional="hide"/>
+                                    <field name="url" widget="url_icon" options='{"html": true}' optional="show"/>
                                 </list>
                             </field>
                         </page>
-                        <page string="Question">
-                            <field name="question" nolabel="1"/>
-                        </page>
-                        <page string="Answer">
-                            <field name="answer" nolabel="1"/>
+                        <page string="Students Assigned">
+                            <field name="task_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_task_form'}">
+                                <list edit="false" create="true" delete="true" default_order="student_id">
+                                    <field name="student_id" readonly="id" optional="show"/>
+                                    <field name="state" widget="badge" 
+                                        decoration-muted="state in ['created','assigned', 'reassigned']" 
+                                        decoration-info="state in ['submitted']" 
+                                        decoration-warning="state in ['due']" 
+                                        decoration-danger="state in ['overdue', 'late']" 
+                                        decoration-success="state == 'complete'" 
+                                        optional="show"/>
+                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                                    <field name="date_due" string="Next Due Date" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
+                                    <field name="submission_count" optional="show"/>
+                                    <field name="last_result" widget="float_sentinel" optional="show"/>
+                                    <field name="avg_result" widget="float_sentinel" optional="hide"/>
+                                    <field name="weighted_result" widget="float_sentinel" optional="hide"/>
+                                    <field name="max_result" widget="float_sentinel" optional="hide"/>
+                                    <field name="latest_submission_text" widget="recent_submissions" options='{"html": true}' optional="show"/>
+
+                                    <!-- This button opens the full form view in the main area -->
+                                    <button string="Open" 
+                                            type="object" 
+                                            name="get_formview_action" 
+                                            icon="fa-external-link" 
+                                            title="Open in full view"/>                                    
+                                </list>
+                            </field>
                         </page>
                     </notebook>
                 </sheet>
+                <chatter groups="aps_sis.group_aps_teacher"/>
             </form>
         </field>
     </record>
@@ -125,7 +159,7 @@
                 <field name="name"/>
                 <field name="type_id"/>
                 <field name="category"/>
-                <field name="relevance"/>
+                <field name="subjects"/>
                 <field name="url" widget="url" optional="hide"/>
             </form>
         </field>
@@ -143,46 +177,33 @@
                     <field name="type_icon" widget="image" options="{'size': [24, 24]}" string=""/>
                     <field name="type_id" optional="hide"/>
                     <field name="category"/>
-                    <field name="relevance"/>
+                    <field name="subjects"/>
                 </sheet>
             </form>
         </field>
     </record>
 
-
-
-    <!-- APS Resource Types list & Form Views -->
-    <record id="view_aps_resource_types_list" model="ir.ui.view">
-        <field name="name">aps.resource.types.list</field>
-        <field name="model">aps.resource.types</field>
+    <!-- Search View -->
+    <record id="view_aps_resources_search" model="ir.ui.view">
+        <field name="name">aps.resources.search</field>
+        <field name="model">aps.resources</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="icon" widget="image" options="{'size': [32, 32]}"/>
+            <search>
+                <field name="name" string="All" filter_domain="['|','|','|','|',('display_name','ilike',self),('name','ilike',self),('url','ilike',self),('description','ilike',self),('category','ilike',self)]"/>
+                <field name="display_name"/>
                 <field name="name"/>
-                <field name="color" widget="color"/>
+                <field name="url"/>
                 <field name="description"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="view_aps_resource_types_form" model="ir.ui.view">
-        <field name="name">aps.resource.types.form</field>
-        <field name="model">aps.resource.types</field>
-        <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <field name="icon" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
-                    <group>
-                        <group string="Details">
-                            <field name="name"/>
-                            <field name="color" widget="color"/>
-                        </group>
-                        <group string="Description">
-                            <field name="description" nolabel="1"/>
-                        </group>
-                    </group>
-                </sheet>
-            </form>
+                <field name="category"/>
+                <field name="marks"/>
+                <field name="subjects"/>
+                <filter name="has_parent" string="Has Parent" domain="[('parent_ids','!=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_type" string="Type" context="{'group_by':'type_id'}"/>
+                    <filter name="group_by_category" string="Category" context="{'group_by':'category'}"/>
+                    <filter name="group_by_subjects" string="Subjects" context="{'group_by':'subjects'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -192,7 +213,8 @@
         <field name="res_model">aps.resources</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_aps_resources_list"/>
-        <field name="context">{'default_order': 'parent_path'}</field>
+        <field name="search_view_id" ref="view_aps_resources_search"/>
+        <field name="context">{'default_order': 'name'}</field>
     </record>
 
     <record id="action_aps_resources_hierarchy" model="ir.actions.act_window">
@@ -200,220 +222,8 @@
         <field name="res_model">aps.resources</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_aps_resources_hierarchy"/>
-        <field name="domain">[('parent_id','=',False)]</field>
-        <field name="context">{'default_order': 'parent_path'}</field>
+        <field name="search_view_id" ref="view_aps_resources_search"/>
+        <field name="domain">[('parent_ids','=',False)]</field>
+        <field name="context">{'default_order': 'name'}</field>
     </record>
-
-        <record id="view_aps_resources_search" model="ir.ui.view">
-            <field name="name">aps.resources.search</field>
-            <field name="model">aps.resources</field>
-            <field name="arch" type="xml">
-                <search>
-                    <field name="url"/>
-                    <field name="description"/>
-                    <field name="category"/>
-                    <field name="relevance"/>
-                    <filter name="has_parent" string="Has Parent" domain="[('parent_id','!=',False)]"/>
-                    <group expand="0" string="Group By">
-                        <filter name="group_by_parent" string="Parent" context="{'group_by':'parent_id'}"/>
-                        <filter name="group_by_type" string="Type" context="{'group_by':'type_id'}"/>
-                        <filter name="group_by_category" string="Category" context="{'group_by':'category'}"/>
-                        <filter name="group_by_relevance" string="Relevance" context="{'group_by':'relevance'}"/>
-                    </group>
-                </search>
-            </field>
-        </record>
-
-    <record id="action_aps_resource_types" model="ir.actions.act_window">
-        <field name="name">Resource Types</field>
-        <field name="res_model">aps.resource.types</field>
-        <field name="view_mode">list,form</field>
-        <field name="view_id" ref="view_aps_resource_types_list"/>
-    </record>
-
-    <!-- Menus -->
-    <menuitem id="menu_aps_root" name="APS SIS" sequence="10"/>
-    <menuitem id="menu_aps_resources" name="Resources" parent="menu_aps_root" action="action_aps_resources" sequence="10"/>
-    <menuitem id="menu_aps_resources_hierarchy" name="Resources (Hierarchy)" parent="menu_aps_root" action="action_aps_resources_hierarchy" sequence="15"/>
-    <menuitem id="menu_aps_resource_types" name="Resource Types" parent="menu_aps_root" action="action_aps_resource_types" sequence="20"/>
-
-    <!-- APS Assign Students Wizard View -->
-    <record id="view_aps_assign_students_wizard" model="ir.ui.view">
-        <field name="name">aps.assign.students.wizard</field>
-        <field name="model">aps.assign.students.wizard</field>
-        <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <group>
-                        <group string="Assignment Details">
-                            <field name="resource_id"/>
-                            <field name="date_assigned"/>
-                            <field name="due_date"/>
-                        </group>
-                        <group string="Students">
-                            <field name="student_ids" widget="many2many" nolabel="1">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="email"/>
-                                    <field name="phone"/>
-                                </list>
-                            </field>
-                        </group>
-                    </group>
-                    <footer>
-                        <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary"/>
-                        <button string="Cancel" class="btn-secondary" special="cancel"/>
-                    </footer>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <!-- APS Resource Assignment Search View -->
-    <record id="view_aps_resource_assignment_search" model="ir.ui.view">
-        <field name="name">aps.resource.assignment.search</field>
-        <field name="model">aps.resource.assignment</field>
-        <field name="arch" type="xml">
-            <search>
-                <field name="resource_id"/>
-                <field name="student_id"/>
-                <field name="state"/>
-                <field name="due_date"/>
-                <filter name="overdue" string="Overdue" domain="[('due_date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
-                <filter name="due_today" string="Due Today" domain="[('due_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
-                <filter name="due_soon" string="Due Soon" domain="[('due_date', '&gt;=', context_today().strftime('%Y-%m-%d')), ('due_date', '&lt;=', (context_today() + relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
-                <group expand="0" string="Group By">
-                    <filter name="group_by_resource" string="Resource" context="{'group_by':'resource_id'}"/>
-                    <filter name="group_by_student" string="Student" context="{'group_by':'student_id'}"/>
-                    <filter name="group_by_state" string="State" context="{'group_by':'state'}"/>
-                    <filter name="group_by_due_date" string="Due Date" context="{'group_by':'due_date'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
-    <!-- APS Resource Assignments list & Form Views -->
-    <record id="view_aps_resource_assignment_list" model="ir.ui.view">
-        <field name="name">aps.resource.assignment.list</field>
-        <field name="model">aps.resource.assignment</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="resource_id"/>
-                <field name="student_id"/>
-                <field name="due_date"/>
-                <field name="state"/>
-                <field name="last_score"/>
-                <field name="max_score"/>
-                <field name="attempt_count"/>
-                <field name="create_date" optional="hide"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="view_aps_resource_assignment_form" model="ir.ui.view">
-        <field name="name">aps.resource.assignment.form</field>
-        <field name="model">aps.resource.assignment</field>
-        <field name="arch" type="xml">
-            <form>
-                <header>
-                    <field name="state" widget="statusbar"/>
-                    <button name="action_create_attempt" string="Create Attempt" type="object" class="btn-secondary"/>
-                </header>
-                <sheet>
-                    <group>
-                        <group string="Assignment Details">
-                            <field name="resource_id"/>
-                            <field name="student_id"/>
-                            <field name="due_date"/>
-                        </group>
-                        <group string="Scoring">
-                            <field name="last_score"/>
-                            <field name="max_score"/>
-                            <field name="attempt_count"/>
-                        </group>
-                    </group>
-                    <notebook>
-                        <page string="Attempts">
-                            <field name="attempt_ids">
-                                <list>
-                                    <field name="date_assigned"/>
-                                    <field name="state"/>
-                                    <field name="result_percent"/>
-                                    <field name="feedback"/>
-                                </list>
-                            </field>
-                        </page>
-                    </notebook>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <!-- APS Resource Attempts list & Form Views -->
-    <record id="view_aps_resource_attempt_list" model="ir.ui.view">
-        <field name="name">aps.resource.attempt.list</field>
-        <field name="model">aps.resource.attempt</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="assignment_id"/>
-                <field name="date_assigned"/>
-                <field name="state"/>
-                <field name="result_percent"/>
-                <field name="batch_id"/>
-                <field name="feedback"/>
-                <field name="create_date" optional="hide"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="view_aps_resource_attempt_form" model="ir.ui.view">
-        <field name="name">aps.resource.attempt.form</field>
-        <field name="model">aps.resource.attempt</field>
-        <field name="arch" type="xml">
-            <form>
-                <header>
-                    <field name="state" widget="statusbar"/>
-                    <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state == 'complete'"/>
-                </header>
-                <sheet>
-                    <group>
-                        <group string="Attempt Details">
-                            <field name="assignment_id"/>
-                            <field name="resource_id" readonly="1"/>
-                            <field name="date_assigned"/>
-                            <field name="due_date"/>
-                            <field name="actual_duration"/>
-                            <field name="batch_id"/>
-                        </group>
-                        <group string="Results">
-                            <field name="result_percent"/>
-                            <field name="date_completed"/>
-                            <field name="due_status"/>
-                            <field name="feedback" nolabel="1"/>
-                        </group>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <!-- Actions for Assignments and Attempts -->
-    <record id="action_aps_resource_assignments" model="ir.actions.act_window">
-        <field name="name">Assignments</field>
-        <field name="res_model">aps.resource.assignment</field>
-        <field name="view_mode">list,form</field>
-        <field name="view_id" ref="view_aps_resource_assignment_list"/>
-        <field name="search_view_id" ref="view_aps_resource_assignment_search"/>
-    </record>
-
-    <record id="action_aps_resource_attempts" model="ir.actions.act_window">
-        <field name="name">Attempts</field>
-        <field name="res_model">aps.resource.attempt</field>
-        <field name="view_mode">list,form</field>
-        <field name="view_id" ref="view_aps_resource_attempt_list"/>
-    </record>
-
-    <!-- Menus for Assignments and Attempts -->
-    <menuitem id="menu_aps_assignments" name="Assignments" parent="menu_aps_root" action="action_aps_resource_assignments" sequence="25"/>
-    <menuitem id="menu_aps_attempts" name="Attempts" parent="menu_aps_root" action="action_aps_resource_attempts" sequence="30"/>
 </odoo>

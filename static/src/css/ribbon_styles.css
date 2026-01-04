@@ -1,0 +1,19 @@
+/* Ensure ribbon is on top of images and other controls */
+.o_widget_web_ribbon {
+    z-index: 30 !important;
+}
+
+.o_widget_web_ribbon .ribbon.ribbon-top-right {
+    z-index: 35 !important;
+}
+
+.o_widget_web_ribbon .ribbon.ribbon-top-right span {
+    z-index: 40 !important;
+}
+
+/* Ensure ribbon appears above form content */
+.o_form_view .o_widget_web_ribbon {
+    z-index: 50 !important;
+}
+
+

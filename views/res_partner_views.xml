@@ -31,4 +31,16 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Make user_id (Follow-up Responsible) optional in partner tree view -->
+    <record id="view_partner_tree_user_id_optional" model="ir.ui.view">
+        <field name="name">res.partner.tree.user_id.optional</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_responsible_id']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>

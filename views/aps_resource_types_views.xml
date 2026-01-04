@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- APS Resource Types list & Form Views -->
+    <record id="view_aps_resource_types_list" model="ir.ui.view">
+        <field name="name">aps.resource.types.list</field>
+        <field name="model">aps.resource.types</field>
+        <field name="arch" type="xml">
+            <list default_order="sequence, name">
+                <field name="sequence" widget="handle"/>
+                <field name="icon" widget="image" options="{'size': [32, 32]}"/>
+                <field name="name"/>
+                <field name="color" widget="color"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_resource_types_form" model="ir.ui.view">
+        <field name="name">aps.resource.types.form</field>
+        <field name="model">aps.resource.types</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <field name="icon" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
+                    <group>
+                        <group string="Details">
+                            <field name="sequence"/>
+                            <field name="name"/>
+                            <field name="color" widget="color"/>
+                        </group>
+                        <group string="Description">
+                            <field name="description" nolabel="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_resource_types" model="ir.actions.act_window">
+        <field name="name">Resource Types</field>
+        <field name="res_model">aps.resource.types</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_aps_resource_types_list"/>
+    </record>
+</odoo>

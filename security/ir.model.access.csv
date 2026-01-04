@@ -1,7 +1,11 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_aps_resources_user,aps.resources.user,model_aps_resources,base.group_user,1,1,1,1
-access_aps_resource_types_user,aps.resource.types.user,model_aps_resource_types,base.group_user,1,1,1,1
-access_aps_tasks_user,aps.tasks.user,model_aps_tasks,base.group_user,1,1,1,1
-access_aps_resource_assignment_user,aps.resource.assignment.user,model_aps_resource_assignment,,1,1,1,1
-access_aps_resource_attempt_user,aps.resource.attempt.user,model_aps_resource_attempt,,1,1,1,1
-access_aps_assign_students_wizard_user,aps.assign.students.wizard.user,model_aps_assign_students_wizard,,1,1,1,1
+access_aps_resources_teacher,aps.resources.teacher,model_aps_resources,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resource_types_teacher,aps.resource.types.teacher,model_aps_resource_types,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resource_task_teacher,aps.resource.task.teacher,model_aps_resource_task,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resource_submission_teacher,aps.resource.submission.teacher,model_aps_resource_submission,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_assign_students_wizard_teacher,aps.assign.students.wizard.teacher,model_aps_assign_students_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_assign_students_wizard_line_teacher,aps.assign.students.wizard.line.teacher,model_aps_assign_students_wizard_line,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resources_student,aps.resources.student,model_aps_resources,aps_sis.group_aps_student,1,0,0,0
+access_aps_resource_types_student,aps.resource.types.student,model_aps_resource_types,aps_sis.group_aps_student,1,0,0,0
+access_aps_resource_task_student,aps.resource.task.student,model_aps_resource_task,aps_sis.group_aps_student,1,1,0,0
+access_aps_resource_submission_student,aps.resource.submission.student,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,0

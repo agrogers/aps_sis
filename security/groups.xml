@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- APS SIS Security Groups -->
+        <record id="group_aps_teacher" model="res.groups">
+            <field name="name">APS Teacher</field>
+            <field name="comment">Teachers can manage resources, tasks, and view student progress</field>
+        </record>
+
+        <record id="group_aps_student" model="res.groups">
+            <field name="name">APS Student</field>
+            <field name="comment">Students can view their assigned resources and submit attempts</field>
+        </record>
+    </data>
+</odoo>

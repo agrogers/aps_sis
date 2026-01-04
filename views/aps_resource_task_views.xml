@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- APS Resource Task Search View -->
+    <record id="view_aps_resource_task_search" model="ir.ui.view">
+        <field name="name">aps.resource.task.search</field>
+        <field name="model">aps.resource.task</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="resource_id"/>
+                <field name="student_id"/>
+                <field name="state"/>
+                <field name="date_due"/>
+                <filter name="overdue" string="Overdue" domain="[('date_due', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="due_today" string="Due Today" domain="[('date_due', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="due_soon" string="Due Soon" domain="[('date_due', '&gt;=', context_today().strftime('%Y-%m-%d')), ('date_due', '&lt;=', (context_today() + relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_resource" string="Resource" context="{'group_by':'resource_id'}"/>
+                    <filter name="group_by_student" string="Student" context="{'group_by':'student_id'}"/>
+                    <filter name="group_by_state" string="State" context="{'group_by':'state'}"/>
+                    <filter name="group_by_due_date" string="Due Date" context="{'group_by':'date_due'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- APS Resource Tasks list & Form Views -->
+    <record id="view_aps_resource_task_list" model="ir.ui.view">
+        <field name="name">aps.resource.task.list</field>
+        <field name="model">aps.resource.task</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="resource_id"/>
+                <field name="student_id"/>
+                <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                <field name="state" widget="badge" decoration-muted="state == 'created'" decoration-info="state in ['assigned', 'reassigned', 'submitted']" decoration-warning="state == 'due'" decoration-danger="state in ['overdue', 'late']" decoration-success="state == 'complete'"/>
+                <field name="last_result"/>
+                <field name="max_result"/>
+                <field name="submission_count"/>
+                <field name="create_date" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_resource_task_form" model="ir.ui.view">
+        <field name="name">aps.resource.task.form</field>
+        <field name="model">aps.resource.task</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <widget name="web_ribbon" title="Due Today" bg_color="bg-warning"
+                            invisible="state != 'due'"/>
+                    <widget name="web_ribbon" title="Overdue" bg_color="bg-danger" 
+                            invisible="state != 'overdue'"/>
+                    <widget name="web_ribbon" title="Submitted" bg_color="bg-info" 
+                            invisible="state != 'submitted'"/>
+                    <widget name="web_ribbon" title="Complete" bg_color="bg-success" 
+                            invisible="state != 'complete'"/>
+                    <widget name="web_ribbon" title="Late" bg_color="bg-warning" 
+                            invisible="state != 'late'"/>
+                    <widget name="web_ribbon" title="Assigned"  bg_color="text-bg-secondary" 
+                            invisible="state != 'assigned'"/>
+                    <widget name="web_ribbon" title="Reassigned" bg_color="text-bg-secondary"  
+                            invisible="state != 'reassigned'"/>
+                    <button name="action_create_submission" string="Create Submission" type="object" class="btn-secondary" context="{'default_task_id': id, 'default_assigned_by': uid}"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="resource_id" readonly="1"/>
+                        <group string="Task Details">
+                            <field name="state"/>
+                            <field name="student_id" readonly="id"/>
+                            <field name="date_assigned" widget="datetime"/>
+                            <field name="date_due" widget="datetime"/>
+                        </group>
+                        <group string="Scoring">
+                            <field name="submission_count"/>
+                            <field name="last_result" widget="float_sentinel" options="{'sentinel': 0.00}"/>
+                            <field name="avg_result" widget="float_sentinel" options="{'sentinel': 0.00}"/>
+                            <field name="weighted_result" widget="float_sentinel" options="{'sentinel': 0.00}"/>
+                            <field name="max_result" widget="float_sentinel" options="{'sentinel': 0.00}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Submissions">
+                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}">
+                                <list>
+                                    <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
+                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
+                                    <field name="score" optional="hide"/>
+                                    <field name="assigned_by" optional="hide"/>
+                                    <field name="date_submitted" widget="datetime" optional="hide"/>
+                                    <field name="date_completed" widget="datetime" optional="hide"/>
+                                    <field name="result_percent" optional="hide"/>
+                                    <field name="submission_label" optional="hide"/>
+                                    <field name="has_answer" widget="boolean" string="Answer" readonly="1" optional="hide"/>
+                                    <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
+                                    <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                                    <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                                    <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
+                                    <!-- This button opens the full form view in the main area -->
+                                    <button string="Open" 
+                                            type="object" 
+                                            name="get_formview_action" 
+                                            icon="fa-external-link" 
+                                            title="Open in full view"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions for Tasks -->
+    <record id="action_aps_resource_tasks" model="ir.actions.act_window">
+        <field name="name">Tasks</field>
+        <field name="res_model">aps.resource.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_aps_resource_task_list"/>
+        <field name="search_view_id" ref="view_aps_resource_task_search"/>
+    </record>
+</odoo>

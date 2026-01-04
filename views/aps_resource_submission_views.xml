@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- APS Resource Submissions list & Form Views -->
+    <record id="view_aps_resource_submission_list" model="ir.ui.view">
+        <field name="name">aps.resource.submission.list</field>
+        <field name="model">aps.resource.submission</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="task_id"/>
+                <field name="assigned_by"/>
+                <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'"/>
+                <field name="score" widget="float_sentinel" optional="hide"/>
+                <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
+                <field name="result_percent"  placeholder="-" optional="hide"/>
+                <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="submission_label"/>
+                <field name="has_answer" widget="boolean" string="Answer" readonly="1"/>
+                <field name="has_feedback" widget="boolean" string="Feedback" readonly="1"/>
+                <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                <field name="create_date" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_resource_submission_form" model="ir.ui.view">
+        <field name="name">aps.resource.submission.form</field>
+        <field name="model">aps.resource.submission</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <widget name="web_ribbon" title="Assigned" bg_color="bg-warning"
+                            invisible="state != 'assigned'"/>
+                    <widget name="web_ribbon" title="Submitted" bg_color="bg-info" 
+                            invisible="state != 'submitted'"/>
+                    <widget name="web_ribbon" title="Complete" bg_color="bg-success" 
+                            invisible="state != 'complete'"/>
+                    
+                    <field name="state" invisible="1"/>
+                    <field name="is_current_user_faculty" invisible="1"/>
+                    <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
+                    <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
+                </header>
+                <sheet>
+                    <notebook>
+                        <page string="Details">
+                            <group>
+                                <group string="Submission Details">
+                                    <field name="task_id" invisible="1"/>
+                                    <field name="resource_id" readonly="1"/>
+                                    <field name="assigned_by"/>
+                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="actual_duration" widget="float_sentinel" placeholder="Enter hours"/>
+                                    <field name="submission_label"/>
+                                </group>
+                                <group string="Results">
+                                    <field name="state"/>
+                                    <label for="score" string="Score"/>
+                                    <div class="o_row">
+                                        <field name="score" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1"/>
+                                        <span class="oe_inline"> / </span>
+                                        <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1"/>
+                                    </div>
+                                    <field name="result_percent"/>
+                                    <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="due_status"/>
+                                    <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Student Answer">
+                            <field name="answer" nolabel="1" placeholder="Enter your answer here."/>
+                        </page>
+                        <page string="Teacher Feedback">
+                            <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter groups="aps_sis.group_aps_teacher"/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_resource_submissions" model="ir.actions.act_window">
+        <field name="name">Submissions</field>
+        <field name="res_model">aps.resource.submission</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_aps_resource_submission_list"/>
+    </record>
+</odoo>
