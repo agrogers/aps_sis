@@ -86,14 +86,44 @@ class APSResource(models.Model):
 
     @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids')
     def _compute_display_name(self):
-        """Build display name using the primary parent's full path if available."""
+        """Build display name from ancestor chain, removing redundant overlapping characters."""
         for rec in self:
             # Priority: 1. primary_parent_id, 2. first parent from parent_ids, 3. just name
             parent_to_use = rec.primary_parent_id or (rec.parent_ids and rec.parent_ids[0])
             
             if parent_to_use:
                 parent_display = parent_to_use.display_name or parent_to_use.name or ''
-                rec.display_name = f"{parent_display}🢒{rec.name or ''}"
+                current_name = rec.name or ''
+                separator = '🢒'
+                
+                # Find overlapping characters between start of current_name and end of parent_display
+                overlap_length = 0
+                parent_len = len(parent_display)
+                current_len = len(current_name)
+                
+                # Check if current_name starts with the suffix of parent_display
+                # Compare current_name[0:n] with parent_display[-n:] for increasing n
+                match_found = False
+                for i in range(1, min(parent_len, current_len) + 1):
+                    if current_name[:i] == parent_display[-i:]:
+                        overlap_length = i
+                        match_found = True
+                    else:
+                        if match_found:
+                            break
+                
+                # Remove overlapping characters from current_name
+                if overlap_length > 0:
+                    remaining_name = current_name[overlap_length:].lstrip()
+                    # Strip any "." that appear at the start of the remaining name
+                    remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
+                    if remaining_name:
+                        rec.display_name = parent_display + separator + remaining_name
+                    else:
+                        rec.display_name = parent_display
+                else:
+                    # No overlap, concatenate normally
+                    rec.display_name = parent_display + separator + current_name
             else:
                 rec.display_name = rec.name or ''
 
