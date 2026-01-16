@@ -4,3 +4,6 @@
     background: linear-gradient(to bottom, #acacac20, white);
     /* background: linear-gradient(to bottom, var(--link-color) 0%, var(--link-color) 7%, #acacac44 7%, transparent 100%) */
 }
+.o_search_panel_counter {
+    font-weight: 700;
+}

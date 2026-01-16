@@ -48,7 +48,7 @@
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
                 </header>
                 <sheet>
-                    <widget name="web_ribbon" title="Late" bg_color="bg-warning"
+                    <widget name="web_ribbon" title="Late" bg_color="bg-danger"
                             invisible="due_status != 'late'"/> 
                     <widget name="web_ribbon" title="On-Time" bg_color="bg-info" 
                             invisible="due_status != 'on-time'"/> 
