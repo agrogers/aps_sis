@@ -12,7 +12,9 @@ class APSResourceSubmission(models.Model):
     
     display_name = fields.Char(compute='_compute_display_name', store=True)
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
-    resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id', store=True)
+    resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
+    subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects')
+    student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
     submission_label = fields.Char(
         string='Label',
@@ -21,8 +23,10 @@ class APSResourceSubmission(models.Model):
     state = fields.Selection([
         ('assigned', 'Assigned'),
         ('submitted', 'Submitted'),
-        ('complete', 'Complete'),
-    ], string='State', default='assigned', tracking=True)
+        ('complete', 'Finalised'),  # Leave the underlying value as 'complete' for easier sync with task state 
+        ], string='State', default='assigned', 
+        tracking=True,
+        required=True)
     date_assigned = fields.Datetime(
         string='Date Assigned',
         default=fields.Datetime.now)
@@ -31,14 +35,13 @@ class APSResourceSubmission(models.Model):
         help='The date when the submission was made by the student.',
         tracking=True)
     date_completed = fields.Datetime(
-        string='Date Completed', 
-        help='The date when the submission was marked as complete by the teacher. Submissions may be rejected.',
+        string='Date Finalised', 
+        help='The date when the submission was marked as finalised by the teacher. Submissions may be rejected.',
         tracking=True)
     date_due = fields.Datetime(string='Due Date', tracking=True)
     score = fields.Float(string='Score', digits=(16, 1), tracking=True, default=sentinel_zero)
-    
     out_of_marks = fields.Float(string='Out of Marks', related='resource_id.marks', store=True, readonly=True)
-    result_percent = fields.Integer(string='Result %', tracking=True)
+    result_percent = fields.Integer(string='Result %', compute='_compute_result_percent', store=True, tracking=True)
     due_status = fields.Selection([
         ('late', 'Late'),
         ('on-time', 'On Time'),
@@ -49,8 +52,30 @@ class APSResourceSubmission(models.Model):
     answer = fields.Html(string='Answer')
     has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
     has_answer = fields.Boolean(string='Has Answer', compute='_compute_has_answer', store=True)
-    reviewed_by = fields.Many2many('op.faculty', string='Reviewed By', tracking=True)
+    reviewed_by = fields.Many2many(
+        'op.faculty',
+        'aps_submission_reviewed_by_rel',
+        'submission_id',
+        'faculty_id',
+        string='Reviewed By',
+        tracking=True,
+    )
+    review_requested_by = fields.Many2many(
+        'op.faculty',
+        'aps_submission_review_request_rel',
+        'submission_id',
+        'faculty_id',
+        string='Review Requested By',
+        help='Faculty members who have been requested to review this submission.',
+        tracking=True,
+    )
     is_current_user_faculty = fields.Boolean(compute='_compute_is_current_user_faculty')
+    model_answer = fields.Html(
+        string='Model Answer',
+        related='resource_id.answer',
+        readonly=True,
+        help='The model answer from the associated resource for comparison.'
+    )
 
     @api.depends('feedback')
     def _compute_has_feedback(self):
@@ -76,21 +101,29 @@ class APSResourceSubmission(models.Model):
         
         now = fields.Datetime.now()
         for record in self:
-            if not record.date_due:
-                record.due_status = False
-                continue
-            
+           
             # Use completion date if submission is complete, otherwise use current date
-            compare_date = record.date_submitted if record.state in ['submitted', 'complete'] else now
-            
-            # Early: submitted 1 day or more before due date
-            due_date_minus_1 = fields.Date.add(record.date_due.date(), days=-1)
-            if compare_date.date() < due_date_minus_1:
-                record.due_status = 'early'
-            elif compare_date.date() <= record.date_due.date():
-                record.due_status = 'on-time'
+            # Handle case where date_submitted is not set yet during state transition
+            if record.state in ['submitted', 'complete'] and record.date_submitted:
+                compare_date = record.date_submitted
             else:
-                record.due_status = 'late'
+                compare_date = now
+            
+            if not record.date_due:
+                if record.state == 'assigned':
+                    record.due_status = False
+                else:
+                    record.due_status = 'on-time'
+            else:
+                # Early: submitted 1 day or more before due date
+                due_date_minus_1 = fields.Date.add(record.date_due.date(), days=-1)
+
+                if record.date_due.date() and compare_date.date() < due_date_minus_1:
+                    record.due_status = 'early'
+                elif compare_date.date() <= record.date_due.date():
+                    record.due_status = 'on-time'
+                else:
+                    record.due_status = 'late'
 
     @api.depends()
     def _compute_is_current_user_faculty(self):
@@ -98,14 +131,15 @@ class APSResourceSubmission(models.Model):
         for record in self:
             record.is_current_user_faculty = bool(faculty)
 
-    @api.onchange('score')
-    def _onchange_score(self):
-        """Auto-calculate result_percent when score changes"""
-        if self.score and self.score != sentinel_zero and self.out_of_marks and self.out_of_marks != sentinel_zero:
-            self.result_percent = int(round((self.score / self.out_of_marks) * 100))
-        elif self.score == sentinel_zero or not self.out_of_marks or self.out_of_marks == sentinel_zero:
-            self.result_percent = 0
-
+    @api.depends('score', 'out_of_marks')  # Needed to trigger recompute when related model fields change fields change
+    def _compute_result_percent(self):
+        """Auto-calculate result_percent based on score and out_of_marks"""
+        for record in self:
+            if record.score and record.score != sentinel_zero and record.out_of_marks and record.out_of_marks != sentinel_zero:
+                record.result_percent = int(round((record.score / record.out_of_marks) * 100))
+            elif record.score == sentinel_zero or not record.out_of_marks or record.out_of_marks == sentinel_zero:
+                record.result_percent = 0
+        
     @api.depends('task_id.student_id.name', 'resource_id.display_name', 'submission_label')
     def _compute_display_name(self):
         for record in self:
@@ -154,6 +188,19 @@ class APSResourceSubmission(models.Model):
             'state': 'submitted',
             'date_submitted': fields.Date.today(),
         })
+
+    def action_mark_reviewed(self):
+        faculty = self._get_current_faculty()
+        if not faculty:
+            raise UserError("Only faculty members can mark submissions as reviewed.")
+
+        for record in self:
+            record.write({
+                'reviewed_by': [(4, faculty.id)],
+                'review_requested_by': [(3, faculty.id)],
+            })
+
+        return True
 
     def write(self, vals):
         # Handle automatic date setting based on state changes

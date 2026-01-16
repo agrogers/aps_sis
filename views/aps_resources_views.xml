@@ -61,15 +61,18 @@
                 </header>
                 <sheet>
                     <div class="aps_ribbon" invisible="not type_id">
-                        <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1"/>
-                        <field name="display_name"/>
+                        <field name="type_icon" widget="image" options="{'size': [40, 40]}" class="me-2" nolabel="1"/>
+                        <field name="display_name" style="font-size: 1.5em; font-weight: 600;"/>
                     </div>
                     <notebook>
                         <page string="Basic Information">
+                            <group>
+                                 <field name="name"/>
+                                 <field name="description"/>
+                            </group>
                             <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
                             <group>
                                 <group string="Details">
-                                    <field name="name"/>
                                     <label for="type_id"/>
                                     <div class="d-flex align-items-center">
                                         <field name="type_icon" widget="image" options="{'size': [24, 24]}" class="me-2 flex-shrink-0" style="width: 24px;" nolabel="1"/>
@@ -78,10 +81,14 @@
                                     <field name="category"/>
                                     <field name="marks" widget="float_sentinel"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
+                                    <field name="url" widget="url_icon"/>
+                                    
                                 </group>
                                 <group string="Technical">
-                                    <field name="url" widget="url_icon"/>
-                                    <field name="description" nolabel="0"/>
+                                    <field name="has_question"/>
+                                    <field name="has_answer"/>
+                                    <field name="has_child_resources"/>
+                                    <field name="has_supporting_resources"/>
                                     <field name="parent_ids" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="has_multiple_parents" invisible="1"/>
                                     <div class="o_row" invisible="not has_multiple_parents" style="margin-left: 15px;">
@@ -92,14 +99,51 @@
                             </group>
                             </group>
                         </page>
-                        <page string="Question">
-                            <field name="question" nolabel="1" placeholder="Enter the question for this resource."/>
+                        <page string="Question" invisible="has_question=='no'">
+                            <group invisible="not has_question=='use_parent'" >
+                                <div class="alert alert-info" role="alert">Using <b>Parent Question</b> (read only).</div>
+                                <field name="parent_question" nolabel="1" placeholder="Parent question will appear here."/>
+                            </group>
+                            <field name="question"  invisible="not has_question=='yes'" nolabel="1" placeholder="Enter the question for this resource."/>
                         </page>
-                        <page string="Model Answer">
-                            <field name="answer" nolabel="1" placeholder="Enter the answer or solution for this resource."/>
+                        <page string="Model Answer" invisible="has_answer=='no'">
+                            <group invisible="not has_answer=='use_parent'" >
+                                <div class="alert alert-info" role="alert">Using <b>Parent Answer</b> (read only).</div>
+                                <field name="parent_answer" nolabel="1" placeholder="Parent answer will appear here."/>
+                            </group>
+                            <field name="answer" invisible="not has_answer=='yes'" placeholder="Enter the answer or solution for this resource."/>
                         </page>
-                        <page string="Child Resources">
+                        <page string="Linked Resources" invisible="not has_child_resources=='yes'">
+                            <group>
+                                <div><i>Linked resources contribute to the parent total marks. To add resources such as videos or related quizzes that do not contribute to the total marks, use the 'Supporting Resources' tab.</i></div>
+                            </group>
                             <field name="child_ids" widget="many2many" context="{'default_parent_ids': [(6, 0, [id])], 'default_primary_parent_id': id, 'default_subjects': subjects}">
+                                <list default_order="sequence,name">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
+                                    <field name="name" optional="show"/>
+                                    <field name="display_name" optional="hide"/>
+                                    <field name="type_id" optional="show"/>
+                                    <field name="category" optional="hide"/>
+                                    <field name="marks" optional="hide"/>
+                                    <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                                    <field name="description" optional="show"/>
+                                    <field name="child_count" optional="hide"/>
+                                    <field name="url" widget="url_icon" options='{"html": true}' optional="show"/>
+                                    
+                                    <button string="Open" 
+                                            type="object" 
+                                            name="get_formview_action" 
+                                            icon="fa-external-link" 
+                                            title="Open in full view"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Supporting Resources" invisible="not has_supporting_resources=='yes'">
+                            <group>
+                                <div><i>Supporting resources usually include videos or related quizzes that do not contribute to the total marks.</i></div>
+                            </group>
+                            <field name="supporting_resource_ids" widget="many2many" context="{'default_subjects': subjects}">
                                 <list default_order="sequence,name">
                                     <field name="sequence" widget="handle"/>
                                     <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
@@ -111,6 +155,11 @@
                                     <field name="description" optional="show"/>
                                     <field name="child_count" optional="hide"/>
                                     <field name="url" widget="url_icon" options='{"html": true}' optional="show"/>
+                                    <button string="Open" 
+                                            type="object" 
+                                            name="get_formview_action" 
+                                            icon="fa-external-link" 
+                                            title="Open in full view"/>
                                 </list>
                             </field>
                         </page>
@@ -128,10 +177,10 @@
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                                     <field name="date_due" string="Next Due Date" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
                                     <field name="submission_count" optional="show"/>
-                                    <field name="last_result" widget="float_sentinel" optional="show"/>
-                                    <field name="avg_result" widget="float_sentinel" optional="hide"/>
-                                    <field name="weighted_result" widget="float_sentinel" optional="hide"/>
-                                    <field name="max_result" widget="float_sentinel" optional="hide"/>
+                                    <field name="last_result" widget="percentpie_ranged" optional="show"/>
+                                    <field name="avg_result" widget="percentpie_ranged" optional="hide"/>
+                                    <field name="weighted_result" widget="percentpie_ranged" optional="hide"/>
+                                    <field name="best_result" widget="percentpie_ranged" optional="hide"/>
                                     <field name="latest_submission_text" widget="recent_submissions" options='{"html": true}' optional="show"/>
 
                                     <!-- This button opens the full form view in the main area -->
@@ -225,5 +274,17 @@
         <field name="search_view_id" ref="view_aps_resources_search"/>
         <field name="domain">[('parent_ids','=',False)]</field>
         <field name="context">{'default_order': 'name'}</field>
+    </record>
+
+    <!-- Server action to force update all display names -->
+    <record id="action_force_update_aps_resource_display_names" model="ir.actions.server">
+        <field name="name">Update Resource Names</field>
+        <field name="model_id" ref="model_aps_resources"/>
+        <field name="binding_model_id" ref="model_aps_resources"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">
+env['aps.resources'].action_force_update_display_names()
+        </field>
     </record>
 </odoo>

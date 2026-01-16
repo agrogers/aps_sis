@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Report for Submissions -->
+        <record id="submission_report_action" model="ir.actions.report">
+            <field name="name">Submissions Report</field>
+            <field name="model">aps.resource.submission</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">aps_sis.report_submission_template</field>
+            <field name="print_report_name">'Submissions - %s' % object.create_date.strftime('%Y-%m-%d')</field>
+            <field name="binding_model_id" ref="model_aps_resource_submission"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <!-- Report Template -->
+        <template id="report_submission_template">
+            <t t-call="web.html_container">
+                <t t-call="web.external_layout">
+                    <style>
+                        @page {
+                            @top-center { content: none; }
+                            @top-left { content: none; }
+                            @top-right { content: none; }
+                        }
+                        @page :first {
+                            @top-center { content: element(header); }
+                            @top-left { content: element(header); }
+                            @top-right { content: element(header); }
+                        }
+                        /* Hide header on pages after first */
+                        .header {
+                            display: none;
+                        }
+                        .page:first-of-type .header,
+                        body > .header:first-child {
+                            display: block;
+                        }
+                        /* Reduce heading sizes in answer/feedback content */
+                        .submission-content h1 { font-size: 1.6em; font-weight: bold; margin: 0.5em 0; }
+                        .submission-content h2 { font-size: 1.5em; font-weight: bold; margin: 0.4em 0; }
+                        .submission-content h3 { font-size: 1.4em; font-weight: bold; margin: 0.3em 0; }
+                        .submission-content h4 { font-size: 1.3em; font-weight: bold; margin: 0.3em 0; }
+                        .submission-content h5 { font-size: 1.2em; font-weight: bold; margin: 0.2em 0; }
+                        .submission-content h6 { font-size: 1.1em; font-weight: normal; margin: 0.2em 0; }
+                        
+                    </style>
+                    <div class="page">
+                        <h1 class="text-center mb-4">Student Submissions Report</h1>
+                        
+                        <t t-foreach="docs" t-as="submission">
+                            <div class="submission-item" style="page-break-inside: avoid; margin-bottom: 30px; padding: 1px; border: 0px solid #ccc;">
+                                <!-- Header Row -->
+                                <div class="row mb-3" style="background-color: #aaaaaa; padding: 5px; border-radius: 4px;">
+                                    <div class="col-12">
+                                        <h3 t-field="submission.student_id.name" class="mb-1"/>
+                                        <h4 t-field="submission.resource_id.display_name" class="mb-1"/>
+                                    </div>
+                                </div>
+
+                                <!-- Score and Percentage Row -->
+                                <div class="row mb-3" style="background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                    <div class="col-4">
+                                        <p class="mb-0">
+                                            <strong>Score:</strong> <span t-field="submission.score"/> / <span t-field="submission.out_of_marks"/>
+                                        </p>
+                                    </div>
+                                    <div class="col-4">
+                                        <p class="mb-0">
+                                            <strong>Percentage:</strong> <span t-field="submission.result_percent"/>%
+                                        </p>
+                                    </div>
+                                    <div class="col-4">
+                                        <p class="mb-0">
+                                            <strong>Status:</strong> <span t-field="submission.due_status"/>
+                                        </p>
+                                    </div>
+                                </div>
+                                <!-- Metadata Footer -->
+                                <div class="row" style="border-top: 1px solid #eee; padding-top: 10px; font-size: 11px;">
+                                    <div class="col-6">
+                                        <p class="mb-0 text-muted">
+                                            <strong>Submitted:</strong> <span t-field="submission.date_submitted" t-options="{'widget': 'datetime', 'format': 'dd/MM/yyyy HH:mm'}"/>
+                                        </p>
+                                    </div>
+                                    <div class="col-6 text-right">
+                                        <p class="mb-0 text-muted">
+                                            <strong>Finalized:</strong> <span t-field="submission.date_completed" t-options="{'widget': 'datetime', 'format': 'dd/MM/yyyy HH:mm'}"/>
+                                        </p>
+                                    </div>
+                                </div>
+                                <!-- Student Answer -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <h5 class="mb-2" style="color: #0066cc;">Student Answer</h5>
+                                        <div class="submission-content" style="background-color: #f0f7ff; padding: 12px; border-left: 3px solid #0066cc; min-height: 60px;">
+                                            <t t-if="submission.answer">
+                                                <div t-raw="submission.answer"/>
+                                            </t>
+                                            <t t-else="">
+                                                <p class="text-muted"><em>No answer submitted</em></p>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Feedback -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <h5 class="mb-2" style="color: #28a745;">Teacher Feedback</h5>
+                                        <div class="submission-content" style="padding: 12px; border-left: 3px solid #28a745; min-height: 60px;">
+                                            <t t-if="submission.feedback">
+                                                <div t-raw="submission.feedback"/>
+                                            </t>
+                                            <t t-else="">
+                                                <p class="text-muted"><em>No feedback provided</em></p>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

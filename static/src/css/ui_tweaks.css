@@ -1,0 +1,6 @@
+/* Make active tab links bold in notebooks */
+.nav-link.active {
+    font-weight: 600;
+    background: linear-gradient(to bottom, #acacac20, white);
+    /* background: linear-gradient(to bottom, var(--link-color) 0%, var(--link-color) 7%, #acacac44 7%, transparent 100%) */
+}

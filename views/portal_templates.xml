@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_submissions" name="My Submissions">
+        <t t-call="web.layout">
+            <div class="container o_my_submissions mt-5">
+                <div class="row">
+                    <div class="col-12">
+                        <h1>My Submissions</h1>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <t t-if="not submissions">
+                            <p>You have no submissions.</p>
+                        </t>
+                        <t t-else="">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Task</th>
+                                        <th>State</th>
+                                        <th>Due Date</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="submissions" t-as="submission">
+                                        <td><t t-out="submission.task_id.name"/></td>
+                                        <td><t t-out="submission.state"/></td>
+                                        <td><t t-out="submission.date_due and submission.date_due.strftime('%d/%m/%Y') or '-'"/></td>
+                                        <td><t t-out="submission.score != -0.01 and f'{submission.score}/{submission.out_of_marks}' or '-'"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

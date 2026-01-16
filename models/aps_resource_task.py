@@ -21,7 +21,7 @@ class APSResourceTask(models.Model):
     last_result = fields.Float(string='Last Result%', compute='_compute_submission_stats', store=True, default=None)
     avg_result = fields.Float(string='Average Result%', compute='_compute_submission_stats', store=True, default=None)
     weighted_result = fields.Float(string='Weighted Result%', compute='_compute_submission_stats', store=True, default=None)
-    max_result = fields.Float(string='Max Result%', compute='_compute_submission_stats', store=True, default=None)
+    best_result = fields.Float(string='Best Result%', compute='_compute_submission_stats', store=True, default=None)
     state = fields.Selection([
         ('created', 'Created'),
         ('assigned', 'Assigned'),
@@ -93,7 +93,7 @@ class APSResourceTask(models.Model):
             if task.state != new_state:
                 task.state = new_state
 
-    @api.depends('submission_ids', 'submission_ids.state', 'submission_ids.result_percent')
+    @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.score', 'submission_ids.out_of_marks')
     def _compute_submission_stats(self):
         for rec in self:
             submissions = rec.submission_ids.filtered(lambda a: a.state in ['submitted', 'complete']).sorted(lambda s: s.date_assigned or s.create_date)
@@ -102,7 +102,7 @@ class APSResourceTask(models.Model):
                 scores = submissions.mapped('result_percent')
                 rec.last_result = scores[-1] if scores else False
                 rec.avg_result = round(sum(scores) / len(scores), 2) if scores else False
-                rec.max_result = max(scores) if scores else False
+                rec.best_result = max(scores) if scores else False
                 
                 # Calculate weighted result using last 10 submissions
                 # Most recent gets highest weight (n, n-1, n-2, ..., 1)
@@ -124,7 +124,7 @@ class APSResourceTask(models.Model):
                 rec.last_result = False
                 rec.avg_result = False
                 rec.weighted_result = False
-                rec.max_result = False
+                rec.best_result = False
 
     @api.depends('submission_ids.date_due', 'submission_ids.state')
     def _compute_date_due(self):

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aps_sis.PercentPieRangedField">
+        <figure class="o_pie mb-0 rounded-circle"
+                t-attf-style="background: conic-gradient(
+                    {{color}} 0% {{value}}%,
+                    rgba(0, 0, 0, 0.15) 0% 100%
+                ); --PercentPieField-color-active: {{color}};"
+        />
+
+        <div class="o_pie_info">
+            <span class="o_pie_value" t-esc="formattedValue"/>
+            <span class="o_pie_text" t-esc="props.string"/>
+        </div>
+    </t>
+
+</templates>

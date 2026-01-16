@@ -1,0 +1,39 @@
+/* Draft */
+button.o_arrow_button[aria-checked="true"][data-value="submitted"],
+button.o_arrow_button[aria-checked="true"][data-value="draft"] {
+    background-color: var(--info) !important;  /* Light blue */
+    color: white !important;
+}
+
+/* Pending */
+button.o_arrow_button[aria-checked="true"][data-value="pending"] {
+    background-color: var(--info-text-emphasis) !important;  /* orange? */
+    color: white !important;
+    border-color: white;
+}
+
+/* Running */
+button.o_arrow_button[aria-checked="true"][data-value="complete"],
+button.o_arrow_button[aria-checked="true"][data-value="open"] {
+    background-color: var(--success) !important;  /* Light green */
+    color: white !important;
+    border-color: white;
+}
+
+/* Expired */
+button.o_arrow_button[aria-checked="true"][data-value="close"] {
+    background-color: var(--warning) !important;  /* Light yellow */
+    color: black !important;
+}
+
+/* Cancelled */
+button.o_arrow_button[aria-checked="true"][data-value="cancel"] {
+    background-color: var(--gray-600) !important;
+    color: black !important;
+}
+
+/* Target the status bar container to set the custom property */
+.o_statusbar_status {
+    --o-statusbar-border-active: white !important; /* Set the active border color to white */
+}
+ 

@@ -16,8 +16,48 @@ class APSResource(models.Model):
     name = fields.Char(string='Name', tracking=True)
     description = fields.Text(string='Description', tracking=True)
 
+    has_question = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Question', 
+        default='no', 
+        help='A resource can use the parent\'s question if set to "Use Parent".',
+        required=True,
+        tracking=True)
     question = fields.Html(string='Question')
-    answer = fields.Html(string='Answer')
+    parent_question = fields.Html(string='Parent Question', compute='_compute_parent_question', store=False)
+
+    has_answer = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Answer', 
+        default='no', 
+        help='Resources can include model answers to a question. A resource can use the parent\'s answer if set to "Use Parent".',
+        required=True,
+        tracking=True)
+    answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
+    parent_answer = fields.Html(string='Parent Answer', compute='_compute_parent_answer', store=False)
+
+    has_child_resources = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ], string='Has Linked Resources', 
+        default='no', 
+        help='Linked resources can be used to break down a resource into smaller parts. They usually contribute to the overall marks of the parent resource.',
+        required=True,
+        tracking=True)    
+
+    has_supporting_resources = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ], string='Has Supporting Resources', 
+        default='no', 
+        help='Supporting resources can be used to add supplementary materials that do not contribute to the overall marks of the parent resource.',
+        required=True,
+        tracking=True)    
+
     thumbnail = fields.Binary(string='Thumbnail', compute='_compute_thumbnail', store=True)
 
     type_id = fields.Many2one('aps.resource.types', string='Type', ondelete='set null')
@@ -29,7 +69,9 @@ class APSResource(models.Model):
         ('mandatory', 'Mandatory'),
         ('optional', 'Optional'),
         ('information', 'Information'),
-        ], string='Category', default='optional', help='Identifies which resources should be assigned to students to complete.', tracking=True)
+        ], string='Category', 
+        default='optional', 
+        help='Identifies which resources should be assigned to students to complete.', tracking=True)
     marks = fields.Float(string='Marks', digits=(16, 1), help='Maximum marks/points for this resource')
     subjects = fields.Many2many('op.subject', string='Subjects')
     task_ids = fields.One2many('aps.resource.task', 'resource_id', string='Tasks')
@@ -40,10 +82,12 @@ class APSResource(models.Model):
         domain="[('id', 'in', parent_ids)]", 
         help='The resource used for generating the display name. Must be one of the selected parents.',
     )
-    child_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'parent_id', 'child_id', string='Child Resources', domain="[('id', '!=', id)]")
+    child_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'parent_id', 'child_id', string='Linked Resources', domain="[('id', '!=', id)]")
     # Removed parent_path since multiple parents don't fit tree structure
     child_count = fields.Integer(string='Total Children', compute='_compute_child_count')
     has_multiple_parents = fields.Boolean(string='Has Multiple Parents', compute='_compute_has_multiple_parents')
+
+    supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]")
 
     @api.model
     def default_get(self, fields_list):
@@ -84,6 +128,24 @@ class APSResource(models.Model):
         for rec in self:
             rec.has_multiple_parents = len(rec.parent_ids) > 1
 
+    @api.depends('primary_parent_id.answer')
+    def _compute_parent_answer(self):
+        """Get the answer to display based on has_answer setting."""
+        for rec in self:
+            if rec.has_answer == 'use_parent' and rec.primary_parent_id:
+                rec.parent_answer = rec.primary_parent_id.answer
+            else:
+                rec.parent_answer = False    
+                
+    @api.depends('primary_parent_id.question')
+    def _compute_parent_question(self):
+        """Get the question to display based on has_answer setting."""
+        for rec in self:
+            if rec.has_question == 'use_parent' and rec.primary_parent_id:
+                rec.parent_question = rec.primary_parent_id.question
+            else:
+                rec.parent_question = False
+
     @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids')
     def _compute_display_name(self):
         """Build display name from ancestor chain, removing redundant overlapping characters."""
@@ -94,7 +156,7 @@ class APSResource(models.Model):
             if parent_to_use:
                 parent_display = parent_to_use.display_name or parent_to_use.name or ''
                 current_name = rec.name or ''
-                separator = '🢒'
+                separator = ' 🢒 '
                 
                 # Find overlapping characters between start of current_name and end of parent_display
                 overlap_length = 0
@@ -183,8 +245,22 @@ class APSResource(models.Model):
 
     # Removed _check_parent_loop since multiple parents make cycle detection complex
 
+    def _sync_primary_parent(self):
+        """Ensure `primary_parent_id` is set to a valid parent whenever parents exist."""
+        for rec in self:
+            if rec.parent_ids:
+                if not rec.primary_parent_id or rec.primary_parent_id not in rec.parent_ids:
+                    # Use update() to avoid cascading writes and recursion
+                    rec.sudo().update({'primary_parent_id': rec.parent_ids[0].id})
+            else:
+                # No parents: clear primary_parent_id
+                if rec.primary_parent_id:
+                    rec.sudo().update({'primary_parent_id': False})
+
     def write(self, vals):
         result = super().write(vals)
+        # Ensure primary_parent_id stays consistent after any write
+        self._sync_primary_parent()
         if 'name' in vals:
             # When name changes, update display_name for self and direct children
             for rec in self:
@@ -194,6 +270,13 @@ class APSResource(models.Model):
                 if children:
                     children._compute_display_name()
         return result
+
+    @api.model
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        # Ensure primary_parent_id is set whenever parents exist on new records
+        records._sync_primary_parent()
+        return records
 
     def _get_all_descendants(self):
         """Recursively get all descendants of this resource in the graph."""
@@ -221,5 +304,51 @@ class APSResource(models.Model):
             'context': {
                 'default_resource_id': self.id,
             },
+        }
+
+    def action_force_update_display_names(self):
+        """Force recompute display names for all resources in hierarchical order."""
+        all_resources = self.search([])
+        total_count = len(all_resources)
+        updated = self.env['aps.resources']
+        
+        # Start with resources that have no parents (root level)
+        to_process = all_resources.filtered(lambda r: not r.parent_ids)
+        
+        # Process in layers: update current layer, then find children of updated resources
+        iteration = 0
+        max_iterations = 100  # Safety limit to prevent infinite loops
+        
+        while to_process and iteration < max_iterations:
+            # Update display names for current layer
+            to_process._compute_display_name()
+            updated |= to_process
+            
+            # Find next layer: resources whose parents are all in the updated set
+            remaining = all_resources - updated
+            next_layer = self.env['aps.resources']
+            
+            for resource in remaining:
+                # Check if all parents of this resource have been updated
+                if all(parent in updated for parent in resource.parent_ids):
+                    next_layer |= resource
+            
+            to_process = next_layer
+            iteration += 1
+        
+        # Handle any remaining resources (shouldn't happen unless there are cycles)
+        remaining = all_resources - updated
+        if remaining:
+            remaining._compute_display_name()
+            updated |= remaining
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Success',
+                'message': f'Updated display names for {len(updated)} resources in {iteration} layers.',
+                'sticky': False,
+            }
         }
 
