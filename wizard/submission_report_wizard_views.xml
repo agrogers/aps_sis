@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_submission_report_wizard_form" model="ir.ui.view">
+        <field name="name">aps.submission.report.wizard.form</field>
+        <field name="model">aps.submission.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Print Submissions Report">
+                
+                    <group>
+                        <field name="submission_count" readonly="1"/>
+                    </group>
+                    <group col="2">
+                        <group string="Content Options">
+                            <field name="show_score" widget="boolean_toggle"/>
+                            <field name="show_metadata" widget="boolean_toggle"/>
+                            <field name="show_answer" widget="boolean_toggle"/>
+                            <field name="show_feedback" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Layout Options">
+                            <field name="show_model_answer" widget="boolean_toggle"/>
+                            <field name="page_break_before_resource" widget="boolean_toggle"/>
+                            <field name="page_break_before_student" widget="boolean_toggle"/>
+                            <field name="page_break_after_model_answer" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                
+                <footer>
+                    <button name="action_print_report" string="Print" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_submission_report_wizard" model="ir.actions.act_window">
+        <field name="name">Print Submissions Report</field>
+        <field name="res_model">aps.submission.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_submission_ids': active_ids}</field>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="binding_type">action</field>
+    </record>
+</odoo>

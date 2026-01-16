@@ -10,3 +10,4 @@ access_aps_resource_types_student,aps.resource.types.student,model_aps_resource_
 access_aps_resource_task_student,aps.resource.task.student,model_aps_resource_task,aps_sis.group_aps_student,1,1,0,0
 access_aps_resource_submission_student,aps.resource.submission.student,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,0
 access_aps_resource_submission_portal,aps.resource.submission.portal,model_aps_resource_submission,base.group_portal,1,1,0,0
+access_aps_submission_report_wizard_teacher,aps.submission.report.wizard.teacher,model_aps_submission_report_wizard,aps_sis.group_aps_teacher,1,1,1,1
