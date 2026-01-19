@@ -89,9 +89,9 @@ class APSResource(models.Model):
 
     supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]")
     
-    resource_links_data = fields.Json(
+    resources_links = fields.Json(
         string='Resource Links',
-        compute='_compute_resource_links_data',
+        compute='_compute_resources_links',
         help='JSON data containing resource links with icons for the widget.'
     )
 
@@ -99,7 +99,7 @@ class APSResource(models.Model):
                  'supporting_resource_ids', 'supporting_resource_ids.url', 
                  'supporting_resource_ids.name', 'supporting_resource_ids.display_name',
                  'supporting_resource_ids.type_icon', 'supporting_resource_ids.type_id.name')
-    def _compute_resource_links_data(self):
+    def _compute_resources_links(self):
         """Compute JSON data for resource links widget."""
         for resource in self:
             links = []
@@ -124,7 +124,7 @@ class APSResource(models.Model):
                         'type_name': supporting.type_id.name if supporting.type_id else 'Resource',
                         'is_main': False,
                     })
-            resource.resource_links_data = links
+            resource.resources_links = links
 
     @api.model
     def default_get(self, fields_list):

@@ -5,9 +5,11 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     _description = 'Assign Students Wizard Line'
 
     wizard_id = fields.Many2one('aps.assign.students.wizard', required=True)
+    type_icon = fields.Binary(related='resource_id.type_icon', string='Icon', readonly=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', required=True)
     display_name = fields.Char(string='Resource', compute='_compute_display_name', store=False)
     description = fields.Text(string='Description', related='resource_id.description', readonly=True)
+    resources_links = fields.Json(related='resource_id.resources_links', string='Resource Links', readonly=True)
     selected = fields.Boolean(string='Assign', default=True)
 
     @api.depends('resource_id')

@@ -77,9 +77,9 @@ class APSResourceSubmission(models.Model):
         readonly=True,
         help='The model answer from the associated resource for comparison.'
     )
-    resource_links_data = fields.Json(
+    resources_links = fields.Json(
         string='Links',
-        related='resource_id.resource_links_data',
+        related='resource_id.resources_links',
         help='Links to resources associated with this submission (e.g., main resource and supporting resources).'
     )
     type_icon = fields.Binary(

@@ -60,7 +60,7 @@
                 <field name="subjects" widget="many2many_tags" optional="show"/>
                 <field name="resource_id" optional="show"/>
                 <field name="display_name" optional="hide"/>
-                <field name="resource_links_data" widget="resource_links" optional="show"/>
+                <field name="resources_links" widget="resource_links" optional="show"/>
                 <field name="task_id" optional="hide"/>
                 <field name="student_id" optional="hide"/>
                 <field name="assigned_by" optional="hide"/>
@@ -149,7 +149,7 @@
                                     <field name="task_id" invisible="1"/>
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
-                                    <field name="resource_links_data" widget="resource_links"  invisible="not resource_links_data"/>
+                                    <field name="resources_links" widget="resource_links"  invisible="not resources_links"/>
                                     <field name="assigned_by" readonly="1"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1"/>
                                     <field name="submission_label" readonly="1"/>

@@ -7,10 +7,10 @@
         <field name="arch" type="xml">
             <list default_order="sequence,name">
                 <field name="sequence" widget="handle"/>
+                <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                 <field name="thumbnail" widget="image" options="{'size': [50, 50]}" optional="hide"/>
                 <field name="name" optional="hide"/>
                 <field name="display_name" string="Display Name" optional="show"/>
-                <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                 <field name="type_id" optional="hide"/>
                 <field name="category" optional="hide"/>
                 <field name="marks" optional="hide"/>
@@ -18,7 +18,7 @@
                 <field name="parent_ids" optional="hide"/>
                 <field name="child_count" string="Children" optional="hide"/>
                 <field name="description" optional="hide"/>
-                <field name="resource_links_data" widget="resource_links" optional="hide"/>
+                <field name="resources_links" widget="resource_links" optional="show"/>
                 <field name="url" widget="url_icon"  options="{'html': true}" optional="hide"/>
                 <field name="has_question" optional="hide"/>
                 <field name="has_answer" optional="hide"/>
@@ -77,8 +77,7 @@
                     <notebook>
                         <page string="Basic Information">
                             <group>
-                                 <field name="name"/>
-                                <field name="parent_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                                <field name="parent_ids" widget="clickable_many2many_tags" options="{'no_create': True}"/>
                                 <field name="has_multiple_parents" invisible="1"/>
                                 <div class="o_row" invisible="not has_multiple_parents" style="margin-left: 15px;">
                                     <label for="primary_parent_id" string="Display Parent:" class="text-muted" style="font-size: 0.8em !important;"/>
