@@ -88,6 +88,43 @@ class APSResource(models.Model):
     has_multiple_parents = fields.Boolean(string='Has Multiple Parents', compute='_compute_has_multiple_parents')
 
     supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]")
+    
+    resource_links_data = fields.Json(
+        string='Resource Links',
+        compute='_compute_resource_links_data',
+        help='JSON data containing resource links with icons for the widget.'
+    )
+
+    @api.depends('url', 'name', 'display_name', 'type_icon', 'type_id.name',
+                 'supporting_resource_ids', 'supporting_resource_ids.url', 
+                 'supporting_resource_ids.name', 'supporting_resource_ids.display_name',
+                 'supporting_resource_ids.type_icon', 'supporting_resource_ids.type_id.name')
+    def _compute_resource_links_data(self):
+        """Compute JSON data for resource links widget."""
+        for resource in self:
+            links = []
+            # Add main resource if it has a URL
+            if resource.url:
+                links.append({
+                    'id': resource.id,
+                    'name': resource.name or resource.display_name,
+                    'url': resource.url,
+                    'icon_url': f'/web/image/aps.resources/{resource.id}/type_icon' if resource.type_icon else False,
+                    'type_name': resource.type_id.name if resource.type_id else 'Resource',
+                    'is_main': True,
+                })
+            # Add supporting resources that have URLs
+            for supporting in resource.supporting_resource_ids:
+                if supporting.url:
+                    links.append({
+                        'id': supporting.id,
+                        'name': supporting.name or supporting.display_name,
+                        'url': supporting.url,
+                        'icon_url': f'/web/image/aps.resources/{supporting.id}/type_icon' if supporting.type_icon else False,
+                        'type_name': supporting.type_id.name if supporting.type_id else 'Resource',
+                        'is_main': False,
+                    })
+            resource.resource_links_data = links
 
     @api.model
     def default_get(self, fields_list):
@@ -157,6 +194,18 @@ class APSResource(models.Model):
                 parent_display = parent_to_use.display_name or parent_to_use.name or ''
                 current_name = rec.name or ''
                 separator = ' 🢒 '
+                
+                # NEW: Remove bracketed text that matches part or all of the parent
+                if current_name and parent_display:
+                    # Find all text in brackets (round, square, or curly)
+                    bracketed_texts = re.findall(r'\([^)]+\)|\[[^\]]+\]|{[^}]+}', current_name)
+                    for bracketed in bracketed_texts:
+                        # Remove brackets to get the content
+                        content = bracketed[1:-1]  # Remove first and last character (brackets)
+                        # Check if this content appears in the parent display name
+                        if content in parent_display:
+                            # Remove the entire bracketed text from current_name
+                            current_name = current_name.replace(bracketed, '').strip()
                 
                 # Find overlapping characters between start of current_name and end of parent_display
                 overlap_length = 0
