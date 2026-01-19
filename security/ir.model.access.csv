@@ -5,9 +5,8 @@ access_aps_resource_task_teacher,aps.resource.task.teacher,model_aps_resource_ta
 access_aps_resource_submission_teacher,aps.resource.submission.teacher,model_aps_resource_submission,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_assign_students_wizard_teacher,aps.assign.students.wizard.teacher,model_aps_assign_students_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_assign_students_wizard_line_teacher,aps.assign.students.wizard.line.teacher,model_aps_assign_students_wizard_line,aps_sis.group_aps_teacher,1,1,1,1
-access_aps_resources_student,aps.resources.student,model_aps_resources,aps_sis.group_aps_student,1,0,0,0
-access_aps_resource_types_student,aps.resource.types.student,model_aps_resource_types,aps_sis.group_aps_student,1,0,0,0
-access_aps_resource_task_student,aps.resource.task.student,model_aps_resource_task,aps_sis.group_aps_student,1,1,0,0
-access_aps_resource_submission_student,aps.resource.submission.student,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,0
-access_aps_resource_submission_portal,aps.resource.submission.portal,model_aps_resource_submission,base.group_portal,1,1,0,0
-access_aps_submission_report_wizard_teacher,aps.submission.report.wizard.teacher,model_aps_submission_report_wizard,aps_sis.group_aps_teacher,1,1,1,1
+
+access_aps_resources_student_full,aps.resources.student.full,model_aps_resources,aps_sis.group_aps_student,1,0,1,0
+access_aps_resource_types_student_full,aps.resource.types.student.full,model_aps_resource_types,aps_sis.group_aps_student,1,0,0,0
+access_aps_resource_task_student_full,aps.resource.task.student.full,model_aps_resource_task,aps_sis.group_aps_student,1,1,1,1
+access_aps_resource_submission_student_full,aps.resource.submission.student.full,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,1

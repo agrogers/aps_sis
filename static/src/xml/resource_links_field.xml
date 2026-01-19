@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.ResourceLinksField">
+        <div class="o_resource_links d-flex flex-wrap gap-1 align-items-center" t-on-click.stop="">
+            <t t-foreach="links" t-as="link" t-key="link.id">
+                <a 
+                    t-att-href="link.url"
+                    class="resource-link-icon"
+                    t-att-title="link.type_name + ': ' + link.name"
+                    t-on-click.stop=""
+                    style="cursor: pointer; text-decoration: none;">
+                    <t t-if="link.icon_url">
+                        <img 
+                            t-att-src="link.icon_url" 
+                            alt=""
+                            style="width: 24px; height: 24px; object-fit: contain;"/>
+                    </t>
+                    <t t-else="">
+                        <i class="fa fa-external-link fa-lg text-primary"/>
+                    </t>
+                </a>
+            </t>
+            <t t-if="!links.length">
+                <span class="text-muted fst-italic small"></span>
+            </t>
+        </div>
+    </t>
+</templates>

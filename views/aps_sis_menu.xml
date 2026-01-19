@@ -47,7 +47,7 @@
 
     <!-- APS SIS Menu Structure -->
     <menuitem id="menu_aps_root" name="APS SIS" sequence="10" web_icon="/aps_sis/static/src/img/menu_icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student,base.group_system"/>
-    <menuitem id="menu_aps_tasks" name="Accademic Tasks" parent="menu_aps_root" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student,base.group_system"/>
+    <menuitem id="menu_aps_tasks" name="Academic Tasks" parent="menu_aps_root" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student,base.group_system"/>
     <menuitem id="menu_aps_task_list" name="Tasks" parent="menu_aps_tasks" action="action_aps_resource_tasks" sequence="25" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student,base.group_system"/>
     <menuitem id="menu_aps_resources" name="Resources" parent="menu_aps_tasks" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student,base.group_system"/>
     <menuitem id="menu_aps_resource_types" name="Resource Types" parent="menu_aps_tasks" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_teacher,base.group_system"/>

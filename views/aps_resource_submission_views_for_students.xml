@@ -60,6 +60,7 @@
                 <field name="subjects" widget="many2many_tags" optional="show"/>
                 <field name="resource_id" optional="show"/>
                 <field name="display_name" optional="hide"/>
+                <field name="resource_links_data" widget="resource_links" optional="show"/>
                 <field name="task_id" optional="hide"/>
                 <field name="student_id" optional="hide"/>
                 <field name="assigned_by" optional="hide"/>
@@ -92,6 +93,7 @@
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
+                    <button name="action_open_student_dashboard" type="object" string="Student Dashboard" class="btn-info"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon" title="Late" bg_color="bg-danger"
@@ -101,9 +103,12 @@
                     <widget name="web_ribbon" title="Early" bg_color="bg-success" 
                             invisible="due_status != 'early'"/> 
                     
-                    <group col="3">
+                    <group col="4">
                         <group>
-                            <field name="resource_id" readonly="1" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
+                            <div class="d-flex align-items-left gap-1">
+                                <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px"/>
+                                <field name="resource_id" readonly="1" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
+                            </div>
                         </group>
                         <group>
                             <field name="review_requested_by" string="Review Requested:" widget="many2many_tags" options="{'no_create': True}"/>
@@ -118,10 +123,10 @@
                                 <group>
                                     <div class="o_row">
                                         <label for="score" string="Score:" class="oe_inline me-2"/>
-                                        <field name="score" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1"/>
+                                        <field name="score" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
                                         <span class="oe_inline mx-1"> / </span>
-                                        <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1"/>
-                                        <field name="result_percent" widget="percentpie_ranged" class="oe_inline ms-3"/>
+                                        <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1" readonly="1"/>
+                                        <field name="result_percent" widget="percentpie_ranged" class="oe_inline ms-3" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
                                     </div>
                                 </group>
                             </group>
@@ -143,6 +148,8 @@
                                 <group>
                                     <field name="task_id" invisible="1"/>
                                     <field name="resource_id" readonly="1"/>
+                                    <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="resource_links_data" widget="resource_links"  invisible="not resource_links_data"/>
                                     <field name="assigned_by" readonly="1"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1"/>
                                     <field name="submission_label" readonly="1"/>
@@ -182,6 +189,60 @@
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_aps_resource_submission_form_for_students"/>
         <field name="act_window_id" ref="action_aps_resource_submissions_for_students"/>
+    </record>
+
+    <!-- Student Dashboard Graph View -->
+    <record id="view_student_dashboard_graph" model="ir.ui.view">
+        <field name="name">aps.resource.submission.graph.dashboard</field>
+        <field name="model">aps.resource.submission</field>
+        <field name="arch" type="xml">
+            <graph string="Submissions by Status" type="pie" sample="1">
+                <field name="state"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Student Dashboard Calendar View -->
+    <record id="view_student_dashboard_calendar" model="ir.ui.view">
+        <field name="name">aps.resource.submission.calendar.dashboard</field>
+        <field name="model">aps.resource.submission</field>
+        <field name="arch" type="xml">
+            <calendar date_start="date_due" color="state" mode="month">
+                <field name="display_name"/>
+                <field name="resource_id"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Student Dashboard Action -->
+    <record id="action_student_dashboard" model="ir.actions.act_window">
+        <field name="name">Student Dashboard</field>
+        <field name="res_model">aps.resource.submission</field>
+        <field name="view_mode">graph,calendar,list</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- Bind specific views to the dashboard action -->
+    <record id="action_student_dashboard_view_graph" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_student_dashboard_graph"/>
+        <field name="act_window_id" ref="action_student_dashboard"/>
+    </record>
+
+    <record id="action_student_dashboard_view_calendar" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">calendar</field>
+        <field name="view_id" ref="view_student_dashboard_calendar"/>
+        <field name="act_window_id" ref="action_student_dashboard"/>
+    </record>
+
+    <record id="action_student_dashboard_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_resource_submission_list_for_students"/>
+        <field name="act_window_id" ref="action_student_dashboard"/>
     </record>
 
 </odoo>

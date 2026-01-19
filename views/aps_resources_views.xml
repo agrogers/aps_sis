@@ -18,7 +18,12 @@
                 <field name="parent_ids" optional="hide"/>
                 <field name="child_count" string="Children" optional="hide"/>
                 <field name="description" optional="hide"/>
+                <field name="resource_links_data" widget="resource_links" optional="hide"/>
                 <field name="url" widget="url_icon"  options="{'html': true}" optional="hide"/>
+                <field name="has_question" optional="hide"/>
+                <field name="has_answer" optional="hide"/>
+                <field name="has_child_resources" optional="hide"/>
+                <field name="has_supporting_resources" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <field name="write_date" optional="hide"/>
             </list>
@@ -31,20 +36,25 @@
         <field name="name">aps.resources.hierarchy</field>
         <field name="model">aps.resources</field>
         <field name="arch" type="xml">
-            <list default_order="sequence,name">
-                <field name="sequence" widget="handle"/>
-                <field name="display_name" optional="show"/>
-                <field name="name" optional="hide"/>
-                <field name="type_id" optional="hide"/>
-                <field name="category" optional="hide"/>
-                <field name="marks" optional="hide"/>
-                <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
-                <field name="child_count" string="Children" optional="hide"/>
-                <field name="description" optional="hide"/>
-                <field name="url" widget="url_icon"  options="{'html': true}"/>
-                <field name="create_date" optional="hide"/>
-                <field name="write_date" optional="hide"/>
-            </list>
+                <list default_order="sequence,name">
+                    <field name="sequence" widget="handle"/>
+                    <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
+                    <field name="display_name" optional="show"/>
+                    <field name="name" optional="hide"/>
+                    <field name="type_id" optional="hide"/>
+                    <field name="category" optional="hide"/>
+                    <field name="marks" optional="hide"/>
+                    <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                    <field name="child_count" string="Children" optional="hide"/>
+                    <field name="description" optional="hide"/>
+                    <field name="url" widget="url_icon"  options="{'html': true}"/>
+                    <field name="has_question" optional="hide"/>
+                    <field name="has_answer" optional="hide"/>
+                    <field name="has_child_resources" optional="hide"/>
+                    <field name="has_supporting_resources" optional="hide"/>
+                    <field name="create_date" optional="hide"/>
+                    <field name="write_date" optional="hide"/>
+                </list>
         </field>
     </record>
 
@@ -57,7 +67,7 @@
                     'tree_view_ref': 'view_aps_resources_form_brief',
                     'form_view_ref': 'view_aps_resources_form_brief'}">
                 <header>
-                    <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary"/>
+                    <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher"/>
                 </header>
                 <sheet>
                     <div class="aps_ribbon" invisible="not type_id">
@@ -68,7 +78,12 @@
                         <page string="Basic Information">
                             <group>
                                  <field name="name"/>
-                                 <field name="description"/>
+                                <field name="parent_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                                <field name="has_multiple_parents" invisible="1"/>
+                                <div class="o_row" invisible="not has_multiple_parents" style="margin-left: 15px;">
+                                    <label for="primary_parent_id" string="Display Parent:" class="text-muted" style="font-size: 0.8em !important;"/>
+                                    <field name="primary_parent_id" options="{'no_create': True, 'no_open': True}" class="text-muted" style="font-size: 0.9em;" nolabel="1"/>
+                                </div>
                             </group>
                             <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
                             <group>
@@ -82,6 +97,7 @@
                                     <field name="marks" widget="float_sentinel"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="url" widget="url_icon"/>
+                                     <field name="description"/>
                                     
                                 </group>
                                 <group string="Technical">
@@ -89,12 +105,6 @@
                                     <field name="has_answer"/>
                                     <field name="has_child_resources"/>
                                     <field name="has_supporting_resources"/>
-                                    <field name="parent_ids" widget="many2many_tags" options="{'no_create': True}"/>
-                                    <field name="has_multiple_parents" invisible="1"/>
-                                    <div class="o_row" invisible="not has_multiple_parents" style="margin-left: 15px;">
-                                        <label for="primary_parent_id" string="Display Parent:" class="text-muted" style="font-size: 0.8em !important;"/>
-                                        <field name="primary_parent_id" options="{'no_create': True, 'no_open': True}" class="text-muted" style="font-size: 0.9em;" nolabel="1"/>
-                                    </div>
                                     <field name="child_count"/>
                             </group>
                             </group>
@@ -238,6 +248,11 @@
         <field name="model">aps.resources</field>
         <field name="arch" type="xml">
             <search>
+                <searchpanel>
+                    <field name="type_id" icon="fa-tag" enable_counters="1" select="multi"/>
+                    <field name="subjects" icon="fa-book" enable_counters="1" select="multi"/>
+                    <field name="category" icon="fa-star" enable_counters="1"/>
+                </searchpanel>
                 <field name="name" string="All" filter_domain="['|','|','|','|',('display_name','ilike',self),('name','ilike',self),('url','ilike',self),('description','ilike',self),('category','ilike',self)]"/>
                 <field name="display_name"/>
                 <field name="name"/>
@@ -247,10 +262,28 @@
                 <field name="marks"/>
                 <field name="subjects"/>
                 <filter name="has_parent" string="Has Parent" domain="[('parent_ids','!=',False)]"/>
+                <filter name="no_parent" string="Root Resources" domain="[('parent_ids','=',False)]"/>
+                <filter name="has_url" string="Has URL" domain="[('url','!=',False)]"/>
+                <filter name="has_marks" string="Has Marks" domain="[('marks','>',0)]"/>
+                <separator/>
+                <filter name="has_question_yes" string="Has Question" domain="[('has_question','=','yes')]"/>
+                <filter name="has_question_use_parent" string="Uses Parent Question" domain="[('has_question','=','use_parent')]"/>
+                <filter name="has_answer_yes" string="Has Answer" domain="[('has_answer','=','yes')]"/>
+                <filter name="has_answer_use_parent" string="Uses Parent Answer" domain="[('has_answer','=','use_parent')]"/>
+                <filter name="has_child_resources" string="Has Linked Resources" domain="[('has_child_resources','=','yes')]"/>
+                <filter name="has_supporting_resources" string="Has Supporting Resources" domain="[('has_supporting_resources','=','yes')]"/>
+                <separator/>
+                <filter name="category_mandatory" string="Mandatory" domain="[('category','=','mandatory')]"/>
+                <filter name="category_optional" string="Optional" domain="[('category','=','optional')]"/>
+                <filter name="category_information" string="Information" domain="[('category','=','information')]"/>
                 <group expand="0" string="Group By">
                     <filter name="group_by_type" string="Type" context="{'group_by':'type_id'}"/>
                     <filter name="group_by_category" string="Category" context="{'group_by':'category'}"/>
                     <filter name="group_by_subjects" string="Subjects" context="{'group_by':'subjects'}"/>
+                    <filter name="group_by_has_question" string="Has Question" context="{'group_by':'has_question'}"/>
+                    <filter name="group_by_has_answer" string="Has Answer" context="{'group_by':'has_answer'}"/>
+                    <filter name="group_by_has_child_resources" string="Has Linked Resources" context="{'group_by':'has_child_resources'}"/>
+                    <filter name="group_by_has_supporting_resources" string="Has Supporting Resources" context="{'group_by':'has_supporting_resources'}"/>
                 </group>
             </search>
         </field>

@@ -16,6 +16,7 @@
                 <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
+                <field name="resource_links_data" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
@@ -24,6 +25,7 @@
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
+                <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
             </list>
         </field>
     </record>
@@ -54,7 +56,13 @@
                             invisible="due_status != 'on-time'"/> 
                     <widget name="web_ribbon" title="Early" bg_color="bg-success" 
                             invisible="due_status != 'early'"/> 
-                    
+                    <group>
+                        <div class="d-flex align-items-left gap-1">
+                            <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px"/>
+                            <field name="resource_id" readonly="1" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
+                        </div>
+                    </group>
+
                     <notebook>
                         <page string="Details">
                             <group>
@@ -67,6 +75,7 @@
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="actual_duration" widget="float_sentinel" placeholder="Enter hours"/>
                                     <field name="submission_label"/>
+                                    <field name="resource_links_data" widget="resource_links"/>
                                 </group>
                                 <group string="Results">
                                     <field name="state" readonly="not is_current_user_faculty"/>

@@ -1,6 +1,7 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 import logging
+from lxml import etree
 
 _logger = logging.getLogger(__name__)
 sentinel_zero = -0.01
@@ -76,6 +77,28 @@ class APSResourceSubmission(models.Model):
         readonly=True,
         help='The model answer from the associated resource for comparison.'
     )
+    resource_links_data = fields.Json(
+        string='Links',
+        related='resource_id.resource_links_data',
+        help='Links to resources associated with this submission (e.g., main resource and supporting resources).'
+    )
+    type_icon = fields.Binary(
+        string='Type Icon',
+        related='resource_id.type_icon',
+        readonly=True,
+    )
+
+
+
+    @api.model
+    def _get_view(self, view_id=None, view_type='form', **options):
+        arch, view = super()._get_view(view_id, view_type, **options)
+        if view_type == 'form':
+            for node in arch.xpath("//field"):
+                # If the field is NOT 'answer', make it read-only
+                if node.get('name') != 'answer':
+                    node.set('readonly', '1')
+        return arch, view
 
     @api.depends('feedback')
     def _compute_has_feedback(self):
@@ -201,6 +224,31 @@ class APSResourceSubmission(models.Model):
             })
 
         return True
+
+    def action_open_student_dashboard(self):
+        """Open the student dashboard for the current submission's student."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'{self.student_id.name} - Dashboard',
+            'res_model': 'aps.resource.submission',
+            'view_mode': 'graph,calendar,list',
+            'domain': [('student_id', '=', self.student_id.id)],
+            'context': {'search_default_student_id': self.student_id.id},
+            'target': 'current',
+        }
+
+    def action_open_submission(self):
+        """Open the submission form view."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.display_name,
+            'res_model': 'aps.resource.submission',
+            'view_mode': 'form',
+            'res_id': self.id,
+            'target': 'current',
+        }
 
     def write(self, vals):
         # Handle automatic date setting based on state changes

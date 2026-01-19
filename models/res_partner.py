@@ -18,6 +18,7 @@ class ResPartner(models.Model):
     is_teacher = fields.Boolean("Teacher")
 
     student_count = fields.Integer(compute='_compute_student_count', string='Student Count')
+    submission_ids = fields.One2many('aps.resource.submission', 'student_id', string='Submissions')
 
     def _compute_student_count(self):
         for rec in self:
