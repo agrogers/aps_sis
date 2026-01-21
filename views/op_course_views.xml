@@ -48,7 +48,7 @@
         <field name="name">op.subject.tree.inherit.aps</field>
         <field name="model">op.subject</field>
         <field name="inherit_id" ref="openeducat_core.view_op_subject_tree"/>
-        <field name="arch" type="xml">
+        <field name="arch" type="xml"> 
             <xpath expr="//field[@name='name']" position="after">
                 <field name="faculty_ids" string="Teachers" widget="many2many_tags" optional="show"/>
             </xpath>
