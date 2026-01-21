@@ -34,7 +34,7 @@
                                 <field name="selected" widget="boolean_toggle"/>
                                 <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
                                 <field name="display_name" readonly="1" optional="show"/>
-                                <field name="parent_custom_name_data" string="Custom Name" widget="parent_child_name_pill"/>
+                                <field name="parent_custom_name_data" string="Custom Name" widget="parent_child_name_pill" options="{'hide_create': True}"/>
                                 <field name="parent_resource_id" readonly="1" optional="hide"/>
                                 <field name="description" readonly="1" optional="hide"/>
                                 <field name="has_question" readonly="1" optional="hide"/>

@@ -81,6 +81,15 @@ export class ParentChildNameField extends Component {
         return this.props.record.resId || this.props.record.id || false;
     }
 
+    get hideCreate() {
+        // Read widget options from attrs if present: options={'hide_create': True}
+        const attrs = this.props.attrs || (this.props.record && this.props.record.fields && this.props.record.fields[this.props.name] && this.props.record.fields[this.props.name].attrs) || null;
+        if (!attrs) return false;
+        const options = attrs.options || {};
+        // Accept boolean True, 1, or string representations
+        return options.hide_create === true || options.hide_create === 1 || options.hide_create === '1' || options.hide_create === 'True' || options.hide_create === 'true';
+    }
+
     async onClick() {
         if (this.name_id) {
             // Open existing custom name in a popup form and wait for it to close
@@ -92,6 +101,10 @@ export class ParentChildNameField extends Component {
                 target: 'new',
             };
             await this._openCustomNameForm(action);
+            return;
+        }
+        // If there is no existing entry and the widget is configured to hide create, do nothing
+        if (this.hideCreate) {
             return;
         }
         // Open a creation form for this parent/resource pair using action with context defaults (avoid rpc service)
