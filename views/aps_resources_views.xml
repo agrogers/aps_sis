@@ -18,7 +18,7 @@
                 <field name="parent_ids" optional="hide"/>
                 <field name="child_count" string="Children" optional="hide"/>
                 <field name="description" optional="hide"/>
-                <field name="resources_links" widget="resource_links" optional="show"/>
+                <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
                 <field name="url" widget="url_icon"  options="{'html': true}" optional="hide"/>
                 <field name="has_question" optional="hide"/>
                 <field name="has_answer" optional="hide"/>
@@ -77,11 +77,12 @@
                     <notebook>
                         <page string="Basic Information">
                             <group>
+                                <field name="name" />
                                 <field name="parent_ids" widget="clickable_many2many_tags" options="{'no_create': True}"/>
                                 <field name="has_multiple_parents" invisible="1"/>
                                 <div class="o_row" invisible="not has_multiple_parents" style="margin-left: 15px;">
-                                    <label for="primary_parent_id" string="Display Parent:" class="text-muted" style="font-size: 0.8em !important;"/>
-                                    <field name="primary_parent_id" options="{'no_create': True, 'no_open': True}" class="text-muted" style="font-size: 0.9em;" nolabel="1"/>
+                                    <label for="primary_parent_id" string="Display Parent:" style="font-size: 0.8em !important;"/>
+                                    <field name="primary_parent_id" options="{'no_create': True, 'no_open': True}" style="font-size: 0.9em;" nolabel="1"/>
                                 </div>
                             </group>
                             <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
@@ -137,9 +138,12 @@
                                     <field name="marks" optional="hide"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                                     <field name="description" optional="show"/>
+                                    <field name="has_question" optional="hide"/>
+                                    <field name="has_answer" optional="hide"/>
                                     <field name="child_count" optional="hide"/>
-                                    <field name="url" widget="url_icon" options='{"html": true}' optional="show"/>
-                                    
+                                    <field name="child_count" optional="hide"/>
+                                    <field name="url" widget="url_icon" options='{"html": true}' optional="hide"/>
+                                    <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                                     <button string="Open" 
                                             type="object" 
                                             name="get_formview_action" 

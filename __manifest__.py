@@ -46,6 +46,7 @@
 			'aps_sis/static/src/js/resource_links_widget.js',
 			'aps_sis/static/src/xml/resource_links_field.xml',
 			'aps_sis/static/src/js/clickable_many2many_tags.js',
+			'aps_sis/static/src/css/clickable_many2many_tags.css',
 			'aps_sis/static/src/img/menu_icon.png',
 		],
 	},

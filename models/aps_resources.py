@@ -89,9 +89,9 @@ class APSResource(models.Model):
 
     supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]")
     
-    resources_links = fields.Json(
+    supporting_resources_buttons = fields.Json(
         string='Resource Links',
-        compute='_compute_resources_links',
+        compute='_compute_supporting_resources_buttons',
         help='JSON data containing resource links with icons for the widget.'
     )
 
@@ -99,12 +99,12 @@ class APSResource(models.Model):
                  'supporting_resource_ids', 'supporting_resource_ids.url', 
                  'supporting_resource_ids.name', 'supporting_resource_ids.display_name',
                  'supporting_resource_ids.type_icon', 'supporting_resource_ids.type_id.name')
-    def _compute_resources_links(self):
+    def _compute_supporting_resources_buttons(self):
         """Compute JSON data for resource links widget."""
         for resource in self:
             links = []
-            # Add main resource if it has a URL
-            if resource.url:
+            # Only process if resource.id is a real id (not NewId)
+            if resource.url and isinstance(resource.id, int):
                 links.append({
                     'id': resource.id,
                     'name': resource.name or resource.display_name,
@@ -113,9 +113,9 @@ class APSResource(models.Model):
                     'type_name': resource.type_id.name if resource.type_id else 'Resource',
                     'is_main': True,
                 })
-            # Add supporting resources that have URLs
+            # Add supporting resources that have URLs and real ids
             for supporting in resource.supporting_resource_ids:
-                if supporting.url:
+                if supporting.url and isinstance(supporting.id, int):
                     links.append({
                         'id': supporting.id,
                         'name': supporting.name or supporting.display_name,
@@ -124,7 +124,7 @@ class APSResource(models.Model):
                         'type_name': supporting.type_id.name if supporting.type_id else 'Resource',
                         'is_main': False,
                     })
-            resource.resources_links = links
+            resource.supporting_resources_buttons = links
 
     @api.model
     def default_get(self, fields_list):
@@ -399,5 +399,14 @@ class APSResource(models.Model):
                 'message': f'Updated display names for {len(updated)} resources in {iteration} layers.',
                 'sticky': False,
             }
+        }
+
+    def action_assign_students(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'aps.assign.students.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_resource_id': self.id},
         }
 

@@ -29,13 +29,15 @@
                     </group>
                     <group string="Affected Resources">
                         <field name="affected_resource_line_ids" nolabel="1">
-                            <list create="0" delete="0" default_order="sequence,name">
-                                <field name="selected"/>
+                            <list create="0" delete="0" default_order="sequence,name" open="false">
+                                <field name="selected" widget="boolean_toggle"/>
                                 <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
-                                <field name="display_name" readonly="1"/>
-                                <field name="description" readonly="1"/>
-                                <field name="resources_links" widget="resource_links" optional="show"/>
-                                <!-- <field name="resource_id" invisible="1"/> -->
+                                <field name="display_name" readonly="1" optional="show"/>
+                                <field name="description" readonly="1" optional="hide"/>
+                                <field name="has_question" readonly="1" optional="hide"/>
+                                <field name="has_answer" readonly="1" optional="hide"/>
+                                <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
+                                <field name="resource_id" invisible="0" readonly="1"  optional="hide"/>
                             </list>
                         </field>
                     </group>
@@ -46,5 +48,12 @@
                 </sheet>
             </form>
         </field>
+    </record>
+
+    <record id="action_aps_assign_students_wizard" model="ir.actions.act_window">
+        <field name="name">Assign Students</field>
+        <field name="res_model">aps.assign.students.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
     </record>
 </odoo>

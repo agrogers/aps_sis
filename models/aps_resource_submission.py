@@ -77,9 +77,9 @@ class APSResourceSubmission(models.Model):
         readonly=True,
         help='The model answer from the associated resource for comparison.'
     )
-    resources_links = fields.Json(
+    supporting_resources_buttons = fields.Json(
         string='Links',
-        related='resource_id.resources_links',
+        related='resource_id.supporting_resources_buttons',
         help='Links to resources associated with this submission (e.g., main resource and supporting resources).'
     )
     type_icon = fields.Binary(
@@ -88,8 +88,6 @@ class APSResourceSubmission(models.Model):
         readonly=True,
     )
 
-
-
     @api.model
     def _get_view(self, view_id=None, view_type='form', **options):
         arch, view = super()._get_view(view_id, view_type, **options)
@@ -97,7 +95,7 @@ class APSResourceSubmission(models.Model):
             for node in arch.xpath("//field"):
                 # If the field is NOT 'answer', make it read-only
                 if node.get('name') != 'answer':
-                    node.set('readonly', '1')
+                    node.set('readonly', '0')
         return arch, view
 
     @api.depends('feedback')

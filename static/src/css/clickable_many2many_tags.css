@@ -1,0 +1,12 @@
+/* Clickable many2many tags styling */
+
+.o_field_widget.o_field_clickable_many2many_tags .o_badge {
+    border: 1px solid var(--o-cc1-btn-primary-border) !important;
+    cursor: pointer !important;
+}
+
+.o_field_widget.o_field_clickable_many2many_tags .o_badge:hover  {
+    border-color: var(--o-cc1-btn-primary-border) !important;
+    background-color: var(--o-cc1-btn-primary) !important;
+    color: var(--o-cc1-btn-primary-text) !important;
+}

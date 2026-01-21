@@ -1,12 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Inherit and modify the Subject form view to add teachers field -->
+
+    <!-- Extend op.subject tree view to show icon -->
+    <record id="aps_sis_view_op_subject_tree_inherit_icon" model="ir.ui.view">
+        <field name="name">op.subject.list.icon.inherit.aps_sis</field>
+        <field name="model">op.subject</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_subject_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="before">
+                <field name="icon" widget="image" options="{'size': [32, 32]}" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Inherit and modify the Subject form view to add teachers field and icon using standard Odoo layout -->
     <record id="view_op_subject_form_inherit" model="ir.ui.view">
         <field name="name">op.subject.form.inherit.aps</field>
         <field name="model">op.subject</field>
         <field name="inherit_id" ref="openeducat_core.view_op_subject_form"/>
         <field name="arch" type="xml">
-            <!-- Add the teachers field somewhere appropriate, e.g., after the name or in a specific tab -->
+            <!-- Add the icon in a standard Odoo group column, after the name/type/subject_type group -->
+            <xpath expr="//group/group[1]" position="after">
+                <group>
+                    <field name="icon" widget="image" options="{'size': [64, 64]}"/>
+                </group>
+            </xpath>
+            <!-- Add the teachers field after the name field -->
             <xpath expr="//field[@name='name']" position="after">
                 <field name="faculty_ids" widget="many2many_tags"/>
             </xpath>

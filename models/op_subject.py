@@ -26,3 +26,9 @@ class OpSubject(models.Model):
         string='Faculty Members',
         help='Faculty members linked to this subject'
     )
+    icon = fields.Image(
+        string="Icon",
+        max_width=64,
+        max_height=64,
+        help="Subject icon (e.g. for visual identification in lists)"
+    )
