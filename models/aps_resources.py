@@ -1,3 +1,15 @@
+class ResourceCustomName(models.Model):
+    _name = 'resource.custom.name'
+    _description = 'Custom Resource Name for Parent/Child'
+    _rec_name = 'custom_name'
+    _sql_constraints = [
+        ('unique_parent_child', 'unique(parent_resource_id, resource_id)', 'Custom name must be unique per parent/child pair.')
+    ]
+
+    parent_resource_id = fields.Many2one('aps.resources', string='Parent Resource', required=True, ondelete='cascade')
+    resource_id = fields.Many2one('aps.resources', string='Resource', required=True, ondelete='cascade')
+    custom_name = fields.Char(string='Custom Name', required=True)
+
 import re
 import base64
 import requests
@@ -5,6 +17,7 @@ from odoo import models, fields, api, tools
 from odoo.exceptions import ValidationError
 
 class APSResource(models.Model):
+        custom_name_ids = fields.One2many('resource.custom.name', 'resource_id', string='Custom Names')
     _name = 'aps.resources'
     _description = 'Resource (APS)'
     _inherit = ['mail.thread', 'mail.activity.mixin']
@@ -183,37 +196,27 @@ class APSResource(models.Model):
             else:
                 rec.parent_question = False
 
-    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids')
+    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids', 'custom_name_ids.custom_name')
     def _compute_display_name(self):
-        """Build display name from ancestor chain, removing redundant overlapping characters."""
+        """Build display name from ancestor chain, using custom name if set for parent/child."""
         for rec in self:
-            # Priority: 1. primary_parent_id, 2. first parent from parent_ids, 3. just name
             parent_to_use = rec.primary_parent_id or (rec.parent_ids and rec.parent_ids[0])
-            
             if parent_to_use:
                 parent_display = parent_to_use.display_name or parent_to_use.name or ''
-                current_name = rec.name or ''
+                # Check for custom name for this parent/child
+                custom_name_rec = rec.custom_name_ids.filtered(lambda cn: cn.parent_resource_id == parent_to_use)
+                current_name = custom_name_rec.custom_name if custom_name_rec else (rec.name or '')
                 separator = ' 🢒 '
-                
-                # NEW: Remove bracketed text that matches part or all of the parent
+                # Remove bracketed text that matches part or all of the parent
                 if current_name and parent_display:
-                    # Find all text in brackets (round, square, or curly)
                     bracketed_texts = re.findall(r'\([^)]+\)|\[[^\]]+\]|{[^}]+}', current_name)
                     for bracketed in bracketed_texts:
-                        # Remove brackets to get the content
-                        content = bracketed[1:-1]  # Remove first and last character (brackets)
-                        # Check if this content appears in the parent display name
+                        content = bracketed[1:-1]
                         if content in parent_display:
-                            # Remove the entire bracketed text from current_name
                             current_name = current_name.replace(bracketed, '').strip()
-                
-                # Find overlapping characters between start of current_name and end of parent_display
                 overlap_length = 0
                 parent_len = len(parent_display)
                 current_len = len(current_name)
-                
-                # Check if current_name starts with the suffix of parent_display
-                # Compare current_name[0:n] with parent_display[-n:] for increasing n
                 match_found = False
                 for i in range(1, min(parent_len, current_len) + 1):
                     if current_name[:i] == parent_display[-i:]:
@@ -222,18 +225,15 @@ class APSResource(models.Model):
                     else:
                         if match_found:
                             break
-                
-                # Remove overlapping characters from current_name
                 if overlap_length > 0:
                     remaining_name = current_name[overlap_length:].lstrip()
-                    # Strip any "." that appear at the start of the remaining name
+                    import re
                     remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
                     if remaining_name:
                         rec.display_name = parent_display + separator + remaining_name
                     else:
                         rec.display_name = parent_display
                 else:
-                    # No overlap, concatenate normally
                     rec.display_name = parent_display + separator + current_name
             else:
                 rec.display_name = rec.name or ''

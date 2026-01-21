@@ -11,7 +11,13 @@ class APSResourceSubmission(models.Model):
     _description = 'Resource Submission'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
-    display_name = fields.Char(compute='_compute_display_name', store=True)
+    display_name = fields.Char(
+        compute='_compute_display_name', store=True,
+        help='The submission name'
+        )
+    submission_name = fields.Char(
+        string='Submission Name',
+    )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
     subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects')

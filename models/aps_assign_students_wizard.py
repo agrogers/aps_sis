@@ -82,7 +82,9 @@ class APSAssignStudentsWizard(models.TransientModel):
     def action_assign_students(self):
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
-        
+        parent_resource = self.resource_id
+        parent_name = parent_resource.display_name or parent_resource.name or ''
+        separator = ' 🢒 '
         # Get all resources to assign: selected resources from the list, ordered by sequence
         selected_resources = self.env['aps.resources']
         order = 1
@@ -92,19 +94,43 @@ class APSAssignStudentsWizard(models.TransientModel):
                 # Set order on the line for later use
                 line.submission_order = order
                 order += 1
-        
         for resource in selected_resources:
             # Find the order for this resource
             line = self.affected_resource_line_ids.filtered(lambda l: l.resource_id == resource and l.selected)
             submission_order = line.submission_order if line else 0
-            
+            # Compute submission_name: parent 🢒 child (or just parent if same)
+            child_name = resource.name or resource.display_name or ''
+            if resource.id == parent_resource.id:
+                submission_name = parent_name
+            else:
+                # Remove overlap as in _compute_display_name
+                overlap_length = 0
+                parent_len = len(parent_name)
+                child_len = len(child_name)
+                match_found = False
+                for i in range(1, min(parent_len, child_len) + 1):
+                    if child_name[:i] == parent_name[-i:]:
+                        overlap_length = i
+                        match_found = True
+                    else:
+                        if match_found:
+                            break
+                if overlap_length > 0:
+                    remaining_name = child_name[overlap_length:].lstrip()
+                    import re
+                    remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
+                    if remaining_name:
+                        submission_name = parent_name + separator + remaining_name
+                    else:
+                        submission_name = parent_name
+                else:
+                    submission_name = parent_name + separator + child_name
             for student in self.student_ids:
                 # Check if task exists
                 task = task_model.search([
                     ('resource_id', '=', resource.id),
                     ('student_id', '=', student.id)
                 ], limit=1)
-                
                 if not task:
                     task = task_model.create({
                         'resource_id': resource.id,
@@ -112,16 +138,15 @@ class APSAssignStudentsWizard(models.TransientModel):
                         'state': 'assigned',
                         'date_due': self.date_due,
                     })
-                
                 # Create submission. Multiple submissions allowed per task.
                 submission_model.create({
                     'task_id': task.id,
                     'assigned_by': self.assigned_by.id if self.assigned_by else False,
                     'submission_label': self.submission_label,
                     'submission_order': submission_order,
+                    'submission_name': submission_name,
                     'date_assigned': self.date_assigned,
                     'date_due': self.date_assigned,
                     'state': 'assigned',
                 })
-        
         return {'type': 'ir.actions.act_window_close'}

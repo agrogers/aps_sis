@@ -1,4 +1,20 @@
-The app must store the name of the resource
+
+The app must occasionally store a custom name for a resource when attached to a particular parent. So I think I need:
+1. A new model called resource_custom_name that stores: parent_resource_id, resource_id, custom_name
+2. A field in the aps_resources_views.child_ids list that links to this model and shows the custom_name
+3. When a user enters a value into the custom_name field it creates a corresponding record in the resource_custom_name
+What do you think? Can it work? Better way?
+
+
+The naming code is now duplicated in the wizard and in the resource model. Consolidate this to remove the duplication.
+
+#################### COMPLETE ########################
+
+The app must store the name of the resource in the submission. The name should be calculated based on the parent selected resource. 
+1. The full name must be calculated using the same logic found in the resources._compute_display_name only using the wizard resource as the parent.
+2. There will only ever be two levels - the parent resource as set by the wizard and the child resource.
+3. The name will look like "wizard_parent 🢒 affected_resource_line_name"
+4. This name should be stored submission.submission_name
 
 
 

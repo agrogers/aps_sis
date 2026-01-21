@@ -8,6 +8,7 @@
             <list default_order="create_date,student_id,submission_label,submission_order">
                 <field name="task_id"  optional="hide"/>
                 <field name="display_name" optional="show"/>
+                <field name="submission_name" optional="show"/>
                 <field name="resource_id" optional="hide"/>
                 <field name="student_id" optional="show"/>  
                 <field name="subjects" widget="many2many_tags" optional="show"/>
