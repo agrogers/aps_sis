@@ -1,3 +1,9 @@
+import re
+import base64
+import requests
+from odoo import models, fields, api, tools
+from odoo.exceptions import ValidationError
+
 class ResourceCustomName(models.Model):
     _name = 'resource.custom.name'
     _description = 'Custom Resource Name for Parent/Child'
@@ -10,14 +16,7 @@ class ResourceCustomName(models.Model):
     resource_id = fields.Many2one('aps.resources', string='Resource', required=True, ondelete='cascade')
     custom_name = fields.Char(string='Custom Name', required=True)
 
-import re
-import base64
-import requests
-from odoo import models, fields, api, tools
-from odoo.exceptions import ValidationError
-
 class APSResource(models.Model):
-        custom_name_ids = fields.One2many('resource.custom.name', 'resource_id', string='Custom Names')
     _name = 'aps.resources'
     _description = 'Resource (APS)'
     _inherit = ['mail.thread', 'mail.activity.mixin']
@@ -196,7 +195,7 @@ class APSResource(models.Model):
             else:
                 rec.parent_question = False
 
-    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids', 'custom_name_ids.custom_name')
+    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids')
     def _compute_display_name(self):
         """Build display name from ancestor chain, using custom name if set for parent/child."""
         for rec in self:
