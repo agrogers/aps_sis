@@ -2,6 +2,7 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_aps_resources_teacher,aps.resources.teacher,model_aps_resources,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_types_teacher,aps.resource.types.teacher,model_aps_resource_types,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_task_teacher,aps.resource.task.teacher,model_aps_resource_task,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resource_custom_name_teacher,aps.resource.custom.name.teacher,model_aps_resource_custom_name,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_submission_teacher,aps.resource.submission.teacher,model_aps_resource_submission,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_assign_students_wizard_teacher,aps.assign.students.wizard.teacher,model_aps_assign_students_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_assign_students_wizard_line_teacher,aps.assign.students.wizard.line.teacher,model_aps_assign_students_wizard_line,aps_sis.group_aps_teacher,1,1,1,1

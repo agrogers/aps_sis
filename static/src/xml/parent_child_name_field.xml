@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.ParentChildNameField">
+        <div class="o_parent_child_pill" t-on-click.stop.prevent="onClick">
+            <t t-if="this.name">
+                <span class="badge"><t t-esc="this.name"/></span>
+            </t>
+            <t t-else="">
+                <span class="badge bg-outline-secondary">Create...</span>
+            </t>
+        </div>
+    </t>
+</templates>

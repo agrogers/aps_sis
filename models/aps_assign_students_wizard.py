@@ -4,6 +4,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.line'
     _description = 'Assign Students Wizard Line'
 
+    sequence = fields.Integer(string='Sequence', default=10)
     wizard_id = fields.Many2one('aps.assign.students.wizard', required=True)
     type_icon = fields.Binary(related='resource_id.type_icon', string='Icon', readonly=True)    
     resource_id = fields.Many2one('aps.resources', string='Resource', required=True)
@@ -13,7 +14,8 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     has_answer = fields.Selection(related='resource_id.has_answer', readonly=True)
     supporting_resources_buttons = fields.Json(related='resource_id.supporting_resources_buttons', string='Resource Links', readonly=True)    
     selected = fields.Boolean(string='Assign', default=True)
-    sequence = fields.Integer(string='Sequence', default=10)
+    parent_custom_name_data = fields.Json(string='Custom Names', related='resource_id.parent_custom_name_data', readonly=True, store=True)
+    parent_resource_id = fields.Many2one('aps.resources', string='Resource', required=True)
     submission_order = fields.Integer(string='Submission Order')
 
     @api.depends('resource_id')
@@ -63,6 +65,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                 selected = descendant.has_question == 'yes'
                 lines.append((0, 0, {
                     'resource_id': descendant.id,
+                    'parent_resource_id': self.resource_id.id,
                     'selected': selected,
                     'sequence': sequence,
                 }))

@@ -127,8 +127,8 @@
                             <group>
                                 <div><i>Linked resources contribute to the parent total marks. To add resources such as videos or related quizzes that do not contribute to the total marks, use the 'Supporting Resources' tab.</i></div>
                             </group>
-                            <field name="child_ids" widget="many2many" context="{'default_parent_ids': [(6, 0, [id])], 'default_primary_parent_id': id, 'default_subjects': subjects}">
-                                <list default_order="sequence,name">
+                            <field name="child_ids" widget="many2many" context="{'default_parent_ids': [(6, 0, [id])], 'default_primary_parent_id': id, 'default_subjects': subjects, 'current_parent_id': id}">
+                                <list default_order="sequence,name" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
                                     <field name="name" optional="show"/>
@@ -144,6 +144,9 @@
                                     <field name="child_count" optional="hide"/>
                                     <field name="url" widget="url_icon" options='{"html": true}' optional="hide"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
+                                    <!-- Parent-child custom name pill: shows custom name or Create... -->
+                                    <field name="parent_custom_name_data" string="Custom Name" widget="parent_child_name_pill" context="{'current_parent_id': parent.id}"/>
+                                    <!-- Quick access to full custom name list -->
                                     <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
                                 </list>
                             </field>

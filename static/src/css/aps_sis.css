@@ -14,3 +14,19 @@
     border-color: #007bff;
 }
 
+/* Parent-child custom name pill */
+.o_parent_child_pill {
+    display: inline-block;
+    cursor: pointer;
+}
+.o_parent_child_pill .badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+}
+.o_parent_child_pill .bg-outline-secondary {
+    background: white;
+    color: #6c757d;
+    border: 1px dashed #ced4da;
+}
+

@@ -1,14 +1,25 @@
 
+
+
+
+
+
+
+The naming code is now duplicated in the wizard and in the resource model. Consolidate this to remove the duplication.
+
+#################### COMPLETE ########################
+
+ok, i need to do the parent_custom_name  differently.
+1. rename parent_custom_name to parent_custom_name_data
+2. It now stores the data for various custom names in json  format:  parent_resource_id ,  custom name
+3. The widget needs to be modified to extract the correct name based on the current parent
+
 The app must occasionally store a custom name for a resource when attached to a particular parent. So I think I need:
 1. A new model called resource_custom_name that stores: parent_resource_id, resource_id, custom_name
 2. A field in the aps_resources_views.child_ids list that links to this model and shows the custom_name
 3. When a user enters a value into the custom_name field it creates a corresponding record in the resource_custom_name
 What do you think? Can it work? Better way?
 
-
-The naming code is now duplicated in the wizard and in the resource model. Consolidate this to remove the duplication.
-
-#################### COMPLETE ########################
 
 The app must store the name of the resource in the submission. The name should be calculated based on the parent selected resource. 
 1. The full name must be calculated using the same logic found in the resources._compute_display_name only using the wizard resource as the parent.

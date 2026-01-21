@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_resource_custom_name_list" model="ir.ui.view">
+        <field name="name">resource.custom.name.list</field>
+        <field name="model">aps.resource.custom.name</field>
+        <field name="arch" type="xml">
+            <list string="Custom Names">
+                <field name="parent_resource_id"/>
+                <field name="resource_id"/>
+                <field name="custom_name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_resource_custom_name_form" model="ir.ui.view">
+        <field name="name">resource.custom.name.form</field>
+        <field name="model">aps.resource.custom.name</field>
+        <field name="arch" type="xml">
+            <form string="Custom Name">
+                <header>
+                    <button name="action_delete" type="object" string="Delete" class="btn-danger" groups="aps_sis.group_aps_teacher"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="parent_resource_id"/>
+                        <field name="resource_id"/>
+                        <field name="custom_name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+        <!-- Action & Menu for custom parent-child names -->
+    <record id="action_aps_resource_custom_names" model="ir.actions.act_window">
+        <field name="name">Custom Resource Names</field>
+        <field name="res_model">aps.resource.custom.name</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_resource_custom_name_list"/>
+    </record>
+    
+</odoo>
