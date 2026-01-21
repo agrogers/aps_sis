@@ -38,7 +38,9 @@
                 <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
                 <filter string="Overdue" name="overdue" domain="[('state', '=', 'assigned'), ('date_due', '&lt;', time.strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
-                
+                <separator/>
+                <filter string="Edited in Last 5 Minutes" name="edited_last_5_minutes" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                <filter string="Edited Today" name="edited_today" domain="[('write_date', '>=', time.strftime('%Y-%m-%d'))]"/>
                 <group expand="0" string="Group By">
                     <filter string="Resource" name="groupby_resource" context="{'group_by': 'resource_id'}"/>
                     <filter string="Subject" name="groupby_subject" context="{'group_by': 'subjects'}"/>

@@ -21,6 +21,7 @@ class APSResourceSubmission(models.Model):
         string='Label',
         help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework .'
     )
+    submission_order = fields.Integer(string='Submission Order')
     state = fields.Selection([
         ('assigned', 'Assigned'),
         ('submitted', 'Submitted'),

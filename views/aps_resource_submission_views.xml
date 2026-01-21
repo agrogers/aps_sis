@@ -5,10 +5,11 @@
         <field name="name">aps.resource.submission.list</field>
         <field name="model">aps.resource.submission</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="task_id"/>
-                <field name="display_name" optional="hide"/>
+            <list default_order="create_date,student_id,submission_label,submission_order">
+                <field name="task_id"  optional="hide"/>
+                <field name="display_name" optional="show"/>
                 <field name="resource_id" optional="hide"/>
+                <field name="student_id" optional="show"/>  
                 <field name="subjects" widget="many2many_tags" optional="show"/>
                 <field name="assigned_by"/>
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
@@ -23,6 +24,8 @@
                 <field name="submission_label"/>
                 <field name="has_answer" widget="boolean" string="Answer" readonly="1"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1"/>
+                <field name="submission_label" optional="hide"/>
+                <field name="submission_order" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>

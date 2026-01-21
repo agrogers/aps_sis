@@ -144,11 +144,7 @@
                                     <field name="child_count" optional="hide"/>
                                     <field name="url" widget="url_icon" options='{"html": true}' optional="hide"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
-                                    <button string="Open" 
-                                            type="object" 
-                                            name="get_formview_action" 
-                                            icon="fa-external-link" 
-                                            title="Open in full view"/>
+                                    <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
                                 </list>
                             </field>
                         </page>
@@ -168,11 +164,7 @@
                                     <field name="description" optional="show"/>
                                     <field name="child_count" optional="hide"/>
                                     <field name="url" widget="url_icon" options='{"html": true}' optional="show"/>
-                                    <button string="Open" 
-                                            type="object" 
-                                            name="get_formview_action" 
-                                            icon="fa-external-link" 
-                                            title="Open in full view"/>
+                                    <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
                                 </list>
                             </field>
                         </page>
@@ -195,13 +187,7 @@
                                     <field name="weighted_result" widget="percentpie_ranged" optional="hide"/>
                                     <field name="best_result" widget="percentpie_ranged" optional="hide"/>
                                     <field name="latest_submission_text" widget="recent_submissions" options='{"html": true}' optional="show"/>
-
-                                    <!-- This button opens the full form view in the main area -->
-                                    <button string="Open" 
-                                            type="object" 
-                                            name="get_formview_action" 
-                                            icon="fa-external-link" 
-                                            title="Open in full view"/>                                    
+                                    <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>                                  
                                 </list>
                             </field>
                         </page>

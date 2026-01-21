@@ -341,6 +341,12 @@ class APSResource(models.Model):
         
         return descendants
 
+    @api.model
+    def _default_assignment_duration(self):
+        """Return the default duration for assignments (e.g., 7 days)."""
+        from datetime import timedelta
+        return timedelta(days=7)
+
     def action_assign_students(self):
         self.ensure_one()
         return {
