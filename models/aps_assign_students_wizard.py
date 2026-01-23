@@ -14,8 +14,8 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     has_answer = fields.Selection(related='resource_id.has_answer', readonly=True)
     supporting_resources_buttons = fields.Json(related='resource_id.supporting_resources_buttons', string='Resource Links', readonly=True)    
     selected = fields.Boolean(string='Assign', default=True)
-    parent_custom_name_data = fields.Json(string='Custom Names', related='resource_id.parent_custom_name_data', readonly=True, store=True)
-    parent_resource_id = fields.Many2one('aps.resources', string='Resource', required=True)
+    parent_custom_name_data = fields.Json(string='Custom Names', related='resource_id.parent_custom_name_data', readonly=True, required=False)
+    parent_resource_id = fields.Many2one('aps.resources', string='Resource', required=False)
     submission_order = fields.Integer(string='Submission Order')
 
     @api.depends('resource_id')
@@ -106,6 +106,14 @@ class APSAssignStudentsWizard(models.TransientModel):
             if resource.id == parent_resource.id:
                 submission_name = parent_name
             else:
+                # Use parent-specific custom name if present, otherwise fall back to resource name/display_name
+                child_name = resource.name or resource.display_name or ''
+                custom_data = resource.parent_custom_name_data or []
+                if isinstance(custom_data, (list, tuple)):
+                    for entry in custom_data:
+                        if entry.get('parent_resource_id') == parent_resource.id and entry.get('custom_name'):
+                            child_name = entry.get('custom_name')
+                            break
                 # Remove overlap as in _compute_display_name
                 overlap_length = 0
                 parent_len = len(parent_name)

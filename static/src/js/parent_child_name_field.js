@@ -6,7 +6,9 @@ import { rpc } from "@web/core/network/rpc";
 
 export class ParentChildNameField extends Component {
     static template = "aps_sis.ParentChildNameField";
-    static props = { ...standardFieldProps };
+    static props = { ...standardFieldProps,
+        enabled: { type: Boolean, optional: true },
+     };
 
     setup() {
         this.action = useService('action');
@@ -81,17 +83,14 @@ export class ParentChildNameField extends Component {
         return this.props.record.resId || this.props.record.id || false;
     }
 
-    get hideCreate() {
-        // Read widget options from attrs if present: options={'hide_create': True}
-        const attrs = this.props.attrs || (this.props.record && this.props.record.fields && this.props.record.fields[this.props.name] && this.props.record.fields[this.props.name].attrs) || null;
-        if (!attrs) return false;
-        const options = attrs.options || {};
-        // Accept boolean True, 1, or string representations
-        return options.hide_create === true || options.hide_create === 1 || options.hide_create === '1' || options.hide_create === 'True' || options.hide_create === 'true';
+    get enabled() {
+        if (this.props.enabled === undefined) return true;
+        return this.props.enabled === true || this.props.enabled === 1 || this.props.enabled === '1' || this.props.enabled === 'True' || this.props.enabled === 'true';
     }
 
     async onClick() {
-        if (this.name_id) {
+        if (!this.enabled) { return; }
+        if (this.name_id ) {
             // Open existing custom name in a popup form and wait for it to close
             const action = {
                 type: 'ir.actions.act_window',
@@ -100,13 +99,10 @@ export class ParentChildNameField extends Component {
                 views: [[false, 'form']],
                 target: 'new',
             };
-            await this._openCustomNameForm(action);
+            this.action.doAction(action);
             return;
         }
-        // If there is no existing entry and the widget is configured to hide create, do nothing
-        if (this.hideCreate) {
-            return;
-        }
+
         // Open a creation form for this parent/resource pair using action with context defaults (avoid rpc service)
         try {
             const action = {
@@ -121,49 +117,9 @@ export class ParentChildNameField extends Component {
                     default_custom_name: '',
                 },
             };
-            await this._openCustomNameForm(action);
+            this.action.doAction(action);
         } catch (e) {
             this.notification.add({ title: 'Error', message: e.message || 'Could not open custom name form', type: 'danger' });
-        }
-    }
-
-    async _openCustomNameForm(action) {
-        // action is the act_window used to open the custom-name form (target: 'new')
-        try {
-            await this.env.services.action.doAction(action);
-            // After the popup closes, fetch latest data directly from DB and update pill
-            await this._fetchAndUpdate();
-        } catch (e) {
-            // ignore user cancelled dialog
-        }
-    }
-
-    async _fetchAndUpdate() {
-        try {
-            const pid = this.parent_id;
-            const rid = this.resource_id;
-            if (!pid || !rid) {
-                this.state.liveName = false;
-                this.state.liveId = false;
-                return;
-            }
-            const res = await rpc({
-                model: 'aps.resource.custom.name',
-                method: 'search_read',
-                args: [[['parent_resource_id','=',pid], ['resource_id','=',rid]] , ['id','custom_name']],
-                kwargs: {limit: 1},
-            });
-            if (res && res.length) {
-                this.state.liveName = res[0].custom_name;
-                this.state.liveId = String(res[0].id);
-            } else {
-                this.state.liveName = false;
-                this.state.liveId = false;
-            }
-        } catch (e) {
-            // On error clear live values
-            this.state.liveName = false;
-            this.state.liveId = false;
         }
     }
 }
@@ -171,7 +127,10 @@ export class ParentChildNameField extends Component {
 export const parentChildNameField = {
     component: ParentChildNameField,
     supportedTypes: ["char"],
-    extractProps() { return {}; },
-};
+    extractProps({ options }) {
+        return {
+            enabled: options.enabled ?? true,
+        };
+    },};
 
 registry.category('fields').add('parent_child_name_pill', parentChildNameField);

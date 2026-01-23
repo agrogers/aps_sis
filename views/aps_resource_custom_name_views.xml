@@ -22,8 +22,8 @@
                 </header>
                 <sheet>
                     <group>
-                        <field name="parent_resource_id"/>
-                        <field name="resource_id"/>
+                        <field name="parent_resource_id" readonly="1"/>
+                        <field name="resource_id" readonly="1"/>
                         <field name="custom_name"/>
                     </group>
                 </sheet>

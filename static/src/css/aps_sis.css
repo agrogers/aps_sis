@@ -30,3 +30,30 @@
     border: 1px dashed #ced4da;
 }
 
+.o_form_view .fixed-score-width {
+    width: 35px !important;
+    display: inline-block;
+    max-width: none !important; 
+}
+
+div[name="score"].fixed-score-width {
+    color: var(--o-cc1-link);
+}
+
+/* Target the specific cell type in Odoo 18 list views 
+.o_list_table td.o_percentpie_ranged_cell {
+    text-align: left !important;
+    justify-content: left !important; 
+    display: flex !important;         
+}
+
+
+
+/* Targets the specific header for your field 
+.o_list_table th.o_percentpie_ranged_cell[data-name="result_percent"] {
+    text-align: left !important;
+    justify-content: left !important; 
+    display: flex; 
+    vertical-align: middle !important
+    
+} */

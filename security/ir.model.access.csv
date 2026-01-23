@@ -10,7 +10,7 @@ access_aps_submission_report_wizard_teacher,aps.submission.report.wizard.teacher
 
 access_aps_resources_student_full,aps.resources.student.full,model_aps_resources,aps_sis.group_aps_student,1,0,1,0
 access_aps_resource_types_student_full,aps.resource.types.student.full,model_aps_resource_types,aps_sis.group_aps_student,1,0,0,0
-access_aps_resource_task_student_full,aps.resource.task.student.full,model_aps_resource_task,aps_sis.group_aps_student,1,1,1,1
-access_aps_resource_submission_student_full,aps.resource.submission.student.full,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,1
+access_aps_resource_task_student_full,aps.resource.task.student.full,model_aps_resource_task,aps_sis.group_aps_student,1,1,1,0
+access_aps_resource_submission_student,aps.resource.submission.student.full,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,0
 
 

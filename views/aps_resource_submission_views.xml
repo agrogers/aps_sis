@@ -1,5 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <!-- Search view for student submissions -->
+    <record id="view_aps_resource_submission_search_for_students" model="ir.ui.view">
+        <field name="name">aps.resource.submission.search.for.students</field>
+        <field name="model">aps.resource.submission</field>
+        <field name="arch" type="xml">
+            <search string="Search Submissions">
+                <searchpanel>
+                    <field name="subjects" string="Subjects" icon="fa-book" enable_counters="1" select="multi"/>                    
+                    <field name="due_status" string="Due Status" icon="fa-clock" enable_counters="1" select="multi"/>
+                    <field name="state" string="State" icon="fa-clock" enable_counters="1" select="multi"/>
+                    <field name="student_id" string="Student" icon="fa-user" enable_counters="1" select="multi"/>
+                </searchpanel>
+                <field name="display_name" string="Submission"/>
+                <field name="resource_id" string="Resource"/>
+                <field name="subjects"/>
+                <field name="state"/>
+                <field name="due_status"/>
+                <field name="submission_label"/>
+                <field name="assigned_by"/>
+                <field name="date_assigned"/>
+                <field name="date_due"/>
+                <field name="date_submitted"/>
+                <field name="date_completed"/>
+                
+                <filter string="Due Today" name="due_today" domain="[('date_due', '&gt;=', time.strftime('%Y-%m-%d')), ('date_due', '&lt;=', (datetime.datetime.now() + datetime.timedelta(days=1)).to_utc().strftime('%Y-%m-%d'))]"/>
+                <filter string="Due Tomorrow" name="due_tomorrow" domain="[('date_due', '=', (datetime.datetime.now() + datetime.timedelta(days=1)).to_utc().strftime('%Y-%m-%d'))]"/>
+                <filter string="Due in Next 7 Days" name="due_next_7_days" domain="[('date_due', '&gt;=', time.strftime('%Y-%m-%d')), ('date_due', '&lt;=', (datetime.datetime.now() + datetime.timedelta(days=7)).to_utc().strftime('%Y-%m-%d'))]"/>
+                <filter string="Overdue" name="overdue" domain="[('state', '=', 'assigned'), ('date_due', '&lt;', time.strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                <separator/>
+                <filter string="Assigned" name="assigned" domain="[('state', '=', 'assigned')]"/>
+                <filter string="Submitted" name="submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter string="Completed" name="completed" domain="[('state', '=', 'complete')]"/>
+                <filter string="Late" name="late" domain="[('due_status', '=', 'late')]"/>
+                <filter string="On Time" name="on_time" domain="[('due_status', '=', 'on-time')]"/>
+                <filter string="Early" name="early" domain="[('due_status', '=', 'early')]"/>
+                <separator/>
+                <filter string="Has Answer" name="has_answer" domain="[('has_answer', '=', True)]"/>
+                <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
+                <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
+                <separator/>
+                <filter string="Edited in Last 5 Minutes" name="edited_last_5_minutes" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(minutes=5)).to_utc().strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                <filter string="Edited Today" name="edited_today" domain="[('write_date', '>=', time.strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Resource" name="groupby_resource" context="{'group_by': 'resource_id'}"/>
+                    <filter string="Subject" name="groupby_subject" context="{'group_by': 'subjects'}"/>
+                    <filter string="Status" name="groupby_state" context="{'group_by': 'state'}"/>
+                    <filter string="Due Status" name="groupby_due_status" context="{'group_by': 'due_status'}"/>
+                    <filter string="Assigned By" name="groupby_assigned_by" context="{'group_by': 'assigned_by'}"/>
+                    <filter string="Month" name="groupby_month" context="{'group_by': 'date_assigned'}" help="Group by month of assignment"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <!-- APS Resource Submissions list & Form Views -->
     <record id="view_aps_resource_submission_list" model="ir.ui.view">
         <field name="name">aps.resource.submission.list</field>
@@ -7,22 +61,22 @@
         <field name="arch" type="xml">
             <list default_order="create_date,student_id,submission_label,submission_order">
                 <field name="task_id"  optional="hide"/>
+                <field name="subject_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Icon"/>
+                <field name="subjects" widget="many2many_tags" optional="show"/>
                 <field name="display_name" optional="show"/>
                 <field name="submission_name" optional="show"/>
                 <field name="resource_id" optional="hide"/>
                 <field name="student_id" optional="show"/>  
-                <field name="subjects" widget="many2many_tags" optional="show"/>
                 <field name="assigned_by"/>
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'"/>
+                <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="submission_label"/>
                 <field name="has_answer" widget="boolean" string="Answer" readonly="1"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1"/>
                 <field name="submission_label" optional="hide"/>
@@ -77,7 +131,6 @@
                                     <field name="assigned_by"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
-                                    <field name="actual_duration" widget="float_sentinel" placeholder="Enter hours"/>
                                     <field name="submission_label"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
                                 </group>

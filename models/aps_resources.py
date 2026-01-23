@@ -20,7 +20,7 @@ class ResourceCustomName(models.Model):
         """Delete the custom name and close the popup when invoked from the form header."""
         self.ensure_one()
         self.unlink()
-        return {'type': 'ir.actions.act_window_close'}
+        return {'type': 'ir.actions.act_window_close', 'tag': 'reload'}
 
 class APSResource(models.Model):
     _name = 'aps.resources'
@@ -383,19 +383,19 @@ class APSResource(models.Model):
         from datetime import timedelta
         return timedelta(days=7)
 
-    def action_assign_students(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Assign Students',
-            'res_model': 'aps.assign.students.wizard',
-            'view_mode': 'form',
-            'view_id': self.env.ref('aps_sis.view_aps_assign_students_wizard').id,
-            'target': 'new',
-            'context': {
-                'default_resource_id': self.id,
-            },
-        }
+    # def action_assign_students(self):
+    #     self.ensure_one()
+    #     return {
+    #         'type': 'ir.actions.act_window',
+    #         'name': 'Assign Students',
+    #         'res_model': 'aps.assign.students.wizard',
+    #         'view_mode': 'form',
+    #         'view_id': self.env.ref('aps_sis.view_aps_assign_students_wizard').id,
+    #         'target': 'new',
+    #         'context': {
+    #             'default_resource_id': self.id,
+    #         },
+    #     }
 
     def action_force_update_display_names(self):
         """Force recompute display names for all resources in hierarchical order."""

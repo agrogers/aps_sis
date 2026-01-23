@@ -1,10 +1,10 @@
 {
-	'name': 'APS SIS Resources',
+	'name': 'APEX - Academic Progress and Excellence',
 	'version': '18.0.1.0.5',
 	'icon': '/aps_sis/static/description/icon.png',
 	'category': 'Tools',
 	'summary': 'Manage APS resources and types (URLs, descriptions).',
-	'description': 'APS - Academic Positioning System / Academic Progress System. Helps to track student progress. It will work with  EduCat SIS',
+	'description': 'APEX - Academic Progress and Excellence. Helps to track student progress. It will work with  EduCat SIS',
 	'author': 'APS',
 	'license': 'LGPL-3',
 	'depends': ['base', 'openeducat_core', 'web', 'mail', 'portal'],

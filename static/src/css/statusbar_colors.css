@@ -5,24 +5,25 @@ button.o_arrow_button[aria-checked="true"][data-value="draft"] {
     color: white !important;
 }
 
-/* Pending */
+/* orange? */
 button.o_arrow_button[aria-checked="true"][data-value="pending"] {
-    background-color: var(--info-text-emphasis) !important;  /* orange? */
+    background-color: var(--info-text-emphasis) !important;  
     color: white !important;
     border-color: white;
 }
 
-/* Running */
+/* Light green */
 button.o_arrow_button[aria-checked="true"][data-value="complete"],
 button.o_arrow_button[aria-checked="true"][data-value="open"] {
-    background-color: var(--success) !important;  /* Light green */
+    background-color: var(--success) !important;  
     color: white !important;
     border-color: white;
 }
 
-/* Expired */
+/* Light yellow */
+button.o_arrow_button[aria-checked="true"][data-value="assigned"],
 button.o_arrow_button[aria-checked="true"][data-value="close"] {
-    background-color: var(--warning) !important;  /* Light yellow */
+    background-color: var(--warning) !important;  
     color: black !important;
 }
 

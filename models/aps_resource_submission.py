@@ -1,3 +1,5 @@
+import json
+import ast
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 import logging
@@ -47,7 +49,7 @@ class APSResourceSubmission(models.Model):
         help='The date when the submission was marked as finalised by the teacher. Submissions may be rejected.',
         tracking=True)
     date_due = fields.Datetime(string='Due Date', tracking=True)
-    score = fields.Float(string='Score', digits=(16, 1), tracking=True, default=sentinel_zero)
+    score = fields.Float(string='Score', digits=(16, 2), tracking=True, default=sentinel_zero)
     out_of_marks = fields.Float(string='Out of Marks', related='resource_id.marks', store=True, readonly=True)
     result_percent = fields.Integer(string='Result %', compute='_compute_result_percent', store=True, tracking=True)
     due_status = fields.Selection([
@@ -95,14 +97,45 @@ class APSResourceSubmission(models.Model):
         readonly=True,
     )
 
+    subject_icon = fields.Image(
+        string='Subject Icon',
+        compute='_compute_subject_icon',
+        help='Icon for the first subject associated with the resource',
+        store=False,
+    )
+
+    @api.depends('resource_id.subjects', 'resource_id.subjects.icon')
+    def _compute_subject_icon(self):
+        for record in self:
+            if record.resource_id and record.resource_id.subjects:
+                first = record.resource_id.subjects[:1]
+                record.subject_icon = first.icon if first else False
+            else:
+                record.subject_icon = False
+
     @api.model
     def _get_view(self, view_id=None, view_type='form', **options):
         arch, view = super()._get_view(view_id, view_type, **options)
         if view_type == 'form':
-            for node in arch.xpath("//field"):
-                # If the field is NOT 'answer', make it read-only
-                if node.get('name') != 'answer':
-                    node.set('readonly', '0')
+            if view.name == 'aps.resource.submission.form.for.students':
+                for node in arch.xpath("//field"):
+                    
+                    if node.get('name') not in  ['answer','score','review_requested_by']:
+                        node.set('readonly', '1')
+                        # Disable the ability to open the resource from student view
+                        options_str = node.get('options') or '{}'
+                        try:
+                            # Try parsing as JSON first
+                            options = json.loads(options_str)
+                        except json.JSONDecodeError:
+                            # If JSON fails, try parsing as Python literal (handles single quotes)
+                            try:
+                                options = ast.literal_eval(options_str)
+                            except (ValueError, SyntaxError):
+                                # If both fail, start with empty dict
+                                options = {}
+                        options['no_open'] = True
+                        node.set('options', json.dumps(options))
         return arch, view
 
     @api.depends('feedback')
@@ -147,10 +180,13 @@ class APSResourceSubmission(models.Model):
                 due_date_minus_1 = fields.Date.add(record.date_due.date(), days=-1)
 
                 if record.date_due.date() and compare_date.date() < due_date_minus_1:
-                    record.due_status = 'early'
+                    # if the submission is well before the due date
+                    record.due_status = 'early' if record.state in ['submitted', 'complete'] else False                    
                 elif compare_date.date() <= record.date_due.date():
-                    record.due_status = 'on-time'
-                else:
+                    # If the submission is within 1 day of the due date then it is on-time
+                    record.due_status = 'on-time' if record.state in ['submitted', 'complete'] else False
+                else:  
+                    # If due date has passed, then the submission is late regardless of State
                     record.due_status = 'late'
 
     @api.depends()
@@ -216,6 +252,20 @@ class APSResourceSubmission(models.Model):
             'state': 'submitted',
             'date_submitted': fields.Date.today(),
         })
+
+    @api.onchange('state')
+    def _onchange_state_set_dates(self):
+        """Set date_submitted/date_completed immediately when state changes in the form."""
+        for record in self:
+            # When marking submitted in the form, set a submitted timestamp if missing
+            if record.state == 'submitted' and not record.date_submitted:
+                record.date_submitted = fields.Datetime.now()
+            # When marking complete in the form, set completion and submission timestamps if missing
+            if record.state == 'complete':
+                if not record.date_completed:
+                    record.date_completed = fields.Datetime.now()
+                if not record.date_submitted:
+                    record.date_submitted = fields.Datetime.now()
 
     def action_mark_reviewed(self):
         faculty = self._get_current_faculty()

@@ -8,6 +8,7 @@
                     class="resource-link-icon"
                     t-att-title="link.type_name + ': ' + link.name"
                     t-on-click.stop=""
+                    target="_blank"
                     style="cursor: pointer; text-decoration: none;">
                     <t t-if="link.icon_url">
                         <img 
