@@ -11,7 +11,7 @@ export class RecentSubmissionsField extends CharField {
             <t t-foreach="this.pills" t-as="pill" t-key="pill_index">
                 <button type="button"
                         t-on-click="() => this.openRecord(pill)"
-                        t-att-class="'badge ' + pill.color + ' text-decoration-none '"
+                        t-att-class="'recent-submissions-pill badge ' + pill.color + ' text-decoration-none '"
                         title=""
                         data-bs-toggle=""
                         data-tooltip="">

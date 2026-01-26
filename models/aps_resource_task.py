@@ -36,11 +36,11 @@ class APSResourceTask(models.Model):
         decoration_warning="state == 'created' or state == 'late'",
         decoration_info="state in ['assigned', 'due', 'reassigned', 'submitted']",
         decoration_danger="state == 'overdue'")
-    date_assigned = fields.Datetime(string='Date Assigned', compute='_compute_date_assigned', store=True)
-    date_due = fields.Datetime(string='Due Date', compute='_compute_date_due', store=True)
+    date_assigned = fields.Date(string='Date Assigned', compute='_compute_date_assigned', store=True)
+    date_due = fields.Date(string='Due Date', compute='_compute_date_due', store=True)
     latest_submission_text = fields.Char(
         compute='_compute_latest_submission_data',
-        store=False,
+        store=True,
         string='Recent Submissions',
         help='The latest submission for this task based on the assignment date.'
     )
@@ -151,7 +151,9 @@ class APSResourceTask(models.Model):
                 continue
                 
             # Get last 3 submissions, most recent first
-            submissions = rec.submission_ids.sorted(lambda s: s.date_assigned or s.create_date or datetime.min, reverse=True)[:3]
+            # The most recent are first because they are the ones that the user is most likely to want to see.
+            # This looks weird though when there are a lot of submission created for far distant dates.
+            submissions = rec.submission_ids.filtered(lambda s: s.submission_active).sorted(lambda s: s.date_assigned or s.create_date or datetime.min, reverse=True)[:3]
             
             pills = []
             state_colors = {

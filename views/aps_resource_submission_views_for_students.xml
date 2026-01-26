@@ -7,9 +7,10 @@
         <field name="name">aps.resource.submission.list.for.students</field>
         <field name="model">aps.resource.submission</field>
         <field name="arch" type="xml">
-            <list>
+            <list string="My Submissions" create="false" delete="false">
                 <field name="subject_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
                 <field name="subjects" widget="many2many_tags" optional="hide"/>
+                <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
                 <field name="submission_name" optional="show"/>
                 <field name="resource_id" optional="hide"/>
                 <field name="display_name" optional="hide"/>
@@ -21,9 +22,11 @@
                 <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="show"/>
+                <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="has_answer" widget="boolean" string="Answer" readonly="1" optional="hide"/>
+                <field name="has_question" string="Question" readonly="1" optional="hide"/>
+                <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="show"/>
                 <field name="submission_label" optional="hide"/>
                 <field name="submission_order" optional="hide"/>
@@ -40,7 +43,7 @@
         <field name="name">aps.resource.submission.form.for.students</field>
         <field name="model">aps.resource.submission</field>
         <field name="arch" type="xml">
-            <form>
+            <form create="false" delete="false">
                 <header>
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
@@ -59,8 +62,8 @@
                     <group col="3">
                         <group>
                             <div class="d-flex align-items-left gap-1">
-                                <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px"/>
-                                <field name="submission_name" readonly="1" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
+                                <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px" readonly="1"/>
+                                <field name="submission_name" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
                             </div>
                         </group>
                         <group>
@@ -71,7 +74,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="✏️Student Answer">
+                        <page string="Student Answer">
                             <group col="12">
                                 <group colspan="8">
                                     <div class="o_row fs-2 fw-bold">
@@ -97,34 +100,49 @@
                             </group>
                             
                             <hr/>
-                            <field name="answer" nolabel="1" placeholder="Enter your answer here." readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
+                            <div class="text-muted"
+                                style="font-size: 1.2em;"
+                                invisible="state == 'assigned' or answer">
+                                No answer has been supplied.
+                            </div>
+
+                            <field name="answer"
+                                nolabel="1"
+                                placeholder="Enter your answer here."
+                                readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"
+                                invisible="state != 'assigned' and not answer"/>
+
                         </page>
-                        <page string="📝Teacher Feedback" invisible="state=='assigned' or not has_feedback">
+                        <page string="🗪 Teacher Feedback" invisible="state=='assigned' or not has_feedback">
                             <field name="feedback" 
                                 nolabel="1" 
                                 readonly="True if is_current_user_faculty else True"
                                 placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="✅Model Answer" invisible="not model_answer or state=='assigned'">
+                        <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned'">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
-                        <page string="Details">
+                        <page string="ℚuestion" invisible="has_question=='no'">
+                            <field name="question" nolabel="1" readonly="1"/>
+                        </page>
+                        <page string="ⓘ">
                             <group>
                                 <group>
                                     <field name="task_id" invisible="1"/>
-                                    <field name="resource_id" options="{'no_open': True}"/>
-                                    <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="student_id" readonly="1" options="{'no_open': True}"/>
+                                    <field name="resource_id" readonly="1" options="{'no_open': True}"/>
+                                    <field name="subjects" readonly="1" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
-                                    <field name="assigned_by" readonly="1"/>
-                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1"/>
-                                    <field name="submission_label" readonly="1"/>
+                                    <field name="assigned_by" />
+                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="submission_label" />
                                 </group>
                                 <group>
                                     <field name="state" readonly="not is_current_user_faculty"/>
-                                    <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1"/>
-                                    <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1"/>
-                                    <field name="due_status" readonly="1"/>
-                                    <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" readonly="1"/>
+                                    <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" />
+                                    <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" />
+                                    <field name="due_status" />
+                                    <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>
                             </group>
                         </page>

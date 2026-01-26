@@ -105,6 +105,7 @@
                                     <field name="has_answer"/>
                                     <field name="has_child_resources"/>
                                     <field name="has_supporting_resources"/>
+                                    <field name="supporting_resources_buttons" widget="resource_links"  />
                                     <field name="child_count"/>
                             </group>
                             </group>
@@ -276,6 +277,8 @@
                     <filter name="group_by_has_answer" string="Has Answer" context="{'group_by':'has_answer'}"/>
                     <filter name="group_by_has_child_resources" string="Has Linked Resources" context="{'group_by':'has_child_resources'}"/>
                     <filter name="group_by_has_supporting_resources" string="Has Supporting Resources" context="{'group_by':'has_supporting_resources'}"/>
+                    
+
                 </group>
             </search>
         </field>
@@ -290,6 +293,7 @@
         <field name="search_view_id" ref="view_aps_resources_search"/>
         <field name="context">{'default_order': 'name'}</field>
     </record>
+
 
     <record id="action_aps_resources_hierarchy" model="ir.actions.act_window">
         <field name="name">Resources (Hierarchy)</field>
@@ -308,8 +312,7 @@
         <field name="binding_model_id" ref="model_aps_resources"/>
         <field name="binding_type">action</field>
         <field name="state">code</field>
-        <field name="code">
-env['aps.resources'].action_force_update_display_names()
+        <field name="code">env['aps.resources'].action_force_update_display_names()
         </field>
     </record>
 </odoo>

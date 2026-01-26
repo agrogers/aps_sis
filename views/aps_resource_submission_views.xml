@@ -8,8 +8,8 @@
             <search string="Search Submissions">
                 <searchpanel>
                     <field name="subjects" string="Subjects" icon="fa-book" enable_counters="1" select="multi"/>                    
-                    <field name="due_status" string="Due Status" icon="fa-clock" enable_counters="1" select="multi"/>
                     <field name="state" string="State" icon="fa-clock" enable_counters="1" select="multi"/>
+                    <field name="due_status" string="Due Status" icon="fa-clock" enable_counters="1" select="multi"/>
                     <field name="student_id" string="Student" icon="fa-user" enable_counters="1" select="multi"/>
                 </searchpanel>
                 <field name="display_name" string="Submission"/>
@@ -36,6 +36,7 @@
                 <filter string="On Time" name="on_time" domain="[('due_status', '=', 'on-time')]"/>
                 <filter string="Early" name="early" domain="[('due_status', '=', 'early')]"/>
                 <separator/>
+                <filter string="Root Resources" name="root_resources" domain="[('resource_id.parent_ids', '=', False)]"/>
                 <filter string="Has Answer" name="has_answer" domain="[('has_answer', '=', True)]"/>
                 <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
                 <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
@@ -43,6 +44,7 @@
                 <filter string="Edited in Last 5 Minutes" name="edited_last_5_minutes" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(minutes=5)).to_utc().strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <filter string="Edited Today" name="edited_today" domain="[('write_date', '>=', time.strftime('%Y-%m-%d'))]"/>
                 <group expand="0" string="Group By">
+                    <filter string="Label" name="groupby_label" context="{'group_by': 'submission_label'}"/>
                     <filter string="Resource" name="groupby_resource" context="{'group_by': 'resource_id'}"/>
                     <filter string="Subject" name="groupby_subject" context="{'group_by': 'subjects'}"/>
                     <filter string="Status" name="groupby_state" context="{'group_by': 'state'}"/>
@@ -63,28 +65,146 @@
                 <field name="task_id"  optional="hide"/>
                 <field name="subject_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Icon"/>
                 <field name="subjects" widget="many2many_tags" optional="show"/>
+                <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
                 <field name="display_name" optional="show"/>
                 <field name="submission_name" optional="show"/>
                 <field name="resource_id" optional="hide"/>
                 <field name="student_id" optional="show"/>  
-                <field name="assigned_by"/>
+                <field name="assigned_by" optional="hide"/>
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'"/>
+                <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="has_answer" widget="boolean" string="Answer" readonly="1"/>
-                <field name="has_feedback" widget="boolean" string="Feedback" readonly="1"/>
+                <field name="has_question" string="Question" readonly="1" optional="hide"/>
+                <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
+                <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
                 <field name="submission_label" optional="hide"/>
                 <field name="submission_order" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
             </list>
+        </field>
+    </record>
+
+    <!-- APS Resource Submissions list for score entry -->
+    <record id="view_aps_resource_submission_score_entry_list" model="ir.ui.view">
+        <field name="name">aps.resource.submission.score.list</field>
+        <field name="model">aps.resource.submission</field>
+        <field name="arch" type="xml">
+            <list editable="top" default_order="create_date,student_id,submission_label,submission_order">
+                <field name="task_id"  optional="hide" readonly="1"/>
+                <field name="subject_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
+                <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
+                <field name="subjects" widget="many2many_tags" optional="show" readonly="1"/>
+                <field name="display_name" optional="hide" readonly="1"/>
+                <field name="submission_name" optional="show" readonly="1"/>
+                <field name="resource_id" optional="hide"/>
+                <field name="student_id" optional="show" readonly="1"/>
+                <field name="assigned_by" readonly="1" optional="hide"/>
+                <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide" readonly="1"/>
+                <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="score" widget="float_sentinel" optional="hide"/>
+                <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
+                <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide" readonly="1"/>
+                <field name="state" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="hide" />
+                <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide" readonly="1" />
+                <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
+                <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="submission_label" optional="hide" readonly="1"/>
+                <field name="submission_order" optional="hide" readonly="1"/>
+                <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                <field name="create_date" optional="hide"/>
+                <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- APS Resource Submissions Kanban View -->
+    <record id="view_aps_resource_submission_kanban" model="ir.ui.view">
+        <field name="name">aps.resource.submission.kanban</field>
+        <field name="model">aps.resource.submission</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="id"/>
+                <field name="display_name"/>
+                <field name="state"/>
+                <field name="student_id"/>
+                <field name="resource_id"/>
+                <field name="date_due"/>
+                <field name="due_status"/>
+                <field name="score"/>
+                <field name="result_percent"/>
+                <field name="subject_icon"/>
+                <field name="subjects"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click">
+                            <div class="row">
+                                <div class="col-2">
+                                    <img t-if="record.subject_icon.raw_value" 
+                                         t-att-src="kanban_image('aps.resource.submission', 'subject_icon', record.id.raw_value, 'image_small')" 
+                                         class="oe_kanban_image" style="max-width: 32px; max-height: 32px;" alt="Subject Icon"/>
+                                    <div t-else="" class="oe_kanban_no_image">
+                                        <i class="fa fa-book"></i>
+                                    </div>
+                                </div>
+                                <div class="col-10">
+                                    <div class="oe_kanban_content">
+                                        <div class="o_kanban_record_title">
+                                            <strong><field name="display_name"/></strong>
+                                        </div>
+                                        <div class="o_kanban_record_body">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <div><strong>Student:</strong> <field name="student_id"/></div>
+                                                    <div><strong>Resource:</strong> <field name="resource_id"/></div>
+                                                    <div><strong>Due:</strong> <field name="date_due" widget="date"/></div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div><strong>Status:</strong> 
+                                                        <span t-attf-class="badge bg-{{ record.due_status.raw_value == 'late' ? 'danger' : record.due_status.raw_value == 'early' ? 'success' : 'info' }}">
+                                                            <field name="due_status"/>
+                                                        </span>
+                                                    </div>
+                                                    <div t-if="record.score.raw_value">
+                                                        <strong>Score:</strong> <field name="score"/> / <field name="out_of_marks"/>
+                                                    </div>
+                                                    <div t-if="record.result_percent.raw_value">
+                                                        <strong>Result:</strong> <field name="result_percent" widget="percentpie_ranged"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div t-if="record.subjects.raw_value">
+                                                <strong>Subjects:</strong> <field name="subjects" widget="many2many_tags"/>
+                                            </div>
+                                        </div>
+                                        <div class="o_kanban_record_bottom">
+                                            <div class="oe_kanban_bottom_left">
+                                                <field name="state" widget="badge" 
+                                                       decoration-muted="state == 'complete'" 
+                                                       decoration-info="state == 'submitted'" 
+                                                       decoration-warning="state == 'assigned'"/>
+                                            </div>
+                                            <div class="oe_kanban_bottom_right">
+                                                <button name="action_open_submission" type="object" class="btn btn-sm btn-secondary">
+                                                    <i class="fa fa-external-link"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
 
@@ -117,15 +237,16 @@
                     <group>
                         <div class="d-flex align-items-left gap-1">
                             <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px"/>
-                            <field name="resource_id" readonly="1" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
+                            <field name="submission_name" nolabel="1" class="fs-3 fw-bold" />
                         </div>
                     </group>
 
                     <notebook>
-                        <page string="Details">
+                        <page string="ⓘ Details">
                             <group>
                                 <group string="Submission Details">
                                     <field name="task_id" invisible="1"/>
+                                    <field name="student_id"/>
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="assigned_by"/>
@@ -133,6 +254,7 @@
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="submission_label"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
+                                    <field name="submission_active"/>
                                 </group>
                                 <group string="Results">
                                     <field name="state" readonly="not is_current_user_faculty"/>
@@ -151,15 +273,19 @@
                                 </group>
                             </group>
                         </page>
-                        <page string="✏️Student Answer">
+                        <page string="Student Answer">
                             <field name="answer" nolabel="1" placeholder="Enter your answer here."/>
                         </page>
-                        <page string="📝Teacher Feedback">
+                        <page string="🗪 Teacher Feedback">
                             <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="✅Model Answer" invisible="not model_answer or state=='assigned'">
-                            <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
+                        <page string="🗹 Model Answer" invisible="not model_answer">
+                            <field name="model_answer" nolabel="1" placeholder="Model answer for this submission." readonly="1"/>
                         </page>
+                        <page string="ℚuestion" invisible="has_question=='no'">
+                            <field name="question" nolabel="1" readonly="1"/>
+                        </page>
+
                     </notebook>
                 </sheet>
                 <chatter groups="aps_sis.group_aps_teacher"/>
@@ -170,8 +296,44 @@
     <record id="action_aps_resource_submissions" model="ir.actions.act_window">
         <field name="name">Submissions</field>
         <field name="res_model">aps.resource.submission</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,form,pivot,kanban,graph,calendar</field>
         <field name="view_id" ref="view_aps_resource_submission_list"/>
     </record>
+
+    <record id="action_aps_resource_submissions_score" model="ir.actions.act_window">
+        <field name="name">Enter Scores</field>
+        <field name="res_model">aps.resource.submission</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_resource_submission_score_entry_list"/>
+    </record>
+
+    <!-- Server actions for bulk state changes -->
+    <record id="action_mark_assigned" model="ir.actions.server">
+        <field name="name">Mark as Assigned</field>
+        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_mark_assigned()</field>
+    </record>
+
+    <record id="action_mark_submitted" model="ir.actions.server">
+        <field name="name">Mark as Submitted</field>
+        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_mark_submitted()</field>
+    </record>
+
+    <record id="action_mark_complete" model="ir.actions.server">
+        <field name="name">Mark as Finalised</field>
+        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_mark_complete()</field>
+    </record>
+
 
 </odoo>

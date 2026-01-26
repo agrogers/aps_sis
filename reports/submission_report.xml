@@ -137,12 +137,12 @@
                                         <div class="row" style="border-top: 1px solid #eee; padding-top: 10px; font-size: 11px;">
                                             <div class="col-6">
                                                 <p class="mb-0 text-muted">
-                                                    <strong>Submitted:</strong> <span t-field="submission.date_submitted" t-options="{'widget': 'datetime', 'format': 'dd/MM/yyyy HH:mm'}"/>
+                                                    <strong>Submitted:</strong> <span t-field="submission.date_submitted" />
                                                 </p>
                                             </div>
                                             <div class="col-6 text-right">
                                                 <p class="mb-0 text-muted">
-                                                    <strong>Finalized:</strong> <span t-field="submission.date_completed" t-options="{'widget': 'datetime', 'format': 'dd/MM/yyyy HH:mm'}"/>
+                                                    <strong>Finalized:</strong> <span t-field="submission.date_completed" />
                                                 </p>
                                             </div>
                                         </div>

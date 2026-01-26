@@ -79,7 +79,8 @@ class APSResource(models.Model):
         required=True,
         tracking=True)    
 
-    thumbnail = fields.Binary(string='Thumbnail', compute='_compute_thumbnail', store=True)
+    # thumbnail = fields.Binary(string='Thumbnail', compute='_compute_thumbnail', store=True)
+    thumbnail = fields.Binary(string='Thumbnail')
 
     type_id = fields.Many2one('aps.resource.types', string='Type', ondelete='set null')
     type_icon = fields.Binary(string='Type Icon', related='type_id.icon', readonly=True)
@@ -93,7 +94,7 @@ class APSResource(models.Model):
         ], string='Category', 
         default='optional', 
         help='Identifies which resources should be assigned to students to complete.', tracking=True)
-    marks = fields.Float(string='Marks', digits=(16, 1), help='Maximum marks/points for this resource')
+    marks = fields.Float(string='Out of Marks', digits=(16, 1), help='Maximum marks/points for this resource')
     subjects = fields.Many2many('op.subject', string='Subjects')
     task_ids = fields.One2many('aps.resource.task', 'resource_id', string='Tasks')
     parent_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'child_id', 'parent_id', string='Parent Resources', domain="[('id', '!=', id)]")
@@ -274,44 +275,44 @@ class APSResource(models.Model):
                     })
             rec.parent_custom_name_data = data or False
 
-    @api.depends('question', 'answer')
-    def _compute_thumbnail(self):
-        """Extract first image from question or answer HTML and store as thumbnail."""
-        for rec in self:
-            thumbnail_data = False
-            html_content = rec.question or rec.answer or ''
+    # @api.depends('question', 'answer')
+    # def _compute_thumbnail(self):
+    #     """Extract first image from question or answer HTML and store as thumbnail."""
+    #     for rec in self:
+    #         thumbnail_data = False
+    #         html_content = rec.question or rec.answer or ''
             
-            # Find first img src in HTML
-            match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html_content, re.IGNORECASE)
-            if match:
-                img_src = match.group(1)
-                try:
-                    # Handle base64 data URLs
-                    if img_src.startswith('data:image'):
-                        # Extract base64 part after comma
-                        base64_data = img_src.split(',', 1)
-                        if len(base64_data) > 1:
-                            thumbnail_data = base64_data[1]
-                    # Handle Odoo attachment URLs (relative paths)
-                    elif img_src.startswith('/web/image') or img_src.startswith('/web/content'):
-                        # For internal Odoo images, try to get from attachment
-                        # Extract attachment id if present
-                        att_match = re.search(r'/web/(?:image|content)/(\d+)', img_src)
-                        if att_match:
-                            att_id = int(att_match.group(1))
-                            attachment = self.env['ir.attachment'].sudo().browse(att_id)
-                            if attachment.exists() and attachment.datas:
-                                thumbnail_data = attachment.datas
-                    # Handle external URLs
-                    elif img_src.startswith('http'):
-                        response = requests.get(img_src, timeout=5)
-                        if response.status_code == 200:
-                            thumbnail_data = base64.b64encode(response.content).decode('utf-8')
-                except Exception:
-                    # Silently fail - thumbnail is optional
-                    pass
+    #         # Find first img src in HTML
+    #         match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html_content, re.IGNORECASE)
+    #         if match:
+    #             img_src = match.group(1)
+    #             try:
+    #                 # Handle base64 data URLs
+    #                 if img_src.startswith('data:image'):
+    #                     # Extract base64 part after comma
+    #                     base64_data = img_src.split(',', 1)
+    #                     if len(base64_data) > 1:
+    #                         thumbnail_data = base64_data[1]
+    #                 # Handle Odoo attachment URLs (relative paths)
+    #                 elif img_src.startswith('/web/image') or img_src.startswith('/web/content'):
+    #                     # For internal Odoo images, try to get from attachment
+    #                     # Extract attachment id if present
+    #                     att_match = re.search(r'/web/(?:image|content)/(\d+)', img_src)
+    #                     if att_match:
+    #                         att_id = int(att_match.group(1))
+    #                         attachment = self.env['ir.attachment'].sudo().browse(att_id)
+    #                         if attachment.exists() and attachment.datas:
+    #                             thumbnail_data = attachment.datas
+    #                 # Handle external URLs
+    #                 elif img_src.startswith('http'):
+    #                     response = requests.get(img_src, timeout=5)
+    #                     if response.status_code == 200:
+    #                         thumbnail_data = base64.b64encode(response.content).decode('utf-8')
+    #             except Exception:
+    #                 # Silently fail - thumbnail is optional
+    #                 pass
             
-            rec.thumbnail = thumbnail_data
+    #         rec.thumbnail = thumbnail_data
 
     @api.constrains('primary_parent_id', 'parent_ids')
     def _check_primary_parent(self):

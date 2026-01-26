@@ -1,54 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="0">
-        <!-- Record Rules for Students - restrict to own data -->
+        <!-- Record Rules for Students - limited access to own records only -->
         <record id="rule_aps_task_student" model="ir.rule">
-            <field name="name">Student: Own Tasks Only</field>
+            <field name="name">Student (APEX): All Tasks</field>
             <field name="model_id" ref="model_aps_resource_task"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
-            <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
-        </record>
-
-        <record id="rule_aps_task_student" model="ir.rule">
-            <field name="name">Student: All Tasks</field>
-            <field name="model_id" ref="model_aps_resource_task"/>
-            <!-- <field name="domain_force">[(1, '=', 1)]</field> -->
             <field name="domain_force">[('student_id', '=', user.partner_id.id)]</field>
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
         </record>
         
         <record id="rule_aps_submission_student" model="ir.rule">
-            <field name="name">Student: Own Submissions Only</field>
+            <field name="name">Student (APEX): Own Submissions Only</field>
             <field name="model_id" ref="model_aps_resource_submission"/>
-            <field name="domain_force">[('student_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">
+             [('student_id', '=', user.partner_id.id),
+                ('submission_active', '=', True)]
+            </field>
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
         </record>
 
-
         <!-- Record Rules for Teachers - full access to all records -->
         <record id="rule_aps_resources_teacher" model="ir.rule">
-            <field name="name">Teacher: All Resources</field>
+            <field name="name">Teacher (APEX): All Resources</field>
             <field name="model_id" ref="model_aps_resources"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
         <record id="rule_aps_resource_types_teacher" model="ir.rule">
-            <field name="name">Teacher: All Resource Types</field>
+            <field name="name">Teacher (APEX): All Resource Types</field>
             <field name="model_id" ref="model_aps_resource_types"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
         <record id="rule_aps_task_teacher" model="ir.rule">
-            <field name="name">Teacher: All Tasks</field>
+            <field name="name">Teacher (APEX): All Tasks</field>
             <field name="model_id" ref="model_aps_resource_task"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
         <record id="rule_aps_submission_teacher" model="ir.rule">
-            <field name="name">Teacher: All Submissions</field>
+            <field name="name">Teacher (APEX): All Submissions</field>
             <field name="model_id" ref="model_aps_resource_submission"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>

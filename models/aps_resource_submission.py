@@ -37,18 +37,18 @@ class APSResourceSubmission(models.Model):
         ], string='State', default='assigned', 
         tracking=True,
         required=True)
-    date_assigned = fields.Datetime(
+    date_assigned = fields.Date(
         string='Date Assigned',
-        default=fields.Datetime.now)
-    date_submitted = fields.Datetime(
+        default=fields.Date.today)
+    date_submitted = fields.Date(
         string='Date Submitted', 
         help='The date when the submission was made by the student.',
         tracking=True)
-    date_completed = fields.Datetime(
+    date_completed = fields.Date(
         string='Date Finalised', 
         help='The date when the submission was marked as finalised by the teacher. Submissions may be rejected.',
         tracking=True)
-    date_due = fields.Datetime(string='Due Date', tracking=True)
+    date_due = fields.Date(string='Due Date', tracking=True)
     score = fields.Float(string='Score', digits=(16, 2), tracking=True, default=sentinel_zero)
     out_of_marks = fields.Float(string='Out of Marks', related='resource_id.marks', store=True, readonly=True)
     result_percent = fields.Integer(string='Result %', compute='_compute_result_percent', store=True, tracking=True)
@@ -60,8 +60,9 @@ class APSResourceSubmission(models.Model):
     actual_duration = fields.Float(string='Actual Duration (hours)', digits=(16, 1))
     feedback = fields.Html(string='Feedback')
     answer = fields.Html(string='Answer')
+    has_question = fields.Selection(string='Has Question', related='resource_id.has_question', readonly=True, store=True)
     has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
-    has_answer = fields.Boolean(string='Has Answer', compute='_compute_has_answer', store=True)
+    has_answer = fields.Selection(string='Has Answer', related='resource_id.has_answer', readonly=True, store=True)
     reviewed_by = fields.Many2many(
         'op.faculty',
         'aps_submission_reviewed_by_rel',
@@ -86,6 +87,12 @@ class APSResourceSubmission(models.Model):
         readonly=True,
         help='The model answer from the associated resource for comparison.'
     )
+    question = fields.Html(
+        string='Question',
+        related='resource_id.question',
+        readonly=True,
+        help='The question from the associated resource.'
+    )
     supporting_resources_buttons = fields.Json(
         string='Links',
         related='resource_id.supporting_resources_buttons',
@@ -96,13 +103,24 @@ class APSResourceSubmission(models.Model):
         related='resource_id.type_icon',
         readonly=True,
     )
-
     subject_icon = fields.Image(
         string='Subject Icon',
         compute='_compute_subject_icon',
         help='Icon for the first subject associated with the resource',
         store=False,
     )
+    submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True)
+
+    @api.depends('date_assigned')
+    def _compute_submission_active(self):
+        for record in self:
+            record.submission_active = (record.date_assigned <= fields.Date.today())
+
+    @api.model
+    def recompute_submission_active_status(self):
+        """Recompute active status for all submissions. Called by cron job daily."""
+        submissions = self.search([])
+        submissions._compute_submission_active()
 
     @api.depends('resource_id.subjects', 'resource_id.subjects.icon')
     def _compute_subject_icon(self):
@@ -121,7 +139,8 @@ class APSResourceSubmission(models.Model):
                 for node in arch.xpath("//field"):
                     
                     if node.get('name') not in  ['answer','score','review_requested_by']:
-                        node.set('readonly', '1')
+                        if node.get('readonly'): continue  # If the readonly status has been explicitly set, skip it
+                        node.set('readonly', 'not is_current_user_faculty')
                         # Disable the ability to open the resource from student view
                         options_str = node.get('options') or '{}'
                         try:
@@ -134,7 +153,7 @@ class APSResourceSubmission(models.Model):
                             except (ValueError, SyntaxError):
                                 # If both fail, start with empty dict
                                 options = {}
-                        options['no_open'] = True
+                        options['no_open'] = "not is_current_user_faculty"
                         node.set('options', json.dumps(options))
         return arch, view
 
@@ -143,24 +162,19 @@ class APSResourceSubmission(models.Model):
         for record in self:
             record.has_feedback = bool(record.feedback and record.feedback.strip())
 
-    @api.depends('answer')
-    def _compute_has_answer(self):
-        for record in self:
-            record.has_answer = bool(record.answer and record.answer.strip())
-
     @api.depends('date_assigned')
     def _compute_date_due(self):
         for record in self:
             if record.date_assigned:
                 # Set due date to 7 days after assignment
-                record.date_due = fields.Datetime.add(record.date_assigned, days=7)
+                record.date_due = fields.Date.add(record.date_assigned, days=7)
             else:
                 record.date_due = False
 
     @api.depends('date_due', 'date_submitted', 'date_completed', 'state')
     def _compute_due_status(self):
         
-        now = fields.Datetime.now()
+        now = fields.Date.today()
         for record in self:
            
             # Use completion date if submission is complete, otherwise use current date
@@ -177,12 +191,12 @@ class APSResourceSubmission(models.Model):
                     record.due_status = 'on-time'
             else:
                 # Early: submitted 1 day or more before due date
-                due_date_minus_1 = fields.Date.add(record.date_due.date(), days=-1)
+                due_date_minus_1 = fields.Date.add(record.date_due, days=-1)
 
-                if record.date_due.date() and compare_date.date() < due_date_minus_1:
+                if record.date_due and compare_date < due_date_minus_1:
                     # if the submission is well before the due date
                     record.due_status = 'early' if record.state in ['submitted', 'complete'] else False                    
-                elif compare_date.date() <= record.date_due.date():
+                elif compare_date <= record.date_due:
                     # If the submission is within 1 day of the due date then it is on-time
                     record.due_status = 'on-time' if record.state in ['submitted', 'complete'] else False
                 else:  
@@ -230,22 +244,32 @@ class APSResourceSubmission(models.Model):
         return self._get_faculty_for_current_user()
 
     def action_mark_complete(self):
-        faculty = self._get_current_faculty()
-        if not faculty:
-            raise UserError("Only faculty members can mark submissions as complete.")
-        
-        completion_date = fields.Date.today()
-        vals = {
-            'state': 'complete',
-            'date_completed': completion_date,
-            'reviewed_by': [(4, faculty.id)] if faculty else [],
+        today = fields.Date.today()
+
+        for record in self:
+            faculty = self._get_current_faculty()
+            if not faculty:
+                raise UserError("Only faculty members can mark submissions as complete.")
+
+            if record.state == 'complete':
+                continue  # or raise / log / skip
+
+            record.write({
+                'state': 'complete',
+                'date_completed': today,
+            })
+
+        # Optional success message
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Done',
+                'message': f"Processed {len(self)} submission(s).",
+                'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
         }
-        
-        # If no submission date is set, set it to the completion date
-        if not self.date_submitted:
-            vals['date_submitted'] = completion_date
-        
-        self.write(vals)
 
     def action_mark_submitted(self):
         self.write({
@@ -253,19 +277,45 @@ class APSResourceSubmission(models.Model):
             'date_submitted': fields.Date.today(),
         })
 
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Done',
+                'message': f"Processed {len(self)} submission(s).",
+                'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
+
+    def action_mark_assigned(self):
+        self.write({
+            'state': 'assigned',
+        })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Done',
+                'message': f"Processed {len(self)} submission(s).",
+                'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
+        
     @api.onchange('state')
     def _onchange_state_set_dates(self):
         """Set date_submitted/date_completed immediately when state changes in the form."""
         for record in self:
             # When marking submitted in the form, set a submitted timestamp if missing
             if record.state == 'submitted' and not record.date_submitted:
-                record.date_submitted = fields.Datetime.now()
+                record.date_submitted = fields.Date.today()
             # When marking complete in the form, set completion and submission timestamps if missing
             if record.state == 'complete':
                 if not record.date_completed:
-                    record.date_completed = fields.Datetime.now()
+                    record.date_completed = fields.Date.today()
                 if not record.date_submitted:
-                    record.date_submitted = fields.Datetime.now()
+                    record.date_submitted = fields.Date.today()
 
     def action_mark_reviewed(self):
         faculty = self._get_current_faculty()
@@ -311,14 +361,14 @@ class APSResourceSubmission(models.Model):
             for record in self:
                 # If changing to submitted and no submission date, set it to today
                 if vals['state'] == 'submitted' and not record.date_submitted and 'date_submitted' not in vals:
-                    vals['date_submitted'] = fields.Datetime.now()
+                    vals['date_submitted'] = fields.Date.today()
                 
                 # If changing to complete and no completion date, set it to today
                 elif vals['state'] == 'complete' and not record.date_completed and 'date_completed' not in vals:
-                    vals['date_completed'] = fields.Datetime.now()
+                    vals['date_completed'] = fields.Date.today()
                     # Also ensure submission date is set if missing
                     if not record.date_submitted and 'date_submitted' not in vals:
-                        vals['date_submitted'] = fields.Datetime.now()
+                        vals['date_submitted'] = fields.Date.today()
         
         result = super().write(vals)
         
@@ -344,3 +394,16 @@ class APSResourceSubmission(models.Model):
         for submission in submissions:
             _logger.info(f"Created submission {submission.id} for task {submission.task_id.id}")
         return submissions
+
+    def copy(self, default=None):
+        if default is None:
+            default = {}
+        default['date_assigned'] = fields.Date.today()
+        default['date_submitted'] = False
+        default['date_completed'] = False
+        default['reviewed_by'] = []
+        default['review_requested_by'] = []
+        default['assigned_by'] = self._get_current_faculty().id
+        default['score'] = sentinel_zero
+        # date_due will be recomputed based on the new date_assigned
+        return super().copy(default)

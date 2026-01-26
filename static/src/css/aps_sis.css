@@ -12,6 +12,7 @@
 .o_resource_links .resource-link-icon:hover img,
 .o_resource_links .resource-link-icon:hover i {
     border-color: #007bff;
+    transform: scale(1.2);
 }
 
 /* Parent-child custom name pill */
@@ -39,6 +40,14 @@
 div[name="score"].fixed-score-width {
     color: var(--o-cc1-link);
 }
+
+
+.recent-submissions-pill:hover {
+    cursor: pointer;
+    transform: scale(1.1);
+}
+
+
 
 /* Target the specific cell type in Odoo 18 list views 
 .o_list_table td.o_percentpie_ranged_cell {

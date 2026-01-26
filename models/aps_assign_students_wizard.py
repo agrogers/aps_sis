@@ -50,6 +50,12 @@ class APSAssignStudentsWizard(models.TransientModel):
 
         return res
 
+    @api.onchange('date_assigned')
+    def _onchange_date_due(self):
+        if self.date_assigned:
+            from datetime import timedelta
+            self.date_due = self.date_assigned + self.env['aps.resources']._default_assignment_duration()
+
     @api.onchange('resource_id')
     def _onchange_resource_id(self):
         if self.resource_id:
@@ -157,7 +163,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'submission_order': submission_order,
                     'submission_name': submission_name,
                     'date_assigned': self.date_assigned,
-                    'date_due': self.date_assigned,
+                    'date_due': self.date_due,
                     'state': 'assigned',
                 })
         return {'type': 'ir.actions.act_window_close'}
