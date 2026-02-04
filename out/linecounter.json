@@ -1,0 +1,1174 @@
+{
+    "extension": "linecounter",
+    "version": "0.2.7",
+    "workspace": "c:\\Git\\Odoo_Custom_Addons\\_live\\aps_sis",
+    "linecount": [
+        {
+            "version": "0.2.7",
+            "counttime": "2026-01-27 00:10:19",
+            "filesum": 168,
+            "codesum": 3762,
+            "commentsum": 394,
+            "blanksum": 472,
+            "statistics": {
+                ".txt": {
+                    "code": 28,
+                    "comment": 0,
+                    "blank": 17
+                },
+                ".py": {
+                    "code": 1417,
+                    "comment": 212,
+                    "blank": 247
+                },
+                ".xml": {
+                    "code": 1746,
+                    "comment": 86,
+                    "blank": 104
+                },
+                ".html": {
+                    "code": 25,
+                    "comment": 2,
+                    "blank": 2
+                },
+                ".svg": {
+                    "code": 3,
+                    "comment": 0,
+                    "blank": 0
+                },
+                ".csv": {
+                    "code": 13,
+                    "comment": 0,
+                    "blank": 3
+                },
+                ".css": {
+                    "code": 96,
+                    "comment": 34,
+                    "blank": 21
+                },
+                "": {
+                    "code": 3,
+                    "comment": 0,
+                    "blank": 0
+                },
+                ".md": {
+                    "code": 21,
+                    "comment": 0,
+                    "blank": 5
+                },
+                ".js": {
+                    "code": 410,
+                    "comment": 60,
+                    "blank": 73
+                }
+            },
+            "filelist": [
+                {
+                    "blank": 0,
+                    "code": 2,
+                    "comment": 0,
+                    "filename": ".gitattributes"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": ".gitignore"
+                },
+                {
+                    "blank": 0,
+                    "code": 2,
+                    "comment": 0,
+                    "filename": "__init__.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 58,
+                    "comment": 0,
+                    "filename": "__manifest__.py"
+                },
+                {
+                    "filename": "__pycache__\\__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "__pycache__\\__init__.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "controllers\\__init__.py"
+                },
+                {
+                    "filename": "controllers\\__pycache__\\__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "controllers\\__pycache__\\portal.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 5,
+                    "code": 31,
+                    "comment": 2,
+                    "filename": "controllers\\portal.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 13,
+                    "comment": 0,
+                    "filename": "data\\cron.xml"
+                },
+                {
+                    "blank": 4,
+                    "code": 13,
+                    "comment": 14,
+                    "filename": "models\\__init__.py"
+                },
+                {
+                    "filename": "models\\__pycache__\\__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\__init__.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_assign_students_wizard.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_assign_students_wizard.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resource_add_children_wizard.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resource_assignment.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resource_attempt.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resource_submission.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resource_task.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resource_types.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resource_types.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resources.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_resources.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\aps_tasks.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\conditional_views.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\hr_employee.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\hr_employee.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_course.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_course.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_faculty.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_faculty.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_program_level.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_program_level.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_student.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_student.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_subject.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\op_subject.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\res_partner.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "models\\__pycache__\\res_partner.cpython-312.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 14,
+                    "code": 147,
+                    "comment": 8,
+                    "filename": "models\\aps_assign_students_wizard.py"
+                },
+                {
+                    "blank": 49,
+                    "code": 337,
+                    "comment": 27,
+                    "filename": "models\\aps_resource_submission.py"
+                },
+                {
+                    "blank": 29,
+                    "code": 175,
+                    "comment": 19,
+                    "filename": "models\\aps_resource_task.py"
+                },
+                {
+                    "blank": 3,
+                    "code": 11,
+                    "comment": 0,
+                    "filename": "models\\aps_resource_types.py"
+                },
+                {
+                    "blank": 67,
+                    "code": 306,
+                    "comment": 91,
+                    "filename": "models\\aps_resources.py"
+                },
+                {
+                    "blank": 4,
+                    "code": 17,
+                    "comment": 11,
+                    "filename": "models\\conditional_views.py"
+                },
+                {
+                    "blank": 3,
+                    "code": 11,
+                    "comment": 1,
+                    "filename": "models\\hr_employee.py"
+                },
+                {
+                    "blank": 3,
+                    "code": 6,
+                    "comment": 0,
+                    "filename": "models\\op_course.py"
+                },
+                {
+                    "blank": 10,
+                    "code": 48,
+                    "comment": 6,
+                    "filename": "models\\op_faculty.py"
+                },
+                {
+                    "blank": 3,
+                    "code": 7,
+                    "comment": 0,
+                    "filename": "models\\op_program_level.py"
+                },
+                {
+                    "blank": 11,
+                    "code": 54,
+                    "comment": 5,
+                    "filename": "models\\op_student.py"
+                },
+                {
+                    "blank": 5,
+                    "code": 17,
+                    "comment": 12,
+                    "filename": "models\\op_subject.py"
+                },
+                {
+                    "blank": 10,
+                    "code": 65,
+                    "comment": 8,
+                    "filename": "models\\res_partner.py"
+                },
+                {
+                    "blank": 5,
+                    "code": 21,
+                    "comment": 0,
+                    "filename": "models\\structure.md"
+                },
+                {
+                    "blank": 16,
+                    "code": 17,
+                    "comment": 0,
+                    "filename": "prompts.txt"
+                },
+                {
+                    "blank": 1,
+                    "code": 11,
+                    "comment": 0,
+                    "filename": "readme.txt"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "reports\\__init__.py"
+                },
+                {
+                    "filename": "reports\\__pycache__\\__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "reports\\__pycache__\\submission_report.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 11,
+                    "code": 35,
+                    "comment": 5,
+                    "filename": "reports\\submission_report.py"
+                },
+                {
+                    "blank": 11,
+                    "code": 167,
+                    "comment": 15,
+                    "filename": "reports\\submission_report.xml"
+                },
+                {
+                    "blank": 5,
+                    "code": 44,
+                    "comment": 2,
+                    "filename": "security\\aps_sis_security.xml"
+                },
+                {
+                    "blank": 1,
+                    "code": 13,
+                    "comment": 1,
+                    "filename": "security\\groups.xml"
+                },
+                {
+                    "blank": 3,
+                    "code": 13,
+                    "comment": 0,
+                    "filename": "security\\ir.model.access.csv"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "static\\description\\education.svg"
+                },
+                {
+                    "filename": "static\\description\\icon.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 25,
+                    "comment": 2,
+                    "filename": "static\\description\\index.html"
+                },
+                {
+                    "blank": 9,
+                    "code": 40,
+                    "comment": 19,
+                    "filename": "static\\src\\css\\aps_sis.css"
+                },
+                {
+                    "blank": 2,
+                    "code": 9,
+                    "comment": 1,
+                    "filename": "static\\src\\css\\clickable_many2many_tags.css"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 4,
+                    "filename": "static\\src\\css\\openeducat.css"
+                },
+                {
+                    "blank": 5,
+                    "code": 12,
+                    "comment": 2,
+                    "filename": "static\\src\\css\\ribbon_styles.css"
+                },
+                {
+                    "blank": 5,
+                    "code": 28,
+                    "comment": 6,
+                    "filename": "static\\src\\css\\statusbar_colors.css"
+                },
+                {
+                    "blank": 0,
+                    "code": 7,
+                    "comment": 2,
+                    "filename": "static\\src\\css\\ui_tweaks.css"
+                },
+                {
+                    "filename": "static\\src\\img\\exam.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\file.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\Knowt (Note).png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\Knowt (Quiz).png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\library.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\menu_icon.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\art.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\beach-ball.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\book.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\craft.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\data-science.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\drawing.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\educational-tool.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\electives.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\english.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\entrepreneur.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\humanities.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\interview (1).png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "static\\src\\img\\subject_icons\\interview.svg"
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\itc.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\learning.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\map.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\maths.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\music.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\myanmar-geog.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\myanmar-history.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\myanmar.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\number-2.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\number-3.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\number-5.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\number-four.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\number-one.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\art.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\book.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "static\\src\\img\\subject_icons\\old\\calculator.svg"
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\english.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\humanities.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\itc.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\maths.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\music.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\myanmar.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\pc.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\pe.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\science.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\old\\toe.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\parabola.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\pc.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\pe.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\quantum-computing.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\science.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\scissors.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\seven.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\six.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\Story.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\toe.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\values.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\subject_icons\\writing.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\test (1).png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\test.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\textbook.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "static\\src\\img\\youtube.png",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 5,
+                    "code": 57,
+                    "comment": 1,
+                    "filename": "static\\src\\js\\clickable_many2many_tags.js"
+                },
+                {
+                    "blank": 18,
+                    "code": 32,
+                    "comment": 29,
+                    "filename": "static\\src\\js\\float_sentinel_widget.js"
+                },
+                {
+                    "blank": 4,
+                    "code": 11,
+                    "comment": 6,
+                    "filename": "static\\src\\js\\hide_g2_popup.js"
+                },
+                {
+                    "blank": 14,
+                    "code": 114,
+                    "comment": 8,
+                    "filename": "static\\src\\js\\parent_child_name_field.js"
+                },
+                {
+                    "blank": 6,
+                    "code": 39,
+                    "comment": 10,
+                    "filename": "static\\src\\js\\percentpie_ranged_widget.js"
+                },
+                {
+                    "blank": 9,
+                    "code": 61,
+                    "comment": 1,
+                    "filename": "static\\src\\js\\recent_submissions_widget.js"
+                },
+                {
+                    "blank": 7,
+                    "code": 42,
+                    "comment": 1,
+                    "filename": "static\\src\\js\\resource_links_widget.js"
+                },
+                {
+                    "blank": 10,
+                    "code": 54,
+                    "comment": 4,
+                    "filename": "static\\src\\js\\url_icon_widget.js"
+                },
+                {
+                    "blank": 0,
+                    "code": 13,
+                    "comment": 0,
+                    "filename": "static\\src\\xml\\parent_child_name_field.xml"
+                },
+                {
+                    "blank": 4,
+                    "code": 12,
+                    "comment": 0,
+                    "filename": "static\\src\\xml\\percentpie_ranged_field.xml"
+                },
+                {
+                    "blank": 0,
+                    "code": 29,
+                    "comment": 0,
+                    "filename": "static\\src\\xml\\resource_links_field.xml"
+                },
+                {
+                    "blank": 0,
+                    "code": 12,
+                    "comment": 0,
+                    "filename": "static\\src\\xml\\templates.xml"
+                },
+                {
+                    "blank": 5,
+                    "code": 18,
+                    "comment": 0,
+                    "filename": "tests\\test_aps_resources.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 54,
+                    "comment": 1,
+                    "filename": "views\\aps_assign_students_wizard_views.xml"
+                },
+                {
+                    "blank": 3,
+                    "code": 38,
+                    "comment": 1,
+                    "filename": "views\\aps_resource_custom_name_views.xml"
+                },
+                {
+                    "blank": 15,
+                    "code": 313,
+                    "comment": 11,
+                    "filename": "views\\aps_resource_submission_views.xml"
+                },
+                {
+                    "blank": 17,
+                    "code": 208,
+                    "comment": 6,
+                    "filename": "views\\aps_resource_submission_views_for_students.xml"
+                },
+                {
+                    "blank": 3,
+                    "code": 116,
+                    "comment": 4,
+                    "filename": "views\\aps_resource_task_views.xml"
+                },
+                {
+                    "blank": 2,
+                    "code": 43,
+                    "comment": 1,
+                    "filename": "views\\aps_resource_types_views.xml"
+                },
+                {
+                    "blank": 12,
+                    "code": 294,
+                    "comment": 10,
+                    "filename": "views\\aps_resources_views.xml"
+                },
+                {
+                    "blank": 11,
+                    "code": 44,
+                    "comment": 7,
+                    "filename": "views\\aps_sis_menu.xml"
+                },
+                {
+                    "blank": 7,
+                    "code": 68,
+                    "comment": 8,
+                    "filename": "views\\op_course_views.xml"
+                },
+                {
+                    "blank": 0,
+                    "code": 15,
+                    "comment": 2,
+                    "filename": "views\\op_faculty_views.xml"
+                },
+                {
+                    "blank": 3,
+                    "code": 52,
+                    "comment": 4,
+                    "filename": "views\\op_program_level_views.xml"
+                },
+                {
+                    "blank": 3,
+                    "code": 48,
+                    "comment": 4,
+                    "filename": "views\\op_student_course_views.xml"
+                },
+                {
+                    "blank": 2,
+                    "code": 28,
+                    "comment": 4,
+                    "filename": "views\\op_subject_views.xml"
+                },
+                {
+                    "blank": 0,
+                    "code": 41,
+                    "comment": 0,
+                    "filename": "views\\portal_templates.xml"
+                },
+                {
+                    "blank": 2,
+                    "code": 39,
+                    "comment": 5,
+                    "filename": "views\\res_partner_views.xml"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "wizard\\__init__.py"
+                },
+                {
+                    "filename": "wizard\\__pycache__\\__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "wizard\\__pycache__\\submission_report_wizard.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 11,
+                    "code": 56,
+                    "comment": 3,
+                    "filename": "wizard\\submission_report_wizard.py"
+                },
+                {
+                    "blank": 3,
+                    "code": 42,
+                    "comment": 0,
+                    "filename": "wizard\\submission_report_wizard_views.xml"
+                }
+            ]
+        }
+    ]
+}

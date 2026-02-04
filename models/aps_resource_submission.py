@@ -114,7 +114,9 @@ class APSResourceSubmission(models.Model):
     @api.depends('date_assigned')
     def _compute_submission_active(self):
         for record in self:
-            record.submission_active = (record.date_assigned <= fields.Date.today())
+            if record.date_assigned:
+                if (record.date_assigned <= fields.Date.today()) != record.submission_active:
+                    record.submission_active = (record.date_assigned <= fields.Date.today())
 
     @api.model
     def recompute_submission_active_status(self):
@@ -139,9 +141,6 @@ class APSResourceSubmission(models.Model):
                 for node in arch.xpath("//field"):
                     
                     if node.get('name') not in  ['answer','score','review_requested_by']:
-                        if node.get('readonly'): continue  # If the readonly status has been explicitly set, skip it
-                        node.set('readonly', 'not is_current_user_faculty')
-                        # Disable the ability to open the resource from student view
                         options_str = node.get('options') or '{}'
                         try:
                             # Try parsing as JSON first
@@ -155,6 +154,10 @@ class APSResourceSubmission(models.Model):
                                 options = {}
                         options['no_open'] = "not is_current_user_faculty"
                         node.set('options', json.dumps(options))
+                        
+                        if node.get('readonly'): continue  # If the readonly status has been explicitly set, skip it
+                        node.set('readonly', 'not is_current_user_faculty')
+                        # Disable the ability to open the resource from student view
         return arch, view
 
     @api.depends('feedback')
@@ -398,6 +401,8 @@ class APSResourceSubmission(models.Model):
     def copy(self, default=None):
         if default is None:
             default = {}
+        default['answer'] = None
+        default['feedback'] = None
         default['date_assigned'] = fields.Date.today()
         default['date_submitted'] = False
         default['date_completed'] = False

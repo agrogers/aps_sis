@@ -7,9 +7,9 @@
         <field name="arch" type="xml">
             <search string="Search Submissions">
                 <searchpanel>
-                    <field name="subjects" string="Subjects" icon="fa-book" enable_counters="1" select="multi"/>                    
                     <field name="state" string="State" icon="fa-clock" enable_counters="1" select="multi"/>
                     <field name="due_status" string="Due Status" icon="fa-clock" enable_counters="1" select="multi"/>
+                    <field name="subjects" string="Subjects" icon="fa-book" enable_counters="1" select="multi"/>                    
                     <field name="student_id" string="Student" icon="fa-user" enable_counters="1" select="multi"/>
                 </searchpanel>
                 <field name="display_name" string="Submission"/>
@@ -29,17 +29,17 @@
                 <filter string="Due in Next 7 Days" name="due_next_7_days" domain="[('date_due', '&gt;=', time.strftime('%Y-%m-%d')), ('date_due', '&lt;=', (datetime.datetime.now() + datetime.timedelta(days=7)).to_utc().strftime('%Y-%m-%d'))]"/>
                 <filter string="Overdue" name="overdue" domain="[('state', '=', 'assigned'), ('date_due', '&lt;', time.strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <separator/>
+                <filter string="Has Answer" name="has_answer" domain="[('has_answer', '=', True)]"/>
+                <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
+                <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
+                <separator/>
                 <filter string="Assigned" name="assigned" domain="[('state', '=', 'assigned')]"/>
                 <filter string="Submitted" name="submitted" domain="[('state', '=', 'submitted')]"/>
                 <filter string="Completed" name="completed" domain="[('state', '=', 'complete')]"/>
                 <filter string="Late" name="late" domain="[('due_status', '=', 'late')]"/>
                 <filter string="On Time" name="on_time" domain="[('due_status', '=', 'on-time')]"/>
                 <filter string="Early" name="early" domain="[('due_status', '=', 'early')]"/>
-                <separator/>
-                <filter string="Root Resources" name="root_resources" domain="[('resource_id.parent_ids', '=', False)]"/>
-                <filter string="Has Answer" name="has_answer" domain="[('has_answer', '=', True)]"/>
-                <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
-                <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
+                <filter string="Root Resource" name="root_resource" domain="[('resource_id.parent_ids', '=', False)]"/>
                 <separator/>
                 <filter string="Edited in Last 5 Minutes" name="edited_last_5_minutes" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(minutes=5)).to_utc().strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <filter string="Edited Today" name="edited_today" domain="[('write_date', '>=', time.strftime('%Y-%m-%d'))]"/>
@@ -87,6 +87,7 @@
                 <field name="submission_order" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
+                <field name="write_date" optional="hide"/>
                 <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
             </list>
         </field>

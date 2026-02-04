@@ -1,0 +1,194 @@
+===============================================================================
+EXTENSION NAME : linecounter
+EXTENSION VERSION : 0.2.7
+-------------------------------------------------------------------------------
+count time : 2026-01-27 00:10:19
+count workspace : c:\Git\Odoo_Custom_Addons\_live\aps_sis
+total files : 168
+total code lines : 3762
+total comment lines : 394
+total blank lines : 472
+
+    statistics
+   |      extension|     total code|  total comment|    total blank|percent|
+   -------------------------------------------------------------------------
+   |           .txt|             28|              0|             17|   0.74|
+   |            .py|           1417|            212|            247|     38|
+   |           .xml|           1746|             86|            104|     46|
+   |          .html|             25|              2|              2|   0.66|
+   |           .svg|              3|              0|              0|  0.080|
+   |           .csv|             13|              0|              3|   0.35|
+   |           .css|             96|             34|             21|    2.6|
+   |               |              3|              0|              0|  0.080|
+   |            .md|             21|              0|              5|   0.56|
+   |            .js|            410|             60|             73|     11|
+   -------------------------------------------------------------------------
+.gitattributes, code is 2, comment is 0, blank is 0.
+.gitignore, code is 1, comment is 0, blank is 0.
+__init__.py, code is 2, comment is 0, blank is 0.
+__manifest__.py, code is 58, comment is 0, blank is 0.
+__pycache__\__init__.cpython-310.pyc, it is a binary file.
+__pycache__\__init__.cpython-312.pyc, it is a binary file.
+controllers\__init__.py, code is 1, comment is 0, blank is 0.
+controllers\__pycache__\__init__.cpython-310.pyc, it is a binary file.
+controllers\__pycache__\portal.cpython-310.pyc, it is a binary file.
+controllers\portal.py, code is 31, comment is 2, blank is 5.
+data\cron.xml, code is 13, comment is 0, blank is 0.
+models\__init__.py, code is 13, comment is 14, blank is 4.
+models\__pycache__\__init__.cpython-310.pyc, it is a binary file.
+models\__pycache__\__init__.cpython-312.pyc, it is a binary file.
+models\__pycache__\aps_assign_students_wizard.cpython-310.pyc, it is a binary file.
+models\__pycache__\aps_assign_students_wizard.cpython-312.pyc, it is a binary file.
+models\__pycache__\aps_resource_add_children_wizard.cpython-312.pyc, it is a binary file.
+models\__pycache__\aps_resource_assignment.cpython-312.pyc, it is a binary file.
+models\__pycache__\aps_resource_attempt.cpython-312.pyc, it is a binary file.
+models\__pycache__\aps_resource_submission.cpython-310.pyc, it is a binary file.
+models\__pycache__\aps_resource_task.cpython-310.pyc, it is a binary file.
+models\__pycache__\aps_resource_types.cpython-310.pyc, it is a binary file.
+models\__pycache__\aps_resource_types.cpython-312.pyc, it is a binary file.
+models\__pycache__\aps_resources.cpython-310.pyc, it is a binary file.
+models\__pycache__\aps_resources.cpython-312.pyc, it is a binary file.
+models\__pycache__\aps_tasks.cpython-312.pyc, it is a binary file.
+models\__pycache__\conditional_views.cpython-310.pyc, it is a binary file.
+models\__pycache__\hr_employee.cpython-310.pyc, it is a binary file.
+models\__pycache__\hr_employee.cpython-312.pyc, it is a binary file.
+models\__pycache__\op_course.cpython-310.pyc, it is a binary file.
+models\__pycache__\op_course.cpython-312.pyc, it is a binary file.
+models\__pycache__\op_faculty.cpython-310.pyc, it is a binary file.
+models\__pycache__\op_faculty.cpython-312.pyc, it is a binary file.
+models\__pycache__\op_program_level.cpython-310.pyc, it is a binary file.
+models\__pycache__\op_program_level.cpython-312.pyc, it is a binary file.
+models\__pycache__\op_student.cpython-310.pyc, it is a binary file.
+models\__pycache__\op_student.cpython-312.pyc, it is a binary file.
+models\__pycache__\op_subject.cpython-310.pyc, it is a binary file.
+models\__pycache__\op_subject.cpython-312.pyc, it is a binary file.
+models\__pycache__\res_partner.cpython-310.pyc, it is a binary file.
+models\__pycache__\res_partner.cpython-312.pyc, it is a binary file.
+models\aps_assign_students_wizard.py, code is 147, comment is 8, blank is 14.
+models\aps_resource_submission.py, code is 337, comment is 27, blank is 49.
+models\aps_resource_task.py, code is 175, comment is 19, blank is 29.
+models\aps_resource_types.py, code is 11, comment is 0, blank is 3.
+models\aps_resources.py, code is 306, comment is 91, blank is 67.
+models\conditional_views.py, code is 17, comment is 11, blank is 4.
+models\hr_employee.py, code is 11, comment is 1, blank is 3.
+models\op_course.py, code is 6, comment is 0, blank is 3.
+models\op_faculty.py, code is 48, comment is 6, blank is 10.
+models\op_program_level.py, code is 7, comment is 0, blank is 3.
+models\op_student.py, code is 54, comment is 5, blank is 11.
+models\op_subject.py, code is 17, comment is 12, blank is 5.
+models\res_partner.py, code is 65, comment is 8, blank is 10.
+models\structure.md, code is 21, comment is 0, blank is 5.
+prompts.txt, code is 17, comment is 0, blank is 16.
+readme.txt, code is 11, comment is 0, blank is 1.
+reports\__init__.py, code is 1, comment is 0, blank is 0.
+reports\__pycache__\__init__.cpython-310.pyc, it is a binary file.
+reports\__pycache__\submission_report.cpython-310.pyc, it is a binary file.
+reports\submission_report.py, code is 35, comment is 5, blank is 11.
+reports\submission_report.xml, code is 167, comment is 15, blank is 11.
+security\aps_sis_security.xml, code is 44, comment is 2, blank is 5.
+security\groups.xml, code is 13, comment is 1, blank is 1.
+security\ir.model.access.csv, code is 13, comment is 0, blank is 3.
+static\description\education.svg, code is 1, comment is 0, blank is 0.
+static\description\icon.png, it is a binary file.
+static\description\index.html, code is 25, comment is 2, blank is 2.
+static\src\css\aps_sis.css, code is 40, comment is 19, blank is 9.
+static\src\css\clickable_many2many_tags.css, code is 9, comment is 1, blank is 2.
+static\src\css\openeducat.css, code is 0, comment is 4, blank is 0.
+static\src\css\ribbon_styles.css, code is 12, comment is 2, blank is 5.
+static\src\css\statusbar_colors.css, code is 28, comment is 6, blank is 5.
+static\src\css\ui_tweaks.css, code is 7, comment is 2, blank is 0.
+static\src\img\exam.png, it is a binary file.
+static\src\img\file.png, it is a binary file.
+static\src\img\Knowt (Note).png, it is a binary file.
+static\src\img\Knowt (Quiz).png, it is a binary file.
+static\src\img\library.png, it is a binary file.
+static\src\img\menu_icon.png, it is a binary file.
+static\src\img\subject_icons\art.png, it is a binary file.
+static\src\img\subject_icons\beach-ball.png, it is a binary file.
+static\src\img\subject_icons\book.png, it is a binary file.
+static\src\img\subject_icons\craft.png, it is a binary file.
+static\src\img\subject_icons\data-science.png, it is a binary file.
+static\src\img\subject_icons\drawing.png, it is a binary file.
+static\src\img\subject_icons\educational-tool.png, it is a binary file.
+static\src\img\subject_icons\electives.png, it is a binary file.
+static\src\img\subject_icons\english.png, it is a binary file.
+static\src\img\subject_icons\entrepreneur.png, it is a binary file.
+static\src\img\subject_icons\humanities.png, it is a binary file.
+static\src\img\subject_icons\interview (1).png, it is a binary file.
+static\src\img\subject_icons\interview.svg, code is 1, comment is 0, blank is 0.
+static\src\img\subject_icons\itc.png, it is a binary file.
+static\src\img\subject_icons\learning.png, it is a binary file.
+static\src\img\subject_icons\map.png, it is a binary file.
+static\src\img\subject_icons\maths.png, it is a binary file.
+static\src\img\subject_icons\music.png, it is a binary file.
+static\src\img\subject_icons\myanmar-geog.png, it is a binary file.
+static\src\img\subject_icons\myanmar-history.png, it is a binary file.
+static\src\img\subject_icons\myanmar.png, it is a binary file.
+static\src\img\subject_icons\number-2.png, it is a binary file.
+static\src\img\subject_icons\number-3.png, it is a binary file.
+static\src\img\subject_icons\number-5.png, it is a binary file.
+static\src\img\subject_icons\number-four.png, it is a binary file.
+static\src\img\subject_icons\number-one.png, it is a binary file.
+static\src\img\subject_icons\old\art.png, it is a binary file.
+static\src\img\subject_icons\old\book.png, it is a binary file.
+static\src\img\subject_icons\old\calculator.svg, code is 1, comment is 0, blank is 0.
+static\src\img\subject_icons\old\english.png, it is a binary file.
+static\src\img\subject_icons\old\humanities.png, it is a binary file.
+static\src\img\subject_icons\old\itc.png, it is a binary file.
+static\src\img\subject_icons\old\maths.png, it is a binary file.
+static\src\img\subject_icons\old\music.png, it is a binary file.
+static\src\img\subject_icons\old\myanmar.png, it is a binary file.
+static\src\img\subject_icons\old\pc.png, it is a binary file.
+static\src\img\subject_icons\old\pe.png, it is a binary file.
+static\src\img\subject_icons\old\science.png, it is a binary file.
+static\src\img\subject_icons\old\toe.png, it is a binary file.
+static\src\img\subject_icons\parabola.png, it is a binary file.
+static\src\img\subject_icons\pc.png, it is a binary file.
+static\src\img\subject_icons\pe.png, it is a binary file.
+static\src\img\subject_icons\quantum-computing.png, it is a binary file.
+static\src\img\subject_icons\science.png, it is a binary file.
+static\src\img\subject_icons\scissors.png, it is a binary file.
+static\src\img\subject_icons\seven.png, it is a binary file.
+static\src\img\subject_icons\six.png, it is a binary file.
+static\src\img\subject_icons\Story.png, it is a binary file.
+static\src\img\subject_icons\toe.png, it is a binary file.
+static\src\img\subject_icons\values.png, it is a binary file.
+static\src\img\subject_icons\writing.png, it is a binary file.
+static\src\img\test (1).png, it is a binary file.
+static\src\img\test.png, it is a binary file.
+static\src\img\textbook.png, it is a binary file.
+static\src\img\youtube.png, it is a binary file.
+static\src\js\clickable_many2many_tags.js, code is 57, comment is 1, blank is 5.
+static\src\js\float_sentinel_widget.js, code is 32, comment is 29, blank is 18.
+static\src\js\hide_g2_popup.js, code is 11, comment is 6, blank is 4.
+static\src\js\parent_child_name_field.js, code is 114, comment is 8, blank is 14.
+static\src\js\percentpie_ranged_widget.js, code is 39, comment is 10, blank is 6.
+static\src\js\recent_submissions_widget.js, code is 61, comment is 1, blank is 9.
+static\src\js\resource_links_widget.js, code is 42, comment is 1, blank is 7.
+static\src\js\url_icon_widget.js, code is 54, comment is 4, blank is 10.
+static\src\xml\parent_child_name_field.xml, code is 13, comment is 0, blank is 0.
+static\src\xml\percentpie_ranged_field.xml, code is 12, comment is 0, blank is 4.
+static\src\xml\resource_links_field.xml, code is 29, comment is 0, blank is 0.
+static\src\xml\templates.xml, code is 12, comment is 0, blank is 0.
+tests\test_aps_resources.py, code is 18, comment is 0, blank is 5.
+views\aps_assign_students_wizard_views.xml, code is 54, comment is 1, blank is 0.
+views\aps_resource_custom_name_views.xml, code is 38, comment is 1, blank is 3.
+views\aps_resource_submission_views.xml, code is 313, comment is 11, blank is 15.
+views\aps_resource_submission_views_for_students.xml, code is 208, comment is 6, blank is 17.
+views\aps_resource_task_views.xml, code is 116, comment is 4, blank is 3.
+views\aps_resource_types_views.xml, code is 43, comment is 1, blank is 2.
+views\aps_resources_views.xml, code is 294, comment is 10, blank is 12.
+views\aps_sis_menu.xml, code is 44, comment is 7, blank is 11.
+views\op_course_views.xml, code is 68, comment is 8, blank is 7.
+views\op_faculty_views.xml, code is 15, comment is 2, blank is 0.
+views\op_program_level_views.xml, code is 52, comment is 4, blank is 3.
+views\op_student_course_views.xml, code is 48, comment is 4, blank is 3.
+views\op_subject_views.xml, code is 28, comment is 4, blank is 2.
+views\portal_templates.xml, code is 41, comment is 0, blank is 0.
+views\res_partner_views.xml, code is 39, comment is 5, blank is 2.
+wizard\__init__.py, code is 1, comment is 0, blank is 0.
+wizard\__pycache__\__init__.cpython-310.pyc, it is a binary file.
+wizard\__pycache__\submission_report_wizard.cpython-310.pyc, it is a binary file.
+wizard\submission_report_wizard.py, code is 56, comment is 3, blank is 11.
+wizard\submission_report_wizard_views.xml, code is 42, comment is 0, blank is 3.
+===============================================================================

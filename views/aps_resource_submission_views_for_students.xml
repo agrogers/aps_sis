@@ -48,8 +48,8 @@
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
-                    <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
-                    <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
+                    <button name="action_mark_submitted" string="Submit" type="object" class="btn-primary" invisible="state != 'assigned'"/>
+                    <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-secondary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon" title="Late" bg_color="bg-danger"
@@ -129,8 +129,8 @@
                             <group>
                                 <group>
                                     <field name="task_id" invisible="1"/>
-                                    <field name="student_id" readonly="1" options="{'no_open': True}"/>
-                                    <field name="resource_id" readonly="1" options="{'no_open': True}"/>
+                                    <field name="student_id" readonly="1"/>
+                                    <field name="resource_id" readonly="1"/>
                                     <field name="subjects" readonly="1" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
                                     <field name="assigned_by" />
