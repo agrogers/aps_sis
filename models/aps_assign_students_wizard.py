@@ -2,7 +2,7 @@ from odoo import models, fields, api
 
 class APSAssignStudentsWizardLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.line'
-    _description = 'Assign Students Wizard Line'
+    _description = 'APEX Assign Students Wizard Line'
 
     sequence = fields.Integer(string='Sequence', default=10)
     wizard_id = fields.Many2one('aps.assign.students.wizard', required=True)
@@ -25,7 +25,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
 
 class APSAssignStudentsWizard(models.TransientModel):
     _name = 'aps.assign.students.wizard'
-    _description = 'Assign Students to Resource Wizard'
+    _description = 'APEXAssign Students to Resource Wizard'
 
     resource_id = fields.Many2one('aps.resources', string='Resource', required=True, readonly=True)
     date_assigned = fields.Date(string='Date Assigned', required=True, default=fields.Date.today)

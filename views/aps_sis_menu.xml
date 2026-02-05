@@ -46,17 +46,19 @@
     <menuitem id="openeducat_core.menu_op_school_main" active="false"/>
 
     <!-- APS SIS Menu Structure -->
-    <menuitem id="menu_aps_root" name="APEX" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
-    <menuitem id="menu_aps_tasks" name="Academic Tasks" parent="menu_aps_root" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_aps_task_list" name="Tasks" parent="menu_aps_tasks" action="action_aps_resource_tasks" sequence="25" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_aps_resources" name="Resources" parent="menu_aps_tasks" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_aps_resource_types" name="Resource Types" parent="menu_aps_tasks" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_aps_submissions" name="Submissions" parent="menu_aps_tasks" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_aps_submissions_students" name="Student Submissions" parent="menu_aps_tasks" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_aps_submissions_score" name="Enter Scores" parent="menu_aps_tasks" action="action_aps_resource_submissions_score" sequence="40" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_aps_resource_custom_names" name="Custom Names" parent="menu_aps_tasks" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_root" name="APEX" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
 
+    <menuitem id="menu_apex_submissions" name="Submissions" parent="menu_apex_root" action="action_aps_resource_submissions" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_submissions_students" name="Student Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_submissions_score" name="Enter Scores" parent="menu_apex_submissions" action="action_aps_resource_submissions_score" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_task_list" name="Tasks" parent="menu_apex_submissions" action="action_aps_resource_tasks" sequence="250" groups="aps_sis.group_aps_teacher"/>
+
+    <menuitem id="menu_apex_configuration" name="Configuration" parent="menu_apex_root" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resources" name="Resources" parent="menu_apex_configuration" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resource_types" name="Resource Types" parent="menu_apex_configuration" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resource_custom_names" name="Custom Names" parent="menu_apex_configuration" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_teacher"/>
     <!-- Student Menus -->
-    <menuitem id="menu_aps_submissions_students_root_menu" name="My Submissions" parent="menu_aps_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
 
 </odoo>

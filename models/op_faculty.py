@@ -5,6 +5,7 @@ class OpFaculty(models.Model):
     _inherit = 'op.faculty'
 
     last_name = fields.Char(required=False)
+    birth_date = fields.Date(required=False, default="2000-01-01")
 
     def _compute_full_name(self):
         """Compute the full name from first, middle, and last names."""

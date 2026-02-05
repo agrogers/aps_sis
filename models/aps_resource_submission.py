@@ -10,7 +10,7 @@ sentinel_zero = -0.01
 
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
-    _description = 'Resource Submission'
+    _description = 'APEX Submission'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     display_name = fields.Char(
@@ -408,8 +408,12 @@ class APSResourceSubmission(models.Model):
         if 'state' in vals:
             for record in self:
                 # If changing to submitted and no submission date, set it to today
-                if vals['state'] == 'submitted' and not record.date_submitted and 'date_submitted' not in vals:
-                    vals['date_submitted'] = fields.Date.today()
+                if vals['state'] == 'submitted':
+                    if record.subjects:
+                        record._notify_new_submission(subject.id for subject in record.subjects)
+
+                    if not record.date_submitted and 'date_submitted' not in vals:
+                        vals['date_submitted'] = fields.Date.today()
                 
                 # If changing to complete and no completion date, set it to today
                 elif vals['state'] == 'complete' and not record.date_completed and 'date_completed' not in vals:
@@ -418,6 +422,8 @@ class APSResourceSubmission(models.Model):
                     if not record.date_submitted and 'date_submitted' not in vals:
                         vals['date_submitted'] = fields.Date.today()
         
+        old_faculty_map = {rec.id: set(rec.review_requested_by.ids) for rec in self}
+
         result = super().write(vals)
         
         # Update task state when submission state changes
@@ -427,7 +433,6 @@ class APSResourceSubmission(models.Model):
             if tasks:
                 tasks._update_state_from_submissions()
 
-        old_faculty_map = {rec.id: set(rec.review_requested_by.ids) for rec in self}
 
         if 'review_requested_by' in vals:
             for record in self:
@@ -440,6 +445,25 @@ class APSResourceSubmission(models.Model):
                 if added_ids:
                     record._notify_new_faculty_reviewers(added_ids)
         return result
+    
+    def _notify_new_submission(self, subject_ids):
+        """Creates an activity for each newly added faculty member."""
+        # Search for faculty records to get their associated User IDs
+
+        subjects = self.env['op.subject'].browse(list(subject_ids))
+        
+        for subject in subjects:
+            # Most op.faculty models link to a user via a 'user_id' field
+            for faculty in subject.faculty_ids:
+                if faculty.emp_id.user_id:
+                    self.activity_schedule(
+                        'mail.mail_activity_data_todo',
+                        user_id=faculty.emp_id.user_id.id,
+                        summary=_(f"New submission by {self.student_id.display_name} for {self.display_name}"),
+                        note=_(f"A task has been submitted which you may need to review or complete."),
+                        date_deadline=fields.Date.add(fields.Date.today(), days=1),  
+                        request_partner_id=self.env.user.partner_id.id
+                    )
 
     def _notify_new_faculty_reviewers(self, faculty_ids):
         """Creates an activity for each newly added faculty member."""
@@ -448,12 +472,14 @@ class APSResourceSubmission(models.Model):
         
         for faculty in faculties:
             # Most op.faculty models link to a user via a 'user_id' field
-            if faculty.user_id:
+            if faculty.emp_id.user_id:
                 self.activity_schedule(
                     'mail.mail_activity_data_todo',
-                    user_id=faculty.user_id.id,
-                    summary=_(f"Review Requested by {self.student_id} for {self.display_name}"),
-                    note=_(f"You have been requested to review the resource submission: {self.display_name}")
+                    user_id=faculty.emp_id.user_id.id,
+                    summary=_(f"Review Requested by {self.env.user.display_name} for {self.display_name} ({self.student_id.display_name})"),
+                    note=_(f"You have been requested to review the resource submission: {self.display_name}"),
+                    date_deadline=fields.Date.add(fields.Date.today(), days=1),  
+                    request_partner_id=self.env.user.partner_id.id
                 )
 
     @api.model_create_multi
@@ -485,3 +511,4 @@ class APSResourceSubmission(models.Model):
         default['score'] = sentinel_zero
         # date_due will be recomputed based on the new date_assigned
         return super().copy(default)
+    

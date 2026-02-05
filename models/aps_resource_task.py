@@ -5,7 +5,7 @@ from odoo import models, fields, api
 
 class APSResourceTask(models.Model):
     _name = 'aps.resource.task'
-    _description = 'Resource Task'
+    _description = 'APEX Task'
     
     _sql_constraints = [
         ('unique_resource_student', 'UNIQUE(resource_id, student_id)', 'This student is already assigned to this resource.'),

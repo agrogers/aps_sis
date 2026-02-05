@@ -12,4 +12,5 @@ class HrEmployee(models.Model):
             for faculty in faculty_records:
                 if faculty.emp_id.id in self.ids:
                     faculty.mobile = faculty.emp_id.mobile_phone or faculty.emp_id.work_phone
+                    
         return res

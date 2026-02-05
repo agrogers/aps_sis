@@ -24,7 +24,7 @@ class ResourceCustomName(models.Model):
 
 class APSResource(models.Model):
     _name = 'aps.resources'
-    _description = 'Resource (APS)'
+    _description = 'APEX Resources'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     # Removed _parent_store since we now support multiple parents
     _order = 'sequence, name'
