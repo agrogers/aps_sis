@@ -3,7 +3,7 @@
     <!-- Search view for student submissions -->
     <record id="view_aps_resource_submission_search_for_students" model="ir.ui.view">
         <field name="name">aps.resource.submission.search.for.students</field>
-        <field name="model">aps.resource.submission</field>
+        <field name="model">aps.resource.submission</field>      
         <field name="arch" type="xml">
             <search string="Search Submissions">
                 <searchpanel>
@@ -79,7 +79,19 @@
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <!-- <field name="date_due" optional="show" options={"decoratements": {
+                    'decorate-0': 'days_till_due &lt;= 0',
+                    'decorate-1': 'days_till_due == 1',
+                    'decorate-2': 'days_till_due == 2',
+                    'decorate-3': 'days_till_due == 3'}}/> -->
+                <field name="date_due" />
+                <field name="date_due" 
+                    widget="badge_decorator"
+                    options="{'css_classes': {
+                        'red0': 'days_till_due &lt;= 0',
+                        'red2': 'days_till_due == 1',
+                        'red4': 'days_till_due == 2'
+                    }}"/>                    
                 <field name="has_question" string="Question" readonly="1" optional="hide"/>
                 <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>

@@ -51,6 +51,8 @@
             'aps_sis/static/src/js/parent_child_name_field.js',
 			'aps_sis/static/src/xml/parent_child_name_field.xml',			
             'aps_sis/static/src/img/menu_icon.png',
+            'aps_sis/static/src/js/badge_decorator_widget.js',
+            'aps_sis/static/src/xml/badge_decorator_field.xml',
 		],
 	},
 	'installable': True,

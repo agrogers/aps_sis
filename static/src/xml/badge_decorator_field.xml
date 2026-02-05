@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-name="aps_sis.BadgeDecorator">
+        <span t-attf-class="#{activeDecorations}">
+            This: <t t-esc="props.record.data[props.name]"/>
+        </span>
+    </t>
+</templates>

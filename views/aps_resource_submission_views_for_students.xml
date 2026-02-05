@@ -19,7 +19,7 @@
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="show"/>
-                <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
+                <field name="date_due" widget="badge" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="show"/>
                 <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
@@ -35,6 +35,7 @@
                 <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
+                <!-- <field name="days_till_due" class="d-none" label_class="d-none"/> -->
             </list>
         </field>
     </record>
@@ -157,6 +158,9 @@
         <field name="name">My Submissions</field>
         <field name="res_model">aps.resource.submission</field>
         <field name="view_mode">list,form</field>
+        <field name="context">{
+            'searchpanel_default_state': ['assigned']
+        }</field>           
     </record>
 
     <!-- Bind specific views to the action -->
@@ -164,7 +168,7 @@
         <field name="sequence">1</field>
         <field name="view_mode">list</field>
         <field name="view_id" ref="view_aps_resource_submission_list_for_students"/>
-        <field name="act_window_id" ref="action_aps_resource_submissions_for_students"/>
+        <field name="act_window_id" ref="action_aps_resource_submissions_for_students"/>       
     </record>
 
     <record id="action_aps_resource_submissions_for_students_view_form" model="ir.actions.act_window.view">

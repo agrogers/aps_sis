@@ -47,7 +47,79 @@ div[name="score"].fixed-score-width {
     transform: scale(1.1);
 }
 
+.text-red0 {
+    color: red !important;
+}
+/* Define the flashing animation */
+@keyframes pulse-red {
+    0% {
+        background-color: rgba(255, 0, 0, 0.8) !;
+    }
+    50% {
+        background-color: rgba(255, 0, 0, 0.2); /* Fades out */
+    }
+    100% {
+        background-color: rgba(255, 0, 0, 0.8); /* Fades back in */
+    }
+}
+.text-bg-red-pulsing {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.8);
+    /* Apply the animation */
+    animation: pulse-red 1.5s infinite !important; 
+    font-weight: bold;
+    border-radius: 2px !important;
+}
 
+.text-bg-red0 {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.9);
+}
+.text-red1 {
+    color: red !important;
+}
+.text-bg-red1 {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.8) !important;
+}
+.text-red2 {
+    color: rgb(255, 24, 24) !important;
+}
+.text-bg-red2 {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.6) !important;
+}
+/* Level 3 - Deep Crimson / High Alert */
+.text-red3 {
+    color: rgb(180, 0, 0) !important;
+}
+.text-bg-red3 {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.5) !important;
+}
+
+.text-red4 {
+    color: rgb(220, 50, 50) !important;
+}
+.text-bg-red4 {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.4) !important;
+}
+
+.text-red5 {
+    color: rgb(240, 100, 100) !important;
+}
+.text-bg-red5 {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.3) !important;
+}
+.text-red6 {
+    color: rgb(255, 150, 150) !important;
+}
+.text-bg-red6 {
+    color: #000000 !important;
+    background-color: rgba(255, 0, 0, 0.1) !important;
+}
 
 /* Target the specific cell type in Odoo 18 list views 
 .o_list_table td.o_percentpie_ranged_cell {

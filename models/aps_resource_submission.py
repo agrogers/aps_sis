@@ -57,6 +57,7 @@ class APSResourceSubmission(models.Model):
         ('on-time', 'On Time'),
         ('early', 'Early'),
     ], string='Due Status', compute='_compute_due_status', store=True)
+    days_till_due = fields.Integer(compute='_compute_days_till_due')  # creates a class used to highlight records when they are nearing their due date
     actual_duration = fields.Float(string='Actual Duration (hours)', digits=(16, 1))
     feedback = fields.Html(string='Feedback')
     answer = fields.Html(string='Answer')
@@ -111,6 +112,16 @@ class APSResourceSubmission(models.Model):
     )
     submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True)
 
+    @api.depends('date_due')
+    def _compute_days_till_due(self):
+        today = fields.Date.today()
+        for record in self:
+            if not record.date_due or record.state != 'assigned':
+                record.days_till_due = 999  # Arbitrary large number for no due date, essentially "not due"
+                continue
+            
+            record.days_till_due = (record.date_due - today).days
+
     @api.depends('date_assigned')
     def _compute_submission_active(self):
         for record in self:
@@ -135,6 +146,22 @@ class APSResourceSubmission(models.Model):
 
     @api.model
     def _get_view(self, view_id=None, view_type='form', **options):
+        """
+        Intercepts the view loading process. If a student is logged in,
+        force the use of student-specific views regardless of what was requested.
+        """
+        
+        # 1. Check if user is a student
+        if self.env.user.has_group('aps_resource_submission.group_aps_student'):
+            
+            # 2. Redirect 'tree' (list) requests to the student list view
+            if view_type == 'list': # In v18, 'tree' is often 'list' in the backend
+                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_list_for_students').id
+                
+            # 3. Redirect 'form' requests to the student form view
+            elif view_type == 'form':
+                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_form_for_students').id
+
         arch, view = super()._get_view(view_id, view_type, **options)
         if view_type == 'form':
             if view.name == 'aps.resource.submission.form.for.students':
