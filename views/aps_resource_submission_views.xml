@@ -79,27 +79,27 @@
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <!-- <field name="date_due" optional="show" options={"decoratements": {
-                    'decorate-0': 'days_till_due &lt;= 0',
-                    'decorate-1': 'days_till_due == 1',
-                    'decorate-2': 'days_till_due == 2',
-                    'decorate-3': 'days_till_due == 3'}}/> -->
-                <field name="date_due" />
                 <field name="date_due" 
                     widget="badge_decorator"
-                    options="{'css_classes': {
-                        'red0': 'days_till_due &lt;= 0',
-                        'red2': 'days_till_due == 1',
-                        'red4': 'days_till_due == 2'
+                    options="{'date_format': 'D-MMM-YY',
+                        'default_classes': 'rounded-pill',
+                        'expression_classes': {
+                            'red-pulsing': 'days_till_due &lt;= 0',
+                            'red2': 'days_till_due == 1',
+                            'red4': 'days_till_due == 2',
+                            'red6': 'days_till_due == 3',
+                            'grey': 'days_till_due &gt; 3'                            
                     }}"/>                    
                 <field name="has_question" string="Question" readonly="1" optional="hide"/>
                 <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
                 <field name="submission_label" optional="hide"/>
                 <field name="submission_order" optional="hide"/>
+                <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <field name="write_date" optional="hide"/>
+                <field name="days_till_due" optional="hide"/>
                 <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
             </list>
         </field>
@@ -132,6 +132,7 @@
                 <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="submission_label" optional="hide" readonly="1"/>
                 <field name="submission_order" optional="hide" readonly="1"/>
+                <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>

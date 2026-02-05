@@ -120,6 +120,13 @@ div[name="score"].fixed-score-width {
     color: #000000 !important;
     background-color: rgba(255, 0, 0, 0.1) !important;
 }
+.text-grey {
+    color: rgb(128, 128, 128) !important;
+}
+.text-bg-grey {
+    color: #000000 !important;
+    background-color: rgba(128, 128, 128, 0.1) !important;
+}
 
 /* Target the specific cell type in Odoo 18 list views 
 .o_list_table td.o_percentpie_ranged_cell {

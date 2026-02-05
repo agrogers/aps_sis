@@ -1,6 +1,6 @@
 import json
 import ast
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import logging
 from lxml import etree
@@ -248,13 +248,14 @@ class APSResourceSubmission(models.Model):
             elif record.score == sentinel_zero or not record.out_of_marks or record.out_of_marks == sentinel_zero:
                 record.result_percent = 0
         
-    @api.depends('task_id.student_id.name', 'resource_id.display_name', 'submission_label')
+    @api.depends('date_assigned', 'submission_name')
     def _compute_display_name(self):
         for record in self:
-            student_name = record.task_id.student_id.name if record.task_id.student_id else 'Unknown Student'
-            resource_name = record.resource_id.display_name if record.resource_id else 'Unknown Resource'
-            label = f">{record.submission_label} " if record.submission_label else ""
-            record.display_name = f"{resource_name}{label}({student_name})"
+            # student_name = record.task_id.student_id.name if record.task_id.student_id else 'Unknown Student'
+            # resource_name = record.resource_id.display_name if record.resource_id else 'Unknown Resource'
+
+            # label = f">{record.submission_label} " if record.submission_label else ""
+            record.display_name = f"{record.submission_name} ({record.date_assigned})"
 
     def _get_faculty_for_current_user(self):
         """Get the faculty record for the current user"""
@@ -305,6 +306,23 @@ class APSResourceSubmission(models.Model):
         self.write({
             'state': 'submitted',
             'date_submitted': fields.Date.today(),
+        })
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Done',
+                'message': f"Processed {len(self)} submission(s).",
+                'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
+
+    def action_mark_unsubmitted(self):
+        self.write({
+            'state': 'assigned',
+            'date_submitted': False,
         })
 
         return {
@@ -408,7 +426,35 @@ class APSResourceSubmission(models.Model):
             tasks = self.mapped('task_id')
             if tasks:
                 tasks._update_state_from_submissions()
+
+        old_faculty_map = {rec.id: set(rec.review_requested_by.ids) for rec in self}
+
+        if 'review_requested_by' in vals:
+            for record in self:
+                old_ids = old_faculty_map.get(record.id, set())
+                new_ids = set(record.review_requested_by.ids)
+                
+                # Find only the IDs that are in the new set but weren't in the old set
+                added_ids = new_ids - old_ids
+                
+                if added_ids:
+                    record._notify_new_faculty_reviewers(added_ids)
         return result
+
+    def _notify_new_faculty_reviewers(self, faculty_ids):
+        """Creates an activity for each newly added faculty member."""
+        # Search for faculty records to get their associated User IDs
+        faculties = self.env['op.faculty'].browse(list(faculty_ids))
+        
+        for faculty in faculties:
+            # Most op.faculty models link to a user via a 'user_id' field
+            if faculty.user_id:
+                self.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=faculty.user_id.id,
+                    summary=_(f"Review Requested by {self.student_id} for {self.display_name}"),
+                    note=_(f"You have been requested to review the resource submission: {self.display_name}")
+                )
 
     @api.model_create_multi
     def create(self, vals_list):

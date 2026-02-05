@@ -19,8 +19,17 @@
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="show"/>
-                <field name="date_due" widget="badge" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
-                <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
+                <field name="date_due" 
+                    widget="badge_decorator"
+                    options="{'date_format': 'D-MMM-YY',
+                        'default_classes': 'rounded-pill',
+                        'expression_classes': {
+                            'red-pulsing': 'days_till_due &lt;= 0',
+                            'red2': 'days_till_due == 1',
+                            'red4': 'days_till_due == 2',
+                            'red6': 'days_till_due == 3',
+                            'grey': 'days_till_due &gt; 3'                            
+                    }}"/>                   <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="show"/>
                 <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show"/>
@@ -35,7 +44,7 @@
                 <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
-                <!-- <field name="days_till_due" class="d-none" label_class="d-none"/> -->
+                <field name="days_till_due" optional="hide"/>
             </list>
         </field>
     </record>
@@ -49,6 +58,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
+                    <button name="action_mark_unsubmitted" string="Unsubmit" type="object" class="btn-secondary" invisible="state != 'submitted'"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-primary" invisible="state != 'assigned'"/>
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-secondary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
                 </header>
