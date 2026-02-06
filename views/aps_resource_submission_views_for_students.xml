@@ -160,7 +160,7 @@
                     </notebook>
                 </sheet>
                 <chatter groups="aps_sis.group_aps_teacher"/>
-            </form>
+          </form>
         </field>
     </record>
 

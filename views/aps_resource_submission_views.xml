@@ -228,13 +228,6 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <!-- <widget name="web_ribbon" title="Assigned" bg_color="bg-warning"
-                            invisible="state != 'assigned'"/>
-                    <widget name="web_ribbon" title="Submitted" bg_color="bg-info" 
-                            invisible="state != 'submitted'"/>
-                    <widget name="web_ribbon" title="Finalised" bg_color="bg-success" 
-                            invisible="state != 'complete'"/> -->
-                    
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
