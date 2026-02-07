@@ -350,6 +350,22 @@ class APSResourceSubmission(models.Model):
                 'next': {'type': 'ir.actions.act_window_close'},
             }
         }
+
+    def action_set_due_status_on_time(self):
+        self.write({
+            'due_status': 'on-time',
+        })
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Done',
+                'message': f"Processed {len(self)} submission(s).",
+                'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
         
     @api.onchange('state')
     def _onchange_state_set_dates(self):
@@ -403,7 +419,10 @@ class APSResourceSubmission(models.Model):
             'target': 'current',
         }
 
+# Region - Write Override
+
     def write(self, vals):
+        
         # Handle automatic date setting based on state changes
         if 'state' in vals:
             for record in self:
@@ -445,7 +464,8 @@ class APSResourceSubmission(models.Model):
                 if added_ids:
                     record._notify_new_faculty_reviewers(added_ids)
         return result
-    
+
+# Region - Activity Notifications    
     def _notify_new_submission(self, subject_ids):
         """Creates an activity for each newly added faculty member."""
         # Search for faculty records to get their associated User IDs

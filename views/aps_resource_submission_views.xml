@@ -342,5 +342,14 @@
         <field name="code">action = records.action_mark_complete()</field>
     </record>
 
+    <record id="action_set_due_status_on_time" model="ir.actions.server">
+        <field name="name">Mark as On Time</field>
+        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_set_due_status_on_time()</field>
+    </record>
+
 
 </odoo>

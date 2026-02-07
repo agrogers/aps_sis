@@ -66,7 +66,7 @@ div[name="score"].fixed-score-width {
     color: #000000 !important;
     background-color: rgba(255, 0, 0, 0.8);
     /* Apply the animation */
-    animation: pulse-red 1.5s infinite !important; 
+    animation: pulse-red 1.5s 5 !important; 
     font-weight: bold;
     border-radius: 2px !important;
 }
