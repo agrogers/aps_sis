@@ -1,6 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_aps_resources_teacher,aps.resources.teacher,model_aps_resources,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_types_teacher,aps.resource.types.teacher,model_aps_resource_types,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resource_tags_teacher,aps.resource.tags.teacher,model_aps_resource_tags,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_task_teacher,aps.resource.task.teacher,model_aps_resource_task,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_custom_name_teacher,aps.resource.custom.name.teacher,model_aps_resource_custom_name,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_submission_teacher,aps.resource.submission.teacher,model_aps_resource_submission,aps_sis.group_aps_teacher,1,1,1,1
@@ -10,6 +11,7 @@ access_aps_submission_report_wizard_teacher,aps.submission.report.wizard.teacher
 
 access_aps_resources_student_full,aps.resources.student.full,model_aps_resources,aps_sis.group_aps_student,1,0,1,0
 access_aps_resource_types_student_full,aps.resource.types.student.full,model_aps_resource_types,aps_sis.group_aps_student,1,0,0,0
+access_aps_resource_tags_student_full,aps.resource.tags.student.full,model_aps_resource_tags,aps_sis.group_aps_student,1,0,0,0
 access_aps_resource_task_student_full,aps.resource.task.student.full,model_aps_resource_task,aps_sis.group_aps_student,1,1,1,0
 access_aps_resource_submission_student,aps.resource.submission.student.full,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,0
 

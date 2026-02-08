@@ -166,7 +166,7 @@
                                          t-att-src="kanban_image('aps.resource.submission', 'subject_icon', record.id.raw_value, 'image_small')" 
                                          class="oe_kanban_image" style="max-width: 32px; max-height: 32px;" alt="Subject Icon"/>
                                     <div t-else="" class="oe_kanban_no_image">
-                                        <i class="fa fa-book"></i>
+                                        <i class="fa fa-book" title="Book"></i>
                                     </div>
                                 </div>
                                 <div class="col-10">
@@ -208,7 +208,7 @@
                                             </div>
                                             <div class="oe_kanban_bottom_right">
                                                 <button name="action_open_submission" type="object" class="btn btn-sm btn-secondary">
-                                                    <i class="fa fa-external-link"></i>
+                                                    <i class="fa fa-external-link" title="Open Submission"></i>
                                                 </button>
                                             </div>
                                         </div>
@@ -232,6 +232,7 @@
                     <field name="is_current_user_faculty" invisible="1"/>
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
+                    <button name="action_resubmit" string="Resubmit" type="object" class="btn-secondary" invisible="state in ['assigned']"/>
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
                 </header>
                 <sheet>
@@ -274,7 +275,7 @@
                                     <field name="result_percent" widget="percentpie_ranged" />
                                     <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
-                                    <field name="due_status"/>
+                                    <field name="due_status" readonly="not is_current_user_faculty"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>

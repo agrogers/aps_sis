@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- APS Resource Tags list & Form Views -->
+    <record id="view_aps_resource_tags_list" model="ir.ui.view">
+        <field name="name">aps.resource.tags.list</field>
+        <field name="model">aps.resource.tags</field>
+        <field name="arch" type="xml">
+            <list default_order="name">
+                <field name="name"/>
+                <field name="color" widget="color"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_resource_tags_form" model="ir.ui.view">
+        <field name="name">aps.resource.tags.form</field>
+        <field name="model">aps.resource.tags</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group string="Details">
+                            <field name="name"/>
+                            <!-- <field name="color" widget="color"/> -->
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_resource_tags" model="ir.actions.act_window">
+        <field name="name">Resource Tags</field>
+        <field name="res_model">aps.resource.tags</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_aps_resource_tags_list"/>
+    </record>
+</odoo>

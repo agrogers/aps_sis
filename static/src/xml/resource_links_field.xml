@@ -4,10 +4,10 @@
         <div class="o_resource_links d-flex flex-wrap gap-1 align-items-center" t-on-click.stop="">
             <t t-foreach="links" t-as="link" t-key="link.id">
                 <a 
-                    t-att-href="link.url"
+                    href="#"
                     class="resource-link-icon"
                     t-att-title="link.type_name + ': ' + link.name"
-                    t-on-click.stop=""
+                    t-on-click.stop.prevent="() => this.openUrl(link)"
                     target="_blank"
                     style="cursor: pointer; text-decoration: none;">
                     <t t-if="link.icon_url">

@@ -96,6 +96,7 @@ class APSResource(models.Model):
         help='Identifies which resources should be assigned to students to complete.', tracking=True)
     marks = fields.Float(string='Out of Marks', digits=(16, 1), help='Maximum marks/points for this resource')
     subjects = fields.Many2many('op.subject', string='Subjects')
+    tag_ids = fields.Many2many('aps.resource.tags', string='Tags')
     task_ids = fields.One2many('aps.resource.task', 'resource_id', string='Tasks')
     parent_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'child_id', 'parent_id', string='Parent Resources', domain="[('id', '!=', id)]")
     primary_parent_id = fields.Many2one(

@@ -112,6 +112,7 @@ class APSResourceSubmission(models.Model):
     )
     submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True)
 
+# region - Computed Fields
     @api.depends('date_due')
     def _compute_days_till_due(self):
         today = fields.Date.today()
@@ -143,49 +144,6 @@ class APSResourceSubmission(models.Model):
                 record.subject_icon = first.icon if first else False
             else:
                 record.subject_icon = False
-
-    @api.model
-    def _get_view(self, view_id=None, view_type='form', **options):
-        """
-        Intercepts the view loading process. If a student is logged in,
-        force the use of student-specific views regardless of what was requested.
-        """
-        
-        # 1. Check if user is a student
-        if self.env.user.has_group('aps_resource_submission.group_aps_student'):
-            
-            # 2. Redirect 'tree' (list) requests to the student list view
-            if view_type == 'list': # In v18, 'tree' is often 'list' in the backend
-                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_list_for_students').id
-                
-            # 3. Redirect 'form' requests to the student form view
-            elif view_type == 'form':
-                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_form_for_students').id
-
-        arch, view = super()._get_view(view_id, view_type, **options)
-        if view_type == 'form':
-            if view.name == 'aps.resource.submission.form.for.students':
-                for node in arch.xpath("//field"):
-                    
-                    if node.get('name') not in  ['answer','score','review_requested_by']:
-                        options_str = node.get('options') or '{}'
-                        try:
-                            # Try parsing as JSON first
-                            options = json.loads(options_str)
-                        except json.JSONDecodeError:
-                            # If JSON fails, try parsing as Python literal (handles single quotes)
-                            try:
-                                options = ast.literal_eval(options_str)
-                            except (ValueError, SyntaxError):
-                                # If both fail, start with empty dict
-                                options = {}
-                        options['no_open'] = "not is_current_user_faculty"
-                        node.set('options', json.dumps(options))
-                        
-                        if node.get('readonly'): continue  # If the readonly status has been explicitly set, skip it
-                        node.set('readonly', 'not is_current_user_faculty')
-                        # Disable the ability to open the resource from student view
-        return arch, view
 
     @api.depends('feedback')
     def _compute_has_feedback(self):
@@ -257,6 +215,52 @@ class APSResourceSubmission(models.Model):
             # label = f">{record.submission_label} " if record.submission_label else ""
             record.display_name = f"{record.submission_name} ({record.date_assigned})"
 
+# endregion - Computed Fields
+
+    @api.model
+    def _get_view(self, view_id=None, view_type='form', **options):
+        """
+        Intercepts the view loading process. If a student is logged in,
+        force the use of student-specific views regardless of what was requested.
+        """
+        
+        # 1. Check if user is a student
+        if self.env.user.has_group('aps_resource_submission.group_aps_student'):
+            
+            # 2. Redirect 'tree' (list) requests to the student list view
+            if view_type == 'list': # In v18, 'tree' is often 'list' in the backend
+                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_list_for_students').id
+                
+            # 3. Redirect 'form' requests to the student form view
+            elif view_type == 'form':
+                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_form_for_students').id
+
+        arch, view = super()._get_view(view_id, view_type, **options)
+        if view_type == 'form':
+            if view.name == 'aps.resource.submission.form.for.students':
+                for node in arch.xpath("//field"):
+                    
+                    if node.get('name') not in  ['answer','score','review_requested_by']:
+                        options_str = node.get('options') or '{}'
+                        try:
+                            # Try parsing as JSON first
+                            options = json.loads(options_str)
+                        except json.JSONDecodeError:
+                            # If JSON fails, try parsing as Python literal (handles single quotes)
+                            try:
+                                options = ast.literal_eval(options_str)
+                            except (ValueError, SyntaxError):
+                                # If both fail, start with empty dict
+                                options = {}
+                        options['no_open'] = "not is_current_user_faculty"
+                        node.set('options', json.dumps(options))
+                        
+                        if node.get('readonly'): continue  # If the readonly status has been explicitly set, skip it
+                        node.set('readonly', 'not is_current_user_faculty')
+                        # Disable the ability to open the resource from student view
+        return arch, view
+
+
     def _get_faculty_for_current_user(self):
         """Get the faculty record for the current user"""
         employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
@@ -274,6 +278,7 @@ class APSResourceSubmission(models.Model):
         """Get the faculty record for the current user"""
         return self._get_faculty_for_current_user()
 
+# region - Action Methods
     def action_mark_complete(self):
         today = fields.Date.today()
 
@@ -336,19 +341,33 @@ class APSResourceSubmission(models.Model):
             }
         }
 
-    def action_mark_assigned(self):
-        self.write({
-            'state': 'assigned',
-        })
+    def action_resubmit(self):
+        """Resubmit the submission by creating a copy with cleared fields."""
+        faculty = self._get_current_faculty()
+        
+        for record in self:
+            new_submission = record.copy({
+                'assigned_by': faculty.id if faculty else False,
+                'date_due': False,
+                'answer': None,
+                'feedback': None,
+                'reviewed_by': [(5,)],  # Clear many2many
+                'review_requested_by': [(5,)],  # Clear many2many
+                'state': 'assigned',  # Reset to assigned
+                'date_submitted': False,
+                'date_completed': False,
+                'score': sentinel_zero,
+                'result_percent': 0,
+            })
+        
+        # Open the new submission form
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Done',
-                'message': f"Processed {len(self)} submission(s).",
-                'type': 'success',
-                'next': {'type': 'ir.actions.act_window_close'},
-            }
+            'type': 'ir.actions.act_window',
+            'name': 'Resubmitted Submission',
+            'res_model': 'aps.resource.submission',
+            'view_mode': 'form',
+            'res_id': new_submission.id,
+            'target': 'current',
         }
 
     def action_set_due_status_on_time(self):
@@ -366,7 +385,9 @@ class APSResourceSubmission(models.Model):
                 'next': {'type': 'ir.actions.act_window_close'},
             }
         }
-        
+
+# endregion - Action Methods
+
     @api.onchange('state')
     def _onchange_state_set_dates(self):
         """Set date_submitted/date_completed immediately when state changes in the form."""

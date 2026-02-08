@@ -107,6 +107,7 @@
                                     <field name="has_supporting_resources"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"  />
                                     <field name="child_count"/>
+                                    <field name="tag_ids" widget="many2many_tags" options="{'no_create': False}"/>
                             </group>
                             </group>
                         </page>

@@ -24,7 +24,7 @@
                     <field name="icon" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
                     <group>
                         <group string="Details">
-                            <field name="sequence"/>
+                            <field name="sequence" invisible="1"/>
                             <field name="name"/>
                             <field name="color" widget="color"/>
                         </group>
