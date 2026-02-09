@@ -18,6 +18,7 @@ export class ApexDashboard extends Component {
             resources_new: { value: 0, percentage: 0 },
             chartData: [],
             doughnutData: [],
+            doughnutData2: [],
             
         });
 
@@ -65,15 +66,44 @@ export class ApexDashboard extends Component {
         const resourceCount = await this.orm.searchCount("aps.resources", resourceDomain);
         this.state.resources_new.value = resourceCount;
         
-        // Fetch chart data: submissions per day
-        const chartDomain = addStudentFilter([['date_submitted', '>=', startDateStr]]);
-        this.state.chartData = await this.orm.readGroup(
-            "aps.resource.submission", 
-            chartDomain, ['date_submitted'], ['date_submitted:day'], {orderby: 'date_submitted'});
+        // Fetch chart data: submissions by status per day for the entire period
+        const allSubmissionsDomain = addStudentFilter([['date_assigned', '>=', startDateStr]]);
+        const allSubmissions = await this.orm.searchRead("aps.resource.submission", allSubmissionsDomain, ["date_assigned", "date_submitted", "date_completed"]);
+        
+        const chartData = [];
+        const dateMap = {};
+        let currentDate = new Date(startDate);
+        while (currentDate <= today) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            dateMap[dateStr] = { assigned: 0, submitted: 0, finalized: 0 };
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        allSubmissions.forEach(sub => {
+            if (sub.date_assigned && dateMap[sub.date_assigned]) {
+                dateMap[sub.date_assigned].assigned++;
+            }
+            if (sub.date_submitted && dateMap[sub.date_submitted]) {
+                dateMap[sub.date_submitted].submitted++;
+            }
+            if (sub.date_completed && dateMap[sub.date_completed]) {
+                dateMap[sub.date_completed].finalized++;
+            }
+        });
+        
+        for (const dateStr in dateMap) {
+            chartData.push({
+                date: dateStr,
+                assigned: dateMap[dateStr].assigned,
+                submitted: dateMap[dateStr].submitted,
+                finalized: dateMap[dateStr].finalized
+            });
+        }
+        this.state.chartData = chartData;
         
         // Fetch doughnut data: tasks assigned per subject
         const doughnutDomain = addStudentFilter([['date_assigned', '>=', startDateStr]]);
-        const submissions = await this.orm.searchRead("aps.resource.submission", doughnutDomain, ["subjects"]);
+        const submissions = await this.orm.searchRead("aps.resource.submission", doughnutDomain, ["subjects","due_status"]);
         
         const subjectIds = new Set();
         submissions.forEach(sub => {
@@ -87,6 +117,7 @@ export class ApexDashboard extends Component {
         subjectRecords.forEach(rec => subjectMap[rec.id] = rec.name);
         
         const subjectCounts = {};
+        const due_statusCounts = {};
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
                 sub.subjects.forEach(id => {
@@ -97,10 +128,26 @@ export class ApexDashboard extends Component {
                     subjectCounts[id].__count++;
                 });
             }
+            if (sub.due_status) {
+                
+                if (!due_statusCounts[sub.due_status]) {
+                    due_statusCounts[sub.due_status] = { status: sub.due_status, __count: 0 };
+                }
+                due_statusCounts[sub.due_status].__count++;
+            }
         });
         this.state.doughnutData = Object.values(subjectCounts);
         
-        // Logic for percentage calculation would go here [cite: 331, 332]
+        // Data fetching complete
+
+        this.state.doughnutData2 = {
+            labels: Object.values(subjectCounts).map(s => s.subject),
+            datasets: [
+                Object.values(subjectCounts).map(s => s.__count),
+                Object.values(due_statusCounts).map(s => s.__count) // dummy second dataset
+            ]
+        };
+
     }
 
     async onChangePeriod() {

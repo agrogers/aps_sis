@@ -31,7 +31,7 @@
                 <KpiCard name="'Active Tasks'" value="state.tasks.value" 
                          percentage="state.tasks.percentage" icon="'fa-tasks'" />
                 <KpiCard name="'Overdue Items'" value="state.overdue.value" 
-                         percentage="state.overdue.percentage" icon="'fa-clock-o'" class="bg-danger-light" />
+                         percentage="state.overdue.percentage" icon="'fa-clock-o'" />
                 <KpiCard name="'New Resources'" value="state.resources_new.value" 
                          percentage="state.resources_new.percentage" icon="'fa-cubes'" />
             </div>
@@ -40,13 +40,27 @@
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
                         <h3 class="fw-bold mb-3">Submission Trends</h3>
-                        <ChartRenderer type="'line'" title="'Submissions over time'" data="state.chartData" />
+                        <ChartRenderer type="'bar'" title="'Submissions by Status'" data="state.chartData" />
                     </div>
                 </div>
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
                         <h3 class="fw-bold mb-3">Tasks Assigned by Subject</h3>
                         <ChartRenderer type="'doughnut'" title="'Tasks Assigned by Subject'" data="state.doughnutData" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="bg-white shadow-sm p-4 rounded h-100">
+                        <h3 class="fw-bold mb-3">Submission Trends</h3>
+                        <ChartRenderer type="'bar'" title="" data="state.chartData" />
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="bg-white shadow-sm p-4 rounded h-100">
+                        <h3 class="fw-bold mb-3">Tasks Assigned by Subject + Due Status</h3>
+                        <ChartRenderer type="'pie'" title="" data="state.doughnutData2" />
                     </div>
                 </div>
             </div>
