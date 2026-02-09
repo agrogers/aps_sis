@@ -14,7 +14,8 @@
 		'security/ir.model.access.csv',
 		'security/aps_sis_security.xml',
 		'data/cron.xml',
-		'views/aps_resource_custom_name_views.xml',		'views/portal_templates.xml',
+		'views/aps_resource_custom_name_views.xml',		
+        'views/portal_templates.xml',
 		'views/aps_resources_views.xml',
 		'views/aps_resource_types_views.xml',
 		'views/aps_resource_tags_views.xml',
@@ -22,6 +23,7 @@
 		'views/aps_resource_task_views.xml',
 		'views/aps_resource_submission_views.xml',
 		'views/aps_resource_submission_views_for_students.xml',
+		'views/aps_dashboard_views.xml',
 		'views/op_program_level_views.xml',
 		'views/op_course_views.xml',
 		'views/op_subject_views.xml',
@@ -31,6 +33,7 @@
 		'views/op_student_course_views.xml',
 		'reports/submission_report.xml',
 		'wizard/submission_report_wizard_views.xml',
+        'views/aps_dashboard_views.xml'
 	],
 	'assets': {
 		'web.assets_backend': [
@@ -54,6 +57,9 @@
             'aps_sis/static/src/img/menu_icon.png',
             'aps_sis/static/src/js/badge_decorator_widget.js',
             'aps_sis/static/src/xml/badge_decorator_field.xml',
+            'aps_sis/static/src/components/**/*.js',
+            'aps_sis/static/src/components/**/*.xml',
+            'aps_sis/static/src/components/**/*.scss',
 		],
 	},
 	'installable': True,

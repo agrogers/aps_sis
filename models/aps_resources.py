@@ -98,6 +98,11 @@ class APSResource(models.Model):
     tag_ids = fields.Many2many('aps.resource.tags', string='Tags')
     task_ids = fields.One2many('aps.resource.task', 'resource_id', string='Tasks')
     parent_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'child_id', 'parent_id', string='Parent Resources', domain="[('id', '!=', id)]")
+    
+    # Dashboard computed fields
+    total_submissions = fields.Integer(string='Total Submissions', compute='_compute_dashboard_stats', store=False)
+    completed_submissions = fields.Integer(string='Completed Submissions', compute='_compute_dashboard_stats', store=False)
+    overdue_tasks = fields.Integer(string='Overdue Tasks', compute='_compute_dashboard_stats', store=False)
     primary_parent_id = fields.Many2one(
         'aps.resources', 
         string='Main Parent', 
@@ -274,6 +279,14 @@ class APSResource(models.Model):
                         'id': c.id,
                     })
             rec.parent_custom_name_data = data or False
+
+    @api.depends('task_ids.submission_ids')
+    def _compute_dashboard_stats(self):
+        for rec in self:
+            submissions = rec.task_ids.mapped('submission_ids')
+            rec.total_submissions = len(submissions)
+            rec.completed_submissions = len(submissions.filtered(lambda s: s.state == 'complete'))
+            rec.overdue_tasks = len(rec.task_ids.filtered(lambda t: t.date_due and t.date_due < fields.Date.today() and t.state != 'complete'))
 
     # @api.depends('question', 'answer')
     # def _compute_thumbnail(self):

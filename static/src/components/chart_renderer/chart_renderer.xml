@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="custom_dashboard.ChartRenderer" owl="1">
+        <div class="chart-container" style="position: relative; height:300px; width:100%">
+            <canvas t-ref="chart"/>
+        </div>
+    </t>
+</templates>

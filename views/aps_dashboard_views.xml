@@ -1,0 +1,9 @@
+<odoo>
+    <record id="action_apex_dashboard" model="ir.actions.client">
+        <field name="name">Performance Dashboard</field>
+        <field name="tag">apex_dashboard_main</field>
+    </record>
+
+    <menuitem id="menu_apex_dashboard_overview" parent="menu_apex_root" 
+              action="action_apex_dashboard" name="Overview" sequence="10"/>
+</odoo>

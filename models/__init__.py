@@ -4,6 +4,7 @@ from . import aps_resource_types
 from . import aps_resource_task
 from . import aps_resource_submission
 from . import aps_assign_students_wizard
+from . import aps_dashboard
 from . import op_program_level
 from . import op_course
 from . import op_subject
