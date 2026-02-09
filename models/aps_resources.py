@@ -26,8 +26,7 @@ class APSResource(models.Model):
     _name = 'aps.resources'
     _description = 'APEX Resources'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    # Removed _parent_store since we now support multiple parents
-    _order = 'sequence, name'
+    
 
     sequence = fields.Integer(string='Sequence', default=10)
     display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True)
@@ -383,7 +382,7 @@ class APSResource(models.Model):
     def _default_assignment_duration(self):
         """Return the default duration for assignments (e.g., 7 days)."""
         from datetime import timedelta
-        return timedelta(days=7)
+        return timedelta(days=6)
 
     # def action_assign_students(self):
     #     self.ensure_one()
@@ -448,6 +447,7 @@ class APSResource(models.Model):
     def action_assign_students(self):
         return {
             'type': 'ir.actions.act_window',
+            'name': 'Assign Students to Resource',
             'res_model': 'aps.assign.students.wizard',
             'view_mode': 'form',
             'target': 'new',

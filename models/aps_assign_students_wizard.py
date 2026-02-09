@@ -32,13 +32,17 @@ class APSAssignStudentsWizard(models.TransientModel):
     date_due = fields.Date(string='Due Date', required=True)
     student_ids = fields.Many2many('res.partner', string='Students', domain=[('is_student', '=', True)], required=True)
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
-    submission_label = fields.Char(help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
+    custom_submission_name = fields.Char(string='Custom Submission Name')
+    warning_message = fields.Char(string='Warning', compute='_compute_warning_message', store=False)
+    submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
     affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources', order='sequence')
+    can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False)
 
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         resource = self.env['aps.resources'].browse(res.get('resource_id'))
+        # res['custom_submission_name'] = resource.display_name
         label = resource.display_name
         if res.get('date_assigned'):
             label += f' ({res["date_assigned"]})'
@@ -55,6 +59,30 @@ class APSAssignStudentsWizard(models.TransientModel):
         if self.date_assigned:
             from datetime import timedelta
             self.date_due = self.date_assigned + self.env['aps.resources']._default_assignment_duration()
+
+    @api.onchange('custom_submission_name', 'date_assigned')
+    def _onchange_custom_submission_name(self):
+        base = self.custom_submission_name or self.resource_id.display_name or ''
+        if self.date_assigned:
+            self.submission_label = f'{base} ({self.date_assigned})'
+        else:
+            self.submission_label = base
+
+    @api.depends('student_ids', 'affected_resource_line_ids')
+    def _compute_can_assign(self):
+        for rec in self:
+            has_students = bool(rec.student_ids)
+            has_selected_resources = any(line.selected for line in rec.affected_resource_line_ids)
+            rec.can_assign = has_students and has_selected_resources
+
+    @api.depends('custom_submission_name', 'resource_id', 'affected_resource_line_ids')
+    def _compute_warning_message(self):
+        for rec in self:
+            if rec.custom_submission_name and rec.custom_submission_name != rec.resource_id.display_name:
+                selected_resources_count = len(rec.affected_resource_line_ids.filtered(lambda l: l.selected))
+                rec.warning_message = f'This applies to all {selected_resources_count} selected resources.'
+            else:
+                rec.warning_message = False
 
     @api.onchange('resource_id')
     def _onchange_resource_id(self):
@@ -103,45 +131,55 @@ class APSAssignStudentsWizard(models.TransientModel):
                 # Set order on the line for later use
                 line.submission_order = order
                 order += 1
-        for resource in selected_resources:
+        for index, resource in enumerate(selected_resources, start=1):
             # Find the order for this resource
             line = self.affected_resource_line_ids.filtered(lambda l: l.resource_id == resource and l.selected)
             submission_order = line.submission_order if line else 0
             # Compute submission_name: parent 🢒 child (or just parent if same)
             child_name = resource.name or resource.display_name or ''
-            if resource.id == parent_resource.id:
-                submission_name = parent_name
-            else:
-                # Use parent-specific custom name if present, otherwise fall back to resource name/display_name
-                child_name = resource.name or resource.display_name or ''
-                custom_data = resource.parent_custom_name_data or []
-                if isinstance(custom_data, (list, tuple)):
-                    for entry in custom_data:
-                        if entry.get('parent_resource_id') == parent_resource.id and entry.get('custom_name'):
-                            child_name = entry.get('custom_name')
-                            break
-                # Remove overlap as in _compute_display_name
-                overlap_length = 0
-                parent_len = len(parent_name)
-                child_len = len(child_name)
-                match_found = False
-                for i in range(1, min(parent_len, child_len) + 1):
-                    if child_name[:i] == parent_name[-i:]:
-                        overlap_length = i
-                        match_found = True
-                    else:
-                        if match_found:
-                            break
-                if overlap_length > 0:
-                    remaining_name = child_name[overlap_length:].lstrip()
-                    import re
-                    remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
-                    if remaining_name:
-                        submission_name = parent_name + separator + remaining_name
-                    else:
-                        submission_name = parent_name
+            # Naming is tricky due to possible custom names set per parent.
+            # There could be many resources are assigned. Normally they have their own names.
+            # But we might want the name, esp when assigning a single resource.
+            # Use parent-specific custom name if present, otherwise fall back to resource name/display_name
+            if self.custom_submission_name:
+                if len(selected_resources) == 1:
+                    # Only one resource assigned, use the custom name directly
+                    submission_name = self.custom_submission_name
                 else:
-                    submission_name = parent_name + separator + child_name
+                    submission_name = f"{self.custom_submission_name} ({child_name})"
+            else:
+                if resource.id == parent_resource.id:
+                    submission_name = parent_name
+                else:
+                    child_name = resource.name or resource.display_name or ''
+                    custom_data = resource.parent_custom_name_data or []
+                    if isinstance(custom_data, (list, tuple)):
+                        for entry in custom_data:
+                            if entry.get('parent_resource_id') == parent_resource.id and entry.get('custom_name'):
+                                child_name = entry.get('custom_name')
+                                break
+                    # Remove overlap as in _compute_display_name
+                    overlap_length = 0
+                    parent_len = len(parent_name)
+                    child_len = len(child_name)
+                    match_found = False
+                    for i in range(1, min(parent_len, child_len) + 1):
+                        if child_name[:i] == parent_name[-i:]:
+                            overlap_length = i
+                            match_found = True
+                        else:
+                            if match_found:
+                                break
+                    if overlap_length > 0:
+                        remaining_name = child_name[overlap_length:].lstrip()
+                        import re
+                        remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
+                        if remaining_name:
+                            submission_name = parent_name + separator + remaining_name
+                        else:
+                            submission_name = parent_name
+                    else:
+                        submission_name = parent_name + separator + child_name
             for student in self.student_ids:
                 # Check if task exists
                 task = task_model.search([

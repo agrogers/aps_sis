@@ -33,6 +33,7 @@
                 <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
                 <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
                 <separator/>
+                <filter string="Active Submissions" name="submission_active" domain="[('submission_active', '=', True)]"/>
                 <filter string="Assigned" name="assigned" domain="[('state', '=', 'assigned')]"/>
                 <filter string="Submitted" name="submitted" domain="[('state', '=', 'submitted')]"/>
                 <filter string="Completed" name="completed" domain="[('state', '=', 'complete')]"/>
@@ -48,6 +49,7 @@
                     <filter string="Resource" name="groupby_resource" context="{'group_by': 'resource_id'}"/>
                     <filter string="Subject" name="groupby_subject" context="{'group_by': 'subjects'}"/>
                     <filter string="Status" name="groupby_state" context="{'group_by': 'state'}"/>
+                    <filter string="Student" name="groupby_student" context="{'group_by': 'student_id'}"/>
                     <filter string="Due Status" name="groupby_due_status" context="{'group_by': 'due_status'}"/>
                     <filter string="Assigned By" name="groupby_assigned_by" context="{'group_by': 'assigned_by'}"/>
                     <filter string="Month" name="groupby_month" context="{'group_by': 'date_assigned'}" help="Group by month of assignment"/>

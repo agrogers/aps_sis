@@ -85,6 +85,7 @@
                             <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}">
                                 <list>
                                     <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
+                                    <field name="submission_name" optional="show"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
                                     <field name="score" optional="hide"/>
                                     <field name="assigned_by" optional="hide"/>

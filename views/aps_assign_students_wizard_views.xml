@@ -11,9 +11,12 @@
                         <group string="Task Details">
                             <field name="resource_id"/>
                             <field name="assigned_by"/>
+                            <field name="custom_submission_name"/>
+                            <field name="warning_message" nolabel="1" readonly="1" class="text-warning" invisible="not warning_message"/>
                             <field name="submission_label"/>
                             <field name="date_assigned"/>
                             <field name="date_due"/>
+                            <field name="can_assign" invisible="1"/>
                         </group>
                         <group string="Students">
                             <field name="student_ids" widget="many2many" nolabel="1">
@@ -45,7 +48,7 @@
                         </field>
                     </group>
                     <footer>
-                        <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary"/>
+                        <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" invisible="not can_assign"/>
                         <button string="Cancel" class="btn-secondary" special="cancel"/>
                     </footer>
                 </sheet>
