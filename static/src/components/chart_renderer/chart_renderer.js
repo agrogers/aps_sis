@@ -3,20 +3,20 @@ import { loadJS } from "@web/core/assets";
 
 export class ChartRenderer extends Component {
     setup() {
-        this.chartRef = useRef("chart");
-        this.chart = null;
+        this.chartRef = useRef("chart"); // Reference to the canvas element [cite: 21, 23]
+        this.chart = null; // Store chart instance
         
         onWillStart(async () => {
-            // Load Chart.js if not already loaded by the framework
+            // Loading the latest Chart.js version via CDN [cite: 21, 22]
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js");
         });
 
         onMounted(() => {
-            this.renderChart();
+            this.renderChart(); // Render chart once component is in the DOM [cite: 21, 27]
         });
 
         onPatched(() => {
-            this.renderChart();
+            this.renderChart(); // Re-render chart when component updates
         });
     }
 
@@ -34,17 +34,13 @@ export class ChartRenderer extends Component {
             }]
         };
 
-        if (this.props.data) {
+        if (this.props.data && this.props.data.length > 0) {
             if (this.props.type === 'line') {
-                chartData.labels = this.props.data.map(d => d.date_assigned || d.date_submitted || d.month);
-                chartData.datasets = [{
-                    label: this.props.title,
-                    data: this.props.data.map(d => d.__count || d.value),
-                    borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.1
-                }];
+                chartData.labels = this.props.data.map(d => d.date_assigned || d.date_submitted);
+                chartData.datasets[0].data = this.props.data.map(d => d.__count);
+
             } else if (this.props.type === 'bar') {
-                chartData.labels = this.props.data.map(d => d.date_assigned);
+                chartData.labels = this.props.data.map(d => d.date);
                 chartData.datasets = [
                     {
                         label: 'Assigned',
@@ -63,60 +59,61 @@ export class ChartRenderer extends Component {
                     {
                         label: 'Finalized',
                         data: this.props.data.map(d => d.finalized),
-                        backgroundColor: 'rgba(75, 206, 86, 0.2)',
-                        borderColor: 'rgba(75, 206, 86, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1
                     }
                 ];
-            } else if (this.props.type === 'doughnut' || this.props.type === 'pie') {
+
+            } else if (this.props.type === 'doughnut') {
                 if (this.props.data.labels && this.props.data.datasets) {
                     if (Array.isArray(this.props.data.datasets[0])) {
+                        // datasets is list of lists
                         chartData.labels = this.props.data.labels;
-                        chartData.datasets = this.props.data.datasets.map((dataset, index) => ({
-                            label: `Dataset ${index}`,
-                            data: dataset,
-                            // backgroundColor: this.generateColors(dataset.length, index),
-                            hoverOffset: 4
+                        chartData.datasets = this.props.data.datasets.map((dataArr, index) => ({
+                            data: dataArr,
+                            backgroundColor: this.generateColors(dataArr.length, index),
+                            borderWidth: 1
                         }));
                     } else {
+                        // datasets is already array of dataset objects
                         chartData = this.props.data;
                     }
-                } else if (Array.isArray(this.props.data)) {
-                    chartData.labels = this.props.data.map(d => d.subject || "Unknown");
-                    chartData.datasets = [{
-                        label: this.props.title,
-                        data: this.props.data.map(d => d.__count),
-                        // backgroundColor: this.generateColors(this.props.data.length, 0),
-                        hoverOffset: 4
-                    }];
+                } else {
+                    // For doughnut, data grouped by subject
+                    chartData.labels = this.props.data.map(d => d.subject || 'Unknown');
+                    chartData.datasets[0].data = this.props.data.map(d => d.__count);
                 }
             }
         }
 
-        const ctx = this.chartRef.el.getContext('2d');
-        this.chart = new Chart(ctx, {
-            type: this.props.type,
+        this.chart = new Chart(this.chartRef.el, {
+            type: this.props.type || 'bar',
             data: chartData,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'top' },
-                    title: { display: true, text: this.props.title }
-                }
+                    legend: {
+                        position: 'bottom',
+                    },
+                    title: {
+                        display: true,
+                        text: this.props.title,
+                        position: 'bottom'
+                    }
+                },
+                scales: this.props.type === 'bar' ? {
+                    x: {
+                        stacked: true,
+                    },
+                    y: {
+                        stacked: true,
+                    }
+                } : {}
             }
         });
     }
-
-    generateColors(count, datasetIndex) {
-        const colors = [];
-        for (let i = 0; i < count; i++) {
-            const hue = (i * 360 / count + datasetIndex * 60) % 360;
-            colors.push(`hsl(${hue}, 70%, 50%)`);
-        }
-        return colors;
-    }
 }
 
-// THIS IS THE MISSING PART THAT LIKELY CAUSED THE ERROR:
 ChartRenderer.template = "custom_dashboard.ChartRenderer";
