@@ -440,7 +440,7 @@ class APSResourceSubmission(models.Model):
             'target': 'current',
         }
 
-# Region - Write Override
+# region - Write Override
 
     def write(self, vals):
         
@@ -486,7 +486,8 @@ class APSResourceSubmission(models.Model):
                     record._notify_new_faculty_reviewers(added_ids)
         return result
 
-# Region - Activity Notifications    
+
+# region - Activity Notifications    
     def _notify_new_submission(self, subject_ids):
         """Creates an activity for each newly added faculty member."""
         # Search for faculty records to get their associated User IDs
@@ -522,6 +523,7 @@ class APSResourceSubmission(models.Model):
                     date_deadline=fields.Date.add(fields.Date.today(), days=1),  
                     request_partner_id=self.env.user.partner_id.id
                 )
+
 
     @api.model_create_multi
     def create(self, vals_list):

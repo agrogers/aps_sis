@@ -9,12 +9,13 @@
                     <select class="form-select" t-model="state.period" t-on-change="onChangePeriod">
                         <option value="0">Select Period</option>
                         <option value="7">Last 7 Days</option>
+                        <option value="14">Last 14 Days</option>
                         <option value="30">Last 30 Days</option>
                         <option value="90">Last 90 Days</option>
                         <option value="365">Last Year</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4" t-if="state.isFaculty">
                     <select class="form-select" t-model="state.selectedStudent" t-on-change="onChangeStudent">
                         <option value="false">All Students</option>
                         <t t-foreach="state.students" t-as="student" t-key="student.id">
@@ -32,35 +33,35 @@
                          percentage="state.tasks.percentage" icon="'fa-tasks'" />
                 <KpiCard name="'Overdue Items'" value="state.overdue.value" 
                          percentage="state.overdue.percentage" icon="'fa-clock-o'" />
-                <KpiCard name="'New Resources'" value="state.resources_new.value" 
-                         percentage="state.resources_new.percentage" icon="'fa-cubes'" />
+                <KpiCard name="'Next 7 Days'" value="state.next_7_days.value" 
+                         percentage="state.next_7_days.percentage" icon="'fa-cubes'" />
             </div>
 
             <div class="row">
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
-                        <h3 class="fw-bold mb-3">Submission Trends</h3>
-                        <ChartRenderer type="'bar'" title="'Submissions by Status'" data="state.chartData" />
+                        <h3 class="fw-bold mb-3">Submissions by Day</h3>
+                        <ChartRenderer type="'bar'" title="" data="state.chartData" />
                     </div>
                 </div>
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
-                        <h3 class="fw-bold mb-3">Tasks Assigned by Subject</h3>
-                        <ChartRenderer type="'doughnut'" title="'Tasks Assigned by Subject'" data="state.doughnutData" />
+                        <h3 class="fw-bold mb-3">Tasks by Due Status</h3>
+                        <ChartRenderer type="'pie'" title="" data="state.doughnutData2" />
                     </div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
-                        <h3 class="fw-bold mb-3">Submission Trends</h3>
-                        <ChartRenderer type="'bar'" title="" data="state.chartData" />
+                        <h3 class="fw-bold mb-3">Submission over Time</h3>
+                        <ChartRenderer type="'line'" title="" data="state.chartDataCummulative" />
                     </div>
                 </div>
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
-                        <h3 class="fw-bold mb-3">Tasks Assigned by Subject + Due Status</h3>
-                        <ChartRenderer type="'pie'" title="" data="state.doughnutData2" />
+                        <h3 class="fw-bold mb-3">Tasks Assigned by Subject</h3>
+                        <ChartRenderer type="'doughnut'" title="" data="state.doughnutData" />
                     </div>
                 </div>
             </div>

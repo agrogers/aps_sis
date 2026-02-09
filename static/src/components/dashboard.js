@@ -8,14 +8,16 @@ export class ApexDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        // this.user = useService("user");
         this.state = useState({
-            period: 90,
+            period: 7,
             selectedStudent: false,
             students: [],
+            isFaculty: true,
             submissions: { value: 0, percentage: 0 },
             tasks: { value: 0, percentage: 0 },
             overdue: { value: 0, percentage: 0 },
-            resources_new: { value: 0, percentage: 0 },
+            next_7_days: { value: 0, percentage: 0 },
             chartData: [],
             doughnutData: [],
             doughnutData2: [],
@@ -27,6 +29,9 @@ export class ApexDashboard extends Component {
             const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
             const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
             this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
+            // Check if user is faculty
+            // const uid = this.user.userId;
+            // this.state.isFaculty = await this.user.hasGroup("aps_sis.group_aps_teacher");
             await this.fetchData();
         });
     }
@@ -37,6 +42,7 @@ export class ApexDashboard extends Component {
         const startDate = new Date(today.getTime() - this.state.period * 24 * 60 * 60 * 1000);
         const startDateStr = startDate.toISOString().split('T')[0]; // YYYY-MM-DD format
         const todayStr = today.toISOString().split('T')[0];
+        const todayPlus7Str = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         
         // Helper to add student filter
         const addStudentFilter = (domain) => {
@@ -47,7 +53,7 @@ export class ApexDashboard extends Component {
         };
         
         // Fetching counts from aps.resource.submission filtered by period
-        const submissionDomain = addStudentFilter([['date_assigned', '>=', startDateStr]]);
+        const submissionDomain = addStudentFilter([['date_assigned', '>=', startDateStr],['submission_active', '=', true]]);
         const submissionCount = await this.orm.searchCount("aps.resource.submission", submissionDomain);
         this.state.submissions.value = submissionCount;
         
@@ -62,9 +68,9 @@ export class ApexDashboard extends Component {
         this.state.overdue.value = overdueCount;
         
         // Fetch new resources
-        const resourceDomain = [['create_date', '>=', startDateStr]];
-        const resourceCount = await this.orm.searchCount("aps.resources", resourceDomain);
-        this.state.resources_new.value = resourceCount;
+        const submission7daysDomain = addStudentFilter([['date_assigned', '>', todayStr],['date_assigned', '<=', todayPlus7Str]]);
+        const submission7daysCount = await this.orm.searchCount("aps.resource.submission", submission7daysDomain);
+        this.state.next_7_days.value = submission7daysCount;
         
         // Fetch chart data: submissions by status per day for the entire period
         const allSubmissionsDomain = addStudentFilter([['date_assigned', '>=', startDateStr]]);
@@ -100,6 +106,27 @@ export class ApexDashboard extends Component {
             });
         }
         this.state.chartData = chartData;
+
+        const chartDataCummulative = [];
+        var assigned = 0;
+        var submitted = 0;
+        var finalized = 0;
+
+        for (const dateStr in dateMap) {
+            assigned += dateMap[dateStr].assigned;
+            submitted += dateMap[dateStr].submitted;
+            finalized += dateMap[dateStr].finalized;
+
+
+            chartDataCummulative.push({
+                date: dateStr,
+                assigned: assigned,
+                submitted: submitted,
+                finalized: finalized
+            });
+        }
+
+        this.state.chartDataCummulative = chartDataCummulative
         
         // Fetch doughnut data: tasks assigned per subject
         const doughnutDomain = addStudentFilter([['date_assigned', '>=', startDateStr]]);
@@ -118,35 +145,32 @@ export class ApexDashboard extends Component {
         
         const subjectCounts = {};
         const due_statusCounts = {};
+        const dueStatusDisplay = {
+            'late': 'Late',
+            'on-time': 'On Time',
+            'early': 'Early'
+        };
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
                 sub.subjects.forEach(id => {
                     const name = subjectMap[id] || 'Unknown';
                     if (!subjectCounts[id]) {
-                        subjectCounts[id] = { subject: name, __count: 0 };
+                        subjectCounts[id] = { data_point: name, __count: 0 };
                     }
                     subjectCounts[id].__count++;
                 });
             }
             if (sub.due_status) {
-                
-                if (!due_statusCounts[sub.due_status]) {
-                    due_statusCounts[sub.due_status] = { status: sub.due_status, __count: 0 };
+                const display = dueStatusDisplay[sub.due_status] || sub.due_status;
+                if (!due_statusCounts[display]) {
+                    due_statusCounts[display] = { data_point: display, __count: 0 };
                 }
-                due_statusCounts[sub.due_status].__count++;
+                due_statusCounts[display].__count++;
             }
         });
         this.state.doughnutData = Object.values(subjectCounts);
-        
-        // Data fetching complete
-
-        this.state.doughnutData2 = {
-            labels: Object.values(subjectCounts).map(s => s.subject),
-            datasets: [
-                Object.values(subjectCounts).map(s => s.__count),
-                Object.values(due_statusCounts).map(s => s.__count) // dummy second dataset
-            ]
-        };
+        this.state.doughnutData2 = Object.values(due_statusCounts);
+    
 
     }
 

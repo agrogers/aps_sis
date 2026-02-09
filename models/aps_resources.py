@@ -125,7 +125,9 @@ class APSResource(models.Model):
     @api.depends('url', 'name', 'display_name', 'type_icon', 'type_id.name',
                  'supporting_resource_ids', 'supporting_resource_ids.url', 
                  'supporting_resource_ids.name', 'supporting_resource_ids.display_name',
-                 'supporting_resource_ids.type_icon', 'supporting_resource_ids.type_id.name')
+                 'supporting_resource_ids.type_icon', 'supporting_resource_ids.type_id.name',
+                 'supporting_resource_ids.sequence')
+    
     def _compute_supporting_resources_buttons(self):
         """Compute JSON data for resource links widget."""
         for resource in self:
@@ -141,7 +143,7 @@ class APSResource(models.Model):
                     'is_main': True,
                 })
             # Add supporting resources that have URLs and real ids
-            for supporting in resource.supporting_resource_ids:
+            for supporting in resource.supporting_resource_ids.sorted('sequence'):
                 if supporting.url and isinstance(supporting.id, int):
                     links.append({
                         'id': supporting.id,

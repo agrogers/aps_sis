@@ -3,11 +3,11 @@
         <div class="bg-white shadow-sm p-4 rounded text-center cursor-pointer h-100" t-on-click="props.onClick">
             <div class="text-muted fw-bold h5" t-esc="props.name"/>
             <div class="display-5 fw-bold my-2" t-att-class="props.value > 0 and props.name === 'Overdue Items' ? 'text-danger' : 'text-dark'" t-esc="props.value"/>
-            <div t-attf-class="h6 fw-bold #{props.percentage >= 0 ? 'text-success' : 'text-danger'}">
+            <!-- <div t-attf-class="h6 fw-bold #{props.percentage >= 0 ? 'text-success' : 'text-danger'}">
                 <i t-attf-class="fa #{props.percentage >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'} me-1"/>
                 <span t-esc="Math.abs(props.percentage) + '%'"/>
                 <span class="text-muted ms-1 fw-normal">vs last period</span>
-            </div>
+            </div> -->
         </div>
     </div>
 </t>
