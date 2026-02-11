@@ -82,7 +82,7 @@ class APSResource(models.Model):
     thumbnail = fields.Binary(string='Thumbnail')
 
     type_id = fields.Many2one('aps.resource.types', string='Type', ondelete='set null')
-    type_icon = fields.Binary(string='Type Icon', related='type_id.icon', readonly=True)
+    type_icon = fields.Image(string='Type Icon', related='type_id.icon', readonly=True)
     type_color = fields.Char(string='Type Color', related='type_id.color', readonly=True)
     url = fields.Char(string='URL', 
                       required=False, tracking=True)
