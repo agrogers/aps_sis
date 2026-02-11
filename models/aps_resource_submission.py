@@ -22,7 +22,7 @@ class APSResourceSubmission(models.Model):
     )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
-    subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects')
+    subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects', readonly=False)
     student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
     submission_label = fields.Char(
@@ -111,7 +111,11 @@ class APSResourceSubmission(models.Model):
         store=True,
     )
     submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True)
-
+    allow_subject_editing = fields.Boolean(
+        string='Allow Subject Editing',
+        default=False,
+        help='If enabled, users can edit the subjects associated with this resource. This is useful for resources that are shared across multiple subjects, where the subject association may need to be customized at the submission level.',
+    )
 # region - Computed Fields
 
     @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
@@ -495,6 +499,7 @@ class APSResourceSubmission(models.Model):
                     record._notify_new_faculty_reviewers(added_ids)
         return result
 
+#endregion - Write Override
 
 # region - Activity Notifications    
     def _notify_new_submission(self, subject_ids):
@@ -564,3 +569,4 @@ class APSResourceSubmission(models.Model):
         # date_due will be recomputed based on the new date_assigned
         return super().copy(default)
     
+# endregion - Activity Notifications

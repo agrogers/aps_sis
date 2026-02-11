@@ -37,7 +37,45 @@ class APSAssignStudentsWizard(models.TransientModel):
     submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
     affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources', order='sequence')
     can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False)
+    allow_subject_editing = fields.Boolean(
+        string='Allow Subject Editing',
+        store=False
+    )
 
+    has_question = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Question', 
+        default='no', 
+        help='A resource can use the parent\'s question if set to "Use Parent".',
+        required=True,
+)
+    question = fields.Html(string='Question')
+    parent_question = fields.Html(string='Parent Question', store=False)
+
+    has_answer = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Answer', 
+        default='no', 
+        help='Resources can include model answers to a question. A resource can use the parent\'s answer if set to "Use Parent".',
+        required=True,
+)
+    answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
+
+    has_default_answer = fields.Boolean(
+        string='Use Default Answer', 
+        default=False, 
+        help='Resources can include a default answer to a question. This is helpful if you wish to provide a template for students to fill in.',
+        required=True,
+)
+    default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
+
+    subjects = fields.Many2many('op.subject', string='Subjects')
+
+    
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -52,6 +90,31 @@ class APSAssignStudentsWizard(models.TransientModel):
             from datetime import timedelta
             res['date_due'] = res['date_assigned'] + self.env['aps.resources']._default_assignment_duration()
 
+        # Copy any matching simple field values from the resource to the wizard defaults
+        if resource and resource.exists():
+            # Fields we should not copy or that are handled separately
+            skip_fields = {
+                'id', 'display_name', 'name', 'affected_resource_line_ids',
+                'student_ids', 'submission_label', 'submission_order', 'assigned_by',
+                'resource_id', 'warning_message', 'can_assign', 'parent_question', 'parent_answer',
+            }
+            for fname in self._fields:
+                if fname in skip_fields:
+                    continue
+                # respect requested fields_list if provided
+                if fields_list and fname not in fields_list:
+                    continue
+                # only copy if the resource model has the field
+                if fname in resource._fields:
+                    try:
+                        val = resource[fname]
+                        # store into default dict
+                        res[fname] = val
+                    except Exception:
+                        # guard against unexpected read/compute errors
+                        continue
+
+    
         return res
 
     @api.onchange('date_assigned')
@@ -107,6 +170,24 @@ class APSAssignStudentsWizard(models.TransientModel):
             self.affected_resource_line_ids = lines
         else:
             self.affected_resource_line_ids = False
+
+        # # Copy matching fields from the selected resource into the wizard fields
+        # if self.resource_id:
+        #     skip_fields = {
+        #         'id', 'display_name', 'name', 'affected_resource_line_ids',
+        #         'student_ids', 'submission_label', 'submission_order', 'assigned_by',
+        #         'resource_id', 'warning_message', 'can_assign', 'parent_question', 'parent_answer',
+        #     }
+        #     for fname in self._fields:
+        #         if fname in skip_fields:
+        #             continue
+        #         # only copy if resource has this field
+        #         if fname in self.resource_id._fields:
+        #             try:
+        #                 setattr(self, fname, self.resource_id[fname])
+        #             except Exception:
+        #                 # ignore fields that can't be assigned or cause errors
+        #                 continue
 
     def _default_assigned_by(self):
         """Get the faculty record for the current user"""
@@ -202,6 +283,8 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'submission_name': submission_name,
                     'date_assigned': self.date_assigned,
                     'date_due': self.date_due,
+                    'allow_subject_editing': self.allow_subject_editing,
                     'state': 'assigned',
+                    'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
                 })
         return {'type': 'ir.actions.act_window_close'}

@@ -60,6 +60,18 @@ class APSResource(models.Model):
     answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
     parent_answer = fields.Html(string='Parent Answer', compute='_compute_parent_answer', store=False)
 
+    # has_default_answer = fields.Selection([
+    #     ('no', 'No'),
+    #     ('yes', 'Yes'),
+    #     ], string='Has Default Answer', 
+    #     default='no', 
+    #     help='Resources can include a default answer to a question. This is helpful if you wish to provide a template for students to fill in.',
+    #     required=True,
+    #     tracking=True)
+    default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
+
+    has_default_answer = fields.Boolean()
+
     has_child_resources = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
@@ -113,20 +125,22 @@ class APSResource(models.Model):
     # Removed parent_path since multiple parents don't fit tree structure
     child_count = fields.Integer(string='Total Children', compute='_compute_child_count')
     has_multiple_parents = fields.Boolean(string='Has Multiple Parents', compute='_compute_has_multiple_parents')
-
-    supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]")
-    
+    supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]") 
     supporting_resources_buttons = fields.Json(
         string='Resource Links',
         compute='_compute_supporting_resources_buttons',
         help='JSON data containing resource links with icons for the widget.'
     )
-
     subject_icons = fields.Image(
         string='Subject Icon',
         compute='_compute_subject_icons',
         help='Icon for the first subject associated with the resource',
         store=True,
+    )
+    allow_subject_editing = fields.Boolean(
+        string='Allow Subject Editing',
+        default=False,
+        help='If enabled, users can edit the subjects associated with this resource. This is useful for resources that are shared across multiple subjects, where the subject association may need to be customized at the submission level.',
     )
 # region Computed Fields and Overrides
     @api.depends('subjects')

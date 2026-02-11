@@ -110,14 +110,13 @@
                                         <field name="supporting_resources_buttons" widget="resource_links"  />
                                 </group>
                             </group>
-                            
+                            <field name="subjects" widget="clickable_many2many_tags" no_add="True" no_open="True" options="{'no_create': True}"/>
                             <hr/>
                             <div class="text-muted"
                                 style="font-size: 1.2em;"
                                 invisible="state == 'assigned' or answer">
                                 No answer has been supplied.
                             </div>
-
                             <field name="answer"
                                 nolabel="1"
                                 placeholder="Enter your answer here."

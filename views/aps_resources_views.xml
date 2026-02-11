@@ -51,6 +51,7 @@
                     <field name="url" widget="url_icon"  options="{'html': true}"/>
                     <field name="has_question" optional="hide"/>
                     <field name="has_answer" optional="hide"/>
+                    <field name="has_default_answer" optional="hide"/>
                     <field name="has_child_resources" optional="hide"/>
                     <field name="has_supporting_resources" optional="hide"/>
                     <field name="create_date" optional="hide"/>
@@ -97,6 +98,7 @@
                                     <field name="category"/>
                                     <field name="marks" widget="float_sentinel"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
+                                    <field name="tag_ids" widget="many2many_tags" options="{'no_create': False}"/>
                                     <field name="url" widget="url_icon"/>
                                      <field name="description"/>
                                     
@@ -104,11 +106,12 @@
                                 <group string="Technical">
                                     <field name="has_question"/>
                                     <field name="has_answer"/>
+                                    <field name="has_default_answer" invisible="has_answer=='no'"/>
                                     <field name="has_child_resources"/>
                                     <field name="has_supporting_resources"/>
+                                    <field name="allow_subject_editing" widget="boolean_toggle"  />
                                     <field name="supporting_resources_buttons" widget="resource_links"  />
                                     <field name="child_count"/>
-                                    <field name="tag_ids" widget="many2many_tags" options="{'no_create': False}"/>
                             </group>
                             </group>
                         </page>
@@ -118,6 +121,9 @@
                                 <field name="parent_question" nolabel="1" placeholder="Parent question will appear here."/>
                             </group>
                             <field name="question"  invisible="not has_question=='yes'" nolabel="1" placeholder="Enter the question for this resource."/>
+                        </page>
+                        <page string="Default Answer" invisible="has_default_answer==False">
+                            <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
                         </page>
                         <page string="Model Answer" invisible="has_answer=='no'">
                             <group invisible="not has_answer=='use_parent'" >
