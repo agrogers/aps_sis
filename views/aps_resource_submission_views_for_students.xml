@@ -8,7 +8,7 @@
         <field name="model">aps.resource.submission</field>
         <field name="arch" type="xml">
             <list string="My Submissions" create="false" delete="false">
-                <field name="subject_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
+                <field name="subject_icons" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
                 <field name="subjects" widget="many2many_tags" optional="hide"/>
                 <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
                 <field name="submission_name" optional="show"/>

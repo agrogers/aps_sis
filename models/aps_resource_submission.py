@@ -101,19 +101,36 @@ class APSResourceSubmission(models.Model):
     )
     type_icon = fields.Image(
         string='Type Icon',
-        related='resource_id.type_id.icon',
-        readonly=True,
+        compute="_compute_type_icon",
         store=True
     )
-    subject_icon = fields.Image(
+    subject_icons = fields.Image(
         string='Subject Icon',
-        compute='_compute_subject_icon',
+        compute='_compute_subject_icons',
         help='Icon for the first subject associated with the resource',
-        store=False,
+        store=True,
     )
     submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True)
 
 # region - Computed Fields
+
+    @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
+    def _compute_type_icon(self):
+        # This is needed because without it the icon is never cached properly. 
+        # That means there is a lot of annoying downloads on every page refresh.
+        # It is duplicated in other models as well.
+        for record in self:
+            record.type_icon = record.resource_id.type_id.icon if record.resource_id.type_id else False
+
+    @api.depends('resource_id.subjects', 'resource_id.subjects.icon')
+    def _compute_subject_icons(self):
+        for record in self:
+            if record.resource_id and record.resource_id.subjects:
+                first = record.resource_id.subjects[:1]
+                record.subject_icons = first.icon if first else False
+            else:
+                record.subject_icons = False
+
     @api.depends('date_due')
     def _compute_days_till_due(self):
         today = fields.Date.today()
@@ -136,15 +153,6 @@ class APSResourceSubmission(models.Model):
         """Recompute active status for all submissions. Called by cron job daily."""
         submissions = self.search([])
         submissions._compute_submission_active()
-
-    @api.depends('resource_id.subjects', 'resource_id.subjects.icon')
-    def _compute_subject_icon(self):
-        for record in self:
-            if record.resource_id and record.resource_id.subjects:
-                first = record.resource_id.subjects[:1]
-                record.subject_icon = first.icon if first else False
-            else:
-                record.subject_icon = False
 
     @api.depends('feedback')
     def _compute_has_feedback(self):

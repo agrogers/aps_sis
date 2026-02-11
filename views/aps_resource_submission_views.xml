@@ -65,7 +65,7 @@
         <field name="arch" type="xml">
             <list default_order="create_date,student_id,submission_label,submission_order">
                 <field name="task_id"  optional="hide"/>
-                <field name="subject_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Icon"/>
+                <field name="subject_icons" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Icon"/>
                 <field name="subjects" widget="many2many_tags" optional="show"/>
                 <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
                 <field name="display_name" optional="show"/>
@@ -114,7 +114,7 @@
         <field name="arch" type="xml">
             <list editable="top" default_order="create_date,student_id,submission_label,submission_order">
                 <field name="task_id"  optional="hide" readonly="1"/>
-                <field name="subject_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
+                <field name="subject_icons" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
                 <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
                 <field name="subjects" widget="many2many_tags" optional="show" readonly="1"/>
                 <field name="display_name" optional="hide" readonly="1"/>
@@ -157,7 +157,7 @@
                 <field name="due_status"/>
                 <field name="score"/>
                 <field name="result_percent"/>
-                <field name="subject_icon"/>
+                <field name="subject_icons"/>
                 <field name="subjects"/>
                 <templates>
                     <t t-name="kanban-box">

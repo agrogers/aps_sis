@@ -81,8 +81,8 @@ class APSResource(models.Model):
     # thumbnail = fields.Binary(string='Thumbnail', compute='_compute_thumbnail', store=True)
     thumbnail = fields.Binary(string='Thumbnail')
 
-    type_id = fields.Many2one('aps.resource.types', string='Type', ondelete='set null')
-    type_icon = fields.Image(string='Type Icon', related='type_id.icon', readonly=True)
+    type_id = fields.Many2one('aps.resource.types', string='Type', ondelete='set null', store=True, tracking=True)
+    type_icon = fields.Image(string='Type Icon', compute='_compute_type_icon', readonly=True, store=True)
     type_color = fields.Char(string='Type Color', related='type_id.color', readonly=True)
     url = fields.Char(string='URL', 
                       required=False, tracking=True)
@@ -122,6 +122,32 @@ class APSResource(models.Model):
         help='JSON data containing resource links with icons for the widget.'
     )
 
+    subject_icons = fields.Image(
+        string='Subject Icon',
+        compute='_compute_subject_icons',
+        help='Icon for the first subject associated with the resource',
+        store=True,
+    )
+# region Computed Fields and Overrides
+    @api.depends('subjects')
+    def _compute_subject_icons(self):
+        for record in self:
+            if record.subjects:
+                first = record.subjects[:1]
+                record.subject_icons = first.icon if first else False
+            else:
+                record.subject_icons = False
+
+
+    @api.depends('type_id', 'type_id.icon')
+    def _compute_type_icon(self):
+        # This is needed because without it the icon is never cached properly. 
+        # That means there is a lot of annoying downloads on every page refresh.
+        # It is duplicated in other models as well.
+        for record in self:
+            record.type_icon = record.type_id.icon if record.type_id else False
+
+
     @api.depends('url', 'name', 'display_name', 'type_icon', 'type_id.name',
                  'supporting_resource_ids', 'supporting_resource_ids.url', 
                  'supporting_resource_ids.name', 'supporting_resource_ids.display_name',
@@ -154,34 +180,6 @@ class APSResource(models.Model):
                         'is_main': False,
                     })
             resource.supporting_resources_buttons = links
-
-    @api.model
-    def default_get(self, fields_list):
-        res = super().default_get(fields_list)
-        parent_id = self.env.context.get('default_primary_parent_id')
-        if parent_id and 'primary_parent_id' in fields_list:
-            res['primary_parent_id'] = parent_id
-
-        # Handle many2many default for parent_ids
-        default_parent_ids = self.env.context.get('default_parent_ids')
-        if default_parent_ids and 'parent_ids' in fields_list:
-            res['parent_ids'] = default_parent_ids
-            # Extract parent ID from the many2many command and set primary_parent_id
-            if default_parent_ids and len(default_parent_ids) > 0:
-                command = default_parent_ids[0]
-                if len(command) >= 3 and command[0] == 6 and command[2]:  # (6, 0, [ids])
-                    parent_ids_list = command[2]
-                    if parent_ids_list and 'primary_parent_id' in fields_list and not res.get('primary_parent_id'):
-                        res['primary_parent_id'] = parent_ids_list[0]
-
-        # Set default type_id to the most recently used type
-        if 'type_id' in fields_list and not res.get('type_id'):
-            # Find the most recent resource with a type_id
-            recent_resource = self.search([('type_id', '!=', False)], order='write_date desc', limit=1)
-            if recent_resource:
-                res['type_id'] = recent_resource.type_id.id
-
-        return res
 
     @api.depends('child_ids')
     def _compute_child_count(self):
@@ -275,10 +273,12 @@ class APSResource(models.Model):
             data = []
             for c in rec.custom_name_ids:
                 if c.parent_resource_id and c.custom_name:
+                    # Replace NewId (in-memory) ids with False so JSON serialization succeeds
+                    cid = c.id if isinstance(c.id, int) else False
                     data.append({
                         'parent_resource_id': c.parent_resource_id.id,
                         'custom_name': c.custom_name,
-                        'id': c.id,
+                        'id': cid,
                     })
             rec.parent_custom_name_data = data or False
 
@@ -290,44 +290,35 @@ class APSResource(models.Model):
             rec.completed_submissions = len(submissions.filtered(lambda s: s.state == 'complete'))
             rec.overdue_tasks = len(rec.task_ids.filtered(lambda t: t.date_due and t.date_due < fields.Date.today() and t.state != 'complete'))
 
-    # @api.depends('question', 'answer')
-    # def _compute_thumbnail(self):
-    #     """Extract first image from question or answer HTML and store as thumbnail."""
-    #     for rec in self:
-    #         thumbnail_data = False
-    #         html_content = rec.question or rec.answer or ''
-            
-    #         # Find first img src in HTML
-    #         match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html_content, re.IGNORECASE)
-    #         if match:
-    #             img_src = match.group(1)
-    #             try:
-    #                 # Handle base64 data URLs
-    #                 if img_src.startswith('data:image'):
-    #                     # Extract base64 part after comma
-    #                     base64_data = img_src.split(',', 1)
-    #                     if len(base64_data) > 1:
-    #                         thumbnail_data = base64_data[1]
-    #                 # Handle Odoo attachment URLs (relative paths)
-    #                 elif img_src.startswith('/web/image') or img_src.startswith('/web/content'):
-    #                     # For internal Odoo images, try to get from attachment
-    #                     # Extract attachment id if present
-    #                     att_match = re.search(r'/web/(?:image|content)/(\d+)', img_src)
-    #                     if att_match:
-    #                         att_id = int(att_match.group(1))
-    #                         attachment = self.env['ir.attachment'].sudo().browse(att_id)
-    #                         if attachment.exists() and attachment.datas:
-    #                             thumbnail_data = attachment.datas
-    #                 # Handle external URLs
-    #                 elif img_src.startswith('http'):
-    #                     response = requests.get(img_src, timeout=5)
-    #                     if response.status_code == 200:
-    #                         thumbnail_data = base64.b64encode(response.content).decode('utf-8')
-    #             except Exception:
-    #                 # Silently fail - thumbnail is optional
-    #                 pass
-            
-    #         rec.thumbnail = thumbnail_data
+# region Overrides and Constraints
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        parent_id = self.env.context.get('default_primary_parent_id')
+        if parent_id and 'primary_parent_id' in fields_list:
+            res['primary_parent_id'] = parent_id
+
+        # Handle many2many default for parent_ids
+        default_parent_ids = self.env.context.get('default_parent_ids')
+        if default_parent_ids and 'parent_ids' in fields_list:
+            res['parent_ids'] = default_parent_ids
+            # Extract parent ID from the many2many command and set primary_parent_id
+            if default_parent_ids and len(default_parent_ids) > 0:
+                command = default_parent_ids[0]
+                if len(command) >= 3 and command[0] == 6 and command[2]:  # (6, 0, [ids])
+                    parent_ids_list = command[2]
+                    if parent_ids_list and 'primary_parent_id' in fields_list and not res.get('primary_parent_id'):
+                        res['primary_parent_id'] = parent_ids_list[0]
+
+        # Set default type_id to the most recently used type
+        if 'type_id' in fields_list and not res.get('type_id'):
+            # Find the most recent resource with a type_id
+            recent_resource = self.search([('type_id', '!=', False)], order='write_date desc', limit=1)
+            if recent_resource:
+                res['type_id'] = recent_resource.type_id.id
+
+        return res
+
 
     @api.constrains('primary_parent_id', 'parent_ids')
     def _check_primary_parent(self):
@@ -399,19 +390,7 @@ class APSResource(models.Model):
         from datetime import timedelta
         return timedelta(days=6)
 
-    # def action_assign_students(self):
-    #     self.ensure_one()
-    #     return {
-    #         'type': 'ir.actions.act_window',
-    #         'name': 'Assign Students',
-    #         'res_model': 'aps.assign.students.wizard',
-    #         'view_mode': 'form',
-    #         'view_id': self.env.ref('aps_sis.view_aps_assign_students_wizard').id,
-    #         'target': 'new',
-    #         'context': {
-    #             'default_resource_id': self.id,
-    #         },
-    #     }
+# region Action Methods
 
     def action_force_update_display_names(self):
         """Force recompute display names for all resources in hierarchical order."""
