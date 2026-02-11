@@ -99,10 +99,11 @@ class APSResourceSubmission(models.Model):
         related='resource_id.supporting_resources_buttons',
         help='Links to resources associated with this submission (e.g., main resource and supporting resources).'
     )
-    type_icon = fields.Binary(
+    type_icon = fields.Image(
         string='Type Icon',
-        related='resource_id.type_icon',
+        related='resource_id.type_id.icon',
         readonly=True,
+        store=True
     )
     subject_icon = fields.Image(
         string='Subject Icon',
