@@ -27,35 +27,85 @@
             </div>
 
             <div class="row mb-4">
-                <KpiCard name="'Active Tasks'" value="state.submissions.value" 
-                         percentage="state.submissions.percentage" icon="'fa-tasks'" 
-                         period_name="state.period_name"
-                         onClick="() => this.viewActiveSubmissions()"/>
-                <KpiCard name="'Overdue Items'" value="state.overdue.value" 
-                         percentage="state.overdue.percentage" icon="'fa-clock-o'" 
-                         period_name="state.period_name"
-                         onClick="() => this.viewOverdueSubmissions()"/>
-                <KpiCard name="'All Overdue Items'" value="state.alloverdue.value" 
-                         percentage="state.alloverdue.percentage" icon="'fa-clock-o'" 
-                         period_name="'All Time'"
-                         onClick="() => this.viewAllOverdueSubmissions()"/>
-                <KpiCard name="'Next 7 Days'" value="state.next_7_days.value" 
-                         percentage="state.next_7_days.percentage" icon="'fa-cubes'" 
-                         period_name="'Items Coming Due'"
-                         onClick="() => this.viewNext7DaysSubmissions()"/>
+                <t t-if="state.loadingKPIs">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="bg-white shadow-sm p-4 rounded h-100 d-flex align-items-center justify-content-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="bg-white shadow-sm p-4 rounded h-100 d-flex align-items-center justify-content-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="bg-white shadow-sm p-4 rounded h-100 d-flex align-items-center justify-content-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="bg-white shadow-sm p-4 rounded h-100 d-flex align-items-center justify-content-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <t t-else="">
+                    <KpiCard name="'Active Tasks'" value="state.submissions.value" 
+                             percentage="state.submissions.percentage" icon="'fa-tasks'" 
+                             period_name="state.period_name"
+                             onClick="() => this.viewActiveSubmissions()"/>
+                    <KpiCard name="'Overdue Items'" value="state.overdue.value" 
+                             percentage="state.overdue.percentage" icon="'fa-clock-o'" 
+                             period_name="state.period_name"
+                             onClick="() => this.viewOverdueSubmissions()"/>
+                    <KpiCard name="'All Overdue Items'" value="state.alloverdue.value" 
+                             percentage="state.alloverdue.percentage" icon="'fa-clock-o'" 
+                             period_name="'All Time'"
+                             onClick="() => this.viewAllOverdueSubmissions()"/>
+                    <KpiCard name="'Next 7 Days'" value="state.next_7_days.value" 
+                             percentage="state.next_7_days.percentage" icon="'fa-cubes'" 
+                             period_name="'Items Coming Due'"
+                             onClick="() => this.viewNext7DaysSubmissions()"/>
+                </t>
             </div>
 
             <div class="row">
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
                         <h3 class="fw-bold mb-3">Submissions by Day</h3>
-                        <ChartRenderer type="'bar'" title="" data="state.chartData" />
+                        <t t-if="state.loadingCharts">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading chart...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <ChartRenderer type="'bar'" title="" data="state.chartData" />
+                        </t>
                     </div>
                 </div>
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
                         <h3 class="fw-bold mb-3">Tasks by Due Status</h3>
-                        <ChartRenderer type="'pie'" title="" data="state.doughnutData2" />
+                        <t t-if="state.loadingDoughnuts">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading chart...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <ChartRenderer type="'pie'" title="" data="state.doughnutData2" />
+                        </t>
                     </div>
                 </div>
             </div>
@@ -63,13 +113,31 @@
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
                         <h3 class="fw-bold mb-3">Submission over Time</h3>
-                        <ChartRenderer type="'line'" title="" data="state.chartDataCummulative" />
+                        <t t-if="state.loadingCharts">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading chart...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <ChartRenderer type="'line'" title="" data="state.chartDataCummulative" />
+                        </t>
                     </div>
                 </div>
                 <div class="col-lg-6 mb-4">
                     <div class="bg-white shadow-sm p-4 rounded h-100">
                         <h3 class="fw-bold mb-3">Tasks Assigned by Subject</h3>
-                        <ChartRenderer type="'doughnut'" title="" data="state.doughnutData" />
+                        <t t-if="state.loadingDoughnuts">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading chart...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <ChartRenderer type="'doughnut'" title="" data="state.doughnutData" />
+                        </t>
                     </div>
                 </div>
             </div>

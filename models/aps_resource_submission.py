@@ -130,11 +130,11 @@ class APSResourceSubmission(models.Model):
         for record in self:
             record.type_icon = record.resource_id.type_id.icon if record.resource_id.type_id else False
 
-    @api.depends('resource_id.subjects', 'resource_id.subjects.icon')
+    @api.depends('subjects', 'subjects.icon')
     def _compute_subject_icons(self):
         for record in self:
-            if record.resource_id and record.resource_id.subjects:
-                first = record.resource_id.subjects[:1]
+            if record.subjects:
+                first = record.subjects[:1]
                 record.subject_icons = first.icon if first else False
             else:
                 record.subject_icons = False
@@ -512,7 +512,7 @@ class APSResourceSubmission(models.Model):
             if view.name == 'aps.resource.submission.form.for.students':
                 for node in arch.xpath("//field"):
                     
-                    if node.get('name') not in  ['answer','score','review_requested_by']:
+                    if node.get('name') not in  ['answer','score','review_requested_by','subjects']:
                         options_str = node.get('options') or '{}'
                         try:
                             # Try parsing as JSON first

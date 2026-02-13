@@ -1,4 +1,4 @@
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { KpiCard } from "./kpi_card/kpi_card";
@@ -27,16 +27,33 @@ export class ApexDashboard extends Component {
             doughnutData2: [],
             list_view_id: false,
             form_view_id: false,
-            
+            // Loading states for progressive loading
+            loadingKPIs: true,
+            loadingCharts: true,
+            loadingDoughnuts: true,
         });
 
         onWillStart(async () => {
-            // Fetch view IDs first
+            console.time('Dashboard Setup');
+
+            // Fetch view IDs first (needed for actions)
+            console.time('Fetch View IDs');
             await this.fetchViewIds();
-            // Fetch students
+            console.timeEnd('Fetch View IDs');
+
+            // Fetch students (needed for dropdown)
+            console.time('Fetch Students');
             await this.fetchStudents();
-            // Then fetch the rest of the data
-            await this.fetchData();
+            console.timeEnd('Fetch Students');
+
+            console.timeEnd('Dashboard Setup');
+        });
+
+        onMounted(async () => {
+            // Load dashboard data after component is rendered
+            console.time('Load Dashboard Data');
+            await this.loadDashboardData();
+            console.timeEnd('Load Dashboard Data');
         });
     }
 
@@ -94,7 +111,7 @@ export class ApexDashboard extends Component {
     }
 
     getSubmission7DaysDomain() {
-        return this.addStudentFilter([['date_assigned', '>', this.getTodayStr()], ['date_assigned', '<=', this.getTodayPlus7Str()]]);
+        return this.addStudentFilter([['date_due', '>', this.getTodayStr()], ['date_due', '<=', this.getTodayPlus7Str()]]);
     }
 
     getAllSubmissionsDomain() {
@@ -106,12 +123,14 @@ export class ApexDashboard extends Component {
     }
 
     async fetchViewIds() {
-        // Fetch student view IDs
+        console.time('fetchViewIds');
+        // Fetch student view IDs - use sudo to bypass access restrictions
         const [data_list] = await this.env.services.orm.searchRead(
             "ir.model.data",
             [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_list_for_students"]],
             ["res_id"],
-            { limit: 1 }
+            { limit: 1 },
+            { sudo: true }
         );
         this.state.list_view_id = data_list ? data_list.res_id : false;
 
@@ -119,17 +138,20 @@ export class ApexDashboard extends Component {
             "ir.model.data",
             [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_form_for_students"]],
             ["res_id"],
-            { limit: 1 }
+            { limit: 1 },
+            { sudo: true }
         );
         this.state.form_view_id = data_form ? data_form.res_id : false;
+        console.timeEnd('fetchViewIds');
     }
 
     async fetchStudents() {
+        console.time('fetchStudents');
         // Fetch unique students from submissions, ordered by name
         const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
         const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
         this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
-        
+
         // Set selectedStudent after students are loaded
         const savedSettings = this.loadSettings();
         if (savedSettings.selectedStudent) {
@@ -143,148 +165,173 @@ export class ApexDashboard extends Component {
         } else {
             this.state.selectedStudent = false;
         }
-        
+
         // Check if user is faculty
         // const uid = this.user.userId;
         // this.state.isFaculty = await this.user.hasGroup("aps_sis.group_aps_teacher");
+        console.timeEnd('fetchStudents');
     }
 
-    async fetchData() {
-            const todayStr = this.getTodayStr();
-            const todayPlus7Str = this.getTodayPlus7Str();
-            
-            this.state.period_name = this.selectedPeriodText;
+    async loadDashboardData() {
+        // Load KPIs first (fastest to load, most important for user)
+        await this.fetchKPIs();
 
-            // Fetching counts from aps.resource.submission filtered by period
-            const submissionDomain = this.getActiveSubmissionsDomain();
-            const submissionCount = await this.orm.searchCount("aps.resource.submission", submissionDomain);
-            this.state.submissions.value = submissionCount;
-            
-            // // Fetch active tasks
-            // const taskDomain = this.getTaskDomain();
-            // const taskCount = await this.orm.searchCount("aps.resource.task", taskDomain);
-            // this.state.tasks.value = taskCount;
-            
-            // Fetch overdue items (submissions past due date and not submitted)
-            const overdueDomain = this.getOverdueDomain();
-            const overdueCount = await this.orm.searchCount("aps.resource.submission", overdueDomain);
-            this.state.overdue.value = overdueCount;
-    
-            
-            // Fetch ALL overdue items (submissions past due date and not submitted)
-            const allOverdueCount = await this.orm.searchCount("aps.resource.submission", this.getAllOverdueDomain());
-            this.state.alloverdue.value = allOverdueCount;
-            
-            // Fetch new resources
-            const submission7daysDomain = this.getSubmission7DaysDomain();
-            const submission7daysCount = await this.orm.searchCount("aps.resource.submission", submission7daysDomain);
-            this.state.next_7_days.value = submission7daysCount;
-            
-            // Fetch chart data: submissions by status per day for the entire period
-            const allSubmissionsDomain = this.getAllSubmissionsDomain();
-            const allSubmissions = await this.orm.searchRead("aps.resource.submission", allSubmissionsDomain, ["date_assigned", "date_submitted", "date_completed"]);
-            
-            const chartData = [];
-            const dateMap = {};
-            const today = new Date();
-            const startDate = new Date(today.getTime() - this.state.period * 24 * 60 * 60 * 1000);
+        // Then load charts and doughnuts in parallel
+        await Promise.all([
+            this.fetchChartData(),
+            this.fetchDoughnutData()
+        ]);
+    }
 
-            let currentDate = new Date(startDate);
-            while (currentDate <= today) {
-                const dateStr = currentDate.toISOString().split('T')[0];
-                dateMap[dateStr] = { assigned: 0, submitted: 0, finalized: 0 };
-                currentDate.setDate(currentDate.getDate() + 1);
+    async fetchKPIs() {
+        console.time('Fetch KPIs');
+        this.state.loadingKPIs = true;
+
+        const todayStr = this.getTodayStr();
+        const todayPlus7Str = this.getTodayPlus7Str();
+        this.state.period_name = this.selectedPeriodText;
+
+        // Fetch all KPI counts in parallel for better performance
+        const [
+            submissionCount,
+            overdueCount,
+            allOverdueCount,
+            submission7daysCount
+        ] = await Promise.all([
+            this.orm.searchCount("aps.resource.submission", this.getActiveSubmissionsDomain()),
+            this.orm.searchCount("aps.resource.submission", this.getOverdueDomain()),
+            this.orm.searchCount("aps.resource.submission", this.getAllOverdueDomain()),
+            this.orm.searchCount("aps.resource.submission", this.getSubmission7DaysDomain())
+        ]);
+
+        this.state.submissions.value = submissionCount;
+        this.state.overdue.value = overdueCount;
+        this.state.alloverdue.value = allOverdueCount;
+        this.state.next_7_days.value = submission7daysCount;
+
+        this.state.loadingKPIs = false;
+        console.timeEnd('Fetch KPIs');
+    }
+
+    async fetchChartData() {
+        console.time('Fetch Chart Data');
+        this.state.loadingCharts = true;
+
+        // Fetch chart data: submissions by status per day for the entire period
+        const allSubmissionsDomain = this.getAllSubmissionsDomain();
+        const allSubmissions = await this.orm.searchRead("aps.resource.submission", allSubmissionsDomain, ["date_assigned", "date_submitted", "date_completed"]);
+
+        console.time('Process Chart Data');
+        const chartData = [];
+        const dateMap = {};
+        const today = new Date();
+        const startDate = new Date(today.getTime() - this.state.period * 24 * 60 * 60 * 1000);
+
+        let currentDate = new Date(startDate);
+        while (currentDate <= today) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            dateMap[dateStr] = { assigned: 0, submitted: 0, finalized: 0 };
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        allSubmissions.forEach(sub => {
+            if (sub.date_assigned && dateMap[sub.date_assigned]) {
+                dateMap[sub.date_assigned].assigned++;
             }
-            
-            allSubmissions.forEach(sub => {
-                if (sub.date_assigned && dateMap[sub.date_assigned]) {
-                    dateMap[sub.date_assigned].assigned++;
-                }
-                if (sub.date_submitted && dateMap[sub.date_submitted]) {
-                    dateMap[sub.date_submitted].submitted++;
-                }
-                if (sub.date_completed && dateMap[sub.date_completed]) {
-                    dateMap[sub.date_completed].finalized++;
-                }
+            if (sub.date_submitted && dateMap[sub.date_submitted]) {
+                dateMap[sub.date_submitted].submitted++;
+            }
+            if (sub.date_completed && dateMap[sub.date_completed]) {
+                dateMap[sub.date_completed].finalized++;
+            }
+        });
+
+        for (const dateStr in dateMap) {
+            chartData.push({
+                date: dateStr,
+                assigned: dateMap[dateStr].assigned,
+                submitted: dateMap[dateStr].submitted,
+                finalized: dateMap[dateStr].finalized
             });
-            
-            for (const dateStr in dateMap) {
-                chartData.push({
-                    date: dateStr,
-                    assigned: dateMap[dateStr].assigned,
-                    submitted: dateMap[dateStr].submitted,
-                    finalized: dateMap[dateStr].finalized
-                });
-            }
-            this.state.chartData = chartData;
+        }
+        this.state.chartData = chartData;
 
-            const chartDataCummulative = [];
-            var assigned = 0;
-            var submitted = 0;
-            var finalized = 0;
+        const chartDataCummulative = [];
+        var assigned = 0;
+        var submitted = 0;
+        var finalized = 0;
 
-            for (const dateStr in dateMap) {
-                assigned += dateMap[dateStr].assigned;
-                submitted += dateMap[dateStr].submitted;
-                finalized += dateMap[dateStr].finalized;
+        for (const dateStr in dateMap) {
+            assigned += dateMap[dateStr].assigned;
+            submitted += dateMap[dateStr].submitted;
+            finalized += dateMap[dateStr].finalized;
 
-
-                chartDataCummulative.push({
-                    date: dateStr,
-                    assigned: assigned,
-                    submitted: submitted,
-                    finalized: finalized
-                });
-            }
-
-            this.state.chartDataCummulative = chartDataCummulative
-            
-            // Fetch doughnut data: tasks assigned per subject
-            const doughnutDomain = this.getDoughnutDomain();
-            const submissions = await this.orm.searchRead("aps.resource.submission", doughnutDomain, ["subjects","due_status"]);
-            
-            const subjectIds = new Set();
-            submissions.forEach(sub => {
-                if (sub.subjects && Array.isArray(sub.subjects)) {
-                    sub.subjects.forEach(id => subjectIds.add(id));
-                }
+            chartDataCummulative.push({
+                date: dateStr,
+                assigned: assigned,
+                submitted: submitted,
+                finalized: finalized
             });
-            
-            const subjectRecords = await this.orm.searchRead("op.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name"]);
-            const subjectMap = {};
-            subjectRecords.forEach(rec => subjectMap[rec.id] = rec.name);
-            
-            const subjectCounts = {};
-            const due_statusCounts = {};
-            const dueStatusDisplay = {
-                'late': 'Late',
-                'on-time': 'On Time',
-                'early': 'Early'
-            };
-            submissions.forEach(sub => {
-                if (sub.subjects && Array.isArray(sub.subjects)) {
-                    sub.subjects.forEach(id => {
-                        const name = subjectMap[id] || 'Unknown';
-                        if (!subjectCounts[id]) {
-                            subjectCounts[id] = { data_point: name, __count: 0 };
-                        }
-                        subjectCounts[id].__count++;
-                    });
-                }
-                if (sub.due_status) {
-                    const display = dueStatusDisplay[sub.due_status] || sub.due_status;
-                    if (!due_statusCounts[display]) {
-                        due_statusCounts[display] = { data_point: display, __count: 0 };
+        }
+
+        this.state.chartDataCummulative = chartDataCummulative;
+        console.timeEnd('Process Chart Data');
+
+        this.state.loadingCharts = false;
+        console.timeEnd('Fetch Chart Data');
+    }
+
+    async fetchDoughnutData() {
+        console.time('Fetch Doughnut Data');
+        this.state.loadingDoughnuts = true;
+
+        // Fetch doughnut data: tasks assigned per subject
+        const doughnutDomain = this.getDoughnutDomain();
+        const submissions = await this.orm.searchRead("aps.resource.submission", doughnutDomain, ["subjects","due_status"]);
+
+        console.time('Process Doughnut Data');
+        const subjectIds = new Set();
+        submissions.forEach(sub => {
+            if (sub.subjects && Array.isArray(sub.subjects)) {
+                sub.subjects.forEach(id => subjectIds.add(id));
+            }
+        });
+
+        const subjectRecords = await this.orm.searchRead("op.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name"]);
+        const subjectMap = {};
+        subjectRecords.forEach(rec => subjectMap[rec.id] = rec.name);
+
+        const subjectCounts = {};
+        const due_statusCounts = {};
+        const dueStatusDisplay = {
+            'late': 'Late',
+            'on-time': 'On Time',
+            'early': 'Early'
+        };
+        submissions.forEach(sub => {
+            if (sub.subjects && Array.isArray(sub.subjects)) {
+                sub.subjects.forEach(id => {
+                    const name = subjectMap[id] || 'Unknown';
+                    if (!subjectCounts[id]) {
+                        subjectCounts[id] = { data_point: name, __count: 0 };
                     }
-                    due_statusCounts[display].__count++;
+                    subjectCounts[id].__count++;
+                });
+            }
+            if (sub.due_status) {
+                const display = dueStatusDisplay[sub.due_status] || sub.due_status;
+                if (!due_statusCounts[display]) {
+                    due_statusCounts[display] = { data_point: display, __count: 0 };
                 }
-            });
-            this.state.doughnutData = Object.values(subjectCounts);
-            this.state.doughnutData2 = Object.values(due_statusCounts);
-        // } catch (error) {
-        //     console.error("Error fetching dashboard data:", error);
-        //     // Optionally, set default values or show an error message
-        // }
+                due_statusCounts[display].__count++;
+            }
+        });
+        this.state.doughnutData = Object.values(subjectCounts);
+        this.state.doughnutData2 = Object.values(due_statusCounts);
+        console.timeEnd('Process Doughnut Data');
+
+        this.state.loadingDoughnuts = false;
+        console.timeEnd('Fetch Doughnut Data');
     }
 
     loadSettings() {
@@ -311,12 +358,12 @@ export class ApexDashboard extends Component {
 
     async onChangePeriod() {
         this.saveSettings();
-        await this.fetchData();
+        await this.loadDashboardData();
     }
 
     async onChangeStudent() {
         this.saveSettings();
-        await this.fetchData();
+        await this.loadDashboardData();
     }
 
     viewActiveSubmissions() {
