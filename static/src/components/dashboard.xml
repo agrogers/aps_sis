@@ -4,6 +4,7 @@
             <div class="row mb-4 align-items-center justify-content-between bg-white shadow-sm p-4 mx-0 rounded">
                 <div class="col-md-4">
                     <h1 class="text-primary fw-bold mb-0">APEX Dashboard</h1>
+                    <small class="text-muted" t-esc="selectedPeriodText"/>
                 </div>
                 <div class="col-md-4">
                     <select class="form-select" t-model="state.period" t-on-change="onChangePeriod">
@@ -26,15 +27,22 @@
             </div>
 
             <div class="row mb-4">
-                <KpiCard name="'Total Tasks'" value="state.submissions.value" 
-                         percentage="state.submissions.percentage" icon="'fa-file-text'" 
-                         onClick="() => this.viewSubmissions()"/>
-                <KpiCard name="'Active Tasks'" value="state.tasks.value" 
-                         percentage="state.tasks.percentage" icon="'fa-tasks'" />
+                <KpiCard name="'Active Tasks'" value="state.submissions.value" 
+                         percentage="state.submissions.percentage" icon="'fa-tasks'" 
+                         period_name="state.period_name"
+                         onClick="() => this.viewActiveSubmissions()"/>
                 <KpiCard name="'Overdue Items'" value="state.overdue.value" 
-                         percentage="state.overdue.percentage" icon="'fa-clock-o'" />
+                         percentage="state.overdue.percentage" icon="'fa-clock-o'" 
+                         period_name="state.period_name"
+                         onClick="() => this.viewOverdueSubmissions()"/>
+                <KpiCard name="'All Overdue Items'" value="state.alloverdue.value" 
+                         percentage="state.alloverdue.percentage" icon="'fa-clock-o'" 
+                         period_name="'All Time'"
+                         onClick="() => this.viewAllOverdueSubmissions()"/>
                 <KpiCard name="'Next 7 Days'" value="state.next_7_days.value" 
-                         percentage="state.next_7_days.percentage" icon="'fa-cubes'" />
+                         percentage="state.next_7_days.percentage" icon="'fa-cubes'" 
+                         period_name="'Items Coming Due'"
+                         onClick="() => this.viewNext7DaysSubmissions()"/>
             </div>
 
             <div class="row">

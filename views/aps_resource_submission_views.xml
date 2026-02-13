@@ -259,7 +259,7 @@
                                     <field name="student_id"/>
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
-                                    <field name="allow_subject_editing" invisible="0"/>
+                                    <field name="allow_subject_editing"  widget="boolean_toggle" />
                                     <field name="assigned_by"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
@@ -286,7 +286,8 @@
                             <group>
                                 <group string="Other Details">
                                     <field name="active_datetime" readonly="1"/>
-                                    <field name="notified_active" />
+                                    <field name="notified_active"  widget="boolean_toggle" />
+                                    <field name="days_till_due" readonly="1"/>
                                     <field name="create_date" readonly="1"/>
                                     <field name="write_date" readonly="1"/>
                                 </group>

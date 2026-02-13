@@ -7,7 +7,7 @@ from lxml import etree
 
 _logger = logging.getLogger(__name__)
 sentinel_zero = -0.01
-mins_before_notification = 0
+mins_before_notification = 10
 
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
@@ -23,7 +23,8 @@ class APSResourceSubmission(models.Model):
     )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
-    subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects', readonly=False)
+    # subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects', readonly=False)
+    subjects = fields.Many2many('op.subject', string='Subjects')
     student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
     submission_label = fields.Char(
@@ -58,7 +59,7 @@ class APSResourceSubmission(models.Model):
         ('on-time', 'On Time'),
         ('early', 'Early'),
     ], string='Due Status', compute='_compute_due_status', store=True)
-    days_till_due = fields.Integer(compute='_compute_days_till_due')  # creates a class used to highlight records when they are nearing their due date
+    days_till_due = fields.Integer(compute='_compute_days_till_due', store=True)  # creates a class used to highlight records when they are nearing their due date
     actual_duration = fields.Float(string='Actual Duration (hours)', digits=(16, 1))
     feedback = fields.Html(string='Feedback')
     has_answer = fields.Selection(string='Has Answer', related='resource_id.has_answer', readonly=True, store=True)
@@ -491,6 +492,9 @@ class APSResourceSubmission(models.Model):
         Intercepts the view loading process. If a student is logged in,
         force the use of student-specific views regardless of what was requested.
         """
+        import traceback
+        _logger.warning(f"_get_view called: view_id={view_id}, view_type={view_type}, user={self.env.user.name}, student_group={self.env.user.has_group('aps_resource_submission.group_aps_student')}")
+        _logger.warning(f"Call stack: {traceback.format_stack()[-3:-1]}")
         
         # 1. Check if user is a student
         if self.env.user.has_group('aps_resource_submission.group_aps_student'):
@@ -616,6 +620,18 @@ class APSResourceSubmission(models.Model):
                     )
             submission.notified_active = True
   
+    @api.model
+    def update_submissions_subjects(self):
+        """Update subjects for all submissions based on their resource's subjects.
+        This method can be called by a cron job to sync subjects."""
+        submissions = self.search([])
+        updated_count = 0
+        for submission in submissions:
+            if submission.resource_id and submission.resource_id.subjects:
+                submission.subjects = submission.resource_id.subjects
+                updated_count += 1
+        _logger.info(f"Updated subjects for {updated_count} submissions")
+        return updated_count
     
 # endregion - Activity Notifications
 

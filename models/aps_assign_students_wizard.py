@@ -37,6 +37,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
     affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources', order='sequence')
     can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False)
+    
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
         store=True
@@ -171,24 +172,6 @@ class APSAssignStudentsWizard(models.TransientModel):
         else:
             self.affected_resource_line_ids = False
 
-        # # Copy matching fields from the selected resource into the wizard fields
-        # if self.resource_id:
-        #     skip_fields = {
-        #         'id', 'display_name', 'name', 'affected_resource_line_ids',
-        #         'student_ids', 'submission_label', 'submission_order', 'assigned_by',
-        #         'resource_id', 'warning_message', 'can_assign', 'parent_question', 'parent_answer',
-        #     }
-        #     for fname in self._fields:
-        #         if fname in skip_fields:
-        #             continue
-        #         # only copy if resource has this field
-        #         if fname in self.resource_id._fields:
-        #             try:
-        #                 setattr(self, fname, self.resource_id[fname])
-        #             except Exception:
-        #                 # ignore fields that can't be assigned or cause errors
-        #                 continue
-
     def _default_assigned_by(self):
         """Get the faculty record for the current user"""
         employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
@@ -262,6 +245,15 @@ class APSAssignStudentsWizard(models.TransientModel):
                     else:
                         submission_name = parent_name + separator + child_name
             for student in self.student_ids:
+                # Get student's assigned subjects from running courses
+                student_record = self.env['op.student'].search([('partner_id', '=', student.id)], limit=1)
+                student_subjects = self.env['op.subject']
+                if student_record:
+                    running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+                    student_subjects = running_courses.mapped('subject_ids')
+                # Intersect with wizard subjects
+                assigned_subjects = self.subjects & student_subjects
+                
                 # Check if task exists
                 task = task_model.search([
                     ('resource_id', '=', resource.id),
@@ -286,5 +278,6 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'allow_subject_editing': self.allow_subject_editing,
                     'state': 'assigned',
                     'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
+                    'subjects': assigned_subjects.ids,
                 })
         return {'type': 'ir.actions.act_window_close'}
