@@ -7,6 +7,7 @@ from lxml import etree
 
 _logger = logging.getLogger(__name__)
 sentinel_zero = -0.01
+mins_before_notification = 0
 
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
@@ -60,10 +61,9 @@ class APSResourceSubmission(models.Model):
     days_till_due = fields.Integer(compute='_compute_days_till_due')  # creates a class used to highlight records when they are nearing their due date
     actual_duration = fields.Float(string='Actual Duration (hours)', digits=(16, 1))
     feedback = fields.Html(string='Feedback')
-    answer = fields.Html(string='Answer')
-    has_question = fields.Selection(string='Has Question', related='resource_id.has_question', readonly=True, store=True)
-    has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
     has_answer = fields.Selection(string='Has Answer', related='resource_id.has_answer', readonly=True, store=True)
+    answer = fields.Html(string='Answer')
+    has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
     reviewed_by = fields.Many2many(
         'op.faculty',
         'aps_submission_reviewed_by_rel',
@@ -88,6 +88,7 @@ class APSResourceSubmission(models.Model):
         readonly=True,
         help='The model answer from the associated resource for comparison.'
     )
+    has_question = fields.Selection(string='Has Question', related='resource_id.has_question', readonly=True, store=True)
     question = fields.Html(
         string='Question',
         related='resource_id.question',
@@ -111,6 +112,8 @@ class APSResourceSubmission(models.Model):
         store=True,
     )
     submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True)
+    active_datetime = fields.Datetime(string='Active Since', compute='_compute_active_datetime', store=True)
+    notified_active = fields.Boolean(string='Notified Active', default=False)
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
         default=False,
@@ -157,6 +160,16 @@ class APSResourceSubmission(models.Model):
         """Recompute active status for all submissions. Called by cron job daily."""
         submissions = self.search([])
         submissions._compute_submission_active()
+
+    @api.depends('date_assigned', 'submission_active')
+    def _compute_active_datetime(self):
+        for record in self:
+            if record.submission_active and not record.active_datetime:
+                record.active_datetime = fields.Datetime.now()
+            elif not record.submission_active:
+                record.active_datetime = False
+
+
 
     @api.depends('feedback')
     def _compute_has_feedback(self):
@@ -229,49 +242,6 @@ class APSResourceSubmission(models.Model):
             record.display_name = f"{record.submission_name} ({record.date_assigned})"
 
 # endregion - Computed Fields
-
-    @api.model
-    def _get_view(self, view_id=None, view_type='form', **options):
-        """
-        Intercepts the view loading process. If a student is logged in,
-        force the use of student-specific views regardless of what was requested.
-        """
-        
-        # 1. Check if user is a student
-        if self.env.user.has_group('aps_resource_submission.group_aps_student'):
-            
-            # 2. Redirect 'tree' (list) requests to the student list view
-            if view_type == 'list': # In v18, 'tree' is often 'list' in the backend
-                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_list_for_students').id
-                
-            # 3. Redirect 'form' requests to the student form view
-            elif view_type == 'form':
-                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_form_for_students').id
-
-        arch, view = super()._get_view(view_id, view_type, **options)
-        if view_type == 'form':
-            if view.name == 'aps.resource.submission.form.for.students':
-                for node in arch.xpath("//field"):
-                    
-                    if node.get('name') not in  ['answer','score','review_requested_by']:
-                        options_str = node.get('options') or '{}'
-                        try:
-                            # Try parsing as JSON first
-                            options = json.loads(options_str)
-                        except json.JSONDecodeError:
-                            # If JSON fails, try parsing as Python literal (handles single quotes)
-                            try:
-                                options = ast.literal_eval(options_str)
-                            except (ValueError, SyntaxError):
-                                # If both fail, start with empty dict
-                                options = {}
-                        options['no_open'] = "not is_current_user_faculty"
-                        node.set('options', json.dumps(options))
-                        
-                        if node.get('readonly'): continue  # If the readonly status has been explicitly set, skip it
-                        node.set('readonly', 'not is_current_user_faculty')
-                        # Disable the ability to open the resource from student view
-        return arch, view
 
 
     def _get_faculty_for_current_user(self):
@@ -399,22 +369,6 @@ class APSResourceSubmission(models.Model):
             }
         }
 
-# endregion - Action Methods
-
-    @api.onchange('state')
-    def _onchange_state_set_dates(self):
-        """Set date_submitted/date_completed immediately when state changes in the form."""
-        for record in self:
-            # When marking submitted in the form, set a submitted timestamp if missing
-            if record.state == 'submitted' and not record.date_submitted:
-                record.date_submitted = fields.Date.today()
-            # When marking complete in the form, set completion and submission timestamps if missing
-            if record.state == 'complete':
-                if not record.date_completed:
-                    record.date_completed = fields.Date.today()
-                if not record.date_submitted:
-                    record.date_submitted = fields.Date.today()
-
     def action_mark_reviewed(self):
         faculty = self._get_current_faculty()
         if not faculty:
@@ -453,7 +407,9 @@ class APSResourceSubmission(models.Model):
             'target': 'current',
         }
 
-# region - Write Override
+# endregion - Action Methods
+
+# region - Overrides and records methods
 
     def write(self, vals):
         
@@ -498,8 +454,96 @@ class APSResourceSubmission(models.Model):
                 if added_ids:
                     record._notify_new_faculty_reviewers(added_ids)
         return result
+    
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if 'state' not in vals:
+                vals['state'] = 'assigned'
+        submissions = super().create(vals_list)
+        # Update task states for newly created submissions
+        tasks = submissions.mapped('task_id')
+        if tasks:
+            tasks._update_state_from_submissions()
+        # Log creation for debugging
+        for submission in submissions:
+            _logger.info(f"Created submission {submission.id} for task {submission.task_id.id}")
+        return submissions
 
-#endregion - Write Override
+    def copy(self, default=None):
+        if default is None:
+            default = {}
+        default['answer'] = None
+        default['feedback'] = None
+        default['date_assigned'] = fields.Date.today()
+        default['date_submitted'] = False
+        default['date_completed'] = False
+        default['reviewed_by'] = []
+        default['review_requested_by'] = []
+        default['assigned_by'] = self._get_current_faculty().id
+        default['score'] = sentinel_zero
+        # date_due will be recomputed based on the new date_assigned
+        return super().copy(default)
+
+    @api.model
+    def _get_view(self, view_id=None, view_type='form', **options):
+        """
+        Intercepts the view loading process. If a student is logged in,
+        force the use of student-specific views regardless of what was requested.
+        """
+        
+        # 1. Check if user is a student
+        if self.env.user.has_group('aps_resource_submission.group_aps_student'):
+            
+            # 2. Redirect 'tree' (list) requests to the student list view
+            if view_type == 'list': # In v18, 'tree' is often 'list' in the backend
+                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_list_for_students').id
+                
+            # 3. Redirect 'form' requests to the student form view
+            elif view_type == 'form':
+                view_id = self.env.ref('aps_resource_submission.view_aps_resource_submission_form_for_students').id
+
+        arch, view = super()._get_view(view_id, view_type, **options)
+        if view_type == 'form':
+            if view.name == 'aps.resource.submission.form.for.students':
+                for node in arch.xpath("//field"):
+                    
+                    if node.get('name') not in  ['answer','score','review_requested_by']:
+                        options_str = node.get('options') or '{}'
+                        try:
+                            # Try parsing as JSON first
+                            options = json.loads(options_str)
+                        except json.JSONDecodeError:
+                            # If JSON fails, try parsing as Python literal (handles single quotes)
+                            try:
+                                options = ast.literal_eval(options_str)
+                            except (ValueError, SyntaxError):
+                                # If both fail, start with empty dict
+                                options = {}
+                        options['no_open'] = "not is_current_user_faculty"
+                        node.set('options', json.dumps(options))
+                        
+                        if node.get('readonly'): continue  # If the readonly status has been explicitly set, skip it
+                        node.set('readonly', 'not is_current_user_faculty')
+                        # Disable the ability to open the resource from student view
+        return arch, view
+
+    @api.onchange('state')
+    def _onchange_state_set_dates(self):
+        """Set date_submitted/date_completed immediately when state changes in the form."""
+        for record in self:
+            # When marking submitted in the form, set a submitted timestamp if missing
+            if record.state == 'submitted' and not record.date_submitted:
+                record.date_submitted = fields.Date.today()
+            # When marking complete in the form, set completion and submission timestamps if missing
+            if record.state == 'complete':
+                if not record.date_completed:
+                    record.date_completed = fields.Date.today()
+                if not record.date_submitted:
+                    record.date_submitted = fields.Date.today()
+
+
+#endregion - Overrides and records methods
 
 # region - Activity Notifications    
     def _notify_new_submission(self, subject_ids):
@@ -532,41 +576,46 @@ class APSResourceSubmission(models.Model):
                 self.activity_schedule(
                     'mail.mail_activity_data_todo',
                     user_id=faculty.emp_id.user_id.id,
-                    summary=_(f"Review Requested by {self.env.user.display_name} for {self.display_name} ({self.student_id.display_name})"),
-                    note=_(f"You have been requested to review the resource submission: {self.display_name}"),
+                    summary=_(f"Review Requested by {self.env.user.display_name} for {self.submission_name} ({self.student_id.display_name})"),
+                    note=_(f"You have been requested to review the resource submission: {self.submission_name}"),
                     date_deadline=fields.Date.add(fields.Date.today(), days=1),  
                     request_partner_id=self.env.user.partner_id.id
                 )
 
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if 'state' not in vals:
-                vals['state'] = 'assigned'
-        submissions = super().create(vals_list)
-        # Update task states for newly created submissions
-        tasks = submissions.mapped('task_id')
-        if tasks:
-            tasks._update_state_from_submissions()
-        # Log creation for debugging
+    @api.model
+    def send_active_notifications(self):
+        """Send notifications for submissions that became active at least 10 minutes ago. Called by cron every 10 minutes."""
+        from datetime import timedelta
+        threshold_time = fields.Datetime.now() - timedelta(minutes=mins_before_notification)
+        submissions = self.search([
+            ('submission_active', '=', True),
+            ('notified_active', '=', False),
+            ('active_datetime', '!=', False),
+            ('active_datetime', '<=', threshold_time),
+        ])
         for submission in submissions:
-            _logger.info(f"Created submission {submission.id} for task {submission.task_id.id}")
-        return submissions
-
-    def copy(self, default=None):
-        if default is None:
-            default = {}
-        default['answer'] = None
-        default['feedback'] = None
-        default['date_assigned'] = fields.Date.today()
-        default['date_submitted'] = False
-        default['date_completed'] = False
-        default['reviewed_by'] = []
-        default['review_requested_by'] = []
-        default['assigned_by'] = self._get_current_faculty().id
-        default['score'] = sentinel_zero
-        # date_due will be recomputed based on the new date_assigned
-        return super().copy(default)
+            if submission.student_id and submission.student_id.email:
+                # Send email notification
+                template = self.env.ref('aps_sis.apex_submission_active_email_template', raise_if_not_found=False)
+                if template:
+                    context = {
+                        'question': submission.question,  
+                        'submission_name': submission.submission_name,
+                        'date_assigned': submission.date_assigned,  
+                        'date_due': submission.date_due,
+                        'record_url': submission._notify_get_action_link('view'),
+                    }
+                    template.with_context(context).send_mail(submission.id, force_send=True)
+                else:
+                    # Fallback: post message
+                    submission.message_post(
+                        body=_("Your task '%s' is now active.") % submission.display_name,
+                        partner_ids=[submission.student_id.id],
+                        message_type='notification',
+                        subtype_xmlid='mail.mt_note'
+                    )
+            submission.notified_active = True
+  
     
 # endregion - Activity Notifications
+

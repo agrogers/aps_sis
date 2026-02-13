@@ -39,7 +39,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False)
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
-        store=False
+        store=True
     )
 
     has_question = fields.Selection([

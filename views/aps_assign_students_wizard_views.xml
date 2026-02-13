@@ -19,7 +19,7 @@
                                     <field name="date_assigned"/>
                                     <field name="date_due"/>
                                     <field name="can_assign" invisible="1"/>
-                                    <field name="allow_subject_editing" widget="boolean_toggle" invisible="0"/>
+                                    <field name="allow_subject_editing" widget="boolean_toggle" invisible="1"/>
                                     <field name="has_question"  readonly="0" invisible="0"/>
                                     <field name="has_default_answer" widget="boolean_toggle" readonly="0" invisible="0"/>
 

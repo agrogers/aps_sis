@@ -110,7 +110,7 @@
                                         <field name="supporting_resources_buttons" widget="resource_links"  />
                                 </group>
                             </group>
-                            <field name="subjects" widget="clickable_many2many_tags" no_add="True" no_open="True" options="{'no_create': True}"/>
+                            <field name="subjects" widget="clickable_many2many_tags" invisible="allow_subject_editing==False" no_add="True" no_open="True" options="{'no_create': True}"/>
                             <hr/>
                             <div class="text-muted"
                                 style="font-size: 1.2em;"

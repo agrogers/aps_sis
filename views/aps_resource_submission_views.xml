@@ -259,12 +259,13 @@
                                     <field name="student_id"/>
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="allow_subject_editing" invisible="0"/>
                                     <field name="assigned_by"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="submission_label"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
-                                    <field name="submission_active"/>
+                                    <field name="submission_active" widget="boolean_toggle" />
                                 </group>
                                 <group string="Results">
                                     <field name="state" readonly="not is_current_user_faculty"/>
@@ -280,6 +281,14 @@
                                     <field name="due_status" readonly="not is_current_user_faculty"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Other Details">
+                                    <field name="active_datetime" readonly="1"/>
+                                    <field name="notified_active" />
+                                    <field name="create_date" readonly="1"/>
+                                    <field name="write_date" readonly="1"/>
                                 </group>
                             </group>
                         </page>
