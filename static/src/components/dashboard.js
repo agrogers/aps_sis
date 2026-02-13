@@ -8,8 +8,11 @@ export class ApexDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        
+        const savedSettings = this.loadSettings();
+
         this.state = useState({
-            period: 7,
+            period: savedSettings.period || 7,
             period_name: "",
             selectedStudent: false,
             students: [],
@@ -22,17 +25,17 @@ export class ApexDashboard extends Component {
             chartData: [],
             doughnutData: [],
             doughnutData2: [],
+            list_view_id: false,
+            form_view_id: false,
             
         });
 
         onWillStart(async () => {
-            // Fetch unique students from submissions, ordered by name
-            const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
-            const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
-            this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
-            // Check if user is faculty
-            // const uid = this.user.userId;
-            // this.state.isFaculty = await this.user.hasGroup("aps_sis.group_aps_teacher");
+            // Fetch view IDs first
+            await this.fetchViewIds();
+            // Fetch students
+            await this.fetchStudents();
+            // Then fetch the rest of the data
             await this.fetchData();
         });
     }
@@ -51,7 +54,7 @@ export class ApexDashboard extends Component {
 
     addStudentFilter(domain, field = 'student_id.id') {
         if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
-            domain.push([field, '=', this.state.selectedStudent]);
+            domain.push([field, '=', parseInt(this.state.selectedStudent, 10)]);
         }
         return domain;
     }
@@ -102,10 +105,51 @@ export class ApexDashboard extends Component {
         return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()]]);
     }
 
+    async fetchViewIds() {
+        // Fetch student view IDs
+        const [data_list] = await this.env.services.orm.searchRead(
+            "ir.model.data",
+            [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_list_for_students"]],
+            ["res_id"],
+            { limit: 1 }
+        );
+        this.state.list_view_id = data_list ? data_list.res_id : false;
+
+        const [data_form] = await this.env.services.orm.searchRead(
+            "ir.model.data",
+            [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_form_for_students"]],
+            ["res_id"],
+            { limit: 1 }
+        );
+        this.state.form_view_id = data_form ? data_form.res_id : false;
+    }
+
+    async fetchStudents() {
+        // Fetch unique students from submissions, ordered by name
+        const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
+        const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
+        this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
+        
+        // Set selectedStudent after students are loaded
+        const savedSettings = this.loadSettings();
+        if (savedSettings.selectedStudent) {
+            const selectedId = parseInt(savedSettings.selectedStudent, 10);
+            const studentExists = this.state.students.some(student => student.id === selectedId);
+            if (studentExists) {
+                this.state.selectedStudent = selectedId;
+            } else {
+                this.state.selectedStudent = false;
+            }
+        } else {
+            this.state.selectedStudent = false;
+        }
+        
+        // Check if user is faculty
+        // const uid = this.user.userId;
+        // this.state.isFaculty = await this.user.hasGroup("aps_sis.group_aps_teacher");
+    }
+
     async fetchData() {
-        // try {
-            // Calculate start date based on period
-            const startDateStr = this.getPeriodStartDateStr();
             const todayStr = this.getTodayStr();
             const todayPlus7Str = this.getTodayPlus7Str();
             
@@ -243,20 +287,44 @@ export class ApexDashboard extends Component {
         // }
     }
 
+    loadSettings() {
+        try {
+            const settings = localStorage.getItem('aps_dashboard_settings');
+            return settings ? JSON.parse(settings) : {};
+        } catch (error) {
+            console.warn('Failed to load dashboard settings:', error);
+            return {};
+        }
+    }
+
+    saveSettings() {
+        try {
+            const settings = {
+                period: this.state.period,
+                selectedStudent: this.state.selectedStudent
+            };
+            localStorage.setItem('aps_dashboard_settings', JSON.stringify(settings));
+        } catch (error) {
+            console.warn('Failed to save dashboard settings:', error);
+        }
+    }
+
     async onChangePeriod() {
+        this.saveSettings();
         await this.fetchData();
     }
 
     async onChangeStudent() {
+        this.saveSettings();
         await this.fetchData();
     }
 
     viewActiveSubmissions() {
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Submissions",
+            name: "Submissions Assigned in the last " + this.state.period_name,
             res_model: "aps.resource.submission",
-            views: [[false, "list"], [false, "form"]],
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: this.getActiveSubmissionsDomain(),
         });
     }
@@ -267,7 +335,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: "Active Tasks",
             res_model: "aps.resource.task",
-            views: [[false, "list"], [false, "form"]],
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: taskDomain,
         });
     }
@@ -276,9 +344,9 @@ export class ApexDashboard extends Component {
         const overdueDomain = this.getOverdueDomain();
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Overdue Submissions",
+            name: "Overdue Submissions in the last " + this.state.period_name,
             res_model: "aps.resource.submission",
-            views: [[false, "list"], [false, "form"]],
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: overdueDomain,
         });
     }
@@ -287,9 +355,9 @@ export class ApexDashboard extends Component {
         const domain = this.getAllOverdueDomain();
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Overdue Submissions",
+            name: "All Overdue Submissions",
             res_model: "aps.resource.submission",
-            views: [[false, "list"], [false, "form"]],
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: domain,
         });
     }
@@ -300,7 +368,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: "Next 7 Days Submissions",
             res_model: "aps.resource.submission",
-            views: [[false, "list"], [false, "form"]],
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: domain,
         });
     }
