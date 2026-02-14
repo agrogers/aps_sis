@@ -24,6 +24,7 @@ export class ApexDashboard extends Component {
             next_7_days: { value: 0, percentage: 0, period: "" },
             student_points: { value: 0, percentage: 0, period: "" },
             student_rank: { value: 0, total_students: 0, period: "" },
+            total_submitted: { value: 0, percentage: 0, period: "" },
             chartData: [],
             doughnutData: [],
             doughnutData2: [],
@@ -96,6 +97,10 @@ export class ApexDashboard extends Component {
     getTodayPlus7Str() {
         const today = new Date();
         return new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    }
+
+    getTotalSubmittedDomain() {
+        return this.addStudentFilter([['date_submitted', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
     }
 
     getActiveSubmissionsDomain() {
@@ -223,20 +228,36 @@ export class ApexDashboard extends Component {
             this.state.student_rank.value = newRank;
             this.state.student_rank.total_students = totalStudentsWithPoints;
 
-            // Trigger confetti only once when rank #1
-            if (newRank === 1 && this.state.confettiReady && this.confetti ) {
-                this.confetti({
-                    particleCount: 150,
-                    spread: 90,
-                    startVelocity: 40,
-                    origin: { y: 0.6 },
-                    gravity: 0.8,
-                    ticks: 400,
-                    colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
-                });
+            // Trigger confetti for top 3 ranks
+            if (newRank >= 1 && newRank <= 3 && this.state.confettiReady && this.confetti) {
+                // Determine duration based on rank
+                const duration = newRank === 1 ? 5000 : newRank === 2 ? 2000 : 1000; // 5s, 2s, 1s
+                const end = Date.now() + duration;
+                var colors = ['#c700bd', '#ffffff', '#ff0000'];
+
+                (function frame() {
+                    confetti({
+                        particleCount: newRank === 1 ? 3 : newRank === 2 ? 2 : 1, // More particles for higher ranks
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 },
+                        colors: colors
+                    });
+                    confetti({
+                        particleCount: newRank === 1 ? 3 : newRank === 2 ? 2 : 1, // More particles for higher ranks
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 },
+                        colors: colors
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                }());
 
                 this.state.confettiTriggered = true;
-                console.log("Rank #1 confetti triggered!");
+                console.log(`Rank #${newRank} confetti triggered for ${duration}ms!`);
             }
 
             console.timeLog(
@@ -332,6 +353,13 @@ export class ApexDashboard extends Component {
                 .then(count => {
                     this.state.submissions.value = count;
                     console.timeLog('Fetch KPIs', 'Active submissions loaded');
+                }),
+
+            // Total Submitted
+            this.orm.searchCount("aps.resource.submission", this.getTotalSubmittedDomain())
+                .then(count => {
+                    this.state.total_submitted.value = count;
+                    console.timeLog('Fetch KPIs', 'Total submitted loaded');
                 }),
 
             // Overdue items
@@ -545,6 +573,19 @@ export class ApexDashboard extends Component {
             res_model: "aps.resource.task",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: taskDomain,
+        });
+    }
+
+    
+
+    viewTotalSubmitted() {
+        const totalSubmittedDomain = this.getTotalSubmittedDomain();
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Total Submitted in the last " + this.state.period_name,
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: totalSubmittedDomain,
         });
     }
 

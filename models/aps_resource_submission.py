@@ -426,6 +426,7 @@ class APSResourceSubmission(models.Model):
     def action_open_submission(self):
         """Open the submission form view."""
         self.ensure_one()
+        view_id = self.env.ref('aps_sis.view_aps_resource_submission_form').id
         return {
             'type': 'ir.actions.act_window',
             'name': self.display_name,
@@ -433,6 +434,7 @@ class APSResourceSubmission(models.Model):
             'view_mode': 'form',
             'res_id': self.id,
             'target': 'current',
+            'views': [(view_id, 'form')] if view_id else [],  # only include if view exists
         }
 
 # endregion - Action Methods

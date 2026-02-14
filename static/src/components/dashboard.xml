@@ -58,10 +58,15 @@
                     </div>
                 </t>
                 <t t-else="">
-                    <KpiCard name="'Active Tasks'" value="state.submissions.value" 
-                             percentage="state.submissions.percentage" icon="'fa-tasks'" 
+                    <KpiCard name="'Points'" value="state.student_points.value" 
+                             percentage="state.student_points.percentage" icon="'fa-tasks'" 
                              period_name="state.period_name"
-                             onClick="() => this.viewActiveSubmissions()"/>
+                             onClick="() => this.viewPointsSubmissions()"/>
+                             
+                    <KpiCard name="'Rank'" value="state.student_rank.value" 
+                             total_students="state.student_rank.total_students" icon="'fa-trophy'" 
+                             period_name="state.period_name"
+                             onClick="() => this.viewPointsSubmissions()"/>
                     <KpiCard name="'Overdue Items'" value="state.overdue.value" 
                              percentage="state.overdue.percentage" icon="'fa-clock-o'" 
                              period_name="state.period_name"
@@ -70,10 +75,6 @@
                              percentage="state.alloverdue.percentage" icon="'fa-clock-o'" 
                              period_name="'All Time'"
                              onClick="() => this.viewAllOverdueSubmissions()"/>
-                    <KpiCard name="'Next 7 Days'" value="state.next_7_days.value" 
-                             percentage="state.next_7_days.percentage" icon="'fa-cubes'" 
-                             period_name="'Items Coming Due'"
-                             onClick="() => this.viewNext7DaysSubmissions()"/>
                 </t>
             </div>
 
@@ -110,19 +111,18 @@
                     </div>
                 </t>
                 <t t-else="">
-                    <KpiCard name="'Points'" value="state.student_points.value" 
-                             percentage="state.student_points.percentage" icon="'fa-tasks'" 
+                    <KpiCard name="'Active Tasks'" value="state.submissions.value" 
+                             percentage="state.submissions.percentage" icon="'fa-tasks'" 
                              period_name="state.period_name"
-                             onClick="() => this.viewPointsSubmissions()"/>
-                             
-                    <KpiCard name="'Rank'" value="state.student_rank.value" 
-                             total_students="state.student_rank.total_students" icon="'fa-trophy'" 
+                             onClick="() => this.viewActiveSubmissions()"/>
+                    <KpiCard name="'Coming Due'" value="state.next_7_days.value" 
+                             percentage="state.next_7_days.percentage" icon="'fa-cubes'" 
+                             period_name="'in the next 7 days'"
+                             onClick="() => this.viewNext7DaysSubmissions()"/>
+                    <KpiCard name="'Total Submitted'" value="state.total_submitted.value" 
+                             percentage="state.total_submitted.percentage" icon="'fa-clock-o'" 
                              period_name="state.period_name"
-                             onClick="() => this.viewPointsSubmissions()"/>
-                    <KpiCard name="'???'" value="" 
-                             percentage="state.alloverdue.percentage" icon="'fa-clock-o'" 
-                             period_name="'All Time'"
-                             onClick="() => this.viewAllOverdueSubmissions()"/>
+                             onClick="() => this.viewTotalSubmitted()"/>
                     <KpiCard name="'???'" value="" 
                              percentage="state.next_7_days.percentage" icon="'fa-cubes'" 
                              period_name="'Items Coming Due'"

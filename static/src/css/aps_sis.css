@@ -46,7 +46,13 @@ div[name="score"].fixed-score-width {
     cursor: pointer;
     transform: scale(1.1);
 }
-
+.bg-pink {
+    background-color: rgb(252, 131, 252) !important;
+}
+.bg-pink-pulse {
+    background-color: rgba(252, 131, 252, 1) !important;
+    animation: pulse-pink-bg 1.5s infinite !important;
+}
 .text-red0 {
     color: red !important;
 }
@@ -60,6 +66,30 @@ div[name="score"].fixed-score-width {
     }
     100% {
         background-color: rgba(255, 0, 0, 0.8); /* Fades back in */
+    }
+}
+
+@keyframes pulse-pink {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-pink-bg {
+    0% {
+        background-color: rgba(252, 131, 252, 1) !important;
+    }
+    50% {
+        background-color: rgba(252, 131, 252, 0.3) !important;
+    }
+    100% {
+        background-color: rgba(252, 131, 252, 1) !important;
     }
 }
 .text-bg-red-pulsing {

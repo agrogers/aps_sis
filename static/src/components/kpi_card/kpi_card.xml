@@ -1,6 +1,6 @@
 <t t-name="apex_dashboard.KpiCard" owl="1">
     <div class="col-lg-3 col-md-6 " t-att-id="'KPI-' + props.name" t-on-click="props.onClick">
-        <div class="bg-white shadow-sm p-4 rounded text-center cursor-pointer h-100" t-on-click="props.onClick">
+        <div class="shadow-sm p-4 rounded text-center cursor-pointer h-100" t-att-class="props.name === 'Rank' and props.value === 1  ? 'bg-pink-pulse' : 'bg-white'" t-on-click="props.onClick">
             <div class="text-muted fw-bold h5" t-esc="props.name"/>
             <div class="display-5 fw-bold my-2" t-att-class="props.value > 0 and props.name.includes('Overdue') ? 'text-danger' : 'text-dark'" t-esc="props.value"/>
             <!-- <div t-attf-class="h6 fw-bold #{props.percentage >= 0 ? 'text-success' : 'text-danger'}"> -->
