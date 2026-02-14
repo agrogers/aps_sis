@@ -42,8 +42,9 @@
                                 </div>
                             </group>
                             <group string="Affected Resources">
+          
                                 <field name="affected_resource_line_ids" nolabel="1">
-                                    <list editable="bottom" create="0" delete="0" default_order="sequence">
+                                    <list editable="bottom" create="0" delete="0" default_order="sequence" selectable="multi">
                                         <field name="sequence" widget="handle"/>
                                         <field name="selected" widget="boolean_toggle"/>
                                         <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="show"/>

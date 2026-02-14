@@ -7,7 +7,6 @@ from lxml import etree
 
 _logger = logging.getLogger(__name__)
 sentinel_zero = -0.01
-mins_before_notification = 10
 
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
@@ -112,15 +111,44 @@ class APSResourceSubmission(models.Model):
         help='Icon for the first subject associated with the resource',
         store=True,
     )
-    submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True)
-    active_datetime = fields.Datetime(string='Active Since', compute='_compute_active_datetime', store=True)
-    notified_active = fields.Boolean(string='Notified Active', default=False)
+    submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True, 
+        help='Indicates whether the submission is active and so visible to the student based on the assigned date. A submission becomes active when the assigned date is today or in the past.')
+    active_datetime = fields.Datetime(string='Active Since', compute='_compute_active_datetime', store=True, help='The datetime when the submission became active. Used to trigger notifications for new active submissions.')
+    notified_active = fields.Boolean(string='Notified', default=False, help='Indicates whether the user has been notified that this submission is active.')
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
         default=False,
         help='If enabled, users can edit the subjects associated with this resource. This is useful for resources that are shared across multiple subjects, where the subject association may need to be customized at the submission level.',
     )
+    points = fields.Integer(
+        string='Points', compute='_compute_points', store=True, 
+        help='The points allocated to this submission.')
+
 # region - Computed Fields
+    @api.depends('date_submitted', 'date_due', 'state', 'resource_id.points_scale')
+    def _compute_points(self):
+        for record in self:
+            if record.state in ['complete', 'submitted'] and record.date_submitted:
+                if not record.date_due:
+                    points = 3  # on time if no due date
+                else:
+                    days_from_due_date = record.date_submitted - record.date_due
+                    days_diff = days_from_due_date.days
+                    
+                    if days_diff > 2:  # very late (more than 2 days after due)
+                        points = 1
+                    elif days_diff > 0:  # late (1-2 days after due)
+                        points = 2
+                    elif days_diff >= -1:  # on time (on due date or 1 day early)
+                        points = 3
+                    elif days_diff >= -2:  # early (2 days early)
+                        points = 4
+                    else:  # very early (more than 2 days early)
+                        points = 5
+
+                record.points = int(points * record.resource_id.points_scale)
+            else:
+                record.points = 0
 
     @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
     def _compute_type_icon(self):
@@ -243,7 +271,6 @@ class APSResourceSubmission(models.Model):
             record.display_name = f"{record.submission_name} ({record.date_assigned})"
 
 # endregion - Computed Fields
-
 
     def _get_faculty_for_current_user(self):
         """Get the faculty record for the current user"""
@@ -451,9 +478,24 @@ class APSResourceSubmission(models.Model):
                 
                 # Find only the IDs that are in the new set but weren't in the old set
                 added_ids = new_ids - old_ids
+                # Find IDs that were in the old set but are not in the new set
+                removed_ids = old_ids - new_ids
                 
                 if added_ids:
                     record._notify_new_faculty_reviewers(added_ids)
+                    
+                    # Add the new faculty members as followers
+                    faculty_to_follow = self.env['op.faculty'].browse(added_ids)
+                    partner_ids = faculty_to_follow.mapped('partner_id.id')
+                    if partner_ids:
+                        record.message_subscribe(partner_ids=partner_ids)
+                
+                if removed_ids:
+                    # Remove faculty members as followers when they're no longer requested to review
+                    faculty_to_unfollow = self.env['op.faculty'].browse(removed_ids)
+                    partner_ids = faculty_to_unfollow.mapped('partner_id.id')
+                    if partner_ids:
+                        record.message_unsubscribe(partner_ids=partner_ids)
         return result
     
     @api.model_create_multi
@@ -469,6 +511,27 @@ class APSResourceSubmission(models.Model):
         # Log creation for debugging
         for submission in submissions:
             _logger.info(f"Created submission {submission.id} for task {submission.task_id.id}")
+            
+            # Add faculty reviewers and assigner as followers
+            partner_ids = []
+            
+            # Add student as follower
+            if submission.student_id:
+                partner_ids.append(submission.student_id.id)
+            
+            # Add assigned faculty as follower
+            if submission.assigned_by and submission.assigned_by.partner_id:
+                partner_ids.append(submission.assigned_by.partner_id.id)
+            
+            # Add faculty reviewers as followers
+            if submission.review_requested_by:
+                reviewer_partner_ids = submission.review_requested_by.mapped('partner_id.id')
+                partner_ids.extend(reviewer_partner_ids)
+            
+            # Subscribe all relevant partners
+            if partner_ids:
+                submission.message_subscribe(partner_ids=list(set(partner_ids)))
+        
         return submissions
 
     def copy(self, default=None):
@@ -590,6 +653,9 @@ class APSResourceSubmission(models.Model):
     def send_active_notifications(self):
         """Send notifications for submissions that became active at least 10 minutes ago. Called by cron every 10 minutes."""
         from datetime import timedelta
+        mins_before_notification =  int(
+            self.env['ir.config_parameter'].sudo().get_param('apex.mins_before_notification')
+        ) or 10
         threshold_time = fields.Datetime.now() - timedelta(minutes=mins_before_notification)
         submissions = self.search([
             ('submission_active', '=', True),
@@ -602,12 +668,19 @@ class APSResourceSubmission(models.Model):
                 # Send email notification
                 template = self.env.ref('aps_sis.apex_submission_active_email_template', raise_if_not_found=False)
                 if template:
+                    # Example in email template or chatter
+                    view = self.env.ref('aps_sis.view_aps_resource_submission_form_for_students')
+                    if view:
+                        record_url = f"{self.env['ir.config_parameter'].sudo().get_param('web.base.url')}/web#id={self.id}&model={self._name}&view_id={view.id}"
+                    else:
+                        record_url = f"{self.env['ir.config_parameter'].sudo().get_param('web.base.url')}"
+                     
                     context = {
                         'question': submission.question,  
                         'submission_name': submission.submission_name,
                         'date_assigned': submission.date_assigned,  
                         'date_due': submission.date_due,
-                        'record_url': submission._notify_get_action_link('view'),
+                        'record_url': record_url,
                     }
                     template.with_context(context).send_mail(submission.id, force_send=True)
                 else:

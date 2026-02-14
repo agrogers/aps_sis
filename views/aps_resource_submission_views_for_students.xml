@@ -6,6 +6,7 @@
     <record id="view_aps_resource_submission_list_for_students" model="ir.ui.view">
         <field name="name">aps.resource.submission.list.for.students</field>
         <field name="model">aps.resource.submission</field>
+        <field name="priority">5</field>
         <field name="arch" type="xml">
             <list string="My Submissions" create="false" delete="false">
                 <field name="subject_icons" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
@@ -30,9 +31,10 @@
                             'red6': 'days_till_due == 3',
                             'grey': 'days_till_due &gt; 3'                            
                     }}"/>                   <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
-                <field name="score" widget="float_sentinel" optional="show"/>
-                <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
+                <field name="score" widget="float_sentinel" optional="show" />
+                <field name="out_of_marks" widget="float_sentinel" optional="hide" />
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show"/>
+                <field name="points"  optional="hide" sum="Total Points"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="has_question" string="Question" readonly="1" optional="hide"/>
                 <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
@@ -52,6 +54,7 @@
     <record id="view_aps_resource_submission_form_for_students" model="ir.ui.view">
         <field name="name">aps.resource.submission.form.for.students</field>
         <field name="model">aps.resource.submission</field>
+        <field name="priority">5</field>
         <field name="arch" type="xml">
             <form create="false" delete="false">
                 <header>
@@ -71,25 +74,28 @@
                     <widget name="web_ribbon" title="Early" bg_color="bg-success" 
                             invisible="due_status != 'early'"/> 
                     
-                    <group col="3">
-                        <group>
+                    <group col="12">
+                        <group colspan="6">
                             <div class="d-flex align-items-left gap-1">
                                 <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px" readonly="1"/>
                                 <field name="submission_name" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
                             </div>
                         </group>
-                        <group>
-                            <field name="review_requested_by" string="Review Requested:" widget="many2many_tags" options="{'no_create': True}"/>
+                        <group colspan="4">
+                            <field name="review_requested_by" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
-                        <group>
-                            <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1" />
+                        <group colspan="2">
+                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1" />
                         </group>
                     </group>
                     <notebook>
                         <page string="Student Answer">
                             <group col="12">
-                                <group colspan="8">
-                                    <div class="o_row fs-2 fw-bold">
+                                <group colspan="6">
+                                    <div class="o_row fs-3" invisible="out_of_marks != 0">
+                                        This task is not graded. Just submit it when you're done!
+                                    </div>
+                                    <div class="o_row fs-2 fw-bold" invisible="out_of_marks == 0">
                                         <span>
                                             <label for="score" string="Score:" class="oe_inline fs-2 me-2"/>
                                             <field name="score" widget="float_sentinel" 
@@ -105,6 +111,9 @@
                                             <span>  </span>
                                         </span> 
                                     </div>
+                                </group>
+                                <group colspan="2" class="d-flex justify-content-end fs-2" invisible="state == 'assigned'">
+                                    <field name="points" />
                                 </group>
                                 <group colspan="4" class="d-flex justify-content-end">
                                         <field name="supporting_resources_buttons" widget="resource_links"  />

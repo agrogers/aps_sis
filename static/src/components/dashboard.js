@@ -22,6 +22,8 @@ export class ApexDashboard extends Component {
             overdue: { value: 0, percentage: 0, period: "" },
             alloverdue: { value: 0, percentage: 0, period: "" },
             next_7_days: { value: 0, percentage: 0, period: "" },
+            student_points: { value: 0, percentage: 0, period: "" },
+            student_rank: { value: 0, total_students: 0, period: "" },
             chartData: [],
             doughnutData: [],
             doughnutData2: [],
@@ -121,6 +123,80 @@ export class ApexDashboard extends Component {
     getDoughnutDomain() {
         return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()]]);
     }
+    getStudentPointsDomain() {
+        if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
+            return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], 
+                ['submission_active', '=', true],
+                ['points', '>', 0],
+            ]);
+        } else {
+            return [];
+        }
+    }
+
+    async calculateStudentRank() {
+        if (!this.state.selectedStudent || this.state.selectedStudent === "false") {
+            this.state.student_rank.value = "";
+            this.state.student_rank.total_students = "";
+            return;
+        }
+
+        console.time('Calculate Student Rank');
+
+        const periodStart = this.getPeriodStartDateStr();
+
+        const domain = [
+            ['date_assigned', '>=', periodStart],
+            ['submission_active', '=', true],
+            ['points', '>', 0]
+        ];
+
+        // Optional: apply student filter if you later want per-student context
+        // (but for ranking we need all students, so we don't filter here)
+
+        try {
+            // Group by student_id and sum points in one database query
+            const groups = await this.orm.readGroup(
+                "aps.resource.submission",
+                domain,
+                ["points:sum"],           // aggregate: sum of points
+                ["student_id"],           // group by this field
+                { orderby: "points:sum desc" }  // sort descending by total points
+            );
+
+            // groups is now an array like:
+            // [
+            //   { student_id: [42, "John Doe"], points: 850, __count: 12, __domain: [...] },
+            //   { student_id: [17, "Jane Smith"], points: 720, __count: 8, ... },
+            //   ...
+            // ]
+
+            const rankedStudents = groups.map((group, index) => ({
+                studentId: group.student_id[0],     // the ID
+                totalPoints: group.points || 0,
+                rank: index + 1                      // already sorted descending
+            }));
+
+            const totalStudentsWithPoints = rankedStudents.length;
+
+            const selectedStudentId = parseInt(this.state.selectedStudent, 10);
+            const selectedRankObj = rankedStudents.find(s => s.studentId === selectedStudentId);
+
+            this.state.student_rank.value = selectedRankObj ? selectedRankObj.rank : 0;
+            this.state.student_rank.total_students = totalStudentsWithPoints;
+
+            console.timeLog(
+                'Calculate Student Rank',
+                `Rank: ${this.state.student_rank.value} out of ${totalStudentsWithPoints}`
+            );
+        } catch (error) {
+            console.error("Error calculating student rank:", error);
+            this.state.student_rank.value = "Error";
+            this.state.student_rank.total_students = "";
+        }
+
+        console.timeEnd('Calculate Student Rank');
+    }
 
     async fetchViewIds() {
         console.time('fetchViewIds');
@@ -191,23 +267,50 @@ export class ApexDashboard extends Component {
         const todayPlus7Str = this.getTodayPlus7Str();
         this.state.period_name = this.selectedPeriodText;
 
-        // Fetch all KPI counts in parallel for better performance
-        const [
-            submissionCount,
-            overdueCount,
-            allOverdueCount,
-            submission7daysCount
-        ] = await Promise.all([
-            this.orm.searchCount("aps.resource.submission", this.getActiveSubmissionsDomain()),
-            this.orm.searchCount("aps.resource.submission", this.getOverdueDomain()),
-            this.orm.searchCount("aps.resource.submission", this.getAllOverdueDomain()),
-            this.orm.searchCount("aps.resource.submission", this.getSubmission7DaysDomain())
-        ]);
+        // Start all KPI fetches immediately and update UI as they complete
+        const kpiPromises = [
+            // Active submissions
+            this.orm.searchCount("aps.resource.submission", this.getActiveSubmissionsDomain())
+                .then(count => {
+                    this.state.submissions.value = count;
+                    console.timeLog('Fetch KPIs', 'Active submissions loaded');
+                }),
 
-        this.state.submissions.value = submissionCount;
-        this.state.overdue.value = overdueCount;
-        this.state.alloverdue.value = allOverdueCount;
-        this.state.next_7_days.value = submission7daysCount;
+            // Overdue items
+            this.orm.searchCount("aps.resource.submission", this.getOverdueDomain())
+                .then(count => {
+                    this.state.overdue.value = count;
+                    console.timeLog('Fetch KPIs', 'Overdue items loaded');
+                }),
+
+            // All overdue items
+            this.orm.searchCount("aps.resource.submission", this.getAllOverdueDomain())
+                .then(count => {
+                    this.state.alloverdue.value = count;
+                    console.timeLog('Fetch KPIs', 'All overdue items loaded');
+                }),
+
+            // Next 7 days
+            this.orm.searchCount("aps.resource.submission", this.getSubmission7DaysDomain())
+                .then(count => {
+                    this.state.next_7_days.value = count;
+                    console.timeLog('Fetch KPIs', 'Next 7 days loaded');
+                }),
+
+            // Student points (sum of points, not count)
+            this.orm.searchRead("aps.resource.submission", this.getStudentPointsDomain(), ["points"])
+                .then(submissions => {
+                    const totalPoints = submissions.reduce((sum, submission) => sum + (submission.points || 0), 0);
+                    this.state.student_points.value = totalPoints;
+                    console.timeLog('Fetch KPIs', 'Student points loaded');
+                })                
+        ];
+
+        // Wait for all to complete, but UI updates happen immediately as each finishes
+        await Promise.all(kpiPromises);
+
+        // Calculate student rank (needs to run after other KPIs)
+        await this.calculateStudentRank();
 
         this.state.loadingKPIs = false;
         console.timeEnd('Fetch KPIs');
@@ -414,6 +517,16 @@ export class ApexDashboard extends Component {
         this.action.doAction({
             type: "ir.actions.act_window",
             name: "Next 7 Days Submissions",
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: domain,
+        });
+    }
+    viewPointsSubmissions() {
+        const domain = this.getStudentPointsDomain();
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Student Points Submissions",
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: domain,

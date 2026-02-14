@@ -142,6 +142,10 @@ class APSResource(models.Model):
         default=False,
         help='If enabled, users can edit the subjects associated with this resource. This is useful for resources that are shared across multiple subjects, where the subject association may need to be customized at the submission level.',
     )
+    points_scale = fields.Integer(
+        string='Points Scale', help="Scales the default points allocated to a resource.",
+        default=1
+    )
 # region Computed Fields and Overrides
     @api.depends('subjects')
     def _compute_subject_icons(self):
@@ -348,6 +352,21 @@ class APSResource(models.Model):
         elif not self.primary_parent_id and self.parent_ids:
             # Set primary parent to the first parent if not set
             self.primary_parent_id = self.parent_ids[0]
+
+    @api.onchange('url')
+    def _onchange_url(self):
+        """Automatically assign resource type based on URL keywords."""
+        if self.url:
+            # Search for resource types that have URL keywords
+            resource_types = self.env['aps.resource.types'].search([('url_keywords', '!=', False)])
+            for resource_type in resource_types:
+                if resource_type.url_keywords:
+                    # Check if any of the keywords (comma-separated) are in the URL
+                    keywords = [kw.strip().lower() for kw in resource_type.url_keywords.split(',')]
+                    url_lower = self.url.lower()
+                    if any(keyword in url_lower for keyword in keywords):
+                        self.type_id = resource_type
+                        break  # Stop at the first match
 
     # Removed _check_parent_loop since multiple parents make cycle detection complex
 

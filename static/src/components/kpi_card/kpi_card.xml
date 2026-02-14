@@ -5,7 +5,12 @@
             <div class="display-5 fw-bold my-2" t-att-class="props.value > 0 and props.name.includes('Overdue') ? 'text-danger' : 'text-dark'" t-esc="props.value"/>
             <!-- <div t-attf-class="h6 fw-bold #{props.percentage >= 0 ? 'text-success' : 'text-danger'}"> -->
             <div class="fs-6 text-primary">
-                <small t-esc="props.period_name"/>
+                <t t-if="props.name === 'Rank'">
+                    <small>out of <t t-esc="props.total_students || 0"/></small>
+                </t>
+                <t t-else="">
+                    <small t-esc="props.period_name"/>
+                </t>
             </div>
         </div>
     </div>

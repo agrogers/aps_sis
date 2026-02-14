@@ -148,6 +148,46 @@ class APSAssignStudentsWizard(models.TransientModel):
             else:
                 rec.warning_message = False
 
+    @api.onchange('subjects')
+    def _onchange_subjects(self):
+        """Update student list when subjects change"""
+        if self.subjects:
+        
+            # Find all students who are enrolled in running courses with these subjects
+            student_partners = self.env['res.partner']
+            
+            # Get all students enrolled in running courses
+
+            # student_records = self.env['op.student'].search([])
+            # for student_record in student_records:
+            #     running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            #     student_subjects = running_courses.mapped('subject_ids')
+            #     # If student has any of the resource subjects, include them
+            #     if student_subjects:
+            #         student_partners |= student_record.partner_id
+            
+
+            # 1. Get the subjects we care about (from the submission)
+            relevant_subjects = self.subjects  # Many2many 'op.subject'
+
+            if not relevant_subjects:
+                # No subjects → no students (or handle differently)
+                student_partners = self.env['res.partner']
+            else:
+                # 2. Find students who have at least one running course with overlapping subjects
+                students = self.env['op.student'].search([
+                    ('course_detail_ids.state', '=', 'running'),
+                    ('course_detail_ids.subject_ids', 'in', relevant_subjects.ids),
+                ])
+
+                # 3. Get their partners
+                student_partners = students.mapped('partner_id')
+
+            if student_partners:
+                self.student_ids = student_partners
+            else:
+                self.student_ids = False
+
     @api.onchange('resource_id')
     def _onchange_resource_id(self):
         if self.resource_id:
@@ -178,7 +218,6 @@ class APSAssignStudentsWizard(models.TransientModel):
         if employee:
             faculty = self.env['op.faculty'].search([('emp_id', '=', employee.id)], limit=1)
             return faculty.id if faculty else False
-        return False
 
     def action_assign_students(self):
         task_model = self.env['aps.resource.task']
@@ -245,14 +284,22 @@ class APSAssignStudentsWizard(models.TransientModel):
                     else:
                         submission_name = parent_name + separator + child_name
             for student in self.student_ids:
-                # Get student's assigned subjects from running courses
-                student_record = self.env['op.student'].search([('partner_id', '=', student.id)], limit=1)
-                student_subjects = self.env['op.subject']
-                if student_record:
-                    running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-                    student_subjects = running_courses.mapped('subject_ids')
-                # Intersect with wizard subjects
-                assigned_subjects = self.subjects & student_subjects
+                
+                if len(self.subjects) < 2:
+                    # If there is only one subject attached to the Resource then assume that is what should be assigned to the student regardless of what subjects they are currently taking.
+                    # This is needed when a resource (eg ESL nugget) needs to be given to a student who doesn't do the subject.
+                    # It assumes that there is only one subject associated then it must be relevant. 
+                    # If there are multiple subjects then we will try to be smarter and only assign the ones that are relevant to the student based on their current courses.
+                    assigned_subjects = self.subjects
+                else:
+                    # Get student's assigned subjects from running courses
+                    student_record = self.env['op.student'].search([('partner_id', '=', student.id)], limit=1)
+                    student_subjects = self.env['op.subject']
+                    if student_record:
+                        running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+                        student_subjects = running_courses.mapped('subject_ids')
+                    # Intersect with wizard subjects
+                    assigned_subjects = self.subjects & student_subjects
                 
                 # Check if task exists
                 task = task_model.search([

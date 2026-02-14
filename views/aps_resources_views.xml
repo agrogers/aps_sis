@@ -109,6 +109,7 @@
                                     <field name="has_default_answer" invisible="has_answer=='no'"/>
                                     <field name="has_child_resources"/>
                                     <field name="has_supporting_resources"/>
+                                    <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
                                     <field name="supporting_resources_buttons" widget="resource_links"  />
                                     <field name="child_count"/>
@@ -152,6 +153,8 @@
                                     <field name="child_count" optional="hide"/>
                                     <field name="child_count" optional="hide"/>
                                     <field name="url" widget="url_icon" options='{"html": true}' optional="hide"/>
+                                    <field name="allow_subject_editing" widget="boolean_toggle" optional="hide"/>
+                                    <field name="points_scale" optional="hide"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                                     <!-- Parent-child custom name pill: shows custom name or Create... -->
                                     <field name="parent_custom_name_data" string="Custom Name" widget="parent_child_name_pill" context="{'current_parent_id': parent.id}"/>
