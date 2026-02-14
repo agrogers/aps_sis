@@ -33,7 +33,11 @@ export class ApexDashboard extends Component {
             loadingKPIs: true,
             loadingCharts: true,
             loadingDoughnuts: true,
+            confettiReady: false,  // we'll use this to know when canvas is set up
         });
+
+        
+        this.confetti = null;  // will hold the confetti.create() function
 
         onWillStart(async () => {
             console.time('Dashboard Setup');
@@ -53,6 +57,7 @@ export class ApexDashboard extends Component {
 
         onMounted(async () => {
             // Load dashboard data after component is rendered
+            this.initializeConfettiCanvas();
             console.time('Load Dashboard Data');
             await this.loadDashboardData();
             console.timeEnd('Load Dashboard Data');
@@ -134,6 +139,48 @@ export class ApexDashboard extends Component {
         }
     }
 
+    initializeConfettiCanvas() {
+     // Create full-window canvas
+        const canvas = document.createElement('canvas');
+        canvas.style.position = 'fixed';
+        canvas.style.inset = '0';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '9999';           // high z-index so it's on top
+        document.body.appendChild(canvas);
+
+        // Create confetti instance (no worker to avoid transfer error)
+        this.confetti = confetti.create(canvas, {
+            resize: true,
+            useWorker: false
+        });
+
+        // Handle resize
+        const resize = () => {
+            canvas.width = window.innerWidth * window.devicePixelRatio;
+            canvas.height = window.innerHeight * window.devicePixelRatio;
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        };
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        this.state.confettiReady = true;
+        console.log("Full-page confetti canvas initialized");
+    }
+
+    resizeCanvas(canvas, container) {
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.scale(dpr, dpr);
+        }
+    }
     async calculateStudentRank() {
         if (!this.state.selectedStudent || this.state.selectedStudent === "false") {
             this.state.student_rank.value = "";
@@ -151,30 +198,19 @@ export class ApexDashboard extends Component {
             ['points', '>', 0]
         ];
 
-        // Optional: apply student filter if you later want per-student context
-        // (but for ranking we need all students, so we don't filter here)
-
         try {
-            // Group by student_id and sum points in one database query
             const groups = await this.orm.readGroup(
                 "aps.resource.submission",
                 domain,
-                ["points:sum"],           // aggregate: sum of points
-                ["student_id"],           // group by this field
-                { orderby: "points:sum desc" }  // sort descending by total points
+                ["points:sum"],
+                ["student_id"],
+                { orderby: "points:sum desc" }
             );
 
-            // groups is now an array like:
-            // [
-            //   { student_id: [42, "John Doe"], points: 850, __count: 12, __domain: [...] },
-            //   { student_id: [17, "Jane Smith"], points: 720, __count: 8, ... },
-            //   ...
-            // ]
-
             const rankedStudents = groups.map((group, index) => ({
-                studentId: group.student_id[0],     // the ID
+                studentId: group.student_id[0],
                 totalPoints: group.points || 0,
-                rank: index + 1                      // already sorted descending
+                rank: index + 1
             }));
 
             const totalStudentsWithPoints = rankedStudents.length;
@@ -182,12 +218,30 @@ export class ApexDashboard extends Component {
             const selectedStudentId = parseInt(this.state.selectedStudent, 10);
             const selectedRankObj = rankedStudents.find(s => s.studentId === selectedStudentId);
 
-            this.state.student_rank.value = selectedRankObj ? selectedRankObj.rank : 0;
+            const newRank = selectedRankObj ? selectedRankObj.rank : 0;
+
+            this.state.student_rank.value = newRank;
             this.state.student_rank.total_students = totalStudentsWithPoints;
+
+            // Trigger confetti only once when rank #1
+            if (newRank === 1 && this.state.confettiReady && this.confetti ) {
+                this.confetti({
+                    particleCount: 150,
+                    spread: 90,
+                    startVelocity: 40,
+                    origin: { y: 0.6 },
+                    gravity: 0.8,
+                    ticks: 400,
+                    colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
+                });
+
+                this.state.confettiTriggered = true;
+                console.log("Rank #1 confetti triggered!");
+            }
 
             console.timeLog(
                 'Calculate Student Rank',
-                `Rank: ${this.state.student_rank.value} out of ${totalStudentsWithPoints}`
+                `Rank: ${newRank} out of ${totalStudentsWithPoints}`
             );
         } catch (error) {
             console.error("Error calculating student rank:", error);
@@ -197,6 +251,7 @@ export class ApexDashboard extends Component {
 
         console.timeEnd('Calculate Student Rank');
     }
+
 
     async fetchViewIds() {
         console.time('fetchViewIds');
@@ -257,6 +312,9 @@ export class ApexDashboard extends Component {
             this.fetchChartData(),
             this.fetchDoughnutData()
         ]);
+
+        // Now that KPIs are loaded → the rank card should exist
+        this.initializeConfettiCanvas();        
     }
 
     async fetchKPIs() {
