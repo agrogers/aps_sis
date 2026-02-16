@@ -32,6 +32,7 @@
                 <filter string="Has Answer" name="has_answer" domain="[('has_answer', '=', True)]"/>
                 <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
                 <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
+                <filter string="Review not Requested" name="review_requested" domain="[('review_requested_by', '=', False)]"/>
                 <separator/>
                 <filter string="Active Submissions" name="submission_active" domain="[('submission_active', '=', True)]"/>
                 <filter string="Assigned" name="assigned" domain="[('state', '=', 'assigned')]"/>
@@ -58,7 +59,7 @@
         </field>
     </record>
 
-    <!-- APS Resource Submissions list & Form Views -->
+    <!-- Resource Submissions list  -->
     <record id="view_aps_resource_submission_list" model="ir.ui.view">
         <field name="name">aps.resource.submission.list</field>
         <field name="model">aps.resource.submission</field>
@@ -102,6 +103,7 @@
                 <field name="submission_order" optional="hide"/>
                 <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
+                <field name="notification_state" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <field name="write_date" optional="hide"/>
                 <field name="days_till_due" optional="hide"/>
@@ -110,7 +112,7 @@
         </field>
     </record>
 
-    <!-- APS Resource Submissions list for score entry -->
+    <!-- Resource Submissions list for score entry -->
     <record id="view_aps_resource_submission_score_entry_list" model="ir.ui.view">
         <field name="name">aps.resource.submission.score.list</field>
         <field name="model">aps.resource.submission</field>
@@ -147,7 +149,7 @@
         </field>
     </record>
 
-    <!-- APS Resource Submissions Kanban View -->
+    <!-- Resource Submissions Kanban View -->
     <record id="view_aps_resource_submission_kanban" model="ir.ui.view">
         <field name="name">aps.resource.submission.kanban</field>
         <field name="model">aps.resource.submission</field>
@@ -231,6 +233,7 @@
         </field>
     </record>
 
+    <!-- Resource Submissions Form View -->
     <record id="view_aps_resource_submission_form" model="ir.ui.view">
         <field name="name">aps.resource.submission.form</field>
         <field name="model">aps.resource.submission</field>
@@ -243,6 +246,9 @@
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
                     <button name="action_resubmit" string="Resubmit" type="object" class="btn-secondary" invisible="state in ['assigned']"/>
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
+                    <separator/>
+                    <separator/>
+                    <button name="action_open_submission_student_view" string="Student View" type="object" class="btn-secondary" />
                 </header>
                 <sheet>
                     <widget name="web_ribbon" title="Late" bg_color="bg-danger"
@@ -294,7 +300,7 @@
                             <group>
                                 <group string="Other Details">
                                     <field name="active_datetime" readonly="1"/>
-                                    <field name="notified_active"  widget="boolean_toggle" />
+                                    <field name="notification_state"  />
                                     <field name="days_till_due" readonly="1"/>
                                     <field name="points_scale" readonly="0"/>
                                     <field name="create_date" readonly="1"/>

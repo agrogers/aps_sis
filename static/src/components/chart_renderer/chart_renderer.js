@@ -139,7 +139,7 @@ export class ChartRenderer extends Component {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom',
+                        position: (this.props.type === 'bar' || this.props.type === 'line') ? 'bottom' : 'right',
                     },
                     title: {
                         display: true,

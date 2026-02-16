@@ -37,7 +37,6 @@ class APSAssignStudentsWizard(models.TransientModel):
     warning_message = fields.Char(string='Warning', compute='_compute_warning_message', store=False)
     submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
     affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources', order='sequence')
-    can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False)
     
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
@@ -77,7 +76,10 @@ class APSAssignStudentsWizard(models.TransientModel):
 
     subjects = fields.Many2many('op.subject', string='Subjects')
     apply_points_scale = fields.Boolean(string='Apply Points Scale', default=True, help='If enabled, the points scale from the resource will be applied to the submission. This is useful for resources that are used in different contexts with different grading schemes.')
-    
+    notify_student = fields.Boolean(string='Notify Student', default=True, help='If enabled, students will receive a notification when they are assigned to the resource.')
+
+    can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False) # Helper field to enable/disable assign button based on whether any students and any resources are selected
+
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -328,5 +330,6 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
                     'subjects': assigned_subjects.ids,
                     'points_scale': resource.points_scale if self.apply_points_scale else 0,
+                    'notification_state': 'not_sent' if self.notify_student else 'skipped',
                 })
         return {'type': 'ir.actions.act_window_close'}

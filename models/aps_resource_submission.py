@@ -115,6 +115,12 @@ class APSResourceSubmission(models.Model):
         help='Indicates whether the submission is active and so visible to the student based on the assigned date. A submission becomes active when the assigned date is today or in the past.')
     active_datetime = fields.Datetime(string='Active Since', compute='_compute_active_datetime', store=True, help='The datetime when the submission became active. Used to trigger notifications for new active submissions.')
     notified_active = fields.Boolean(string='Notified', default=False, help='Indicates whether the user has been notified that this submission is active.')
+    notification_state = fields.Selection(required=True, default='skipped', 
+        selection= [('not_sent', 'Not Sent'), ('sent', 'Sent'), ('posted','Posted'), ('failed', 'Failed'), ('skipped', 'Skipped')], 
+        string='Notification State', 
+        help="Tracks the state of notifications for this submission. 'Not Sent' will allow the automated notification " \
+        "process to attempt sending a notification. 'Sent' indicates an email has been sent while 'Posted' indicates that an Odoo message has been logged. " \
+        "'Skipped' is the default for submissions that are not eligible for notifications and will be ignored by the notification process.")   
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
         default=False,
@@ -437,6 +443,20 @@ class APSResourceSubmission(models.Model):
             'target': 'current',
             'views': [(view_id, 'form')] if view_id else [],  # only include if view exists
         }
+    
+    def action_open_submission_student_view(self):
+        """Open the submission form view for students."""
+        self.ensure_one()
+        view_id = self.env.ref('aps_sis.view_aps_resource_submission_form_for_students').id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.display_name,
+            'res_model': 'aps.resource.submission',
+            'view_mode': 'form',
+            'res_id': self.id,
+            'target': 'current',
+            'views': [(view_id, 'form')] if view_id else [],  # only include if view exists
+        }
 
 # endregion - Action Methods
 
@@ -656,13 +676,13 @@ class APSResourceSubmission(models.Model):
     def send_active_notifications(self):
         """Send notifications for submissions that became active at least 10 minutes ago. Called by cron every 10 minutes."""
         from datetime import timedelta
-        mins_before_notification =  int(
+        mins_before_notification = int(
             self.env['ir.config_parameter'].sudo().get_param('apex.mins_before_notification')
         ) or 10
         threshold_time = fields.Datetime.now() - timedelta(minutes=mins_before_notification)
         submissions = self.search([
             ('submission_active', '=', True),
-            ('notified_active', '=', False),
+            ('notification_state', '=', 'not_sent'),
             ('active_datetime', '!=', False),
             ('active_datetime', '<=', threshold_time),
         ])
@@ -674,42 +694,41 @@ class APSResourceSubmission(models.Model):
                     # Example in email template or chatter
                     view = self.env.ref('aps_sis.view_aps_resource_submission_form_for_students')
                     if view:
-                        record_url = f"{self.env['ir.config_parameter'].sudo().get_param('web.base.url')}/web#id={self.id}&model={self._name}&view_id={view.id}"
+                        record_url = f"{self.env['ir.config_parameter'].sudo().get_param('web.base.url')}/web#id={submission.id}&model={self._name}&view_id={view.id}"
                     else:
                         record_url = f"{self.env['ir.config_parameter'].sudo().get_param('web.base.url')}"
-                     
-                    context = {
-                        'question': submission.question,  
-                        'submission_name': submission.submission_name,
-                        'date_assigned': submission.date_assigned,  
-                        'date_due': submission.date_due,
-                        'record_url': record_url,
-                    }
+                 
+                context = {
+                    'question': submission.question,  
+                    'submission_name': submission.submission_name,
+                    'date_assigned': submission.date_assigned,  
+                    'date_due': submission.date_due,
+                    'record_url': record_url,
+                }
+                try:
                     template.with_context(context).send_mail(submission.id, force_send=True)
-                else:
-                    # Fallback: post message
+                    submission.notification_state = 'sent'
+                except Exception as e:
+                    _logger.error(f"Failed to send email notification for submission {submission.id}: {str(e)}")
+                    submission.notification_state = 'failed'
+
+            if submission.notification_state == 'not_sent':
+                # Fallback: post message
+                try:
                     submission.message_post(
                         body=_("Your task '%s' is now active.") % submission.display_name,
                         partner_ids=[submission.student_id.id],
                         message_type='notification',
                         subtype_xmlid='mail.mt_note'
                     )
-            submission.notified_active = True
-  
-    @api.model
-    def update_submissions_subjects(self):
-        """Update subjects for all submissions based on their resource's subjects.
-        This method can be called by a cron job to sync subjects."""
-        submissions = self.search([])
-        updated_count = 0
-        for submission in submissions:
-            if submission.resource_id and submission.resource_id.subjects:
-                submission.subjects = submission.resource_id.subjects
-                updated_count += 1
-        _logger.info(f"Updated subjects for {updated_count} submissions")
-        return updated_count
-    
+                    submission.notification_state = 'posted'
+                except Exception as e:
+                    _logger.error(f"Failed to post notification message for submission {submission.id}: {str(e)}")
+                    submission.notification_state = 'failed'
+
 # endregion - Activity Notifications
+
+# region - Get Data    
     @api.model
     def read_group_points_by_student(self, domain, orderby=False):
         return self.sudo().read_group(
@@ -719,3 +738,4 @@ class APSResourceSubmission(models.Model):
             orderby=orderby,
             lazy=True,  # or False, depending on your needs
         )
+# endregion - Get Data

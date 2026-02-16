@@ -674,9 +674,14 @@ export class ApexDashboard extends Component {
             }
         });
 
-        const subjectRecords = await this.orm.searchRead("op.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name"]);
+        const subjectRecords = await this.orm.searchRead("op.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name", "category_id"]);
         const subjectMap = {};
-        subjectRecords.forEach(rec => subjectMap[rec.id] = rec.name);
+        subjectRecords.forEach(rec => {
+            subjectMap[rec.id] = {
+                name: rec.name,
+                category: rec.category_id ? rec.category_id[1] : 'No Category'
+            };
+        });
 
         const subjectCounts = {};
         const due_statusCounts = {};
@@ -688,11 +693,14 @@ export class ApexDashboard extends Component {
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
                 sub.subjects.forEach(id => {
-                    const name = subjectMap[id] || 'Unknown';
-                    if (!subjectCounts[id]) {
-                        subjectCounts[id] = { data_point: name, __count: 0 };
+                    const subjectInfo = subjectMap[id];
+                    if (subjectInfo) {
+                        const categoryName = subjectInfo.category !== 'No Category' ? subjectInfo.category : subjectInfo.name;
+                        if (!subjectCounts[categoryName]) {
+                            subjectCounts[categoryName] = { data_point: categoryName, __count: 0 };
+                        }
+                        subjectCounts[categoryName].__count++;
                     }
-                    subjectCounts[id].__count++;
                 });
             }
             if (sub.due_status) {

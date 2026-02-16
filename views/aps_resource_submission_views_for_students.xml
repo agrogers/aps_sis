@@ -61,6 +61,9 @@
         <field name="arch" type="xml">
             <form create="false" delete="false">
                 <header>
+                    <button name="action_open_submission" string="Submission Details" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
+                    <separator invisible="not is_current_user_faculty"/>
+                    <separator invisible="not is_current_user_faculty"/>
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
@@ -88,8 +91,11 @@
                             <field name="review_requested_by" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
                         <group colspan="2">
-                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="1" />
+                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty" />
                         </group>
+                    </group>
+                    <group col="12" class="mb-4">
+                        <field name="student_id" readonly="1"/>
                     </group>
                     <notebook>
                         <page string="Student Answer">
@@ -119,7 +125,7 @@
                                     <field name="points" />
                                 </group>
                                 <group colspan="4" class="d-flex justify-content-end">
-                                        <field name="supporting_resources_buttons" widget="resource_links"  />
+                                        <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '40px'}" />
                                 </group>
                             </group>
                             <field name="subjects" widget="clickable_many2many_tags" invisible="allow_subject_editing==False" no_add="True" no_open="True" options="{'no_create': True}"/>

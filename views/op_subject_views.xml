@@ -8,10 +8,14 @@
         <field name="inherit_id" ref="openeducat_core.view_op_subject_tree"/>
         <field name="arch" type="xml">
             <field name="name" position="before">
-                <field name="icon" widget="image" options="{'size': [32, 32]}" optional="show"/>
+                <field name="icon" widget="image" options="{'size': [32, 32]}" optional="show"/>               
+            </field>
+            <field name="subject_type" position="before">
+                <field name="category_id" optional="show"/>               
             </field>
         </field>
     </record>
+
 
     <!-- Inherit and modify the Subject form view to add teachers field and icon using standard Odoo layout -->
     <record id="view_op_subject_form_inherit" model="ir.ui.view">
@@ -28,6 +32,7 @@
             <!-- Add the teachers field after the name field -->
             <xpath expr="//field[@name='name']" position="after">
                 <field name="faculty_ids" widget="many2many_tags"/>
+                <field name="category_id" options="{'no_create': False}"/>
             </xpath>
         </field>
     </record>

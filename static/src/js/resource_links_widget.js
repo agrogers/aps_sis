@@ -5,7 +5,9 @@ import { useService } from "@web/core/utils/hooks";
 
 export class ResourceLinksField extends Component {
     static template = "aps_sis.ResourceLinksField";
-    static props = { ...standardFieldProps };
+    static props = { ...standardFieldProps,
+        size: { type: String, optional: true },
+     };
 
     setup() {
         this.notification = useService("notification");
@@ -67,8 +69,18 @@ export class ResourceLinksField extends Component {
 export const resourceLinksField = {
     component: ResourceLinksField,
     supportedTypes: ["json"],
-    extractProps({ attrs }) {
-        return {};
+    supportedOptions: [
+        {
+            label: "Size",
+            name: "size",
+            type: "string",
+            default: "24px",
+        },
+    ],    
+    extractProps({ options }) {
+        return {
+            size: options.size || "24px",
+        };
     },
 };
 

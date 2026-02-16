@@ -62,6 +62,7 @@
         </field>
     </record>
 
+    <!-- Resources Form -->
     <record id="view_aps_resources_form" model="ir.ui.view">
         <field name="name">aps.resources.form</field>
         <field name="model">aps.resources</field>
@@ -113,7 +114,7 @@
                                     <field name="has_supporting_resources"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
-                                    <field name="supporting_resources_buttons" widget="resource_links"  />
+                                    <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px'}" />
                                     <field name="child_count"/>
                             </group>
                             </group>
