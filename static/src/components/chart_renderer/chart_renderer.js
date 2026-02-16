@@ -41,20 +41,20 @@ export class ChartRenderer extends Component {
                 const datasetColors = ['rgb(255 172 0)', 'rgb(23 162 184)', 'rgb(150, 157, 163)'];
                 chartData.datasets = [
 
-                {
-                        label: 'Finalised',
-                        data: this.props.data.map(d => d.finalized),
-                        backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
-                        borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.1,
-                        pointRadius: 0,
-                        cubicInterpolationMode: 'monotone',
-                    }   ,                 
+                // {
+                //         label: 'Finalised',
+                //         data: this.props.data.map(d => d.Finalised),
+                //         backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
+                //         borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
+                //         borderWidth: 2,
+                //         fill: true,
+                //         tension: 0.1,
+                //         pointRadius: 0,
+                //         cubicInterpolationMode: 'monotone',
+                //     }   ,                 
                     {
-                        label: 'Submitted',
-                        data: this.props.data.map(d => d.submitted),
+                        label: 'Submitted*',
+                        data: this.props.data.map(d => d.submitted_finalized),
                         backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[1], 40)),
                         borderColor: Array(chartData.labels.length).fill(datasetColors[1]),
                         borderWidth: 2,

@@ -16,7 +16,12 @@
                 </t>
                 <t t-else="">
                     <br/>
-                    <small class=""><t t-esc="props.points_from_next"/> pts behind #<t t-esc="props.value  - 1"/></small>
+                    <t t-if="props.points_from_next === '-'">
+                        <small class="">Nothing Submitted</small>
+                    </t>
+                    <t t-else="">
+                        <small class=""><t t-esc="props.points_from_next"/> pts behind #<t t-esc="props.value  - 1"/></small>
+                    </t>
                 </t>
                 
             </div>

@@ -197,7 +197,10 @@ export class ApexDashboard extends Component {
     }
 
     getAllSubmissionsDomain() {
-        return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()]]);
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        return domain;
     }
 
     getDoughnutDomain() {
@@ -334,7 +337,7 @@ export class ApexDashboard extends Component {
             const selectedStudentId = parseInt(this.state.selectedStudent, 10);
             const selectedRankObj = rankedStudents.find(s => s.studentId === selectedStudentId);
 
-            const newRank = selectedRankObj ? selectedRankObj.rank : 0;
+            let newRank = selectedRankObj ? selectedRankObj.rank : 0;
 
             // Calculate points to next place (difference to next different score)
             
@@ -361,7 +364,10 @@ export class ApexDashboard extends Component {
                 if (groupPoints.length > 1) { // Need to handle first place differently
                     pointsFromNext = groupPoints[0] - groupPoints[1];  // difference between top score and next different score
                 };
-            }
+            } else {
+                newRank = "-";
+                pointsFromNext = "-";
+            };
 
             // Update state
             this.state.student_rank.value = newRank;
@@ -628,21 +634,20 @@ export class ApexDashboard extends Component {
         }
         this.state.chartData = chartData;
 
+        // Submissions over time
         const chartDataCummulative = [];
         var assigned = 0;
-        var submitted = 0;
-        var finalized = 0;
+        var submitted_finalized = 0;
 
         for (const dateStr in dateMap) {
             assigned += dateMap[dateStr].assigned;
-            submitted += dateMap[dateStr].submitted;
-            finalized += dateMap[dateStr].finalized;
+            submitted_finalized += dateMap[dateStr].submitted + dateMap[dateStr].finalized;
+            // finalized += dateMap[dateStr].finalized;
 
             chartDataCummulative.push({
                 date: dateStr,
                 assigned: assigned,
-                submitted: submitted,
-                finalized: finalized
+                submitted_finalized: submitted_finalized           
             });
         }
 
@@ -741,7 +746,7 @@ export class ApexDashboard extends Component {
     viewActiveSubmissions() {
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Last " + this.state.period_name,
+            name: this.state.period_name,
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: this.getActiveSubmissionsDomain(false),
@@ -766,7 +771,7 @@ export class ApexDashboard extends Component {
         const totalSubmittedDomain = this.getTotalSubmittedDomain({ includeState: false, includePeriod: true });
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Last " + this.state.period_name,
+            name: this.state.period_name,
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: totalSubmittedDomain,
@@ -781,7 +786,7 @@ export class ApexDashboard extends Component {
         const overdueDomain = this.getOverdueDomain(true,false); // Only show overdue items, ignore period and state (assigned or not);
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Last " + this.state.period_name,
+            name: this.state.period_name,
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: overdueDomain,

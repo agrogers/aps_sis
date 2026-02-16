@@ -168,7 +168,7 @@ class APSResourceSubmission(models.Model):
             else:
                 record.subject_icons = False
 
-    @api.depends('date_due')
+    @api.depends('date_due','state')
     def _compute_days_till_due(self):
         today = fields.Date.today()
         for record in self:
