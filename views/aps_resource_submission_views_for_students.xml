@@ -47,6 +47,9 @@
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <field name="days_till_due" optional="hide"/>
+                <button name="action_open_submission" type="object" string="Details..."
+                    title="Open Submission" class="btn-secondary btn-sm" invisible="not is_current_user_faculty"/>
+
             </list>
         </field>
     </record>

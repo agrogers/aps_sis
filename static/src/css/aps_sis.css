@@ -49,6 +49,9 @@ div[name="score"].fixed-score-width {
 .bg-pink {
     background-color: rgb(252, 131, 252) !important;
 }
+.bg-pale-yellow {
+    background-color: rgba(255, 238, 0, 0.329) !important;
+}
 .bg-pink-pulse {
     background-color: rgba(252, 131, 252, 1) !important;
     animation: pulse-pink-bg 1.5s infinite !important;

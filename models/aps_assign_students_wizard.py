@@ -12,6 +12,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     description = fields.Text(string='Description', related='resource_id.description', readonly=True)
     has_question = fields.Selection(related='resource_id.has_question', readonly=True)
     has_answer = fields.Selection(related='resource_id.has_answer', readonly=True)
+    points_scale = fields.Integer(related='resource_id.points_scale', readonly=True)
     supporting_resources_buttons = fields.Json(related='resource_id.supporting_resources_buttons', string='Resource Links', readonly=True)    
     selected = fields.Boolean(string='Assign', default=True)
     parent_custom_name_data = fields.Json(string='Custom Names', related='resource_id.parent_custom_name_data', readonly=True, required=False)
@@ -75,7 +76,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
 
     subjects = fields.Many2many('op.subject', string='Subjects')
-
+    apply_points_scale = fields.Boolean(string='Apply Points Scale', default=True, help='If enabled, the points scale from the resource will be applied to the submission. This is useful for resources that are used in different contexts with different grading schemes.')
     
     @api.model
     def default_get(self, fields_list):
@@ -326,5 +327,6 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'state': 'assigned',
                     'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
                     'subjects': assigned_subjects.ids,
+                    'points_scale': resource.points_scale if self.apply_points_scale else 0,
                 })
         return {'type': 'ir.actions.act_window_close'}

@@ -22,6 +22,7 @@
                                     <field name="allow_subject_editing" widget="boolean_toggle" invisible="1"/>
                                     <field name="has_question"  readonly="0" invisible="0"/>
                                     <field name="has_default_answer" widget="boolean_toggle" readonly="0" invisible="0"/>
+                                    <field name="apply_points_scale" widget="boolean_toggle" readonly="0" invisible="0"/>
 
                                 </group>
                                 <div>
@@ -32,7 +33,7 @@
                                         <field name="student_ids" widget="many2many" nolabel="1">
                                             <list>
                                                 <field name="name"/>
-                                                <field name="category_id" widget="many2many_tags" optional="show"/>
+                                                <field name="category_id" widget="many2many_tags" optional="hide"/>
                                                 <field name="user_id" optional="hide"/>
                                                 <field name="email" optional="hide"/>
                                                 <field name="phone" optional="hide"/>
@@ -54,6 +55,7 @@
                                         <field name="description" readonly="1" optional="hide"/>
                                         <field name="has_question" readonly="1" optional="hide"/>
                                         <field name="has_answer" readonly="1" optional="hide"/>
+                                        <field name="points_scale" readonly="1" optional="hide"/>
                                         <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
                                         <field name="resource_id" invisible="1"/>
                                     </list>

@@ -12,7 +12,7 @@ export class ApexDashboard extends Component {
         const savedSettings = this.loadSettings();
 
         this.state = useState({
-            period: savedSettings.period || 7,
+            period: parseInt(savedSettings.period) || 7,
             period_name: "",
             selectedStudent: false,
             students: [],
@@ -23,7 +23,10 @@ export class ApexDashboard extends Component {
             alloverdue: { value: 0, percentage: 0, period: "" },
             next_7_days: { value: 0, percentage: 0, period: "" },
             student_points: { value: 0, percentage: 0, period: "" },
-            student_rank: { value: 0, total_students: 0, period: "" },
+            student_rank: { value: 0, total_students: 0, period: "", points_from_next: 0, },
+            submitted_today: { value: 0, percentage: 0, period: "", submitted_yesterday: 0 },
+            points_from_next: 0,
+            rank_description: "",
             total_submitted: { value: 0, percentage: 0, period: "" },
             chartData: [],
             doughnutData: [],
@@ -85,8 +88,20 @@ export class ApexDashboard extends Component {
     }
 
     getPeriodStartDateStr() {
+        // If no period selected, return today's date
+        if (this.state.period === 0) {
+            return this.getTodayStr();
+        }
+        
         const today = new Date();
         const startDate = new Date(today.getTime() - this.state.period * 24 * 60 * 60 * 1000);
+        
+        // Ensure the date is valid
+        if (isNaN(startDate.getTime())) {
+            console.error('Invalid date calculated for period:', this.state.period);
+            return this.getTodayStr();
+        }
+        
         return startDate.toISOString().split('T')[0];
     }
 
@@ -99,12 +114,42 @@ export class ApexDashboard extends Component {
         return new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     }
 
-    getTotalSubmittedDomain() {
-        return this.addStudentFilter([['date_submitted', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
+    getSubmittedTodayDomain() {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        return this.addStudentFilter([['date_submitted', '=', todayStr], ['submission_active', '=', true]]);
     }
 
-    getActiveSubmissionsDomain() {
-        return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], ['state','=','assigned'],['submission_active', '=', true]]);
+    getSubmittedYesterdayDomain() {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        return this.addStudentFilter([['date_submitted', '=', yesterdayStr], ['submission_active', '=', true]]);
+    }
+
+    getTotalSubmittedDomain(options = {}) {
+        const includeState = options.includeState ?? true;
+        const includePeriod = options.includePeriod ?? true;
+        let domain =[];
+        domain = this.addStudentFilter(domain); 
+        domain.push(['submission_active', '=', true]);
+        if (includePeriod) {
+            domain.push(['date_submitted', '>=', this.getPeriodStartDateStr()]);
+        }
+        if (includeState) {
+            domain.push(['state', 'in', ['submitted', 'complete']]);
+        }
+
+        return domain;
+    }
+
+    getActiveSubmissionsDomain(inludeSubmissionActive = true) {
+        // Parameter is needed because when we open the list view we want to pass in a filter context, not a domain, and the filter context will handle the submission_active part
+        let domain = this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
+        if (inludeSubmissionActive) {
+            domain.push(['state','=','assigned']);
+        }
+        return domain;
     }
 
     getTotalSubmissionsDomain() {
@@ -115,15 +160,40 @@ export class ApexDashboard extends Component {
         return this.addStudentFilter([['create_date', '>=', this.getPeriodStartDateStr()]], 'student_id');
     }
 
-    getOverdueDomain() {
-        return this.addStudentFilter([['days_till_due', '<', 0], ['date_due','>=',this.getPeriodStartDateStr()], ['state', 'in', ['assigned']]]);
-    }
-    getAllOverdueDomain() {
-        return this.addStudentFilter([['days_till_due', '<', 0], ['state', 'in', ['assigned']]]);
+    getOverdueDomain(includePeriod = true, includeState = true) {
+        let domain =[];
+        domain = this.addStudentFilter(domain);
+        domain.push(['date_due','<',this.getTodayStr()]);
+        if (includeState) {
+            domain.push(['state', 'in', ['assigned']]);
+        }
+        if (includePeriod) {
+            domain.push(['date_due','>=',this.getPeriodStartDateStr()]);
+        }
+        
+        return domain;
     }
 
-    getSubmission7DaysDomain() {
-        return this.addStudentFilter([['date_due', '>', this.getTodayStr()], ['date_due', '<=', this.getTodayPlus7Str()]]);
+    getOldOverdueDomain() {
+        return this.addStudentFilter([['date_due','>=',this.getPeriodStartDateStr()], ['state', 'in', ['assigned']]]);
+    }
+    getAllOverdueDomain() {
+        return this.addStudentFilter([ ['state', 'in', ['assigned']]]);
+    }
+
+    getSubmission7DaysDomain(options = {}) {
+        const includeDateDue = options.includeDateDue ?? true;
+        const includeState = options.includeState ?? true;
+
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        if (includeDateDue) {
+            domain.push(['date_due', '>', this.getTodayStr()], ['date_due', '<=', this.getTodayPlus7Str()]);
+        }
+        if (includeState) {
+            domain.push(['state', 'in', ['assigned']]);
+        }
+        return domain;
     }
 
     getAllSubmissionsDomain() {
@@ -187,9 +257,15 @@ export class ApexDashboard extends Component {
         }
     }
     async calculateStudentRank() {
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+            }
+
         if (!this.state.selectedStudent || this.state.selectedStudent === "false") {
             this.state.student_rank.value = "";
             this.state.student_rank.total_students = "";
+            this.state.student_rank.points_from_next = 0;
+            this.state.rank_description = "";
             return;
         }
 
@@ -204,70 +280,152 @@ export class ApexDashboard extends Component {
         ];
 
         try {
-            const groups = await this.orm.readGroup(
+            const groups = await this.orm.call(
                 "aps.resource.submission",
-                domain,
-                ["points:sum"],
-                ["student_id"],
-                { orderby: "points:sum desc" }
+                "read_group_points_by_student",
+                [domain],
+                {
+                    orderby: "points:sum desc", // kwargs
+                    // You can add lazy: true, offset: 0, limit: null, etc. if needed
+                },
             );
 
-            const rankedStudents = groups.map((group, index) => ({
-                studentId: group.student_id[0],
-                totalPoints: group.points || 0,
-                rank: index + 1
-            }));
+            if (!groups.length) {
+                this.state.student_rank.value = 0;
+                this.state.student_rank.total_students = 0;
+                this.state.student_rank.points_from_next = 0;
+                this.state.rank_description = "";
+                console.timeEnd('Calculate Student Rank');
+                return;
+            }
+
+            // Build ranked list with proper dense ranking
+            const rankedStudents = [];
+            let currentRank = 1;
+            let previousPoints = null;
+            let position = 1;  // actual placement (used for skipping)
+
+            groups.forEach((group, index) => {
+                const currentPoints = group.points || 0;
+                const studentId = group.student_id[0];
+
+                // If points are the same as previous, keep the same rank
+                if (index > 0 && currentPoints === previousPoints) {
+                    // same rank as last one
+                } else {
+                    // new rank = current position
+                    currentRank = position;
+                }
+
+                rankedStudents.push({
+                    studentId,
+                    totalPoints: currentPoints,
+                    rank: currentRank,
+                    pointsFromNextPlace: 0  // we'll calculate later
+                });
+
+                previousPoints = currentPoints;
+                position++;
+            });
 
             const totalStudentsWithPoints = rankedStudents.length;
 
+            // Find selected student
             const selectedStudentId = parseInt(this.state.selectedStudent, 10);
             const selectedRankObj = rankedStudents.find(s => s.studentId === selectedStudentId);
 
             const newRank = selectedRankObj ? selectedRankObj.rank : 0;
 
+            // Calculate points to next place (difference to next different score)
+            
+            let pointsFromNext = 0;
+            if (selectedRankObj) {
+                const currentIndex = rankedStudents.findIndex(s => s.studentId === selectedStudentId);
+                // Find the next student with fewer points
+                let lastPts = rankedStudents[0].totalPoints;  // default to top points if not found 
+                let groupPoints = [lastPts];
+                for (let i = 0; i < rankedStudents.length; i++) {
+                    let curPts = rankedStudents[i].totalPoints;
+                    if (lastPts !== curPts) {
+                        rankedStudents[i].pointsFromNextPlace = lastPts - curPts;  // I dont need to do all of these
+                    }
+                    if (rankedStudents[i].studentId === selectedStudentId) {
+                        pointsFromNext = rankedStudents[i].pointsFromNextPlace;
+                    }
+                    if (lastPts != curPts) {
+                        groupPoints.push(curPts);
+                        lastPts = curPts;                               
+                    }
+                }
+
+                if (groupPoints.length > 1) { // Need to handle first place differently
+                    pointsFromNext = groupPoints[0] - groupPoints[1];  // difference between top score and next different score
+                };
+            }
+
+            // Update state
             this.state.student_rank.value = newRank;
             this.state.student_rank.total_students = totalStudentsWithPoints;
+            this.state.student_rank.points_from_next = pointsFromNext;
 
-            // Trigger confetti for top 3 ranks
-            if (newRank >= 1 && newRank <= 3 && this.state.confettiReady && this.confetti) {
-                // Determine duration based on rank
-                const duration = newRank === 1 ? 5000 : newRank === 2 ? 2000 : 1000; // 5s, 2s, 1s
+            // Nice message
+            if (newRank === 1) {
+                if (pointsFromNext > 0) {
+                    this.state.rank_description = `${pointsFromNext} points ahead of 2nd place`;
+                } else {
+                    this.state.rank_description = "Tied for 1st place";
+                }
+            } else if (newRank > 1 && pointsFromNext > 0) {
+                this.state.rank_description = `${pointsFromNext} points from next place`;
+            } else if (newRank > 1 && pointsFromNext === 0) {
+                this.state.rank_description = "Tied with next place";
+            } else {
+                this.state.rank_description = "";
+            }
+
+            // Confetti for top 3 ranks (you can adjust duration/particle count)
+            if (newRank >= 1 && newRank <= 3 && this.state.confettiReady && this.confetti ) {
+                const duration = newRank === 1 ? 1500 : newRank === 2 ? 1000 : 500;
                 const end = Date.now() + duration;
-                var colors = ['#c700bd', '#ffffff', '#ff0000'];
-
-                (function frame() {
-                    confetti({
-                        particleCount: newRank === 1 ? 3 : newRank === 2 ? 2 : 1, // More particles for higher ranks
+                const colors = ['#c700bd', '#ffffff', '#ff0000', '#63008a', '#ffff00'];
+                const confettitSettings = {
+                        particleCount: newRank === 1 ? 5 : newRank === 2 ? 3 : 2,
                         angle: 60,
                         spread: 55,
+                        startVelocity: 35,
+                        decay: 0.9,
+                        gravity: randomInRange(0.4, 0.6),
+                        drift: randomInRange(-0.4, 0.4),
                         origin: { x: 0 },
                         colors: colors
-                    });
-                    confetti({
-                        particleCount: newRank === 1 ? 3 : newRank === 2 ? 2 : 1, // More particles for higher ranks
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1 },
-                        colors: colors
-                    });
+                    };
+                let confettitSettings2 = { ...confettitSettings }; // Create a copy
+                confettitSettings2.origin = { x: 1 }; // alternate sides
+                // confettitSettings2.angle = 120; 
+
+                (function frame() {
+                    confetti(confettitSettings);
+                    confetti(confettitSettings2);
 
                     if (Date.now() < end) {
                         requestAnimationFrame(frame);
                     }
-                }());
+                })();
 
                 this.state.confettiTriggered = true;
-                console.log(`Rank #${newRank} confetti triggered for ${duration}ms!`);
+                console.log(`Rank #${newRank} confetti triggered for ${duration}ms`);
             }
 
             console.timeLog(
                 'Calculate Student Rank',
-                `Rank: ${newRank} out of ${totalStudentsWithPoints}`
+                `Rank: ${newRank} of ${totalStudentsWithPoints}, Points from next: ${pointsFromNext}`
             );
         } catch (error) {
             console.error("Error calculating student rank:", error);
             this.state.student_rank.value = "Error";
             this.state.student_rank.total_students = "";
+            this.state.student_rank.points_from_next = 0;
+            this.state.rank_description = "";
         }
 
         console.timeEnd('Calculate Student Rank');
@@ -304,18 +462,23 @@ export class ApexDashboard extends Component {
         const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
         this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
 
-        // Set selectedStudent after students are loaded
-        const savedSettings = this.loadSettings();
-        if (savedSettings.selectedStudent) {
-            const selectedId = parseInt(savedSettings.selectedStudent, 10);
-            const studentExists = this.state.students.some(student => student.id === selectedId);
-            if (studentExists) {
-                this.state.selectedStudent = selectedId;
+        // If only one student, automatically select it
+        if (this.state.students.length === 1) {
+            this.state.selectedStudent = this.state.students[0].id;
+        } else {
+            // Set selectedStudent after students are loaded
+            const savedSettings = this.loadSettings();
+            if (savedSettings.selectedStudent) {
+                const selectedId = parseInt(savedSettings.selectedStudent, 10);
+                const studentExists = this.state.students.some(student => student.id === selectedId);
+                if (studentExists) {
+                    this.state.selectedStudent = selectedId;
+                } else {
+                    this.state.selectedStudent = false;
+                }
             } else {
                 this.state.selectedStudent = false;
             }
-        } else {
-            this.state.selectedStudent = false;
         }
 
         // Check if user is faculty
@@ -325,6 +488,12 @@ export class ApexDashboard extends Component {
     }
 
     async loadDashboardData() {
+        // Don't load data if no period is selected
+        if (this.state.period === 0) {
+            console.log('Skipping dashboard data load - no period selected');
+            return;
+        }
+
         // Load KPIs first (fastest to load, most important for user)
         await this.fetchKPIs();
 
@@ -348,20 +517,14 @@ export class ApexDashboard extends Component {
 
         // Start all KPI fetches immediately and update UI as they complete
         const kpiPromises = [
-            // Active submissions
-            this.orm.searchCount("aps.resource.submission", this.getActiveSubmissionsDomain())
-                .then(count => {
-                    this.state.submissions.value = count;
-                    console.timeLog('Fetch KPIs', 'Active submissions loaded');
+            // Student points (sum of points, not count)
+            this.orm.searchRead("aps.resource.submission", this.getStudentPointsDomain(), ["points"])
+                .then(submissions => {
+                    const totalPoints = submissions.reduce((sum, submission) => sum + (submission.points || 0), 0);
+                    this.state.student_points.value = totalPoints;
+                    console.timeLog('Fetch KPIs', 'Student points loaded');
                 }),
-
-            // Total Submitted
-            this.orm.searchCount("aps.resource.submission", this.getTotalSubmittedDomain())
-                .then(count => {
-                    this.state.total_submitted.value = count;
-                    console.timeLog('Fetch KPIs', 'Total submitted loaded');
-                }),
-
+                
             // Overdue items
             this.orm.searchCount("aps.resource.submission", this.getOverdueDomain())
                 .then(count => {
@@ -370,10 +533,17 @@ export class ApexDashboard extends Component {
                 }),
 
             // All overdue items
-            this.orm.searchCount("aps.resource.submission", this.getAllOverdueDomain())
+            this.orm.searchCount("aps.resource.submission", this.getOverdueDomain(false,true))
                 .then(count => {
                     this.state.alloverdue.value = count;
                     console.timeLog('Fetch KPIs', 'All overdue items loaded');
+                }),
+
+            // Active submissions
+            this.orm.searchCount("aps.resource.submission", this.getActiveSubmissionsDomain())
+                .then(count => {
+                    this.state.submissions.value = count;
+                    console.timeLog('Fetch KPIs', 'Active submissions loaded');
                 }),
 
             // Next 7 days
@@ -383,13 +553,26 @@ export class ApexDashboard extends Component {
                     console.timeLog('Fetch KPIs', 'Next 7 days loaded');
                 }),
 
-            // Student points (sum of points, not count)
-            this.orm.searchRead("aps.resource.submission", this.getStudentPointsDomain(), ["points"])
-                .then(submissions => {
-                    const totalPoints = submissions.reduce((sum, submission) => sum + (submission.points || 0), 0);
-                    this.state.student_points.value = totalPoints;
-                    console.timeLog('Fetch KPIs', 'Student points loaded');
-                })                
+            // Total Submitted
+            this.orm.searchCount("aps.resource.submission", this.getTotalSubmittedDomain())
+                .then(count => {
+                    this.state.total_submitted.value = count;
+                    console.timeLog('Fetch KPIs', 'Total submitted loaded');
+                }),
+
+            // Submitted today
+            this.orm.searchCount("aps.resource.submission", this.getSubmittedTodayDomain())
+                .then(count => {
+                    this.state.submitted_today.value = count;
+                    console.timeLog('Fetch KPIs', 'Submitted today loaded');
+                }),
+
+            // Submitted yesterday
+            this.orm.searchCount("aps.resource.submission", this.getSubmittedYesterdayDomain())
+                .then(count => {
+                    this.state.submitted_today.submitted_yesterday = count;
+                    console.timeLog('Fetch KPIs', 'Submitted yesterday loaded');
+                }),
         ];
 
         // Wait for all to complete, but UI updates happen immediately as each finishes
@@ -558,10 +741,13 @@ export class ApexDashboard extends Component {
     viewActiveSubmissions() {
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Submissions Assigned in the last " + this.state.period_name,
+            name: "Last " + this.state.period_name,
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
-            domain: this.getActiveSubmissionsDomain(),
+            domain: this.getActiveSubmissionsDomain(false),
+            context: {
+                search_default_assigned: 1,
+            },            
         });
     }
 
@@ -576,49 +762,61 @@ export class ApexDashboard extends Component {
         });
     }
 
-    
-
     viewTotalSubmitted() {
-        const totalSubmittedDomain = this.getTotalSubmittedDomain();
+        const totalSubmittedDomain = this.getTotalSubmittedDomain({ includeState: false, includePeriod: true });
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Total Submitted in the last " + this.state.period_name,
+            name: "Last " + this.state.period_name,
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: totalSubmittedDomain,
+            context: {
+                search_default_submitted: 1,
+                search_default_completed: 1,
+            },              
         });
     }
 
     viewOverdueSubmissions() {
-        const overdueDomain = this.getOverdueDomain();
+        const overdueDomain = this.getOverdueDomain(true,false); // Only show overdue items, ignore period and state (assigned or not);
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Overdue Submissions in the last " + this.state.period_name,
+            name: "Last " + this.state.period_name,
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: overdueDomain,
+            context: {
+                search_default_overdue: 1,
+            },            
         });
     }
 
     viewAllOverdueSubmissions() {
-        const domain = this.getAllOverdueDomain();
+        const domain = this.getOverdueDomain(false, false); // Only show overdue items, ignore period and state (assigned or not);
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "All Overdue Submissions",
+            name: "",
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: domain,
+            context: {
+                search_default_overdue: 1,
+            },               
         });
     }
 
     viewNext7DaysSubmissions() {
-        const domain = this.getSubmission7DaysDomain();
+        const domain = this.getSubmission7DaysDomain({includeDateDue: false, includeState: false}); // Show all items due in the next 7 days, regardless of assigned state
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Next 7 Days Submissions",
+            name: "Coming Due in the next 7 Days",
             res_model: "aps.resource.submission",
             views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
             domain: domain,
+            context: {
+                search_default_due_next_7_days: 1,
+                search_default_assigned: 1,
+            }
         });
     }
     viewPointsSubmissions() {
@@ -631,6 +829,17 @@ export class ApexDashboard extends Component {
             domain: domain,
         });
     }
+    viewTodaySubmissions() {
+        const domain = this.getSubmittedTodayDomain();
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Today's Submissions",
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: domain,
+        });
+    }
+
 }
 
 ApexDashboard.template = "apex_dashboard.Dashboard";

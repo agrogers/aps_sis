@@ -36,7 +36,7 @@
                 <filter string="Active Submissions" name="submission_active" domain="[('submission_active', '=', True)]"/>
                 <filter string="Assigned" name="assigned" domain="[('state', '=', 'assigned')]"/>
                 <filter string="Submitted" name="submitted" domain="[('state', '=', 'submitted')]"/>
-                <filter string="Completed" name="completed" domain="[('state', '=', 'complete')]"/>
+                <filter string="Finalised" name="completed" domain="[('state', '=', 'complete')]"/>
                 <filter string="Late" name="late" domain="[('due_status', '=', 'late')]"/>
                 <filter string="On Time" name="on_time" domain="[('due_status', '=', 'on-time')]"/>
                 <filter string="Early" name="early" domain="[('due_status', '=', 'early')]"/>
@@ -79,6 +79,7 @@
                 <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="points" optional="hide"/>
+                <field name="points_scale" optional="hide"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
@@ -104,7 +105,7 @@
                 <field name="create_date" optional="hide"/>
                 <field name="write_date" optional="hide"/>
                 <field name="days_till_due" optional="hide"/>
-                <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
+                <button name="action_open_submission" type="object" string="Details..." title="Open Submission" class="btn-secondary btn-sm"/>
             </list>
         </field>
     </record>
@@ -141,7 +142,7 @@
                 <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="create_date" optional="hide"/>
-                <button name="action_open_submission" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
+                <button name="action_open_submission" type="object" string="Details..." title="Open Submission" class="btn-secondary btn-sm"/>
             </list>
         </field>
     </record>
@@ -295,6 +296,7 @@
                                     <field name="active_datetime" readonly="1"/>
                                     <field name="notified_active"  widget="boolean_toggle" />
                                     <field name="days_till_due" readonly="1"/>
+                                    <field name="points_scale" readonly="0"/>
                                     <field name="create_date" readonly="1"/>
                                     <field name="write_date" readonly="1"/>
                                 </group>

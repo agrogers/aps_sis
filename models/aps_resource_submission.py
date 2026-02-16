@@ -120,12 +120,13 @@ class APSResourceSubmission(models.Model):
         default=False,
         help='If enabled, users can edit the subjects associated with this resource. This is useful for resources that are shared across multiple subjects, where the subject association may need to be customized at the submission level.',
     )
+    points_scale = fields.Integer(string='Points Scale', default=0)  # I need to save this here because the scale changes depending on how the resource is being used. End of semester exmams the point scale is not used. Non enforced work is.
     points = fields.Integer(
         string='Points', compute='_compute_points', store=True, 
         help='The points allocated to this submission.')
 
 # region - Computed Fields
-    @api.depends('date_submitted', 'date_due', 'state', 'resource_id.points_scale')
+    @api.depends('date_submitted', 'date_due', 'state', 'points_scale')
     def _compute_points(self):
         for record in self:
             if record.state in ['complete', 'submitted'] and record.date_submitted:
@@ -146,7 +147,7 @@ class APSResourceSubmission(models.Model):
                     else:  # very early (more than 2 days early)
                         points = 5
 
-                record.points = int(points * record.resource_id.points_scale)
+                record.points = int(points * record.points_scale)
             else:
                 record.points = 0
 
@@ -709,4 +710,12 @@ class APSResourceSubmission(models.Model):
         return updated_count
     
 # endregion - Activity Notifications
-
+    @api.model
+    def read_group_points_by_student(self, domain, orderby=False):
+        return self.sudo().read_group(
+            domain=domain,
+            fields=["points:sum"],
+            groupby=["student_id"],
+            orderby=orderby,
+            lazy=True,  # or False, depending on your needs
+        )

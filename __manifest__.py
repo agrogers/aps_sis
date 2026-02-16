@@ -1,6 +1,6 @@
 {
 	'name': 'APEX - Academic Progress and Excellence',
-	'version': '18.0.1.0.19',
+	'version': '18.0.1.0.20',
 	'icon': '/aps_sis/static/description/icon.png',
 	'category': 'Tools',
 	'summary': 'Allow the assigning and tracking of academic tasks such as homework, exams etc.',
@@ -25,6 +25,7 @@
 		'views/aps_resource_submission_views.xml',
 		'views/aps_resource_submission_views_for_students.xml',
 		'views/aps_dashboard_views.xml',
+		'views/aps_submission_mass_update_wizard_views.xml',
 		'views/op_program_level_views.xml',
 		'views/op_course_views.xml',
 		'views/op_subject_views.xml',

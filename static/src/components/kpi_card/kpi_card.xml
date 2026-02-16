@@ -1,17 +1,34 @@
 <t t-name="apex_dashboard.KpiCard" owl="1">
-    <div class="col-lg-3 col-md-6 " t-att-id="'KPI-' + props.name" t-on-click="props.onClick">
-        <div class="shadow-sm p-4 rounded text-center cursor-pointer h-100" t-att-class="props.name === 'Rank' and props.value === 1  ? 'bg-pink-pulse' : 'bg-white'" t-on-click="props.onClick">
-            <div class="text-muted fw-bold h5" t-esc="props.name"/>
-            <div class="display-5 fw-bold my-2" t-att-class="props.value > 0 and props.name.includes('Overdue') ? 'text-danger' : 'text-dark'" t-esc="props.value"/>
-            <!-- <div t-attf-class="h6 fw-bold #{props.percentage >= 0 ? 'text-success' : 'text-danger'}"> -->
-            <div class="fs-6 text-primary">
-                <t t-if="props.name === 'Rank'">
+    <div class="col-lg-3 col-md-6 " t-att-id="'KPI-' + props.name"  t-on-click="props.onClick ? props.onClick : () => {}">
+        <t t-if="props.name === 'Rank'">
+            <div class="shadow-sm p-4 rounded text-center cursor-pointer h-100" t-att-class="props.value &lt;= 3 ? 'bg-pale-yellow' : ''">
+                <div class="text-muted fw-bold h5" t-esc="props.name"/>
+                <!-- <div class="text-muted fw-bold h5" t-esc="props.rank_description"/> -->
+                <div class="display-5 fw-bold my-2 text-dark" style="line-height: 0.5">
+                    <t t-esc="props.value"/>
+                    <br/>
                     <small>out of <t t-esc="props.total_students || 0"/></small>
+                </div>
+                <!-- <div t-attf-class="h6 fw-bold #{props.percentage >= 0 ? 'text-success' : 'text-danger'}"> -->
+                <t t-if="props.value === 1">
+                    <br/>
+                    <small class="text-success">+<t t-esc="props.points_from_next"/> pts ahead of #2</small>
                 </t>
                 <t t-else="">
-                    <small t-esc="props.period_name"/>
+                    <br/>
+                    <small class=""><t t-esc="props.points_from_next"/> pts behind #<t t-esc="props.value  - 1"/></small>
                 </t>
+                
             </div>
-        </div>
+        </t>
+        <t t-else="">
+            <div class="shadow-sm p-4 rounded text-center cursor-pointer h-100 bg-white">    
+                <div class="text-muted fw-bold h5" t-esc="props.name"/>
+                <div class="display-5 fw-bold my-2" t-att-class="props.value > 0 and props.name.includes('Overdue') ? 'text-danger' : 'text-dark'" t-esc="props.value">
+                </div>
+                <br/>
+                <small t-esc="props.period_name"/>
+            </div>  
+        </t>
     </div>
 </t>

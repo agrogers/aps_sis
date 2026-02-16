@@ -7,8 +7,7 @@ access_aps_resource_custom_name_teacher,aps.resource.custom.name.teacher,model_a
 access_aps_resource_submission_teacher,aps.resource.submission.teacher,model_aps_resource_submission,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_assign_students_wizard_teacher,aps.assign.students.wizard.teacher,model_aps_assign_students_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_assign_students_wizard_line_teacher,aps.assign.students.wizard.line.teacher,model_aps_assign_students_wizard_line,aps_sis.group_aps_teacher,1,1,1,1
-access_aps_submission_report_wizard_teacher,aps.submission.report.wizard.teacher,model_aps_submission_report_wizard,aps_sis.group_aps_teacher,1,1,1,1
-access_aps_dashboard_teacher,aps.dashboard.teacher,model_aps_dashboard,aps_sis.group_aps_teacher,1,0,0,0
+access_aps_submission_mass_update_wizard_teacher,aps.submission.mass.update.wizard.teacher,model_aps_submission_mass_update_wizard,aps_sis.group_aps_teacher,1,1,1,1
 
 access_aps_resources_student_full,aps.resources.student.full,model_aps_resources,aps_sis.group_aps_student,1,0,1,0
 access_aps_resource_types_student_full,aps.resource.types.student.full,model_aps_resource_types,aps_sis.group_aps_student,1,0,0,0
