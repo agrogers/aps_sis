@@ -223,7 +223,7 @@ class APSResource(models.Model):
     def _compute_parent_question(self):
         """Get the question to display based on has_answer setting."""
         for rec in self:
-            if rec.has_question == 'use_parent' and rec.primary_parent_id:
+            if rec.primary_parent_id:  # We leave the parent_question field set even if has_question is not 'use_parent' because the wizard may still want to access it. The visibility of the field is controlled in the form view.
                 rec.parent_question = rec.primary_parent_id.question
             else:
                 rec.parent_question = False

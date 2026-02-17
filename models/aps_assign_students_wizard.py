@@ -49,7 +49,8 @@ class APSAssignStudentsWizard(models.TransientModel):
         ('use_parent', 'Use Parent'),
         ], string='Has Question', 
         default='no', 
-        help='A resource can use the parent\'s question if set to "Use Parent".',
+        help='A resource can use the parent\'s question if set to "Use Parent". This applies ONLY to the top-level resource. ' \
+        'Child resources will always use their own question setting.',
         required=True,
 )
     question = fields.Html(string='Question')
@@ -120,6 +121,16 @@ class APSAssignStudentsWizard(models.TransientModel):
 
     
         return res
+
+    @api.onchange('has_question')
+    def _onchange_has_question(self):
+        if self.resource_id:
+            if self.has_question == 'no':
+                self.question = False
+            elif self.has_question == 'yes':
+                self.question = self.resource_id.question if self.resource_id.question else False
+            elif self.has_question == 'use_parent':
+                self.question = self.resource_id.parent_question
 
     @api.onchange('date_assigned')
     def _onchange_date_due(self):
@@ -225,8 +236,8 @@ class APSAssignStudentsWizard(models.TransientModel):
     def action_assign_students(self):
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
-        parent_resource = self.resource_id
-        parent_name = parent_resource.display_name or parent_resource.name or ''
+        top_level_resource = self.resource_id
+        top_level_resource_name = top_level_resource.display_name or top_level_resource.name or ''
         separator = ' 🢒 '
         # Get all resources to assign: selected resources from the list, ordered by sequence
         selected_resources = self.env['aps.resources']
@@ -254,23 +265,23 @@ class APSAssignStudentsWizard(models.TransientModel):
                 else:
                     submission_name = f"{self.custom_submission_name} ({child_name})"
             else:
-                if resource.id == parent_resource.id:
-                    submission_name = parent_name
+                if resource.id == top_level_resource.id:
+                    submission_name = top_level_resource_name
                 else:
                     child_name = resource.name or resource.display_name or ''
                     custom_data = resource.parent_custom_name_data or []
                     if isinstance(custom_data, (list, tuple)):
                         for entry in custom_data:
-                            if entry.get('parent_resource_id') == parent_resource.id and entry.get('custom_name'):
+                            if entry.get('parent_resource_id') == top_level_resource.id and entry.get('custom_name'):
                                 child_name = entry.get('custom_name')
                                 break
                     # Remove overlap as in _compute_display_name
                     overlap_length = 0
-                    parent_len = len(parent_name)
+                    parent_len = len(top_level_resource_name)
                     child_len = len(child_name)
                     match_found = False
                     for i in range(1, min(parent_len, child_len) + 1):
-                        if child_name[:i] == parent_name[-i:]:
+                        if child_name[:i] == top_level_resource_name[-i:]:
                             overlap_length = i
                             match_found = True
                         else:
@@ -281,11 +292,34 @@ class APSAssignStudentsWizard(models.TransientModel):
                         import re
                         remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
                         if remaining_name:
-                            submission_name = parent_name + separator + remaining_name
+                            submission_name = top_level_resource_name + separator + remaining_name
                         else:
-                            submission_name = parent_name
+                            submission_name = top_level_resource_name
                     else:
-                        submission_name = parent_name + separator + child_name
+                        submission_name = top_level_resource_name + separator + child_name
+
+            # Set the question based on the resource's setting and the wizard's fields
+            # If the resource is the top_level_resource, use the wizard's has_question and question field settings. 
+            # Otherwise, use the resource's has_question and question.
+            if resource == top_level_resource:
+                # The question HTML field is already prefilled with the correct question based on the resource's has_question setting in the onchange of resource_id, 
+                # so we can just use that value directly without needing to check the has_question field again here. 
+                # This also allows the user to override the question for the top-level resource if they want to.
+                has_question = self.has_question
+                parent_question = question = self.question 
+            else:
+                has_question = resource.has_question
+                question = resource.question 
+                parent_question = resource.primary_parent_id.question if resource.primary_parent_id else False
+
+            if has_question == 'no':
+                use_question = False
+            elif has_question == 'yes':
+                use_question = question if question else False
+            elif has_question == 'use_parent':
+                # Copy question from resource if not explicitly provided
+                use_question = parent_question if parent_question else False
+                
             for student in self.student_ids:
                 
                 if len(self.subjects) < 2:
@@ -327,6 +361,8 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'date_due': self.date_due,
                     'allow_subject_editing': self.allow_subject_editing,
                     'state': 'assigned',
+                    'question': use_question,
+                    'has_question': has_question,
                     'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
                     'subjects': assigned_subjects.ids,
                     'points_scale': resource.points_scale if self.apply_points_scale else 0,

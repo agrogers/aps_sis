@@ -65,10 +65,10 @@
                         </page>
                         <page string="Question" invisible="has_question=='no'">
                             <group invisible="not has_question=='use_parent'" >
-                                <div class="alert alert-info" role="alert">Using <b>Parent Question</b> (read only).</div>
-                                <field name="parent_question" nolabel="1" placeholder="Parent question will appear here."/>
+                                <div class="alert alert-info" role="alert">Using <b>Parent Question</b>.</div>
+                                <!-- <field name="parent_question" nolabel="1" placeholder="Parent question will appear here." readonly="has_question=='use_parent'"/> -->
                             </group>
-                            <field name="question"  invisible="not has_question=='yes'" nolabel="1" placeholder="Enter the question for this resource."/>
+                            <field name="question"  nolabel="1" placeholder="Enter the question for this resource."/>
                         </page>
                         <page string="Default Answer" invisible="has_default_answer==False">
                             <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>

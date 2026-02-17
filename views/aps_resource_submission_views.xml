@@ -65,7 +65,7 @@
         <field name="model">aps.resource.submission</field>
         <field name="priority">10</field>
         <field name="arch" type="xml">
-            <list default_order="create_date,student_id,submission_label,submission_order">
+            <list default_order="create_date desc,student_id,submission_label,submission_order">
                 <field name="task_id"  optional="hide"/>
                 <field name="subject_icons" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Icon"/>
                 <field name="subjects" widget="many2many_tags" optional="show"/>
@@ -242,13 +242,13 @@
                 <header>
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
+                    <button name="action_open_submission_student_view" string="Student View" type="object" class="btn-secondary" />
+                    <separator/>
+                    <separator/>
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
                     <button name="action_resubmit" string="Resubmit" type="object" class="btn-secondary" invisible="state in ['assigned']"/>
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
-                    <separator/>
-                    <separator/>
-                    <button name="action_open_submission_student_view" string="Student View" type="object" class="btn-secondary" />
                 </header>
                 <sheet>
                     <widget name="web_ribbon" title="Late" bg_color="bg-danger"
@@ -289,7 +289,10 @@
                                         <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1"/>
                                     </div>
                                     <field name="result_percent" widget="percentpie_ranged" />
-                                    <field name="points"/>
+                                    
+                                    <field class="col" name="points"/>
+                                    <field class="col" name="points_scale" readonly="0"/>
+                                    
                                     <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="due_status" readonly="not is_current_user_faculty"/>
@@ -302,7 +305,7 @@
                                     <field name="active_datetime" readonly="1"/>
                                     <field name="notification_state"  />
                                     <field name="days_till_due" readonly="1"/>
-                                    <field name="points_scale" readonly="0"/>
+                                    
                                     <field name="create_date" readonly="1"/>
                                     <field name="write_date" readonly="1"/>
                                 </group>

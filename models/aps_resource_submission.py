@@ -88,11 +88,17 @@ class APSResourceSubmission(models.Model):
         readonly=True,
         help='The model answer from the associated resource for comparison.'
     )
-    has_question = fields.Selection(string='Has Question', related='resource_id.has_question', readonly=True, store=True)
+    has_question = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Question', 
+        default='no', 
+        help='A resource can use the parent\'s question if set to "Use Parent".',
+        required=True,
+        tracking=True)
     question = fields.Html(
         string='Question',
-        related='resource_id.question',
-        readonly=True,
         help='The question from the associated resource.'
     )
     supporting_resources_buttons = fields.Json(
@@ -526,6 +532,14 @@ class APSResourceSubmission(models.Model):
         for vals in vals_list:
             if 'state' not in vals:
                 vals['state'] = 'assigned'
+        
+        # Copy question from resource if not explicitly provided
+        for vals in vals_list:
+            if 'question' not in vals and 'task_id' in vals:
+                task = self.env['aps.resource.task'].browse(vals['task_id'])
+                if task.resource_id and task.resource_id.question:
+                    vals['question'] = task.resource_id.question
+
         submissions = super().create(vals_list)
         # Update task states for newly created submissions
         tasks = submissions.mapped('task_id')

@@ -54,31 +54,29 @@
         </field>
     </record>
 
+<!-- Student Submssion Form -->
     <record id="view_aps_resource_submission_form_for_students" model="ir.ui.view">
         <field name="name">aps.resource.submission.form.for.students</field>
         <field name="model">aps.resource.submission</field>
         <field name="priority">5</field>
         <field name="arch" type="xml">
             <form create="false" delete="false">
-                <header>
+               <header>
                     <button name="action_open_submission" string="Submission Details" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
-                    <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
+                    <button name="action_mark_reviewed" string="Reviewed" invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
                     <button name="action_mark_unsubmitted" string="Unsubmit" type="object" class="btn-secondary" invisible="state != 'submitted'"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-primary" invisible="state != 'assigned'"/>
                     <button name="action_resubmit" string="Resubmit" type="object" class="btn-secondary" invisible="state in ['assigned']"/>
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-secondary" invisible="state not in ['assigned', 'submitted'] or not is_current_user_faculty"/>
                 </header>
                 <sheet>
-                    <widget name="web_ribbon" title="Late" bg_color="bg-danger"
-                            invisible="due_status != 'late'"/> 
-                    <widget name="web_ribbon" title="On-Time" bg_color="bg-info" 
-                            invisible="due_status != 'on-time'"/> 
-                    <widget name="web_ribbon" title="Early" bg_color="bg-success" 
-                            invisible="due_status != 'early'"/> 
+                    <widget name="web_ribbon" title="Late" bg_color="bg-danger" invisible="due_status != 'late'"/> 
+                    <widget name="web_ribbon" title="On-Time" bg_color="bg-info" invisible="due_status != 'on-time'"/> 
+                    <widget name="web_ribbon" title="Early" bg_color="bg-success" invisible="due_status != 'early'"/> 
                     
                     <group col="12">
                         <group colspan="6">
@@ -91,7 +89,7 @@
                             <field name="review_requested_by" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
                         <group colspan="2">
-                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty" />
+                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
                         </group>
                     </group>
                     <group col="12" class="mb-4">
@@ -99,60 +97,48 @@
                     </group>
                     <notebook>
                         <page string="Student Answer">
-                            <group col="12">
-                                <group colspan="6">
+                            <group class="container-fluid">
+                                <div class="row flex-nowrap">
+                                <group class="col">
                                     <div class="o_row fs-3" invisible="out_of_marks != 0">
                                         This task is not graded. Just submit it when you're done!
                                     </div>
-                                    <div class="o_row fs-2 fw-bold" invisible="out_of_marks == 0">
+                                    <div class="o_row fs-2 fw-bold  flex-nowrap" style="white-space:nowrap" invisible="out_of_marks == 0">
                                         <span>
                                             <label for="score" string="Score:" class="oe_inline fs-2 me-2"/>
-                                            <field name="score" widget="float_sentinel" 
-                                                    options="{'sentinel': -0.01}" 
-                                                    class="oe_inline fixed-score-width" nolabel="1" 
-                                                    readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
+                                            <field name="score" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline fixed-score-width" nolabel="1" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
                                             <span class="oe_inline mx-1"> / </span>
-                                            <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" 
-                                                    class="oe_inline fixed-score-width" nolabel="1" readonly="1"/>
+                                            <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline fixed-score-width" nolabel="1" readonly="1"/>
                                             <span class="ps-2">⇒</span>
-                                            <field name="result_percent" widget="percentpie_ranged" 
-                                                class="oe_inline ms-3" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
+                                            <field name="result_percent" widget="percentpie_ranged" class="oe_inline ms-3" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
                                             <span>  </span>
                                         </span> 
                                     </div>
                                 </group>
-                                <group colspan="2" class="d-flex justify-content-end fs-2" invisible="state == 'assigned'">
-                                    <field name="points" />
+                                <group style="max-width:125px" class="col d-flex justify-content-end fs-2" invisible="state == 'assigned'">
+                                    <field name="points" style="max-width:40px" string="Pts"/>
                                 </group>
-                                <group colspan="4" class="d-flex justify-content-end">
-                                        <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '40px'}" />
+                                <group class="col d-flex justify-content-end">
+                                        <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '40px'}"/>
                                 </group>
+                                </div>
                             </group>
                             <field name="subjects" widget="clickable_many2many_tags" invisible="allow_subject_editing==False" no_add="True" no_open="True" options="{'no_create': True}"/>
                             <hr/>
-                            <div class="text-muted"
-                                style="font-size: 1.2em;"
-                                invisible="state == 'assigned' or answer">
+                            <div class="text-muted" style="font-size: 1.2em;" invisible="state == 'assigned' or answer">
                                 No answer has been supplied.
                             </div>
-                            <field name="answer"
-                                nolabel="1"
-                                placeholder="Enter your answer here."
-                                readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"
-                                invisible="state != 'assigned' and not answer"/>
+                            <field name="answer" nolabel="1" placeholder="Enter your answer here." readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" invisible="state != 'assigned' and not answer"/>
 
                         </page>
                         <page string="🗪 Teacher Feedback" invisible="state=='assigned' or not has_feedback">
-                            <field name="feedback" 
-                                nolabel="1" 
-                                readonly="True if is_current_user_faculty else True"
-                                placeholder="Feedback on this submission."/>
+                            <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
                         </page>
                         <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned'">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
                         <page string="ℚuestion" invisible="has_question=='no'">
-                            <field name="question" nolabel="1" readonly="1"/>
+                            <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
                         </page>
                         <page string="ⓘ">
                             <group>
@@ -162,15 +148,15 @@
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" readonly="1" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
-                                    <field name="assigned_by" />
+                                    <field name="assigned_by"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
-                                    <field name="submission_label" />
+                                    <field name="submission_label"/>
                                 </group>
                                 <group>
                                     <field name="state" readonly="not is_current_user_faculty"/>
-                                    <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" />
-                                    <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" />
-                                    <field name="due_status" />
+                                    <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="due_status"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>
                             </group>
