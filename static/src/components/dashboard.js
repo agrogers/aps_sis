@@ -203,8 +203,24 @@ export class ApexDashboard extends Component {
         return domain;
     }
 
+    // getDueStatusDomain() {
+    //     let domain = this.addStudentFilter([]);
+    //     domain.push(['submission_active', '=', true]);
+    //     domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+    //     // domain.push(['state', 'not in', ['assigned']]);
+    //     return domain;
+    // }
+    // getTasksBySubject() {
+    //     let domain = this.addStudentFilter([]);
+    //     domain.push(['submission_active', '=', true]);
+    //     domain.push(['date_submitted', '>=', this.getPeriodStartDateStr()]);
+    //     return domain;
+    // }
     getDoughnutDomain() {
-        return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()]]);
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        return domain;
     }
     getStudentPointsDomain() {
         if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
@@ -683,6 +699,7 @@ export class ApexDashboard extends Component {
             };
         });
 
+        // Tasks by Due Status
         const subjectCounts = {};
         const due_statusCounts = {};
         const dueStatusDisplay = {

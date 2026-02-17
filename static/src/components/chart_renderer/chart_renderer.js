@@ -144,8 +144,24 @@ export class ChartRenderer extends Component {
                     title: {
                         display: true,
                         text: this.props.title,
-                        position: 'top'
+                        position: 'top',
+                        align: 'center',  // 'start', 'center', 'end'
                     },
+                    // subtitle: {
+                    //     display: true,
+                    //     text: 'Data for Q1 2026 - All regions',  // Your subtitle here
+                    //     font: {
+                    //     size: 14,
+                    //     style: 'italic'
+                    //     },
+                    //     color: '#666',
+                    //     padding: {
+                    //     top: 0,
+                    //     bottom: 100
+                    //     },
+                    //     align: 'start',  // 'start', 'center', 'end',
+                    //     position: 'bottom'
+                    // },
                     datalabels: {
                         display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
                         color: '#fff', // Text color
