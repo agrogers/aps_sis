@@ -321,7 +321,7 @@
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission." readonly="1"/>
                         </page>
                         <page string="ℚuestion" invisible="has_question=='no'">
-                            <field name="question" nolabel="1" readonly="1"/>
+                            <field name="question" nolabel="1" readonly=""/>
                         </page>
 
                     </notebook>
