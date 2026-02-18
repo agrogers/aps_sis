@@ -1,6 +1,6 @@
 {
 	'name': 'APEX - Academic Progress and Excellence',
-	'version': '18.0.1.0.22',
+	'version': '18.0.1.0.23',
 	'icon': '/aps_sis/static/description/icon.png',
 	'category': 'Tools',
 	'summary': 'Allow the assigning and tracking of academic tasks such as homework, exams etc.',
@@ -41,6 +41,8 @@
 	],
 	'assets': {
 		'web.assets_backend': [
+            # 'aps_sis/static/src/components/chart_renderer/chart.umd.min.js',
+            # 'aps_sis/static/src/components/chart_renderer/chartjs-plugin-datalabels.min.js',
 			'aps_sis/static/src/js/hide_g2_popup.js',
 			'aps_sis/static/src/css/ribbon_styles.css',
 			'aps_sis/static/src/css/openeducat.css',

@@ -8,8 +8,10 @@ export class ChartRenderer extends Component {
         
         onWillStart(async () => {
             // Loading the latest Chart.js version via CDN [cite: 21, 22]
-            await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js");
-            await loadJS("https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0");
+            // await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js");
+            await loadJS("https://unpkg.com/chart.js");
+            // await loadJS("https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0");
+            await loadJS("https://unpkg.com/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js");
         });
 
         onMounted(() => {
@@ -27,12 +29,12 @@ export class ChartRenderer extends Component {
         }
 
         let chartData = {
-            labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-            datasets: [{
-                label: this.props.title,
-                data: [12, 19, 3, 5, 2, 3],
-                borderWidth: 1
-            }]
+            // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+            // datasets: [{
+            //     label: this.props.title,
+            //     data: [12, 19, 3, 5, 2, 3],
+            //     borderWidth: 1
+            // }]
         };
 
         if (this.props.data && this.props.data.length > 0) {
@@ -94,13 +96,13 @@ export class ChartRenderer extends Component {
                         borderColor: Array(chartData.labels.length).fill(datasetColors[1]),
                         borderWidth: 1
                     },
-                    {
-                        label: 'Finalised',
-                        data: this.props.data.map(d => d.finalized),
-                        backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
-                        borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
-                        borderWidth: 1
-                    }
+                    // {
+                    //     label: 'Finalised',
+                    //     data: this.props.data.map(d => d.finalized),
+                    //     backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
+                    //     borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
+                    //     borderWidth: 1
+                    // }
                 ];
 
             } else if (this.props.type === 'doughnut' || this.props.type === 'pie') {

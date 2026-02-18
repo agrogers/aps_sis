@@ -5,7 +5,7 @@
         <field name="name">aps.resources.list</field>
         <field name="model">aps.resources</field>
         <field name="arch" type="xml">
-            <list>
+            <list default_order="create_date desc">
                 <field name="sequence" widget="handle"/>
                 <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                 <field name="subject_icons" string="Subject Icons" widget="image" options="{'size': [24, 24]}" optional="hide"/>

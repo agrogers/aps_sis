@@ -3,6 +3,7 @@ import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { KpiCard } from "./kpi_card/kpi_card";
 import { ChartRenderer } from "./chart_renderer/chart_renderer";
+import { Domain } from "@web/core/domain";
 
 export class ApexDashboard extends Component {
     setup() {
@@ -143,6 +144,23 @@ export class ApexDashboard extends Component {
         return domain;
     }
 
+    // Generic Data Domain Builder - can be used for multiple KPIs and views by toggling state and period filters
+    getDataDomain(options = {}) {
+        const incStudentFilter = options.incStudentFilter ?? true;
+        const incSubmissionActive = options.incSubmissionActive ?? true;
+        const incState = options.incState ?? false;
+        const incPeriodSubmitted = options.incPeriodSubmitted ?? false;
+        const incPeriodAssigned = options.incPeriodAssigned ?? false;
+        let domain =[];
+        if (incStudentFilter) {domain = this.addStudentFilter(domain); }
+        if (incSubmissionActive) {domain.push(['submission_active', '=', true]);}
+        if (incPeriodSubmitted) {domain.push(['date_submitted', '>=', this.getPeriodStartDateStr()]);}
+        if (incPeriodAssigned) {domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);}
+        if (incState) {domain.push(['state', 'in', incState]);}  // eg ['submitted', 'complete']
+
+        return domain;
+    }
+
     getActiveSubmissionsDomain(inludeSubmissionActive = true) {
         // Parameter is needed because when we open the list view we want to pass in a filter context, not a domain, and the filter context will handle the submission_active part
         let domain = this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
@@ -203,19 +221,7 @@ export class ApexDashboard extends Component {
         return domain;
     }
 
-    // getDueStatusDomain() {
-    //     let domain = this.addStudentFilter([]);
-    //     domain.push(['submission_active', '=', true]);
-    //     domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
-    //     // domain.push(['state', 'not in', ['assigned']]);
-    //     return domain;
-    // }
-    // getTasksBySubject() {
-    //     let domain = this.addStudentFilter([]);
-    //     domain.push(['submission_active', '=', true]);
-    //     domain.push(['date_submitted', '>=', this.getPeriodStartDateStr()]);
-    //     return domain;
-    // }
+
     getDoughnutDomain() {
         let domain = this.addStudentFilter([]);
         domain.push(['submission_active', '=', true]);
@@ -576,7 +582,7 @@ export class ApexDashboard extends Component {
                 }),
 
             // Total Submitted
-            this.orm.searchCount("aps.resource.submission", this.getTotalSubmittedDomain())
+            this.orm.searchCount("aps.resource.submission", this.getDataDomain({'incPeriodSubmitted': true}))
                 .then(count => {
                     this.state.total_submitted.value = count;
                     console.timeLog('Fetch KPIs', 'Total submitted loaded');
@@ -612,8 +618,19 @@ export class ApexDashboard extends Component {
         this.state.loadingCharts = true;
 
         // Fetch chart data: submissions by status per day for the entire period
-        const allSubmissionsDomain = this.getAllSubmissionsDomain();
-        const allSubmissions = await this.orm.searchRead("aps.resource.submission", allSubmissionsDomain, ["date_assigned", "date_submitted", "date_completed"]);
+        // const allSubmissionsDomain = this.getAllSubmissionsDomain();
+        // const allSubmissions = await this.orm.searchRead("aps.resource.submission", allSubmissionsDomain, ["date_assigned", "date_submitted", "date_completed"]);
+
+        const submittedDomain = this.getDataDomain({ incPeriodSubmitted: true, incState: ['submitted','complete'] });
+        const assignedDomain = this.getDataDomain({ incPeriodAssigned: true});
+
+        // console.log("Submitted domain:", JSON.stringify(submittedDomain));
+        // console.log("Assigned domain:", JSON.stringify(assignedDomain));
+
+        const dataDomain = Domain.or([submittedDomain, assignedDomain]).toList();
+        // console.log("Combined OR:", JSON.stringify(dataDomain));
+
+        const allSubmissions = await this.orm.searchRead("aps.resource.submission", dataDomain, ["date_assigned", "date_submitted", "date_completed"]);
 
         console.time('Process Chart Data');
         const chartData = [];
@@ -650,20 +667,20 @@ export class ApexDashboard extends Component {
         }
         this.state.chartData = chartData;
 
-        // Submissions over time
+        // Submissions over time //
         const chartDataCummulative = [];
         var assigned = 0;
-        var submitted_finalized = 0;
+        var submitted = 0;
 
         for (const dateStr in dateMap) {
             assigned += dateMap[dateStr].assigned;
-            submitted_finalized += dateMap[dateStr].submitted + dateMap[dateStr].finalized;
+            submitted += dateMap[dateStr].submitted;
             // finalized += dateMap[dateStr].finalized;
 
             chartDataCummulative.push({
                 date: dateStr,
                 assigned: assigned,
-                submitted_finalized: submitted_finalized           
+                submitted_finalized: submitted,  // combine submitted and finalized for a clearer chart (and because finalized is a subset of submitted)
             });
         }
 
