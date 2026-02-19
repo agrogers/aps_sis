@@ -649,7 +649,7 @@ class APSResourceSubmission(models.Model):
 
 #endregion - Overrides and records methods
 
-# region - Activity Notifications    
+# region - Notifications    
     def _notify_new_submission(self, subject_ids):
         """Creates an activity for each newly added faculty member."""
         # Search for faculty records to get their associated User IDs
@@ -740,7 +740,7 @@ class APSResourceSubmission(models.Model):
                     _logger.error(f"Failed to post notification message for submission {submission.id}: {str(e)}")
                     submission.notification_state = 'failed'
 
-# endregion - Activity Notifications
+# endregion - Notifications
 
 # region - Get Data    
     @api.model
