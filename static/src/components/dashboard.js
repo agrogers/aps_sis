@@ -2,6 +2,7 @@ import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { KpiCard } from "./kpi_card/kpi_card";
+import { KpiGauge } from "./kpi_gauge/kpi_gauge";
 import { ChartRenderer } from "./chart_renderer/chart_renderer";
 import { Domain } from "@web/core/domain";
 
@@ -890,6 +891,6 @@ export class ApexDashboard extends Component {
 }
 
 ApexDashboard.template = "apex_dashboard.Dashboard";
-ApexDashboard.components = { KpiCard, ChartRenderer };
+ApexDashboard.components = { KpiCard, KpiGauge, ChartRenderer };
 
 registry.category("actions").add("apex_dashboard_main", ApexDashboard);

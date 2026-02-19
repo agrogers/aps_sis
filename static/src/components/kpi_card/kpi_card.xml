@@ -1,5 +1,5 @@
 <t t-name="apex_dashboard.KpiCard" owl="1">
-    <div class="col-lg-3 col-md-6 " t-att-id="'KPI-' + props.name"  t-on-click="props.onClick ? props.onClick : () => {}">
+    <div class="col-lg-3 col-md-6 pb-2" t-att-id="'KPI-' + props.name"  t-on-click="props.onClick ? props.onClick : () => {}">
         <t t-if="props.name === 'Rank'">
             <div class="shadow-sm p-4 rounded text-center cursor-pointer h-100" t-att-class="props.value &lt;= 3 ? 'bg-pale-yellow' : ''">
                 <div class="text-muted fw-bold h5" t-esc="props.name"/>
