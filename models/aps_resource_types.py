@@ -4,6 +4,7 @@ from odoo import models, fields
 class APSResourceType(models.Model):
     _name = 'aps.resource.types'
     _description = 'APEX Resource Type'
+    _order = 'sequence, name'
 
     sequence = fields.Integer(string='Sequence', default=10)
     name = fields.Char(string='Name', required=True)

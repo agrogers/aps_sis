@@ -38,7 +38,7 @@
         <field name="name">aps.resources.hierarchy</field>
         <field name="model">aps.resources</field>
         <field name="arch" type="xml">
-                <list default_order="sequence,name">
+                <list default_order="create_date desc,sequence,name">
                     <field name="sequence" widget="handle"/>
                     <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                     <field name="display_name" optional="show"/>
@@ -141,7 +141,7 @@
                                 <div><i>Linked resources contribute to the parent total marks. To add resources such as videos or related quizzes that do not contribute to the total marks, use the 'Supporting Resources' tab.</i></div>
                             </group>
                             <field name="child_ids" widget="many2many" context="{'default_parent_ids': [(6, 0, [id])], 'default_primary_parent_id': id, 'default_subjects': subjects, 'current_parent_id': id}">
-                                <list default_order="sequence,name" editable="bottom">
+                                <list default_order="sequence,name" >
                                     <field name="sequence" widget="handle"/>
                                     <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
                                     <field name="name" optional="show"/>
@@ -155,7 +155,7 @@
                                     <field name="has_answer" optional="hide"/>
                                     <field name="child_count" optional="hide"/>
                                     <field name="child_count" optional="hide"/>
-                                    <field name="url" widget="url_icon" options='{"html": true}' optional="hide"/>
+                                    <field name="url" optional="hide"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle" optional="hide"/>
                                     <field name="points_scale" optional="hide"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
@@ -170,8 +170,9 @@
                             <group>
                                 <div><i>Supporting resources usually include videos or related quizzes that do not contribute to the total marks.</i></div>
                             </group>
-                            <field name="supporting_resource_ids" widget="many2many" context="{'default_subjects': subjects}">
-                                <list default_order="sequence,name">
+                            <field name="supporting_resource_ids" widget="many2many" 
+                               context="{'default_subjects': subjects}">
+                                <list default_order="sequence,name" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
                                     <field name="name" optional="show"/>
@@ -181,7 +182,7 @@
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                                     <field name="description" optional="show"/>
                                     <field name="child_count" optional="hide"/>
-                                    <field name="url" widget="url_icon" options='{"html": true}' optional="show"/>
+                                    <field name="url" optional="show"/>
                                     <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
                                 </list>
                             </field>

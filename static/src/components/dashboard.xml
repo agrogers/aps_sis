@@ -58,22 +58,26 @@
                     </div>
                 </t>
                 <t t-else="">
-                    <KpiCard name="'Rank'" value="state.student_rank.value" 
+                    <KpiGauge name="'Rank'" value="state.student_rank.value" 
                              total_students="state.student_rank.total_students" 
                              points_from_next="state.student_rank.points_from_next" icon="'fa-trophy'" 
                              period_name="state.period_name"
+                             max="state.student_rank.max"
                              onClick=""/>
-                    <KpiCard name="'Points'" value="state.student_points.value" 
+                    <KpiGauge name="'Points'" value="state.student_points.value" 
                              percentage="state.student_points.percentage" icon="'fa-tasks'" 
                              period_name="state.period_name"
+                             max="state.student_points.max"
                              onClick="() => this.viewPointsSubmissions()"/>
                              
                     <KpiGauge name="'Overdue Items'" value="state.overdue.value" 
                              period_name="state.period_name"
+                             max="state.overdue.max"
                              onClick="() => this.viewOverdueSubmissions()"/>
                     <KpiGauge name="'All Overdue Items'" value="state.alloverdue.value" 
                              percentage="state.alloverdue.percentage"  
                              period_name="'All Time'"
+                             max="state.alloverdue.max"
                              onClick="() => this.viewAllOverdueSubmissions()"/>
                 </t>
             </div>

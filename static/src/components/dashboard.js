@@ -20,12 +20,12 @@ export class ApexDashboard extends Component {
             students: [],
             isFaculty: true,
             submissions: { value: 0, percentage: 0, period: "" },
-            tasks: { value: 0, percentage: 0, period: "" },
-            overdue: { value: 0, percentage: 0, period: "" },
-            alloverdue: { value: 0, percentage: 0, period: "" },
+            tasks: { type:'tasks', value: 0, percentage: 0, period: "" },
+            overdue: { type:'overdue', value: 0, percentage: 0, period: "" },
+            alloverdue: { type:'alloverdue', value: 0, percentage: 0, period: "" },
             next_7_days: { value: 0, percentage: 0, period: "" },
-            student_points: { value: 0, percentage: 0, period: "" },
-            student_rank: { value: 0, total_students: 0, period: "", points_from_next: 0, },
+            student_points: {type:'student_points', value: 0, percentage: 0, period: "", max: 0  },
+            student_rank: {type:'student_rank', value: 0, total_students: 0, period: "", points_from_next: 0, max: 0 },
             submitted_today: { value: 0, percentage: 0, period: "", submitted_yesterday: 0 },
             points_from_next: 0,
             rank_description: "",
@@ -354,6 +354,9 @@ export class ApexDashboard extends Component {
                 position++;
             });
 
+
+            this.state.student_rank.max = currentRank;  // top score in the period
+            this.state.student_points.max = rankedStudents[0].totalPoints;  // top score in the period
             const totalStudentsWithPoints = rankedStudents.length;
 
             // Find selected student

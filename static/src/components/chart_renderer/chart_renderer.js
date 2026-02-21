@@ -8,10 +8,8 @@ export class ChartRenderer extends Component {
         
         onWillStart(async () => {
             // Loading the latest Chart.js version via CDN [cite: 21, 22]
-            // await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js");
             await loadJS("https://unpkg.com/chart.js");
-            // await loadJS("https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0");
-            await loadJS("https://unpkg.com/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js");
+            await loadJS("https://unpkg.com/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js");
         });
 
         onMounted(() => {
@@ -132,7 +130,8 @@ export class ChartRenderer extends Component {
             }
         }
 
-        this.chart = new Chart(this.chartRef.el, {
+        this.chart = new Chart(this.chartRef.el, 
+            {
             type: this.props.type || 'bar',
             data: chartData,
             plugins: [ChartDataLabels],
@@ -149,6 +148,20 @@ export class ChartRenderer extends Component {
                         position: 'top',
                         align: 'center',  // 'start', 'center', 'end'
                     },
+                    datalabels: {
+                        display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
+                        color: '#fff', // Text color
+                        anchor: 'center',
+                        align: 'center',
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        },
+                        formatter: (value, context) => {
+                            // Only show if value is greater than 0
+                            return value > 0 ? value : ''; 
+                        }
+                    },
                     // subtitle: {
                     //     display: true,
                     //     text: 'Data for Q1 2026 - All regions',  // Your subtitle here
@@ -163,20 +176,7 @@ export class ChartRenderer extends Component {
                     //     },
                     //     align: 'start',  // 'start', 'center', 'end',
                     //     position: 'bottom'
-                    // },
-                    datalabels: {
-                        display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
-                        color: '#fff', // Text color
-                        anchor: 'center',
-                        align: 'center',
-                        font: {
-                            weight: 'bold',
-                            size: 14
-                        },
-                        formatter: (value, context) => {
-                            // Only show if value is greater than 0
-                            return value > 0 ? value : ''; 
-                        }
+
                     }
                 },
                 scales: this.props.type === 'bar' ? {
@@ -188,7 +188,7 @@ export class ChartRenderer extends Component {
                     }
                 } : {}
             }
-        });
+        );
     }
 
     generateColors(labels, datasetIndex) {
