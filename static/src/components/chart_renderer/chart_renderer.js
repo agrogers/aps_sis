@@ -8,8 +8,9 @@ export class ChartRenderer extends Component {
         
         onWillStart(async () => {
             // Loading the latest Chart.js version via CDN [cite: 21, 22]
-            await loadJS("https://unpkg.com/chart.js");
-            await loadJS("https://unpkg.com/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js");
+            // await loadJS("https://unpkg.com/chart.js");
+            await loadJS("/aps_sis/static/src/lib/chart.js");
+            // await loadJS("/aps_sis/static/src/lib/chartjs-plugin-datalabels-2.0.0.min.js");
         });
 
         onMounted(() => {
@@ -134,7 +135,7 @@ export class ChartRenderer extends Component {
             {
             type: this.props.type || 'bar',
             data: chartData,
-            plugins: [ChartDataLabels],
+            // plugins: [ChartDataLabels],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -148,20 +149,21 @@ export class ChartRenderer extends Component {
                         position: 'top',
                         align: 'center',  // 'start', 'center', 'end'
                     },
-                    datalabels: {
-                        display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
-                        color: '#fff', // Text color
-                        anchor: 'center',
-                        align: 'center',
-                        font: {
-                            weight: 'bold',
-                            size: 14
-                        },
-                        formatter: (value, context) => {
-                            // Only show if value is greater than 0
-                            return value > 0 ? value : ''; 
-                        }
-                    },
+                    // datalabels: {
+                    //     display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
+                    //     color: '#fff', // Text color
+                    //     anchor: 'center',
+                    //     align: 'center',
+                    //     font: {
+                    //         weight: 'bold',
+                    //         size: 14
+                    //     },
+                    //     formatter: (value, context) => {
+                    //         // Only show if value is greater than 0
+                    //         return value > 0 ? value : ''; 
+                    //     }
+                    // },
+
                     // subtitle: {
                     //     display: true,
                     //     text: 'Data for Q1 2026 - All regions',  // Your subtitle here
