@@ -136,8 +136,24 @@ class APSResourceSubmission(models.Model):
     points = fields.Integer(
         string='Points', compute='_compute_points', store=True, 
         help='The points allocated to this submission.')
+    default_notebook_page = fields.Char(help="Used by the system to manage default pages.")
+    default_notebook_page_per_user = fields.Json(
+        help="Used by the system to manage default pages.",
+        default=dict,
+        compute="_compute_default_notebook_page_per_user",
+        store=True
+        )
 
 # region - Computed Fields
+
+    @api.depends('default_notebook_page')
+    def _compute_default_notebook_page_per_user(self):
+        for rec in self:
+            current_user_id = self.env.user.id
+            data = rec.default_notebook_page_per_user or {}
+            data[current_user_id] = rec.default_notebook_page
+            rec.default_notebook_page_per_user = data
+
     @api.depends('date_submitted', 'date_due', 'state', 'points_scale')
     def _compute_points(self):
         for record in self:
@@ -461,6 +477,9 @@ class APSResourceSubmission(models.Model):
             'view_mode': 'form',
             'res_id': self.id,
             'target': 'current',
+            'context': {
+                'default_notebook_page': 'question_page',
+            },
             'views': [(view_id, 'form')] if view_id else [],  # only include if view exists
         }
 
@@ -612,7 +631,7 @@ class APSResourceSubmission(models.Model):
             if view.name == 'aps.resource.submission.form.for.students':
                 for node in arch.xpath("//field"):
                     
-                    if node.get('name') not in  ['answer','score','review_requested_by','subjects']:
+                    if node.get('name') not in  ['answer','score','review_requested_by','subjects','default_notebook_page_per_user']:
                         options_str = node.get('options') or '{}'
                         try:
                             # Try parsing as JSON first

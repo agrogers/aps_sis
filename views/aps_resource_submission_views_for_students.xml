@@ -61,6 +61,7 @@
         <field name="priority">5</field>
         <field name="arch" type="xml">
             <form create="false" delete="false">
+                <field name="default_notebook_page_per_user" invisible="1" readonly="0"/> <!-- Hidden field to store per-user default tab preferences -->
                <header>
                     <button name="action_open_submission" string="Submission Details" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
@@ -95,8 +96,8 @@
                     <group col="12" class="mb-4">
                         <field name="student_id" readonly="1"/>
                     </group>
-                    <notebook>
-                        <page string="Student Answer">
+                    <notebook >
+                        <page string="Student Answer"  name="student_answer_page" >
                             <group class="container-fluid">
                                 <div class="row flex-nowrap">
                                 <group class="col">
@@ -131,16 +132,16 @@
                             <field name="answer" nolabel="1" placeholder="Enter your answer here." readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" invisible="state != 'assigned' and not answer"/>
 
                         </page>
-                        <page string="🗪 Teacher Feedback" invisible="state=='assigned' or not has_feedback">
+                        <page string="🗪 Teacher Feedback" invisible="state=='assigned' or not has_feedback"  name="feedback_page" >
                             <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned'">
+                        <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned'" name="model_answer_page">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
-                        <page string="ℚuestion" name="question_page" invisible="has_question=='no'">
+                        <page string="ℚuestion" name="question_page" class="default-page" invisible="has_question=='no'">
                             <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
                         </page>
-                        <page string="ⓘ">
+                        <page string="ⓘ" name="information_page" >
                             <group>
                                 <group>
                                     <field name="task_id" invisible="1"/>

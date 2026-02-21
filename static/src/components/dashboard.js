@@ -12,6 +12,7 @@ export class ApexDashboard extends Component {
         actionId: { type: Number, optional: true },
         updateActionState: { type: Function, optional: true },
         className: { type: String, optional: true },
+        globalState: { type: Object, optional: true },
     };
     setup() {
         this.orm = useService("orm");
