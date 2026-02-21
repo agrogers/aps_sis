@@ -2,6 +2,22 @@ import { Component, onMounted, onWillStart, useRef, onPatched } from "@odoo/owl"
 import { loadJS } from "@web/core/assets";
 
 export class ChartRenderer extends Component {
+    static props = {
+        name: { type: String, optional: true },
+        value: { type: [Number, String], optional: true },
+        // max: { type: [Number, String], optional: true },
+        // zones: { type: Array, optional: true },
+        // points_from_next: { type: [Number, String], optional: true },
+        // total_students: { type: [Number, String], optional: true },
+        // icon: { type: String, optional: true },
+        // period_name: { type: String, optional: true },
+        onClick: { type: Function, optional: true },
+        percentage: { type: [Number, String], optional: true },
+        title: { type: String, optional: true },
+        type: { type: String, optional: true }, // 'bar', 'line', 'doughnut', 'pie'
+        data: { type: Array, optional: true }, // Expecting array of objects with 'date', 'assigned', 'submitted', 'finalized' keys for line/bar; or 'data_point' and '__count' for doughnut/pie
+
+    };    
     setup() {
         this.chartRef = useRef("chart"); // Reference to the canvas element [cite: 21, 23]
         this.chart = null; // Store chart instance

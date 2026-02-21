@@ -137,7 +137,7 @@
                         <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned'">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
-                        <page string="ℚuestion" invisible="has_question=='no'">
+                        <page string="ℚuestion" name="question_page" invisible="has_question=='no'">
                             <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
                         </page>
                         <page string="ⓘ">
@@ -156,6 +156,7 @@
                                     <field name="state" readonly="not is_current_user_faculty"/>
                                     <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
                                     <field name="due_status"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>
@@ -173,7 +174,8 @@
         <field name="res_model">aps.resource.submission</field>
         <field name="view_mode">list,form</field>
         <field name="context">{
-            'searchpanel_default_state': ['assigned']
+            'searchpanel_default_state': ['assigned'],
+            'default_notebook_page': 'question_page'
         }</field>           
     </record>
 

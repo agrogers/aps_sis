@@ -7,6 +7,12 @@ import { ChartRenderer } from "./chart_renderer/chart_renderer";
 import { Domain } from "@web/core/domain";
 
 export class ApexDashboard extends Component {
+    static props = {
+        action: { type: Object, optional: true },
+        actionId: { type: Number, optional: true },
+        updateActionState: { type: Function, optional: true },
+        className: { type: String, optional: true },
+    };
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
@@ -20,12 +26,12 @@ export class ApexDashboard extends Component {
             students: [],
             isFaculty: true,
             submissions: { value: 0, percentage: 0, period: "" },
-            tasks: { type:'tasks', value: 0, percentage: 0, period: "" },
-            overdue: { type:'overdue', value: 0, percentage: 0, period: "" },
-            alloverdue: { type:'alloverdue', value: 0, percentage: 0, period: "" },
+            tasks: { value: 0, percentage: 0, period: "" },
+            overdue: {  value: 0, percentage: 0, period: "" },
+            alloverdue: {  value: 0, percentage: 0, period: "" },
             next_7_days: { value: 0, percentage: 0, period: "" },
-            student_points: {type:'student_points', value: 0, percentage: 0, period: "", max: 0  },
-            student_rank: {type:'student_rank', value: 0, total_students: 0, period: "", points_from_next: 0, max: 0 },
+            student_points: {value: 0, percentage: 0, period: "", max: 0  },
+            student_rank: { value: 0, total_students: 0, period: "", points_from_next: 0, max: 0 },
             submitted_today: { value: 0, percentage: 0, period: "", submitted_yesterday: 0 },
             points_from_next: 0,
             rank_description: "",
