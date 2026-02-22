@@ -516,6 +516,13 @@ class APSResource(models.Model):
                     children._compute_display_name()
         return result
 
+    def copy(self, default=None):
+        default = dict(default or {})
+        name = default.get('name') or self.name or ''
+        if name and not name.endswith(' (copy)'):
+            default['name'] = f"{name} (copy)"
+        return super().copy(default)
+
     @api.model
     def create(self, vals_list):
         records = super().create(vals_list)
