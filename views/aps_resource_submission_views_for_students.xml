@@ -165,6 +165,7 @@
                                     <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
                                     <field name="due_status"/>
+                                    <field name="points_scale"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>
                             </group>
