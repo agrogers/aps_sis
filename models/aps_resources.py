@@ -133,6 +133,7 @@ class APSResource(models.Model):
     has_answer = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
+        ('yes_notes', 'Yes (Notes)'),
         ('use_parent', 'Use Parent'),
         ], string='Has Answer', 
         default='no', 
@@ -141,6 +142,7 @@ class APSResource(models.Model):
         tracking=True)
     answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
     parent_answer = fields.Html(string='Parent Answer', compute='_compute_parent_answer', store=False)
+    answer_is_notes = fields.Boolean(string='Answer Is Notes', compute='_compute_answer_is_notes', store=False)
 
     # has_default_answer = fields.Selection([
     #     ('no', 'No'),
@@ -301,6 +303,14 @@ class APSResource(models.Model):
                 rec.parent_answer = rec._extract_from_parent_html(parent_answer, rec.name)
             else:
                 rec.parent_answer = False    
+
+    @api.depends('has_answer', 'primary_parent_id.has_answer')
+    def _compute_answer_is_notes(self):
+        for rec in self:
+            rec.answer_is_notes = (
+                rec.has_answer == 'yes_notes'
+                or (rec.has_answer == 'use_parent' and rec.primary_parent_id and rec.primary_parent_id.has_answer == 'yes_notes')
+            )
                 
     @api.depends('primary_parent_id.question','has_question')
     def _compute_parent_question(self):

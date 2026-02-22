@@ -48,6 +48,7 @@
                 <group expand="0" string="Group By">
                     <filter string="Label" name="groupby_label" context="{'group_by': 'submission_label'}"/>
                     <filter string="Resource" name="groupby_resource" context="{'group_by': 'resource_id'}"/>
+                    <filter string="Submission Name" name="groupby_submission_name" context="{'group_by': 'submission_name'}"/>
                     <filter string="Subject" name="groupby_subject" context="{'group_by': 'subjects'}"/>
                     <filter string="Status" name="groupby_state" context="{'group_by': 'state'}"/>
                     <filter string="Student" name="groupby_student" context="{'group_by': 'student_id'}"/>
@@ -265,6 +266,7 @@
                         </div>
                     </group>
 
+                    <field name="model_answer_is_notes" invisible="1"/>
                     <notebook>
                         <page string="ⓘ Details">
                             <group>
@@ -318,8 +320,11 @@
                         <page string="🗪 Teacher Feedback">
                             <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="🗹 Model Answer" invisible="not model_answer">
+                        <page string="🗹 Model Answer" invisible="not model_answer or model_answer_is_notes">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission." readonly="1"/>
+                        </page>
+                        <page string="🗹 Notes" invisible="not model_answer or not model_answer_is_notes">
+                            <field name="model_answer" nolabel="1" placeholder="Notes for this submission." readonly="1"/>
                         </page>
                         <page string="ℚuestion" invisible="has_question=='no'">
                             <field name="question" nolabel="1" readonly=""/>

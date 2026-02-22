@@ -109,6 +109,7 @@
                                 <group string="Technical">
                                     <field name="has_question"/>
                                     <field name="has_answer"/>
+                                    <field name="answer_is_notes" invisible="1"/>
                                     <field name="has_default_answer" invisible="has_answer=='no'"/>
                                     <field name="has_child_resources"/>
                                     <field name="has_supporting_resources"/>
@@ -129,12 +130,19 @@
                         <page string="Default Answer" invisible="has_default_answer==False">
                             <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
                         </page>
-                        <page string="Model Answer" invisible="has_answer=='no'">
+                        <page string="Model Answer" invisible="has_answer=='no' or answer_is_notes">
                             <group invisible="not has_answer=='use_parent'" >
                                 <div class="alert alert-info" role="alert">Using <b>Parent Answer</b> (read only).</div>
                                 <field name="parent_answer" nolabel="1" placeholder="Parent answer will appear here."/>
                             </group>
-                            <field name="answer" invisible="not has_answer=='yes'" placeholder="Enter the answer or solution for this resource."/>
+                            <field name="answer" invisible="has_answer not in ['yes','yes_notes']" placeholder="Enter the answer or solution for this resource."/>
+                        </page>
+                        <page string="Notes" invisible="has_answer=='no' or not answer_is_notes">
+                            <group invisible="not has_answer=='use_parent'" >
+                                <div class="alert alert-info" role="alert">Using <b>Parent Answer</b> (read only).</div>
+                                <field name="parent_answer" nolabel="1" placeholder="Parent answer will appear here."/>
+                            </group>
+                            <field name="answer" invisible="has_answer not in ['yes','yes_notes']" placeholder="Enter the notes for this resource."/>
                         </page>
                         <page string="Linked Resources" invisible="not has_child_resources=='yes'">
                             <group>

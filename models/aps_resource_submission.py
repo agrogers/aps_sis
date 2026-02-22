@@ -88,6 +88,11 @@ class APSResourceSubmission(models.Model):
         readonly=True,
         help='The model answer from the associated resource for comparison.'
     )
+    model_answer_is_notes = fields.Boolean(
+        string='Model Answer Is Notes',
+        compute='_compute_model_answer_is_notes',
+        store=False
+    )
     has_question = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
@@ -280,6 +285,18 @@ class APSResourceSubmission(models.Model):
         faculty = self._get_current_faculty()
         for record in self:
             record.is_current_user_faculty = bool(faculty)
+
+    @api.depends('resource_id.has_answer', 'resource_id.primary_parent_id.has_answer')
+    def _compute_model_answer_is_notes(self):
+        for record in self:
+            resource = record.resource_id
+            record.model_answer_is_notes = bool(
+                resource
+                and (
+                    resource.has_answer == 'yes_notes'
+                    or (resource.has_answer == 'use_parent' and resource.primary_parent_id and resource.primary_parent_id.has_answer == 'yes_notes')
+                )
+            )
 
     @api.depends('score', 'out_of_marks')  # Needed to trigger recompute when related model fields change fields change
     def _compute_result_percent(self):
