@@ -1,8 +1,90 @@
 import re
 import base64
 import requests
+from html.parser import HTMLParser
 from odoo import models, fields, api, tools
 from odoo.exceptions import ValidationError
+
+class ExtractHeadingContent(HTMLParser):
+    """Extract content under a specific heading in HTML."""
+    def __init__(self, target_heading):
+        super().__init__()
+        self.target_heading = target_heading.lower().strip()
+        self.content_parts = []
+        self.collecting = False
+        self.found_target = False
+        self.target_heading_level = None
+        self.current_heading_text = []
+        self.in_heading = False
+        self.current_heading_tag = None
+        
+    def handle_starttag(self, tag, attrs):
+        if tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+            # We're entering a heading tag
+            self.in_heading = True
+            self.current_heading_tag = tag
+            self.current_heading_text = []
+            
+            # Only include nested headings (deeper level than target)
+            if self.collecting and self.found_target:
+                heading_level = int(tag[1])
+                if heading_level > self.target_heading_level:
+                    # This is a nested heading, include it
+                    attrs_str = ' '.join([f'{k}="{v}"' for k, v in attrs])
+                    if attrs_str:
+                        self.content_parts.append(f'<{tag} {attrs_str}>')
+                    else:
+                        self.content_parts.append(f'<{tag}>')
+        elif self.collecting:
+            # Collecting content: reconstruct opening tags
+            attrs_str = ' '.join([f'{k}="{v}"' for k, v in attrs])
+            if attrs_str:
+                self.content_parts.append(f'<{tag} {attrs_str}>')
+            else:
+                self.content_parts.append(f'<{tag}>')
+                
+    def handle_endtag(self, tag):
+        if tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+            # End of heading tag - check if text matches
+            heading_text = ''.join(self.current_heading_text).strip().lower()
+            heading_level = int(tag[1])
+            
+            if heading_text == self.target_heading and not self.found_target:
+                # Found our target heading!
+                self.found_target = True
+                self.collecting = True
+                self.target_heading_level = heading_level
+            elif self.found_target and self.collecting:
+                # We're collecting content from target heading
+                # Stop if we hit a heading of equal or higher level (lower number = higher level)
+                if heading_level <= self.target_heading_level:
+                    self.collecting = False
+                elif heading_level > self.target_heading_level:
+                    # This is a nested heading, include its closing tag
+                    self.content_parts.append(f'</{tag}>')
+            
+            self.in_heading = False
+            self.current_heading_text = []
+        elif self.collecting:
+            # Collecting content: reconstruct closing tags
+            self.content_parts.append(f'</{tag}>')
+            
+    def handle_data(self, data):
+        if self.in_heading:
+            # Accumulate heading text for comparison
+            self.current_heading_text.append(data)
+            # Only add to output if we're collecting and this is a nested heading (deeper level)
+            if self.collecting and self.found_target and self.current_heading_tag:
+                heading_level = int(self.current_heading_tag[1])
+                if heading_level > self.target_heading_level:
+                    self.content_parts.append(data)
+        elif self.collecting:
+            # Collecting content under target heading
+            self.content_parts.append(data)
+    
+    def get_content(self):
+        return ''.join(self.content_parts).strip()
+
 
 class ResourceCustomName(models.Model):
     _name = 'aps.resource.custom.name'
@@ -210,23 +292,51 @@ class APSResource(models.Model):
         for rec in self:
             rec.has_multiple_parents = len(rec.parent_ids) > 1
 
-    @api.depends('primary_parent_id.answer')
+    @api.depends('primary_parent_id.answer','has_answer')
     def _compute_parent_answer(self):
         """Get the answer to display based on has_answer setting."""
         for rec in self:
             if rec.has_answer == 'use_parent' and rec.primary_parent_id:
-                rec.parent_answer = rec.primary_parent_id.answer
+                parent_answer = rec.primary_parent_id.answer
+                rec.parent_answer = rec._extract_from_parent_html(parent_answer, rec.name)
             else:
                 rec.parent_answer = False    
                 
-    @api.depends('primary_parent_id.question')
+    @api.depends('primary_parent_id.question','has_question')
     def _compute_parent_question(self):
-        """Get the question to display based on has_answer setting."""
+        """Get the question to display based on has_question setting."""
         for rec in self:
-            if rec.primary_parent_id:  # We leave the parent_question field set even if has_question is not 'use_parent' because the wizard may still want to access it. The visibility of the field is controlled in the form view.
-                rec.parent_question = rec.primary_parent_id.question
+            if rec.primary_parent_id:
+                parent_question = rec.primary_parent_id.question
+                rec.parent_question = rec._extract_from_parent_html(parent_question, rec.name)
             else:
                 rec.parent_question = False
+
+    def _extract_from_parent_html(self, parent_html, resource_name):
+        """
+        Extract content from parent HTML based on matching heading.
+        If a heading matches the resource name, extract content under that heading.
+        Otherwise, return all content.
+        Append a note indicating partial content.
+        """
+        if not parent_html or not resource_name:
+            return parent_html
+            
+        # Try to find a matching heading
+        parser = ExtractHeadingContent(resource_name)
+        try:
+            parser.feed(parent_html)
+            extracted_content = parser.get_content()
+            
+            if extracted_content:
+                # Add the note at the bottom
+                note = '<p style="font-size: 12px; color: #888; margin-top: 10px;"><em>(Displaying a part of the parent content only.)</em></p>'
+                return f'{extracted_content}{note}'
+        except Exception:
+            # If parsing fails, return original
+            pass
+            
+        return parent_html
 
     @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids')
     def _compute_display_name(self):
