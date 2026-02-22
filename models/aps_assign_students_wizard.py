@@ -30,6 +30,9 @@ class APSAssignStudentsWizard(models.TransientModel):
 
     resource_id = fields.Many2one('aps.resources', string='Resource', required=True, readonly=True)
     date_assigned = fields.Date(string='Date Assigned', required=True, default=fields.Date.today)
+    time_assigned = fields.Float(
+        string='Time Assigned',
+        help='The specific time when this submission should become active as a decimal (e.g., 14.5 = 14:30). If not set, the submission becomes active at midnight on the assigned date.')
     date_due = fields.Date(string='Due Date', required=True)
     student_ids = fields.Many2many('res.partner', string='Students', domain=[('is_student', '=', True)], required=True)
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
@@ -59,6 +62,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     has_answer = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
+        ('yes_notes', 'Yes (Notes)'),
         ('use_parent', 'Use Parent'),
         ], string='Has Answer', 
         default='no', 
@@ -101,7 +105,7 @@ class APSAssignStudentsWizard(models.TransientModel):
             skip_fields = {
                 'id', 'display_name', 'name', 'affected_resource_line_ids',
                 'student_ids', 'submission_label', 'submission_order', 'assigned_by',
-                'resource_id', 'warning_message', 'can_assign', 'parent_question', 'parent_answer',
+                'resource_id', 'warning_message', 'can_assign', 'parent_question', 'parent_answer', 'time_assigned',
             }
             for fname in self._fields:
                 if fname in skip_fields:
@@ -358,6 +362,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'submission_order': submission_order,
                     'submission_name': submission_name,
                     'date_assigned': self.date_assigned,
+                    'time_assigned': self.time_assigned,
                     'date_due': self.date_due,
                     'allow_subject_editing': self.allow_subject_editing,
                     'state': 'assigned',
