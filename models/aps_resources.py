@@ -30,18 +30,18 @@ class ExtractHeadingContent(HTMLParser):
                 heading_level = int(tag[1])
                 if heading_level > self.target_heading_level:
                     # This is a nested heading, include it
-                    attrs_str = ' '.join([f'{k}="{v}"' for k, v in attrs])
-                    if attrs_str:
-                        self.content_parts.append(f'<{tag} {attrs_str}>')
-                    else:
-                        self.content_parts.append(f'<{tag}>')
-        elif self.collecting:
-            # Collecting content: reconstruct opening tags
+                    self._append_tag(tag, attrs)
+        elif self.collecting and self.found_target:
+            # Only collecting content after we've found the target heading
+            self._append_tag(tag, attrs)
+    
+    def _append_tag(self, tag, attrs):
+        """Helper to properly reconstruct an opening tag with all attributes."""
+        if attrs:
             attrs_str = ' '.join([f'{k}="{v}"' for k, v in attrs])
-            if attrs_str:
-                self.content_parts.append(f'<{tag} {attrs_str}>')
-            else:
-                self.content_parts.append(f'<{tag}>')
+            self.content_parts.append(f'<{tag} {attrs_str}>')
+        else:
+            self.content_parts.append(f'<{tag}>')
                 
     def handle_endtag(self, tag):
         if tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
@@ -65,8 +65,8 @@ class ExtractHeadingContent(HTMLParser):
             
             self.in_heading = False
             self.current_heading_text = []
-        elif self.collecting:
-            # Collecting content: reconstruct closing tags
+        elif self.collecting and self.found_target:
+            # Only collect closing tags if we've found the target heading
             self.content_parts.append(f'</{tag}>')
             
     def handle_data(self, data):

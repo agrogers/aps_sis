@@ -11,3 +11,13 @@
 .o-paragraph {
     margin-bottom: 0.5em;
 }
+
+/* Improve HTML field look */
+
+.o_field_html div {
+    margin-bottom: 0.5em;
+}
+
+.o_field_html .alert li {
+    margin-bottom: 0.5em;
+}
