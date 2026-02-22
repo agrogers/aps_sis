@@ -16,10 +16,8 @@
                                     <field name="custom_submission_name"/>
                                     <field name="warning_message" nolabel="1" readonly="1" class="text-warning" invisible="not warning_message"/>
                                     <field name="submission_label"/>
-                                    <div class="o_row">
-                                        <field name="date_assigned"/>
-                                        <field name="time_assigned" widget="float_time" nolabel="1"/>
-                                    </div>
+                                    <field name="date_assigned"/>
+                                    <field name="time_assigned" widget="float_time" nolabel="0"/>
                                     <field name="date_due"/>
                                     <field name="can_assign" invisible="1"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle" invisible="1"/>

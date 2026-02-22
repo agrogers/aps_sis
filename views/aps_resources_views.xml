@@ -111,8 +111,9 @@
                                     <field name="has_answer"/>
                                     <field name="answer_is_notes" invisible="1"/>
                                     <field name="has_default_answer" invisible="has_answer=='no'"/>
-                                    <field name="has_child_resources"/>
-                                    <field name="has_supporting_resources"/>
+                                    <field name="has_child_resources" />
+                                    <field name="has_supporting_resources" />
+                                    <field name="has_lesson_plan" widget="boolean_toggle"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
                                     <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px'}" />
@@ -218,6 +219,9 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Lesson Plan" invisible="not has_lesson_plan" groups="aps_sis.group_aps_teacher">
+                            <field name="lesson_plan" nolabel="1" readonly="0"/>
+                        </page>                        
                     </notebook>
                 </sheet>
                 <chatter groups="aps_sis.group_aps_teacher"/>

@@ -109,7 +109,6 @@ class APSResource(models.Model):
     _description = 'APEX Resources'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
-
     sequence = fields.Integer(string='Sequence', default=10)
     display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True)
     name = fields.Char(string='Name', tracking=True)
@@ -155,6 +154,9 @@ class APSResource(models.Model):
     default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
 
     has_default_answer = fields.Boolean()
+
+    lesson_plan = fields.Html(string='Lesson Plan', help='The lesson plan for this resource.')
+    has_lesson_plan = fields.Boolean(string='Has Lesson Plan', store=True)
 
     has_child_resources = fields.Selection([
         ('no', 'No'),
