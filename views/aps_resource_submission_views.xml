@@ -171,7 +171,7 @@
                 <field name="subjects"/>
                 <templates>
                     <t t-name="kanban-box">
-                        <div t-attf-class="oe_kanban_card oe_kanban_global_click" style="min-height: 180px;">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click" style="min-height: 50px;">
                             <div class="row">
                                 <div class="col-2">
                                     <img t-if="record.subject_icons.raw_value" 
@@ -202,7 +202,7 @@
                                                         </span>
                                                         <span t-else="" class="badge bg-secondary">Unknown</span>
                                                     </div>
-                                                    <div><strong>Student:</strong> <field name="student_id"/></div>
+                                                    <div groups="aps_sis.group_aps_teacher"><strong>Student:</strong> <field name="student_id"/></div>
                                                     <div>
                                                             <strong>Due:</strong> <field name="date_due" widget="date"/>
                                                     </div>
@@ -210,14 +210,15 @@
                                                     <div t-if="record.score.raw_value and record.score.raw_value !== -0.01">
                                                         <strong>Score:</strong> <field name="score"/> / <field name="out_of_marks"/>
                                                     </div>
+                                                    <div t-if="record.result_percent and record.result_percent.raw_value">
+                                                        <strong>Result:</strong> <field name="result_percent" widget="percentpie_ranged"/>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="o_kanban_record_bottom">
                                                 <div class="oe_kanban_bottom_left">
-                                                    <div t-if="record.result_percent and record.result_percent.raw_value">
-                                                        <strong>Result:</strong> <field name="result_percent" widget="percentpie_ranged"/>
-                                                    </div>
+                                                    <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                                                 </div>
                                             <div class="oe_kanban_bottom_right">
                                                 <button name="action_open_submission" type="object" class="btn btn-sm btn-secondary">

@@ -185,6 +185,7 @@
             'searchpanel_default_state': ['assigned'],
             'default_notebook_page': 'question_page'
         }</field>           
+        
     </record>
 
     <!-- Bind specific views to the action -->
