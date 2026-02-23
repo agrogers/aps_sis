@@ -1,0 +1,38 @@
+<t t-name="apex_dashboard.KpiGauge" owl="1">
+    <div class="col-lg-3 col-md-6  pb-2" t-on-click="() => props.onClick and props.onClick()">
+        <div class="shadow-sm p-4 rounded text-center cursor-pointer h-100 bg-white">
+            <div class="text-muted fw-bold h5 " t-esc="props.name"/>
+            
+            <!-- Gauge Canvas -->
+            <div style="position: relative; width: 100%; margin-bottom: 10px; margin-top: 0px;">
+                <canvas t-ref="gaugeCanvas" style="max-width: 100%; max-height:76px; margin-left:auto; margin-right:auto"></canvas>
+            </div>
+            
+            <!-- Period Label -->
+            <div class="text-center">
+
+                <t t-if="props.name === 'Rank'">
+
+                    <t t-if="props.value === 1">
+                        
+                        <small class="text-success">+<t t-esc="props.points_from_next"/> pts ahead of #2</small>
+                    </t>
+                    <t t-else="">
+                        
+                        <t t-if="props.points_from_next === '-'">
+                            <small class="">Nothing Submitted</small>
+                        </t>
+                        <t t-else="">
+                            <small class=""><t t-esc="props.points_from_next"/> pts behind #<t t-esc="props.value  - 1"/></small>
+                        </t>
+                    </t>
+
+                </t>
+                <t t-else="">
+                    <small t-esc="props.period_name" class=""/>
+                </t>
+
+            </div>
+        </div>
+    </div>
+</t>
