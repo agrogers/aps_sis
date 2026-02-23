@@ -128,7 +128,7 @@ class APSResourceSubmission(models.Model):
         help='Icon for the first subject associated with the resource',
         store=True,
     )
-    submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=True, store=True, 
+    submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=False, store=True, 
         help='Indicates whether the submission is active and so visible to the student based on the assigned date. A submission becomes active when the assigned date is today or in the past.')
     active_datetime = fields.Datetime(string='Active Since', compute='_compute_active_datetime', store=True, help='The datetime when the submission became active. Used to trigger notifications for new active submissions.')
     notified_active = fields.Boolean(string='Notified', default=False, help='Indicates whether the user has been notified that this submission is active.')
