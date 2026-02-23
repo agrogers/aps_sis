@@ -68,3 +68,13 @@ class OpStudent(models.Model):
                 self.birth_date = partner.birthdate if hasattr(partner, 'birthdate') else False
             gender_map = {'male': 'm', 'female': 'f', 'other': 'o'}
             self.gender = gender_map.get(partner.gender, False) if hasattr(partner, 'gender') and partner.gender else False
+
+class OpStudentCourse(models.Model):
+    _inherit = "op.student.course"
+
+    def copy(self, default=None):
+        if default is None:
+            default = {}
+        default['student_id'] = False  # Reset student_id to allow duplication
+        default['roll_number'] = False  # Reset roll_number to allow duplication
+        return super(OpStudentCourse, self).copy(default)

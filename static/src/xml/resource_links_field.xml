@@ -14,7 +14,7 @@
                         <img 
                             t-att-src="link.icon_url" 
                             alt=""
-                            style="width: 24px; height: 24px; object-fit: contain;"/>
+                            t-att-style="'width: ' + this.props.size + '; height: ' + this.props.size + '; object-fit: contain;'"/>
                     </t>
                     <t t-else="">
                         <i class="fa fa-external-link fa-lg text-primary"/>

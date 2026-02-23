@@ -1,6 +1,6 @@
 {
 	'name': 'APEX - Academic Progress and Excellence',
-	'version': '18.0.1.0.18',
+	'version': '18.0.1.0.25',
 	'icon': '/aps_sis/static/description/icon.png',
 	'category': 'Tools',
 	'summary': 'Allow the assigning and tracking of academic tasks such as homework, exams etc.',
@@ -14,6 +14,8 @@
 		'security/ir.model.access.csv',
 		'security/aps_sis_security.xml',
 		'data/cron.xml',
+		'data/email_templates.xml',
+		'data/subject_categories.xml',
 		'views/aps_resource_custom_name_views.xml',		
         'views/portal_templates.xml',
 		'views/aps_resources_views.xml',
@@ -24,6 +26,8 @@
 		'views/aps_resource_submission_views.xml',
 		'views/aps_resource_submission_views_for_students.xml',
 		'views/aps_dashboard_views.xml',
+		'views/aps_submission_mass_update_wizard_views.xml',
+		'views/aps_subject_category_views.xml',
 		'views/op_program_level_views.xml',
 		'views/op_course_views.xml',
 		'views/op_subject_views.xml',
@@ -37,6 +41,8 @@
 	],
 	'assets': {
 		'web.assets_backend': [
+            'aps_sis/static/src/lib/chart.js',
+            # 'aps_sis/static/src/components/chart_renderer/chartjs-plugin-datalabels.min.js',
 			'aps_sis/static/src/js/hide_g2_popup.js',
 			'aps_sis/static/src/css/ribbon_styles.css',
 			'aps_sis/static/src/css/openeducat.css',
@@ -46,9 +52,12 @@
 			'aps_sis/static/src/js/percentpie_ranged_widget.js',
 			'aps_sis/static/src/xml/percentpie_ranged_field.xml',
 			'aps_sis/static/src/js/url_icon_widget.js',
-			'aps_sis/static/src/js/recent_submissions_widget.js',
+			'aps_sis/static/src/js/recent_submissions_widget.js',            
+            'aps_sis/static/src/js/confetti.browser.min.js',            
             'aps_sis/static/src/js/float_sentinel_widget.js',
 			'aps_sis/static/src/js/resource_links_widget.js',
+			'aps_sis/static/src/js/form_notebook_default_page.js',
+             
 			'aps_sis/static/src/xml/resource_links_field.xml',
 			'aps_sis/static/src/js/clickable_many2many_tags.js',
 			'aps_sis/static/src/css/clickable_many2many_tags.css',		

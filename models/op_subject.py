@@ -1,6 +1,22 @@
 from odoo import fields, models
 
 
+class APSSubjectCategory(models.Model):
+    _name = 'aps.subject.category'
+    _description = 'Subject Category'
+    _order = 'name'
+
+    name = fields.Char(string='Name', required=True, translate=True)
+    code = fields.Char(string='Code', help='Short code for the category')
+    description = fields.Text(string='Description')
+    color = fields.Integer(string='Color Index')
+    active = fields.Boolean(default=True, string='Active')
+
+    _sql_constraints = [
+        ('name_uniq', 'unique(name)', 'Category name must be unique!'),
+    ]
+
+
 class OpSubject(models.Model):
     _inherit = 'op.subject'
 
@@ -31,4 +47,9 @@ class OpSubject(models.Model):
         max_width=64,
         max_height=64,
         help="Subject icon (e.g. for visual identification in lists)"
+    )
+    category_id = fields.Many2one(
+        'aps.subject.category',
+        string='Subject Category',
+        help='Category this subject belongs to'
     )

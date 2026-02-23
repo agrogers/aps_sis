@@ -12,6 +12,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     description = fields.Text(string='Description', related='resource_id.description', readonly=True)
     has_question = fields.Selection(related='resource_id.has_question', readonly=True)
     has_answer = fields.Selection(related='resource_id.has_answer', readonly=True)
+    points_scale = fields.Integer(related='resource_id.points_scale', readonly=True)
     supporting_resources_buttons = fields.Json(related='resource_id.supporting_resources_buttons', string='Resource Links', readonly=True)    
     selected = fields.Boolean(string='Assign', default=True)
     parent_custom_name_data = fields.Json(string='Custom Names', related='resource_id.parent_custom_name_data', readonly=True, required=False)
@@ -36,7 +37,49 @@ class APSAssignStudentsWizard(models.TransientModel):
     warning_message = fields.Char(string='Warning', compute='_compute_warning_message', store=False)
     submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
     affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources', order='sequence')
-    can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False)
+    
+    allow_subject_editing = fields.Boolean(
+        string='Allow Subject Editing',
+        store=True
+    )
+
+    has_question = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Question', 
+        default='no', 
+        help='A resource can use the parent\'s question if set to "Use Parent". This applies ONLY to the top-level resource. ' \
+        'Child resources will always use their own question setting.',
+        required=True,
+)
+    question = fields.Html(string='Question')
+    parent_question = fields.Html(string='Parent Question', store=False)
+
+    has_answer = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Answer', 
+        default='no', 
+        help='Resources can include model answers to a question. A resource can use the parent\'s answer if set to "Use Parent".',
+        required=True,
+)
+    answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
+
+    has_default_answer = fields.Boolean(
+        string='Use Default Answer', 
+        default=False, 
+        help='Resources can include a default answer to a question. This is helpful if you wish to provide a template for students to fill in.',
+        required=True,
+)
+    default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
+
+    subjects = fields.Many2many('op.subject', string='Subjects')
+    apply_points_scale = fields.Boolean(string='Apply Points Scale', default=True, help='If enabled, the points scale from the resource will be applied to the submission. This is useful for resources that are used in different contexts with different grading schemes.')
+    notify_student = fields.Boolean(string='Notify Student', default=True, help='If enabled, students will receive a notification when they are assigned to the resource.')
+
+    can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False) # Helper field to enable/disable assign button based on whether any students and any resources are selected
 
     @api.model
     def default_get(self, fields_list):
@@ -52,7 +95,42 @@ class APSAssignStudentsWizard(models.TransientModel):
             from datetime import timedelta
             res['date_due'] = res['date_assigned'] + self.env['aps.resources']._default_assignment_duration()
 
+        # Copy any matching simple field values from the resource to the wizard defaults
+        if resource and resource.exists():
+            # Fields we should not copy or that are handled separately
+            skip_fields = {
+                'id', 'display_name', 'name', 'affected_resource_line_ids',
+                'student_ids', 'submission_label', 'submission_order', 'assigned_by',
+                'resource_id', 'warning_message', 'can_assign', 'parent_question', 'parent_answer',
+            }
+            for fname in self._fields:
+                if fname in skip_fields:
+                    continue
+                # respect requested fields_list if provided
+                if fields_list and fname not in fields_list:
+                    continue
+                # only copy if the resource model has the field
+                if fname in resource._fields:
+                    try:
+                        val = resource[fname]
+                        # store into default dict
+                        res[fname] = val
+                    except Exception:
+                        # guard against unexpected read/compute errors
+                        continue
+
+    
         return res
+
+    @api.onchange('has_question')
+    def _onchange_has_question(self):
+        if self.resource_id:
+            if self.has_question == 'no':
+                self.question = False
+            elif self.has_question == 'yes':
+                self.question = self.resource_id.question if self.resource_id.question else False
+            elif self.has_question == 'use_parent':
+                self.question = self.resource_id.parent_question
 
     @api.onchange('date_assigned')
     def _onchange_date_due(self):
@@ -84,6 +162,46 @@ class APSAssignStudentsWizard(models.TransientModel):
             else:
                 rec.warning_message = False
 
+    @api.onchange('subjects')
+    def _onchange_subjects(self):
+        """Update student list when subjects change"""
+        if self.subjects:
+        
+            # Find all students who are enrolled in running courses with these subjects
+            student_partners = self.env['res.partner']
+            
+            # Get all students enrolled in running courses
+
+            # student_records = self.env['op.student'].search([])
+            # for student_record in student_records:
+            #     running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            #     student_subjects = running_courses.mapped('subject_ids')
+            #     # If student has any of the resource subjects, include them
+            #     if student_subjects:
+            #         student_partners |= student_record.partner_id
+            
+
+            # 1. Get the subjects we care about (from the submission)
+            relevant_subjects = self.subjects  # Many2many 'op.subject'
+
+            if not relevant_subjects:
+                # No subjects → no students (or handle differently)
+                student_partners = self.env['res.partner']
+            else:
+                # 2. Find students who have at least one running course with overlapping subjects
+                students = self.env['op.student'].search([
+                    ('course_detail_ids.state', '=', 'running'),
+                    ('course_detail_ids.subject_ids', 'in', relevant_subjects.ids),
+                ])
+
+                # 3. Get their partners
+                student_partners = students.mapped('partner_id')
+
+            if student_partners:
+                self.student_ids = student_partners
+            else:
+                self.student_ids = False
+
     @api.onchange('resource_id')
     def _onchange_resource_id(self):
         if self.resource_id:
@@ -114,13 +232,12 @@ class APSAssignStudentsWizard(models.TransientModel):
         if employee:
             faculty = self.env['op.faculty'].search([('emp_id', '=', employee.id)], limit=1)
             return faculty.id if faculty else False
-        return False
 
     def action_assign_students(self):
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
-        parent_resource = self.resource_id
-        parent_name = parent_resource.display_name or parent_resource.name or ''
+        top_level_resource = self.resource_id
+        top_level_resource_name = top_level_resource.display_name or top_level_resource.name or ''
         separator = ' 🢒 '
         # Get all resources to assign: selected resources from the list, ordered by sequence
         selected_resources = self.env['aps.resources']
@@ -148,23 +265,23 @@ class APSAssignStudentsWizard(models.TransientModel):
                 else:
                     submission_name = f"{self.custom_submission_name} ({child_name})"
             else:
-                if resource.id == parent_resource.id:
-                    submission_name = parent_name
+                if resource.id == top_level_resource.id:
+                    submission_name = top_level_resource_name
                 else:
                     child_name = resource.name or resource.display_name or ''
                     custom_data = resource.parent_custom_name_data or []
                     if isinstance(custom_data, (list, tuple)):
                         for entry in custom_data:
-                            if entry.get('parent_resource_id') == parent_resource.id and entry.get('custom_name'):
+                            if entry.get('parent_resource_id') == top_level_resource.id and entry.get('custom_name'):
                                 child_name = entry.get('custom_name')
                                 break
                     # Remove overlap as in _compute_display_name
                     overlap_length = 0
-                    parent_len = len(parent_name)
+                    parent_len = len(top_level_resource_name)
                     child_len = len(child_name)
                     match_found = False
                     for i in range(1, min(parent_len, child_len) + 1):
-                        if child_name[:i] == parent_name[-i:]:
+                        if child_name[:i] == top_level_resource_name[-i:]:
                             overlap_length = i
                             match_found = True
                         else:
@@ -175,12 +292,52 @@ class APSAssignStudentsWizard(models.TransientModel):
                         import re
                         remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
                         if remaining_name:
-                            submission_name = parent_name + separator + remaining_name
+                            submission_name = top_level_resource_name + separator + remaining_name
                         else:
-                            submission_name = parent_name
+                            submission_name = top_level_resource_name
                     else:
-                        submission_name = parent_name + separator + child_name
+                        submission_name = top_level_resource_name + separator + child_name
+
+            # Set the question based on the resource's setting and the wizard's fields
+            # If the resource is the top_level_resource, use the wizard's has_question and question field settings. 
+            # Otherwise, use the resource's has_question and question.
+            if resource == top_level_resource:
+                # The question HTML field is already prefilled with the correct question based on the resource's has_question setting in the onchange of resource_id, 
+                # so we can just use that value directly without needing to check the has_question field again here. 
+                # This also allows the user to override the question for the top-level resource if they want to.
+                has_question = self.has_question
+                parent_question = question = self.question 
+            else:
+                has_question = resource.has_question
+                question = resource.question 
+                parent_question = resource.primary_parent_id.question if resource.primary_parent_id else False
+
+            if has_question == 'no':
+                use_question = False
+            elif has_question == 'yes':
+                use_question = question if question else False
+            elif has_question == 'use_parent':
+                # Copy question from resource if not explicitly provided
+                use_question = parent_question if parent_question else False
+                
             for student in self.student_ids:
+                
+                if len(self.subjects) < 2:
+                    # If there is only one subject attached to the Resource then assume that is what should be assigned to the student regardless of what subjects they are currently taking.
+                    # This is needed when a resource (eg ESL nugget) needs to be given to a student who doesn't do the subject.
+                    # It assumes that there is only one subject associated then it must be relevant. 
+                    # If there are multiple subjects then we will try to be smarter and only assign the ones that are relevant to the student based on their current courses.
+                    assigned_subjects = self.subjects
+                else:
+                    # Get student's assigned subjects from running courses
+                    student_record = self.env['op.student'].search([('partner_id', '=', student.id)], limit=1)
+                    student_subjects = self.env['op.subject']
+                    if student_record:
+                        running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+                        student_subjects = running_courses.mapped('subject_ids')
+                    # Intersect with wizard subjects
+                    assigned_subjects = self.subjects & student_subjects
+                
                 # Check if task exists
                 task = task_model.search([
                     ('resource_id', '=', resource.id),
@@ -202,6 +359,13 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'submission_name': submission_name,
                     'date_assigned': self.date_assigned,
                     'date_due': self.date_due,
+                    'allow_subject_editing': self.allow_subject_editing,
                     'state': 'assigned',
+                    'question': use_question,
+                    'has_question': has_question,
+                    'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
+                    'subjects': assigned_subjects.ids,
+                    'points_scale': resource.points_scale if self.apply_points_scale else 0,
+                    'notification_state': 'not_sent' if self.notify_student else 'skipped',
                 })
         return {'type': 'ir.actions.act_window_close'}

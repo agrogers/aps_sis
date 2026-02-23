@@ -10,3 +10,7 @@
     background-color: var(--o-cc1-btn-primary) !important;
     color: var(--o-cc1-btn-primary-text) !important;
 }
+
+.o_field_widget.o_field_clickable_many2many_tags .o_tag_badge_text  {
+    max-width: 100% !important;
+}

@@ -7,46 +7,73 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <group>
-                        <group string="Task Details">
-                            <field name="resource_id"/>
-                            <field name="assigned_by"/>
-                            <field name="custom_submission_name"/>
-                            <field name="warning_message" nolabel="1" readonly="1" class="text-warning" invisible="not warning_message"/>
-                            <field name="submission_label"/>
-                            <field name="date_assigned"/>
-                            <field name="date_due"/>
-                            <field name="can_assign" invisible="1"/>
-                        </group>
-                        <group string="Students">
-                            <field name="student_ids" widget="many2many" nolabel="1">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="category_id" widget="many2many_tags" optional="show"/>
-                                    <field name="user_id" optional="hide"/>
-                                    <field name="email" optional="hide"/>
-                                    <field name="phone" optional="hide"/>
-                                </list>
-                            </field>
-                        </group>
-                    </group>
-                    <group string="Affected Resources">
-                        <field name="affected_resource_line_ids" nolabel="1">
-                            <list editable="bottom" create="0" delete="0" default_order="sequence">
-                                <field name="sequence" widget="handle"/>
-                                <field name="selected" widget="boolean_toggle"/>
-                                <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
-                                <field name="display_name" readonly="1" optional="show"/>
-                                <field name="parent_custom_name_data" readonly="1" string="Custom Name" widget="parent_child_name_pill" options="{'enabled': False}"/>
-                                <field name="parent_resource_id" readonly="1" optional="hide"/>
-                                <field name="description" readonly="1" optional="hide"/>
-                                <field name="has_question" readonly="1" optional="hide"/>
-                                <field name="has_answer" readonly="1" optional="hide"/>
-                                <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
-                                <field name="resource_id" invisible="1"/>
-                            </list>
-                        </field>
-                    </group>
+                    <notebook class="o_aps_assign_students_wizard">
+                        <page string="Assignment Details">
+                            <group>
+                                <group>
+                                    <field name="resource_id"/>
+                                    <field name="assigned_by"/>
+                                    <field name="custom_submission_name"/>
+                                    <field name="warning_message" nolabel="1" readonly="1" class="text-warning" invisible="not warning_message"/>
+                                    <field name="submission_label"/>
+                                    <field name="date_assigned"/>
+                                    <field name="date_due"/>
+                                    <field name="can_assign" invisible="1"/>
+                                    <field name="allow_subject_editing" widget="boolean_toggle" invisible="1"/>
+                                    <field name="has_question"  readonly="0" invisible="0"/>
+                                    <field name="has_default_answer" widget="boolean_toggle" readonly="0" invisible="0"/>
+                                    <field name="apply_points_scale" widget="boolean_toggle" readonly="0" invisible="0"/>
+                                    <field name="notify_student" widget="boolean_toggle" readonly="0" invisible="0"/>
+
+                                </group>
+                                <div>
+
+                                    <group>
+                                        <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
+
+                                        <field name="student_ids" widget="many2many" nolabel="1">
+                                            <list>
+                                                <field name="name"/>
+                                                <field name="category_id" widget="many2many_tags" optional="hide"/>
+                                                <field name="user_id" optional="hide"/>
+                                                <field name="email" optional="hide"/>
+                                                <field name="phone" optional="hide"/>
+                                            </list>
+                                        </field>
+                                    </group>
+                                </div>
+                            </group>
+                            <group string="Affected Resources">
+          
+                                <field name="affected_resource_line_ids" nolabel="1">
+                                    <list editable="bottom" create="0" delete="0" default_order="sequence" selectable="multi">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="selected" widget="boolean_toggle"/>
+                                        <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
+                                        <field name="display_name" readonly="1" optional="show"/>
+                                        <field name="parent_custom_name_data" readonly="1" string="Custom Name" widget="parent_child_name_pill" options="{'enabled': False}"/>
+                                        <field name="parent_resource_id" readonly="1" optional="hide"/>
+                                        <field name="description" readonly="1" optional="hide"/>
+                                        <field name="has_question" readonly="1" optional="hide"/>
+                                        <field name="has_answer" readonly="1" optional="hide"/>
+                                        <field name="points_scale" readonly="1" optional="hide"/>
+                                        <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
+                                        <field name="resource_id" invisible="1"/>
+                                    </list>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="Question" invisible="has_question=='no'">
+                            <group invisible="not has_question=='use_parent'" >
+                                <div class="alert alert-info" role="alert">Using <b>Parent Question</b>.</div>
+                                <!-- <field name="parent_question" nolabel="1" placeholder="Parent question will appear here." readonly="has_question=='use_parent'"/> -->
+                            </group>
+                            <field name="question"  nolabel="1" placeholder="Enter the question for this resource."/>
+                        </page>
+                        <page string="Default Answer" invisible="has_default_answer==False">
+                            <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
+                        </page>                        
+                    </notebook>
                     <footer>
                         <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" invisible="not can_assign"/>
                         <button string="Cancel" class="btn-secondary" special="cancel"/>

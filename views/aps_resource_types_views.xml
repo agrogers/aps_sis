@@ -11,6 +11,7 @@
                 <field name="name"/>
                 <field name="color" widget="color"/>
                 <field name="description"/>
+                <field name="url_keywords" optional="hide"/>
             </list>
         </field>
     </record>
@@ -27,9 +28,11 @@
                             <field name="sequence" invisible="1"/>
                             <field name="name"/>
                             <field name="color" widget="color"/>
+                            <field name="url_keywords" />
                         </group>
                         <group string="Description">
                             <field name="description" nolabel="1"/>
+                            
                         </group>
                     </group>
                 </sheet>

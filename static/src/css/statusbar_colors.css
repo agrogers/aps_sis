@@ -12,11 +12,11 @@ button.o_arrow_button[aria-checked="true"][data-value="pending"] {
     border-color: white;
 }
 
-/* Light green */
+
 button.o_arrow_button[aria-checked="true"][data-value="complete"],
 button.o_arrow_button[aria-checked="true"][data-value="open"] {
-    background-color: var(--success) !important;  
-    color: white !important;
+    background-color: var(--gray-600) !important;  
+    color: black !important;
     border-color: white;
 }
 

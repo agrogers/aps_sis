@@ -2,14 +2,31 @@ import { Component, onMounted, onWillStart, useRef, onPatched } from "@odoo/owl"
 import { loadJS } from "@web/core/assets";
 
 export class ChartRenderer extends Component {
+    static props = {
+        name: { type: String, optional: true },
+        value: { type: [Number, String], optional: true },
+        // max: { type: [Number, String], optional: true },
+        // zones: { type: Array, optional: true },
+        // points_from_next: { type: [Number, String], optional: true },
+        // total_students: { type: [Number, String], optional: true },
+        // icon: { type: String, optional: true },
+        // period_name: { type: String, optional: true },
+        onClick: { type: Function, optional: true },
+        percentage: { type: [Number, String], optional: true },
+        title: { type: String, optional: true },
+        type: { type: String, optional: true }, // 'bar', 'line', 'doughnut', 'pie'
+        data: { type: Array, optional: true }, // Expecting array of objects with 'date', 'assigned', 'submitted', 'finalized' keys for line/bar; or 'data_point' and '__count' for doughnut/pie
+
+    };    
     setup() {
         this.chartRef = useRef("chart"); // Reference to the canvas element [cite: 21, 23]
         this.chart = null; // Store chart instance
         
         onWillStart(async () => {
             // Loading the latest Chart.js version via CDN [cite: 21, 22]
-            await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js");
-            await loadJS("https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0");
+            // await loadJS("https://unpkg.com/chart.js");
+            await loadJS("/aps_sis/static/src/lib/chart.js");
+            // await loadJS("/aps_sis/static/src/lib/chartjs-plugin-datalabels-2.0.0.min.js");
         });
 
         onMounted(() => {
@@ -27,12 +44,12 @@ export class ChartRenderer extends Component {
         }
 
         let chartData = {
-            labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-            datasets: [{
-                label: this.props.title,
-                data: [12, 19, 3, 5, 2, 3],
-                borderWidth: 1
-            }]
+            // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+            // datasets: [{
+            //     label: this.props.title,
+            //     data: [12, 19, 3, 5, 2, 3],
+            //     borderWidth: 1
+            // }]
         };
 
         if (this.props.data && this.props.data.length > 0) {
@@ -41,20 +58,20 @@ export class ChartRenderer extends Component {
                 const datasetColors = ['rgb(255 172 0)', 'rgb(23 162 184)', 'rgb(150, 157, 163)'];
                 chartData.datasets = [
 
-                {
-                        label: 'Finalised',
-                        data: this.props.data.map(d => d.finalized),
-                        backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
-                        borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.1,
-                        pointRadius: 0,
-                        cubicInterpolationMode: 'monotone',
-                    }   ,                 
+                // {
+                //         label: 'Finalised',
+                //         data: this.props.data.map(d => d.Finalised),
+                //         backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
+                //         borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
+                //         borderWidth: 2,
+                //         fill: true,
+                //         tension: 0.1,
+                //         pointRadius: 0,
+                //         cubicInterpolationMode: 'monotone',
+                //     }   ,                 
                     {
-                        label: 'Submitted',
-                        data: this.props.data.map(d => d.submitted),
+                        label: 'Submitted*',
+                        data: this.props.data.map(d => d.submitted_finalized),
                         backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[1], 40)),
                         borderColor: Array(chartData.labels.length).fill(datasetColors[1]),
                         borderWidth: 2,
@@ -94,13 +111,13 @@ export class ChartRenderer extends Component {
                         borderColor: Array(chartData.labels.length).fill(datasetColors[1]),
                         borderWidth: 1
                     },
-                    {
-                        label: 'Finalised',
-                        data: this.props.data.map(d => d.finalized),
-                        backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
-                        borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
-                        borderWidth: 1
-                    }
+                    // {
+                    //     label: 'Finalised',
+                    //     data: this.props.data.map(d => d.finalized),
+                    //     backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
+                    //     borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
+                    //     borderWidth: 1
+                    // }
                 ];
 
             } else if (this.props.type === 'doughnut' || this.props.type === 'pie') {
@@ -130,35 +147,54 @@ export class ChartRenderer extends Component {
             }
         }
 
-        this.chart = new Chart(this.chartRef.el, {
+        this.chart = new Chart(this.chartRef.el, 
+            {
             type: this.props.type || 'bar',
             data: chartData,
-            plugins: [ChartDataLabels],
+            // plugins: [ChartDataLabels],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom',
+                        position: (this.props.type === 'bar' || this.props.type === 'line') ? 'bottom' : 'right',
                     },
                     title: {
                         display: true,
                         text: this.props.title,
-                        position: 'top'
+                        position: 'top',
+                        align: 'center',  // 'start', 'center', 'end'
                     },
-                    datalabels: {
-                        display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
-                        color: '#fff', // Text color
-                        anchor: 'center',
-                        align: 'center',
-                        font: {
-                            weight: 'bold',
-                            size: 14
-                        },
-                        formatter: (value, context) => {
-                            // Only show if value is greater than 0
-                            return value > 0 ? value : ''; 
-                        }
+                    // datalabels: {
+                    //     display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
+                    //     color: '#fff', // Text color
+                    //     anchor: 'center',
+                    //     align: 'center',
+                    //     font: {
+                    //         weight: 'bold',
+                    //         size: 14
+                    //     },
+                    //     formatter: (value, context) => {
+                    //         // Only show if value is greater than 0
+                    //         return value > 0 ? value : ''; 
+                    //     }
+                    // },
+
+                    // subtitle: {
+                    //     display: true,
+                    //     text: 'Data for Q1 2026 - All regions',  // Your subtitle here
+                    //     font: {
+                    //     size: 14,
+                    //     style: 'italic'
+                    //     },
+                    //     color: '#666',
+                    //     padding: {
+                    //     top: 0,
+                    //     bottom: 100
+                    //     },
+                    //     align: 'start',  // 'start', 'center', 'end',
+                    //     position: 'bottom'
+
                     }
                 },
                 scales: this.props.type === 'bar' ? {
@@ -170,7 +206,7 @@ export class ChartRenderer extends Component {
                     }
                 } : {}
             }
-        });
+        );
     }
 
     generateColors(labels, datasetIndex) {

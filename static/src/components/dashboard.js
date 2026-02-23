@@ -1,90 +1,661 @@
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { KpiCard } from "./kpi_card/kpi_card";
+import { KpiGauge } from "./kpi_gauge/kpi_gauge";
 import { ChartRenderer } from "./chart_renderer/chart_renderer";
+import { Domain } from "@web/core/domain";
 
 export class ApexDashboard extends Component {
+    static props = {
+        action: { type: Object, optional: true },
+        actionId: { type: Number, optional: true },
+        updateActionState: { type: Function, optional: true },
+        className: { type: String, optional: true },
+        globalState: { type: Object, optional: true },
+    };
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
-        // this.user = useService("user");
+        
+        const savedSettings = this.loadSettings();
+
         this.state = useState({
-            period: 7,
+            period: parseInt(savedSettings.period) || 7,
+            period_name: "",
             selectedStudent: false,
             students: [],
             isFaculty: true,
-            submissions: { value: 0, percentage: 0 },
-            tasks: { value: 0, percentage: 0 },
-            overdue: { value: 0, percentage: 0 },
-            next_7_days: { value: 0, percentage: 0 },
+            submissions: { value: 0, percentage: 0, period: "" },
+            tasks: { value: 0, percentage: 0, period: "" },
+            overdue: {  value: 0, percentage: 0, period: "" },
+            alloverdue: {  value: 0, percentage: 0, period: "" },
+            next_7_days: { value: 0, percentage: 0, period: "" },
+            student_points: {value: 0, percentage: 0, period: "", max: 0  },
+            student_rank: { value: 0, total_students: 0, period: "", points_from_next: 0, max: 0 },
+            submitted_today: { value: 0, percentage: 0, period: "", submitted_yesterday: 0 },
+            points_from_next: 0,
+            rank_description: "",
+            total_submitted: { value: 0, percentage: 0, period: "" },
             chartData: [],
             doughnutData: [],
             doughnutData2: [],
-            
+            list_view_id: false,
+            form_view_id: false,
+            // Loading states for progressive loading
+            loadingKPIs: true,
+            loadingCharts: true,
+            loadingDoughnuts: true,
+            confettiReady: false,  // we'll use this to know when canvas is set up
         });
 
+        
+        this.confetti = null;  // will hold the confetti.create() function
+
         onWillStart(async () => {
-            // Fetch unique students from submissions, ordered by name
-            const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
-            const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
-            this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
-            // Check if user is faculty
-            // const uid = this.user.userId;
-            // this.state.isFaculty = await this.user.hasGroup("aps_sis.group_aps_teacher");
-            await this.fetchData();
+            console.time('Dashboard Setup');
+
+            // Fetch view IDs first (needed for actions)
+            console.time('Fetch View IDs');
+            await this.fetchViewIds();
+            console.timeEnd('Fetch View IDs');
+
+            // Fetch students (needed for dropdown)
+            console.time('Fetch Students');
+            await this.fetchStudents();
+            console.timeEnd('Fetch Students');
+
+            console.timeEnd('Dashboard Setup');
+        });
+
+        onMounted(async () => {
+            // Load dashboard data after component is rendered
+            this.initializeConfettiCanvas();
+            console.time('Load Dashboard Data');
+            await this.loadDashboardData();
+            console.timeEnd('Load Dashboard Data');
         });
     }
 
-    async fetchData() {
-        // Calculate start date based on period
+    get selectedPeriodText() {
+        const periodMap = {
+            0: 'Select Period',
+            7: 'Last 7 Days',
+            14: 'Last 14 Days',
+            30: 'Last 30 Days',
+            90: 'Last 90 Days',
+            365: 'Last Year'
+        };
+        return periodMap[this.state.period] || 'Select Period';
+    }
+
+    addStudentFilter(domain, field = 'student_id.id') {
+        if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
+            domain.push([field, '=', parseInt(this.state.selectedStudent, 10)]);
+        }
+        return domain;
+    }
+
+    getPeriodStartDateStr() {
+        // If no period selected, return today's date
+        if (this.state.period === 0) {
+            return this.getTodayStr();
+        }
+        
         const today = new Date();
         const startDate = new Date(today.getTime() - this.state.period * 24 * 60 * 60 * 1000);
-        const startDateStr = startDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        // Ensure the date is valid
+        if (isNaN(startDate.getTime())) {
+            console.error('Invalid date calculated for period:', this.state.period);
+            return this.getTodayStr();
+        }
+        
+        return startDate.toISOString().split('T')[0];
+    }
+
+    getTodayStr() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    getTodayPlus7Str() {
+        const today = new Date();
+        return new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    }
+
+    getSubmittedTodayDomain() {
+        const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        const todayPlus7Str = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        return this.addStudentFilter([['date_submitted', '=', todayStr], ['submission_active', '=', true]]);
+    }
+
+    getSubmittedYesterdayDomain() {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        return this.addStudentFilter([['date_submitted', '=', yesterdayStr], ['submission_active', '=', true]]);
+    }
+
+    getTotalSubmittedDomain(options = {}) {
+        const includeState = options.includeState ?? true;
+        const includePeriod = options.includePeriod ?? true;
+        let domain =[];
+        domain = this.addStudentFilter(domain); 
+        domain.push(['submission_active', '=', true]);
+        if (includePeriod) {
+            domain.push(['date_submitted', '>=', this.getPeriodStartDateStr()]);
+        }
+        if (includeState) {
+            domain.push(['state', 'in', ['submitted', 'complete']]);
+        }
+
+        return domain;
+    }
+
+    // Generic Data Domain Builder - can be used for multiple KPIs and views by toggling state and period filters
+    getDataDomain(options = {}) {
+        const incStudentFilter = options.incStudentFilter ?? true;
+        const incSubmissionActive = options.incSubmissionActive ?? true;
+        const incState = options.incState ?? false;
+        const incPeriodSubmitted = options.incPeriodSubmitted ?? false;
+        const incPeriodAssigned = options.incPeriodAssigned ?? false;
+        let domain =[];
+        if (incStudentFilter) {domain = this.addStudentFilter(domain); }
+        if (incSubmissionActive) {domain.push(['submission_active', '=', true]);}
+        if (incPeriodSubmitted) {domain.push(['date_submitted', '>=', this.getPeriodStartDateStr()]);}
+        if (incPeriodAssigned) {domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);}
+        if (incState) {domain.push(['state', 'in', incState]);}  // eg ['submitted', 'complete']
+
+        return domain;
+    }
+
+    getActiveSubmissionsDomain(inludeSubmissionActive = true) {
+        // Parameter is needed because when we open the list view we want to pass in a filter context, not a domain, and the filter context will handle the submission_active part
+        let domain = this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
+        if (inludeSubmissionActive) {
+            domain.push(['state','=','assigned']);
+        }
+        return domain;
+    }
+
+    getTotalSubmissionsDomain() {
+        return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
+    }
+
+    getTaskDomain() {
+        return this.addStudentFilter([['create_date', '>=', this.getPeriodStartDateStr()]], 'student_id');
+    }
+
+    getOverdueDomain(includePeriod = true, includeState = true) {
+        let domain =[];
+        domain = this.addStudentFilter(domain);
+        domain.push(['date_due','<',this.getTodayStr()]);
+        if (includeState) {
+            domain.push(['state', 'in', ['assigned']]);
+        }
+        if (includePeriod) {
+            domain.push(['date_due','>=',this.getPeriodStartDateStr()]);
+        }
         
-        // Helper to add student filter
-        const addStudentFilter = (domain) => {
-            if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
-                domain.push(['student_id', '=', parseInt(this.state.selectedStudent)]);
-            }
-            return domain;
+        return domain;
+    }
+
+    getOldOverdueDomain() {
+        return this.addStudentFilter([['date_due','>=',this.getPeriodStartDateStr()], ['state', 'in', ['assigned']]]);
+    }
+    getAllOverdueDomain() {
+        return this.addStudentFilter([ ['state', 'in', ['assigned']]]);
+    }
+
+    getSubmission7DaysDomain(options = {}) {
+        const includeDateDue = options.includeDateDue ?? true;
+        const includeState = options.includeState ?? true;
+
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        if (includeDateDue) {
+            domain.push(['date_due', '>', this.getTodayStr()], ['date_due', '<=', this.getTodayPlus7Str()]);
+        }
+        if (includeState) {
+            domain.push(['state', 'in', ['assigned']]);
+        }
+        return domain;
+    }
+
+    getAllSubmissionsDomain() {
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        return domain;
+    }
+
+
+    getDoughnutDomain() {
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        return domain;
+    }
+    getStudentPointsDomain() {
+        if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
+            return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], 
+                ['submission_active', '=', true],
+                ['points', '>', 0],
+            ]);
+        } else {
+            return [];
+        }
+    }
+
+    initializeConfettiCanvas() {
+     // Create full-window canvas
+        const canvas = document.createElement('canvas');
+        canvas.style.position = 'fixed';
+        canvas.style.inset = '0';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '9999';           // high z-index so it's on top
+        document.body.appendChild(canvas);
+
+        // Create confetti instance (no worker to avoid transfer error)
+        this.confetti = confetti.create(canvas, {
+            resize: true,
+            useWorker: false
+        });
+
+        // Handle resize
+        const resize = () => {
+            canvas.width = window.innerWidth * window.devicePixelRatio;
+            canvas.height = window.innerHeight * window.devicePixelRatio;
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         };
-        
-        // Fetching counts from aps.resource.submission filtered by period
-        const submissionDomain = addStudentFilter([['date_assigned', '>=', startDateStr],['submission_active', '=', true]]);
-        const submissionCount = await this.orm.searchCount("aps.resource.submission", submissionDomain);
-        this.state.submissions.value = submissionCount;
-        
-        // Fetch active tasks
-        const taskDomain = addStudentFilter([['create_date', '>=', startDateStr]]);
-        const taskCount = await this.orm.searchCount("aps.resource.task", taskDomain);
-        this.state.tasks.value = taskCount;
-        
-        // Fetch overdue items (submissions past due date and not submitted)
-        const overdueDomain = addStudentFilter([['date_due', '<', todayStr], ['state', 'in', ['assigned']  ]]  );
-        const overdueCount = await this.orm.searchCount("aps.resource.submission", overdueDomain);
-        this.state.overdue.value = overdueCount;
-        
-        // Fetch new resources
-        const submission7daysDomain = addStudentFilter([['date_assigned', '>', todayStr],['date_assigned', '<=', todayPlus7Str]]);
-        const submission7daysCount = await this.orm.searchCount("aps.resource.submission", submission7daysDomain);
-        this.state.next_7_days.value = submission7daysCount;
-        
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        this.state.confettiReady = true;
+        console.log("Full-page confetti canvas initialized");
+    }
+
+    resizeCanvas(canvas, container) {
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.scale(dpr, dpr);
+        }
+    }
+    async calculateStudentRank() {
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+            }
+
+        if (!this.state.selectedStudent || this.state.selectedStudent === "false") {
+            this.state.student_rank.value = "";
+            this.state.student_rank.total_students = "";
+            this.state.student_rank.points_from_next = 0;
+            this.state.rank_description = "";
+            return;
+        }
+
+        console.time('Calculate Student Rank');
+
+        const periodStart = this.getPeriodStartDateStr();
+
+        const domain = [
+            ['date_assigned', '>=', periodStart],
+            ['submission_active', '=', true],
+            ['points', '>', 0]
+        ];
+
+        try {
+            const groups = await this.orm.call(
+                "aps.resource.submission",
+                "read_group_points_by_student",
+                [domain],
+                {
+                    orderby: "points:sum desc", // kwargs
+                    // You can add lazy: true, offset: 0, limit: null, etc. if needed
+                },
+            );
+
+            if (!groups.length) {
+                this.state.student_rank.value = 0;
+                this.state.student_rank.total_students = 0;
+                this.state.student_rank.points_from_next = 0;
+                this.state.rank_description = "";
+                console.timeEnd('Calculate Student Rank');
+                return;
+            }
+
+            // Build ranked list with proper dense ranking
+            const rankedStudents = [];
+            let currentRank = 1;
+            let previousPoints = null;
+            let position = 1;  // actual placement (used for skipping)
+
+            groups.forEach((group, index) => {
+                const currentPoints = group.points || 0;
+                const studentId = group.student_id[0];
+
+                // If points are the same as previous, keep the same rank
+                if (index > 0 && currentPoints === previousPoints) {
+                    // same rank as last one
+                } else {
+                    // new rank = current position
+                    currentRank = position;
+                }
+
+                rankedStudents.push({
+                    studentId,
+                    totalPoints: currentPoints,
+                    rank: currentRank,
+                    pointsFromNextPlace: 0  // we'll calculate later
+                });
+
+                previousPoints = currentPoints;
+                position++;
+            });
+
+
+            this.state.student_rank.max = currentRank;  // top score in the period
+            this.state.student_points.max = rankedStudents[0].totalPoints;  // top score in the period
+            const totalStudentsWithPoints = rankedStudents.length;
+
+            // Find selected student
+            const selectedStudentId = parseInt(this.state.selectedStudent, 10);
+            const selectedRankObj = rankedStudents.find(s => s.studentId === selectedStudentId);
+
+            let newRank = selectedRankObj ? selectedRankObj.rank : 0;
+
+            // Calculate points to next place (difference to next different score)
+            
+            let pointsFromNext = 0;
+            if (selectedRankObj) {
+                const currentIndex = rankedStudents.findIndex(s => s.studentId === selectedStudentId);
+                // Find the next student with fewer points
+                let lastPts = rankedStudents[0].totalPoints;  // default to top points if not found 
+                let groupPoints = [lastPts];
+                for (let i = 0; i < rankedStudents.length; i++) {
+                    let curPts = rankedStudents[i].totalPoints;
+                    if (lastPts !== curPts) {
+                        rankedStudents[i].pointsFromNextPlace = lastPts - curPts;  // I dont need to do all of these
+                    }
+                    if (rankedStudents[i].studentId === selectedStudentId) {
+                        pointsFromNext = rankedStudents[i].pointsFromNextPlace;
+                    }
+                    if (lastPts != curPts) {
+                        groupPoints.push(curPts);
+                        lastPts = curPts;                               
+                    }
+                }
+
+                if (groupPoints.length > 1) { // Need to handle first place differently
+                    pointsFromNext = groupPoints[0] - groupPoints[1];  // difference between top score and next different score
+                };
+            } else {
+                newRank = "-";
+                pointsFromNext = "-";
+            };
+
+            // Update state
+            this.state.student_rank.value = newRank;
+            this.state.student_rank.total_students = totalStudentsWithPoints;
+            this.state.student_rank.points_from_next = pointsFromNext;
+
+            // Nice message
+            if (newRank === 1) {
+                if (pointsFromNext > 0) {
+                    this.state.rank_description = `${pointsFromNext} points ahead of 2nd place`;
+                } else {
+                    this.state.rank_description = "Tied for 1st place";
+                }
+            } else if (newRank > 1 && pointsFromNext > 0) {
+                this.state.rank_description = `${pointsFromNext} points from next place`;
+            } else if (newRank > 1 && pointsFromNext === 0) {
+                this.state.rank_description = "Tied with next place";
+            } else {
+                this.state.rank_description = "";
+            }
+
+            // Confetti for top 3 ranks (you can adjust duration/particle count)
+            if (newRank >= 1 && newRank <= 3 && this.state.confettiReady && this.confetti ) {
+                const duration = newRank === 1 ? 1500 : newRank === 2 ? 1000 : 500;
+                const end = Date.now() + duration;
+                const colors = ['#c700bd', '#ffffff', '#ff0000', '#63008a', '#ffff00'];
+                const confettitSettings = {
+                        particleCount: newRank === 1 ? 5 : newRank === 2 ? 3 : 2,
+                        angle: 60,
+                        spread: 55,
+                        startVelocity: 35,
+                        decay: 0.9,
+                        gravity: randomInRange(0.4, 0.6),
+                        drift: randomInRange(-0.4, 0.4),
+                        origin: { x: 0 },
+                        colors: colors
+                    };
+                let confettitSettings2 = { ...confettitSettings }; // Create a copy
+                confettitSettings2.origin = { x: 1 }; // alternate sides
+                // confettitSettings2.angle = 120; 
+
+                (function frame() {
+                    confetti(confettitSettings);
+                    confetti(confettitSettings2);
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                })();
+
+                this.state.confettiTriggered = true;
+                console.log(`Rank #${newRank} confetti triggered for ${duration}ms`);
+            }
+
+            console.timeLog(
+                'Calculate Student Rank',
+                `Rank: ${newRank} of ${totalStudentsWithPoints}, Points from next: ${pointsFromNext}`
+            );
+        } catch (error) {
+            console.error("Error calculating student rank:", error);
+            this.state.student_rank.value = "Error";
+            this.state.student_rank.total_students = "";
+            this.state.student_rank.points_from_next = 0;
+            this.state.rank_description = "";
+        }
+
+        console.timeEnd('Calculate Student Rank');
+    }
+
+
+    async fetchViewIds() {
+        console.time('fetchViewIds');
+        // Fetch student view IDs - use sudo to bypass access restrictions
+        const [data_list] = await this.env.services.orm.searchRead(
+            "ir.model.data",
+            [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_list_for_students"]],
+            ["res_id"],
+            { limit: 1 },
+            { sudo: true }
+        );
+        this.state.list_view_id = data_list ? data_list.res_id : false;
+
+        const [data_form] = await this.env.services.orm.searchRead(
+            "ir.model.data",
+            [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_form_for_students"]],
+            ["res_id"],
+            { limit: 1 },
+            { sudo: true }
+        );
+        this.state.form_view_id = data_form ? data_form.res_id : false;
+        console.timeEnd('fetchViewIds');
+    }
+
+    async fetchStudents() {
+        console.time('fetchStudents');
+        // Fetch unique students from submissions, ordered by name
+        const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
+        const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
+        this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
+
+        // If only one student, automatically select it
+        if (this.state.students.length === 1) {
+            this.state.selectedStudent = this.state.students[0].id;
+        } else {
+            // Set selectedStudent after students are loaded
+            const savedSettings = this.loadSettings();
+            if (savedSettings.selectedStudent) {
+                const selectedId = parseInt(savedSettings.selectedStudent, 10);
+                const studentExists = this.state.students.some(student => student.id === selectedId);
+                if (studentExists) {
+                    this.state.selectedStudent = selectedId;
+                } else {
+                    this.state.selectedStudent = false;
+                }
+            } else {
+                this.state.selectedStudent = false;
+            }
+        }
+
+        // Check if user is faculty
+        // const uid = this.user.userId;
+        // this.state.isFaculty = await this.user.hasGroup("aps_sis.group_aps_teacher");
+        console.timeEnd('fetchStudents');
+    }
+
+    async loadDashboardData() {
+        // Don't load data if no period is selected
+        if (this.state.period === 0) {
+            console.log('Skipping dashboard data load - no period selected');
+            return;
+        }
+
+        // Load KPIs first (fastest to load, most important for user)
+        await this.fetchKPIs();
+
+        // Then load charts and doughnuts in parallel
+        await Promise.all([
+            this.fetchChartData(),
+            this.fetchDoughnutData()
+        ]);
+
+        // Now that KPIs are loaded → the rank card should exist
+        this.initializeConfettiCanvas();        
+    }
+
+    async fetchKPIs() {
+        console.time('Fetch KPIs');
+        this.state.loadingKPIs = true;
+
+        const todayStr = this.getTodayStr();
+        const todayPlus7Str = this.getTodayPlus7Str();
+        this.state.period_name = this.selectedPeriodText;
+
+        // Start all KPI fetches immediately and update UI as they complete
+        const kpiPromises = [
+            // Student points (sum of points, not count)
+            this.orm.searchRead("aps.resource.submission", this.getStudentPointsDomain(), ["points"])
+                .then(submissions => {
+                    const totalPoints = submissions.reduce((sum, submission) => sum + (submission.points || 0), 0);
+                    this.state.student_points.value = totalPoints;
+                    console.timeLog('Fetch KPIs', 'Student points loaded');
+                }),
+                
+            // Overdue items
+            this.orm.searchCount("aps.resource.submission", this.getOverdueDomain())
+                .then(count => {
+                    this.state.overdue.value = count;
+                    console.timeLog('Fetch KPIs', 'Overdue items loaded');
+                }),
+
+            // All overdue items
+            this.orm.searchCount("aps.resource.submission", this.getOverdueDomain(false,true))
+                .then(count => {
+                    this.state.alloverdue.value = count;
+                    console.timeLog('Fetch KPIs', 'All overdue items loaded');
+                }),
+
+            // Active submissions
+            this.orm.searchCount("aps.resource.submission", this.getActiveSubmissionsDomain())
+                .then(count => {
+                    this.state.submissions.value = count;
+                    console.timeLog('Fetch KPIs', 'Active submissions loaded');
+                }),
+
+            // Next 7 days
+            this.orm.searchCount("aps.resource.submission", this.getSubmission7DaysDomain())
+                .then(count => {
+                    this.state.next_7_days.value = count;
+                    console.timeLog('Fetch KPIs', 'Next 7 days loaded');
+                }),
+
+            // Total Submitted
+            this.orm.searchCount("aps.resource.submission", this.getDataDomain({'incPeriodSubmitted': true}))
+                .then(count => {
+                    this.state.total_submitted.value = count;
+                    console.timeLog('Fetch KPIs', 'Total submitted loaded');
+                }),
+
+            // Submitted today
+            this.orm.searchCount("aps.resource.submission", this.getSubmittedTodayDomain())
+                .then(count => {
+                    this.state.submitted_today.value = count;
+                    console.timeLog('Fetch KPIs', 'Submitted today loaded');
+                }),
+
+            // Submitted yesterday
+            this.orm.searchCount("aps.resource.submission", this.getSubmittedYesterdayDomain())
+                .then(count => {
+                    this.state.submitted_today.submitted_yesterday = count;
+                    console.timeLog('Fetch KPIs', 'Submitted yesterday loaded');
+                }),
+        ];
+
+        // Wait for all to complete, but UI updates happen immediately as each finishes
+        await Promise.all(kpiPromises);
+
+        // Calculate student rank (needs to run after other KPIs)
+        await this.calculateStudentRank();
+
+        this.state.loadingKPIs = false;
+        console.timeEnd('Fetch KPIs');
+    }
+
+    async fetchChartData() {
+        console.time('Fetch Chart Data');
+        this.state.loadingCharts = true;
+
         // Fetch chart data: submissions by status per day for the entire period
-        const allSubmissionsDomain = addStudentFilter([['date_assigned', '>=', startDateStr]]);
-        const allSubmissions = await this.orm.searchRead("aps.resource.submission", allSubmissionsDomain, ["date_assigned", "date_submitted", "date_completed"]);
-        
+        // const allSubmissionsDomain = this.getAllSubmissionsDomain();
+        // const allSubmissions = await this.orm.searchRead("aps.resource.submission", allSubmissionsDomain, ["date_assigned", "date_submitted", "date_completed"]);
+
+        const submittedDomain = this.getDataDomain({ incPeriodSubmitted: true, incState: ['submitted','complete'] });
+        const assignedDomain = this.getDataDomain({ incPeriodAssigned: true});
+
+        // console.log("Submitted domain:", JSON.stringify(submittedDomain));
+        // console.log("Assigned domain:", JSON.stringify(assignedDomain));
+
+        const dataDomain = Domain.or([submittedDomain, assignedDomain]).toList();
+        // console.log("Combined OR:", JSON.stringify(dataDomain));
+
+        const allSubmissions = await this.orm.searchRead("aps.resource.submission", dataDomain, ["date_assigned", "date_submitted", "date_completed"]);
+
+        console.time('Process Chart Data');
         const chartData = [];
         const dateMap = {};
+        const today = new Date();
+        const startDate = new Date(today.getTime() - this.state.period * 24 * 60 * 60 * 1000);
+
         let currentDate = new Date(startDate);
         while (currentDate <= today) {
             const dateStr = currentDate.toISOString().split('T')[0];
             dateMap[dateStr] = { assigned: 0, submitted: 0, finalized: 0 };
             currentDate.setDate(currentDate.getDate() + 1);
         }
-        
+
         allSubmissions.forEach(sub => {
             if (sub.date_assigned && dateMap[sub.date_assigned]) {
                 dateMap[sub.date_assigned].assigned++;
@@ -96,7 +667,7 @@ export class ApexDashboard extends Component {
                 dateMap[sub.date_completed].finalized++;
             }
         });
-        
+
         for (const dateStr in dateMap) {
             chartData.push({
                 date: dateStr,
@@ -107,42 +678,56 @@ export class ApexDashboard extends Component {
         }
         this.state.chartData = chartData;
 
+        // Submissions over time //
         const chartDataCummulative = [];
         var assigned = 0;
         var submitted = 0;
-        var finalized = 0;
 
         for (const dateStr in dateMap) {
             assigned += dateMap[dateStr].assigned;
             submitted += dateMap[dateStr].submitted;
-            finalized += dateMap[dateStr].finalized;
-
+            // finalized += dateMap[dateStr].finalized;
 
             chartDataCummulative.push({
                 date: dateStr,
                 assigned: assigned,
-                submitted: submitted,
-                finalized: finalized
+                submitted_finalized: submitted,  // combine submitted and finalized for a clearer chart (and because finalized is a subset of submitted)
             });
         }
 
-        this.state.chartDataCummulative = chartDataCummulative
-        
+        this.state.chartDataCummulative = chartDataCummulative;
+        console.timeEnd('Process Chart Data');
+
+        this.state.loadingCharts = false;
+        console.timeEnd('Fetch Chart Data');
+    }
+
+    async fetchDoughnutData() {
+        console.time('Fetch Doughnut Data');
+        this.state.loadingDoughnuts = true;
+
         // Fetch doughnut data: tasks assigned per subject
-        const doughnutDomain = addStudentFilter([['date_assigned', '>=', startDateStr]]);
+        const doughnutDomain = this.getDoughnutDomain();
         const submissions = await this.orm.searchRead("aps.resource.submission", doughnutDomain, ["subjects","due_status"]);
-        
+
+        console.time('Process Doughnut Data');
         const subjectIds = new Set();
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
                 sub.subjects.forEach(id => subjectIds.add(id));
             }
         });
-        
-        const subjectRecords = await this.orm.searchRead("op.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name"]);
+
+        const subjectRecords = await this.orm.searchRead("op.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name", "category_id"]);
         const subjectMap = {};
-        subjectRecords.forEach(rec => subjectMap[rec.id] = rec.name);
-        
+        subjectRecords.forEach(rec => {
+            subjectMap[rec.id] = {
+                name: rec.name,
+                category: rec.category_id ? rec.category_id[1] : 'No Category'
+            };
+        });
+
+        // Tasks by Due Status
         const subjectCounts = {};
         const due_statusCounts = {};
         const dueStatusDisplay = {
@@ -153,11 +738,14 @@ export class ApexDashboard extends Component {
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
                 sub.subjects.forEach(id => {
-                    const name = subjectMap[id] || 'Unknown';
-                    if (!subjectCounts[id]) {
-                        subjectCounts[id] = { data_point: name, __count: 0 };
+                    const subjectInfo = subjectMap[id];
+                    if (subjectInfo) {
+                        const categoryName = subjectInfo.category !== 'No Category' ? subjectInfo.category : subjectInfo.name;
+                        if (!subjectCounts[categoryName]) {
+                            subjectCounts[categoryName] = { data_point: categoryName, __count: 0 };
+                        }
+                        subjectCounts[categoryName].__count++;
                     }
-                    subjectCounts[id].__count++;
                 });
             }
             if (sub.due_status) {
@@ -170,29 +758,149 @@ export class ApexDashboard extends Component {
         });
         this.state.doughnutData = Object.values(subjectCounts);
         this.state.doughnutData2 = Object.values(due_statusCounts);
-    
+        console.timeEnd('Process Doughnut Data');
 
+        this.state.loadingDoughnuts = false;
+        console.timeEnd('Fetch Doughnut Data');
+    }
+
+    loadSettings() {
+        try {
+            const settings = localStorage.getItem('aps_dashboard_settings');
+            return settings ? JSON.parse(settings) : {};
+        } catch (error) {
+            console.warn('Failed to load dashboard settings:', error);
+            return {};
+        }
+    }
+
+    saveSettings() {
+        try {
+            const settings = {
+                period: this.state.period,
+                selectedStudent: this.state.selectedStudent
+            };
+            localStorage.setItem('aps_dashboard_settings', JSON.stringify(settings));
+        } catch (error) {
+            console.warn('Failed to save dashboard settings:', error);
+        }
     }
 
     async onChangePeriod() {
-        await this.fetchData();
+        this.saveSettings();
+        await this.loadDashboardData();
     }
 
     async onChangeStudent() {
-        await this.fetchData();
+        this.saveSettings();
+        await this.loadDashboardData();
     }
 
-    viewSubmissions() {
+    viewActiveSubmissions() {
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Submissions",
+            name: this.state.period_name,
             res_model: "aps.resource.submission",
-            views: [[false, "list"], [false, "form"]],
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: this.getActiveSubmissionsDomain(false),
+            context: {
+                search_default_assigned: 1,
+            },            
         });
     }
+
+    viewTasks() {
+        const taskDomain = this.getTaskDomain();
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Active Tasks",
+            res_model: "aps.resource.task",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: taskDomain,
+        });
+    }
+
+    viewTotalSubmitted() {
+        const totalSubmittedDomain = this.getTotalSubmittedDomain({ includeState: false, includePeriod: true });
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: this.state.period_name,
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: totalSubmittedDomain,
+            context: {
+                search_default_submitted: 1,
+                search_default_completed: 1,
+            },              
+        });
+    }
+
+    viewOverdueSubmissions() {
+        const overdueDomain = this.getOverdueDomain(true,false); // Only show overdue items, ignore period and state (assigned or not);
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: this.state.period_name,
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: overdueDomain,
+            context: {
+                search_default_overdue: 1,
+            },            
+        });
+    }
+
+    viewAllOverdueSubmissions() {
+        const domain = this.getOverdueDomain(false, false); // Only show overdue items, ignore period and state (assigned or not);
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "",
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: domain,
+            context: {
+                search_default_overdue: 1,
+            },               
+        });
+    }
+
+    viewNext7DaysSubmissions() {
+        const domain = this.getSubmission7DaysDomain({includeDateDue: false, includeState: false}); // Show all items due in the next 7 days, regardless of assigned state
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Coming Due in the next 7 Days",
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: domain,
+            context: {
+                search_default_due_next_7_days: 1,
+                search_default_assigned: 1,
+            }
+        });
+    }
+    viewPointsSubmissions() {
+        const domain = this.getStudentPointsDomain();
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Student Points Submissions",
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: domain,
+        });
+    }
+    viewTodaySubmissions() {
+        const domain = this.getSubmittedTodayDomain();
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Today's Submissions",
+            res_model: "aps.resource.submission",
+            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            domain: domain,
+        });
+    }
+
 }
 
 ApexDashboard.template = "apex_dashboard.Dashboard";
-ApexDashboard.components = { KpiCard, ChartRenderer };
+ApexDashboard.components = { KpiCard, KpiGauge, ChartRenderer };
 
 registry.category("actions").add("apex_dashboard_main", ApexDashboard);

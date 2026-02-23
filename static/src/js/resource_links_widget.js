@@ -5,7 +5,9 @@ import { useService } from "@web/core/utils/hooks";
 
 export class ResourceLinksField extends Component {
     static template = "aps_sis.ResourceLinksField";
-    static props = { ...standardFieldProps };
+    static props = { ...standardFieldProps,
+        size: { type: String, optional: true },
+     };
 
     setup() {
         this.notification = useService("notification");
@@ -34,13 +36,21 @@ export class ResourceLinksField extends Component {
         // Check if the URL is meant to trigger an Odoo Client Action
         // Example URL format: "action:lonely_s_game"
         if (url.startsWith("action:")) {
-            const actionTag = url.replace("action:", "");
+            const rawAction = url.replace("action:", "");
+            const paramIndex = rawAction.search(/[?&]/);
+            const actionTag = paramIndex === -1 ? rawAction : rawAction.slice(0, paramIndex);
+            const rawParams = paramIndex === -1 ? "" : rawAction.slice(paramIndex);
+            const params = rawParams ? rawParams.replace(/^[?&]/, "") : "";
+            const urlParams = new URLSearchParams(params);
+            const contextParams = Object.fromEntries(urlParams.entries());
+
             this.action.doAction(actionTag, {
                 additionalContext: {
                     active_id: this.props.record.resId,
                     active_model: this.props.record.resModel,
                     out_of_marks: this.props.record.data.out_of_marks || 10,
-                    submission_state: this.props.record.data.state
+                    submission_state: this.props.record.data.state,
+                    ...contextParams,
                 },
                 target: 'new'
             });
@@ -67,8 +77,18 @@ export class ResourceLinksField extends Component {
 export const resourceLinksField = {
     component: ResourceLinksField,
     supportedTypes: ["json"],
-    extractProps({ attrs }) {
-        return {};
+    supportedOptions: [
+        {
+            label: "Size",
+            name: "size",
+            type: "string",
+            default: "24px",
+        },
+    ],    
+    extractProps({ options }) {
+        return {
+            size: options.size || "24px",
+        };
     },
 };
 
