@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Mass Update Submissions Wizard Form View -->
+    <record id="view_aps_submission_mass_update_wizard_form" model="ir.ui.view">
+        <field name="name">aps.submission.mass.update.wizard.form</field>
+        <field name="model">aps.submission.mass.update.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Mass Update Submissions">
+                <sheet>
+                    <group col="12">
+                        <group string="Update which fields" col="12" colspan="8">
+                            
+                                
+                                <group colspan="4">
+                                    <field name="update_points" nolabel="1" widget="boolean_toggle" class="text-end"/>
+                                    <label for="update_points" class="mb-0">Points</label>
+                                </group>
+                                <group colspan="8"><field name="points_value" invisible="not update_points" /></group>
+                                
+                                <group colspan="4">
+                                    <field name="update_points_scale" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_points_scale" class="mb-0">Points Scale</label>
+                                </group>
+                                <group colspan="8">
+                                    <field name="points_scale_value" invisible="not update_points_scale"/>
+                                </group>
+
+                                <group colspan="4">
+                                    <field name="update_state" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_state" class="mb-0">State</label>
+                                </group>
+                                <group colspan="8"><field name="state_value" invisible="not update_state"/></group>
+                                
+                                <group colspan="4">
+                                    <field name="update_due_date" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_due_date" class="mb-0">Due Date</label>
+                                </group>
+                                <group colspan="8"><field name="due_date_value" invisible="not update_due_date"/></group>
+                                
+                                <group colspan="4"><field name="update_date_assigned" nolabel="1" widget="boolean_toggle"/><label for="update_date_assigned" class="mb-0">Date Assigned</label></group>
+                                <group colspan="8"><field name="date_assigned_value" invisible="not update_date_assigned"/></group>
+                                
+                                <group colspan="4"><field name="update_date_submitted" nolabel="1" widget="boolean_toggle"/><label for="update_date_submitted" class="mb-0">Date Submitted</label></group>
+                                <group colspan="8"><field name="date_submitted_value" invisible="not update_date_submitted"/></group>
+                                
+                                <group colspan="4"><field name="update_date_completed" nolabel="1" widget="boolean_toggle"/><label for="update_date_completed" class="mb-0">Date Completed</label></group>
+                                <group colspan="8"><field name="date_completed_value" invisible="not update_date_completed"/></group>
+                                
+                                <group colspan="4"><field name="update_score" nolabel="1" widget="boolean_toggle"/><label for="update_score" class="mb-0">Score</label></group>
+                                <group colspan="8"><field name="score_value" invisible="not update_score"/></group>
+                                
+                                <group colspan="4"><field name="update_out_of_marks" nolabel="1" widget="boolean_toggle"/><label for="update_out_of_marks" class="mb-0">Out of Marks</label></group>
+                                <group colspan="8"><field name="out_of_marks_value" invisible="not update_out_of_marks"/></group>
+                                
+                                <group colspan="4"><field name="update_due_status" nolabel="1" widget="boolean_toggle"/><label for="update_due_status" class="mb-0">Due Status</label></group>
+                                <group colspan="8"><field name="due_status_value" invisible="not update_due_status"/></group>
+                                
+                                <group colspan="4"><field name="update_notification_state" nolabel="1" widget="boolean_toggle"/><label for="update_notification_state" class="mb-0">Notification State</label></group>
+                                <group colspan="8"><field name="notification_state_value" invisible="not update_notification_state"/></group>
+                       
+                        </group>
+                        <group string="Tasks to Update" colspan="4">
+                            <field name="submission_ids" widget="many2many_tags" nolabel="1"  readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Update" name="action_update" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+ 
+    <record id="action_aps_submission_mass_update" model="ir.actions.server">
+        <field name="name">Mass Update Submissions</field>
+        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_type">action</field>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+                'type': 'ir.actions.act_window',
+                'name': 'Mass Update Submissions',
+                'res_model': 'aps.submission.mass.update.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_submission_ids': [(6, 0, env.context.get('active_ids', []))],
+                }
+            }   
+        </field>
+    </record>
+
+
+
+</odoo>

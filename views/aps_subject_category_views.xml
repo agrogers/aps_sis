@@ -14,7 +14,7 @@
         </field>
     </record>
 
-    <!-- Subject Category Form View -->
+    <!-- Subject Category Form  View -->
     <record id="view_aps_subject_category_form" model="ir.ui.view">
         <field name="name">aps.subject.category.form</field>
         <field name="model">aps.subject.category</field>
