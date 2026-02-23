@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="apex_submission_active_email_template" model="mail.template">
+            <field name="name">APEX Submission Active Email Template</field>
+            <!-- <field name="model">hr.contract</field> -->
+            <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>            
+            <field name="auto_delete" eval="False"/>
+            <field name="subject">APEX task {{ object.submission_name }} is now available. </field>
+            <field name="partner_to">{{object.student_id.id}}</field>
+            <field name="email_cc"></field>          
+            <field name="body_html" type="html">
+                <div>
+                    <p>Hi <t t-out="object.student_id.name"></t>,</p>
+                    <p>The following task is now available.</p>
+                    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                        <tr>
+                            <td><strong>TASK:</strong></td>
+                            <td><a t-att-href="ctx.get('record_url')"><t t-out="object.submission_name"></t></a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>SUBJECT(S):</strong></td>
+                            <td><t t-out="', '.join(object.subjects.mapped('display_name'))"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>START:</strong></td>
+                            <td><t t-out="format_date(object.date_assigned)"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>DUE:</strong></td>
+                            <td><t t-out="format_date(object.date_due)"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>MARKS:</strong></td>
+                            <td><t t-out="object.out_of_marks"/></td>
+                        </tr>
+                    </table>
+                    <p></p>
+                    <p>Please log in to the <a t-att-href="ctx.get('record_url')">APEX student portal</a> to access the task and submit your work before the due date.</p>
+                    <hr/> 
+                    <t t-raw="ctx.get('question', '')"/>
+                </div>
+            </field>    
+
+        </record>
+    </data>
+</odoo>
