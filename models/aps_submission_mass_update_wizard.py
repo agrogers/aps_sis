@@ -26,6 +26,8 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     due_date_value = fields.Date(string='Value')
     update_points = fields.Boolean(string='Points')
     points_value = fields.Integer(string='Value')
+    update_submission_active = fields.Boolean(string='Submission Active')
+    submission_active_value = fields.Boolean(string='Value')
     update_date_assigned = fields.Boolean(string='Date Assigned')
     date_assigned_value = fields.Date(string='Value')
     update_date_submitted = fields.Boolean(string='Date Submitted')
@@ -36,6 +38,8 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     score_value = fields.Float(string='Value')
     update_out_of_marks = fields.Boolean(string='Out of Marks')
     out_of_marks_value = fields.Float(string='Value')
+    update_submission_name = fields.Boolean(string='Submission Name')
+    submission_name_value = fields.Char(string='Value')
     update_due_status = fields.Boolean(string='Due Status')
     due_status_value = fields.Selection([
         ('early', 'Early'),
@@ -87,6 +91,9 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
         if self.update_date_assigned:
             updates['date_assigned'] = self.date_assigned_value
 
+        if self.update_submission_active:
+            updates['submission_active'] = self.submission_active_value
+
         if self.update_date_submitted:
             updates['date_submitted'] = self.date_submitted_value
 
@@ -98,6 +105,9 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
 
         if self.update_out_of_marks:
             updates['out_of_marks'] = self.out_of_marks_value
+
+        if self.update_submission_name:
+            updates['submission_name'] = self.submission_name_value
 
         if self.update_due_status:
             updates['due_status'] = self.due_status_value

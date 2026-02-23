@@ -132,7 +132,7 @@ class APSResource(models.Model):
     has_answer = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
-        ('yes_notes', 'Yes (Notes)'),
+        ('yes_notes', '!!! Dont Use'),
         ('use_parent', 'Use Parent'),
         ], string='Has Answer', 
         default='no', 
@@ -141,19 +141,21 @@ class APSResource(models.Model):
         tracking=True)
     answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
     parent_answer = fields.Html(string='Parent Answer', compute='_compute_parent_answer', store=False)
-    answer_is_notes = fields.Boolean(string='Answer Is Notes', compute='_compute_answer_is_notes', store=False)
-
-    # has_default_answer = fields.Selection([
-    #     ('no', 'No'),
-    #     ('yes', 'Yes'),
-    #     ], string='Has Default Answer', 
-    #     default='no', 
-    #     help='Resources can include a default answer to a question. This is helpful if you wish to provide a template for students to fill in.',
-    #     required=True,
-    #     tracking=True)
-    default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
+    # answer_is_notes = fields.Boolean(string='Answer Is Notes', compute='_compute_answer_is_notes', store=False)
 
     has_default_answer = fields.Boolean()
+    default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
+
+    has_notes = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('use_parent', 'Use Parent'),
+        ], string='Has Notes', 
+        default='no', 
+        help='Resources can include notes. A resource can use the parent\'s notes if set to "Use Parent".',
+        required=True,
+        tracking=True)
+    notes = fields.Html(string='Notes', help='Notes for the resource.')    
 
     lesson_plan = fields.Html(string='Lesson Plan', help='The lesson plan for this resource.')
     has_lesson_plan = fields.Boolean(string='Has Lesson Plan', store=True)
@@ -257,7 +259,6 @@ class APSResource(models.Model):
                  'supporting_resource_ids.name', 'supporting_resource_ids.display_name',
                  'supporting_resource_ids.type_icon', 'supporting_resource_ids.type_id.name',
                  'supporting_resource_ids.sequence')
-    
     def _compute_supporting_resources_buttons(self):
         """Compute JSON data for resource links widget."""
         for resource in self:
@@ -296,6 +297,28 @@ class APSResource(models.Model):
         for rec in self:
             rec.has_multiple_parents = len(rec.parent_ids) > 1
 
+
+    @api.onchange('has_notes', 'primary_parent_id')
+    def _compute_parent_notes(self):
+        """Get the parent notes to display based on has_notes setting."""
+        for rec in self:
+            if rec.has_notes == 'use_parent' and rec.primary_parent_id:
+                parent_notes = rec.primary_parent_id.notes
+                rec.notes = rec._extract_from_parent_html(parent_notes, rec.name)
+
+    def _update_child_notes(self):
+        """Update any child notes that are using this resource as parent."""
+        for rec in self:
+            # Find all child resources where this resource is the primary parent
+            # and the child has has_notes == 'use_parent'
+            child_resources = self.env['aps.resources'].search([
+                ('primary_parent_id', '=', rec.id),
+                ('has_notes', '=', 'use_parent')
+            ])
+            if child_resources:
+                # Invalidate their cache to trigger recomputation
+                child_resources._compute_parent_notes()
+                
     @api.depends('primary_parent_id.answer','has_answer')
     def _compute_parent_answer(self):
         """Get the answer to display based on has_answer setting."""
@@ -305,14 +328,6 @@ class APSResource(models.Model):
                 rec.parent_answer = rec._extract_from_parent_html(parent_answer, rec.name)
             else:
                 rec.parent_answer = False    
-
-    @api.depends('has_answer', 'primary_parent_id.has_answer')
-    def _compute_answer_is_notes(self):
-        for rec in self:
-            rec.answer_is_notes = (
-                rec.has_answer == 'yes_notes'
-                or (rec.has_answer == 'use_parent' and rec.primary_parent_id and rec.primary_parent_id.has_answer == 'yes_notes')
-            )
                 
     @api.depends('primary_parent_id.question','has_question')
     def _compute_parent_question(self):
@@ -516,6 +531,10 @@ class APSResource(models.Model):
                 children = self.search([('parent_ids', 'in', rec.id)])
                 if children:
                     children._compute_display_name()
+
+        """Update records and invalidate child caches if notes changed."""
+        if 'notes' in vals or 'has_notes' in vals:
+            self._update_child_notes()
         return result
 
     def copy(self, default=None):

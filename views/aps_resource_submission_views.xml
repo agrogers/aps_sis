@@ -358,42 +358,7 @@
         <field name="view_id" ref="view_aps_resource_submission_score_entry_list"/>
     </record>
 
-    <!-- Server actions for bulk state changes -->
-    <record id="action_mark_assigned" model="ir.actions.server">
-        <field name="name">Mark as Assigned</field>
-        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_view_types">list,kanban</field>
-        <field name="state">code</field>
-        <field name="code">action = records.action_mark_assigned()</field>
-    </record>
-
-    <record id="action_mark_submitted" model="ir.actions.server">
-        <field name="name">Mark as Submitted</field>
-        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_view_types">list,kanban</field>
-        <field name="state">code</field>
-        <field name="code">action = records.action_mark_submitted()</field>
-    </record>
-
-    <record id="action_mark_complete" model="ir.actions.server">
-        <field name="name">Mark as Finalised</field>
-        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_view_types">list,kanban</field>
-        <field name="state">code</field>
-        <field name="code">action = records.action_mark_complete()</field>
-    </record>
-
-    <record id="action_set_due_status_on_time" model="ir.actions.server">
-        <field name="name">Mark as On Time</field>
-        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
-        <field name="binding_view_types">list,kanban</field>
-        <field name="state">code</field>
-        <field name="code">action = records.action_set_due_status_on_time()</field>
-    </record>
+    
 
 
 </odoo>

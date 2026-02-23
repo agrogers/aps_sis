@@ -32,6 +32,12 @@
                                 <group colspan="8"><field name="state_value" invisible="not update_state"/></group>
                                 
                                 <group colspan="4">
+                                    <field name="update_submission_active" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_submission_active" class="mb-0">Submission Active</label>
+                                </group>
+                                <group colspan="8"><field name="submission_active_value" invisible="not update_submission_active"/></group>
+                                
+                                <group colspan="4">
                                     <field name="update_due_date" nolabel="1" widget="boolean_toggle"/>
                                     <label for="update_due_date" class="mb-0">Due Date</label>
                                 </group>
@@ -51,6 +57,9 @@
                                 
                                 <group colspan="4"><field name="update_out_of_marks" nolabel="1" widget="boolean_toggle"/><label for="update_out_of_marks" class="mb-0">Out of Marks</label></group>
                                 <group colspan="8"><field name="out_of_marks_value" invisible="not update_out_of_marks"/></group>
+                                
+                                <group colspan="4"><field name="update_submission_name" nolabel="1" widget="boolean_toggle"/><label for="update_submission_name" class="mb-0">Submission Name</label></group>
+                                <group colspan="8"><field name="submission_name_value" invisible="not update_submission_name"/></group>
                                 
                                 <group colspan="4"><field name="update_due_status" nolabel="1" widget="boolean_toggle"/><label for="update_due_status" class="mb-0">Due Status</label></group>
                                 <group colspan="8"><field name="due_status_value" invisible="not update_due_status"/></group>
