@@ -19,7 +19,7 @@ patch(FormController.prototype, {
             originalFormSetup.call(this, ...args);
         }
 
-        super.setup(...arguments);  // ← must call this first
+        // super.setup(...arguments);  
 
         onMounted(() => {
 
@@ -80,7 +80,13 @@ patch(FormController.prototype, {
                             // JSON parse failed, start with empty object
                         }
                         currentDefaults[currentUserId] = newPageName;
-                        this.model.root.update({ default_notebook_page_per_user: JSON.stringify(currentDefaults) });
+                        // Update the client-side copy only so we don't trigger a DB write here.
+                        // The invisible field will be written when the user explicitly saves the form.
+                        if (this.model && this.model.root && this.model.root.data) {
+                            // This sets the field value but it isnt saved.
+                            // Using 'update' is causing concurrency issues.
+                            this.model.root.data.default_notebook_page_per_user = currentDefaults;
+                        }
                     }
                 });
             });

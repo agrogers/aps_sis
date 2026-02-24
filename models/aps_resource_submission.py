@@ -131,7 +131,11 @@ class APSResourceSubmission(models.Model):
     submission_active = fields.Boolean(string='Active', compute="_compute_submission_active", default=False, store=True, 
         help='Indicates whether the submission is active and so visible to the student based on the assigned date. A submission becomes active when the assigned date is today or in the past.')
     active_datetime = fields.Datetime(string='Active Since', compute='_compute_active_datetime', store=True, help='The datetime when the submission became active. Used to trigger notifications for new active submissions.')
-    notified_active = fields.Boolean(string='Notified', default=False, help='Indicates whether the user has been notified that this submission is active.')
+    notified_active = fields.Boolean(
+        string='Notified',
+        default=lambda self: not self.env.user.has_group('aps_sis.group_aps_teacher'),
+        help='Indicates whether the user has been notified that this submission is active. Defaults to False for teachers and True for others.'
+    )
     notification_state = fields.Selection(required=True, default='skipped', 
         selection= [('not_sent', 'Not Sent'), ('sent', 'Sent'), ('posted','Posted'), ('failed', 'Failed'), ('skipped', 'Skipped')], 
         string='Notification State', 
@@ -147,23 +151,24 @@ class APSResourceSubmission(models.Model):
     points = fields.Integer(
         string='Points', compute='_compute_points', store=True, 
         help='The points allocated to this submission.')
-    default_notebook_page = fields.Char(help="Used by the system to manage default pages.")
+    
+    # default_notebook_page = fields.Char(help="Used by the system to manage default pages.")
     default_notebook_page_per_user = fields.Json(
         help="Used by the system to manage default pages.",
         default=dict,
-        compute="_compute_default_notebook_page_per_user",
-        store=True
+        # compute="_compute_default_notebook_page_per_user",
+        # store=True
         )
 
 # region - Computed Fields
 
-    @api.depends('default_notebook_page')
-    def _compute_default_notebook_page_per_user(self):
-        for rec in self:
-            current_user_id = self.env.user.id
-            data = rec.default_notebook_page_per_user or {}
-            data[current_user_id] = rec.default_notebook_page
-            rec.default_notebook_page_per_user = data
+    # @api.depends('default_notebook_page')
+    # def _compute_default_notebook_page_per_user(self):
+    #     for rec in self:
+    #         current_user_id = self.env.user.id
+    #         data = rec.default_notebook_page_per_user or {}
+    #         data[current_user_id] = rec.default_notebook_page
+    #         rec.default_notebook_page_per_user = data
 
     @api.depends('date_submitted', 'date_due', 'state', 'points_scale')
     def _compute_points(self):
@@ -489,6 +494,9 @@ class APSResourceSubmission(models.Model):
                 'date_completed': False,
                 'score': sentinel_zero,
                 'result_percent': 0,
+                'active_datetime': False,
+                'submission_active': True,
+
             })
         
         # Open the new submission form

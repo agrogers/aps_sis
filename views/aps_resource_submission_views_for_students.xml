@@ -98,8 +98,10 @@
                     </group>
                     <group col="12" class="mb-4">
                         <field name="student_id" readonly="1"/>
+                        <field name="default_notebook_page_per_user" groups="aps_sis.group_aps_teacher" widget="jsonb"/>
                     </group>
-                    <field name="model_answer_is_notes" invisible="1"/>
+                    
+
                     <notebook >
                         <page string="Student Answer"  name="student_answer_page" >
                             <group class="container-fluid">
