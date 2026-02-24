@@ -19,6 +19,7 @@
                                     <field name="date_assigned"/>
                                     <field name="time_assigned" widget="float_time" nolabel="0"/>
                                     <field name="date_due"/>
+                                    <field name="recurring_days"/>
                                     <field name="can_assign" invisible="1"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle" invisible="1"/>
                                     <field name="has_question"  readonly="0" invisible="0"/>

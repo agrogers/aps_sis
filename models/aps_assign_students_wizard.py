@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from .aps_assign_mixin import APSAssignMixin
 
 class APSAssignStudentsWizardLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.line'
@@ -24,7 +25,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
         for rec in self:
             rec.display_name = rec.resource_id.display_name if rec.resource_id else ''
 
-class APSAssignStudentsWizard(models.TransientModel):
+class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
     _name = 'aps.assign.students.wizard'
     _description = 'APEXAssign Students to Resource Wizard'
 
@@ -39,12 +40,23 @@ class APSAssignStudentsWizard(models.TransientModel):
     custom_submission_name = fields.Char(string='Custom Submission Name')
     warning_message = fields.Char(string='Warning', compute='_compute_warning_message', store=False)
     submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
+    recurring_days = fields.Integer(
+        string='Recurring (Days)',
+        default=0,
+        help='Days between recurring assignments. Set to 0 to disable recurring scheduling.',
+    )
     affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources', order='sequence')
     
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
         store=True
     )
+
+    def _assign_students_field_name(self):
+        return 'student_ids'
+
+    def _assign_resources_field_name(self):
+        return 'affected_resource_line_ids'
 
     has_question = fields.Selection([
         ('no', 'No'),
@@ -168,67 +180,11 @@ class APSAssignStudentsWizard(models.TransientModel):
 
     @api.onchange('subjects')
     def _onchange_subjects(self):
-        """Update student list when subjects change"""
-        if self.subjects:
-        
-            # Find all students who are enrolled in running courses with these subjects
-            student_partners = self.env['res.partner']
-            
-            # Get all students enrolled in running courses
-
-            # student_records = self.env['op.student'].search([])
-            # for student_record in student_records:
-            #     running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-            #     student_subjects = running_courses.mapped('subject_ids')
-            #     # If student has any of the resource subjects, include them
-            #     if student_subjects:
-            #         student_partners |= student_record.partner_id
-            
-
-            # 1. Get the subjects we care about (from the submission)
-            relevant_subjects = self.subjects  # Many2many 'op.subject'
-
-            if not relevant_subjects:
-                # No subjects → no students (or handle differently)
-                student_partners = self.env['res.partner']
-            else:
-                # 2. Find students who have at least one running course with overlapping subjects
-                students = self.env['op.student'].search([
-                    ('course_detail_ids.state', '=', 'running'),
-                    ('course_detail_ids.subject_ids', 'in', relevant_subjects.ids),
-                ])
-
-                # 3. Get their partners
-                student_partners = students.mapped('partner_id')
-
-            if student_partners:
-                self.student_ids = student_partners
-            else:
-                self.student_ids = False
+        self._onchange_subjects_shared()
 
     @api.onchange('resource_id')
     def _onchange_resource_id(self):
-        if self.resource_id:
-            
-            all_descendants = self.resource_id._get_all_descendants()
-            lines = [(0, 0, {
-                'resource_id': self.resource_id.id,
-                'selected': self.resource_id.has_question == 'yes',
-                'sequence': 10,
-            })]
-            sequence = 20
-            for descendant in all_descendants:
-                selected = descendant.has_question == 'yes'
-                lines.append((0, 0, {
-                    'resource_id': descendant.id,
-                    'parent_resource_id': self.resource_id.id,
-                    'selected': selected,
-                    'sequence': sequence,
-                }))
-                sequence += 10
-            self.affected_resource_line_ids = lines
-        else:
-            self.affected_resource_line_ids = False
+        self._onchange_resource_id_shared()
 
     def _default_assigned_by(self):
         """Get the faculty record for the current user"""
@@ -238,11 +194,15 @@ class APSAssignStudentsWizard(models.TransientModel):
             return faculty.id if faculty else False
 
     def action_assign_students(self):
+        self.ensure_one()
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
+        assign_details_model = self.env['aps.assign.details']
         top_level_resource = self.resource_id
         top_level_resource_name = top_level_resource.display_name or top_level_resource.name or ''
         separator = ' 🢒 '
+        label_source = self.submission_label or self.custom_submission_name or top_level_resource_name
+        submission_label_for_date = assign_details_model._format_submission_label(label_source, self.date_assigned)
         # Get all resources to assign: selected resources from the list, ordered by sequence
         selected_resources = self.env['aps.resources']
         order = 1
@@ -358,7 +318,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                 submission_model.create({
                     'task_id': task.id,
                     'assigned_by': self.assigned_by.id if self.assigned_by else False,
-                    'submission_label': self.submission_label,
+                    'submission_label': submission_label_for_date,
                     'submission_order': submission_order,
                     'submission_name': submission_name,
                     'date_assigned': self.date_assigned,
@@ -373,4 +333,47 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'points_scale': self.points_scale,
                     'notification_state': 'not_sent' if self.notify_student else 'skipped',
                 })
+
+        if not self.env.context.get('skip_recurring_save'):
+            self._save_recurring_assignment_details()
+
         return {'type': 'ir.actions.act_window_close'}
+
+    def _save_recurring_assignment_details(self):
+        self.ensure_one()
+        due_offset_days = 0
+        if self.date_assigned and self.date_due:
+            due_offset_days = (self.date_due - self.date_assigned).days
+
+        selected_lines = self.affected_resource_line_ids.filtered(lambda line: line.selected).sorted('sequence')
+        details_vals = {
+            'active': self.recurring_days > 0 if self.recurring_days else False,
+            'resource_id': self.resource_id.id,
+            'assigned_by': self.assigned_by.id if self.assigned_by else False,
+            'custom_submission_name': self.custom_submission_name,
+            'submission_label': self.submission_label,
+            'date_due_offset_days': due_offset_days,
+            'time_assigned': self.time_assigned,
+            'recurring_days': self.recurring_days,
+            'next_assignment_date': fields.Date.add(self.date_assigned, days=self.recurring_days) if self.date_assigned and self.recurring_days > 0 else self.date_assigned,
+            'last_assigned_date': self.date_assigned,
+            'allow_subject_editing': self.allow_subject_editing,
+            'has_question': self.has_question,
+            'question': self.question,
+            'has_answer': self.has_answer,
+            'answer': self.answer,
+            'has_default_answer': self.has_default_answer,
+            'default_answer': self.default_answer,
+            'subjects': [(6, 0, self.subjects.ids)],
+            'points_scale': self.points_scale,
+            'notify_student': self.notify_student,
+            'assign_student_ids': [(0, 0, {'student_id': student.id}) for student in self.student_ids],
+            'assign_resource_ids': [
+                (0, 0, {
+                    'resource_id': line.resource_id.id,
+                    'sequence': line.sequence,
+                })
+                for line in selected_lines
+            ],
+        }
+        return self.env['aps.assign.details'].create(details_vals)

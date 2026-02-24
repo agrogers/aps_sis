@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_assign_details_list" model="ir.ui.view">
+        <field name="name">aps.assign.details.list</field>
+        <field name="model">aps.assign.details</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" optional="show"/>
+                <field name="active" optional="show"/>
+                <field name="resource_id" optional="show"/>
+                <field name="recurring_days" optional="show"/>
+                <field name="next_assignment_date" optional="show"/>
+                <field name="last_assigned_date" optional="show"/>
+
+                <field name="assigned_by" optional="hide"/>
+                <field name="custom_submission_name" optional="hide"/>
+                <field name="submission_label" optional="hide"/>
+                <field name="date_due_offset_days" optional="hide"/>
+                <field name="time_assigned" optional="hide"/>
+                <field name="allow_subject_editing" optional="hide"/>
+                <field name="has_question" optional="hide"/>
+                <field name="question" optional="hide"/>
+                <field name="has_answer" optional="hide"/>
+                <field name="answer" optional="hide"/>
+                <field name="has_default_answer" optional="hide"/>
+                <field name="default_answer" optional="hide"/>
+                <field name="subjects" widget="many2many_tags" optional="hide"/>
+                <field name="points_scale" optional="hide"/>
+                <field name="notify_student" optional="hide"/>
+                <field name="assign_student_ids" optional="hide"/>
+                <field name="assign_resource_ids" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_assign_details_form" model="ir.ui.view">
+        <field name="name">aps.assign.details.form</field>
+        <field name="model">aps.assign.details</field>
+        <field name="inherit_id" ref="aps_sis.view_aps_assign_students_wizard"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='warning_message']" position="replace"/>
+            <xpath expr="//field[@name='can_assign']" position="replace"/>
+
+            <xpath expr="//field[@name='date_assigned']" position="replace">
+                <field name="next_assignment_date"/>
+            </xpath>
+            <xpath expr="//field[@name='date_due']" position="replace">
+                <field name="date_due_offset_days"/>
+            </xpath>
+            <xpath expr="//field[@name='time_assigned']" position="after">
+                <!-- <field name="recurring_days"/> -->
+                <field name="last_assigned_date"/>
+            </xpath>
+
+            <xpath expr="//field[@name='student_ids']" position="replace">
+                <field name="assign_student_ids" nolabel="1">
+                    <list>
+                        <field name="student_id"/>
+                    </list>
+                </field>
+            </xpath>
+
+            <xpath expr="//field[@name='affected_resource_line_ids']" position="replace">
+                <field name="assign_resource_ids" nolabel="1">
+                    <list editable="bottom" default_order="sequence" selectable="multi">
+                        <field name="sequence" widget="handle"/>
+                        <field name="resource_id"/>
+                    </list>
+                </field>
+            </xpath>
+
+            <xpath expr="//footer" position="replace"/>
+        </field>
+    </record>
+
+    <record id="action_aps_assign_details" model="ir.actions.act_window">
+        <field name="name">Recurring &amp; Past Assignments</field>
+        <field name="res_model">aps.assign.details</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_aps_assign_details_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_assign_details_list"/>
+        <field name="act_window_id" ref="action_aps_assign_details"/>
+    </record>
+
+    <record id="action_aps_assign_details_view_form" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_assign_details_form"/>
+        <field name="act_window_id" ref="action_aps_assign_details"/>
+    </record>
+
+    <menuitem id="menu_apex_assign_details"
+              name="Recurring &amp; Past Assignments"
+              parent="menu_apex_configuration"
+              action="action_aps_assign_details"
+              sequence="220"
+              groups="aps_sis.group_aps_teacher"/>
+</odoo>
