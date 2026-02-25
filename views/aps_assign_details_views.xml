@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name" optional="show"/>
-                <field name="active" optional="show"/>
+                <field name="enabled" optional="show"/>
                 <field name="resource_id" optional="show"/>
                 <field name="recurring_days" optional="show"/>
                 <field name="next_assignment_date" optional="show"/>
@@ -40,6 +40,10 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='warning_message']" position="replace"/>
             <xpath expr="//field[@name='can_assign']" position="replace"/>
+
+            <xpath expr="//field[@name='resource_id']" position="after">
+                <field name="enabled"/>
+            </xpath>
 
             <xpath expr="//field[@name='date_assigned']" position="replace">
                 <field name="next_assignment_date"/>

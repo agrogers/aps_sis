@@ -1,7 +1,9 @@
 import re
-
+from logging import getLogger
 from odoo import api, fields, models
 from .aps_assign_mixin import APSAssignMixin
+
+_logger = getLogger(__name__)
 
 
 class APSAssignDetails(APSAssignMixin, models.Model):
@@ -10,7 +12,7 @@ class APSAssignDetails(APSAssignMixin, models.Model):
     _order = 'next_assignment_date, id desc'
 
     name = fields.Char(string='Name', compute='_compute_name', store=True)
-    active = fields.Boolean(default=True)
+    enabled = fields.Boolean(default=True)
 
     resource_id = fields.Many2one('aps.resources', string='Top Level Resource', required=True)
     assigned_by = fields.Many2one('op.faculty', string='Assigned By')
@@ -148,11 +150,13 @@ class APSAssignDetails(APSAssignMixin, models.Model):
     @api.model
     def run_daily_recurring_assignments(self):
         today = fields.Date.today()
+        _logger.info(f"Running cron with today={today}, type={type(today)}")
         schedules = self.search([
-            ('active', '=', True),
+            ('enabled', '=', True),
             ('next_assignment_date', '!=', False),
             ('next_assignment_date', '<=', today),
         ])
+        _logger.info(f"Found {len(schedules)} schedules")
 
         for schedule in schedules:
             run_date = schedule.next_assignment_date
