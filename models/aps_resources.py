@@ -127,7 +127,6 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
     question = fields.Html(string='Question')
-    parent_question = fields.Html(string='Parent Question', compute='_compute_parent_question_compat', store=False)
 
     has_answer = fields.Selection([
         ('no', 'No'),
@@ -140,7 +139,6 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
     answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
-    parent_answer = fields.Html(string='Parent Answer', compute='_compute_parent_answer_compat', store=False)
     # answer_is_notes = fields.Boolean(string='Answer Is Notes', compute='_compute_answer_is_notes', store=False)
 
     has_default_answer = fields.Boolean()
@@ -324,15 +322,15 @@ class APSResource(models.Model):
     def _question_from_parent(self):
         self.ensure_one()
         if self.has_question == 'use_parent' and self.primary_parent_id:
-            parent_question = self.primary_parent_id.question
-            return self._extract_from_parent_html(parent_question, self.name)
+            inherited_question = self.primary_parent_id.question
+            return self._extract_from_parent_html(inherited_question, self.name)
         return False
 
     def _answer_from_parent(self):
         self.ensure_one()
         if self.has_answer == 'use_parent' and self.primary_parent_id:
-            parent_answer = self.primary_parent_id.answer
-            return self._extract_from_parent_html(parent_answer, self.name)
+            inherited_answer = self.primary_parent_id.answer
+            return self._extract_from_parent_html(inherited_answer, self.name)
         return False
 
     def _update_child_notes(self):
@@ -386,16 +384,6 @@ class APSResource(models.Model):
             if rec.answer != synced_answer:
                 rec.update({'answer': synced_answer})
 
-    @api.depends('primary_parent_id.question', 'has_question', 'name')
-    def _compute_parent_question_compat(self):
-        for rec in self:
-            rec.parent_question = rec._question_from_parent() if rec.primary_parent_id else False
-
-    @api.depends('primary_parent_id.answer', 'has_answer', 'name')
-    def _compute_parent_answer_compat(self):
-        for rec in self:
-            rec.parent_answer = rec._answer_from_parent() if rec.primary_parent_id else False
-                
     def _extract_from_parent_html(self, parent_html, resource_name):
         """
         Extract content from parent HTML based on matching heading.
