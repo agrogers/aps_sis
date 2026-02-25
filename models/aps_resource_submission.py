@@ -114,21 +114,21 @@ class APSResourceSubmission(models.Model):
     question = fields.Html(
         string='Question',
         related='assign_detail_id.question',
-        readonly=True,
+        readonly=False,
         help='Question for this submission.'
     )
 
     notes = fields.Html(
         string='Notes',
         related='assign_detail_id.notes',
-        readonly=True,
+        readonly=False,
         help='Notes for this submission.'
     )
 
     model_answer = fields.Html(
         string='Model Answer',
         related='assign_detail_id.model_answer',
-        readonly=True,
+        readonly=False,
         help='Model answer for this submission.'
     )
 

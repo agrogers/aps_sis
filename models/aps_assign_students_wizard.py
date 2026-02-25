@@ -145,7 +145,7 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
             resource_notes = resource.notes
             if not resource_notes and resource.has_notes == 'use_parent' and resource.primary_parent_id:
                 resource_notes = resource.primary_parent_id.notes
-            res['has_notes'] = bool(resource_notes)
+            res['use_notes'] = bool(resource_notes)
             res['notes'] = resource_notes if resource_notes else False
 
     
@@ -289,20 +289,20 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                 # The question HTML field is already prefilled with the correct question based on the resource's has_question setting in the onchange of resource_id, 
                 # so we can just use that value directly without needing to check the has_question field again here. 
                 # This also allows the user to override the question for the top-level resource if they want to.
-                has_question = self.has_question
+                use_question = self.use_question
                 question = self.question 
                 notes = self.notes
-                has_notes = self.has_notes
+                use_notes = self.use_notes
             else:
-                has_question = resource.has_question
+                use_question = False if resource.has_question == "no" else True
                 notes = resource.notes
-                has_notes = resource.has_notes
+                use_notes = False if resource.has_notes == "no" else True
                 question = resource.question 
 
-            if has_question == 'no':
+            if not use_question:
                 question = False
 
-            if has_notes == 'no':
+            if not use_notes:
                 notes = False
             
             for student in self.student_ids:
@@ -336,7 +336,7 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                         'date_due': self.date_due,
                     })
                 # Define has_answer before use
-                has_answer = True if self.has_default_answer and self.default_answer else False
+                has_answer = True if self.use_default_answer and self.default_answer else False
                 # Create submission. Multiple submissions allowed per task.
                 submission_model.create({
                     'task_id': task.id,
@@ -351,11 +351,8 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                     'allow_subject_editing': self.allow_subject_editing,
                     'state': 'assigned',
                     'question': question,
-                    'has_question': True if question else False,
-                    'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
-                    'has_answer': has_answer,
+                    'answer': self.default_answer if self.use_default_answer and self.default_answer else False,
                     'notes': notes,
-                    'has_notes': True if notes else False,
                     'subjects': assigned_subjects.ids,
                     'points_scale': self.points_scale,
                     'notification_state': 'not_sent' if self.notify_student else 'skipped',
@@ -411,11 +408,8 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                     'next_assignment_date': fields.Date.add(self.date_assigned, days=self.recurring_days) if self.date_assigned and self.recurring_days > 0 else self.date_assigned,
                     'last_assigned_date': self.date_assigned,
                     'allow_subject_editing': resource.allow_subject_editing,
-                    'use_question': False if resource.has_question=='no' else True,
                     'question': resource.question,
-                    'use_answer': False if resource.has_answer == 'no' else True,
                     'answer': resource.answer,
-                    'use_notes': False if resource.use_notes=='no' else True,
                     'notes': resource.notes,
                     'subjects': [(6, 0, resource.subjects.ids)],
                     'points_scale': resource.points_scale,

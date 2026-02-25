@@ -140,10 +140,10 @@
                         <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned'" name="model_answer_page">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
-                        <page string="ℚuestion" name="question_page" class="default-page" invisible="not question">
+                        <page string="ℚuestion" name="question_page" class="default-page" invisible="False">
                             <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
                         </page>
-                        <page string="📝 Assignment Notes" name="assignment_notes_page" invisible="not notes">
+                        <page string="📝 Notes" name="assignment_notes_page" invisible="False">
                             <field name="notes" nolabel="1" readonly="1" placeholder="Assignment notes."/>
                         </page>
                         <page string="ⓘ" name="information_page" >
