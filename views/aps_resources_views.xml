@@ -131,9 +131,8 @@
                         <page string="Question" invisible="has_question=='no'">
                             <group invisible="not has_question=='use_parent'" >
                                 <div class="alert alert-info" role="alert">Using <b>Parent Question</b> (read only).</div>
-                                <field name="parent_question" nolabel="1" placeholder="Parent question will appear here."/>
                             </group>
-                            <field name="question"  invisible="not has_question=='yes'" nolabel="1" placeholder="Enter the question for this resource."/>
+                            <field name="question"  invisible="has_question not in ['yes','use_parent']" nolabel="1" placeholder="Enter the question for this resource." readonly="has_question=='use_parent'"/>
                         </page>
                         <page string="Default Answer" invisible="has_default_answer==False">
                             <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
@@ -141,9 +140,8 @@
                         <page string="Model Answer" invisible="has_answer=='no'">
                             <group invisible="not has_answer=='use_parent'" >
                                 <div class="alert alert-info" role="alert">Using <b>Parent Answer</b> (read only).</div>
-                                <field name="parent_answer" nolabel="1" placeholder="Parent answer will appear here."/>
                             </group>
-                            <field name="answer" invisible="has_answer not in ['yes']" placeholder="Enter the answer or solution for this resource."/>
+                            <field name="answer" invisible="has_answer not in ['yes','use_parent']" placeholder="Enter the answer or solution for this resource." readonly="has_answer=='use_parent'"/>
                         </page>
                         <page string="Linked Resources" invisible="not has_child_resources=='yes'">
                             <group>
