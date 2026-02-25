@@ -321,8 +321,14 @@ class APSResource(models.Model):
                 ('has_notes', '=', 'use_parent')
             ])
             if child_resources:
-                # Invalidate their cache to trigger recomputation
-                child_resources._compute_parent_notes()
+                for child in child_resources:
+                    child.update({'notes': child._notes_from_parent()})
+
+    def _sync_notes_from_parent(self):
+        for rec in self.filtered(lambda r: r.has_notes == 'use_parent' and r.primary_parent_id):
+            synced_notes = rec._notes_from_parent()
+            if rec.notes != synced_notes:
+                rec.update({'notes': synced_notes})
                 
     @api.depends('primary_parent_id.answer','has_answer')
     def _compute_parent_answer(self):
@@ -525,18 +531,12 @@ class APSResource(models.Model):
                     rec.sudo().update({'primary_parent_id': False})
 
     def write(self, vals):
-        if self.env.context.get('skip_parent_notes_sync'):
-            return super().write(vals)
-
         result = super().write(vals)
         # Ensure primary_parent_id stays consistent after any write
         self._sync_primary_parent()
 
         if any(field_name in vals for field_name in ['has_notes', 'primary_parent_id', 'name']):
-            for rec in self.filtered(lambda r: r.has_notes == 'use_parent' and r.primary_parent_id):
-                synced_notes = rec._notes_from_parent()
-                if rec.notes != synced_notes:
-                    rec.with_context(skip_parent_notes_sync=True).write({'notes': synced_notes})
+            self._sync_notes_from_parent()
 
         if 'name' in vals:
             # When name changes, update display_name for self and direct children
@@ -564,8 +564,7 @@ class APSResource(models.Model):
         records = super().create(vals_list)
         # Ensure primary_parent_id is set whenever parents exist on new records
         records._sync_primary_parent()
-        for rec in records.filtered(lambda r: r.has_notes == 'use_parent' and r.primary_parent_id):
-            rec.with_context(skip_parent_notes_sync=True).write({'notes': rec._notes_from_parent()})
+        records._sync_notes_from_parent()
         return records
 
     def _get_all_descendants(self):
