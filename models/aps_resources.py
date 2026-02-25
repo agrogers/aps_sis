@@ -127,6 +127,7 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
     question = fields.Html(string='Question')
+    parent_question = fields.Html(string='Parent Question', compute='_compute_parent_question_compat', store=False)
 
     has_answer = fields.Selection([
         ('no', 'No'),
@@ -139,6 +140,7 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
     answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
+    parent_answer = fields.Html(string='Parent Answer', compute='_compute_parent_answer_compat', store=False)
     # answer_is_notes = fields.Boolean(string='Answer Is Notes', compute='_compute_answer_is_notes', store=False)
 
     has_default_answer = fields.Boolean()
@@ -383,6 +385,16 @@ class APSResource(models.Model):
             synced_answer = rec._answer_from_parent()
             if rec.answer != synced_answer:
                 rec.update({'answer': synced_answer})
+
+    @api.depends('primary_parent_id.question', 'has_question', 'name')
+    def _compute_parent_question_compat(self):
+        for rec in self:
+            rec.parent_question = rec._question_from_parent() if rec.primary_parent_id else False
+
+    @api.depends('primary_parent_id.answer', 'has_answer', 'name')
+    def _compute_parent_answer_compat(self):
+        for rec in self:
+            rec.parent_answer = rec._answer_from_parent() if rec.primary_parent_id else False
                 
     def _extract_from_parent_html(self, parent_html, resource_name):
         """
