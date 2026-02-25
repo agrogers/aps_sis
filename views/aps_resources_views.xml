@@ -32,6 +32,61 @@
         </field>
     </record>
 
+    <record id="view_aps_resources_kanban" model="ir.ui.view">
+        <field name="name">aps.resources.kanban</field>
+        <field name="model">aps.resources</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="display_name"/>
+                <field name="name"/>
+                <field name="type_icon"/>
+                <field name="type_id"/>
+                <field name="category"/>
+                <field name="marks"/>
+                <field name="subjects"/>
+                <field name="child_count"/>
+                <field name="has_question"/>
+                <field name="has_answer"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="o_kanban_record">
+                            <div class="d-flex align-items-center mb-2">
+                                <img t-if="record.type_icon.raw_value"
+                                     t-att-src="kanban_image('aps.resources', 'type_icon', record.id.raw_value)"
+                                     style="width:20px;height:20px;object-fit:contain;"
+                                     class="me-2"
+                                     alt="Type"/>
+                                <strong class="o_kanban_record_title">
+                                    <field name="display_name"/>
+                                </strong>
+                            </div>
+
+                            <div class="text-muted mb-1">
+                                <field name="type_id"/>
+                                <t t-if="record.category.raw_value"> • <field name="category"/></t>
+                            </div>
+
+                            <div class="mb-1">
+                                <span>Marks: </span><field name="marks"/>
+                                <span class="ms-3">Children: </span><field name="child_count"/>
+                            </div>
+
+                            <div class="mb-2">
+                                <field name="subjects" widget="many2many_tags"/>
+                            </div>
+
+                            <div class="text-muted small">
+                                <t t-if="record.has_question.raw_value == 'yes'">Q</t>
+                                <t t-if="record.has_question.raw_value == 'use_parent'">Q(parent)</t>
+                                <t t-if="record.has_answer.raw_value != 'no'"> • A</t>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
     <!-- Hierarchy view: now a flat list since multiple parents don't form a tree -->
     <!-- used for searching for resources -->
     <record id="view_aps_resources_hierarchy" model="ir.ui.view">
@@ -122,28 +177,26 @@
                             </group>
                         </page>
                         <page string="Notes" invisible="has_notes=='no'">
-                            <group invisible="not has_notes=='use_parent'" >
-                                <div class="alert alert-info" role="alert">Using <b>Parent Notes</b> (read only).</div>
-                            </group>
                             <field name="notes"  invisible="has_notes not in ['yes','use_parent']" 
                                     nolabel="1" placeholder="Enter the notes for this resource." readonly="has_notes=='use_parent'"/>
+                            <group invisible="not has_notes=='use_parent'" >
+                                <div class="alert alert-light" role="alert">Using <b>Parent Notes</b> (read only).</div>
+                            </group>
                         </page>
                         <page string="Question" invisible="has_question=='no'">
+                            <field name="question"  invisible="has_question not in ['yes','use_parent']" nolabel="1" placeholder="Enter the question for this resource." readonly="has_question=='use_parent'"/>
                             <group invisible="not has_question=='use_parent'" >
-                                <div class="alert alert-info" role="alert">Using <b>Parent Question</b> (read only).</div>
-                                <field name="parent_question" nolabel="1" placeholder="Parent question will appear here."/>
+                                <div class="alert alert-light" role="alert">Using <b>Parent Question</b> (read only).</div>
                             </group>
-                            <field name="question"  invisible="not has_question=='yes'" nolabel="1" placeholder="Enter the question for this resource."/>
                         </page>
                         <page string="Default Answer" invisible="has_default_answer==False">
                             <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
                         </page>
                         <page string="Model Answer" invisible="has_answer=='no'">
+                            <field name="answer" invisible="has_answer not in ['yes','use_parent']" placeholder="Enter the answer or solution for this resource." readonly="has_answer=='use_parent'"/>
                             <group invisible="not has_answer=='use_parent'" >
-                                <div class="alert alert-info" role="alert">Using <b>Parent Answer</b> (read only).</div>
-                                <field name="parent_answer" nolabel="1" placeholder="Parent answer will appear here."/>
+                                <div class="alert alert-light" role="alert">Using <b>Parent Answer</b> (read only).</div>
                             </group>
-                            <field name="answer" invisible="has_answer not in ['yes']" placeholder="Enter the answer or solution for this resource."/>
                         </page>
                         <page string="Linked Resources" invisible="not has_child_resources=='yes'">
                             <group>
@@ -315,7 +368,7 @@
     <record id="action_aps_resources" model="ir.actions.act_window">
         <field name="name">Resources</field>
         <field name="res_model">aps.resources</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="view_id" ref="view_aps_resources_list"/>
         <field name="search_view_id" ref="view_aps_resources_search"/>
         <field name="context">{'default_order': 'name'}</field>
@@ -325,7 +378,7 @@
     <record id="action_aps_resources_hierarchy" model="ir.actions.act_window">
         <field name="name">Resources (Hierarchy)</field>
         <field name="res_model">aps.resources</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="view_id" ref="view_aps_resources_hierarchy"/>
         <field name="search_view_id" ref="view_aps_resources_search"/>
         <field name="domain">[('parent_ids','=',False)]</field>

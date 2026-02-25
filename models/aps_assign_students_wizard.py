@@ -146,7 +146,7 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
             elif self.has_question == 'yes':
                 self.question = self.resource_id.question if self.resource_id.question else False
             elif self.has_question == 'use_parent':
-                self.question = self.resource_id.parent_question
+                self.question = self.resource_id._question_from_parent()
 
     @api.onchange('date_assigned')
     def _onchange_date_due(self):

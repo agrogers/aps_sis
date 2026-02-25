@@ -127,7 +127,6 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
     question = fields.Html(string='Question')
-    parent_question = fields.Html(string='Parent Question', compute='_compute_parent_question', store=False)
 
     has_answer = fields.Selection([
         ('no', 'No'),
@@ -140,7 +139,6 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
     answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
-    parent_answer = fields.Html(string='Parent Answer', compute='_compute_parent_answer', store=False)
     # answer_is_notes = fields.Boolean(string='Answer Is Notes', compute='_compute_answer_is_notes', store=False)
 
     has_default_answer = fields.Boolean()
@@ -302,9 +300,38 @@ class APSResource(models.Model):
     def _compute_parent_notes(self):
         """Get the parent notes to display based on has_notes setting."""
         for rec in self:
-            if rec.has_notes == 'use_parent' and rec.primary_parent_id:
-                parent_notes = rec.primary_parent_id.notes
-                rec.notes = rec._extract_from_parent_html(parent_notes, rec.name)
+            rec.notes = rec._notes_from_parent() if rec.has_notes == 'use_parent' else rec.notes
+
+    @api.onchange('has_question', 'primary_parent_id')
+    def _onchange_parent_question_value(self):
+        for rec in self:
+            rec.question = rec._question_from_parent() if rec.has_question == 'use_parent' else rec.question
+
+    @api.onchange('has_answer', 'primary_parent_id')
+    def _onchange_parent_answer_value(self):
+        for rec in self:
+            rec.answer = rec._answer_from_parent() if rec.has_answer == 'use_parent' else rec.answer
+
+    def _notes_from_parent(self):
+        self.ensure_one()
+        if self.has_notes == 'use_parent' and self.primary_parent_id:
+            parent_notes = self.primary_parent_id.notes
+            return self._extract_from_parent_html(parent_notes, self.name)
+        return False
+
+    def _question_from_parent(self):
+        self.ensure_one()
+        if self.has_question == 'use_parent' and self.primary_parent_id:
+            inherited_question = self.primary_parent_id.question
+            return self._extract_from_parent_html(inherited_question, self.name)
+        return False
+
+    def _answer_from_parent(self):
+        self.ensure_one()
+        if self.has_answer == 'use_parent' and self.primary_parent_id:
+            inherited_answer = self.primary_parent_id.answer
+            return self._extract_from_parent_html(inherited_answer, self.name)
+        return False
 
     def _update_child_notes(self):
         """Update any child notes that are using this resource as parent."""
@@ -316,28 +343,46 @@ class APSResource(models.Model):
                 ('has_notes', '=', 'use_parent')
             ])
             if child_resources:
-                # Invalidate their cache to trigger recomputation
-                child_resources._compute_parent_notes()
-                
-    @api.depends('primary_parent_id.answer','has_answer')
-    def _compute_parent_answer(self):
-        """Get the answer to display based on has_answer setting."""
+                for child in child_resources:
+                    child.update({'notes': child._notes_from_parent()})
+
+    def _update_child_questions(self):
         for rec in self:
-            if rec.has_answer == 'use_parent' and rec.primary_parent_id:
-                parent_answer = rec.primary_parent_id.answer
-                rec.parent_answer = rec._extract_from_parent_html(parent_answer, rec.name)
-            else:
-                rec.parent_answer = False    
-                
-    @api.depends('primary_parent_id.question','has_question')
-    def _compute_parent_question(self):
-        """Get the question to display based on has_question setting."""
+            child_resources = self.env['aps.resources'].search([
+                ('primary_parent_id', '=', rec.id),
+                ('has_question', '=', 'use_parent')
+            ])
+            if child_resources:
+                for child in child_resources:
+                    child.update({'question': child._question_from_parent()})
+
+    def _update_child_answers(self):
         for rec in self:
-            if rec.primary_parent_id:
-                parent_question = rec.primary_parent_id.question
-                rec.parent_question = rec._extract_from_parent_html(parent_question, rec.name)
-            else:
-                rec.parent_question = False
+            child_resources = self.env['aps.resources'].search([
+                ('primary_parent_id', '=', rec.id),
+                ('has_answer', '=', 'use_parent')
+            ])
+            if child_resources:
+                for child in child_resources:
+                    child.update({'answer': child._answer_from_parent()})
+
+    def _sync_notes_from_parent(self):
+        for rec in self.filtered(lambda r: r.has_notes == 'use_parent' and r.primary_parent_id):
+            synced_notes = rec._notes_from_parent()
+            if rec.notes != synced_notes:
+                rec.update({'notes': synced_notes})
+
+    def _sync_questions_from_parent(self):
+        for rec in self.filtered(lambda r: r.has_question == 'use_parent' and r.primary_parent_id):
+            synced_question = rec._question_from_parent()
+            if rec.question != synced_question:
+                rec.update({'question': synced_question})
+
+    def _sync_answers_from_parent(self):
+        for rec in self.filtered(lambda r: r.has_answer == 'use_parent' and r.primary_parent_id):
+            synced_answer = rec._answer_from_parent()
+            if rec.answer != synced_answer:
+                rec.update({'answer': synced_answer})
 
     def _extract_from_parent_html(self, parent_html, resource_name):
         """
@@ -523,6 +568,14 @@ class APSResource(models.Model):
         result = super().write(vals)
         # Ensure primary_parent_id stays consistent after any write
         self._sync_primary_parent()
+
+        if any(field_name in vals for field_name in ['has_notes', 'primary_parent_id', 'name']):
+            self._sync_notes_from_parent()
+        if any(field_name in vals for field_name in ['has_question', 'primary_parent_id', 'name']):
+            self._sync_questions_from_parent()
+        if any(field_name in vals for field_name in ['has_answer', 'primary_parent_id', 'name']):
+            self._sync_answers_from_parent()
+
         if 'name' in vals:
             # When name changes, update display_name for self and direct children
             for rec in self:
@@ -535,6 +588,10 @@ class APSResource(models.Model):
         """Update records and invalidate child caches if notes changed."""
         if 'notes' in vals or 'has_notes' in vals:
             self._update_child_notes()
+        if 'question' in vals or 'has_question' in vals:
+            self._update_child_questions()
+        if 'answer' in vals or 'has_answer' in vals:
+            self._update_child_answers()
         return result
 
     def copy(self, default=None):
@@ -549,6 +606,9 @@ class APSResource(models.Model):
         records = super().create(vals_list)
         # Ensure primary_parent_id is set whenever parents exist on new records
         records._sync_primary_parent()
+        records._sync_notes_from_parent()
+        records._sync_questions_from_parent()
+        records._sync_answers_from_parent()
         return records
 
     def _get_all_descendants(self):

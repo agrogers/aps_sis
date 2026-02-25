@@ -68,7 +68,6 @@
                         <page string="Question" invisible="has_question=='no'">
                             <group invisible="not has_question=='use_parent'" >
                                 <div class="alert alert-info" role="alert">Using <b>Parent Question</b>.</div>
-                                <!-- <field name="parent_question" nolabel="1" placeholder="Parent question will appear here." readonly="has_question=='use_parent'"/> -->
                             </group>
                             <field name="question"  nolabel="1" placeholder="Enter the question for this resource."/>
                         </page>
