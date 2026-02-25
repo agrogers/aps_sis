@@ -29,7 +29,6 @@
                 <filter string="Due in Next 7 Days" name="due_next_7_days" domain="[('date_due', '&gt;=', time.strftime('%Y-%m-%d')), ('date_due', '&lt;=', (datetime.datetime.now() + datetime.timedelta(days=7)).to_utc().strftime('%Y-%m-%d'))]"/>
                 <filter string="Overdue" name="overdue" domain="[('state', '=', 'assigned'), ('date_due', '&lt;', time.strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <separator/>
-                <filter string="Has Answer" name="has_answer" domain="[('has_answer', '=', True)]"/>
                 <filter string="Has Feedback" name="has_feedback" domain="[('has_feedback', '=', True)]"/>
                 <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
                 <filter string="Review not Requested" name="review_requested" domain="[('review_requested_by', '=', False)]"/>
@@ -98,8 +97,6 @@
                             'red6': 'days_till_due == 3',
                             'grey': 'days_till_due &gt; 3'
                     }}"/>                    
-                <field name="has_question" string="Question" readonly="1" optional="hide"/>
-                <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
                 <field name="submission_label" optional="hide"/>
                 <field name="submission_order" optional="hide"/>
@@ -267,7 +264,6 @@
                         </div>
                     </group>
 
-                    <field name="model_answer_is_notes" invisible="1"/>
                     <notebook>
                         <page string="ⓘ Details">
                             <group>
@@ -325,14 +321,14 @@
                         <page string="🗪 Teacher Feedback">
                             <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="🗹 Model Answer" invisible="not model_answer or model_answer_is_notes">
+                        <page string="🗹 Model Answer" invisible="not model_answer">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission." readonly="1"/>
                         </page>
-                        <page string="🗹 Notes" invisible="not model_answer or not model_answer_is_notes">
-                            <field name="model_answer" nolabel="1" placeholder="Notes for this submission." readonly="1"/>
-                        </page>
-                        <page string="ℚuestion" invisible="has_question=='no'">
+                        <page string="ℚuestion" invisible="not question">
                             <field name="question" nolabel="1" readonly=""/>
+                        </page>
+                        <page string="📝 Assignment Notes" invisible="not notes">
+                            <field name="notes" nolabel="1" readonly="1" placeholder="Assignment notes."/>
                         </page>
                     </notebook>
                 </sheet>

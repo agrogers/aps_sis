@@ -16,8 +16,9 @@
 		'data/cron.xml',
 		'data/email_templates.xml',
 		'data/subject_categories.xml',
-		'views/aps_resource_custom_name_views.xml',		
-        'views/portal_templates.xml',
+		
+		'views/aps_resource_custom_name_views.xml',      
+		'views/portal_templates.xml',
 		'views/aps_resources_views.xml',
 		'views/aps_resource_types_views.xml',
 		'views/aps_resource_tags_views.xml',
@@ -25,7 +26,7 @@
 		'views/aps_resource_task_views.xml',
 		'views/aps_resource_submission_views.xml',
 		'views/aps_resource_submission_views_for_students.xml',
-		'views/aps_dashboard_views.xml',
+        
 		'views/aps_submission_mass_update_wizard_views.xml',
 		'views/aps_subject_category_views.xml',
 		'views/op_program_level_views.xml',
@@ -34,11 +35,12 @@
 		'views/op_faculty_views.xml',
 		'views/res_partner_views.xml',
 		'views/aps_sis_menu.xml',
+        'views/aps_dashboard_views.xml',
 		'views/aps_assign_details_views.xml',
 		'views/op_student_course_views.xml',
 		'reports/submission_report.xml',
 		'wizard/submission_report_wizard_views.xml',
-        'views/aps_dashboard_views.xml'
+        
 	],
 	'assets': {
 		'web.assets_backend': [

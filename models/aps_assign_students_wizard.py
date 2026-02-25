@@ -58,42 +58,27 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
     def _assign_resources_field_name(self):
         return 'affected_resource_line_ids'
 
-    has_question = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Question', 
-        default='no', 
-        help='A resource can use the parent\'s question if set to "Use Parent". This applies ONLY to the top-level resource. ' \
-        'Child resources will always use their own question setting.',
-        required=True,
-)
+    use_question = fields.Boolean(string='Use Question', default=False, help='Enable to include a question for this assignment.')
     question = fields.Html(string='Question')
-    parent_question = fields.Html(string='Parent Question', store=False)
 
-    has_answer = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('yes_notes', 'Yes (Notes)'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Answer', 
-        default='no', 
-        help='Resources can include model answers to a question. A resource can use the parent\'s answer if set to "Use Parent".',
-        required=True,
-)
-    answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
+    use_model_answer = fields.Boolean(string='Use Model Answer')
+    # model_answer is used only for display purposes in the wizard and is not stored, since it is always derived from the resource. This allows us to show the model answer for the resource even if the user chooses to use a custom question/answer for this assignment.
+    model_answer = fields.Html(string='Answer', help='Model answer for the resource question.')
 
-    has_default_answer = fields.Boolean(
+    use_default_answer = fields.Boolean(
         string='Use Default Answer', 
         default=False, 
         help='Resources can include a default answer to a question. This is helpful if you wish to provide a template for students to fill in.',
-        required=True,
-)
+        required=False,
+    )
     default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
 
     subjects = fields.Many2many('op.subject', string='Subjects')
     points_scale = fields.Integer(string='Points Scale', default=1, help='Scales the points allocated to the submission. This is useful for resources that are used in different contexts with different grading schemes.')
     notify_student = fields.Boolean(string='Notify Student', default=True, help='If enabled, students will receive a notification when they are assigned to the resource.')
+    
+    use_notes = fields.Boolean(string='Use Notes', default=False, help='Enable to include notes for this assignment.')
+    notes = fields.Html(string='Notes', help='Notes for the resource.')
 
     can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False) # Helper field to enable/disable assign button based on whether any students and any resources are selected
 
@@ -118,6 +103,7 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                 'id', 'display_name', 'name', 'affected_resource_line_ids',
                 'student_ids', 'submission_label', 'submission_order', 'assigned_by',
                 'resource_id', 'warning_message', 'can_assign', 'parent_question', 'parent_answer', 'time_assigned',
+                'has_notes', 'parent_notes',
             }
             for fname in self._fields:
                 if fname in skip_fields:
@@ -126,6 +112,26 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                 if fields_list and fname not in fields_list:
                     continue
                 # only copy if the resource model has the field
+                if fname == 'has_answer':
+                    # has_answer is a bit special because we want to set it to True if there is either an answer or a default answer, since the resource can have either or both and we want to indicate that in the wizard. This allows the user to see that there is an answer associated with the resource even if they are choosing to use a custom question and answer for this assignment.
+                    res['use_model_answer'] = (resource.has_answer != 'no')
+                    continue
+                    
+                if fname == 'has_question':
+                    # has_question is a bit special because we want to set it to True if there is either a question or a default question, since the resource can have either or both and we want to indicate that in the wizard. This allows the user to see that there is a question associated with the resource even if they are choosing to use a custom question and answer for this assignment.
+                    res['use_question'] = (resource.has_question != 'no')
+                    continue
+
+                if fname == 'has_notes':
+                    # has_notes is a bit special because we want to set it to True if there are notes or a default notes, since the resource can have either or both and we want to indicate that in the wizard. This allows the user to see that there are notes associated with the resource even if they are choosing to use custom notes for this assignment.
+                    res['use_notes'] = (resource.has_notes != 'no')
+                    continue                    
+
+                if fname == 'has_default_answer':
+                    # has_default_answer is a bit special because we want to set it to True if there is a default answer, since the resource can have either or both and we want to indicate that in the wizard. This allows the user to see that there is a default answer associated with the resource even if they are choosing to use a custom question and answer for this assignment.
+                    res['use_default_answer'] = (resource.has_default_answer != 'no')
+                    continue                    
+
                 if fname in resource._fields:
                     try:
                         val = resource[fname]
@@ -134,6 +140,13 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                     except Exception:
                         # guard against unexpected read/compute errors
                         continue
+
+            # Set has_notes to 'yes' if the resource has notes (either directly or via parent)
+            resource_notes = resource.notes
+            if not resource_notes and resource.has_notes == 'use_parent' and resource.primary_parent_id:
+                resource_notes = resource.primary_parent_id.notes
+            res['has_notes'] = bool(resource_notes)
+            res['notes'] = resource_notes if resource_notes else False
 
     
         return res
@@ -198,6 +211,13 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
         assign_details_model = self.env['aps.assign.details']
+        
+        # For recurring assignments, create assign_details first
+        assign_detail_id = None
+        if self.recurring_days > 0 and not self.env.context.get('skip_recurring_save'):
+            assign_detail = self._save_recurring_assignment_details()
+            assign_detail_id = assign_detail.id if assign_detail else None
+        
         top_level_resource = self.resource_id
         top_level_resource_name = top_level_resource.display_name or top_level_resource.name or ''
         separator = ' 🢒 '
@@ -270,20 +290,21 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                 # so we can just use that value directly without needing to check the has_question field again here. 
                 # This also allows the user to override the question for the top-level resource if they want to.
                 has_question = self.has_question
-                parent_question = question = self.question 
+                question = self.question 
+                notes = self.notes
+                has_notes = self.has_notes
             else:
                 has_question = resource.has_question
+                notes = resource.notes
+                has_notes = resource.has_notes
                 question = resource.question 
-                parent_question = resource.primary_parent_id.question if resource.primary_parent_id else False
 
             if has_question == 'no':
-                use_question = False
-            elif has_question == 'yes':
-                use_question = question if question else False
-            elif has_question == 'use_parent':
-                # Copy question from resource if not explicitly provided
-                use_question = parent_question if parent_question else False
-                
+                question = False
+
+            if has_notes == 'no':
+                notes = False
+            
             for student in self.student_ids:
                 
                 if len(self.subjects) < 2:
@@ -314,9 +335,12 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                         'state': 'assigned',
                         'date_due': self.date_due,
                     })
+                # Define has_answer before use
+                has_answer = True if self.has_default_answer and self.default_answer else False
                 # Create submission. Multiple submissions allowed per task.
                 submission_model.create({
                     'task_id': task.id,
+                    'assign_detail_id': assign_detail_id,
                     'assigned_by': self.assigned_by.id if self.assigned_by else False,
                     'submission_label': submission_label_for_date,
                     'submission_order': submission_order,
@@ -326,16 +350,16 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
                     'date_due': self.date_due,
                     'allow_subject_editing': self.allow_subject_editing,
                     'state': 'assigned',
-                    'question': use_question,
-                    'has_question': has_question,
+                    'question': question,
+                    'has_question': True if question else False,
                     'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
+                    'has_answer': has_answer,
+                    'notes': notes,
+                    'has_notes': True if notes else False,
                     'subjects': assigned_subjects.ids,
                     'points_scale': self.points_scale,
                     'notification_state': 'not_sent' if self.notify_student else 'skipped',
                 })
-
-        if not self.env.context.get('skip_recurring_save'):
-            self._save_recurring_assignment_details()
 
         return {'type': 'ir.actions.act_window_close'}
 
@@ -346,34 +370,57 @@ class APSAssignStudentsWizard(APSAssignMixin, models.TransientModel):
             due_offset_days = (self.date_due - self.date_assigned).days
 
         selected_lines = self.affected_resource_line_ids.filtered(lambda line: line.selected).sorted('sequence')
-        details_vals = {
-            'active': self.recurring_days > 0 if self.recurring_days else False,
-            'resource_id': self.resource_id.id,
-            'assigned_by': self.assigned_by.id if self.assigned_by else False,
-            'custom_submission_name': self.custom_submission_name,
-            'submission_label': self.submission_label,
-            'date_due_offset_days': due_offset_days,
-            'time_assigned': self.time_assigned,
-            'recurring_days': self.recurring_days,
-            'next_assignment_date': fields.Date.add(self.date_assigned, days=self.recurring_days) if self.date_assigned and self.recurring_days > 0 else self.date_assigned,
-            'last_assigned_date': self.date_assigned,
-            'allow_subject_editing': self.allow_subject_editing,
-            'has_question': self.has_question,
-            'question': self.question,
-            'has_answer': self.has_answer,
-            'answer': self.answer,
-            'has_default_answer': self.has_default_answer,
-            'default_answer': self.default_answer,
-            'subjects': [(6, 0, self.subjects.ids)],
-            'points_scale': self.points_scale,
-            'notify_student': self.notify_student,
-            'assign_student_ids': [(0, 0, {'student_id': student.id}) for student in self.student_ids],
-            'assign_resource_ids': [
-                (0, 0, {
-                    'resource_id': line.resource_id.id,
-                    'sequence': line.sequence,
-                })
-                for line in selected_lines
-            ],
-        }
-        return self.env['aps.assign.details'].create(details_vals)
+        assign_details_records = []
+        for line in selected_lines:
+            resource = line.resource_id
+            is_top_level = resource.id == self.resource_id.id
+            if is_top_level:
+                vals = {
+                    'enabled': self.recurring_days > 0 if self.recurring_days else False,
+                    'resource_id': resource.id,
+                    'assigned_by': self.assigned_by.id if self.assigned_by else False,
+                    'custom_submission_name': self.custom_submission_name,
+                    'submission_label': self.submission_label,
+                    'date_due_offset_days': due_offset_days,
+                    'time_assigned': self.time_assigned,
+                    'recurring_days': self.recurring_days,
+                    'next_assignment_date': fields.Date.add(self.date_assigned, days=self.recurring_days) if self.date_assigned and self.recurring_days > 0 else self.date_assigned,
+                    'last_assigned_date': self.date_assigned,
+                    'allow_subject_editing': self.allow_subject_editing,
+                    'use_question': self.use_question,
+                    'question': self.question,
+                    'use_answer': self.use_answer,
+                    'answer': self.answer,
+                    'use_notes': self.use_notes,
+                    'notes': self.notes,
+                    'subjects': [(6, 0, self.subjects.ids)],
+                    'points_scale': self.points_scale,
+                    'notify_student': self.notify_student,
+                    'assign_student_ids': [(0, 0, {'student_id': student.id}) for student in self.student_ids],
+                }
+            else:
+                vals = {
+                    'enabled': self.recurring_days > 0 if self.recurring_days else False,
+                    'resource_id': resource.id,
+                    'assigned_by': self.assigned_by.id if self.assigned_by else False,
+                    'custom_submission_name': resource.display_name,
+                    'submission_label': resource.display_name,
+                    'date_due_offset_days': due_offset_days,
+                    'time_assigned': self.time_assigned,
+                    'recurring_days': self.recurring_days,
+                    'next_assignment_date': fields.Date.add(self.date_assigned, days=self.recurring_days) if self.date_assigned and self.recurring_days > 0 else self.date_assigned,
+                    'last_assigned_date': self.date_assigned,
+                    'allow_subject_editing': resource.allow_subject_editing,
+                    'use_question': False if resource.has_question=='no' else True,
+                    'question': resource.question,
+                    'use_answer': False if resource.has_answer == 'no' else True,
+                    'answer': resource.answer,
+                    'use_notes': False if resource.use_notes=='no' else True,
+                    'notes': resource.notes,
+                    'subjects': [(6, 0, resource.subjects.ids)],
+                    'points_scale': resource.points_scale,
+                    'notify_student': self.notify_student,
+                    'assign_student_ids': [(0, 0, {'student_id': student.id}) for student in self.student_ids],
+                }
+            assign_details_records.append(self.env['aps.assign.details'].create(vals))
+        return assign_details_records

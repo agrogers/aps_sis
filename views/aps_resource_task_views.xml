@@ -93,7 +93,6 @@
                                     <field name="date_completed" widget="datetime" optional="hide"/>
                                     <field name="result_percent"  widget="percentpie_ranged" optional="hide"/>
                                     <field name="submission_label" optional="hide"/>
-                                    <field name="has_answer" widget="boolean" string="Answer" readonly="1" optional="hide"/>
                                     <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>

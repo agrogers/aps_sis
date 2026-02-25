@@ -22,11 +22,11 @@
                                     <field name="recurring_days"/>
                                     <field name="can_assign" invisible="1"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle" invisible="1"/>
-                                    <field name="has_question"  readonly="0" invisible="0"/>
-                                    <field name="has_default_answer" widget="boolean_toggle" readonly="0" invisible="0"/>
+                                    <field name="use_question" widget="boolean_toggle" readonly="0" invisible="0"/>
+                                    <field name="use_default_answer" widget="boolean_toggle" readonly="0" invisible="0"/>
+                                    <field name="use_notes" widget="boolean_toggle" readonly="0" invisible="0"/>
                                     <field name="points_scale" readonly="0" invisible="0"/>
                                     <field name="notify_student" widget="boolean_toggle" readonly="0" invisible="0"/>
-
                                 </group>
                                 <div>
 
@@ -65,15 +65,18 @@
                                 </field>
                             </group>
                         </page>
-                        <page string="Question" invisible="has_question=='no'">
-                            <group invisible="not has_question=='use_parent'" >
+                        <page string="Question" invisible="not use_question">
+                            <group  >
                                 <div class="alert alert-info" role="alert">Using <b>Parent Question</b>.</div>
                             </group>
                             <field name="question"  nolabel="1" placeholder="Enter the question for this resource."/>
                         </page>
-                        <page string="Default Answer" invisible="has_default_answer==False">
-                            <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
-                        </page>                        
+                        <page string="Default Answer" invisible="not use_default_answer">
+                            <field name="default_answer"  nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
+                        </page>
+                        <page string="Notes" invisible="not use_notes">
+                            <field name="notes" nolabel="1" placeholder="Enter notes for this resource."/>
+                        </page>
                     </notebook>
                     <footer>
                         <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" invisible="not can_assign"/>

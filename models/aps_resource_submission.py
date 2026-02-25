@@ -12,6 +12,22 @@ _logger = logging.getLogger(__name__)
 sentinel_zero = -0.01
 
 class APSResourceSubmission(models.Model):
+    """
+    These fields can all be customised (eg Homework resource details will change every time it is assigned).
+    However they can be copied into the assign_details table and referenced from there.
+    That also allows the user to make changes after the submission is created without affecting the resource details for other submissions. It also allows the user to make changes to the resource details for a specific submission without affecting the resource details for other submissions. This is important because the resource details may need to be customised for different assignments or different students, and we don't want changes to one submission to affect other submissions that are using the same resource.
+    We can assume that if the field *has data* then we want to show it.We dont need to have explicit has_question fields to convey this.
+
+    Each assignment must have its own record in the assign_details table.
+    
+        question: 
+        notes: 
+        model_answer: 
+    
+    The following fields must be editable in the record
+        answer: the Student's answer to the question.
+
+    """
     _name = 'aps.resource.submission'
     _description = 'APEX Submission'
     _inherit = ['mail.thread', 'mail.activity.mixin']
@@ -25,7 +41,11 @@ class APSResourceSubmission(models.Model):
     )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
-    # subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects', readonly=False)
+    assign_detail_id = fields.Many2one(
+        'aps.assign.details',
+        string='Assignment Details',
+        help='Reference to the recurring assignment details if this submission was created from a recurring assignment.'
+    )
     subjects = fields.Many2many('op.subject', string='Subjects')
     student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
@@ -66,10 +86,12 @@ class APSResourceSubmission(models.Model):
     ], string='Due Status', compute='_compute_due_status', store=True)
     days_till_due = fields.Integer(compute='_compute_days_till_due', store=True)  # creates a class used to highlight records when they are nearing their due date
     actual_duration = fields.Float(string='Actual Duration (hours)', digits=(16, 1))
-    feedback = fields.Html(string='Feedback')
-    has_answer = fields.Selection(string='Has Answer', related='resource_id.has_answer', readonly=True, store=True)
-    answer = fields.Html(string='Answer')
+
+    answer = fields.Html(string='Answer', help="Student's answer to the question. This is where the student response is stored and can be edited by the student until the submission is finalised. After finalisation, this field becomes read-only and can be used by teachers to view the student's answer when providing feedback or grading.")
+
     has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
+    feedback = fields.Html(string='Feedback', help="Teacher's feedback on the student's submission. This field is used to provide comments, suggestions, or grades based on the student's answer.")
+
     reviewed_by = fields.Many2many(
         'op.faculty',
         'aps_submission_reviewed_by_rel',
@@ -88,30 +110,28 @@ class APSResourceSubmission(models.Model):
         tracking=True,
     )
     is_current_user_faculty = fields.Boolean(compute='_compute_is_current_user_faculty')
-    model_answer = fields.Html(
-        string='Model Answer',
-        related='resource_id.answer',
-        readonly=True,
-        help='The model answer from the associated resource for comparison.'
-    )
-    model_answer_is_notes = fields.Boolean(
-        string='Model Answer Is Notes',
-        compute='_compute_model_answer_is_notes',
-        store=False
-    )
-    has_question = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Question', 
-        default='no', 
-        help='A resource can use the parent\'s question if set to "Use Parent".',
-        required=True,
-        tracking=True)
+
     question = fields.Html(
         string='Question',
-        help='The question from the associated resource.'
+        related='assign_detail_id.question',
+        readonly=True,
+        help='Question for this submission.'
     )
+
+    notes = fields.Html(
+        string='Notes',
+        related='assign_detail_id.notes',
+        readonly=True,
+        help='Notes for this submission.'
+    )
+
+    model_answer = fields.Html(
+        string='Model Answer',
+        related='assign_detail_id.model_answer',
+        readonly=True,
+        help='Model answer for this submission.'
+    )
+
     supporting_resources_buttons = fields.Json(
         string='Links',
         related='resource_id.supporting_resources_buttons',
@@ -144,10 +164,18 @@ class APSResourceSubmission(models.Model):
         "'Skipped' is the default for submissions that are not eligible for notifications and will be ignored by the notification process.")   
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
-        default=False,
+        related='assign_detail_id.allow_subject_editing',
+        readonly=True,
+        store=True,
         help='If enabled, users can edit the subjects associated with this resource. This is useful for resources that are shared across multiple subjects, where the subject association may need to be customized at the submission level.',
     )
-    points_scale = fields.Integer(string='Points Scale', default=0)  # I need to save this here because the scale changes depending on how the resource is being used. End of semester exmams the point scale is not used. Non enforced work is.
+    points_scale = fields.Integer(
+        string='Points Scale',
+        related='assign_detail_id.points_scale',
+        readonly=True,
+        store=True,
+        help='The points scale from the assignment details.'
+    )
     points = fields.Integer(
         string='Points', compute='_compute_points', store=True, 
         help='The points allocated to this submission.')
@@ -364,18 +392,6 @@ class APSResourceSubmission(models.Model):
         faculty = self._get_current_faculty()
         for record in self:
             record.is_current_user_faculty = bool(faculty)
-
-    @api.depends('resource_id.has_answer', 'resource_id.primary_parent_id.has_answer')
-    def _compute_model_answer_is_notes(self):
-        for record in self:
-            resource = record.resource_id
-            record.model_answer_is_notes = bool(
-                resource
-                and (
-                    resource.has_answer == 'yes_notes'
-                    or (resource.has_answer == 'use_parent' and resource.primary_parent_id and resource.primary_parent_id.has_answer == 'yes_notes')
-                )
-            )
 
     @api.depends('score', 'out_of_marks')  # Needed to trigger recompute when related model fields change fields change
     def _compute_result_percent(self):

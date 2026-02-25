@@ -7,6 +7,14 @@ _logger = getLogger(__name__)
 
 
 class APSAssignDetails(APSAssignMixin, models.Model):
+    """
+    Model to store details of recurring and normal assignments. 
+    I want to use this table to provde the Notes, Answer, and Question fields for both recurring and normal assignments. For normal assignments, there will be a single record in this table with recurring_days set to 0 and the assignment details will be stored here. For recurring assignments, there will be a record in this table that defines the schedule and details for the recurring assignment, and each time the assignment is generated, it will reference this record for its details.
+    But this only works for the top-level resource, not for linked resources.
+    So I need to save the HTML fields with each submission. Seems wasteful but it is also
+    simple. i will keep the link between assign_details and submission for possible future use.
+
+    """
     _name = 'aps.assign.details'
     _description = 'APEX Recurring Assignment Details'
     _order = 'next_assignment_date, id desc'
@@ -37,21 +45,18 @@ class APSAssignDetails(APSAssignMixin, models.Model):
     last_assigned_date = fields.Date(string='Last Assigned Date')
 
     allow_subject_editing = fields.Boolean(string='Allow Subject Editing', default=False)
-    has_question = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('use_parent', 'Use Parent'),
-    ], string='Has Question', default='no', required=True)
+    
+    use_question = fields.Boolean(string='Use Question', default=False, help='Enable to include a question for this assignment.')   
     question = fields.Html(string='Question')
-    has_answer = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('yes_notes', 'Yes (Notes)'),
-        ('use_parent', 'Use Parent'),
-    ], string='Has Answer', default='no', required=True)
-    answer = fields.Html(string='Answer')
-    has_default_answer = fields.Boolean(string='Use Default Answer', default=False)
+    
+    use_model_answer = fields.Boolean(string='Use Model Answer')
+    model_answer = fields.Html(string='Answer')
+
+    use_default_answer = fields.Boolean(string='Use Default Answer', default=False)
     default_answer = fields.Html(string='Default Answer')
+
+    use_notes = fields.Boolean(string='Use Notes', default=False, help='Enable to include notes for this assignment.')
+    notes = fields.Html(string='Notes', help='Notes for the assignment.')
 
     subjects = fields.Many2many('op.subject', string='Subjects')
     points_scale = fields.Integer(string='Points Scale', default=1)
@@ -67,6 +72,12 @@ class APSAssignDetails(APSAssignMixin, models.Model):
         'assign_detail_id',
         string='Resources',
         order='sequence',
+    )
+    submission_ids = fields.One2many(
+        'aps.resource.submission',
+        'assign_detail_id',
+        string='Submissions',
+        help='Submissions created from this recurring assignment.'
     )
 
     def _assign_students_field_name(self):
@@ -137,6 +148,8 @@ class APSAssignDetails(APSAssignMixin, models.Model):
             'answer': self.answer,
             'has_default_answer': self.has_default_answer,
             'default_answer': self.default_answer,
+            'has_notes': self.has_notes,
+            'notes': self.notes,
             'subjects': [(6, 0, self.subjects.ids)],
             'points_scale': self.points_scale,
             'notify_student': self.notify_student,

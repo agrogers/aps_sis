@@ -110,7 +110,7 @@ class APSResource(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     sequence = fields.Integer(string='Sequence', default=10)
-    display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True)
+    display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True, recursive=True)
     name = fields.Char(string='Name', tracking=True)
     custom_name_ids = fields.One2many('aps.resource.custom.name', 'resource_id', string='Custom Names')
     # Computed JSON data of custom names for various parents for this resource
@@ -138,6 +138,7 @@ class APSResource(models.Model):
         help='Resources can include model answers to a question. A resource can use the parent\'s answer if set to "Use Parent".',
         required=True,
         tracking=True)
+    
     answer = fields.Html(string='Answer', help='Model answer for the resource question.')    
     # answer_is_notes = fields.Boolean(string='Answer Is Notes', compute='_compute_answer_is_notes', store=False)
 

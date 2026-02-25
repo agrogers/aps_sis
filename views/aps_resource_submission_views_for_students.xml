@@ -38,8 +38,6 @@
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show"/>
                 <field name="points"  optional="hide" sum="Total Points"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="has_question" string="Question" readonly="1" optional="hide"/>
-                <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="show"/>
                 <field name="submission_label" optional="hide"/>
                 <field name="submission_order" optional="hide"/>
@@ -63,7 +61,6 @@
         <field name="priority">5</field>
         <field name="arch" type="xml">
             <form create="false" delete="false">
-                <field name="default_notebook_page_per_user" invisible="1" readonly="0"/> <!-- Hidden field to store per-user default tab preferences -->
                <header>
                     <button name="action_open_submission" string="Submission Details" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
@@ -98,7 +95,6 @@
                     </group>
                     <group col="12" class="mb-4">
                         <field name="student_id" readonly="1"/>
-                        <field name="default_notebook_page_per_user" groups="aps_sis.group_aps_teacher" widget="jsonb"/>
                     </group>
                     
 
@@ -141,14 +137,14 @@
                         <page string="🗪 Teacher Feedback" invisible="state=='assigned' or not has_feedback"  name="feedback_page" >
                             <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned' or model_answer_is_notes" name="model_answer_page">
+                        <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned'" name="model_answer_page">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
-                        <page string="🗹 Notes" invisible="not model_answer or state=='assigned' or not model_answer_is_notes" name="model_answer_notes_page">
-                            <field name="model_answer" nolabel="1" placeholder="Notes for this submission."/>
-                        </page>
-                        <page string="ℚuestion" name="question_page" class="default-page" invisible="has_question=='no'">
+                        <page string="ℚuestion" name="question_page" class="default-page" invisible="not question">
                             <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
+                        </page>
+                        <page string="📝 Assignment Notes" name="assignment_notes_page" invisible="not notes">
+                            <field name="notes" nolabel="1" readonly="1" placeholder="Assignment notes."/>
                         </page>
                         <page string="ⓘ" name="information_page" >
                             <group>

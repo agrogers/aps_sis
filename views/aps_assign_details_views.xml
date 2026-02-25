@@ -18,17 +18,18 @@
                 <field name="date_due_offset_days" optional="hide"/>
                 <field name="time_assigned" optional="hide"/>
                 <field name="allow_subject_editing" optional="hide"/>
-                <field name="has_question" optional="hide"/>
+                <field name="use_question" optional="hide"/>
                 <field name="question" optional="hide"/>
-                <field name="has_answer" optional="hide"/>
-                <field name="answer" optional="hide"/>
-                <field name="has_default_answer" optional="hide"/>
+                <field name="use_model_answer" optional="hide"/>
+                <field name="model_answer" optional="hide"/>
+                <field name="use_notes" optional="hide"/>
+                <field name="notes" optional="hide"/>
+                <field name="use_default_answer" optional="hide"/>
                 <field name="default_answer" optional="hide"/>
                 <field name="subjects" widget="many2many_tags" optional="hide"/>
                 <field name="points_scale" optional="hide"/>
                 <field name="notify_student" optional="hide"/>
                 <field name="assign_student_ids" optional="hide"/>
-                <field name="assign_resource_ids" optional="hide"/>
             </list>
         </field>
     </record>
