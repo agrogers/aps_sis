@@ -480,10 +480,11 @@ class APSResourceSubmission(models.Model):
     def action_resubmit(self):
         """Resubmit the submission by creating a copy with cleared fields."""
         faculty = self._get_current_faculty()
+        faculty_id = faculty.id if faculty else False
         
         for record in self:
             new_submission = record.copy({
-                'assigned_by': faculty.id if faculty else False,
+                'assigned_by': faculty_id,
                 'date_due': False,
                 'answer': None,
                 'feedback': None,
@@ -699,7 +700,8 @@ class APSResourceSubmission(models.Model):
         default['date_completed'] = False
         default['reviewed_by'] = []
         default['review_requested_by'] = []
-        default['assigned_by'] = self._get_current_faculty().id
+        faculty = self._get_current_faculty()
+        default['assigned_by'] = faculty.id if faculty else False
         default['score'] = sentinel_zero
         # date_due will be recomputed based on the new date_assigned
         return super().copy(default)
