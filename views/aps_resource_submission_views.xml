@@ -82,6 +82,7 @@
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="points" optional="hide"/>
                 <field name="points_scale" optional="hide"/>
+                <field name="state" optional="hide"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>

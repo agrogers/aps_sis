@@ -25,7 +25,6 @@ class APSResourceSubmission(models.Model):
     )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
-    # subjects = fields.Many2many('op.subject', string='Subjects', related='resource_id.subjects', readonly=False)
     subjects = fields.Many2many('op.subject', string='Subjects')
     student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
@@ -389,10 +388,6 @@ class APSResourceSubmission(models.Model):
     @api.depends('date_assigned', 'submission_name')
     def _compute_display_name(self):
         for record in self:
-            # student_name = record.task_id.student_id.name if record.task_id.student_id else 'Unknown Student'
-            # resource_name = record.resource_id.display_name if record.resource_id else 'Unknown Resource'
-
-            # label = f">{record.submission_label} " if record.submission_label else ""
             record.display_name = f"{record.submission_name} ({record.date_assigned})"
 
 # endregion - Computed Fields
@@ -1002,4 +997,149 @@ class APSResourceSubmission(models.Model):
             'period_start': period_start_date,  # For zoom reference
             'period_end': datetime.now().date().isoformat()  # Today as period end
         }
+
+    @api.model
+    def get_student_comparison_data(self):
+        """
+        Get progress comparison data for all students.
+        Returns the most recent progress score for each student in each subject.
+        Returns:
+        - student_data: List of students with their progress by subject
+        - subject_list: List of all subjects
+        - subject_colors: Color mapping for subjects
+        - pace_average: Average PACE percentage across resources
+        """
+        from datetime import datetime
+        
+        # Find all resources with ' Progress' in the name
+        progress_resources = self.env['aps.resources'].search([
+            ('name', 'ilike', ' Progress')
+        ])
+        
+        if not progress_resources:
+            return {
+                'student_data': [],
+                'subject_list': [],
+                'subject_colors': {},
+                'pace_average': 0
+            }
+        
+        # Build domain for submissions
+        domain = [
+            ('resource_id', 'in', progress_resources.ids),
+            ('submission_active', '=', True),
+            ('state', 'in', ['submitted', 'complete'])
+        ]
+        
+        # Fetch submissions
+        submissions = self.search(domain, order='date_submitted asc')
+        
+        if not submissions:
+            return {
+                'student_data': [],
+                'subject_list': [],
+                'subject_colors': {},
+                'pace_average': 0
+            }
+        
+        # Get all subjects from submissions
+        all_subjects = self.env['op.subject']
+        for sub in submissions:
+            all_subjects |= sub.subjects
+        
+        # Get subject colors
+        subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
+        
+        # Build student progress data: {student_id: {subject_id: {'result': x, 'date': y}}}
+        student_progress = {}
+        pace_values = []
+        
+        for submission in submissions:
+            student_id = submission.student_id.id
+            if not student_id:
+                continue
+                
+            if student_id not in student_progress:
+                student_progress[student_id] = {
+                    'name': submission.student_id.name,
+                    'subjects': {}
+                }
+            
+            for subject in submission.subjects:
+                date_to_use = submission.date_submitted or submission.date_completed
+                if not date_to_use:
+                    continue
+                
+                # Track latest result for each subject (most recent submission)
+                if subject.id not in student_progress[student_id]['subjects']:
+                    student_progress[student_id]['subjects'][subject.id] = {
+                        'result_percent': submission.result_percent,
+                        'date': date_to_use
+                    }
+                else:
+                    # Update if this is a more recent submission
+                    if date_to_use > student_progress[student_id]['subjects'][subject.id]['date']:
+                        student_progress[student_id]['subjects'][subject.id] = {
+                            'result_percent': submission.result_percent,
+                            'date': date_to_use
+                        }
+            
+            # Calculate PACE for averaging
+            if submission.resource_id:
+                pace_dates = submission.resource_id.get_pace_dates()
+                if pace_dates['start_date'] and pace_dates['end_date']:
+                    today = datetime.now().date()
+                    start_date = pace_dates['start_date']
+                    end_date = pace_dates['end_date']
+                    
+                    if start_date <= today <= end_date:
+                        total_days = (end_date - start_date).days
+                        if total_days > 0:
+                            days_from_start = (today - start_date).days
+                            pace_percent = (days_from_start / total_days) * 100
+                            pace_values.append(min(100, max(0, pace_percent)))
+        
+        # Format for frontend
+        student_list = []
+        for student_id, student_info in student_progress.items():
+            student_data = {
+                'student_id': student_id,
+                'student_name': student_info['name'],
+                'progress_by_subject': {}
+            }
+            for subject_id, progress_info in student_info['subjects'].items():
+                student_data['progress_by_subject'][subject_id] = progress_info['result_percent']
+            student_list.append(student_data)
+        
+        # Calculate average PACE
+        pace_average = sum(pace_values) / len(pace_values) if pace_values else 0
+        
+        # Build subject list
+        subject_list = []
+        for subject in all_subjects:
+            subject_list.append({
+                'id': subject.id,
+                'name': subject.name,
+                'color': subject_colors.get(subject.id, '#6c757d')
+            })
+        
+        return {
+            'student_data': student_list,
+            'subject_list': subject_list,
+            'subject_colors': subject_colors,
+            'pace_average': pace_average
+        }
+
+    @api.model
+    def get_current_user_is_teacher(self):
+        """
+        Check if the current user is a teacher.
+        Returns True if the user is in the group_aps_teacher group.
+        """
+        teacher_group = self.env.ref('aps_sis.group_aps_teacher', raise_if_not_found=False)
+        if not teacher_group:
+            return False
+        
+        current_user = self.env.user
+        return teacher_group in current_user.groups_id
 # endregion - Get Data

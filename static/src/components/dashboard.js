@@ -53,11 +53,13 @@ export class ApexDashboard extends Component {
             progressLineData: [],
             progressBarData: [],
             loadingProgress: true,
-            selectedSubjectId: null,  // Track which subject is selected/focused (null = show all)
             periodStart: null,  // For zoom reference
             periodEnd: null,
             paceData: {},  // Store PACE data for all resources
             paceForToday: 0,  // Current PACE percentage for today
+            // Student comparison
+            studentComparisonData: null,
+            loadingStudentComparison: true,
         });
 
         
@@ -93,6 +95,7 @@ export class ApexDashboard extends Component {
         onPatched(() => {
             // Re-render progress charts when data changes
             this.progressCharts.renderProgressCharts();
+            this.progressCharts.renderStudentComparisonChart();
         });
     }
 
@@ -540,8 +543,19 @@ export class ApexDashboard extends Component {
         }
 
         // Check if user is faculty
-        // const uid = this.user.userId;
-        // this.state.isFaculty = await this.user.hasGroup("aps_sis.group_aps_teacher");
+        try {
+            const isTeacher = await this.orm.call(
+                "aps.resource.submission",
+                "get_current_user_is_teacher",
+                []
+            );
+            console.log("Teacher check result:", isTeacher);
+            this.state.isFaculty = isTeacher;
+            console.log("isFaculty state set to:", this.state.isFaculty);
+        } catch (error) {
+            console.error("Could not check user group, defaulting to student view", error);
+            this.state.isFaculty = false;
+        }
         console.timeEnd('fetchStudents');
     }
 
@@ -559,7 +573,8 @@ export class ApexDashboard extends Component {
         await Promise.all([
             this.fetchChartData(),
             this.fetchDoughnutData(),
-            this.progressCharts.fetchProgressData()
+            this.progressCharts.fetchProgressData(),
+            this.progressCharts.fetchStudentComparisonData()
         ]);
 
         // Now that KPIs are loaded → the rank card should exist

@@ -11,6 +11,67 @@ export class ProgressCharts {
         this.orm = component.orm;
         this.progressLineChartInstance = null;
         this.progressBarChartInstance = null;
+        this.studentComparisonChartInstance = null;
+    }
+
+    /**
+     * Clean subject name by removing (IGCSE) suffix
+     */
+    cleanSubjectName(subjectName) {
+        if (!subjectName) return subjectName;
+        return subjectName.replace(/\s*\(IGCSE\)\s*$/i, '').trim();
+    }
+
+    /**
+     * Return a consistent Chart.js point style for a subject name.
+     * Uses keyword matching first, then deterministic fallback for unknown subjects.
+     */
+    getSubjectPointStyle(subjectName) {
+        const name = (this.cleanSubjectName(subjectName) || '').toLowerCase();
+
+        const keywordStyles = [
+            { keywords: ['math', 'mathematics', 'algebra', 'geometry', 'calculus'], style: 'triangle' },
+            { keywords: ['english', 'language', 'literature', 'ela'], style: 'rectRounded' },
+            { keywords: ['biology', 'bio'], style: 'circle' },
+            { keywords: ['chemistry', 'chem'], style: 'rect' },
+            { keywords: ['physics', 'phys'], style: 'rectRot' },
+            { keywords: ['science', 'sci'], style: 'star' },
+            { keywords: ['history'], style: 'cross' },
+            { keywords: ['geography', 'geo'], style: 'crossRot' },
+            { keywords: ['business', 'economics', 'commerce', 'accounting'], style: 'dash' },
+            { keywords: ['computer', 'ict', 'coding', 'programming', 'cs'], style: 'line' },
+            { keywords: ['art', 'design', 'drama'], style: 'circle' },
+            { keywords: ['music'], style: 'star' },
+            { keywords: ['physical education', 'pe', 'sport'], style: 'triangle' },
+        ];
+
+        for (const entry of keywordStyles) {
+            if (entry.keywords.some(keyword => name.includes(keyword))) {
+                return entry.style;
+            }
+        }
+
+        const fallbackStyles = ['circle', 'rect', 'triangle', 'rectRot', 'star', 'cross', 'crossRot', 'line', 'dash', 'rectRounded'];
+        const hash = Array.from(name).reduce((total, char) => total + char.charCodeAt(0), 0);
+        return fallbackStyles[hash % fallbackStyles.length];
+    }
+
+    /**
+     * Shared subject-series formatting used by all line-based subject charts.
+     * Source of truth is the Subject Progress Over Time chart style.
+     */
+    getSubjectDatasetStyle(subjectName, color) {
+        return {
+            borderColor: color + '80',  // Add 50% transparency (80 in hex)
+            backgroundColor: color + '40', // Add transparency
+            tension: 0.4,
+            fill: false,
+            pointStyle: this.getSubjectPointStyle(subjectName),
+            pointRadius: 7,
+            pointHoverRadius: 10,
+            borderWidth: 2,  // Thin lines
+            borderDash: [2, 1],  // Dotted pattern
+        };
     }
 
     /**
@@ -60,7 +121,7 @@ export class ProgressCharts {
                 if (!dataPoints || dataPoints.length === 0) continue;
 
                 const subjectIdNum = parseInt(subjectId);
-                const subjectName = dataPoints[0].subject_name;
+                const subjectName = this.cleanSubjectName(dataPoints[0].subject_name);
                 const color = subjectColors[subjectIdNum];
 
                 // Sort data points by date
@@ -72,15 +133,20 @@ export class ProgressCharts {
                         x: p.date,
                         y: p.result_percent
                     })),
-                    borderColor: color,
-                    backgroundColor: color + '40', // Add transparency
-                    tension: 0.4,
-                    fill: false,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    subjectId: subjectIdNum
+                    ...this.getSubjectDatasetStyle(subjectName, color),
+                    subjectId: subjectIdNum,
                 });
             }
+
+            // Sort datasets alphabetically by subject name (exclude PACE lines)
+            datasets.sort((a, b) => {
+                // Keep PACE lines at the end
+                if (a.isPace && !b.isPace) return 1;
+                if (!a.isPace && b.isPace) return -1;
+                if (a.isPace && b.isPace) return 0;
+                // Sort subjects alphabetically
+                return a.label.localeCompare(b.label);
+            });
 
             // Add PACE lines (one per resource, not per subject)
             for (const [resourceId, pace] of Object.entries(paceData)) {
@@ -102,12 +168,14 @@ export class ProgressCharts {
 
             // Process bar chart data
             const barData = progressData.bar_data || [];
-            this.state.progressBarData = barData.map(item => ({
-                subject_name: item.subject_name,
-                progress: item.progress,
-                color: item.color,
-                subject_id: item.subject_id
-            }));
+            this.state.progressBarData = barData
+                .map(item => ({
+                    subject_name: this.cleanSubjectName(item.subject_name),
+                    progress: item.progress,
+                    color: item.color,
+                    subject_id: item.subject_id
+                }))
+                .sort((a, b) => a.subject_name.localeCompare(b.subject_name)); // Sort alphabetically
 
             console.timeEnd('Process Progress Data');
         } catch (error) {
@@ -219,7 +287,7 @@ export class ProgressCharts {
                 data: paceData,
                 borderColor: '#808080',
                 backgroundColor: 'transparent',
-                borderDash: [5, 5],
+                borderDash: [5, 3],
                 tension: 0,
                 fill: false,
                 pointRadius: 2,
@@ -235,25 +303,8 @@ export class ProgressCharts {
     }
 
     /**
-     * Toggle visibility of a subject in the line chart.
-     * Click a subject to show only that subject. Click it again to show all subjects.
-     */
-    toggleSubjectVisibility(subjectId) {
-        if (this.state.selectedSubjectId === subjectId) {
-            // Clicking the same subject again: show all subjects
-            this.state.selectedSubjectId = null;
-        } else {
-            // Clicking a different subject: focus on it
-            this.state.selectedSubjectId = subjectId;
-        }
-        
-        // Trigger re-render
-        this.renderProgressCharts();
-    }
-
-    /**
      * Render both progress charts (line and bar).
-     * Called when data changes or when subject visibility is toggled.
+     * Called when data changes.
      */
     renderProgressCharts() {
         this.renderProgressLineChart();
@@ -271,39 +322,33 @@ export class ProgressCharts {
             return;
         }
 
-        // Destroy existing chart
+        // Destroy existing chart only if it exists
         if (this.progressLineChartInstance) {
             this.progressLineChartInstance.destroy();
+            this.progressLineChartInstance = null;
         }
 
         // Calculate period boundaries as timestamps
         const periodStartTs = this.state.periodStart ? new Date(this.state.periodStart).getTime() : null;
         const periodEndTs = this.state.periodEnd ? new Date(this.state.periodEnd).getTime() : null;
 
-        // Filter datasets based on selected subject and convert dates to timestamps
-        const visibleDatasets = this.state.progressLineData.map(dataset => {
+        // Convert dates to timestamps for all datasets
+        const datasetsWithTimestamps = this.state.progressLineData.map(dataset => {
             const dataWithTimestamps = dataset.data.map(point => ({
                 x: new Date(point.x).getTime(),  // Convert to timestamp
                 y: point.y
             }));
             
-            // If a subject is selected, hide all others (except PACE lines). Otherwise show all.
-            const shouldHide = this.state.selectedSubjectId !== null && 
-                               dataset.subjectId && 
-                               dataset.subjectId !== this.state.selectedSubjectId;
-            
             return {
                 ...dataset,
-                data: dataWithTimestamps,
-                hidden: shouldHide || dataset.hidden
+                data: dataWithTimestamps
             };
         });
-
         // Create chart with linear scale (timestamps)
         this.progressLineChartInstance = new Chart(canvas, {
             type: 'line',
             data: {
-                datasets: visibleDatasets
+                datasets: datasetsWithTimestamps
             },
             options: {
                 responsive: true,
@@ -315,21 +360,16 @@ export class ProgressCharts {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        onClick: (evt, legendItem, legend) => {
-                            // Handle legend click to toggle subject visibility
-                            const index = legendItem.datasetIndex;
-                            const dataset = this.state.progressLineData[index];
-                            if (dataset && dataset.subjectId && !dataset.isPace) {
-                                this.toggleSubjectVisibility(dataset.subjectId);
-                            }
-                            // Return false to prevent default Chart.js behavior (which causes errors with PACE datasets)
-                            return false;
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
                         }
                     },
                     title: {
                         display: false
                     },
                     tooltip: {
+                        enabled: true,
                         filter: (tooltipItem) => {
                             // Exclude PACE datasets from tooltips to prevent errors
                             return !tooltipItem.dataset.isPace;
@@ -395,6 +435,7 @@ export class ProgressCharts {
                 }
             }
         });
+
     }
 
     /**
@@ -475,8 +516,7 @@ export class ProgressCharts {
                     },
                     y: {
                         title: {
-                            display: true,
-                            text: 'Subject'
+                            display: false
                         }
                     }
                 }
@@ -521,6 +561,211 @@ export class ProgressCharts {
     }
 
     /**
+     * Fetch student comparison data from backend.
+     */
+    async fetchStudentComparisonData() {
+        console.time('Fetch Student Comparison Data');
+        this.state.loadingStudentComparison = true;
+
+        try {
+            // Call the backend method to get comparison data
+            const comparisonData = await this.orm.call(
+                "aps.resource.submission",
+                "get_student_comparison_data",
+                []
+            );
+
+            console.time('Process Student Comparison Data');
+
+            const studentData = comparisonData.student_data || [];
+            const subjectList = comparisonData.subject_list || [];
+            const paceAverage = comparisonData.pace_average || 0;
+
+            // Sort students alphabetically
+            studentData.sort((a, b) => a.student_name.localeCompare(b.student_name));
+
+            // Extract student labels for x-axis
+            const studentLabels = studentData.map(student => student.student_name);
+
+            // Create datasets - one per subject
+            const datasets = [];
+
+            // Sort subjects alphabetically and clean names
+            const sortedSubjects = subjectList
+                .map(subject => ({
+                    ...subject,
+                    name: this.cleanSubjectName(subject.name)
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            // Calculate average progress for each student across all subjects
+            const averageData = studentData.map(student => {
+                const subjectProgresses = Object.values(student.progress_by_subject).filter(val => val !== null && val !== undefined);
+                if (subjectProgresses.length === 0) return null;
+                const sum = subjectProgresses.reduce((acc, val) => acc + val, 0);
+                return sum / subjectProgresses.length;
+            });
+
+            // Add Average series first (so it renders behind other series)
+            datasets.push({
+                label: 'Average',
+                data: averageData,
+                borderColor: '#404040',  // Dark gray
+                backgroundColor: 'transparent',
+                pointRadius: 0,  // No markers
+                pointHoverRadius: 0,
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false,
+                order: 1  // Lower order renders first (behind)
+            });
+
+            sortedSubjects.forEach((subject, index) => {
+                const dataPoints = [];
+                
+                // For each student, get their progress in this subject
+                studentData.forEach(student => {
+                    const progress = student.progress_by_subject[subject.id];
+                    if (progress !== undefined) {
+                        dataPoints.push(progress);
+                    } else {
+                        // Add null for students without data in this subject
+                        dataPoints.push(null);
+                    }
+                });
+
+                datasets.push({
+                    label: subject.name,
+                    data: dataPoints,
+                    ...this.getSubjectDatasetStyle(subject.name, subject.color),
+                    subjectId: subject.id
+                });
+            });
+
+            // Add PACE line as a horizontal line
+            if (paceAverage > 0) {
+                const paceData = studentData.map(() => paceAverage);
+
+                datasets.push({
+                    label: 'PACE (Expected)',
+                    data: paceData,
+                    borderColor: '#808080',
+                    backgroundColor: 'rgba(128, 128, 128, 0.15)',  // Light gray shade
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    pointHitRadius: 0,  // Disable hit detection for PACE points
+                    fill: 'origin',  // Fill from bottom (y=0) to the line
+                    spanGaps: true,
+                    isPace: true
+                });
+            }
+
+            this.state.studentComparisonData = {
+                labels: studentLabels,
+                datasets: datasets,
+                paceAverage: paceAverage
+            };
+
+            console.timeEnd('Process Student Comparison Data');
+        } catch (error) {
+            console.error("Error fetching student comparison data:", error);
+            this.state.studentComparisonData = { labels: [], datasets: [], paceAverage: 0 };
+        }
+
+        this.state.loadingStudentComparison = false;
+        console.timeEnd('Fetch Student Comparison Data');
+    }
+
+    /**
+     * Render the student comparison chart.
+     */
+    renderStudentComparisonChart() {
+        const canvas = this.component.__owl__.refs?.studentComparisonChart;
+        
+        if (!canvas || !this.state.studentComparisonData || !this.state.studentComparisonData.datasets || this.state.studentComparisonData.datasets.length === 0) {
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.studentComparisonChartInstance) {
+            this.studentComparisonChartInstance.destroy();
+        }
+
+        // Create chart
+        this.studentComparisonChartInstance = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: this.state.studentComparisonData.labels,
+                datasets: this.state.studentComparisonData.datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    },
+                    title: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        filter: (tooltipItem) => {
+                            // Exclude PACE line from tooltips
+                            return !tooltipItem.dataset.isPace;
+                        },
+                        callbacks: {
+                            label: (context) => {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                if (value === null) return null;
+                                return `${label}: ${Math.round(value)}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'category',
+                        offset: true,  // Add padding to center labels like bars
+                        title: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Progress (%)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+    }
+
+    /**
      * Cleanup method to destroy chart instances.
      */
     destroy() {
@@ -531,6 +776,10 @@ export class ProgressCharts {
         if (this.progressBarChartInstance) {
             this.progressBarChartInstance.destroy();
             this.progressBarChartInstance = null;
+        }
+        if (this.studentComparisonChartInstance) {
+            this.studentComparisonChartInstance.destroy();
+            this.studentComparisonChartInstance = null;
         }
     }
 }
