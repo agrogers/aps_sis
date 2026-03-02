@@ -69,33 +69,27 @@ export class ApexDashboard extends Component {
         this.progressCharts = new ProgressCharts(this);
 
         onWillStart(async () => {
-            console.time('Dashboard Setup');
-
             // Fetch view IDs first (needed for actions)
-            console.time('Fetch View IDs');
             await this.fetchViewIds();
-            console.timeEnd('Fetch View IDs');
 
             // Fetch students (needed for dropdown)
-            console.time('Fetch Students');
             await this.fetchStudents();
-            console.timeEnd('Fetch Students');
-
-            console.timeEnd('Dashboard Setup');
         });
 
         onMounted(async () => {
             // Load dashboard data after component is rendered
             this.initializeConfettiCanvas();
-            console.time('Load Dashboard Data');
             await this.loadDashboardData();
-            console.timeEnd('Load Dashboard Data');
         });
         
         onPatched(() => {
             // Re-render progress charts when data changes
             this.progressCharts.renderProgressCharts();
-            this.progressCharts.renderStudentComparisonChart();
+            // Re-render student comparison chart only if data is loaded
+            // (data itself doesn't depend on period, so fetch won't repeat on period change)
+            if (this.state.studentComparisonData && !this.state.loadingStudentComparison) {
+                this.progressCharts.renderStudentComparisonChart();
+            }
         });
     }
 
@@ -324,8 +318,6 @@ export class ApexDashboard extends Component {
             return;
         }
 
-        console.time('Calculate Student Rank');
-
         const periodStart = this.getPeriodStartDateStr();
 
         const domain = [
@@ -350,7 +342,6 @@ export class ApexDashboard extends Component {
                 this.state.student_rank.total_students = 0;
                 this.state.student_rank.points_from_next = 0;
                 this.state.rank_description = "";
-                console.timeEnd('Calculate Student Rank');
                 return;
             }
 
@@ -477,10 +468,7 @@ export class ApexDashboard extends Component {
                 console.log(`Rank #${newRank} confetti triggered for ${duration}ms`);
             }
 
-            console.timeLog(
-                'Calculate Student Rank',
-                `Rank: ${newRank} of ${totalStudentsWithPoints}, Points from next: ${pointsFromNext}`
-            );
+
         } catch (error) {
             console.error("Error calculating student rank:", error);
             this.state.student_rank.value = "Error";
@@ -488,13 +476,10 @@ export class ApexDashboard extends Component {
             this.state.student_rank.points_from_next = 0;
             this.state.rank_description = "";
         }
-
-        console.timeEnd('Calculate Student Rank');
     }
 
 
     async fetchViewIds() {
-        console.time('fetchViewIds');
         // Fetch student view IDs - use sudo to bypass access restrictions
         const [data_list] = await this.env.services.orm.searchRead(
             "ir.model.data",
@@ -513,11 +498,9 @@ export class ApexDashboard extends Component {
             { sudo: true }
         );
         this.state.form_view_id = data_form ? data_form.res_id : false;
-        console.timeEnd('fetchViewIds');
     }
 
     async fetchStudents() {
-        console.time('fetchStudents');
         // Fetch unique students from submissions, ordered by name
         const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
         const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
@@ -556,7 +539,6 @@ export class ApexDashboard extends Component {
             console.error("Could not check user group, defaulting to student view", error);
             this.state.isFaculty = false;
         }
-        console.timeEnd('fetchStudents');
     }
 
     async loadDashboardData() {
@@ -582,7 +564,6 @@ export class ApexDashboard extends Component {
     }
 
     async fetchKPIs() {
-        console.time('Fetch KPIs');
         this.state.loadingKPIs = true;
 
         const todayStr = this.getTodayStr();
@@ -596,56 +577,48 @@ export class ApexDashboard extends Component {
                 .then(submissions => {
                     const totalPoints = submissions.reduce((sum, submission) => sum + (submission.points || 0), 0);
                     this.state.student_points.value = totalPoints;
-                    console.timeLog('Fetch KPIs', 'Student points loaded');
                 }),
                 
             // Overdue items
             this.orm.searchCount("aps.resource.submission", this.getOverdueDomain())
                 .then(count => {
                     this.state.overdue.value = count;
-                    console.timeLog('Fetch KPIs', 'Overdue items loaded');
                 }),
 
             // All overdue items
             this.orm.searchCount("aps.resource.submission", this.getOverdueDomain(false,true))
                 .then(count => {
                     this.state.alloverdue.value = count;
-                    console.timeLog('Fetch KPIs', 'All overdue items loaded');
                 }),
 
             // Active submissions
             this.orm.searchCount("aps.resource.submission", this.getActiveSubmissionsDomain())
                 .then(count => {
                     this.state.submissions.value = count;
-                    console.timeLog('Fetch KPIs', 'Active submissions loaded');
                 }),
 
             // Next 7 days
             this.orm.searchCount("aps.resource.submission", this.getSubmission7DaysDomain())
                 .then(count => {
                     this.state.next_7_days.value = count;
-                    console.timeLog('Fetch KPIs', 'Next 7 days loaded');
                 }),
 
             // Total Submitted
             this.orm.searchCount("aps.resource.submission", this.getDataDomain({'incPeriodSubmitted': true}))
                 .then(count => {
                     this.state.total_submitted.value = count;
-                    console.timeLog('Fetch KPIs', 'Total submitted loaded');
                 }),
 
             // Submitted today
             this.orm.searchCount("aps.resource.submission", this.getSubmittedTodayDomain())
                 .then(count => {
                     this.state.submitted_today.value = count;
-                    console.timeLog('Fetch KPIs', 'Submitted today loaded');
                 }),
 
             // Submitted yesterday
             this.orm.searchCount("aps.resource.submission", this.getSubmittedYesterdayDomain())
                 .then(count => {
                     this.state.submitted_today.submitted_yesterday = count;
-                    console.timeLog('Fetch KPIs', 'Submitted yesterday loaded');
                 }),
         ];
 
@@ -656,11 +629,9 @@ export class ApexDashboard extends Component {
         await this.calculateStudentRank();
 
         this.state.loadingKPIs = false;
-        console.timeEnd('Fetch KPIs');
     }
 
     async fetchChartData() {
-        console.time('Fetch Chart Data');
         this.state.loadingCharts = true;
 
         // Fetch chart data: submissions by status per day for the entire period
@@ -678,7 +649,6 @@ export class ApexDashboard extends Component {
 
         const allSubmissions = await this.orm.searchRead("aps.resource.submission", dataDomain, ["date_assigned", "date_submitted", "date_completed"]);
 
-        console.time('Process Chart Data');
         const chartData = [];
         const dateMap = {};
         const today = new Date();
@@ -731,21 +701,17 @@ export class ApexDashboard extends Component {
         }
 
         this.state.chartDataCummulative = chartDataCummulative;
-        console.timeEnd('Process Chart Data');
 
         this.state.loadingCharts = false;
-        console.timeEnd('Fetch Chart Data');
     }
 
     async fetchDoughnutData() {
-        console.time('Fetch Doughnut Data');
         this.state.loadingDoughnuts = true;
 
         // Fetch doughnut data: tasks assigned per subject
         const doughnutDomain = this.getDoughnutDomain();
         const submissions = await this.orm.searchRead("aps.resource.submission", doughnutDomain, ["subjects","due_status"]);
 
-        console.time('Process Doughnut Data');
         const subjectIds = new Set();
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
@@ -793,10 +759,8 @@ export class ApexDashboard extends Component {
         });
         this.state.doughnutData = Object.values(subjectCounts);
         this.state.doughnutData2 = Object.values(due_statusCounts);
-        console.timeEnd('Process Doughnut Data');
 
         this.state.loadingDoughnuts = false;
-        console.timeEnd('Fetch Doughnut Data');
     }
 
     loadSettings() {

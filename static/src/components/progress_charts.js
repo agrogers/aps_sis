@@ -78,7 +78,6 @@ export class ProgressCharts {
      * Fetch progress data from the backend and process it for charts.
      */
     async fetchProgressData() {
-        console.time('Fetch Progress Data');
         this.state.loadingProgress = true;
 
         // Only fetch progress data if a student is selected
@@ -86,7 +85,6 @@ export class ProgressCharts {
             this.state.progressLineData = [];
             this.state.progressBarData = [];
             this.state.loadingProgress = false;
-            console.timeEnd('Fetch Progress Data');
             return;
         }
 
@@ -97,8 +95,6 @@ export class ProgressCharts {
                 "get_progress_data_for_dashboard",
                 [parseInt(this.state.selectedStudent, 10), this.component.getPeriodStartDateStr()]
             );
-
-            console.time('Process Progress Data');
 
             // Store period boundaries for zoom
             this.state.periodStart = progressData.period_start;
@@ -177,7 +173,7 @@ export class ProgressCharts {
                 }))
                 .sort((a, b) => a.subject_name.localeCompare(b.subject_name)); // Sort alphabetically
 
-            console.timeEnd('Process Progress Data');
+
         } catch (error) {
             console.error("Error fetching progress data:", error);
             this.state.progressLineData = [];
@@ -185,7 +181,6 @@ export class ProgressCharts {
         }
 
         this.state.loadingProgress = false;
-        console.timeEnd('Fetch Progress Data');
         
         // Render charts after data is loaded
         this.renderProgressCharts();
@@ -564,7 +559,6 @@ export class ProgressCharts {
      * Fetch student comparison data from backend.
      */
     async fetchStudentComparisonData() {
-        console.time('Fetch Student Comparison Data');
         this.state.loadingStudentComparison = true;
 
         try {
@@ -574,8 +568,6 @@ export class ProgressCharts {
                 "get_student_comparison_data",
                 []
             );
-
-            console.time('Process Student Comparison Data');
 
             const studentData = comparisonData.student_data || [];
             const subjectList = comparisonData.subject_list || [];
@@ -610,12 +602,13 @@ export class ProgressCharts {
             datasets.push({
                 label: 'Average',
                 data: averageData,
-                borderColor: '#404040',  // Dark gray
+                borderColor: '#404040d3',  // Dark gray
                 backgroundColor: 'transparent',
                 pointRadius: 0,  // No markers
                 pointHoverRadius: 0,
                 borderWidth: 2,
-                tension: 0.1,
+                borderDash: [16, 8],
+                tension: 0.3,
                 fill: false,
                 order: 1  // Lower order renders first (behind)
             });
@@ -649,7 +642,7 @@ export class ProgressCharts {
                 datasets.push({
                     label: 'PACE (Expected)',
                     data: paceData,
-                    borderColor: '#808080',
+                    borderColor: '#a1a1a1',
                     backgroundColor: 'rgba(128, 128, 128, 0.15)',  // Light gray shade
                     borderDash: [5, 5],
                     borderWidth: 2,
@@ -668,14 +661,13 @@ export class ProgressCharts {
                 paceAverage: paceAverage
             };
 
-            console.timeEnd('Process Student Comparison Data');
+
         } catch (error) {
             console.error("Error fetching student comparison data:", error);
             this.state.studentComparisonData = { labels: [], datasets: [], paceAverage: 0 };
         }
 
         this.state.loadingStudentComparison = false;
-        console.timeEnd('Fetch Student Comparison Data');
     }
 
     /**
@@ -709,7 +701,7 @@ export class ProgressCharts {
                 },
                 plugins: {
                     legend: {
-                        position: 'bottom',
+                        position: 'top',
                         labels: {
                             usePointStyle: true,
                             padding: 15
@@ -743,7 +735,29 @@ export class ProgressCharts {
                         },
                         ticks: {
                             maxRotation: 45,
-                            minRotation: 45
+                            minRotation: 45,
+                            callback: function(value, index, values) {
+                                // Wrap long student names at word boundaries (max ~15 chars per line)
+                                const label = this.getLabelForValue(value);
+                                const maxCharsPerLine = 15;
+                                if (label.length <= maxCharsPerLine) {
+                                    return label;
+                                }
+                                // Split into multiple lines at spaces
+                                const words = label.split(' ');
+                                const lines = [];
+                                let currentLine = '';
+                                words.forEach(word => {
+                                    if ((currentLine + ' ' + word).trim().length > maxCharsPerLine) {
+                                        if (currentLine) lines.push(currentLine);
+                                        currentLine = word;
+                                    } else {
+                                        currentLine = currentLine ? currentLine + ' ' + word : word;
+                                    }
+                                });
+                                if (currentLine) lines.push(currentLine);
+                                return lines;
+                            }
                         }
                     },
                     y: {
