@@ -7,6 +7,7 @@ export class ResourceLinksField extends Component {
     static template = "aps_sis.ResourceLinksField";
     static props = { ...standardFieldProps,
         size: { type: String, optional: true },
+        showName: { type: Boolean, optional: true },
      };
 
     setup() {
@@ -84,10 +85,17 @@ export const resourceLinksField = {
             type: "string",
             default: "24px",
         },
+        {
+            label: "Show Name",
+            name: "show_name",
+            type: "boolean",
+            default: false,
+        },
     ],    
     extractProps({ options }) {
         return {
             size: options.size || "24px",
+            showName: options.show_name || false,
         };
     },
 };

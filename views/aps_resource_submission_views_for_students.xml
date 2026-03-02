@@ -84,7 +84,7 @@
                     <widget name="web_ribbon" title="Early" bg_color="bg-success" invisible="due_status != 'early'"/> 
                     
                     <group col="12">
-                        <group colspan="6">
+                        <group colspan="8">
                             <div class="d-flex align-items-left gap-1">
                                 <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px" readonly="1"/>
                                 <field name="submission_name" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
@@ -93,13 +93,17 @@
                         <group colspan="4">
                             <field name="review_requested_by" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
-                        <group colspan="2">
-                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
-                        </group>
                     </group>
                     <group col="12" class="mb-4">
-                        <field name="student_id" readonly="1"/>
-                        <field name="default_notebook_page_per_user" groups="aps_sis.group_aps_teacher" widget="jsonb"/>
+                        <group colspan="3">
+                            <field name="student_id" readonly="1" nolabel="1" class="fw-bold"/>
+                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
+                        </group>
+                        <group colspan="9">
+                            <div class="d-flex justify-content-end w-100">
+                                <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '40px', 'show_name':True}"/>
+                            </div>
+                        </group>
                     </group>
                     
 
@@ -125,9 +129,6 @@
                                 </group>
                                 <group style="max-width:125px" class="col d-flex justify-content-end fs-2" invisible="state == 'assigned'">
                                     <field name="points" style="max-width:40px" string="Pts"/>
-                                </group>
-                                <group class="col d-flex justify-content-end">
-                                        <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '40px'}"/>
                                 </group>
                                 </div>
                             </group>

@@ -1,25 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="aps_sis.ResourceLinksField">
-        <div class="o_resource_links d-flex flex-wrap gap-1 align-items-center" t-on-click.stop="">
+        <div class="o_resource_links d-flex flex-wrap gap-2 align-items-start" t-on-click.stop="">
             <t t-foreach="links" t-as="link" t-key="link.id">
-                <a 
-                    href="#"
-                    class="resource-link-icon"
-                    t-att-title="link.name"
-                    t-on-click.stop.prevent="() => this.openUrl(link)"
-                    target="_blank"
-                    style="cursor: pointer; text-decoration: none;">
-                    <t t-if="link.icon_url">
-                        <img 
-                            t-att-src="link.icon_url" 
-                            alt=""
-                            t-att-style="'width: ' + this.props.size + '; height: ' + this.props.size + '; object-fit: contain;'"/>
+                <div 
+                    class="resource-link-cell d-flex flex-column align-items-center"
+                    t-att-style="'max-width: calc(' + this.props.size + ' * 2.5); text-align: center;'">
+                    <a 
+                        href="#"
+                        class="resource-link-icon"
+                        t-att-title="link.name"
+                        t-on-click.stop.prevent="() => this.openUrl(link)"
+                        target="_blank"
+                        style="cursor: pointer; text-decoration: none;">
+                        <t t-if="link.icon_url">
+                            <img 
+                                t-att-src="link.icon_url" 
+                                alt=""
+                                t-att-style="'width: ' + this.props.size + '; height: ' + this.props.size + '; object-fit: contain;'"/>
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-external-link fa-lg text-primary"/>
+                        </t>
+                    </a>
+                    <t t-if="this.props.showName">
+                        <span 
+                            class="resource-link-name w-100 text-center"
+                            t-att-style="'font-size: calc(' + this.props.size + ' * 0.25); line-height: 1.2; margin-top: 2px;'"
+                            t-att-title="link.name">
+                            <t t-esc="link.name"/>
+                        </span>
                     </t>
-                    <t t-else="">
-                        <i class="fa fa-external-link fa-lg text-primary"/>
-                    </t>
-                </a>
+                </div>
             </t>
             <t t-if="!links.length">
                 <span class="text-muted fst-italic small"></span>

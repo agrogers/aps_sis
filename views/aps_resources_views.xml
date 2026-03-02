@@ -144,6 +144,7 @@
                                     <label for="primary_parent_id" string="Display Parent:" style="font-size: 0.8em !important;"/>
                                     <field name="primary_parent_id" options="{'no_create': True, 'no_open': True}" style="font-size: 0.9em;" nolabel="1"/>
                                 </div>
+                                <field name="supporting_parent_ids" widget="clickable_many2many_tags" options="{'no_create': True}"/>
                             </group>
                             <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
                             <group>
@@ -171,7 +172,7 @@
                                     <field name="has_lesson_plan" widget="boolean_toggle"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
-                                    <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px'}" />
+                                    <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px', 'show_name':True}" />
                                     <field name="child_count"/>
                             </group>
                             </group>

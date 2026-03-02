@@ -195,7 +195,10 @@ class APSResource(models.Model):
     subjects = fields.Many2many('op.subject', string='Subjects')
     tag_ids = fields.Many2many('aps.resource.tags', string='Tags')
     task_ids = fields.One2many('aps.resource.task', 'resource_id', string='Tasks')
-    parent_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'child_id', 'parent_id', string='Parent Resources', domain="[('id', '!=', id)]")
+    parent_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'child_id', 'parent_id', 
+                                  string='Parent Resources', domain="[('id', '!=', id)]")
+    supporting_parent_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'child_id', 'parent_id', 
+                                  string='Supporting Parent Resources', domain="[('id', '!=', id)]")
     
     # Dashboard computed fields
     total_submissions = fields.Integer(string='Total Submissions', compute='_compute_dashboard_stats', store=False)
