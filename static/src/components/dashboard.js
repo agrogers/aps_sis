@@ -1,10 +1,12 @@
-import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted, onPatched } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { KpiCard } from "./kpi_card/kpi_card";
 import { KpiGauge } from "./kpi_gauge/kpi_gauge";
 import { ChartRenderer } from "./chart_renderer/chart_renderer";
 import { Domain } from "@web/core/domain";
+import { ProgressCharts } from "./progress_charts";
+
 
 export class ApexDashboard extends Component {
     static props = {
@@ -47,10 +49,22 @@ export class ApexDashboard extends Component {
             loadingCharts: true,
             loadingDoughnuts: true,
             confettiReady: false,  // we'll use this to know when canvas is set up
+            // Progress tracking
+            progressLineData: [],
+            progressBarData: [],
+            loadingProgress: true,
+            selectedSubjectId: null,  // Track which subject is selected/focused (null = show all)
+            periodStart: null,  // For zoom reference
+            periodEnd: null,
+            paceData: {},  // Store PACE data for all resources
+            paceForToday: 0,  // Current PACE percentage for today
         });
 
         
         this.confetti = null;  // will hold the confetti.create() function
+
+        // Initialize progress charts module
+        this.progressCharts = new ProgressCharts(this);
 
         onWillStart(async () => {
             console.time('Dashboard Setup');
@@ -74,6 +88,11 @@ export class ApexDashboard extends Component {
             console.time('Load Dashboard Data');
             await this.loadDashboardData();
             console.timeEnd('Load Dashboard Data');
+        });
+        
+        onPatched(() => {
+            // Re-render progress charts when data changes
+            this.progressCharts.renderProgressCharts();
         });
     }
 
@@ -536,10 +555,11 @@ export class ApexDashboard extends Component {
         // Load KPIs first (fastest to load, most important for user)
         await this.fetchKPIs();
 
-        // Then load charts and doughnuts in parallel
+        // Then load charts, doughnuts, and progress data in parallel
         await Promise.all([
             this.fetchChartData(),
-            this.fetchDoughnutData()
+            this.fetchDoughnutData(),
+            this.progressCharts.fetchProgressData()
         ]);
 
         // Now that KPIs are loaded → the rank card should exist

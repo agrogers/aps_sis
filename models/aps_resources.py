@@ -679,6 +679,70 @@ class APSResource(models.Model):
             }
         }
 
+    def get_pace_dates(self):
+        """
+        Parse PACE start_date and end_date from the notes field.
+        
+        Note: Since resource.subjects is a Many2many field, one resource can be associated 
+        with multiple subjects. The PACE dates parsed from this resource's notes field 
+        apply to ALL subjects linked to this resource.
+        
+        Expected format in notes: 
+            start_date: 1/Aug/2025
+            end_date: 31/Dec/2027
+            
+        Returns dict with 'start_date' and 'end_date' as date objects or False if not found.
+        """
+        self.ensure_one()
+        import re
+        from datetime import datetime
+        
+        result = {'start_date': False, 'end_date': False}
+        
+        if not self.notes:
+            return result
+        
+        # Remove HTML tags to get plain text
+        plain_text = re.sub(r'<[^>]+>', '', self.notes)
+        
+        # Pattern to match dates in format: day/month/year where month can be short name or full name
+        # Examples: 1/Aug/2025, 31/December/2027, 15/Jan/2026
+        date_pattern = r'(\d{1,2})/([A-Za-z]+)/(\d{4})'
+        
+        # Search for start_date
+        start_match = re.search(rf'start_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
+        if start_match:
+            try:
+                day, month_str, year = start_match.groups()
+                # Parse month name (handle both full and abbreviated)
+                date_str = f"{day} {month_str} {year}"
+                # Try full month name first, then abbreviated
+                for fmt in ['%d %B %Y', '%d %b %Y']:
+                    try:
+                        result['start_date'] = datetime.strptime(date_str, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+            except (ValueError, AttributeError):
+                pass
+        
+        # Search for end_date
+        end_match = re.search(rf'end_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
+        if end_match:
+            try:
+                day, month_str, year = end_match.groups()
+                date_str = f"{day} {month_str} {year}"
+                for fmt in ['%d %B %Y', '%d %b %Y']:
+                    try:
+                        result['end_date'] = datetime.strptime(date_str, fmt).date()
+                        break
+                    except (ValueError, AttributeError):
+                        continue
+            except (ValueError, AttributeError):
+                pass
+        
+        return result
+
     def action_assign_students(self):
         return {
             'type': 'ir.actions.act_window',

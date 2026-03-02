@@ -31,7 +31,7 @@
                             <field name="active"/>
                         </group>
                         <group>
-                            <field name="color" widget="color"/>
+                            <field name="color_rgb" widget="color"/>
                         </group>
                     </group>
                     <group string="Description">

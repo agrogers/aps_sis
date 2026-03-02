@@ -872,4 +872,134 @@ class APSResourceSubmission(models.Model):
             orderby=orderby,
             lazy=True,  # or False, depending on your needs
         )
+    
+    @api.model
+    def get_progress_data_for_dashboard(self, student_id, period_start_date):
+        """
+        Get student progress data for dashboard charts.
+        Fetches submissions for resources with ' Progress' in the name.
+        Returns:
+        - line_data: List of progress data points over time by subject
+        - bar_data: Current progress percentage by subject
+        - pace_data: PACE information from resource notes
+        - subject_colors: Color mapping for subjects
+        """
+        from datetime import datetime, timedelta
+        
+        # Find all resources with ' Progress' in the name
+        progress_resources = self.env['aps.resources'].search([
+            ('name', 'ilike', ' Progress')
+        ])
+        
+        if not progress_resources:
+            return {
+                'line_data': [],
+                'bar_data': [],
+                'pace_data': {},
+                'subject_colors': {}
+            }
+        
+        # Build domain for submissions
+        domain = [
+            ('resource_id', 'in', progress_resources.ids),
+            ('student_id', '=', student_id),
+            ('submission_active', '=', True),
+            ('state', 'in', ['submitted', 'complete'])
+        ]
+        
+        # Fetch submissions
+        submissions = self.search(domain, order='date_submitted asc')
+        
+        if not submissions:
+            return {
+                'line_data': [],
+                'bar_data': [],
+                'pace_data': {},
+                'subject_colors': {}
+            }
+        
+        # Get all subjects from submissions
+        all_subjects = self.env['op.subject']
+        for sub in submissions:
+            all_subjects |= sub.subjects
+        
+        # Get subject colors (with automatic color generation for subjects without categories)
+        subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
+        
+        # Group submissions by subject and build historical data
+        subject_data = {}  # {subject_id: [(date, result_percent), ...]}
+        current_progress = {}  # {subject_id: {'result_percent': x, 'date': y}}
+        pace_info = {}  # {resource_id: {start_date, end_date, resource_name}}
+        
+        for submission in submissions:
+            for subject in submission.subjects:
+                if subject.id not in subject_data:
+                    subject_data[subject.id] = []
+                
+                # Only use submitted or completed dates since we're filtering for those states
+                date_to_use = submission.date_submitted or submission.date_completed
+                if date_to_use:
+                    subject_data[subject.id].append({
+                        'date': date_to_use.isoformat(),
+                        'result_percent': submission.result_percent,
+                        'subject_id': subject.id,
+                        'subject_name': subject.name,
+                    })
+                    
+                    # Track latest result for bar chart (most recent submission by date)
+                    if subject.id not in current_progress:
+                        current_progress[subject.id] = {
+                            'result_percent': submission.result_percent,
+                            'date': date_to_use
+                        }
+                    else:
+                        # Update if this is a more recent submission
+                        if date_to_use > current_progress[subject.id]['date']:
+                            current_progress[subject.id] = {
+                                'result_percent': submission.result_percent,
+                                'date': date_to_use
+                            }
+                
+                # Get PACE dates from resource notes
+                # Note: resource.subjects is a Many2many field - one resource can have multiple subjects
+                # The PACE dates from the resource's notes field apply to ALL subjects linked to that resource
+                # Store PACE info once per resource (not per subject) to avoid duplicate PACE lines
+                if submission.resource_id and submission.resource_id.id not in pace_info:
+                    pace_dates = submission.resource_id.get_pace_dates()
+                    if pace_dates['start_date'] or pace_dates['end_date']:
+                        pace_info[submission.resource_id.id] = {
+                            'start_date': pace_dates['start_date'].isoformat() if pace_dates['start_date'] else False,
+                            'end_date': pace_dates['end_date'].isoformat() if pace_dates['end_date'] else False,
+                            'resource_name': submission.resource_id.name,
+                        }
+        
+        # Return all data points (sorted by date) - no filtering by period
+        # Frontend will handle zooming to the selected period
+        all_subject_data = {}
+        
+        for subject_id, data_points in subject_data.items():
+            # Sort by date and remove duplicates
+            sorted_points = sorted(data_points, key=lambda x: x['date'])
+            all_subject_data[subject_id] = sorted_points
+        
+        # Build bar data (current progress)
+        bar_data = []
+        for subject_id, progress_data in current_progress.items():
+            subject = all_subjects.filtered(lambda s: s.id == subject_id)
+            if subject:
+                bar_data.append({
+                    'subject_id': subject_id,
+                    'subject_name': subject.name,
+                    'progress': progress_data['result_percent'],  # Extract result_percent from dict
+                    'color': subject_colors.get(subject_id, '#6c757d')  # Fallback to gray
+                })
+        
+        return {
+            'line_data': all_subject_data,
+            'bar_data': bar_data,
+            'pace_data': pace_info,
+            'subject_colors': subject_colors,
+            'period_start': period_start_date,  # For zoom reference
+            'period_end': datetime.now().date().isoformat()  # Today as period end
+        }
 # endregion - Get Data

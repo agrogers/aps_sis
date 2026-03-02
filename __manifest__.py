@@ -42,7 +42,6 @@
 	'assets': {
 		'web.assets_backend': [
             'aps_sis/static/src/lib/chart.js',
-            # 'aps_sis/static/src/components/chart_renderer/chartjs-plugin-datalabels.min.js',
 			'aps_sis/static/src/js/hide_g2_popup.js',
 			'aps_sis/static/src/css/ribbon_styles.css',
 			'aps_sis/static/src/css/openeducat.css',
