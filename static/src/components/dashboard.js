@@ -83,13 +83,9 @@ export class ApexDashboard extends Component {
         });
         
         onPatched(() => {
-            // Re-render progress charts when data changes
+            // Re-render charts when component updates (like ChartRenderer pattern)
             this.progressCharts.renderProgressCharts();
-            // Re-render student comparison chart only if data is loaded
-            // (data itself doesn't depend on period, so fetch won't repeat on period change)
-            if (this.state.studentComparisonData && !this.state.loadingStudentComparison) {
-                this.progressCharts.renderStudentComparisonChart();
-            }
+            this.progressCharts.renderStudentComparisonChart();
         });
     }
 
@@ -100,6 +96,8 @@ export class ApexDashboard extends Component {
             14: 'Last 14 Days',
             30: 'Last 30 Days',
             90: 'Last 90 Days',
+            180: 'Last 6 months',
+            270: 'Last 9 months',
             365: 'Last Year'
         };
         return periodMap[this.state.period] || 'Select Period';
