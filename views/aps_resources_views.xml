@@ -202,6 +202,7 @@
                             <group>
                                 <div><i>Linked resources contribute to the parent total marks. To add resources such as videos or related quizzes that do not contribute to the total marks, use the 'Supporting Resources' tab.</i></div>
                             </group>
+                            <button name="action_open_child_resources_list" type="object" string="Open in List View" class="btn-link mb-2" icon="fa-external-link" invisible="not child_ids"/>
                             <field name="child_ids" widget="many2many" context="{'default_parent_ids': [(6, 0, [id])], 'default_primary_parent_id': id, 'default_subjects': subjects, 'current_parent_id': id}">
                                 <list default_order="sequence,name" >
                                     <field name="sequence" widget="handle"/>
@@ -232,6 +233,7 @@
                             <group>
                                 <div><i>Supporting resources usually include videos or related quizzes that do not contribute to the total marks.</i></div>
                             </group>
+                            <button name="action_open_supporting_resources_list" type="object" string="Open in List View" class="btn-link mb-2" icon="fa-external-link" invisible="not supporting_resource_ids"/>
                             <field name="supporting_resource_ids" widget="many2many" 
                                context="{'default_subjects': subjects}">
                                 <list default_order="sequence,name" editable="bottom">

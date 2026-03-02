@@ -434,6 +434,36 @@ class APSResource(models.Model):
                             # Remove the entire bracketed text from current_name
                             current_name = current_name.replace(bracketed, '').strip()
                 
+                # NEW: Remove leading words from child that appear in parent's last segment
+                # This handles cases like "File Management Video Overview" → "Video Overview"
+                # when parent ends with "Ch 14: File Management"
+                if current_name and parent_display:
+                    # Get the last segment of parent (after last separator)
+                    parent_last_segment = parent_display.split(separator)[-1] if separator in parent_display else parent_display
+                    # Normalize: extract words (alphanumeric sequences), lowercase
+                    parent_words = set(re.findall(r'\b[a-zA-Z]+\b', parent_last_segment.lower()))
+                    
+                    # Split child name into words while preserving structure
+                    child_words = re.split(r'(\s+)', current_name)  # Split but keep separators
+                    
+                    # Find how many leading words to remove (words that appear in parent)
+                    words_to_remove = 0
+                    for word in child_words:
+                        word_lower = word.lower().strip()
+                        if not word_lower or word.isspace():
+                            words_to_remove += 1
+                            continue
+                        # Check if word appears in parent (fuzzy: allow 1-2 char difference for typos)
+                        if word_lower in parent_words or any(
+                            self._similar_words(word_lower, pw) for pw in parent_words
+                        ):
+                            words_to_remove += 1
+                        else:
+                            break
+                    
+                    if words_to_remove > 0:
+                        current_name = ''.join(child_words[words_to_remove:]).strip()
+                
                 # Find overlapping characters between start of current_name and end of parent_display
                 overlap_length = 0
                 parent_len = len(parent_display)
@@ -461,9 +491,28 @@ class APSResource(models.Model):
                         rec.display_name = parent_display
                 else:
                     # No overlap, concatenate normally
-                    rec.display_name = parent_display + separator + current_name
+                    if current_name:
+                        rec.display_name = parent_display + separator + current_name
+                    else:
+                        rec.display_name = parent_display
             else:
                 rec.display_name = rec.name or ''
+
+    def _similar_words(self, word1, word2):
+        """Check if two words are similar (allowing for typos). Returns True if edit distance <= 2."""
+        if abs(len(word1) - len(word2)) > 2:
+            return False
+        if len(word1) < 4 or len(word2) < 4:
+            return word1 == word2  # Short words must match exactly
+        # Simple check: same start and similar length
+        common_prefix = 0
+        for c1, c2 in zip(word1, word2):
+            if c1 == c2:
+                common_prefix += 1
+            else:
+                break
+        # If most characters match, consider similar
+        return common_prefix >= min(len(word1), len(word2)) - 2
 
     @api.depends('custom_name_ids.custom_name', 'custom_name_ids.parent_resource_id')
     def _compute_parent_custom_name_data(self):
@@ -751,6 +800,32 @@ class APSResource(models.Model):
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_resource_id': self.id},
+        }
+
+    def action_open_child_resources_list(self):
+        """Open child resources in a standard list/form view with navigation."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Linked Resources: {self.name}',
+            'res_model': 'aps.resources',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', self.child_ids.ids)],
+            'context': {'default_parent_ids': [(6, 0, [self.id])], 'default_primary_parent_id': self.id, 'default_subjects': self.subjects.ids},
+            'target': 'current',
+        }
+
+    def action_open_supporting_resources_list(self):
+        """Open supporting resources in a standard list/form view with navigation."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Supporting Resources: {self.name}',
+            'res_model': 'aps.resources',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', self.supporting_resource_ids.ids)],
+            'context': {'default_subjects': self.subjects.ids},
+            'target': 'current',
         }
 
     def action_delete(self):

@@ -17,6 +17,7 @@
                 <field name="display_name" optional="hide"/>
                 <field name="student_id" optional="hide"/>  
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="time_assigned" widget="float_time" optional="hide"/>
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="show"/>

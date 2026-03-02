@@ -6,7 +6,7 @@
                 <a 
                     href="#"
                     class="resource-link-icon"
-                    t-att-title="link.type_name + ': ' + link.name"
+                    t-att-title="link.name"
                     t-on-click.stop.prevent="() => this.openUrl(link)"
                     target="_blank"
                     style="cursor: pointer; text-decoration: none;">

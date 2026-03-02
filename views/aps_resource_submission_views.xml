@@ -34,7 +34,7 @@
                 <filter string="Review Requested" name="review_requested" domain="[('review_requested_by', '!=', False)]"/>
                 <filter string="Review not Requested" name="review_requested" domain="[('review_requested_by', '=', False)]"/>
                 <separator/>
-                <filter string="Active Submissions" name="submission_active" domain="[('submission_active', '=', True)]"/>
+                <filter string="Active" name="submission_active" domain="[('submission_active', '=', True)]"/>
                 <filter string="Assigned" name="assigned" domain="[('state', '=', 'assigned')]"/>
                 <filter string="Submitted" name="submitted" domain="[('state', '=', 'submitted')]"/>
                 <filter string="Finalised" name="completed" domain="[('state', '=', 'complete')]"/>
@@ -76,7 +76,8 @@
                 <field name="resource_id" optional="hide"/>
                 <field name="student_id" optional="show"/>  
                 <field name="assigned_by" optional="hide"/>
-                <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY'}" optional="hide"/>
+                <field name="time_assigned" widget="float_time" optional="hide"/>
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
