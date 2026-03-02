@@ -83,9 +83,9 @@ export class ApexDashboard extends Component {
         });
         
         onPatched(() => {
-            // Re-render charts when component updates (like ChartRenderer pattern)
-            this.progressCharts.renderProgressCharts();
-            this.progressCharts.renderStudentComparisonChart();
+            // Only render charts if they don't exist yet and data is available
+            // Avoid constant re-renders which break legend click functionality
+            this.progressCharts.renderIfNeeded();
         });
     }
 

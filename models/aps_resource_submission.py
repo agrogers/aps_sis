@@ -1008,8 +1008,11 @@ class APSResourceSubmission(models.Model):
         - subject_list: List of all subjects
         - subject_colors: Color mapping for subjects
         - pace_average: Average PACE percentage across resources
+        - exclude_from_average: List of subject names to exclude from average calculation
         """
         from datetime import datetime
+        import re
+        from markupsafe import Markup
         
         # Find all resources with ' Progress' in the name
         progress_resources = self.env['aps.resources'].search([
@@ -1021,8 +1024,30 @@ class APSResourceSubmission(models.Model):
                 'student_data': [],
                 'subject_list': [],
                 'subject_colors': {},
-                'pace_average': 0
+                'pace_average': 0,
+                'exclude_from_average': []
             }
+        
+        # Parse exclude_from_average from resource notes
+        exclude_from_average = []
+        for resource in progress_resources:
+            if resource.notes:
+                # Strip HTML tags if present
+                notes_text = resource.notes
+                if isinstance(notes_text, Markup) or '<' in str(notes_text):
+                    notes_text = re.sub(r'<[^>]+>', '', str(notes_text))
+                # Decode HTML entities (e.g., &nbsp; -> space)
+                import html
+                notes_text = html.unescape(str(notes_text))
+                # Look for exclude_from_average: directive
+                match = re.search(r'exclude_from_average:\s*(.+?)(?:\n|$)', notes_text, re.IGNORECASE)
+                if match:
+                    subjects_str = match.group(1)
+                    # Split by comma and strip whitespace
+                    for subject_name in subjects_str.split(','):
+                        cleaned_name = subject_name.strip()
+                        if cleaned_name and cleaned_name not in exclude_from_average:
+                            exclude_from_average.append(cleaned_name)
         
         # Build domain for submissions
         domain = [
@@ -1127,7 +1152,8 @@ class APSResourceSubmission(models.Model):
             'student_data': student_list,
             'subject_list': subject_list,
             'subject_colors': subject_colors,
-            'pace_average': pace_average
+            'pace_average': pace_average,
+            'exclude_from_average': exclude_from_average
         }
 
     @api.model

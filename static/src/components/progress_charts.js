@@ -7,6 +7,8 @@
  * - Uses refs directly for canvas access
  * - Chart.js handles responsiveness with responsive: true
  * - No retry logic needed - lifecycle handles DOM timing
+ * 
+ * DEBUG: Set window.PROGRESS_CHARTS_DEBUG = true in browser console to enable logging
  */
 
 export class ProgressCharts {
@@ -17,6 +19,63 @@ export class ProgressCharts {
         this.progressLineChartInstance = null;
         this.progressBarChartInstance = null;
         this.studentComparisonChartInstance = null;
+        
+        // Track last rendered data to avoid unnecessary re-renders
+        this._lastProgressLineDataHash = null;
+        this._lastProgressBarDataHash = null;
+        this._lastStudentComparisonDataHash = null;
+    }
+    
+    /**
+     * Debug logging - only logs if window.PROGRESS_CHARTS_DEBUG is true
+     */
+    _debug(...args) {
+        if (typeof window !== 'undefined' && window.PROGRESS_CHARTS_DEBUG) {
+            console.log('[ProgressCharts]', ...args);
+        }
+    }
+    
+    /**
+     * Generate a simple hash of data for change detection
+     */
+    _hashData(data) {
+        if (!data) return null;
+        try {
+            return JSON.stringify(data).length + '_' + (Array.isArray(data) ? data.length : Object.keys(data).length);
+        } catch (e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Called from onPatched - only renders if chart doesn't exist and data is ready
+     * This prevents constant re-renders that break legend click functionality
+     */
+    renderIfNeeded() {
+        const lineCanvas = this.component.__owl__.refs?.progressLineChart;
+        const barCanvas = this.component.__owl__.refs?.progressBarChart;
+        const comparisonCanvas = this.component.__owl__.refs?.studentComparisonChart;
+        
+        // Progress line chart - render only if canvas exists, connected, sized, but chart doesn't exist
+        if (lineCanvas && lineCanvas.isConnected && lineCanvas.offsetWidth > 0 && 
+            !this.progressLineChartInstance && this.state.progressLineData?.length) {
+            this._debug('renderIfNeeded: Creating progress line chart (canvas ready, no instance)');
+            this.renderProgressLineChart();
+        }
+        
+        // Progress bar chart - render only if canvas exists, connected, sized, but chart doesn't exist  
+        if (barCanvas && barCanvas.isConnected && barCanvas.offsetWidth > 0 &&
+            !this.progressBarChartInstance && this.state.progressBarData?.length) {
+            this._debug('renderIfNeeded: Creating progress bar chart (canvas ready, no instance)');
+            this.renderProgressBarChart();
+        }
+        
+        // Student comparison chart - render only if canvas exists, connected, sized, but chart doesn't exist
+        if (comparisonCanvas && comparisonCanvas.isConnected && comparisonCanvas.offsetWidth > 0 &&
+            !this.studentComparisonChartInstance && this.state.studentComparisonData?.datasets?.length) {
+            this._debug('renderIfNeeded: Creating student comparison chart (canvas ready, no instance)');
+            this.renderStudentComparisonChart();
+        }
     }
 
     /**
@@ -81,9 +140,22 @@ export class ProgressCharts {
      * Fetch progress data from the backend and process it for charts.
      */
     async fetchProgressData() {
+        this._debug('fetchProgressData: Starting, selectedStudent=', this.state.selectedStudent);
         this.state.loadingProgress = true;
+        
+        // Destroy existing chart instances - canvas will be removed from DOM during loading
+        // This ensures renderIfNeeded() will create new charts after Owl renders
+        if (this.progressLineChartInstance) {
+            this.progressLineChartInstance.destroy();
+            this.progressLineChartInstance = null;
+        }
+        if (this.progressBarChartInstance) {
+            this.progressBarChartInstance.destroy();
+            this.progressBarChartInstance = null;
+        }
 
         if (!this.state.selectedStudent || this.state.selectedStudent === "false") {
+            this._debug('fetchProgressData: No student selected, clearing data');
             this.state.progressLineData = [];
             this.state.progressBarData = [];
             this.state.loadingProgress = false;
@@ -91,11 +163,20 @@ export class ProgressCharts {
         }
 
         try {
+            this._debug('fetchProgressData: Calling ORM...');
             const progressData = await this.orm.call(
                 "aps.resource.submission",
                 "get_progress_data_for_dashboard",
                 [parseInt(this.state.selectedStudent, 10), this.component.getPeriodStartDateStr()]
             );
+            this._debug('fetchProgressData: ORM returned', {
+                hasLineData: !!progressData.line_data,
+                lineDataKeys: Object.keys(progressData.line_data || {}),
+                hasBarData: !!progressData.bar_data,
+                barDataLength: (progressData.bar_data || []).length,
+                periodStart: progressData.period_start,
+                periodEnd: progressData.period_end
+            });
 
             this.state.periodStart = progressData.period_start;
             this.state.periodEnd = progressData.period_end;
@@ -161,15 +242,29 @@ export class ProgressCharts {
                 }))
                 .sort((a, b) => a.subject_name.localeCompare(b.subject_name));
 
+            this._debug('fetchProgressData: Processed datasets', {
+                progressLineDatasets: this.state.progressLineData?.length,
+                progressBarItems: this.state.progressBarData?.length
+            });
+
         } catch (error) {
             console.error("Error fetching progress data:", error);
+            this._debug('fetchProgressData: ERROR', error.message);
             this.state.progressLineData = [];
             this.state.progressBarData = [];
         }
 
         this.state.loadingProgress = false;
-        // Delay render until after Owl processes the state change and canvas is in DOM
-        requestAnimationFrame(() => this.renderProgressCharts());
+        this._debug('fetchProgressData: Complete, scheduling render with double RAF for Owl timing');
+        // Double requestAnimationFrame ensures Owl has rendered the canvas
+        // First RAF: current frame completes, Owl processes state change
+        // Second RAF: Owl has rendered, canvas should be in DOM
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this._debug('fetchProgressData: Double RAF fired, calling renderProgressCharts');
+                this.renderProgressCharts();
+            });
+        });
     }
 
     /**
@@ -268,6 +363,7 @@ export class ProgressCharts {
      * Render both progress charts (line and bar).
      */
     renderProgressCharts() {
+        this._debug('renderProgressCharts: Called');
         this.renderProgressLineChart();
         this.renderProgressBarChart();
     }
@@ -277,9 +373,24 @@ export class ProgressCharts {
      */
     renderProgressLineChart() {
         const canvas = this.component.__owl__.refs?.progressLineChart;
-        if (!canvas || !this.state.progressLineData?.length) return;
+        const hasData = this.state.progressLineData?.length > 0;
+        
+        this._debug('renderProgressLineChart:', {
+            canvasExists: !!canvas,
+            canvasConnected: canvas?.isConnected,
+            canvasSize: canvas ? `${canvas.offsetWidth}x${canvas.offsetHeight}` : 'N/A',
+            hasData: hasData,
+            datasetCount: this.state.progressLineData?.length || 0,
+            existingInstance: !!this.progressLineChartInstance
+        });
+        
+        if (!canvas || !hasData) {
+            this._debug('renderProgressLineChart: Skipping - no canvas or no data');
+            return;
+        }
 
         if (this.progressLineChartInstance) {
+            this._debug('renderProgressLineChart: Destroying existing instance');
             this.progressLineChartInstance.destroy();
             this.progressLineChartInstance = null;
         }
@@ -353,6 +464,7 @@ export class ProgressCharts {
                 }
             }
         });
+        this._debug('renderProgressLineChart: Chart created successfully');
     }
 
     /**
@@ -360,9 +472,24 @@ export class ProgressCharts {
      */
     renderProgressBarChart() {
         const canvas = this.component.__owl__.refs?.progressBarChart;
-        if (!canvas || !this.state.progressBarData?.length) return;
+        const hasData = this.state.progressBarData?.length > 0;
+        
+        this._debug('renderProgressBarChart:', {
+            canvasExists: !!canvas,
+            canvasConnected: canvas?.isConnected,
+            canvasSize: canvas ? `${canvas.offsetWidth}x${canvas.offsetHeight}` : 'N/A',
+            hasData: hasData,
+            itemCount: this.state.progressBarData?.length || 0,
+            existingInstance: !!this.progressBarChartInstance
+        });
+        
+        if (!canvas || !hasData) {
+            this._debug('renderProgressBarChart: Skipping - no canvas or no data');
+            return;
+        }
 
         if (this.progressBarChartInstance) {
+            this._debug('renderProgressBarChart: Destroying existing instance');
             this.progressBarChartInstance.destroy();
             this.progressBarChartInstance = null;
         }
@@ -438,24 +565,43 @@ export class ProgressCharts {
                 }
             }]
         });
+        this._debug('renderProgressBarChart: Chart created successfully');
     }
 
     /**
      * Fetch student comparison data from backend.
      */
     async fetchStudentComparisonData() {
+        this._debug('fetchStudentComparisonData: Starting');
         this.state.loadingStudentComparison = true;
+        
+        // Destroy existing chart instance - canvas will be removed from DOM during loading
+        if (this.studentComparisonChartInstance) {
+            this.studentComparisonChartInstance.destroy();
+            this.studentComparisonChartInstance = null;
+        }
 
         try {
+            this._debug('fetchStudentComparisonData: Calling ORM...');
             const comparisonData = await this.orm.call(
                 "aps.resource.submission",
                 "get_student_comparison_data",
                 []
             );
+            
+            this._debug('fetchStudentComparisonData: ORM returned', {
+                hasStudentData: !!comparisonData.student_data,
+                studentCount: (comparisonData.student_data || []).length,
+                hasSubjectList: !!comparisonData.subject_list,
+                subjectCount: (comparisonData.subject_list || []).length,
+                paceAverage: comparisonData.pace_average,
+                excludeFromAverage: comparisonData.exclude_from_average
+            });
 
             const studentData = comparisonData.student_data || [];
             const subjectList = comparisonData.subject_list || [];
             const paceAverage = comparisonData.pace_average || 0;
+            const excludeFromAverage = comparisonData.exclude_from_average || [];
 
             studentData.sort((a, b) => a.student_name.localeCompare(b.student_name));
 
@@ -465,10 +611,28 @@ export class ProgressCharts {
             const sortedSubjects = subjectList
                 .map(subject => ({ ...subject, name: this.cleanSubjectName(subject.name) }))
                 .sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Build a set of subject IDs to exclude from average calculation
+            // Match by cleaned subject name (case-insensitive)
+            const excludedSubjectIds = new Set();
+            const excludeNamesLower = excludeFromAverage.map(name => 
+                this.cleanSubjectName(name).toLowerCase()
+            );
+            for (const subject of sortedSubjects) {
+                if (excludeNamesLower.includes(subject.name.toLowerCase())) {
+                    excludedSubjectIds.add(subject.id);
+                    this._debug('fetchStudentComparisonData: Excluding from average:', subject.name);
+                }
+            }
 
-            // Average progress per student
+            // Average progress per student (excluding specified subjects)
             const averageData = studentData.map(student => {
-                const progresses = Object.values(student.progress_by_subject).filter(v => v != null);
+                const progresses = [];
+                for (const [subjectId, value] of Object.entries(student.progress_by_subject)) {
+                    if (value != null && !excludedSubjectIds.has(parseInt(subjectId))) {
+                        progresses.push(value);
+                    }
+                }
                 if (!progresses.length) return null;
                 return progresses.reduce((a, b) => a + b, 0) / progresses.length;
             });
@@ -523,14 +687,26 @@ export class ProgressCharts {
                 paceAverage: paceAverage
             };
 
+            this._debug('fetchStudentComparisonData: Processed', {
+                labels: this.state.studentComparisonData?.labels?.length,
+                datasets: this.state.studentComparisonData?.datasets?.length
+            });
+
         } catch (error) {
             console.error("Error fetching student comparison data:", error);
+            this._debug('fetchStudentComparisonData: ERROR', error.message);
             this.state.studentComparisonData = { labels: [], datasets: [], paceAverage: 0 };
         }
 
         this.state.loadingStudentComparison = false;
-        // Delay render until after Owl processes the state change and canvas is in DOM
-        requestAnimationFrame(() => this.renderStudentComparisonChart());
+        this._debug('fetchStudentComparisonData: Complete, scheduling render with double RAF for Owl timing');
+        // Double requestAnimationFrame ensures Owl has rendered the canvas
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this._debug('fetchStudentComparisonData: Double RAF fired, calling renderStudentComparisonChart');
+                this.renderStudentComparisonChart();
+            });
+        });
     }
 
     /**
@@ -538,9 +714,32 @@ export class ProgressCharts {
      */
     renderStudentComparisonChart() {
         const canvas = this.component.__owl__.refs?.studentComparisonChart;
-        if (!canvas || !this.state.studentComparisonData?.datasets?.length) return;
+        const hasData = this.state.studentComparisonData?.datasets?.length > 0;
+        
+        this._debug('renderStudentComparisonChart:', {
+            canvasExists: !!canvas,
+            canvasConnected: canvas?.isConnected,
+            canvasSize: canvas ? `${canvas.offsetWidth}x${canvas.offsetHeight}` : 'N/A',
+            hasData: hasData,
+            datasetCount: this.state.studentComparisonData?.datasets?.length || 0,
+            labelCount: this.state.studentComparisonData?.labels?.length || 0,
+            existingInstance: !!this.studentComparisonChartInstance,
+            isFaculty: this.state.isFaculty
+        });
+        
+        if (!canvas || !hasData) {
+            this._debug('renderStudentComparisonChart: Skipping - no canvas or no data');
+            return;
+        }
+        
+        // Additional check: canvas must be connected to DOM and have dimensions
+        if (!canvas.isConnected || canvas.offsetWidth === 0 || canvas.offsetHeight === 0) {
+            this._debug('renderStudentComparisonChart: Skipping - canvas not connected or zero size, will retry via renderIfNeeded');
+            return;
+        }
 
         if (this.studentComparisonChartInstance) {
+            this._debug('renderStudentComparisonChart: Destroying existing instance');
             this.studentComparisonChartInstance.destroy();
             this.studentComparisonChartInstance = null;
         }
@@ -612,6 +811,7 @@ export class ProgressCharts {
                 }
             }
         });
+        this._debug('renderStudentComparisonChart: Chart created successfully');
     }
 
     /**
