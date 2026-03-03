@@ -44,6 +44,7 @@
             'aps_sis/static/src/lib/chart.js',
 			'aps_sis/static/src/js/hide_g2_popup.js',
 			'aps_sis/static/src/js/utils/color_utils.js',
+			'aps_sis/static/src/js/utils/svg_progress_utils.js',
 			'aps_sis/static/src/css/ribbon_styles.css',
 			'aps_sis/static/src/css/openeducat.css',
 			'aps_sis/static/src/css/ui_tweaks.css',

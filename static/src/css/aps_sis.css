@@ -1,16 +1,24 @@
 /* Resource link icons in circles */
 .o_resource_links .resource-link-icon img,
-.o_resource_links .resource-link-icon i {
+.o_resource_links .resource-link-icon i,
+.o_resource_links .resource-link-icon .progress-svg-container {
     border-radius: 50%;
     border: 1px solid #dee2e6;
     padding: 2px;
     background: white;
     box-shadow: 0 1px 2px rgba(0,0,0,0.91);
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.o_resource_links .resource-link-icon .progress-svg-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .o_resource_links .resource-link-icon:hover img,
-.o_resource_links .resource-link-icon:hover i {
+.o_resource_links .resource-link-icon:hover i,
+.o_resource_links .resource-link-icon:hover .progress-svg-container {
     border-color: #007bff;
     transform: scale(1.2);
 }

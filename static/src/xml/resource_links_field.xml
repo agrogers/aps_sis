@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="aps_sis.ResourceLinksField">
-        <div class="o_resource_links d-flex flex-wrap gap-2 align-items-start" t-on-click.stop="">
+        <div class="o_resource_links d-flex flex-wrap gap-2 align-items-start" t-ref="linksContainer" t-on-click.stop="">
             <t t-foreach="links" t-as="link" t-key="link.id">
                 <div 
                     class="resource-link-cell d-flex flex-column align-items-center"
@@ -13,7 +13,14 @@
                         t-on-click.stop.prevent="() => this.openUrl(link)"
                         target="_blank"
                         style="cursor: pointer; text-decoration: none;">
-                        <t t-if="link.icon_url">
+                        <t t-if="this.props.showResults">
+                            <div 
+                                class="progress-svg-container"
+                                t-att-data-resource-id="link.id"
+                                t-att-data-icon-url="link.icon_url"
+                                t-att-style="'width: ' + this.props.size + '; height: ' + this.props.size + ';'"/>
+                        </t>
+                        <t t-elif="link.icon_url">
                             <img 
                                 t-att-src="link.icon_url" 
                                 alt=""

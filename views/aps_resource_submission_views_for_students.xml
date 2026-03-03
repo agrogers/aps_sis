@@ -102,7 +102,7 @@
                         </group>
                         <group colspan="9">
                             <div class="d-flex justify-content-end w-100">
-                                <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '40px', 'show_name':True}"/>
+                                <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '50px', 'show_name':True, 'show_results':True}"/>
                             </div>
                         </group>
                     </group>

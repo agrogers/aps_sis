@@ -239,6 +239,25 @@ class APSResourceTask(models.Model):
             'submission_results': [s.result_percent or 0 for s in submissions],
         }
 
+    @api.model
+    def get_progress_data_by_resource(self, resource_id, student_id):
+        """
+        Returns progress data for a task matching the given resource_id and student_id.
+        Used by the resource_links widget when show_results option is enabled.
+        """
+        task = self.search([
+            ('resource_id', '=', resource_id),
+            ('student_id', '=', student_id)
+        ], limit=1)
+        
+        if not task:
+            return {
+                'weighted_result': 0,
+                'submission_results': [],
+            }
+        
+        return self.get_progress_data(task.id)
+
     def action_create_submission(self):
         self.ensure_one()
         faculty = self.env['op.faculty'].search([('user_id', '=', self.env.user.id)], limit=1)
