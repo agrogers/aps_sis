@@ -225,7 +225,7 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <ChartRenderer type="'pie'" title="" data="state.doughnutData2" />
+                            <ChartRenderer type="'doughnut'" title="" data="state.doughnutData2" />
                         </t>
                     </div>
                 </div>

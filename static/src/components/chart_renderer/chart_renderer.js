@@ -15,7 +15,7 @@ export class ChartRenderer extends Component {
         percentage: { type: [Number, String], optional: true },
         title: { type: String, optional: true },
         type: { type: String, optional: true }, // 'bar', 'line', 'doughnut', 'pie'
-        data: { type: Array, optional: true }, // Expecting array of objects with 'date', 'assigned', 'submitted', 'finalized' keys for line/bar; or 'data_point' and '__count' for doughnut/pie
+        data: { type: [Array, Object], optional: true }, // Expecting array of objects with 'date', 'assigned', 'submitted', 'finalized' keys for line/bar; or 'data_point' and '__count' for doughnut/pie; or pre-built chart config object
 
     };    
     setup() {
@@ -52,23 +52,16 @@ export class ChartRenderer extends Component {
             // }]
         };
 
-        if (this.props.data && this.props.data.length > 0) {
+        const data = this.props.data;
+        const isArrayData = Array.isArray(data) && data.length > 0;
+        const isObjectData = data && !Array.isArray(data) && typeof data === 'object' && data.labels;
+
+        if (isArrayData || isObjectData) {
             if (this.props.type === 'line') {
                 chartData.labels = this.props.data.map(d => d.date);
                 const datasetColors = ['rgb(255 172 0)', 'rgb(23 162 184)', 'rgb(150, 157, 163)'];
                 chartData.datasets = [
 
-                // {
-                //         label: 'Finalised',
-                //         data: this.props.data.map(d => d.Finalised),
-                //         backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[2], 40)),
-                //         borderColor: Array(chartData.labels.length).fill(datasetColors[2]),
-                //         borderWidth: 2,
-                //         fill: true,
-                //         tension: 0.1,
-                //         pointRadius: 0,
-                //         cubicInterpolationMode: 'monotone',
-                //     }   ,                 
                     {
                         label: 'Submitted*',
                         data: this.props.data.map(d => d.submitted_finalized),
@@ -128,7 +121,7 @@ export class ChartRenderer extends Component {
                         chartData.datasets = this.props.data.datasets.map((dataArr, index) => ({
                             data: dataArr,
                             backgroundColor: this.generateColors(this.props.data.labels, index),
-                            borderWidth: 1
+                            borderWidth: 1,
                         }));
                     } else {
                         // datasets is already array of dataset objects
@@ -141,23 +134,75 @@ export class ChartRenderer extends Component {
                         label: this.props.title,
                         data: this.props.data.map(d => d.__count),
                         backgroundColor: this.generateColors(chartData.labels, 0),
-                        hoverOffset: 4
+                        hoverOffset: 4,
                     }];
                 }
             }
         }
 
+        const hasSpacerDataset = chartData.datasets && chartData.datasets.some(ds => ds.label === 'Spacer');
+
+        // Inline plugin to draw center label on dual-ring doughnuts
+        const centerLabelPlugin = {
+            id: 'centerLabel',
+            afterDraw(chart) {
+                if (!hasSpacerDataset) return;
+                const { ctx, chartArea } = chart;
+                const centerX = (chartArea.left + chartArea.right) / 2;
+                const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+                // Center label: "Class Average"
+                ctx.save();
+                ctx.font = '11px sans-serif';
+                ctx.fillStyle = '#6c757d';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('← Class Average', centerX - 60, centerY);
+                ctx.restore();
+
+                // Outer ring label: "Student Data" at top-right
+                const outerMeta = chart.getDatasetMeta(0);
+                if (outerMeta && outerMeta.data.length > 0) {
+                    const outerRadius = outerMeta.data[0].outerRadius;
+                    const labelX = centerX + 60;
+                    const labelY = chartArea.top;
+                    ctx.save();
+                    ctx.font = '11px sans-serif';
+                    ctx.fillStyle = '#6c757d';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText('↙ Student Data', labelX, labelY);
+                    ctx.restore();
+                }
+            }
+        };
+
         this.chart = new Chart(this.chartRef.el, 
             {
             type: this.props.type || 'bar',
             data: chartData,
-            // plugins: [ChartDataLabels],
+            plugins: hasSpacerDataset ? [centerLabelPlugin] : [],
             options: {
+                borderWidth: 1,
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         position: (this.props.type === 'bar' || this.props.type === 'line') ? 'bottom' : 'right',
+                        ...(hasSpacerDataset ? {
+                            labels: {
+                                filter: (legendItem) => {
+                                    return legendItem.datasetIndex !== chartData.datasets.findIndex(ds => ds.label === 'Spacer');
+                                }
+                            }
+                        } : {}),
+                    },
+                    tooltip: {
+                        ...(hasSpacerDataset ? {
+                            filter: (tooltipItem) => {
+                                return tooltipItem.dataset.label !== 'Spacer';
+                            }
+                        } : {}),
                     },
                     title: {
                         display: true,
@@ -165,35 +210,7 @@ export class ChartRenderer extends Component {
                         position: 'top',
                         align: 'center',  // 'start', 'center', 'end'
                     },
-                    // datalabels: {
-                    //     display: (this.props.type === 'doughnut' || this.props.type === 'pie'),
-                    //     color: '#fff', // Text color
-                    //     anchor: 'center',
-                    //     align: 'center',
-                    //     font: {
-                    //         weight: 'bold',
-                    //         size: 14
-                    //     },
-                    //     formatter: (value, context) => {
-                    //         // Only show if value is greater than 0
-                    //         return value > 0 ? value : ''; 
-                    //     }
-                    // },
-
-                    // subtitle: {
-                    //     display: true,
-                    //     text: 'Data for Q1 2026 - All regions',  // Your subtitle here
-                    //     font: {
-                    //     size: 14,
-                    //     style: 'italic'
-                    //     },
-                    //     color: '#666',
-                    //     padding: {
-                    //     top: 0,
-                    //     bottom: 100
-                    //     },
-                    //     align: 'start',  // 'start', 'center', 'end',
-                    //     position: 'bottom'
+                    
 
                     }
                 },

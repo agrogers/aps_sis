@@ -41,7 +41,7 @@ export class ApexDashboard extends Component {
             total_submitted: { value: 0, percentage: 0, period: "" },
             chartData: [],
             doughnutData: [],
-            doughnutData2: [],
+            doughnutData2: {},
             list_view_id: false,
             form_view_id: false,
             // Loading states for progressive loading
@@ -251,14 +251,11 @@ export class ApexDashboard extends Component {
         return domain;
     }
     getStudentPointsDomain() {
-        if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
-            return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], 
-                ['submission_active', '=', true],
-                ['points', '>', 0],
-            ]);
-        } else {
-            return [];
-        }
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        domain.push(['points', '>', 0]);
+        domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        return domain;
     }
 
     initializeConfettiCanvas() {
@@ -726,14 +723,8 @@ export class ApexDashboard extends Component {
             };
         });
 
-        // Tasks by Due Status
+        // Tasks by Subject
         const subjectCounts = {};
-        const due_statusCounts = {};
-        const dueStatusDisplay = {
-            'late': 'Late',
-            'on-time': 'On Time',
-            'early': 'Early'
-        };
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
                 sub.subjects.forEach(id => {
@@ -747,16 +738,83 @@ export class ApexDashboard extends Component {
                     }
                 });
             }
-            if (sub.due_status) {
-                const display = dueStatusDisplay[sub.due_status] || sub.due_status;
-                if (!due_statusCounts[display]) {
-                    due_statusCounts[display] = { data_point: display, __count: 0 };
-                }
-                due_statusCounts[display].__count++;
-            }
         });
         this.state.doughnutData = Object.values(subjectCounts);
-        this.state.doughnutData2 = Object.values(due_statusCounts);
+
+        // Tasks by Due Status (outer ring: student, inner ring: class average)
+        const dueStatusDisplay = {
+            'late': 'Late',
+            'on-time': 'On Time',
+            'early': 'Early'
+        };
+        const dueStatusLabels = ['Late', 'On Time', 'Early'];
+        const dueStatusColors = {
+            'Late': 'rgba(220, 53, 69, 1)',
+            'On Time': 'rgba(150, 157, 163, 1)',
+            'Early': 'rgba(40, 167, 69, 1)',
+        };
+        const dueStatusColorsHalf = {
+            'Late': 'rgba(220, 53, 69, 0.5)',
+            'On Time': 'rgba(150, 157, 163, 0.5)',
+            'Early': 'rgba(40, 167, 69, 0.5)',
+        };
+
+        // Student counts (outer ring)
+        const due_statusCounts = {};
+        submissions.forEach(sub => {
+            if (sub.due_status) {
+                const display = dueStatusDisplay[sub.due_status] || sub.due_status;
+                due_statusCounts[display] = (due_statusCounts[display] || 0) + 1;
+            }
+        });
+
+        // Class average counts (inner ring) - fetch all students' data without student filter
+        const classDomain = [['submission_active', '=', true], ['date_assigned', '>=', this.getPeriodStartDateStr()]];
+        const classSubmissions = await this.orm.searchRead("aps.resource.submission", classDomain, ["due_status", "student_id"]);
+        const classStudentIds = new Set();
+        const classDueStatusCounts = {};
+        classSubmissions.forEach(sub => {
+            if (sub.student_id) classStudentIds.add(sub.student_id[0]);
+            if (sub.due_status) {
+                const display = dueStatusDisplay[sub.due_status] || sub.due_status;
+                classDueStatusCounts[display] = (classDueStatusCounts[display] || 0) + 1;
+            }
+        });
+        const numStudents = Math.max(classStudentIds.size, 1);
+
+        // Build multi-dataset doughnut config
+        const outerData = dueStatusLabels.map(label => due_statusCounts[label] || 0);
+        const innerData = dueStatusLabels.map(label => Math.round(((classDueStatusCounts[label] || 0) / numStudents) * 10) / 10);
+        const outerColors = dueStatusLabels.map(label => dueStatusColors[label]);
+        const innerColors = dueStatusLabels.map(label => dueStatusColorsHalf[label]);
+
+        this.state.doughnutData2 = {
+            labels: dueStatusLabels,
+            datasets: [
+                {
+                    label: 'Student',
+                    data: outerData,
+                    backgroundColor: outerColors,
+                    borderWidth: 1,
+                    hoverOffset: 4,
+                },
+                {
+                    label: 'Spacer',
+                    data: [1],
+                    backgroundColor: ['rgba(255,255,255,0)'],
+                    borderWidth: 0,
+                    hoverOffset: 0,
+                    weight: 0.3,
+                },
+                {
+                    label: 'Class Avg',
+                    data: innerData,
+                    backgroundColor: innerColors,
+                    borderWidth: 1,
+                    hoverOffset: 4,
+                }
+            ]
+        };
 
         this.state.loadingDoughnuts = false;
     }
