@@ -11,7 +11,8 @@
 }
 
 .progress-circle-outer {
-    animation: progress-circle-outer 1s ease forwards;
+    animation: progress-circle-outer 1.0s ease forwards;
+    animation-delay: 0.8s;
 }
 
 /* Inner segment animation */
@@ -28,14 +29,14 @@
     animation: progress-segment 0.5s ease forwards;
 }
 
-/* Staggered delays for segments (up to 10) */
-.progress-segment-0 { animation-delay: 1.0s; }
-.progress-segment-1 { animation-delay: 1.1s; }
-.progress-segment-2 { animation-delay: 1.2s; }
-.progress-segment-3 { animation-delay: 1.3s; }
-.progress-segment-4 { animation-delay: 1.4s; }
-.progress-segment-5 { animation-delay: 1.5s; }
-.progress-segment-6 { animation-delay: 1.6s; }
-.progress-segment-7 { animation-delay: 1.7s; }
-.progress-segment-8 { animation-delay: 1.8s; }
-.progress-segment-9 { animation-delay: 1.9s; }
+/* Staggered delays for segments (up to 10) - segments animate first */
+.progress-segment-0 { animation-delay: 0.0s; }
+.progress-segment-1 { animation-delay: 0.1s; }
+.progress-segment-2 { animation-delay: 0.2s; }
+.progress-segment-3 { animation-delay: 0.3s; }
+.progress-segment-4 { animation-delay: 0.4s; }
+.progress-segment-5 { animation-delay: 0.5s; }
+.progress-segment-6 { animation-delay: 0.6s; }
+.progress-segment-7 { animation-delay: 0.7s; }
+.progress-segment-8 { animation-delay: 0.8s; }
+.progress-segment-9 { animation-delay: 0.9s; }

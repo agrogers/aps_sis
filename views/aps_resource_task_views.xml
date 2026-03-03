@@ -67,7 +67,7 @@
                     <group col="2">
                         <group colspan="2">
                             <div class="d-flex align-items-center gap-1">
-                                <field name="type_icon" widget="image_result" options="{'size': [55, 55]}" nolabel="1" style="width:64px" readonly="1"/>
+                                <field name="type_icon" widget="image_result" options="{'size': [55, 55], 'task_id': 'id'}" nolabel="1" style="width:64px" readonly="1"/>
                                 <field name="resource_id" readonly="1"/>
                             </div>
                         </group>
@@ -89,7 +89,7 @@
                     <notebook>
                         <page string="Submissions">
                             <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}">
-                                <list>
+                                <list default_order="date_submitted desc">
                                     <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
                                     <field name="submission_name" optional="show"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>

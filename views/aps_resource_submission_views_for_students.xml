@@ -86,7 +86,8 @@
                     <group col="12">
                         <group colspan="8">
                             <div class="d-flex align-items-left gap-1">
-                                <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px" readonly="1"/>
+                                <field name="type_icon" widget="image_result" options="{'size': [52, 52], 'task_id': 'task_id'}" nolabel="1" style="width:60px" readonly="1"/>
+
                                 <field name="submission_name" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
                             </div>
                         </group>

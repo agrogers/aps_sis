@@ -110,7 +110,7 @@ class APSResourceTask(models.Model):
     @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.score', 'submission_ids.out_of_marks')
     def _compute_submission_stats(self):
         for rec in self:
-            submissions = rec.submission_ids.filtered(lambda a: a.state in ['submitted', 'complete']).sorted(lambda s: s.date_assigned or s.create_date)
+            submissions = rec.submission_ids.filtered(lambda a: a.state in ['submitted', 'complete'] and a.score != -0.01).sorted(lambda s: s.date_assigned or s.create_date)
             rec.submission_count = len(submissions)
             if submissions:
                 scores = submissions.mapped('result_percent')
@@ -214,6 +214,30 @@ class APSResourceTask(models.Model):
             })
             
             rec.latest_submission_text = json.dumps({'pills': pills})
+
+    @api.model
+    def get_progress_data(self, task_id):
+        """
+        Returns progress data for the image_result widget.
+        Returns weighted_result and up to 10 most recent submission result_percent values.
+        """
+        task = self.browse(task_id)
+        if not task.exists():
+            return {
+                'weighted_result': 0,
+                'submission_results': [],
+            }
+        
+        # Get the 10 most recent submissions ordered by date_assigned desc
+        # Exclude submissions with negative result_percent or score of -0.01
+        submissions = task.submission_ids.filtered(
+            lambda s: (s.result_percent or 0) >= 0 and s.score != -0.01
+        ).sorted(key=lambda s: s.date_assigned or '', reverse=True)[:10]
+        
+        return {
+            'weighted_result': task.weighted_result or 0,
+            'submission_results': [s.result_percent or 0 for s in submissions],
+        }
 
     def action_create_submission(self):
         self.ensure_one()
