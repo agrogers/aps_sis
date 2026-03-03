@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-name="aps_sis.ImageResultField">
+        <div class="d-inline-block position-relative" t-att-style="sizeStyle" t-ref="svgContainer">
+        </div>
+    </t>
+</templates>

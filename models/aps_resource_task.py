@@ -45,6 +45,20 @@ class APSResourceTask(models.Model):
         help='The latest submission for this task based on the assignment date.'
     )
     submission_ids = fields.One2many('aps.resource.submission', 'task_id', string='Submissions')
+    type_icon = fields.Image(
+        string='Type Icon',
+        compute="_compute_type_icon",
+        store=True
+    )
+
+
+    @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
+    def _compute_type_icon(self):
+        # This is needed because without it the icon is never cached properly. 
+        # That means there is a lot of annoying downloads on every page refresh.
+        # It is duplicated in other models as well.
+        for record in self:
+            record.type_icon = record.resource_id.type_id.icon if record.resource_id.type_id else False
 
     @api.depends('student_id', 'resource_id')
     def _compute_display_name(self):

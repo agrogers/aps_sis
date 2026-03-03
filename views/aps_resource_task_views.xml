@@ -64,8 +64,14 @@
                     <button name="action_create_submission" string="Create Submission" type="object" class="btn-secondary" context="{'default_task_id': id, 'default_assigned_by': uid}"/>
                 </header>
                 <sheet>
-                    <group>
-                        <field name="resource_id" readonly="1"/>
+                    <group col="2">
+                        <group colspan="2">
+                            <div class="d-flex align-items-center gap-1">
+                                <field name="type_icon" widget="image_result" options="{'size': [55, 55]}" nolabel="1" style="width:64px" readonly="1"/>
+                                <field name="resource_id" readonly="1"/>
+                            </div>
+                        </group>
+
                         <group string="Task Details">
                             <field name="state"/>
                             <field name="student_id" readonly="id"/>
