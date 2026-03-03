@@ -70,6 +70,7 @@
             'aps_sis/static/src/components/**/*.scss',
             'aps_sis/static/src/js/image_result_widget.js',
             'aps_sis/static/src/xml/image_result_widget.xml',
+            'aps_sis/static/src/css/image_result_widget.css',
 		],
 	},
 	'installable': True,

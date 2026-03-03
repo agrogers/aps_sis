@@ -100,7 +100,8 @@ function updateProgressCircle(
     backgroundCircle.setAttribute('stroke-width', outerStroke);
     svg.appendChild(backgroundCircle);
 
-    // Create outer circle (progress)
+    // Create outer circle (progress) with CSS animation
+    const targetOffset = circumference * (1 - outerPercent / 100);
     const outerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     outerCircle.setAttribute('cx', center);
     outerCircle.setAttribute('cy', center);
@@ -109,17 +110,14 @@ function updateProgressCircle(
     outerCircle.setAttribute('stroke', outerColor);
     outerCircle.setAttribute('stroke-width', outerStroke);
     outerCircle.setAttribute('stroke-linecap', 'round');
+    outerCircle.setAttribute('class', 'progress-circle-outer');
+    outerCircle.style.setProperty('--circumference', circumference);
+    outerCircle.style.setProperty('--target-offset', targetOffset);
     outerCircle.style.strokeDasharray = circumference;
     outerCircle.style.strokeDashoffset = circumference;
-    outerCircle.style.transition = 'stroke-dashoffset 1s ease';
     outerCircle.style.transform = 'rotate(-90deg)';
     outerCircle.style.transformOrigin = `${center}px ${center}px`;
     svg.appendChild(outerCircle);
-
-    // Animate outer circle
-    setTimeout(() => {
-      outerCircle.style.strokeDashoffset = circumference * (1 - outerPercent / 100);
-    }, 0);
 
     // Create segments group
     const segmentsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -137,60 +135,33 @@ function updateProgressCircle(
     image.setAttribute('clip-path', `url(#${clipPath.getAttribute('id')})`);
     svg.appendChild(image);
   
-    // ── Inner segments ───────────────────────────────────────
+    // ── Inner segments with CSS animations ───────────────────────────────────────
     const segAngle = (2 * Math.PI) / 10;     // 36° in radians (fixed size)
     const gapAngle = (2 * Math.PI) / 180; // 2 degrees in radians
     const visibleAngle = segAngle - 2 * gapAngle;
     const segmentCircumference = visibleAngle * innerR;
 
     for (let i = 0; i < numSegments; i++) {
-      const startAngle = -Math.PI / 2 + i * segAngle + gapAngle; // Add gap at the start
-      const endAngle = -Math.PI / 2 + (i + 1) * segAngle - gapAngle; // Subtract gap at the end
+      const startAngle = -Math.PI / 2 + i * segAngle + gapAngle;
+      const endAngle = -Math.PI / 2 + (i + 1) * segAngle - gapAngle;
 
       const x1 = center + innerR * Math.cos(startAngle);
       const y1 = center + innerR * Math.sin(startAngle);
       const x2 = center + innerR * Math.cos(endAngle);
       const y2 = center + innerR * Math.sin(endAngle);
-      const large = segAngle > Math.PI ? 1 : 0; // always 0 for 36°
 
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute('d', `M ${x1} ${y1} A ${innerR} ${innerR} 0 0 1 ${x2} ${y2}`);
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke-width', innerStroke);
-        path.setAttribute('stroke-linecap', 'butt');
-
+      path.setAttribute('stroke-linecap', 'butt');
       path.setAttribute('stroke', processedSegments[i]);
+      path.setAttribute('class', `progress-segment progress-segment-${i}`);
+      path.style.setProperty('--segment-circumference', segmentCircumference);
       path.style.strokeDasharray = segmentCircumference;
       path.style.strokeDashoffset = segmentCircumference;
-      path.style.transition = 'stroke-dashoffset 0.5s ease';
       segmentsGroup.appendChild(path);
     }
 
-    // Animate segments one by one after outer ring
-    for (let i = 0; i < numSegments; i++) {
-      setTimeout(() => {
-        const path = segmentsGroup.children[i];
-        path.style.strokeDashoffset = '0';
-      }, 1000 + i * (1000 / numSegments));
-    }
-
-    // Rotate icon once after segments finish
-    // setTimeout(() => {
-    //   image.style.transition = 'transform 1s ease';
-    //   image.style.transform = 'rotate(360deg)';
-    // }, 1000 + (numSegments - 1) * (1000 / numSegments) + 500);
-
     return svg;
   }
-  
-//   Usage example:
-  document.addEventListener('DOMContentLoaded', () => {
-  const outerPercent = 59;
-//   const segments = ['#2ecc71', '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
-  const segments = ['#2ecc71', '#2ecc71', '#3498db'];
-  const size = 150;
-  const outerColor = '#00cf3e';
-  const svg = updateProgressCircle(outerPercent, segments, size, outerColor);
-  document.body.appendChild(svg);
-
-});
