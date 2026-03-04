@@ -594,6 +594,10 @@ class APSResourceSubmission(models.Model):
 
                     if not record.date_submitted and 'date_submitted' not in vals:
                         vals['date_submitted'] = fields.Date.today()
+                    
+                    # Also set date_assigned if not set (for auto-assigned submissions)
+                    if not record.date_assigned and 'date_assigned' not in vals:
+                        vals['date_assigned'] = fields.Date.today()
                 
                 # If changing to complete and no completion date, set it to today
                 elif vals['state'] == 'complete' and not record.date_completed and 'date_completed' not in vals:
@@ -1177,4 +1181,98 @@ class APSResourceSubmission(models.Model):
         
         current_user = self.env.user
         return teacher_group in current_user.groups_id
+
+    @api.model
+    def get_or_create_submission_for_resource(self, resource_id, student_id, parent_resource_id=False):
+        """
+        Get or create a submission for a supporting resource when accessed via a link.
+        
+        This method handles the case where a supporting resource (like a Century nugget)
+        has its own marks/score and needs a submission record for the student to track their result.
+        
+        Logic:
+        1. Find or create the task for this resource/student combination
+        2. Look for an existing submission with no date_assigned (auto-assigned ones preferred)
+        3. If submission exists with future date_assigned, change it to today
+        4. If no submission exists, create one with no date_assigned/date_due and label "Assigned Automatically"
+        5. Return the submission ID so frontend can navigate to it
+        
+        Args:
+            resource_id: The supporting resource ID
+            student_id: The student's partner ID
+            parent_resource_id: Optional parent resource ID for context
+            
+        Returns:
+            dict with 'submission_id' key
+        """
+        task_model = self.env['aps.resource.task']
+        resource = self.env['aps.resources'].browse(resource_id)
+        
+        if not resource.exists():
+            raise UserError(_("Resource not found."))
+        
+        # Verify student exists
+        student = self.env['res.partner'].browse(student_id)
+        if not student.exists():
+            raise UserError(_("Student not found."))
+        
+        # Find or create task
+        task = task_model.search([
+            ('resource_id', '=', resource_id),
+            ('student_id', '=', student_id)
+        ], limit=1)
+        
+        if not task:
+            task = task_model.create({
+                'resource_id': resource_id,
+                'student_id': student_id,
+                'state': 'created',
+            })
+        
+        # Look for existing submission - prefer ones with no date_assigned
+        submission = self.search([
+            ('task_id', '=', task.id),
+            ('date_assigned', '=', False)
+        ], limit=1)
+        
+        if not submission:
+            # Check for any submission (maybe assigned for future)
+            submission = self.search([
+                ('task_id', '=', task.id),
+            ], order='date_assigned asc', limit=1)
+        
+        today = fields.Date.today()
+        
+        if submission:
+            # If assigned for future, update to today
+            if submission.date_assigned and submission.date_assigned > today:
+                submission.write({'date_assigned': today})
+        else:
+            # Create new auto-assigned submission
+            # Get question from resource
+            question = False
+            if resource.has_question == 'yes':
+                question = resource.question
+            elif resource.has_question == 'use_parent' and parent_resource_id:
+                parent = self.env['aps.resources'].browse(parent_resource_id)
+                if parent.exists() and parent.question:
+                    question = parent.question
+            
+            # Get subjects from resource
+            subjects = resource.subjects.ids if resource.subjects else []
+            
+            submission = self.create({
+                'task_id': task.id,
+                'submission_label': 'Assigned Automatically',
+                'submission_name': resource.name or resource.display_name,
+                'date_assigned': False,  # No assign date - won't appear as assigned task
+                'date_due': False,  # No due date
+                'state': 'assigned',
+                'has_question': resource.has_question,
+                'question': question,
+                'subjects': [(6, 0, subjects)],
+                'notification_state': 'skipped',  # Don't notify for auto-assigned
+            })
+        
+        return {'submission_id': submission.id}
 # endregion - Get Data

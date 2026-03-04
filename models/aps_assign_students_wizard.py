@@ -354,9 +354,16 @@ class APSAssignStudentsWizard(models.TransientModel):
                         'state': 'assigned',
                         'date_due': self.date_due,
                     })
-                # Create submission. Multiple submissions allowed per task.
-                submission_model.create({
-                    'task_id': task.id,
+                
+                # Check for existing submission with no date_assigned (auto-assigned ones)
+                # that we can reuse instead of creating a new one
+                existing_submission = submission_model.search([
+                    ('task_id', '=', task.id),
+                    ('date_assigned', '=', False),
+                    ('state', '=', 'assigned'),
+                ], limit=1)
+                
+                submission_vals = {
                     'assigned_by': self.assigned_by.id if self.assigned_by else False,
                     'submission_label': self.submission_label,
                     'submission_order': submission_order,
@@ -372,5 +379,13 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'subjects': assigned_subjects.ids,
                     'points_scale': self.points_scale,
                     'notification_state': 'not_sent' if self.notify_student else 'skipped',
-                })
+                }
+                
+                if existing_submission:
+                    # Update the existing auto-assigned submission
+                    existing_submission.write(submission_vals)
+                else:
+                    # Create submission. Multiple submissions allowed per task.
+                    submission_vals['task_id'] = task.id
+                    submission_model.create(submission_vals)
         return {'type': 'ir.actions.act_window_close'}

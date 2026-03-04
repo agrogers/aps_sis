@@ -122,6 +122,16 @@ export class ResourceLinksField extends Component {
         
         if (!url) return;
 
+        // Check if this is a supporting resource (not main) with marks that needs a submission
+        // Main resource should open normally, supporting resources with marks redirect to submission
+        if (!linkData.is_main && linkData.out_of_marks && linkData.out_of_marks > 0) {
+            const studentId = this.getStudentId();
+            if (studentId && linkData.id) {
+                this._openResourceSubmission(linkData, studentId);
+                return;
+            }
+        }
+
         // Check if the URL is meant to trigger an Odoo Client Action
         // Example URL format: "action:lonely_s_game"
         if (url.startsWith("action:")) {
@@ -152,6 +162,47 @@ export class ResourceLinksField extends Component {
         // External links
         else {
             window.open(url, "_blank"); // Open external sites in a new tab
+        }
+    }
+
+    async _openResourceSubmission(linkData, studentId) {
+        /**
+         * Open the submission for a supporting resource.
+         * If the submission doesn't exist, create it via backend.
+         * Then open the submission form and the resource URL.
+         */
+        try {
+            // Get parent resource ID from current record if available
+            const resourceField = this.props.record.data.resource_id;
+            const parentResourceId = resourceField ? (Array.isArray(resourceField) ? resourceField[0] : resourceField) : false;
+            
+            // Call backend to get or create submission
+            const result = await this.orm.call(
+                "aps.resource.submission",
+                "get_or_create_submission_for_resource",
+                [linkData.id, studentId, parentResourceId]
+            );
+            
+            if (result && result.submission_id) {
+                // Open the submission form
+                await this.action.doAction({
+                    type: 'ir.actions.act_window',
+                    res_model: 'aps.resource.submission',
+                    res_id: result.submission_id,
+                    views: [[false, 'form']],
+                    target: 'current',
+                });
+            }
+        } catch (error) {
+            console.error("Failed to open resource submission:", error);
+            this.notification.add(
+                "Failed to open the resource. Please try again.",
+                { type: "danger" }
+            );
+            // Fallback: just open the URL
+            if (linkData.url) {
+                window.open(linkData.url, "_blank");
+            }
         }
     }
 
