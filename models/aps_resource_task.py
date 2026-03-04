@@ -107,7 +107,7 @@ class APSResourceTask(models.Model):
             if task.state != new_state:
                 task.state = new_state
 
-    @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.score', 'submission_ids.out_of_marks')
+    @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.result_percent')
     def _compute_submission_stats(self):
         for rec in self:
             submissions = rec.submission_ids.filtered(lambda a: a.state in ['submitted', 'complete'] and a.score != -0.01).sorted(lambda s: s.date_assigned or s.create_date)
@@ -156,7 +156,7 @@ class APSResourceTask(models.Model):
             if assigned_dates:
                 rec.date_assigned = min(assigned_dates)
 
-    @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.score', 'submission_ids.out_of_marks')
+    @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.result_percent')
     def _compute_latest_submission_data(self):
         for rec in self:
             # Skip computation for unsaved records to avoid interference
