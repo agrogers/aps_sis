@@ -208,9 +208,6 @@
                             <div style="height: 350px; position: relative;">
                                 <canvas t-ref="progressLineChart"></canvas>
                             </div>
-                            <div class="mt-2 text-muted small">
-                                <i class="fa fa-info-circle"></i> Click on a subject to isolate it. Click again to show all subjects.
-                            </div>
                         </t>
                     </div>
                 </div>
