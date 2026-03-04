@@ -174,12 +174,19 @@ export class ApexDashboard extends Component {
         const incState = options.incState ?? false;
         const incPeriodSubmitted = options.incPeriodSubmitted ?? false;
         const incPeriodAssigned = options.incPeriodAssigned ?? false;
+        const excludeSubmissionNameLike = options.excludeSubmissionNameLike ?? false; // can be string or array of strings
         let domain =[];
         if (incStudentFilter) {domain = this.addStudentFilter(domain); }
         if (incSubmissionActive) {domain.push(['submission_active', '=', true]);}
         if (incPeriodSubmitted) {domain.push(['date_submitted', '>=', this.getPeriodStartDateStr()]);}
         if (incPeriodAssigned) {domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);}
         if (incState) {domain.push(['state', 'in', incState]);}  // eg ['submitted', 'complete']
+        if (excludeSubmissionNameLike) {
+            const namesToExclude = Array.isArray(excludeSubmissionNameLike) ? excludeSubmissionNameLike : [excludeSubmissionNameLike];
+            namesToExclude.forEach(name => {
+                domain.push(['submission_name', 'not ilike', name]);
+            });
+        }
 
         return domain;
     }
@@ -249,6 +256,8 @@ export class ApexDashboard extends Component {
         let domain = this.addStudentFilter([]);
         domain.push(['submission_active', '=', true]);
         domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        domain.push(['submission_name', 'not ilike', ' Progress']);
+
         return domain;
     }
     getStudentPointsDomain() {
@@ -779,8 +788,15 @@ export class ApexDashboard extends Component {
         });
 
         // Class average counts (inner ring) - fetch all students' data without student filter
-        const classDomain = [['submission_active', '=', true], ['date_assigned', '>=', this.getPeriodStartDateStr()]];
-        const classSubmissions = await this.orm.searchRead("aps.resource.submission", classDomain, ["due_status", "student_id"]);
+        const classDomain = this.getDataDomain(
+            {'incStudentFilter': false, 'incPeriodAssigned': true, 'excludeSubmissionNameLike':[' Progress']});
+
+        const classSubmissions = await this.orm.call(
+            "aps.resource.submission",
+            "read_submission_data",
+            [classDomain, ["due_status", "student_id"]],
+        );
+
         const classStudentIds = new Set();
         const classDueStatusCounts = {};
         classSubmissions.forEach(sub => {
