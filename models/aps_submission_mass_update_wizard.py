@@ -30,6 +30,8 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     submission_active_value = fields.Boolean(string='Value')
     update_date_assigned = fields.Boolean(string='Date Assigned')
     date_assigned_value = fields.Date(string='Value')
+    update_time_assigned = fields.Boolean(string='Time Assigned')
+    time_assigned_value = fields.Float(string='Value')
     update_date_submitted = fields.Boolean(string='Date Submitted')
     date_submitted_value = fields.Date(string='Value')
     update_date_completed = fields.Boolean(string='Date Completed')
@@ -90,6 +92,9 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
 
         if self.update_date_assigned:
             updates['date_assigned'] = self.date_assigned_value
+
+        if self.update_time_assigned:
+            updates['time_assigned'] = self.time_assigned_value
 
         if self.update_submission_active:
             updates['submission_active'] = self.submission_active_value

@@ -46,6 +46,9 @@
                                 <group colspan="4"><field name="update_date_assigned" nolabel="1" widget="boolean_toggle"/><label for="update_date_assigned" class="mb-0">Date Assigned</label></group>
                                 <group colspan="8"><field name="date_assigned_value" invisible="not update_date_assigned"/></group>
                                 
+                                <group colspan="4"><field name="update_time_assigned" nolabel="1" widget="boolean_toggle"/><label for="update_time_assigned" class="mb-0">Time Assigned</label></group>
+                                <group colspan="8"><field name="time_assigned_value" widget="float_time" invisible="not update_time_assigned"/></group>
+                                
                                 <group colspan="4"><field name="update_date_submitted" nolabel="1" widget="boolean_toggle"/><label for="update_date_submitted" class="mb-0">Date Submitted</label></group>
                                 <group colspan="8"><field name="date_submitted_value" invisible="not update_date_submitted"/></group>
                                 
