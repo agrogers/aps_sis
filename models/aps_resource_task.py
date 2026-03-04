@@ -231,7 +231,7 @@ class APSResourceTask(models.Model):
         # Get the 10 most recent submissions ordered by date_assigned desc
         # Exclude submissions with negative result_percent or score of -0.01
         submissions = task.submission_ids.filtered(
-            lambda s: (s.result_percent or 0) >= 0 and s.score != -0.01
+            lambda s: (s.result_percent or 0) >= 0 and s.score != -0.01 
         ).sorted(key=lambda s: s.date_assigned or '', reverse=True)[:10]
         
         return {

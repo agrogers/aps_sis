@@ -273,6 +273,7 @@ class APSResource(models.Model):
                     'icon_url': f'/web/image/aps.resources/{resource.id}/type_icon' if resource.type_icon else False,
                     'type_name': resource.type_id.name if resource.type_id else 'Resource',
                     'is_main': True,
+                    'out_of_marks': resource.marks,
                 })
             # Add supporting resources that have URLs and real ids
             for supporting in resource.supporting_resource_ids.sorted('sequence'):
@@ -284,6 +285,7 @@ class APSResource(models.Model):
                         'icon_url': f'/web/image/aps.resources/{supporting.id}/type_icon' if supporting.type_icon else False,
                         'type_name': supporting.type_id.name if supporting.type_id else 'Resource',
                         'is_main': False,
+                        'out_of_marks': supporting.marks,
                     })
             resource.supporting_resources_buttons = links
 

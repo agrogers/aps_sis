@@ -13,7 +13,7 @@
                         t-on-click.stop.prevent="() => this.openUrl(link)"
                         target="_blank"
                         style="cursor: pointer; text-decoration: none;">
-                        <t t-if="this.props.showResults">
+                        <t t-if="this.props.showResults and link.out_of_marks != 0">
                             <div 
                                 class="progress-svg-container"
                                 t-att-data-resource-id="link.id"
