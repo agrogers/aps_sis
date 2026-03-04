@@ -869,6 +869,15 @@ class APSResourceSubmission(models.Model):
         )
     
     @api.model
+    def read_submission_data(self, domain, fields, orderby=False, limit=False):
+        return self.env['aps.resource.submission'].sudo().search_read(
+                domain=domain,
+                fields=fields,
+                order=orderby,
+                limit=limit,
+            )
+    
+    @api.model
     def get_progress_data_for_dashboard(self, student_id, period_start_date):
         """
         Get student progress data for dashboard charts.
