@@ -40,7 +40,7 @@ export class ApexDashboard extends Component {
             rank_description: "",
             total_submitted: { value: 0, percentage: 0, period: "" },
             chartData: [],
-            doughnutData: [],
+            doughnutData: {},
             doughnutData2: {},
             list_view_id: false,
             form_view_id: false,
@@ -738,12 +738,21 @@ export class ApexDashboard extends Component {
         subjectRecords.forEach(rec => {
             subjectMap[rec.id] = {
                 name: rec.name,
-                category: rec.category_id ? rec.category_id[1] : 'No Category'
+                category: rec.category_id ? rec.category_id[1] : 'No Category',
+                subjectId: rec.id
             };
         });
 
-        // Tasks by Subject
+        // Get subject colors from backend
+        const subjectColorsMap = await this.orm.call(
+            "op.subject",
+            "get_subject_colors_map",
+            [Array.from(subjectIds)]
+        );
+
+        // Tasks by Subject - track a representative subject_id per category for color lookup
         const subjectCounts = {};
+        const categoryRepSubject = {}; // Map category name -> first subject_id in that category
         submissions.forEach(sub => {
             if (sub.subjects && Array.isArray(sub.subjects)) {
                 sub.subjects.forEach(id => {
@@ -752,13 +761,32 @@ export class ApexDashboard extends Component {
                         const categoryName = subjectInfo.category !== 'No Category' ? subjectInfo.category : subjectInfo.name;
                         if (!subjectCounts[categoryName]) {
                             subjectCounts[categoryName] = { data_point: categoryName, __count: 0 };
+                            categoryRepSubject[categoryName] = id; // Store first subject_id for this category
                         }
                         subjectCounts[categoryName].__count++;
                     }
                 });
             }
         });
-        this.state.doughnutData = Object.values(subjectCounts);
+
+        // Build doughnutData with explicit colors
+        const doughnutEntries = Object.values(subjectCounts);
+        const labels = doughnutEntries.map(d => d.data_point);
+        const counts = doughnutEntries.map(d => d.__count);
+        const colors = labels.map(label => {
+            const repSubjectId = categoryRepSubject[label];
+            return subjectColorsMap[repSubjectId] || '#6c757d';
+        });
+
+        this.state.doughnutData = {
+            labels: labels,
+            datasets: [{
+                label: 'Tasks by Subject',
+                data: counts,
+                backgroundColor: colors,
+                hoverOffset: 4,
+            }]
+        };
 
         // Tasks by Due Status (outer ring: student, inner ring: class average)
         const dueStatusDisplay = {
