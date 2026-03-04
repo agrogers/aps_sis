@@ -44,6 +44,7 @@ export class ApexDashboard extends Component {
             doughnutData2: {},
             list_view_id: false,
             form_view_id: false,
+            kanban_view_id: false,
             // Loading states for progressive loading
             loadingKPIs: true,
             loadingCharts: true,
@@ -493,6 +494,15 @@ export class ApexDashboard extends Component {
             { sudo: true }
         );
         this.state.form_view_id = data_form ? data_form.res_id : false;
+
+        const [data_kanban] = await this.env.services.orm.searchRead(
+            "ir.model.data",
+            [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_kanban"]],
+            ["res_id"],
+            { limit: 1 },
+            { sudo: true }
+        );
+        this.state.kanban_view_id = data_kanban ? data_kanban.res_id : false;
     }
 
     async fetchStudents() {
@@ -851,12 +861,19 @@ export class ApexDashboard extends Component {
         await this.loadDashboardData();
     }
 
+    getResponsiveViews() {
+        const isSmallScreen = window.innerWidth < 768;
+        return isSmallScreen
+            ? [[this.state.kanban_view_id, "kanban"], [this.state.list_view_id, "list"], [this.state.form_view_id, "form"]]
+            : [[this.state.list_view_id, "list"], [this.state.form_view_id, "form"], [this.state.kanban_view_id, "kanban"]];
+    }
+
     viewActiveSubmissions() {
         this.action.doAction({
             type: "ir.actions.act_window",
             name: this.state.period_name,
             res_model: "aps.resource.submission",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: this.getActiveSubmissionsDomain(false),
             context: {
                 search_default_assigned: 1,
@@ -870,7 +887,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: "Active Tasks",
             res_model: "aps.resource.task",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: taskDomain,
         });
     }
@@ -881,7 +898,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: this.state.period_name,
             res_model: "aps.resource.submission",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: totalSubmittedDomain,
             context: {
                 search_default_submitted: 1,
@@ -896,7 +913,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: this.state.period_name,
             res_model: "aps.resource.submission",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: overdueDomain,
             context: {
                 search_default_overdue: 1,
@@ -910,7 +927,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: "",
             res_model: "aps.resource.submission",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: domain,
             context: {
                 search_default_overdue: 1,
@@ -924,7 +941,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: "Coming Due in the next 7 Days",
             res_model: "aps.resource.submission",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: domain,
             context: {
                 search_default_due_next_7_days: 1,
@@ -938,7 +955,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: "Student Points Submissions",
             res_model: "aps.resource.submission",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: domain,
         });
     }
@@ -948,7 +965,7 @@ export class ApexDashboard extends Component {
             type: "ir.actions.act_window",
             name: "Today's Submissions",
             res_model: "aps.resource.submission",
-            views: [[this.state.list_view_id,"list"], [this.state.form_view_id, "form"]],
+            views: this.getResponsiveViews(),
             domain: domain,
         });
     }

@@ -266,4 +266,11 @@
         
     </record>
 
+    <record id="action_student_dashboard_view_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">4</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_aps_resource_submission_kanban"/>
+        <field name="act_window_id" ref="action_student_dashboard"/>
+    </record>
+
 </odoo>
