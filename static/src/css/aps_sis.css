@@ -7,8 +7,8 @@
 
 /* Ancestor pills — blue, clickable */
 .o_breadcrumb_pills .breadcrumb-pill-ancestor {
-    background-color: var(--bs-primary, #0d6efd);
-    color: #fff !important;
+    background-color: var(--200, #9e9e9e);
+    /* color: #fff !important; */
     padding: 0.25em 0.7em;
     cursor: pointer;
     white-space: normal;
@@ -16,14 +16,16 @@
     transition: opacity 0.15s ease;
 }
 .o_breadcrumb_pills .breadcrumb-pill-ancestor:hover {
-    opacity: 0.82;
-    color: #fff !important;
+    /* opacity: 0.82; */
+    background-color: var(--o-cc2-btn-primary, #007bff) !important;
+    color: var(--200, #9e9e9e);
 }
 
 /* Current-resource pill — muted, non-interactive */
 .o_breadcrumb_pills .breadcrumb-pill-current {
-    background-color: var(--bs-secondary, #6c757d);
-    color: #fff !important;
+    /* background-color: var(--200, #9e9e9e); */
+    border: 3px solid var(--300, #9e9e9e);
+    /* color: #fff !important; */
     padding: 0.25em 0.7em;
     cursor: default;
     white-space: normal;
@@ -36,6 +38,11 @@
     color: #9a9a9a;
     flex-shrink: 0;
 }
+
+.o_breadcrumb_pills {    
+    gap: 0px !important;
+}
+
 
 /* Resource link icons in circles */
 .o_resource_links .resource-link-icon img,
