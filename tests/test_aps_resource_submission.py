@@ -193,3 +193,25 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.assertIn('Q1a', answer)
         self.assertIn('Q1b', answer)
         self.assertNotIn('Q1c', answer)
+
+    def test_toggling_flag_updates_parent_score_immediately(self):
+        """Toggling score_contributes_to_parent on a child resource should immediately
+        re-trigger the parent submission recalculation."""
+        # Set all child scores first
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+
+        self.parent_submission.invalidate_recordset()
+        # All three children contribute: 2+4+3 = 9
+        self.assertEqual(self.parent_submission.score, 9.0)
+
+        # Now exclude child_c — parent should recalculate immediately
+        self.child_resource_c.write({'score_contributes_to_parent': False})
+        self.parent_submission.invalidate_recordset()
+        self.assertEqual(self.parent_submission.score, 6.0)
+
+        # Re-enable child_c — parent should include it again
+        self.child_resource_c.write({'score_contributes_to_parent': True})
+        self.parent_submission.invalidate_recordset()
+        self.assertEqual(self.parent_submission.score, 9.0)
