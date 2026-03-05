@@ -67,24 +67,6 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     update_feedback = fields.Boolean(string='Feedback')
     feedback_value = fields.Html(string='Value')
 
-    # Reference fields – show current values from the first selected submission
-    first_submission_question = fields.Html(
-        string='Current Question (First Submission)',
-        compute='_compute_first_submission_fields',
-    )
-    first_submission_answer = fields.Html(
-        string='Current Answer (First Submission)',
-        compute='_compute_first_submission_fields',
-    )
-    first_submission_model_answer = fields.Html(
-        string='Current Model Answer (First Submission)',
-        compute='_compute_first_submission_fields',
-    )
-    first_submission_feedback = fields.Html(
-        string='Current Feedback (First Submission)',
-        compute='_compute_first_submission_fields',
-    )
-
     # Confirmation
     confirm_update = fields.Boolean(string='I confirm I want to apply these changes to the selected submissions')
 
@@ -92,14 +74,22 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     def _default_submission_ids(self):
         return self.env.context.get('active_ids', [])
 
-    @api.depends('submission_ids')
-    def _compute_first_submission_fields(self):
-        for wizard in self:
-            first_submission = wizard.submission_ids[:1]
-            wizard.first_submission_question = first_submission.question if first_submission else False
-            wizard.first_submission_answer = first_submission.answer if first_submission else False
-            wizard.first_submission_model_answer = first_submission.model_answer if first_submission else False
-            wizard.first_submission_feedback = first_submission.feedback if first_submission else False
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        active_ids = self.env.context.get('active_ids', [])
+        if active_ids:
+            first = self.env['aps.resource.submission'].browse(active_ids[0])
+            if first.exists():
+                if 'question_value' in fields_list:
+                    defaults['question_value'] = first.question
+                if 'answer_value' in fields_list:
+                    defaults['answer_value'] = first.answer
+                if 'model_answer_value' in fields_list:
+                    defaults['model_answer_value'] = first.model_answer
+                if 'feedback_value' in fields_list:
+                    defaults['feedback_value'] = first.feedback
+        return defaults
 
     def action_update(self):
         self.ensure_one()
