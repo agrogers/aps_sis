@@ -133,7 +133,7 @@
                 <field name="student_id" optional="show" readonly="1"/>
                 <field name="assigned_by" readonly="1" optional="hide"/>
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide" readonly="1"/>
-                <field name="time_assigned" widget="float_time" nolabel="1"/>
+                <field name="time_assigned" widget="float_time" nolabel="1" optional="hide" />
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
