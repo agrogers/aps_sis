@@ -78,6 +78,13 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
         active_ids = self.env.context.get('active_ids', [])
+        # Fallback: extract IDs from the Many2many command list in default_submission_ids
+        # (server action passes default_submission_ids but not active_ids)
+        if not active_ids:
+            for cmd in self.env.context.get('default_submission_ids', []):
+                if isinstance(cmd, (list, tuple)) and len(cmd) >= 3 and cmd[0] == 6:
+                    active_ids = cmd[2]
+                    break
         if active_ids:
             first = self.env['aps.resource.submission'].browse(active_ids[0])
             if first.exists():
