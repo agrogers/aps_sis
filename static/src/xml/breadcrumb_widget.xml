@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!--
+        BreadcrumbField template.
+
+        Renders the display_name_breadcrumb JSON field as a row of badge pills
+        separated by 🢒 arrows.  Ancestor pills are clickable links; the final
+        pill (the current resource) is styled differently and is not a link.
+
+        OWL 2 t-foreach provides: {name}, {name}_index, {name}_first, {name}_last.
+        We use crumb_last to identify the current resource (last segment).
+        The outer font-size is driven by the widget's `size` option.
+    -->
+    <t t-name="aps_sis.BreadcrumbField">
+        <div class="o_breadcrumb_pills d-flex flex-wrap align-items-center gap-1"
+             t-att-style="props.size ? 'font-size: ' + props.size + ';' : ''">
+            <t t-foreach="breadcrumbs" t-as="crumb" t-key="crumb.id or crumb.label">
+                <!-- Arrow separator (not before the first pill) -->
+                <t t-if="!crumb_first">
+                    <span class="breadcrumb-pills-arrow mx-1 text-muted" aria-hidden="true">🢒</span>
+                </t>
+
+                <!-- Ancestor pill — clickable link -->
+                <t t-if="crumb.id and !crumb_last">
+                    <a href="#"
+                       class="breadcrumb-pill breadcrumb-pill-ancestor badge rounded-pill text-decoration-none"
+                       t-att-title="'Go to: ' + crumb.label"
+                       t-on-click.stop.prevent="() => this.openResource(crumb.id)">
+                        <t t-esc="crumb.label"/>
+                    </a>
+                </t>
+
+                <!-- Current resource pill — not a link -->
+                <t t-else="">
+                    <span class="breadcrumb-pill breadcrumb-pill-current badge rounded-pill"
+                          t-att-title="crumb.label">
+                        <t t-esc="crumb.label"/>
+                    </span>
+                </t>
+            </t>
+        </div>
+    </t>
+</templates>

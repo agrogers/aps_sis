@@ -235,6 +235,12 @@ class APSResource(models.Model):
         string='Points Scale', help="Scales the default points allocated to a resource.",
         default=1
     )
+    display_name_breadcrumb = fields.Json(
+        string='Display Name Breadcrumb',
+        compute='_compute_display_name_breadcrumb',
+        store=True,
+        help='Stored list of [{id, label}] entries representing the ancestor chain for the breadcrumb pills widget.',
+    )
 # region Computed Fields and Overrides
     @api.depends('subjects')
     def _compute_subject_icons(self):
@@ -502,6 +508,58 @@ class APSResource(models.Model):
                         rec.display_name = parent_display
             else:
                 rec.display_name = rec.name or ''
+
+    @api.depends('display_name', 'primary_parent_id', 'parent_ids')
+    def _compute_display_name_breadcrumb(self):
+        """Build a stored list of {id, label} pairs for the breadcrumb pills widget.
+
+        The list runs from the top-level ancestor down to (and including) the current
+        resource.  Labels are taken from the segments of ``display_name`` (split by the
+        🢒 separator) so they match what is already shown on screen.  IDs are resolved by
+        walking up the primary_parent_id / first-parent chain so the pills can open the
+        correct form record.
+        """
+        separator = ' 🢒 '
+        for rec in self:
+            display = rec.display_name or rec.name or ''
+            segments = display.split(separator) if display else [display]
+
+            # Walk from the current record upward to collect the ancestor chain.
+            # We stop if we visit a record twice (cycle guard) or reach a root.
+            # Records are used directly in the visited set because they are hashable.
+            chain = []
+            current = rec
+            visited = set()
+            while current:
+                if current in visited:
+                    break
+                visited.add(current)
+                chain.append(current)
+                parent = current.primary_parent_id or (current.parent_ids and current.parent_ids[0])
+                if not parent:
+                    break
+                current = parent
+
+            # chain[0] = current record, chain[-1] = root ancestor — reverse so root is first.
+            chain.reverse()
+
+            n_seg = len(segments)
+            n_chain = len(chain)
+            breadcrumb = []
+            for i, segment in enumerate(segments):
+                # Align from the right so the last segment always maps to the current record.
+                chain_idx = n_chain - n_seg + i
+                if 0 <= chain_idx < n_chain:
+                    res = chain[chain_idx]
+                    # Resolve to an integer id; NewId instances (during creation) are not useful as links.
+                    origin = getattr(res, '_origin', None)
+                    res_id = (origin.id if origin and isinstance(origin.id, int) else
+                              res.id if isinstance(res.id, int) else False)
+                else:
+                    res_id = False
+                breadcrumb.append({'id': res_id, 'label': segment})
+
+            rec.display_name_breadcrumb = breadcrumb or [{'id': False, 'label': display}]
 
     def _similar_words(self, word1, word2):
         """Check if two words are similar (allowing for typos). Returns True if edit distance <= 2."""

@@ -132,7 +132,8 @@
                 <sheet>
                     <div class="aps_ribbon" invisible="not type_id">
                         <field name="type_icon" widget="image" options="{'size': [40, 40]}" class="me-2" nolabel="1"/>
-                        <field name="display_name" style="font-size: 1.5em; font-weight: 600;"/>
+                        <field name="display_name_breadcrumb" widget="breadcrumb_pills" nolabel="1"
+                               options="{'size': '1.4em'}" style="font-weight: 600;"/>
                     </div>
                     <notebook>
                         <page string="Basic Information">
