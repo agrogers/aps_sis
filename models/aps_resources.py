@@ -426,12 +426,17 @@ class APSResource(models.Model):
             
         return parent_html
 
-    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids')
+    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids', 'parent_ids.display_name')
     def _compute_display_name(self):
         """Build display name from ancestor chain, removing redundant overlapping characters."""
         for rec in self:
-            # Priority: 1. primary_parent_id, 2. first parent from parent_ids, 3. just name
-            parent_to_use = rec.primary_parent_id or (rec.parent_ids and rec.parent_ids[0])
+            # Priority: 1. primary_parent_id, 2. most specific parent from parent_ids, 3. just name
+            if rec.primary_parent_id:
+                parent_to_use = rec.primary_parent_id
+            elif rec.parent_ids:
+                parent_to_use = self._most_specific_parent(rec.parent_ids)
+            else:
+                parent_to_use = None
             
             if parent_to_use:
                 parent_display = parent_to_use.display_name or parent_to_use.name or ''
@@ -625,7 +630,10 @@ class APSResource(models.Model):
                 if len(command) >= 3 and command[0] == 6 and command[2]:  # (6, 0, [ids])
                     parent_ids_list = command[2]
                     if parent_ids_list and 'primary_parent_id' in fields_list and not res.get('primary_parent_id'):
-                        res['primary_parent_id'] = parent_ids_list[0]
+                        # Pick the most specific (deepest) parent rather than the first
+                        parents = self.env['aps.resources'].browse(parent_ids_list)
+                        best = self._most_specific_parent(parents)
+                        res['primary_parent_id'] = best.id
 
         # Set default type_id to the most recently used type
         if 'type_id' in fields_list and not res.get('type_id'):
@@ -649,8 +657,8 @@ class APSResource(models.Model):
         if self.primary_parent_id and self.primary_parent_id not in self.parent_ids:
             self.primary_parent_id = False
         elif not self.primary_parent_id and self.parent_ids:
-            # Set primary parent to the first parent if not set
-            self.primary_parent_id = self.parent_ids[0]
+            # Set primary parent to the most specific (deepest) parent
+            self.primary_parent_id = self._most_specific_parent(self.parent_ids)
 
     @api.onchange('url')
     def _onchange_url(self):
@@ -669,13 +677,42 @@ class APSResource(models.Model):
 
     # Removed _check_parent_loop since multiple parents make cycle detection complex
 
+    def _most_specific_parent(self, parents):
+        """Return the most specific (deepest in the chain) parent from a recordset.
+
+        The depth of a resource is determined by the number of ' 🢒 ' separators
+        in its display_name.  A parent with more separators sits lower in the
+        hierarchy and is therefore more specific.  When two parents share the
+        same depth the one with the longer display_name is preferred.
+
+        Returns False if ``parents`` is empty.
+        """
+        if not parents:
+            return self.env['aps.resources']
+        separator = ' 🢒 '
+
+        def _depth_key(p):
+            dn = p.display_name or p.name or ''
+            return (dn.count(separator), len(dn))
+
+        return max(parents, key=_depth_key)
+
     def _sync_primary_parent(self):
-        """Ensure `primary_parent_id` is set to a valid parent whenever parents exist."""
+        """Ensure `primary_parent_id` is set to a valid parent whenever parents exist.
+
+        When the current primary_parent_id is missing or no longer in parent_ids,
+        we pick the *most specific* parent (deepest in the ancestor chain) rather
+        than parent_ids[0].  The M2M relation returns records ordered by their
+        database id, which is creation order – a root ancestor therefore tends to
+        have a lower id than its children and would incorrectly become the primary
+        parent when multiple ancestors are all listed in parent_ids.
+        """
         for rec in self:
             if rec.parent_ids:
                 if not rec.primary_parent_id or rec.primary_parent_id not in rec.parent_ids:
                     # Use update() to avoid cascading writes and recursion
-                    rec.sudo().update({'primary_parent_id': rec.parent_ids[0].id})
+                    best = self._most_specific_parent(rec.parent_ids)
+                    rec.sudo().update({'primary_parent_id': best.id})
             else:
                 # No parents: clear primary_parent_id
                 if rec.primary_parent_id:
@@ -694,13 +731,13 @@ class APSResource(models.Model):
             self._sync_answers_from_parent()
 
         if 'name' in vals:
-            # When name changes, update display_name for self and direct children
+            # When name changes, update display_name for self and all descendants
             for rec in self:
                 rec._compute_display_name()
-                # Update display_name for direct children
-                children = self.search([('parent_ids', 'in', rec.id)])
-                if children:
-                    children._compute_display_name()
+                # Update display_name for all descendants in hierarchical order
+                descendants = rec._get_all_descendants()
+                if descendants:
+                    descendants._compute_display_name()
 
         """Update records and invalidate child caches if notes changed."""
         if 'notes' in vals or 'has_notes' in vals:
