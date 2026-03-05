@@ -69,12 +69,70 @@
                                 
                                 <group colspan="4"><field name="update_notification_state" nolabel="1" widget="boolean_toggle"/><label for="update_notification_state" class="mb-0">Notification State</label></group>
                                 <group colspan="8"><field name="notification_state_value" invisible="not update_notification_state"/></group>
-                       
+
+                                <group colspan="4">
+                                    <field name="update_question" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_question" class="mb-0">Question</label>
+                                </group>
+                                <group colspan="8"/>
+
+                                <group colspan="4">
+                                    <field name="update_answer" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_answer" class="mb-0">Answer</label>
+                                </group>
+                                <group colspan="8"/>
+
+                                <group colspan="4">
+                                    <field name="update_model_answer" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_model_answer" class="mb-0">Model Answer</label>
+                                </group>
+                                <group colspan="8"/>
+
+                                <group colspan="4">
+                                    <field name="update_feedback" nolabel="1" widget="boolean_toggle"/>
+                                    <label for="update_feedback" class="mb-0">Feedback</label>
+                                </group>
+                                <group colspan="8"/>
+
                         </group>
                         <group string="Tasks to Update" colspan="4">
                             <field name="submission_ids" widget="many2many_tags" nolabel="1"  readonly="1"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Question" invisible="not update_question">
+                            <group string="Current Question (First Submission)" col="1">
+                                <field name="first_submission_question" widget="html" nolabel="1" readonly="1"/>
+                            </group>
+                            <group string="New Question" col="1">
+                                <field name="question_value" widget="html" nolabel="1"/>
+                            </group>
+                        </page>
+                        <page string="Answer" invisible="not update_answer">
+                            <group string="Current Answer (First Submission)" col="1">
+                                <field name="first_submission_answer" widget="html" nolabel="1" readonly="1"/>
+                            </group>
+                            <group string="New Answer" col="1">
+                                <field name="answer_value" widget="html" nolabel="1"/>
+                            </group>
+                        </page>
+                        <page string="Model Answer" invisible="not update_model_answer">
+                            <group string="Current Model Answer (First Submission)" col="1">
+                                <field name="first_submission_model_answer" widget="html" nolabel="1" readonly="1"/>
+                            </group>
+                            <group string="New Model Answer" col="1">
+                                <field name="model_answer_value" widget="html" nolabel="1"/>
+                            </group>
+                        </page>
+                        <page string="Feedback" invisible="not update_feedback">
+                            <group string="Current Feedback (First Submission)" col="1">
+                                <field name="first_submission_feedback" widget="html" nolabel="1" readonly="1"/>
+                            </group>
+                            <group string="New Feedback" col="1">
+                                <field name="feedback_value" widget="html" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
                 <footer>
                     <button string="Update" name="action_update" type="object" class="btn-primary"/>
