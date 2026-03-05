@@ -420,8 +420,13 @@ class APSResourceSubmission(models.Model):
             if not child_resources:
                 continue
 
+            # Only include children that contribute to the parent score
+            contributing_children = child_resources.filtered(lambda r: r.score_contributes_to_parent)
+            if not contributing_children:
+                continue
+
             domain = [
-                ('resource_id', 'in', child_resources.ids),
+                ('resource_id', 'in', contributing_children.ids),
                 ('student_id', '=', record.student_id.id),
             ]
             if record.submission_label:

@@ -204,3 +204,32 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         Submission = self.env['aps.resource.submission']
         self.assertEqual(Submission._fmt_num(5.5), '5.50')
         self.assertEqual(Submission._fmt_num(3.14), '3.14')
+
+    def test_child_excluded_from_parent_score_when_flag_false(self):
+        """When a child resource has score_contributes_to_parent=False its score
+        should not be included in the parent's auto-calculated score."""
+        # Mark child_c as not contributing to parent score
+        self.child_resource_c.write({'score_contributes_to_parent': False})
+
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
+        # child_sub_c is scored but should be excluded
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+
+        self.parent_submission.invalidate_recordset()
+        # Only Q1a (2) + Q1b (4) = 6 should count; Q1c (3) is excluded
+        self.assertEqual(self.parent_submission.score, 6.0)
+
+    def test_excluded_child_not_in_parent_answer_summary(self):
+        """The excluded child's name should not appear in the parent answer summary."""
+        self.child_resource_c.write({'score_contributes_to_parent': False})
+
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+
+        self.parent_submission.invalidate_recordset()
+        answer = self.parent_submission.answer or ''
+        self.assertIn('Q1a', answer)
+        self.assertIn('Q1b', answer)
+        self.assertNotIn('Q1c', answer)
