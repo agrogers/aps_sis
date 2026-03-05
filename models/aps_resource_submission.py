@@ -465,35 +465,35 @@ class APSResourceSubmission(models.Model):
             })
 
     def _check_and_update_parent_score(self):
-        """After a score update on this record, find the corresponding parent submission
-        and trigger a score recalculation if the parent has auto_score enabled."""
+        """After a score update on this record, find the corresponding parent submissions
+        for all parent resources and trigger a score recalculation if the parent has
+        auto_score enabled."""
         for record in self:
-            if not record.resource_id or not record.resource_id.primary_parent_id:
+            if not record.resource_id or not record.resource_id.parent_ids:
                 continue
 
-            parent_resource = record.resource_id.primary_parent_id
+            for parent_resource in record.resource_id.parent_ids:
+                # Find the parent task for the same student
+                parent_task = self.env['aps.resource.task'].search([
+                    ('resource_id', '=', parent_resource.id),
+                    ('student_id', '=', record.student_id.id),
+                ], limit=1)
 
-            # Find the parent task for the same student
-            parent_task = self.env['aps.resource.task'].search([
-                ('resource_id', '=', parent_resource.id),
-                ('student_id', '=', record.student_id.id),
-            ], limit=1)
+                if not parent_task:
+                    continue
 
-            if not parent_task:
-                continue
+                # Find the parent submission, preferring one with a matching label
+                parent_domain = [('task_id', '=', parent_task.id)]
+                if record.submission_label:
+                    parent_domain.append(('submission_label', '=', record.submission_label))
 
-            # Find the parent submission, preferring one with a matching label
-            parent_domain = [('task_id', '=', parent_task.id)]
-            if record.submission_label:
-                parent_domain.append(('submission_label', '=', record.submission_label))
+                parent_submission = self.search(parent_domain, order='create_date desc', limit=1)
 
-            parent_submission = self.search(parent_domain, order='create_date desc', limit=1)
+                if not parent_submission:
+                    continue
 
-            if not parent_submission:
-                continue
-
-            if parent_submission.auto_score:
-                parent_submission._recalculate_score_from_children()
+                if parent_submission.auto_score:
+                    parent_submission._recalculate_score_from_children()
 
 # endregion - Auto Score / Auto Answer
 
