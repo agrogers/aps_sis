@@ -153,6 +153,46 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.parent_submission.invalidate_recordset()
         self.assertEqual(self.parent_submission.score, 9.0)
 
+    def test_all_parents_updated_when_child_has_multiple_parents(self):
+        """When a child resource belongs to multiple parents, all parent submissions
+        with auto_score=True should be updated when the child score changes."""
+        # Create a second parent resource that also contains child_resource_a
+        parent_resource_2 = self.env['aps.resources'].create({
+            'name': 'Q2',
+            'marks': 10.0,
+        })
+
+        # Add the second parent to child_resource_a
+        self.child_resource_a.write({
+            'parent_ids': [(4, parent_resource_2.id)],
+        })
+
+        # Create task and submission for the second parent
+        parent_task_2 = self.env['aps.resource.task'].create({
+            'resource_id': parent_resource_2.id,
+            'student_id': self.student.id,
+        })
+        parent_submission_2 = self.env['aps.resource.submission'].create({
+            'task_id': parent_task_2.id,
+            'submission_name': 'Q2',
+            'submission_label': 'Exam2025',
+            'auto_score': True,
+        })
+
+        # Set scores on all children of original parent
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+        # Updating child_resource_a's score should trigger both parents
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
+
+        # Original parent_submission should be updated (sum of a+b+c = 9)
+        self.parent_submission.invalidate_recordset()
+        self.assertEqual(self.parent_submission.score, 9.0)
+
+        # Second parent_submission_2 should also be updated (only child_a contributes = 2)
+        parent_submission_2.invalidate_recordset()
+        self.assertEqual(parent_submission_2.score, 2.0)
+
     def test_fmt_num_integer(self):
         """_fmt_num should return integer string for whole numbers."""
         Submission = self.env['aps.resource.submission']
