@@ -159,6 +159,21 @@ class APSResourceSubmission(models.Model):
         # store=True
         )
 
+    auto_score = fields.Boolean(
+        string='Auto Score',
+        default=True,
+        help='If True, the score is automatically calculated from child resource scores. '
+             'Set to False when the score has been manually entered by a user.',
+        tracking=True,
+    )
+    auto_answer = fields.Boolean(
+        string='Auto Answer',
+        default=True,
+        help='If True, the answer is automatically generated from child resource results. '
+             'Set to False when the answer has been manually entered by a user.',
+        tracking=True,
+    )
+
 # region - Computed Fields
 
     # @api.depends('default_notebook_page')
@@ -392,6 +407,104 @@ class APSResourceSubmission(models.Model):
 
 # endregion - Computed Fields
 
+# region - Auto Score / Auto Answer
+
+    @staticmethod
+    def _fmt_num(n):
+        """Format a number, removing unnecessary decimal places."""
+        if n == int(n):
+            return str(int(n))
+        return f"{n:.2f}"
+
+    def _recalculate_score_from_children(self):
+        """For records with auto_score/auto_answer=True, recalculate score and answer
+        from child resource submissions for the same student and submission label."""
+        for record in self:
+            if not (record.auto_score or record.auto_answer):
+                continue
+
+            child_resources = record.resource_id.child_ids if record.resource_id else False
+            if not child_resources:
+                continue
+
+            domain = [
+                ('resource_id', 'in', child_resources.ids),
+                ('student_id', '=', record.student_id.id),
+            ]
+            if record.submission_label:
+                domain.append(('submission_label', '=', record.submission_label))
+
+            child_submissions = self.search(domain).sorted(
+                lambda s: (s.submission_order or 999, s.submission_name or '')
+            )
+
+            if not child_submissions:
+                continue
+
+            total_score = 0.0
+            total_out_of = 0.0
+            lines = []
+
+            for child_sub in child_submissions:
+                score = child_sub.score if child_sub.score != sentinel_zero else 0.0
+                out_of = child_sub.out_of_marks or 0.0
+                name = child_sub.submission_name or child_sub.display_name or '?'
+                lines.append(
+                    f"{name}) Score: {self._fmt_num(score)}/{self._fmt_num(out_of)}"
+                )
+                total_score += score
+                total_out_of += out_of
+
+            update_vals = {}
+
+            if record.auto_score:
+                new_score = total_score if total_out_of > 0 else sentinel_zero
+                update_vals['score'] = new_score
+                update_vals['auto_score'] = True  # Prevent write() from resetting to False
+
+            if record.auto_answer and lines:
+                total_line = f"TOTAL: {self._fmt_num(total_score)}/{self._fmt_num(total_out_of)}"
+                all_lines = lines + [total_line]
+                summary_html = '<p>' + '</p><p>'.join(all_lines) + '</p>'
+                update_vals['answer'] = summary_html
+                update_vals['auto_answer'] = True  # Prevent write() from resetting to False
+
+            if update_vals:
+                record.write(update_vals)
+
+    def _check_and_update_parent_score(self):
+        """After a score update on this record, find the corresponding parent submission
+        and trigger a score recalculation if the parent has auto_score or auto_answer enabled."""
+        for record in self:
+            if not record.resource_id or not record.resource_id.primary_parent_id:
+                continue
+
+            parent_resource = record.resource_id.primary_parent_id
+
+            # Find the parent task for the same student
+            parent_task = self.env['aps.resource.task'].search([
+                ('resource_id', '=', parent_resource.id),
+                ('student_id', '=', record.student_id.id),
+            ], limit=1)
+
+            if not parent_task:
+                continue
+
+            # Find the parent submission, preferring one with a matching label
+            parent_domain = [('task_id', '=', parent_task.id)]
+            if record.submission_label:
+                parent_domain.append(('submission_label', '=', record.submission_label))
+
+            parent_submission = self.search(parent_domain, order='create_date desc', limit=1)
+
+            if not parent_submission:
+                continue
+
+            if parent_submission.auto_score or parent_submission.auto_answer:
+                parent_submission._recalculate_score_from_children()
+
+# endregion - Auto Score / Auto Answer
+
     def _get_faculty_for_current_user(self):
         """Get the faculty record for the current user"""
         employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
@@ -584,6 +697,20 @@ class APSResourceSubmission(models.Model):
 
     def write(self, vals):
         
+        # Mark score as manually set when score is changed without explicitly passing auto_score=True.
+        # Our auto-calculation code always passes auto_score=True explicitly, so this only
+        # triggers for user-initiated changes.
+        if 'score' in vals and 'auto_score' not in vals:
+            vals['auto_score'] = False
+
+        # Similarly mark answer as manually set when changed without explicitly passing auto_answer=True.
+        if 'answer' in vals and 'auto_answer' not in vals:
+            vals['auto_answer'] = False
+
+        # Capture old auto_score / auto_answer values to detect transitions to True
+        old_auto_score = {rec.id: rec.auto_score for rec in self}
+        old_auto_answer = {rec.id: rec.auto_answer for rec in self}
+
         # Handle automatic date setting based on state changes
         if 'state' in vals:
             for record in self:
@@ -613,6 +740,20 @@ class APSResourceSubmission(models.Model):
             if tasks:
                 tasks._update_state_from_submissions()
 
+        # When auto_score or auto_answer is reset to True, recalculate from children
+        if vals.get('auto_score') is True or vals.get('auto_answer') is True:
+            to_recalculate = self.filtered(
+                lambda r: (
+                    (vals.get('auto_score') is True and not old_auto_score.get(r.id, True))
+                    or (vals.get('auto_answer') is True and not old_auto_answer.get(r.id, True))
+                )
+            )
+            if to_recalculate:
+                to_recalculate._recalculate_score_from_children()
+
+        # When score changes (for any reason), check if a parent submission needs updating
+        if 'score' in vals:
+            self._check_and_update_parent_score()
 
         if 'review_requested_by' in vals:
             for record in self:
