@@ -1,4 +1,5 @@
 from odoo.tests.common import TransactionCase
+from odoo.addons.aps_sis.models.aps_resource_submission import sentinel_zero
 
 
 class TestAPSResourceSubmissionAutoScore(TransactionCase):
@@ -106,10 +107,11 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.assertTrue(self.child_sub_a.auto_score)
 
     def test_parent_score_updated_when_child_score_changes(self):
-        """When a child score is set, the parent submission (with auto_score=True) should be updated."""
-        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
-        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
-        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+        """When all child scores are set and submitted, the parent submission
+        (with auto_score=True) should be updated."""
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False, 'state': 'submitted'})
 
         # Re-read parent to get updated values
         self.parent_submission.invalidate_recordset()
@@ -117,9 +119,9 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
 
     def test_parent_answer_updated_with_summary(self):
         """Parent answer should contain a summary of child scores when auto_score=True."""
-        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
-        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
-        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False, 'state': 'submitted'})
 
         self.parent_submission.invalidate_recordset()
         answer = self.parent_submission.answer or ''
@@ -141,10 +143,10 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
 
     def test_reset_auto_score_to_true_triggers_recalculation(self):
         """When auto_score is reset from False to True, parent score should be recalculated."""
-        # Manually set children's scores
-        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
-        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
-        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+        # Manually set children's scores and mark them as submitted
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False, 'state': 'submitted'})
 
         # Disable auto_score on parent, then re-enable
         self.parent_submission.write({'auto_score': False, 'score': 0.0})
@@ -179,11 +181,11 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
             'auto_score': True,
         })
 
-        # Set scores on all children of original parent
-        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
-        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+        # Set scores on all children of original parent and mark as submitted
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False, 'state': 'submitted'})
         # Updating child_resource_a's score should trigger both parents
-        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
 
         # Original parent_submission should be updated (sum of a+b+c = 9)
         self.parent_submission.invalidate_recordset()
@@ -211,9 +213,9 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         # Mark child_c as not contributing to parent score
         self.child_resource_c.write({'score_contributes_to_parent': False})
 
-        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
-        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
-        # child_sub_c is scored but should be excluded
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        # child_sub_c is scored but should be excluded; its state does not matter
         self.child_sub_c.write({'score': 3.0, 'auto_score': False})
 
         self.parent_submission.invalidate_recordset()
@@ -224,8 +226,8 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         """The excluded child's name should not appear in the parent answer summary."""
         self.child_resource_c.write({'score_contributes_to_parent': False})
 
-        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
-        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
         self.child_sub_c.write({'score': 3.0, 'auto_score': False})
 
         self.parent_submission.invalidate_recordset()
@@ -233,3 +235,58 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.assertIn('Q1a', answer)
         self.assertIn('Q1b', answer)
         self.assertNotIn('Q1c', answer)
+
+    def test_parent_not_updated_when_not_all_children_submitted(self):
+        """Parent score should NOT be updated if some contributing children have
+        not yet reached 'submitted' or 'complete' state."""
+        # Submit only two of the three contributing children
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        # child_sub_c remains in 'assigned' state
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+
+        self.parent_submission.invalidate_recordset()
+        # Parent must NOT be updated because child_c is still 'assigned'
+        self.assertEqual(self.parent_submission.score, sentinel_zero)
+
+    def test_parent_updated_when_last_child_submits(self):
+        """Parent score should be updated when the final contributing child
+        transitions to 'submitted' state (even if scores were already set)."""
+        # Set scores on all children but keep them in 'assigned' state first
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        # child_sub_c has its score but is still assigned
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+
+        # Parent should not yet be updated
+        self.parent_submission.invalidate_recordset()
+        self.assertNotEqual(self.parent_submission.score, 9.0)
+
+        # Now submit the last child — this should trigger the parent update
+        self.child_sub_c.write({'state': 'submitted'})
+
+        self.parent_submission.invalidate_recordset()
+        self.assertEqual(self.parent_submission.score, 9.0)
+
+    def test_best_score_used_for_duplicate_child_submissions(self):
+        """When a child resource has two submissions sharing the same resource and
+        label, only the one with the highest score should contribute to the parent."""
+        # Create a second submission for child_resource_a with a higher score
+        self.env['aps.resource.submission'].create({
+            'task_id': self.child_task_a.id,
+            'submission_name': 'Q1a',
+            'submission_label': 'Exam2025',
+            'submission_order': 1,
+            'score': 4.0,
+            'auto_score': False,
+            'state': 'submitted',
+        })
+
+        # Original child_sub_a gets a lower score and is submitted
+        self.child_sub_a.write({'score': 1.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False, 'state': 'submitted'})
+
+        self.parent_submission.invalidate_recordset()
+        # Best score for Q1a is 4 (from the duplicate), so total = 4 + 4 + 3 = 11
+        self.assertEqual(self.parent_submission.score, 11.0)
