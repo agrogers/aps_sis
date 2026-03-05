@@ -177,7 +177,7 @@
                             <div class="row">
                                 <div class="col-2">
                                     <img t-if="record.subject_icons.raw_value" 
-                                         t-att-src="kanban_image('aps.resource.submission', 'subject_icons', record.id.raw_value, 'image_small')" 
+                                         t-att-src="'/web/image/aps.resource.submission/' + record.id.raw_value + '/subject_icons'" 
                                          class="oe_kanban_image" style="max-width: 32px; max-height: 32px;" alt="Subject Icon"/>
                                     <div t-else="" class="oe_kanban_no_image">
                                         <i class="fa fa-book" title="Book"></i>
@@ -281,7 +281,7 @@
                                     <field name="allow_subject_editing"  widget="boolean_toggle" />
                                     <field name="assigned_by"/>
                                     <div class="o_row" colspan="2">  <!-- colspan=2 makes it span both columns of the parent group -->
-                                        <label for="date_assigned" string="Assigned Date and Time" class="fw-bold"/>
+                                        <label for="date_assigned" string="Assigned On" class="fw-bold"/>
                                         <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                         <field name="time_assigned" widget="float_time" nolabel="1"/>
                                     </div>

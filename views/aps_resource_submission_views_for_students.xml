@@ -162,7 +162,11 @@
                                     <field name="subjects" readonly="1" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
                                     <field name="assigned_by"/>
-                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                    <div class="o_row" colspan="2">  <!-- colspan=2 makes it span both columns of the parent group -->
+                                        <label for="date_assigned" string="Assigned On" class="fw-bold"/>
+                                        <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                        <field name="time_assigned" widget="float_time" nolabel="1"/>
+                                    </div>
                                     <field name="submission_label"/>
                                 </group>
                                 <group>

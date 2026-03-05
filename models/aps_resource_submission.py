@@ -601,7 +601,12 @@ class APSResourceSubmission(models.Model):
                     # Also ensure submission date is set if missing
                     if not record.date_submitted and 'date_submitted' not in vals:
                         vals['date_submitted'] = fields.Date.today()
-        
+
+                # Also set date_assigned if not set (for auto-assigned submissions)
+                if not record.date_assigned and 'date_assigned' not in vals:
+                    vals['date_assigned'] = fields.Date.today()
+                
+
         old_faculty_map = {rec.id: set(rec.review_requested_by.ids) for rec in self}
 
         result = super().write(vals)

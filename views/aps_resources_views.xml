@@ -52,7 +52,7 @@
                         <div class="o_kanban_record">
                             <div class="d-flex align-items-center mb-2">
                                 <img t-if="record.type_icon.raw_value"
-                                     t-att-src="kanban_image('aps.resources', 'type_icon', record.id.raw_value)"
+                                      t-att-src="'/web/image/aps.resources/' + record.id.raw_value + '/type_icon'"
                                      style="width:20px;height:20px;object-fit:contain;"
                                      class="me-2"
                                      alt="Type"/>
