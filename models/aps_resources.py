@@ -192,6 +192,11 @@ class APSResource(models.Model):
         default='optional', 
         help='Identifies which resources should be assigned to students to complete.', tracking=True)
     marks = fields.Float(string='Out of Marks', digits=(16, 1), help='Maximum marks/points for this resource')
+    score_contributes_to_parent = fields.Boolean(
+        string='Contributes to Parent Score',
+        default=True,
+        help='When enabled, this resource\'s score is included in the parent resource\'s total score calculation.',
+    )
     subjects = fields.Many2many('op.subject', string='Subjects')
     tag_ids = fields.Many2many('aps.resource.tags', string='Tags')
     task_ids = fields.One2many('aps.resource.task', 'resource_id', string='Tasks')

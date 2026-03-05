@@ -156,6 +156,7 @@
                                     </div>
                                     <field name="category"/>
                                     <field name="marks" widget="float_sentinel"/>
+                                    <field name="score_contributes_to_parent" widget="boolean_toggle" invisible="not parent_ids"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="tag_ids" widget="many2many_tags" options="{'no_create': False}"/>
                                     <field name="url" widget="url_icon"/>
