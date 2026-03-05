@@ -25,7 +25,7 @@
                     <a href="#"
                        class="breadcrumb-pill breadcrumb-pill-ancestor badge rounded-pill text-decoration-none"
                        t-att-title="'Go to: ' + crumb.label"
-                       t-on-click.stop.prevent="() => openResource(crumb.id)">
+                       t-on-click.stop.prevent="() => this.openResource(crumb.id)">
                         <t t-esc="crumb.label"/>
                     </a>
                 </t>
