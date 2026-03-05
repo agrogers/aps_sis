@@ -2,7 +2,7 @@ from odoo.tests.common import TransactionCase
 
 
 class TestAPSResourceSubmissionAutoScore(TransactionCase):
-    """Tests for the auto_score and auto_answer fields and parent score calculation."""
+    """Tests for the auto_score field and parent score calculation."""
 
     def setUp(self):
         super().setUp()
@@ -62,7 +62,6 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
             'submission_name': 'Q1',
             'submission_label': 'Exam2025',
             'auto_score': True,
-            'auto_answer': True,
         })
         self.child_sub_a = self.env['aps.resource.submission'].create({
             'task_id': self.child_task_a.id,
@@ -91,23 +90,15 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         })
         self.assertTrue(sub.auto_score)
 
-    def test_auto_answer_defaults_to_true(self):
-        """New submissions should have auto_answer=True by default."""
-        sub = self.env['aps.resource.submission'].create({
-            'task_id': self.parent_task.id,
-            'submission_name': 'New',
-        })
-        self.assertTrue(sub.auto_answer)
-
     def test_setting_score_sets_auto_score_false(self):
         """Writing a score without explicitly passing auto_score should set auto_score=False."""
         self.child_sub_a.write({'score': 3.0})
         self.assertFalse(self.child_sub_a.auto_score)
 
-    def test_setting_answer_sets_auto_answer_false(self):
-        """Writing an answer without explicitly passing auto_answer should set auto_answer=False."""
+    def test_setting_answer_sets_auto_score_false(self):
+        """Writing an answer without explicitly passing auto_score should set auto_score=False."""
         self.child_sub_a.write({'answer': '<p>My answer</p>'})
-        self.assertFalse(self.child_sub_a.auto_answer)
+        self.assertFalse(self.child_sub_a.auto_score)
 
     def test_auto_score_explicit_true_is_preserved(self):
         """Writing score with auto_score=True explicitly should keep auto_score=True."""
@@ -125,7 +116,7 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.assertEqual(self.parent_submission.score, 9.0)
 
     def test_parent_answer_updated_with_summary(self):
-        """Parent answer should contain a summary of child scores when auto_answer=True."""
+        """Parent answer should contain a summary of child scores when auto_score=True."""
         self.child_sub_a.write({'score': 2.0, 'auto_score': False})
         self.child_sub_b.write({'score': 4.0, 'auto_score': False})
         self.child_sub_c.write({'score': 3.0, 'auto_score': False})
@@ -140,7 +131,7 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
 
     def test_parent_not_updated_when_auto_score_false(self):
         """Parent score should NOT be updated when parent.auto_score=False."""
-        self.parent_submission.write({'auto_score': False, 'auto_answer': False})
+        self.parent_submission.write({'auto_score': False})
         original_score = self.parent_submission.score
 
         self.child_sub_a.write({'score': 2.0})

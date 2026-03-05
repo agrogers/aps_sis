@@ -162,15 +162,8 @@ class APSResourceSubmission(models.Model):
     auto_score = fields.Boolean(
         string='Auto Score',
         default=True,
-        help='If True, the score is automatically calculated from child resource scores. '
-             'Set to False when the score has been manually entered by a user.',
-        tracking=True,
-    )
-    auto_answer = fields.Boolean(
-        string='Auto Answer',
-        default=True,
-        help='If True, the answer is automatically generated from child resource results. '
-             'Set to False when the answer has been manually entered by a user.',
+        help='If True, the score and answer summary are automatically calculated from child '
+             'resource scores. Set to False when the score has been manually entered by a user.',
         tracking=True,
     )
 
@@ -417,10 +410,10 @@ class APSResourceSubmission(models.Model):
         return f"{n:.2f}"
 
     def _recalculate_score_from_children(self):
-        """For records with auto_score/auto_answer=True, recalculate score and answer
+        """For records with auto_score=True, recalculate score and answer summary
         from child resource submissions for the same student and submission label."""
         for record in self:
-            if not (record.auto_score or record.auto_answer):
+            if not record.auto_score:
                 continue
 
             child_resources = record.resource_id.child_ids if record.resource_id else False
@@ -455,26 +448,25 @@ class APSResourceSubmission(models.Model):
                 total_score += score
                 total_out_of += out_of
 
-            update_vals = {}
+            new_score = total_score if total_out_of > 0 else sentinel_zero
 
-            if record.auto_score:
-                new_score = total_score if total_out_of > 0 else sentinel_zero
-                update_vals['score'] = new_score
-                update_vals['auto_score'] = True  # Prevent write() from resetting to False
+            if not lines:
+                continue
 
-            if record.auto_answer and lines:
-                total_line = f"TOTAL: {self._fmt_num(total_score)}/{self._fmt_num(total_out_of)}"
-                all_lines = lines + [total_line]
-                summary_html = '<p>' + '</p><p>'.join(all_lines) + '</p>'
-                update_vals['answer'] = summary_html
-                update_vals['auto_answer'] = True  # Prevent write() from resetting to False
+            total_line = f"TOTAL: {self._fmt_num(total_score)}/{self._fmt_num(total_out_of)}"
+            all_lines = lines + [total_line]
+            summary_html = '<p>' + '</p><p>'.join(all_lines) + '</p>'
 
-            if update_vals:
-                record.write(update_vals)
+            # Pass auto_score=True explicitly so write() does not flip the flag back to False
+            record.write({
+                'score': new_score,
+                'answer': summary_html,
+                'auto_score': True,
+            })
 
     def _check_and_update_parent_score(self):
         """After a score update on this record, find the corresponding parent submission
-        and trigger a score recalculation if the parent has auto_score or auto_answer enabled."""
+        and trigger a score recalculation if the parent has auto_score enabled."""
         for record in self:
             if not record.resource_id or not record.resource_id.primary_parent_id:
                 continue
@@ -500,7 +492,7 @@ class APSResourceSubmission(models.Model):
             if not parent_submission:
                 continue
 
-            if parent_submission.auto_score or parent_submission.auto_answer:
+            if parent_submission.auto_score:
                 parent_submission._recalculate_score_from_children()
 
 # endregion - Auto Score / Auto Answer
@@ -697,19 +689,14 @@ class APSResourceSubmission(models.Model):
 
     def write(self, vals):
         
-        # Mark score as manually set when score is changed without explicitly passing auto_score=True.
-        # Our auto-calculation code always passes auto_score=True explicitly, so this only
-        # triggers for user-initiated changes.
-        if 'score' in vals and 'auto_score' not in vals:
+        # Mark score and answer as manually set when either is changed without explicitly
+        # passing auto_score=True. Our auto-calculation code always passes auto_score=True
+        # explicitly, so this only triggers for user-initiated changes.
+        if ('score' in vals or 'answer' in vals) and 'auto_score' not in vals:
             vals['auto_score'] = False
 
-        # Similarly mark answer as manually set when changed without explicitly passing auto_answer=True.
-        if 'answer' in vals and 'auto_answer' not in vals:
-            vals['auto_answer'] = False
-
-        # Capture old auto_score / auto_answer values to detect transitions to True
+        # Capture old auto_score values to detect transitions to True
         old_auto_score = {rec.id: rec.auto_score for rec in self}
-        old_auto_answer = {rec.id: rec.auto_answer for rec in self}
 
         # Handle automatic date setting based on state changes
         if 'state' in vals:
@@ -740,13 +727,10 @@ class APSResourceSubmission(models.Model):
             if tasks:
                 tasks._update_state_from_submissions()
 
-        # When auto_score or auto_answer is reset to True, recalculate from children
-        if vals.get('auto_score') is True or vals.get('auto_answer') is True:
+        # When auto_score is reset to True, immediately recalculate from children
+        if vals.get('auto_score') is True:
             to_recalculate = self.filtered(
-                lambda r: (
-                    (vals.get('auto_score') is True and not old_auto_score.get(r.id, True))
-                    or (vals.get('auto_answer') is True and not old_auto_answer.get(r.id, True))
-                )
+                lambda r: not old_auto_score.get(r.id, True)
             )
             if to_recalculate:
                 to_recalculate._recalculate_score_from_children()

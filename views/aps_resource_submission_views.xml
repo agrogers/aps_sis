@@ -313,7 +313,6 @@
                             <group>
                                 <group string="Other Details">
                                     <field name="auto_score" widget="boolean_toggle"/>
-                                    <field name="auto_answer" widget="boolean_toggle"/>
                                     <field name="active_datetime" readonly="1"/>
                                     <field name="notification_state"  />
                                     <field name="days_till_due" readonly="1"/>
