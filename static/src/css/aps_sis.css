@@ -1,3 +1,42 @@
+/* ============================================================
+   Breadcrumb Pills Widget  (widget="breadcrumb_pills")
+   ============================================================ */
+.o_breadcrumb_pills {
+    line-height: 1.4;
+}
+
+/* Ancestor pills — blue, clickable */
+.o_breadcrumb_pills .breadcrumb-pill-ancestor {
+    background-color: var(--bs-primary, #0d6efd);
+    color: #fff !important;
+    padding: 0.25em 0.7em;
+    cursor: pointer;
+    white-space: normal;
+    text-align: left;
+    transition: opacity 0.15s ease;
+}
+.o_breadcrumb_pills .breadcrumb-pill-ancestor:hover {
+    opacity: 0.82;
+    color: #fff !important;
+}
+
+/* Current-resource pill — muted, non-interactive */
+.o_breadcrumb_pills .breadcrumb-pill-current {
+    background-color: var(--bs-secondary, #6c757d);
+    color: #fff !important;
+    padding: 0.25em 0.7em;
+    cursor: default;
+    white-space: normal;
+    text-align: left;
+}
+
+/* Arrow between pills */
+.o_breadcrumb_pills .breadcrumb-pills-arrow {
+    font-size: 0.85em;
+    color: #9a9a9a;
+    flex-shrink: 0;
+}
+
 /* Resource link icons in circles */
 .o_resource_links .resource-link-icon img,
 .o_resource_links .resource-link-icon i,
