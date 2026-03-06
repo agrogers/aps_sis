@@ -43,6 +43,11 @@
                 <filter string="Early" name="early" domain="[('due_status', '=', 'early')]"/>
                 <filter string="Root Resource" name="root_resource" domain="[('resource_id.parent_ids', '=', False)]"/>
                 <separator/>
+                <filter string="Created Today" name="created_today" domain="[('create_date', '&gt;=', datetime.datetime.now().strftime('%Y-%m-%d')), ('create_date', '&lt;', (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Created Yesterday" name="created_yesterday" domain="[('create_date', '&gt;=', (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), ('create_date', '&lt;', datetime.datetime.now().strftime('%Y-%m-%d'))]"/>
+                <filter string="Created This Week" name="created_this_week" domain="[('create_date', '&gt;=', (datetime.datetime.now() - datetime.timedelta(days=datetime.datetime.now().weekday())).strftime('%Y-%m-%d'))]"/>
+                <filter string="Created Last Week" name="created_last_week" domain="[('create_date', '&gt;=', (datetime.datetime.now() - datetime.timedelta(days=datetime.datetime.now().weekday() + 7)).strftime('%Y-%m-%d')), ('create_date', '&lt;', (datetime.datetime.now() - datetime.timedelta(days=datetime.datetime.now().weekday())).strftime('%Y-%m-%d'))]"/>
+                <separator/>
                 <filter string="Edited in Last 5 Minutes" name="edited_last_5_minutes" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(minutes=5)).to_utc().strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <filter string="Edited Today" name="edited_today" domain="[('write_date', '>=', time.strftime('%Y-%m-%d'))]"/>
                 <group expand="0" string="Group By">
