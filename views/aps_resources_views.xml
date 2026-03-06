@@ -354,6 +354,11 @@
                 <filter name="category_mandatory" string="Mandatory" domain="[('category','=','mandatory')]"/>
                 <filter name="category_optional" string="Optional" domain="[('category','=','optional')]"/>
                 <filter name="category_information" string="Information" domain="[('category','=','information')]"/>
+                <separator/>
+                <filter name="created_today" string="Created Today" domain="[('create_date','&gt;=', context_today().strftime('%Y-%m-%d')), ('create_date','&lt;', (context_today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <filter name="created_yesterday" string="Created Yesterday" domain="[('create_date','&gt;=', (context_today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')), ('create_date','&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="created_this_week" string="Created This Week" domain="[('create_date','&gt;=', (context_today() + relativedelta(days=1, weekday=0, weeks=-1)).strftime('%Y-%m-%d')), ('create_date','&lt;', (context_today() + relativedelta(days=1, weekday=0)).strftime('%Y-%m-%d'))]"/>
+                <filter name="created_last_week" string="Created Last Week" domain="[('create_date','&gt;=', (context_today() + relativedelta(days=1, weekday=0, weeks=-2)).strftime('%Y-%m-%d')), ('create_date','&lt;', (context_today() + relativedelta(days=1, weekday=0, weeks=-1)).strftime('%Y-%m-%d'))]"/>
                 <group expand="0" string="Group By">
                     <filter name="group_by_type" string="Type" context="{'group_by':'type_id'}"/>
                     <filter name="group_by_category" string="Category" context="{'group_by':'category'}"/>

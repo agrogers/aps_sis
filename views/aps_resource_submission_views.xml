@@ -43,8 +43,7 @@
                 <filter string="Early" name="early" domain="[('due_status', '=', 'early')]"/>
                 <filter string="Root Resource" name="root_resource" domain="[('resource_id.parent_ids', '=', False)]"/>
                 <separator/>
-                <filter string="Edited in Last 5 Minutes" name="edited_last_5_minutes" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(minutes=5)).to_utc().strftime('%Y-%m-%d %H:%M:%S'))]"/>
-                <filter string="Edited Today" name="edited_today" domain="[('write_date', '>=', time.strftime('%Y-%m-%d'))]"/>
+                <filter string="Edited in Last 5 Minutes" name="edited_last_5_minutes" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(minutes=5)).to_utc().strftime('%Y-%m-%d %H:%M:%S'))]"/>                <filter string="Edited Today" name="edited_today" domain="[('write_date', '>=', (datetime.datetime.now() - datetime.timedelta(days=0)).to_utc().strftime('%Y-%m-%d'))]"/>
                 <group expand="0" string="Group By">
                     <filter string="Label" name="groupby_label" context="{'group_by': 'submission_label'}"/>
                     <filter string="Resource" name="groupby_resource" context="{'group_by': 'resource_id'}"/>
