@@ -102,16 +102,16 @@
                             </group>
                         </page>
                         <page string="Question" invisible="not update_question">
-                            <field name="question_value" widget="html" nolabel="1"/>
+                            <field name="question_value" widget="html" nolabel="1" placeholder="Enter question here"/>
                         </page>
                         <page string="Answer" invisible="not update_answer">
-                            <field name="answer_value" widget="html" nolabel="1"/>
+                            <field name="answer_value" widget="html" nolabel="1" placeholder="Enter answer here"/>
                         </page>
                         <page string="Model Answer" invisible="not update_model_answer">
-                            <field name="model_answer_value" widget="html" nolabel="1"/>
+                            <field name="model_answer_value" widget="html" nolabel="1" placeholder="Enter model answer here"/>
                         </page>
                         <page string="Feedback" invisible="not update_feedback">
-                            <field name="feedback_value" widget="html" nolabel="1"/>
+                            <field name="feedback_value" widget="html" nolabel="1" placeholder="Enter feedback here"/>
                         </page>
                     </notebook>
                 </sheet>
