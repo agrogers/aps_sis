@@ -686,6 +686,18 @@ class APSResource(models.Model):
         # Ensure primary_parent_id stays consistent after any write
         self._sync_primary_parent()
 
+        if 'score_contributes_to_parent' in vals:
+            # When the contribution flag changes, re-trigger parent score recalculation
+            # for every parent resource that has auto_score submissions.
+            parent_resources = self.mapped('parent_ids')
+            if parent_resources:
+                parent_submissions = self.env['aps.resource.submission'].search([
+                    ('resource_id', 'in', parent_resources.ids),
+                    ('auto_score', '=', True),
+                ])
+                if parent_submissions:
+                    parent_submissions._recalculate_score_from_children()
+
         if any(field_name in vals for field_name in ['has_notes', 'primary_parent_id', 'name']):
             self._sync_notes_from_parent()
         if any(field_name in vals for field_name in ['has_question', 'primary_parent_id', 'name']):
