@@ -246,6 +246,12 @@ class APSResource(models.Model):
         store=True,
         help='Stored list of [{id, label}] entries representing the ancestor chain for the breadcrumb pills widget.',
     )
+    level = fields.Integer(
+        string='Hierarchy Level',
+        compute='_compute_level',
+        store=True,
+        help='Depth in the resource hierarchy. Level 0 = root (no parents), Level 1 = direct children of root, etc.',
+    )
 # region Computed Fields and Overrides
     @api.depends('subjects')
     def _compute_subject_icons(self):
@@ -305,6 +311,77 @@ class APSResource(models.Model):
         for rec in self:
             # Count resources that have this resource as a parent
             rec.child_count = self.search_count([('parent_ids', 'in', rec.id)])
+
+    @api.depends('parent_ids', 'parent_ids.level')
+    def _compute_level(self):
+        """Compute the hierarchy depth of each resource.
+
+        Level 0 = root resources (no parents).
+        Level N = min(parent.level for all parents) + 1.
+
+        A BFS-based approach is used over the current record-set so that
+        parents are always resolved before their children, and cycles are
+        safely handled (cycle nodes keep their already-set level).
+
+        Note: ``@api.depends('parent_ids.level')`` causes the ORM to
+        re-trigger this method for children whenever a parent's stored level
+        changes, which is the desired cascading behaviour.
+        """
+        # Build a fast lookup set for ids that belong to this batch.
+        batch_ids = {rec.id for rec in self if isinstance(rec.id, int)}
+
+        # Topological processing: start with roots in the batch, then advance
+        # level by level to ensure parents are computed first.
+        assigned = {}  # id -> level (already committed for this batch)
+
+        # Seed: records whose parents are all outside this batch (already stored)
+        queue = []
+        for rec in self:
+            if not isinstance(rec.id, int):
+                # NewId (unsaved) - treat as root
+                rec.level = 0
+                continue
+            parents = rec.parent_ids
+            if not parents:
+                rec.level = 0
+                assigned[rec.id] = 0
+            else:
+                # Check if any parents belong to this batch (and therefore may
+                # not yet have their level assigned in `assigned`).
+                if not any(isinstance(p.id, int) and p.id in batch_ids for p in parents):
+                    # All parents are outside the batch – use their stored levels.
+                    rec.level = min(p.level for p in parents) + 1
+                    assigned[rec.id] = rec.level
+                else:
+                    queue.append(rec)
+
+        # Process remaining records in dependency order (BFS layers)
+        max_iterations = len(queue) + 1
+        iteration = 0
+        while queue and iteration < max_iterations:
+            iteration += 1
+            still_pending = []
+            for rec in queue:
+                parents = rec.parent_ids
+                # Check if all batch parents have been assigned a level yet.
+                unresolved = [
+                    p for p in parents
+                    if isinstance(p.id, int) and p.id in batch_ids and p.id not in assigned
+                ]
+                if not unresolved:
+                    rec.level = min(
+                        assigned[p.id] if isinstance(p.id, int) and p.id in batch_ids else p.level
+                        for p in parents
+                    ) + 1
+                    assigned[rec.id] = rec.level
+                else:
+                    still_pending.append(rec)
+            queue = still_pending
+
+        # Cycle guard: any record still in queue could not be resolved (cycle)
+        for rec in queue:
+            if rec.id not in assigned:
+                rec.level = 0
 
     @api.depends('parent_ids')
     def _compute_has_multiple_parents(self):

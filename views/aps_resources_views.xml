@@ -26,6 +26,7 @@
                 <field name="has_answer" optional="hide"/>
                 <field name="has_child_resources" optional="hide"/>
                 <field name="has_supporting_resources" optional="hide"/>
+                <field name="level" string="Level" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <field name="write_date" optional="hide"/>
             </list>
@@ -341,6 +342,9 @@
                 <field name="subjects"/>
                 <filter name="has_parent" string="Has Parent" domain="[('parent_ids','!=',False)]"/>
                 <filter name="no_parent" string="Root Resources" domain="[('parent_ids','=',False)]"/>
+                <filter name="level_0" string="Level 0 (Root)" domain="[('level','=',0)]"/>
+                <filter name="level_1" string="Level 1" domain="[('level','=',1)]"/>
+                <filter name="level_2" string="Level 2+" domain="[('level','>=',2)]"/>
                 <filter name="has_url" string="Has URL" domain="[('url','!=',False)]"/>
                 <filter name="has_marks" string="Has Marks" domain="[('marks','>',0)]"/>
                 <separator/>
@@ -362,6 +366,7 @@
                     <filter name="group_by_has_answer" string="Has Answer" context="{'group_by':'has_answer'}"/>
                     <filter name="group_by_has_child_resources" string="Has Linked Resources" context="{'group_by':'has_child_resources'}"/>
                     <filter name="group_by_has_supporting_resources" string="Has Supporting Resources" context="{'group_by':'has_supporting_resources'}"/>
+                    <filter name="group_by_level" string="Hierarchy Level" context="{'group_by':'level'}"/>
                     
 
                 </group>
