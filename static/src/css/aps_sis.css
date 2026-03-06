@@ -32,7 +32,7 @@
     text-align: left;
 }
 
-/* Clickable variant of the current pill (shown when siblings exist) */
+/* Clickable variant of the current pill (shown when children exist) */
 .o_breadcrumb_pills .breadcrumb-pill-current-btn {
     cursor: pointer;
     user-select: none;
@@ -48,21 +48,102 @@
     background-color: rgba(0, 123, 255, 0.06);
     outline: none;
 }
+.o_breadcrumb_pills .breadcrumb-pill-current-btn.active {
+    border-color: var(--o-cc2-btn-primary, #007bff);
+    background-color: rgba(0, 123, 255, 0.12);
+}
 
-/* Downward-pointing caret on the last pill */
-.o_breadcrumb_pills .breadcrumb-sibling-caret {
+/* Downward-pointing caret on the current pill */
+.o_breadcrumb_pills .breadcrumb-children-caret {
     font-size: 0.72em;
-    opacity: 0.55;
-    margin-left: 4px;
+    opacity: 0.65;
     vertical-align: middle;
     line-height: 1;
+    transition: transform 0.15s ease;
+}
+.o_breadcrumb_pills .breadcrumb-pill-current-btn.active .breadcrumb-children-caret {
+    transform: rotate(180deg);
 }
 
 /* Arrow between pills */
 .o_breadcrumb_pills .breadcrumb-pills-arrow {
+    font-size: 0.65em;
+    color: #9a9a9a;
+    flex-shrink: 0;
+}
+
+/* Arrow button wrapper */
+.o_breadcrumb_pills .breadcrumb-arrow-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Arrow button — clickable, opens sibling dropdown */
+.o_breadcrumb_pills .breadcrumb-arrow-btn {
     font-size: 0.85em;
     color: #9a9a9a;
     flex-shrink: 0;
+    border: none;
+    background: none;
+    padding: 0.15em 0.3em;
+    margin: 0 0.15em;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    text-decoration: none !important;
+}
+.o_breadcrumb_pills .breadcrumb-arrow-btn:hover {
+    color: var(--o-cc2-btn-primary, #007bff);
+    background-color: rgba(0, 123, 255, 0.08);
+    text-decoration: none !important;
+}
+.o_breadcrumb_pills .breadcrumb-arrow-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+.o_breadcrumb_pills .breadcrumb-arrow-btn.active {
+    color: var(--o-cc2-btn-primary, #007bff);
+    background-color: rgba(0, 123, 255, 0.12);
+}
+
+/* Arrow icon styling */
+.o_breadcrumb_pills .breadcrumb-arrow {
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+.o_breadcrumb_pills .breadcrumb-arrow-active {
+    color: var(--o-cc2-btn-primary, #007bff);
+    /* transform: rotate(90deg); */
+}
+
+/* SVG arrow icon */
+.o_breadcrumb_pills .breadcrumb-arrow-icon {
+    width: 0.8em;
+    height: 0.8em;
+    display: inline-block;
+    vertical-align: middle;
+    opacity: 0.6;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.o_breadcrumb_pills .breadcrumb-arrow-btn:hover .breadcrumb-arrow-icon {
+    opacity: 1;
+}
+.o_breadcrumb_pills .breadcrumb-arrow-icon.breadcrumb-arrow-open {
+    transform: rotate(90deg);
+    opacity: 1;
+}
+/* No siblings - dimmer, non-interactive appearance */
+.o_breadcrumb_pills .breadcrumb-arrow-icon.breadcrumb-arrow-no-siblings {
+    opacity: 0.35;
+}
+.o_breadcrumb_pills .breadcrumb-arrow-btn.no-siblings {
+    cursor: default;
+    pointer-events: none;
+}
+.o_breadcrumb_pills .breadcrumb-arrow-btn:hover .breadcrumb-arrow-icon.breadcrumb-arrow-no-siblings {
+    opacity: 0.35;
 }
 
 .o_breadcrumb_pills {    
@@ -85,8 +166,8 @@
     left: 0;
     z-index: 1050;
     min-width: 150px;
-    max-width: 320px;
-    max-height: 260px;
+    max-width: 620px;
+    max-height: 360px;
     overflow-y: auto;
     background: #fff;
     border: 1px solid rgba(0, 0, 0, 0.12);
@@ -122,6 +203,30 @@
 .o_breadcrumb_pills .breadcrumb-sibling-empty:hover {
     background: none;
     color: #888;
+}
+
+/* Loading state for sibling dropdown */
+.o_breadcrumb_pills .breadcrumb-sibling-loading {
+    color: #666;
+    font-style: italic;
+    cursor: default;
+    display: flex;
+    align-items: center;
+}
+.o_breadcrumb_pills .breadcrumb-sibling-loading:hover {
+    background: none;
+    color: #666;
+}
+
+/* Currently selected sibling (the current resource) */
+.o_breadcrumb_pills .breadcrumb-sibling-item.active {
+    background-color: #e8f0fe;
+    font-weight: 500;
+    cursor: default;
+}
+.o_breadcrumb_pills .breadcrumb-sibling-item.active:hover {
+    background-color: #e8f0fe;
+    color: #333;
 }
 
 

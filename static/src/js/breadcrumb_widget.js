@@ -1,15 +1,15 @@
 import { registry } from "@web/core/registry";
-import { Component, useState, useRef } from "@odoo/owl";
+import { Component, useState, useRef, onMounted, onWillUnmount, onWillStart, onWillUpdateProps } from "@odoo/owl";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
-import { useService, useExternalListener } from "@web/core/utils/hooks";
+import { useService } from "@web/core/utils/hooks";
 
 /**
  * BreadcrumbField — renders the ``display_name_breadcrumb`` JSON field as a
- * row of clickable pills separated by 🢒 arrows.
+ * row of clickable pills separated by arrows.
  *
- * The final (current) pill shows a caret indicator when sibling resources
- * exist under the same parent.  Clicking it opens a compact dropdown listing
- * those siblings so the user can jump to one directly.
+ * Each arrow between pills is clickable and opens a dropdown showing sibling
+ * resources (all children of the parent at that position).  This allows quick
+ * navigation to any sibling at any level of the hierarchy.
  *
  * Usage in a view:
  *   <field name="display_name_breadcrumb" widget="breadcrumb_pills"
@@ -32,15 +32,47 @@ export class BreadcrumbField extends Component {
         this.orm = useService("orm");
 
         this.state = useState({
-            dropdownOpen: false,
+            dropdownOpenIndex: null,  // Which arrow index has the dropdown open (null = none)
             siblings: [],
             loading: false,
+            // Children dropdown (on the final badge)
+            childrenDropdownOpen: false,
+            children: [],
+            childrenLoading: false,
+            // Whether the current resource has children
+            hasChildren: false,
+            // Which arrow indices have siblings available (object: {index: boolean})
+            arrowHasSiblings: {},
         });
 
-        this.dropdownRef = useRef("siblingDropdown");
+        this.rootRef = useRef("widgetRoot");
+
+        // Check for children and sibling availability on mount
+        onWillStart(async () => {
+            await Promise.all([
+                this._checkHasChildren(),
+                this._checkArrowSiblings(),
+            ]);
+        });
+
+        // Re-check when props change (different record)
+        onWillUpdateProps(async (nextProps) => {
+            if (nextProps.record !== this.props.record) {
+                await Promise.all([
+                    this._checkHasChildren(nextProps),
+                    this._checkArrowSiblings(nextProps),
+                ]);
+            }
+        });
 
         // Close dropdown when the user clicks anywhere outside the widget.
-        useExternalListener(window, "click", this._onWindowClick.bind(this));
+        this._onWindowClick = this._onWindowClick.bind(this);
+        onMounted(() => {
+            window.addEventListener("click", this._onWindowClick);
+        });
+        onWillUnmount(() => {
+            window.removeEventListener("click", this._onWindowClick);
+        });
     }
 
     /** Parsed breadcrumb array: [{id, label}, ...] */
@@ -57,19 +89,101 @@ export class BreadcrumbField extends Component {
         return Array.isArray(value) ? value : [];
     }
 
-    /** ID of the current (last) breadcrumb entry, or false. */
-    get currentId() {
-        const bc = this.breadcrumbs;
-        return bc.length > 0 ? bc[bc.length - 1].id : false;
+    /**
+     * Check if the current resource has any children.
+     * @param {Object} props - Optional props to use (for onWillUpdateProps)
+     */
+    async _checkHasChildren(props = null) {
+        const propsToUse = props || this.props;
+        const value = propsToUse.record.data[propsToUse.name];
+        let breadcrumbs = [];
+        
+        if (value) {
+            if (typeof value === "string") {
+                try {
+                    breadcrumbs = JSON.parse(value);
+                } catch {
+                    breadcrumbs = [];
+                }
+            } else if (Array.isArray(value)) {
+                breadcrumbs = value;
+            }
+        }
+        
+        if (breadcrumbs.length === 0) {
+            this.state.hasChildren = false;
+            return;
+        }
+        
+        const currentId = breadcrumbs[breadcrumbs.length - 1].id;
+        if (!currentId) {
+            this.state.hasChildren = false;
+            return;
+        }
+
+        try {
+            const count = await this.orm.searchCount(
+                "aps.resources",
+                [["parent_ids", "in", [currentId]]]
+            );
+            this.state.hasChildren = count > 0;
+        } catch (error) {
+            console.error("BreadcrumbField: failed to check for children", error);
+            this.state.hasChildren = false;
+        }
     }
 
     /**
-     * ID of the immediate parent (second-to-last breadcrumb entry), or false.
-     * When this is present the last pill can have siblings.
+     * Check which arrows have siblings available.
+     * An arrow at index i shows siblings (children of breadcrumbs[i-1]).
+     * We show the outline icon if there's more than 1 child (i.e., siblings exist).
+     * @param {Object} props - Optional props to use (for onWillUpdateProps)
      */
-    get parentId() {
-        const bc = this.breadcrumbs;
-        return bc.length > 1 ? bc[bc.length - 2].id : false;
+    async _checkArrowSiblings(props = null) {
+        const propsToUse = props || this.props;
+        const value = propsToUse.record.data[propsToUse.name];
+        let breadcrumbs = [];
+        
+        if (value) {
+            if (typeof value === "string") {
+                try {
+                    breadcrumbs = JSON.parse(value);
+                } catch {
+                    breadcrumbs = [];
+                }
+            } else if (Array.isArray(value)) {
+                breadcrumbs = value;
+            }
+        }
+        
+        // For each arrow position (indices 1 to length-1), check if parent has >1 child
+        const arrowHasSiblings = {};
+        const checkPromises = [];
+        
+        for (let i = 1; i < breadcrumbs.length; i++) {
+            const parentIndex = i - 1;
+            const parentId = breadcrumbs[parentIndex].id;
+            const currentAtArrow = breadcrumbs[i].id;
+            
+            if (parentId) {
+                checkPromises.push(
+                    this.orm.searchCount(
+                        "aps.resources",
+                        [["parent_ids", "in", [parentId]]]
+                    ).then((count) => {
+                        // Has siblings if count > 1 (more than just the current resource)
+                        arrowHasSiblings[i] = count > 1;
+                    }).catch(() => {
+                        arrowHasSiblings[i] = false;
+                    })
+                );
+            } else {
+                arrowHasSiblings[i] = false;
+            }
+        }
+        
+        await Promise.all(checkPromises);
+        this.state.arrowHasSiblings = arrowHasSiblings;
     }
 
     /**
@@ -88,23 +202,51 @@ export class BreadcrumbField extends Component {
     }
 
     /**
-     * Toggle the sibling dropdown.  Fetches siblings from the server the
-     * first time (or whenever the dropdown is re-opened after being closed).
+     * Handle click on an ancestor breadcrumb pill.
      * @param {MouseEvent} ev
      */
-    async toggleSiblingDropdown(ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
+    onAncestorClick(ev) {
+        const id = parseInt(ev.currentTarget.dataset.resId, 10);
+        if (id) {
+            this.openResource(id);
+        }
+    }
 
-        if (this.state.dropdownOpen) {
-            this.state.dropdownOpen = false;
+    /**
+     * Handle click on an arrow between breadcrumb pills.
+     * Opens a dropdown showing sibling resources at that position.
+     * @param {MouseEvent} ev
+     */
+    async onArrowClick(ev) {
+        const arrowIndex = parseInt(ev.currentTarget.dataset.arrowIndex, 10);
+        
+        // Don't open dropdown if no siblings exist at this position
+        if (!this.state.arrowHasSiblings[arrowIndex]) {
+            return;
+        }
+        
+        // If clicking the same arrow that's already open, close it
+        if (this.state.dropdownOpenIndex === arrowIndex) {
+            this.state.dropdownOpenIndex = null;
             return;
         }
 
-        const parentId = this.parentId;
-        if (!parentId) return;
+        // The parent is the breadcrumb at arrowIndex - 1
+        const breadcrumbs = this.breadcrumbs;
+        const parentIndex = arrowIndex - 1;
+        
+        if (parentIndex < 0 || parentIndex >= breadcrumbs.length) {
+            return;
+        }
+        
+        const parentId = breadcrumbs[parentIndex].id;
+        if (!parentId) {
+            return;
+        }
 
-        this.state.dropdownOpen = true;
+        // Close children dropdown when opening sibling dropdown
+        this.state.childrenDropdownOpen = false;
+        this.state.dropdownOpenIndex = arrowIndex;
         this.state.loading = true;
         this.state.siblings = [];
 
@@ -115,9 +257,9 @@ export class BreadcrumbField extends Component {
                 ["id", "name", "sequence"],
                 { order: "sequence asc, name asc" }
             );
-            // Exclude the current resource from its own sibling list.
-            const currentId = this.currentId;
-            this.state.siblings = results.filter((r) => r.id !== currentId);
+            // Exclude the resource at this arrow position from siblings list
+            const excludeId = breadcrumbs[arrowIndex].id;
+            this.state.siblings = results.filter((r) => r.id !== excludeId);
         } catch (error) {
             console.error("BreadcrumbField: failed to load sibling resources", error);
             this.state.siblings = [];
@@ -127,20 +269,78 @@ export class BreadcrumbField extends Component {
     }
 
     /**
-     * Navigate to a sibling resource and close the dropdown.
-     * @param {number} id
+     * Handle click on a sibling item in the dropdown.
+     * @param {MouseEvent} ev
      */
-    openSibling(id) {
-        this.state.dropdownOpen = false;
-        this.openResource(id);
+    onSiblingClick(ev) {
+        const id = parseInt(ev.currentTarget.dataset.resId, 10);
+        if (id) {
+            this.state.dropdownOpenIndex = null;
+            this.openResource(id);
+        }
+    }
+
+    /**
+     * Handle click on the current (final) breadcrumb pill.
+     * Opens a dropdown showing child resources.
+     * @param {MouseEvent} ev
+     */
+    async onCurrentClick(ev) {
+        // Close sibling dropdowns first
+        this.state.dropdownOpenIndex = null;
+        
+        // Toggle children dropdown
+        if (this.state.childrenDropdownOpen) {
+            this.state.childrenDropdownOpen = false;
+            return;
+        }
+
+        const breadcrumbs = this.breadcrumbs;
+        if (breadcrumbs.length === 0) return;
+        
+        const currentId = breadcrumbs[breadcrumbs.length - 1].id;
+        if (!currentId) return;
+
+        this.state.childrenDropdownOpen = true;
+        this.state.childrenLoading = true;
+        this.state.children = [];
+
+        try {
+            const results = await this.orm.searchRead(
+                "aps.resources",
+                [["parent_ids", "in", [currentId]]],
+                ["id", "name", "sequence"],
+                { order: "sequence asc, name asc" }
+            );
+            // Exclude the current resource from the children list
+            this.state.children = results.filter((r) => r.id !== currentId);
+        } catch (error) {
+            console.error("BreadcrumbField: failed to load child resources", error);
+            this.state.children = [];
+        } finally {
+            this.state.childrenLoading = false;
+        }
+    }
+
+    /**
+     * Handle click on a child item in the dropdown.
+     * @param {MouseEvent} ev
+     */
+    onChildClick(ev) {
+        const id = parseInt(ev.currentTarget.dataset.resId, 10);
+        if (id) {
+            this.state.childrenDropdownOpen = false;
+            this.openResource(id);
+        }
     }
 
     /** Close the dropdown when a click occurs outside the widget. */
     _onWindowClick(ev) {
-        if (!this.state.dropdownOpen) return;
-        const el = this.dropdownRef.el;
+        if (this.state.dropdownOpenIndex === null && !this.state.childrenDropdownOpen) return;
+        const el = this.rootRef.el;
         if (el && !el.contains(ev.target)) {
-            this.state.dropdownOpen = false;
+            this.state.dropdownOpenIndex = null;
+            this.state.childrenDropdownOpen = false;
         }
     }
 }
