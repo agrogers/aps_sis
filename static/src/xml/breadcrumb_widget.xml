@@ -5,7 +5,8 @@
 
         Renders the display_name_breadcrumb JSON field as a row of badge pills
         separated by 🢒 arrows.  Ancestor pills are clickable links; the final
-        pill (the current resource) is styled differently and is not a link.
+        pill (the current resource) shows a caret indicator and opens a sibling-
+        resource dropdown when clicked (if a parent exists in the breadcrumb).
 
         OWL 2 t-foreach provides: {name}, {name}_index, {name}_first, {name}_last.
         We use crumb_last to identify the current resource (last segment).
@@ -21,7 +22,7 @@
                 </t>
 
                 <!-- Ancestor pill — clickable link -->
-                <t t-if="crumb.id and !crumb_last">
+                <t t-if="!crumb_last and crumb.id">
                     <a href="#"
                        class="breadcrumb-pill breadcrumb-pill-ancestor badge rounded-pill text-decoration-none"
                        t-att-title="'Go to: ' + crumb.label"
@@ -30,12 +31,67 @@
                     </a>
                 </t>
 
-                <!-- Current resource pill — not a link -->
-                <t t-else="">
-                    <span class="breadcrumb-pill breadcrumb-pill-current badge rounded-pill"
+                <!-- Non-last pill without an id — plain text badge -->
+                <t t-elif="!crumb_last">
+                    <span class="breadcrumb-pill breadcrumb-pill-ancestor badge rounded-pill"
                           t-att-title="crumb.label">
                         <t t-esc="crumb.label"/>
                     </span>
+                </t>
+
+                <!-- Current (last) resource pill — clickable sibling dropdown when a parent exists -->
+                <t t-else="">
+                    <div class="breadcrumb-pill-wrapper" t-ref="siblingDropdown">
+                        <!-- Has a parent → show caret and enable sibling dropdown -->
+                        <t t-if="parentId">
+                            <button type="button"
+                                    class="breadcrumb-pill breadcrumb-pill-current breadcrumb-pill-current-btn badge rounded-pill"
+                                    t-att-title="'Click to see sibling resources'"
+                                    t-on-click="toggleSiblingDropdown"
+                                    aria-haspopup="listbox"
+                                    t-att-aria-expanded="state.dropdownOpen ? 'true' : 'false'">
+                                <t t-esc="crumb.label"/>
+                                <span class="breadcrumb-sibling-caret" aria-hidden="true">&#x25BE;</span>
+                            </button>
+                        </t>
+                        <!-- No parent → plain non-interactive pill -->
+                        <t t-else="">
+                            <span class="breadcrumb-pill breadcrumb-pill-current badge rounded-pill"
+                                  t-att-title="crumb.label">
+                                <t t-esc="crumb.label"/>
+                            </span>
+                        </t>
+
+                        <!-- Sibling dropdown panel -->
+                        <div t-if="state.dropdownOpen"
+                             class="breadcrumb-sibling-dropdown"
+                             role="listbox"
+                             aria-label="Sibling resources">
+                            <!-- Loading state -->
+                            <div t-if="state.loading"
+                                 class="breadcrumb-sibling-item breadcrumb-sibling-empty">
+                                Loading&#8230;
+                            </div>
+                            <t t-else="">
+                                <!-- Empty state -->
+                                <div t-if="!state.siblings.length"
+                                     class="breadcrumb-sibling-item breadcrumb-sibling-empty">
+                                    No sibling resources
+                                </div>
+                                <!-- Sibling entries -->
+                                <a t-foreach="state.siblings"
+                                   t-as="sibling"
+                                   t-key="sibling.id"
+                                   href="#"
+                                   class="breadcrumb-sibling-item"
+                                   role="option"
+                                   t-att-title="sibling.name"
+                                   t-on-click.prevent.stop="(ev) => this.openSibling(sibling.id)">
+                                    <t t-esc="sibling.name"/>
+                                </a>
+                            </t>
+                        </div>
+                    </div>
                 </t>
             </t>
         </div>
