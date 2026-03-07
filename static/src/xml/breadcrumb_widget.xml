@@ -112,7 +112,12 @@
                                     aria-haspopup="listbox"
                                     t-att-aria-expanded="state.childrenDropdownOpen ? 'true' : 'false'">
                                 <t t-esc="crumb.label"/>
-                                <span class="breadcrumb-children-caret ms-1" aria-hidden="true">▾</span>
+                                <img src="/aps_sis/static/src/img/play_solid.svg"
+                                    class="breadcrumb-arrow-icon"
+                                    t-att-class="state.childrenDropdownOpen ? 'breadcrumb-arrow-open' : ''"
+                                    alt=""
+                                    aria-hidden="true"/>
+
                             </button>
 
                             <!-- Children dropdown panel -->
