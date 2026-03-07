@@ -58,7 +58,14 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
         ('skipped', 'Skipped'),
         ], string='Value',
         )
-    
+    update_question = fields.Boolean(string='Question')
+    question_value = fields.Html(string='Value')
+    update_answer = fields.Boolean(string='Answer')
+    answer_value = fields.Html(string='Value')
+    update_model_answer = fields.Boolean(string='Model Answer')
+    model_answer_value = fields.Html(string='Value')
+    update_feedback = fields.Boolean(string='Feedback')
+    feedback_value = fields.Html(string='Value')
 
     # Confirmation
     confirm_update = fields.Boolean(string='I confirm I want to apply these changes to the selected submissions')
@@ -66,6 +73,30 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     @api.model
     def _default_submission_ids(self):
         return self.env.context.get('active_ids', [])
+
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        active_ids = self.env.context.get('active_ids', [])
+        # Fallback: extract IDs from the Many2many command list in default_submission_ids
+        # (server action passes default_submission_ids but not active_ids)
+        if not active_ids:
+            for cmd in self.env.context.get('default_submission_ids', []):
+                if isinstance(cmd, (list, tuple)) and len(cmd) >= 3 and cmd[0] == 6:
+                    active_ids = cmd[2]
+                    break
+        if active_ids:
+            first = self.env['aps.resource.submission'].browse(active_ids[0])
+            if first.exists():
+                if 'question_value' in fields_list:
+                    defaults['question_value'] = first.question
+                if 'answer_value' in fields_list:
+                    defaults['answer_value'] = first.answer
+                if 'model_answer_value' in fields_list:
+                    defaults['model_answer_value'] = first.model_answer
+                if 'feedback_value' in fields_list:
+                    defaults['feedback_value'] = first.feedback
+        return defaults
 
     def action_update(self):
         self.ensure_one()
@@ -120,11 +151,25 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
         if self.update_notification_state:
             updates['notification_state'] = self.notification_state_value
 
-        if not updates:
+        if self.update_question:
+            updates['question'] = self.question_value
+
+        if self.update_answer:
+            updates['answer'] = self.answer_value
+
+        if self.update_feedback:
+            updates['feedback'] = self.feedback_value
+
+        if not updates and not self.update_model_answer:
             raise UserError(_("No updates selected. Please enable at least one update option."))
 
         # Perform the updates
         self.submission_ids.write(updates)
+
+        # Update model answer (resource_id.answer) separately as it is a related readonly field
+        if self.update_model_answer:
+            resources = self.submission_ids.mapped('resource_id').filtered(lambda resource: resource.id)
+            resources.write({'answer': self.model_answer_value})
 
         return {
             'type': 'ir.actions.client',

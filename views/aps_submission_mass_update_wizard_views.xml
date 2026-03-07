@@ -7,74 +7,113 @@
         <field name="arch" type="xml">
             <form string="Mass Update Submissions">
                 <sheet>
-                    <group col="12">
-                        <group string="Update which fields" col="12" colspan="8">
-                            
-                                
-                                <group colspan="4">
-                                    <field name="update_points" nolabel="1" widget="boolean_toggle" class="text-end"/>
-                                    <label for="update_points" class="mb-0">Points</label>
-                                </group>
-                                <group colspan="8"><field name="points_value" invisible="not update_points" /></group>
-                                
-                                <group colspan="4">
-                                    <field name="update_points_scale" nolabel="1" widget="boolean_toggle"/>
-                                    <label for="update_points_scale" class="mb-0">Points Scale</label>
-                                </group>
-                                <group colspan="8">
-                                    <field name="points_scale_value" invisible="not update_points_scale"/>
-                                </group>
+                    <notebook>
+                        <page string="Options">
+                            <group col="12">
+                                <group string="Update which fields" col="12" colspan="8">
 
-                                <group colspan="4">
-                                    <field name="update_state" nolabel="1" widget="boolean_toggle"/>
-                                    <label for="update_state" class="mb-0">State</label>
+                                    <group colspan="4">
+                                        <field name="update_points" nolabel="1" widget="boolean_toggle" class="text-end"/>
+                                        <label for="update_points" class="mb-0">Points</label>
+                                    </group>
+                                    <group colspan="8"><field name="points_value" invisible="not update_points"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_points_scale" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_points_scale" class="mb-0">Points Scale</label>
+                                    </group>
+                                    <group colspan="8">
+                                        <field name="points_scale_value" invisible="not update_points_scale"/>
+                                    </group>
+
+                                    <group colspan="4">
+                                        <field name="update_state" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_state" class="mb-0">State</label>
+                                    </group>
+                                    <group colspan="8"><field name="state_value" invisible="not update_state"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_submission_active" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_submission_active" class="mb-0">Submission Active</label>
+                                    </group>
+                                    <group colspan="8"><field name="submission_active_value" invisible="not update_submission_active"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_due_date" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_due_date" class="mb-0">Due Date</label>
+                                    </group>
+                                    <group colspan="8"><field name="due_date_value" invisible="not update_due_date"/></group>
+
+                                    <group colspan="4"><field name="update_date_assigned" nolabel="1" widget="boolean_toggle"/><label for="update_date_assigned" class="mb-0">Date Assigned</label></group>
+                                    <group colspan="8"><field name="date_assigned_value" invisible="not update_date_assigned"/></group>
+
+                                    <group colspan="4"><field name="update_time_assigned" nolabel="1" widget="boolean_toggle"/><label for="update_time_assigned" class="mb-0">Time Assigned</label></group>
+                                    <group colspan="8"><field name="time_assigned_value" widget="float_time" invisible="not update_time_assigned"/></group>
+
+                                    <group colspan="4"><field name="update_date_submitted" nolabel="1" widget="boolean_toggle"/><label for="update_date_submitted" class="mb-0">Date Submitted</label></group>
+                                    <group colspan="8"><field name="date_submitted_value" invisible="not update_date_submitted"/></group>
+
+                                    <group colspan="4"><field name="update_date_completed" nolabel="1" widget="boolean_toggle"/><label for="update_date_completed" class="mb-0">Date Completed</label></group>
+                                    <group colspan="8"><field name="date_completed_value" invisible="not update_date_completed"/></group>
+
+                                    <group colspan="4"><field name="update_score" nolabel="1" widget="boolean_toggle"/><label for="update_score" class="mb-0">Score</label></group>
+                                    <group colspan="8"><field name="score_value" invisible="not update_score"/></group>
+
+                                    <group colspan="4"><field name="update_out_of_marks" nolabel="1" widget="boolean_toggle"/><label for="update_out_of_marks" class="mb-0">Out of Marks</label></group>
+                                    <group colspan="8"><field name="out_of_marks_value" invisible="not update_out_of_marks"/></group>
+
+                                    <group colspan="4"><field name="update_submission_name" nolabel="1" widget="boolean_toggle"/><label for="update_submission_name" class="mb-0">Submission Name</label></group>
+                                    <group colspan="8"><field name="submission_name_value" invisible="not update_submission_name"/></group>
+
+                                    <group colspan="4"><field name="update_due_status" nolabel="1" widget="boolean_toggle"/><label for="update_due_status" class="mb-0">Due Status</label></group>
+                                    <group colspan="8"><field name="due_status_value" invisible="not update_due_status"/></group>
+
+                                    <group colspan="4"><field name="update_notification_state" nolabel="1" widget="boolean_toggle"/><label for="update_notification_state" class="mb-0">Notification State</label></group>
+                                    <group colspan="8"><field name="notification_state_value" invisible="not update_notification_state"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_question" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_question" class="mb-0">Question</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_answer" class="mb-0">Answer</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_model_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_model_answer" class="mb-0">Model Answer</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_feedback" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_feedback" class="mb-0">Feedback</label>
+                                    </group>
+                                    <group colspan="8"/>
+
                                 </group>
-                                <group colspan="8"><field name="state_value" invisible="not update_state"/></group>
-                                
-                                <group colspan="4">
-                                    <field name="update_submission_active" nolabel="1" widget="boolean_toggle"/>
-                                    <label for="update_submission_active" class="mb-0">Submission Active</label>
+                                <group string="Submissions to Update" colspan="4">
+                                    <field name="submission_ids" widget="many2many_tags" nolabel="1" readonly="1"/>
                                 </group>
-                                <group colspan="8"><field name="submission_active_value" invisible="not update_submission_active"/></group>
-                                
-                                <group colspan="4">
-                                    <field name="update_due_date" nolabel="1" widget="boolean_toggle"/>
-                                    <label for="update_due_date" class="mb-0">Due Date</label>
-                                </group>
-                                <group colspan="8"><field name="due_date_value" invisible="not update_due_date"/></group>
-                                
-                                <group colspan="4"><field name="update_date_assigned" nolabel="1" widget="boolean_toggle"/><label for="update_date_assigned" class="mb-0">Date Assigned</label></group>
-                                <group colspan="8"><field name="date_assigned_value" invisible="not update_date_assigned"/></group>
-                                
-                                <group colspan="4"><field name="update_time_assigned" nolabel="1" widget="boolean_toggle"/><label for="update_time_assigned" class="mb-0">Time Assigned</label></group>
-                                <group colspan="8"><field name="time_assigned_value" widget="float_time" invisible="not update_time_assigned"/></group>
-                                
-                                <group colspan="4"><field name="update_date_submitted" nolabel="1" widget="boolean_toggle"/><label for="update_date_submitted" class="mb-0">Date Submitted</label></group>
-                                <group colspan="8"><field name="date_submitted_value" invisible="not update_date_submitted"/></group>
-                                
-                                <group colspan="4"><field name="update_date_completed" nolabel="1" widget="boolean_toggle"/><label for="update_date_completed" class="mb-0">Date Completed</label></group>
-                                <group colspan="8"><field name="date_completed_value" invisible="not update_date_completed"/></group>
-                                
-                                <group colspan="4"><field name="update_score" nolabel="1" widget="boolean_toggle"/><label for="update_score" class="mb-0">Score</label></group>
-                                <group colspan="8"><field name="score_value" invisible="not update_score"/></group>
-                                
-                                <group colspan="4"><field name="update_out_of_marks" nolabel="1" widget="boolean_toggle"/><label for="update_out_of_marks" class="mb-0">Out of Marks</label></group>
-                                <group colspan="8"><field name="out_of_marks_value" invisible="not update_out_of_marks"/></group>
-                                
-                                <group colspan="4"><field name="update_submission_name" nolabel="1" widget="boolean_toggle"/><label for="update_submission_name" class="mb-0">Submission Name</label></group>
-                                <group colspan="8"><field name="submission_name_value" invisible="not update_submission_name"/></group>
-                                
-                                <group colspan="4"><field name="update_due_status" nolabel="1" widget="boolean_toggle"/><label for="update_due_status" class="mb-0">Due Status</label></group>
-                                <group colspan="8"><field name="due_status_value" invisible="not update_due_status"/></group>
-                                
-                                <group colspan="4"><field name="update_notification_state" nolabel="1" widget="boolean_toggle"/><label for="update_notification_state" class="mb-0">Notification State</label></group>
-                                <group colspan="8"><field name="notification_state_value" invisible="not update_notification_state"/></group>
-                       
-                        </group>
-                        <group string="Tasks to Update" colspan="4">
-                            <field name="submission_ids" widget="many2many_tags" nolabel="1"  readonly="1"/>
-                        </group>
-                    </group>
+                            </group>
+                        </page>
+                        <page string="Question" invisible="not update_question">
+                            <field name="question_value" widget="html" nolabel="1" placeholder="Enter question here"/>
+                        </page>
+                        <page string="Answer" invisible="not update_answer">
+                            <field name="answer_value" widget="html" nolabel="1" placeholder="Enter answer here"/>
+                        </page>
+                        <page string="Model Answer" invisible="not update_model_answer">
+                            <field name="model_answer_value" widget="html" nolabel="1" placeholder="Enter model answer here"/>
+                        </page>
+                        <page string="Feedback" invisible="not update_feedback">
+                            <field name="feedback_value" widget="html" nolabel="1" placeholder="Enter feedback here"/>
+                        </page>
+                    </notebook>
                 </sheet>
                 <footer>
                     <button string="Update" name="action_update" type="object" class="btn-primary"/>
