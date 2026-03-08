@@ -582,7 +582,7 @@ export class ProgressCharts {
                     {
                         label: 'Predicted Progress',
                         data: predictionData,
-                        backgroundColor: 'rgba(220, 220, 220, 0.5)',
+                        backgroundColor: 'rgba(220, 220, 220, 0.2)',
                         // borderColor and borderWidth intentionally omitted here;
                         // the dashed border is drawn by the predictionDashedBorder plugin below.
                         borderWidth: 0
