@@ -57,7 +57,7 @@
             'aps_sis/static/src/js/confetti.browser.min.js',            
             'aps_sis/static/src/js/float_sentinel_widget.js',
 			'aps_sis/static/src/js/resource_links_widget.js',
-			'aps_sis/static/src/js/form_notebook_default_page.js',
+			# 'aps_sis/static/src/js/form_notebook_default_page.js',
 			'aps_sis/static/src/js/submission_list_score_refresh.js',
              
 			'aps_sis/static/src/xml/resource_links_field.xml',
