@@ -468,7 +468,73 @@ export class ProgressCharts {
     }
 
     /**
-     * Render the progress bar chart showing current progress by subject.
+     * Calculate predicted additional progress per subject by the course deadline.
+     * Uses the current rate of progress (derived from historical line data) and
+     * the remaining days until the pace end_date to project forward.
+     * Returns an array of prediction segment values aligned to progressBarData.
+     */
+    _calculatePredictionData() {
+        const today = new Date();
+
+        // Determine the deadline from paceData (use the latest end_date across all resources)
+        let deadline = null;
+        const paceData = this.state.paceData || {};
+        for (const pace of Object.values(paceData)) {
+            if (pace && pace.end_date) {
+                const endDate = new Date(pace.end_date);
+                if (!deadline || endDate > deadline) {
+                    deadline = endDate;
+                }
+            }
+        }
+
+        // No prediction if there is no deadline or if the deadline has already passed
+        if (!deadline || deadline <= today) {
+            return (this.state.progressBarData || []).map(() => 0);
+        }
+
+        const daysRemaining = (deadline - today) / (1000 * 60 * 60 * 24);
+
+        return (this.state.progressBarData || []).map(item => {
+            const currentProgress = item.progress || 0;
+
+            // Already complete – no prediction needed
+            if (currentProgress >= 100) return 0;
+
+            // Find this subject's historical dataset in progressLineData
+            const subjectDataset = (this.state.progressLineData || []).find(
+                ds => !ds.isPace && ds.label === item.subject_name
+            );
+
+            if (!subjectDataset || !subjectDataset.data || subjectDataset.data.length < 2) {
+                return 0;
+            }
+
+            // Sort data points by date ascending (x is a date string like '2025-01-15')
+            const sorted = [...subjectDataset.data].sort((a, b) => {
+                return new Date(a.x).getTime() - new Date(b.x).getTime();
+            });
+
+            const firstPoint = sorted[0];
+            const lastPoint = sorted[sorted.length - 1];
+            const daysBetween = (new Date(lastPoint.x) - new Date(firstPoint.x)) / (1000 * 60 * 60 * 24);
+
+            if (daysBetween <= 0) return 0;
+
+            const dailyRate = (lastPoint.y - firstPoint.y) / daysBetween;
+
+            // No prediction if the student is not making forward progress
+            if (dailyRate <= 0) return 0;
+
+            const predictedTotal = Math.min(currentProgress + dailyRate * daysRemaining, 100);
+            return Math.max(0, predictedTotal - currentProgress);
+        });
+    }
+
+    /**
+     * Render the progress bar chart showing current progress by subject,
+     * including a stacked prediction bar segment indicating projected progress
+     * by the course deadline at the current pace.
      */
     renderProgressBarChart() {
         const canvas = this.component.__owl__.refs?.progressBarChart;
@@ -498,18 +564,30 @@ export class ProgressCharts {
         const data = this.state.progressBarData.map(item => item.progress);
         const colors = this.state.progressBarData.map(item => item.color);
         const paceForToday = this.state.paceForToday;
+        const predictionData = this._calculatePredictionData();
+        const hasPrediction = predictionData.some(v => v > 0);
 
         this.progressBarChartInstance = new Chart(canvas, {
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Current Progress',
-                    data: data,
-                    backgroundColor: colors.map(c => c + '80'),
-                    borderColor: colors,
-                    borderWidth: 2
-                }]
+                datasets: [
+                    {
+                        label: 'Current Progress',
+                        data: data,
+                        backgroundColor: colors.map(c => c + '80'),
+                        borderColor: colors,
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Predicted Progress',
+                        data: predictionData,
+                        backgroundColor: 'rgba(220, 220, 220, 0.2)',
+                        // borderColor and borderWidth intentionally omitted here;
+                        // the dashed border is drawn by the predictionDashedBorder plugin below.
+                        borderWidth: 0
+                    }
+                ]
             },
             options: {
                 responsive: true,
@@ -521,49 +599,97 @@ export class ProgressCharts {
                     title: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: (context) => 'Progress: ' + Math.round(context.parsed.x) + '%'
+                            label: (context) => {
+                                if (context.datasetIndex === 0) {
+                                    return 'Progress: ' + Math.round(context.parsed.x) + '%';
+                                }
+                                if (context.datasetIndex === 1 && context.parsed.x > 0) {
+                                    const current = data[context.dataIndex] || 0;
+                                    const predicted = Math.round(current + context.parsed.x);
+                                    return 'Predicted by deadline: ' + predicted + '%';
+                                }
+                                return null;
+                            }
                         }
                     }
                 },
                 scales: {
                     x: {
+                        stacked: true,
                         beginAtZero: true,
                         max: 100,
                         title: { display: true, text: 'Progress (%)' },
                         ticks: { callback: (value) => value + '%' }
                     },
-                    y: { title: { display: false } }
+                    y: {
+                        stacked: true,
+                        title: { display: false }
+                    }
                 }
             },
-            plugins: [{
-                id: 'paceLine',
-                afterDatasetsDraw: (chart) => {
-                    if (!paceForToday) return;
+            plugins: [
+                {
+                    id: 'paceLine',
+                    afterDatasetsDraw: (chart) => {
+                        if (!paceForToday) return;
 
-                    const ctx = chart.ctx;
-                    const xScale = chart.scales.x;
-                    const yScale = chart.scales.y;
-                    const xPixel = xScale.getPixelForValue(paceForToday);
+                        const ctx = chart.ctx;
+                        const xScale = chart.scales.x;
+                        const yScale = chart.scales.y;
+                        const xPixel = xScale.getPixelForValue(paceForToday);
 
-                    ctx.save();
-                    ctx.strokeStyle = '#808080';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([5, 5]);
-                    ctx.beginPath();
-                    ctx.moveTo(xPixel, yScale.top);
-                    ctx.lineTo(xPixel, yScale.bottom);
-                    ctx.stroke();
-                    ctx.restore();
+                        ctx.save();
+                        ctx.strokeStyle = '#808080';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.moveTo(xPixel, yScale.top);
+                        ctx.lineTo(xPixel, yScale.bottom);
+                        ctx.stroke();
+                        ctx.restore();
 
-                    ctx.save();
-                    ctx.font = 'bold 12px sans-serif';
-                    ctx.fillStyle = '#808080';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'bottom';
-                    ctx.fillText(`PACE: ${Math.round(paceForToday)}%`, xPixel, yScale.top - 5);
-                    ctx.restore();
+                        ctx.save();
+                        ctx.font = 'bold 12px sans-serif';
+                        ctx.fillStyle = '#808080';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(`PACE: ${Math.round(paceForToday)}%`, xPixel, yScale.top - 5);
+                        ctx.restore();
+                    }
+                },
+                {
+                    id: 'predictionDashedBorder',
+                    afterDatasetsDraw: (chart) => {
+                        if (!hasPrediction) return;
+
+                        const meta = chart.getDatasetMeta(1);
+                        if (!meta || !meta.data) return;
+
+                        const ctx = chart.ctx;
+                        ctx.save();
+                        ctx.strokeStyle = 'rgba(150, 150, 150, 0.9)';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([4, 3]);
+
+                        meta.data.forEach((bar, index) => {
+                            if ((predictionData[index] || 0) <= 0) return;
+
+                            // For horizontal bars: base is left x, x is right x,
+                            // y is center, height is bar height.
+                            const left = bar.base;
+                            const right = bar.x;
+                            const top = bar.y - bar.height / 2;
+                            const barHeight = bar.height;
+
+                            if (right > left) {
+                                ctx.strokeRect(left, top, right - left, barHeight);
+                            }
+                        });
+
+                        ctx.restore();
+                    }
                 }
-            }]
+            ]
         });
         this._debug('renderProgressBarChart: Chart created successfully');
     }
