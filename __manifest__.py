@@ -27,6 +27,7 @@
 		'views/aps_resource_submission_views_for_students.xml',
 		'views/aps_dashboard_views.xml',
 		'views/aps_submission_mass_update_wizard_views.xml',
+		'views/aps_resource_mass_update_wizard_views.xml',
 		'views/aps_subject_category_views.xml',
 		'views/op_program_level_views.xml',
 		'views/op_course_views.xml',

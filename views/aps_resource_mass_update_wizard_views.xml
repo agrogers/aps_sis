@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Mass Update Resources Wizard Form View -->
+    <record id="view_aps_resource_mass_update_wizard_form" model="ir.ui.view">
+        <field name="name">aps.resource.mass.update.wizard.form</field>
+        <field name="model">aps.resource.mass.update.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Mass Update Resources">
+                <sheet>
+                    <notebook>
+                        <page string="Options">
+                            <group col="12">
+                                <group string="Update which fields" col="12" colspan="8">
+
+                                    <group colspan="4">
+                                        <field name="update_name" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_name" class="mb-0">Name</label>
+                                    </group>
+                                    <group colspan="8"><field name="name_value" invisible="not update_name"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_description" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_description" class="mb-0">Description</label>
+                                    </group>
+                                    <group colspan="8"><field name="description_value" invisible="not update_description"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_type_id" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_type_id" class="mb-0">Type</label>
+                                    </group>
+                                    <group colspan="8"><field name="type_id_value" invisible="not update_type_id"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_category" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_category" class="mb-0">Category</label>
+                                    </group>
+                                    <group colspan="8"><field name="category_value" invisible="not update_category"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_marks" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_marks" class="mb-0">Out of Marks</label>
+                                    </group>
+                                    <group colspan="8"><field name="marks_value" invisible="not update_marks"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_points_scale" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_points_scale" class="mb-0">Points Scale</label>
+                                    </group>
+                                    <group colspan="8"><field name="points_scale_value" invisible="not update_points_scale"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_url" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_url" class="mb-0">URL</label>
+                                    </group>
+                                    <group colspan="8"><field name="url_value" invisible="not update_url"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_has_question" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_has_question" class="mb-0">Has Question</label>
+                                    </group>
+                                    <group colspan="8"><field name="has_question_value" invisible="not update_has_question"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_has_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_has_answer" class="mb-0">Has Answer</label>
+                                    </group>
+                                    <group colspan="8"><field name="has_answer_value" invisible="not update_has_answer"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_has_notes" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_has_notes" class="mb-0">Has Notes</label>
+                                    </group>
+                                    <group colspan="8"><field name="has_notes_value" invisible="not update_has_notes"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_has_lesson_plan" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_has_lesson_plan" class="mb-0">Has Lesson Plan</label>
+                                    </group>
+                                    <group colspan="8"><field name="has_lesson_plan_value" invisible="not update_has_lesson_plan"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_has_default_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_has_default_answer" class="mb-0">Has Default Answer</label>
+                                    </group>
+                                    <group colspan="8"><field name="has_default_answer_value" invisible="not update_has_default_answer"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_has_child_resources" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_has_child_resources" class="mb-0">Has Linked Resources</label>
+                                    </group>
+                                    <group colspan="8"><field name="has_child_resources_value" invisible="not update_has_child_resources"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_has_supporting_resources" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_has_supporting_resources" class="mb-0">Has Supporting Resources</label>
+                                    </group>
+                                    <group colspan="8"><field name="has_supporting_resources_value" invisible="not update_has_supporting_resources"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_score_contributes_to_parent" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_score_contributes_to_parent" class="mb-0">Contributes to Parent Score</label>
+                                    </group>
+                                    <group colspan="8"><field name="score_contributes_to_parent_value" invisible="not update_score_contributes_to_parent"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_allow_subject_editing" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_allow_subject_editing" class="mb-0">Allow Subject Editing</label>
+                                    </group>
+                                    <group colspan="8"><field name="allow_subject_editing_value" invisible="not update_allow_subject_editing"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_question" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_question" class="mb-0">Question</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_answer" class="mb-0">Answer</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_notes" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_notes" class="mb-0">Notes</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_lesson_plan" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_lesson_plan" class="mb-0">Lesson Plan</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_default_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_default_answer" class="mb-0">Default Answer</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                </group>
+                                <group string="Resources to Update" colspan="4">
+                                    <field name="resource_ids" widget="many2many_tags" nolabel="1" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Question" invisible="not update_question">
+                            <field name="question_value" widget="html" nolabel="1" placeholder="Enter question here"/>
+                        </page>
+                        <page string="Answer" invisible="not update_answer">
+                            <field name="answer_value" widget="html" nolabel="1" placeholder="Enter answer here"/>
+                        </page>
+                        <page string="Notes" invisible="not update_notes">
+                            <field name="notes_value" widget="html" nolabel="1" placeholder="Enter notes here"/>
+                        </page>
+                        <page string="Lesson Plan" invisible="not update_lesson_plan">
+                            <field name="lesson_plan_value" widget="html" nolabel="1" placeholder="Enter lesson plan here"/>
+                        </page>
+                        <page string="Default Answer" invisible="not update_default_answer">
+                            <field name="default_answer_value" widget="html" nolabel="1" placeholder="Enter default answer here"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button string="Update" name="action_update" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_resource_mass_update" model="ir.actions.server">
+        <field name="name">Mass Update Resources</field>
+        <field name="model_id" ref="aps_sis.model_aps_resources"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resources"/>
+        <field name="binding_type">action</field>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+                'type': 'ir.actions.act_window',
+                'name': 'Mass Update Resources',
+                'res_model': 'aps.resource.mass.update.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_resource_ids': [(6, 0, env.context.get('active_ids', []))],
+                }
+            }
+        </field>
+    </record>
+
+</odoo>

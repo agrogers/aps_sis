@@ -8,6 +8,7 @@ access_aps_resource_submission_teacher,aps.resource.submission.teacher,model_aps
 access_aps_assign_students_wizard_teacher,aps.assign.students.wizard.teacher,model_aps_assign_students_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_assign_students_wizard_line_teacher,aps.assign.students.wizard.line.teacher,model_aps_assign_students_wizard_line,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_submission_mass_update_wizard_teacher,aps.submission.mass.update.wizard.teacher,model_aps_submission_mass_update_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resource_mass_update_wizard_teacher,aps.resource.mass.update.wizard.teacher,model_aps_resource_mass_update_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_subject_category_teacher,aps.subject.category.teacher,model_aps_subject_category,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_subject_category_student,aps.subject.category.student,model_aps_subject_category,aps_sis.group_aps_student,1,0,0,0
 
