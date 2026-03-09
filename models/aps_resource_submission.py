@@ -903,9 +903,14 @@ class APSResourceSubmission(models.Model):
     def _notify_new_submission(self, subject_ids):
         """Creates an activity for each newly added faculty member."""
         # Search for faculty records to get their associated User IDs
+        
+        new_setting_to_receive_notifications = False
+        
+        if not new_setting_to_receive_notifications:
+            return
 
         subjects = self.env['op.subject'].browse(list(subject_ids))
-        
+
         for subject in subjects:
             # Most op.faculty models link to a user via a 'user_id' field
             for faculty in subject.faculty_ids:

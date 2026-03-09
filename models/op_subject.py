@@ -19,7 +19,7 @@ class APSSubjectCategory(models.Model):
 
 class OpSubject(models.Model):
     _inherit = 'op.subject'
-
+    _order = 'name'
     # teachers_ids = fields.Many2many(
     #     'op.faculty',
     #     relation='op_subject_teachers_rel',
