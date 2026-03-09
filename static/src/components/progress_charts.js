@@ -187,6 +187,8 @@ export class ProgressCharts {
             
             this.state.paceData = paceData;
             this.state.paceForToday = this.calculatePaceForToday(paceData);
+            this.state.redlineForToday = this.calculateRedlineForToday(paceData);
+            this.state.excludeFromAverage = progressData.exclude_from_average || [];
 
             const datasets = [];
             const today = new Date().toISOString().split('T')[0];
@@ -301,6 +303,44 @@ export class ProgressCharts {
 
         return paceValues.length > 0 
             ? paceValues.reduce((a, b) => a + b, 0) / paceValues.length 
+            : 0;
+    }
+
+    /**
+     * Calculate the average Redline percentage for today across all resources.
+     * Uses redline_start_date and redline_end_date from pace data.
+     */
+    calculateRedlineForToday(paceData) {
+        if (!paceData || Object.keys(paceData).length === 0) {
+            return 0;
+        }
+
+        const today = new Date();
+        const redlineValues = [];
+
+        for (const [resourceId, pace] of Object.entries(paceData)) {
+            if (!pace || !pace.redline_start_date || !pace.redline_end_date) continue;
+
+            try {
+                const startDate = new Date(pace.redline_start_date);
+                const endDate = new Date(pace.redline_end_date);
+
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) continue;
+                if (today < startDate || today > endDate) continue;
+
+                const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                if (totalDays <= 0) continue;
+
+                const daysFromStart = (today - startDate) / (1000 * 60 * 60 * 24);
+                const progressPercent = (daysFromStart / totalDays) * 100;
+                redlineValues.push(Math.max(0, Math.min(100, progressPercent)));
+            } catch (error) {
+                console.error("Error calculating Redline for today:", error);
+            }
+        }
+
+        return redlineValues.length > 0
+            ? redlineValues.reduce((a, b) => a + b, 0) / redlineValues.length
             : 0;
     }
 
@@ -564,8 +604,19 @@ export class ProgressCharts {
         const data = this.state.progressBarData.map(item => item.progress);
         const colors = this.state.progressBarData.map(item => item.color);
         const paceForToday = this.state.paceForToday;
+        const redlineForToday = this.state.redlineForToday || 0;
+        const excludeFromAverage = this.state.excludeFromAverage || [];
         const predictionData = this._calculatePredictionData();
         const hasPrediction = predictionData.some(v => v > 0);
+
+        // Pre-compute y-axis label colours: red if progress < redline (excluding non-highlighted subjects)
+        const excludeNamesLower = excludeFromAverage.filter(n => n).map(n => this.cleanSubjectName(n).toLowerCase());
+        const barLabelColors = this.state.progressBarData.map(item => {
+            if (!redlineForToday) return '#666';
+            const cleanedName = (this.cleanSubjectName(item.subject_name) || '').toLowerCase();
+            if (excludeNamesLower.includes(cleanedName)) return '#666';
+            return item.progress < redlineForToday ? '#dc3545' : '#666';
+        });
 
         this.progressBarChartInstance = new Chart(canvas, {
             type: 'bar',
@@ -593,7 +644,7 @@ export class ProgressCharts {
                 responsive: true,
                 maintainAspectRatio: false,
                 indexAxis: 'y',
-                layout: { padding: { top: 30 } },
+                layout: { padding: { top: 45 } },
                 plugins: {
                     legend: { display: false },
                     title: { display: false },
@@ -623,7 +674,10 @@ export class ProgressCharts {
                     },
                     y: {
                         stacked: true,
-                        title: { display: false }
+                        title: { display: false },
+                        ticks: {
+                            color: (context) => barLabelColors[context.index] || '#666'
+                        }
                     }
                 }
             },
@@ -654,6 +708,35 @@ export class ProgressCharts {
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
                         ctx.fillText(`PACE: ${Math.round(paceForToday)}%`, xPixel, yScale.top - 5);
+                        ctx.restore();
+                    }
+                },
+                {
+                    id: 'redLine',
+                    afterDatasetsDraw: (chart) => {
+                        if (!redlineForToday) return;
+
+                        const ctx = chart.ctx;
+                        const xScale = chart.scales.x;
+                        const yScale = chart.scales.y;
+                        const xPixel = xScale.getPixelForValue(redlineForToday);
+
+                        ctx.save();
+                        ctx.strokeStyle = '#dc3545';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.moveTo(xPixel, yScale.top);
+                        ctx.lineTo(xPixel, yScale.bottom);
+                        ctx.stroke();
+                        ctx.restore();
+
+                        ctx.save();
+                        ctx.font = 'bold 12px sans-serif';
+                        ctx.fillStyle = '#dc3545';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(`Redline: ${Math.round(redlineForToday)}%`, xPixel, yScale.top - 20);
                         ctx.restore();
                     }
                 },
@@ -721,12 +804,14 @@ export class ProgressCharts {
                 hasSubjectList: !!comparisonData.subject_list,
                 subjectCount: (comparisonData.subject_list || []).length,
                 paceAverage: comparisonData.pace_average,
-                excludeFromAverage: comparisonData.exclude_from_average
+                excludeFromAverage: comparisonData.exclude_from_average,
+                redlineAverage: comparisonData.redline_average
             });
 
             const studentData = comparisonData.student_data || [];
             const subjectList = comparisonData.subject_list || [];
             const paceAverage = comparisonData.pace_average || 0;
+            const redlineAverage = comparisonData.redline_average || 0;
             const excludeFromAverage = comparisonData.exclude_from_average || [];
 
             studentData.sort((a, b) => a.student_name.localeCompare(b.student_name));
@@ -807,10 +892,44 @@ export class ProgressCharts {
                 });
             }
 
+            if (redlineAverage > 0) {
+                datasets.push({
+                    label: 'Redline',
+                    data: studentData.map(() => redlineAverage),
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.08)',
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    pointHitRadius: 0,
+                    fill: false,
+                    spanGaps: true,
+                    isPace: true  // Reuse isPace flag to exclude from tooltips (same filter applies)
+                });
+            }
+
+            // Compute which students have at least one non-excluded subject below the redline
+            const redStudentIndices = [];
+            if (redlineAverage > 0) {
+                studentData.forEach((student, index) => {
+                    for (const [subjectId, value] of Object.entries(student.progress_by_subject)) {
+                        if (value != null && !excludedSubjectIds.has(parseInt(subjectId))) {
+                            if (value < redlineAverage) {
+                                redStudentIndices.push(index);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+
             this.state.studentComparisonData = {
                 labels: studentLabels,
                 datasets: datasets,
-                paceAverage: paceAverage
+                paceAverage: paceAverage,
+                redlineAverage: redlineAverage,
+                redStudentIndices: redStudentIndices
             };
 
             this._debug('fetchStudentComparisonData: Processed', {
@@ -821,7 +940,7 @@ export class ProgressCharts {
         } catch (error) {
             console.error("Error fetching student comparison data:", error);
             this._debug('fetchStudentComparisonData: ERROR', error.message);
-            this.state.studentComparisonData = { labels: [], datasets: [], paceAverage: 0 };
+            this.state.studentComparisonData = { labels: [], datasets: [], paceAverage: 0, redlineAverage: 0, redStudentIndices: [] };
         }
 
         this.state.loadingStudentComparison = false;
@@ -870,6 +989,9 @@ export class ProgressCharts {
             this.studentComparisonChartInstance = null;
         }
 
+        // Capture redline data for use inside Chart.js option callbacks
+        const redStudentIndices = new Set(this.state.studentComparisonData.redStudentIndices || []);
+
         this.studentComparisonChartInstance = new Chart(canvas, {
             type: 'line',
             data: {
@@ -907,6 +1029,7 @@ export class ProgressCharts {
                         ticks: {
                             maxRotation: 45,
                             minRotation: 45,
+                            color: (context) => redStudentIndices.has(context.index) ? '#dc3545' : '#666',
                             callback: function(value) {
                                 const label = this.getLabelForValue(value);
                                 const maxChars = 15;

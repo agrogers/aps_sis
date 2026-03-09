@@ -58,6 +58,8 @@ export class ApexDashboard extends Component {
             periodEnd: null,
             paceData: {},  // Store PACE data for all resources
             paceForToday: 0,  // Current PACE percentage for today
+            redlineForToday: 0,  // Current Redline percentage for today
+            excludeFromAverage: [],  // Subject names excluded from redline highlight
             // Student comparison
             studentComparisonData: null,
             loadingStudentComparison: true,
