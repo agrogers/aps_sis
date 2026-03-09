@@ -1020,10 +1020,14 @@ class APSResourceSubmission(models.Model):
         Returns:
         - line_data: List of progress data points over time by subject
         - bar_data: Current progress percentage by subject
-        - pace_data: PACE information from resource notes
+        - pace_data: PACE information from resource notes (including redline dates)
         - subject_colors: Color mapping for subjects
+        - exclude_from_average: Subject names to exclude from redline highlight
         """
         from datetime import datetime, timedelta
+        import re
+        import html as html_lib
+        from markupsafe import Markup
         
         # Find all resources with ' Progress' in the name
         progress_resources = self.env['aps.resources'].search([
@@ -1035,8 +1039,24 @@ class APSResourceSubmission(models.Model):
                 'line_data': [],
                 'bar_data': [],
                 'pace_data': {},
-                'subject_colors': {}
+                'subject_colors': {},
+                'exclude_from_average': [],
             }
+        
+        # Parse exclude_from_average from resource notes
+        exclude_from_average = []
+        for resource in progress_resources:
+            if resource.notes:
+                notes_text = resource.notes
+                if isinstance(notes_text, Markup) or '<' in str(notes_text):
+                    notes_text = re.sub(r'<[^>]+>', '', str(notes_text))
+                notes_text = html_lib.unescape(str(notes_text))
+                match = re.search(r'exclude_from_average:\s*(.+?)(?:\n|$)', notes_text, re.IGNORECASE)
+                if match:
+                    for subject_name in match.group(1).split(','):
+                        cleaned_name = subject_name.strip()
+                        if cleaned_name and cleaned_name not in exclude_from_average:
+                            exclude_from_average.append(cleaned_name)
         
         # Build domain for submissions
         domain = [
@@ -1054,7 +1074,8 @@ class APSResourceSubmission(models.Model):
                 'line_data': [],
                 'bar_data': [],
                 'pace_data': {},
-                'subject_colors': {}
+                'subject_colors': {},
+                'exclude_from_average': exclude_from_average,
             }
         
         # Get all subjects from submissions
@@ -1068,7 +1089,7 @@ class APSResourceSubmission(models.Model):
         # Group submissions by subject and build historical data
         subject_data = {}  # {subject_id: [(date, result_percent), ...]}
         current_progress = {}  # {subject_id: {'result_percent': x, 'date': y}}
-        pace_info = {}  # {resource_id: {start_date, end_date, resource_name}}
+        pace_info = {}  # {resource_id: {start_date, end_date, redline_start_date, redline_end_date, resource_name}}
         
         for submission in submissions:
             for subject in submission.subjects:
@@ -1099,16 +1120,23 @@ class APSResourceSubmission(models.Model):
                                 'date': date_to_use
                             }
                 
-                # Get PACE dates from resource notes
+                # Get PACE/redline dates from resource notes
                 # Note: resource.subjects is a Many2many field - one resource can have multiple subjects
                 # The PACE dates from the resource's notes field apply to ALL subjects linked to that resource
                 # Store PACE info once per resource (not per subject) to avoid duplicate PACE lines
                 if submission.resource_id and submission.resource_id.id not in pace_info:
                     pace_dates = submission.resource_id.get_pace_dates()
-                    if pace_dates['start_date'] or pace_dates['end_date']:
+                    if any([
+                        pace_dates['start_date'],
+                        pace_dates['end_date'],
+                        pace_dates['redline_start_date'],
+                        pace_dates['redline_end_date'],
+                    ]):
                         pace_info[submission.resource_id.id] = {
                             'start_date': pace_dates['start_date'].isoformat() if pace_dates['start_date'] else False,
                             'end_date': pace_dates['end_date'].isoformat() if pace_dates['end_date'] else False,
+                            'redline_start_date': pace_dates['redline_start_date'].isoformat() if pace_dates['redline_start_date'] else False,
+                            'redline_end_date': pace_dates['redline_end_date'].isoformat() if pace_dates['redline_end_date'] else False,
                             'resource_name': submission.resource_id.name,
                         }
         
@@ -1138,6 +1166,7 @@ class APSResourceSubmission(models.Model):
             'bar_data': bar_data,
             'pace_data': pace_info,
             'subject_colors': subject_colors,
+            'exclude_from_average': exclude_from_average,
             'period_start': period_start_date,  # For zoom reference
             'period_end': datetime.now().date().isoformat()  # Today as period end
         }
@@ -1222,6 +1251,8 @@ class APSResourceSubmission(models.Model):
         # Build student progress data: {student_id: {subject_id: {'result': x, 'date': y}}}
         student_progress = {}
         pace_values = []
+        redline_values = []
+        processed_resources_for_pace = set()
         
         for submission in submissions:
             student_id = submission.student_id.id
@@ -1253,20 +1284,31 @@ class APSResourceSubmission(models.Model):
                             'date': date_to_use
                         }
             
-            # Calculate PACE for averaging
-            if submission.resource_id:
+            # Calculate PACE and redline for averaging (process each resource only once)
+            if submission.resource_id and submission.resource_id.id not in processed_resources_for_pace:
+                processed_resources_for_pace.add(submission.resource_id.id)
                 pace_dates = submission.resource_id.get_pace_dates()
+                today = datetime.now().date()
+                
                 if pace_dates['start_date'] and pace_dates['end_date']:
-                    today = datetime.now().date()
                     start_date = pace_dates['start_date']
                     end_date = pace_dates['end_date']
-                    
                     if start_date <= today <= end_date:
                         total_days = (end_date - start_date).days
                         if total_days > 0:
                             days_from_start = (today - start_date).days
                             pace_percent = (days_from_start / total_days) * 100
                             pace_values.append(min(100, max(0, pace_percent)))
+                
+                if pace_dates['redline_start_date'] and pace_dates['redline_end_date']:
+                    rl_start = pace_dates['redline_start_date']
+                    rl_end = pace_dates['redline_end_date']
+                    if rl_start <= today <= rl_end:
+                        total_days = (rl_end - rl_start).days
+                        if total_days > 0:
+                            days_from_start = (today - rl_start).days
+                            redline_percent = (days_from_start / total_days) * 100
+                            redline_values.append(min(100, max(0, redline_percent)))
         
         # Format for frontend
         student_list = []
@@ -1280,8 +1322,9 @@ class APSResourceSubmission(models.Model):
                 student_data['progress_by_subject'][subject_id] = progress_info['result_percent']
             student_list.append(student_data)
         
-        # Calculate average PACE
+        # Calculate average PACE and redline
         pace_average = sum(pace_values) / len(pace_values) if pace_values else 0
+        redline_average = sum(redline_values) / len(redline_values) if redline_values else 0
         
         # Build subject list
         subject_list = []
@@ -1297,6 +1340,7 @@ class APSResourceSubmission(models.Model):
             'subject_list': subject_list,
             'subject_colors': subject_colors,
             'pace_average': pace_average,
+            'redline_average': redline_average,
             'exclude_from_average': exclude_from_average
         }
 

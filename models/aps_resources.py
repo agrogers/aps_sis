@@ -810,7 +810,8 @@ class APSResource(models.Model):
 
     def get_pace_dates(self):
         """
-        Parse PACE start_date and end_date from the notes field.
+        Parse PACE start_date, end_date, redline_start_date, and redline_end_date
+        from the notes field.
         
         Note: Since resource.subjects is a Many2many field, one resource can be associated 
         with multiple subjects. The PACE dates parsed from this resource's notes field 
@@ -819,14 +820,21 @@ class APSResource(models.Model):
         Expected format in notes: 
             start_date: 1/Aug/2025
             end_date: 31/Dec/2027
+            redline_start_date: 1/Nov/2025
+            redline_end_date: 30/Jan/2027
             
-        Returns dict with 'start_date' and 'end_date' as date objects or False if not found.
+        Returns dict with date objects or False for each key if not found.
         """
         self.ensure_one()
         import re
         from datetime import datetime
         
-        result = {'start_date': False, 'end_date': False}
+        result = {
+            'start_date': False,
+            'end_date': False,
+            'redline_start_date': False,
+            'redline_end_date': False,
+        }
         
         if not self.notes:
             return result
@@ -838,37 +846,39 @@ class APSResource(models.Model):
         # Examples: 1/Aug/2025, 31/December/2027, 15/Jan/2026
         date_pattern = r'(\d{1,2})/([A-Za-z]+)/(\d{4})'
         
-        # Search for start_date
-        start_match = re.search(rf'start_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
-        if start_match:
+        def _parse_date_match(match):
+            """Parse a regex match containing (day, month_str, year) groups into a date."""
             try:
-                day, month_str, year = start_match.groups()
-                # Parse month name (handle both full and abbreviated)
+                day, month_str, year = match.groups()
                 date_str = f"{day} {month_str} {year}"
-                # Try full month name first, then abbreviated
                 for fmt in ['%d %B %Y', '%d %b %Y']:
                     try:
-                        result['start_date'] = datetime.strptime(date_str, fmt).date()
-                        break
+                        return datetime.strptime(date_str, fmt).date()
                     except ValueError:
                         continue
             except (ValueError, AttributeError):
                 pass
+            return False
         
-        # Search for end_date
-        end_match = re.search(rf'end_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
+        # Search for start_date (use negative lookbehind to exclude redline_start_date)
+        start_match = re.search(rf'(?<!redline_)start_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
+        if start_match:
+            result['start_date'] = _parse_date_match(start_match) or False
+        
+        # Search for end_date (use negative lookbehind to exclude redline_end_date)
+        end_match = re.search(rf'(?<!redline_)end_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
         if end_match:
-            try:
-                day, month_str, year = end_match.groups()
-                date_str = f"{day} {month_str} {year}"
-                for fmt in ['%d %B %Y', '%d %b %Y']:
-                    try:
-                        result['end_date'] = datetime.strptime(date_str, fmt).date()
-                        break
-                    except (ValueError, AttributeError):
-                        continue
-            except (ValueError, AttributeError):
-                pass
+            result['end_date'] = _parse_date_match(end_match) or False
+        
+        # Search for redline_start_date
+        redline_start_match = re.search(rf'redline_start_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
+        if redline_start_match:
+            result['redline_start_date'] = _parse_date_match(redline_start_match) or False
+        
+        # Search for redline_end_date
+        redline_end_match = re.search(rf'redline_end_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
+        if redline_end_match:
+            result['redline_end_date'] = _parse_date_match(redline_end_match) or False
         
         return result
 
