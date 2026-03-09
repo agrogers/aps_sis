@@ -860,12 +860,12 @@ class APSResource(models.Model):
                 pass
             return False
         
-        # Search for start_date (use negative lookbehind to exclude redline_start_date)
+        # Search for start_date (negative lookbehind prevents matching 'redline_start_date:')
         start_match = re.search(rf'(?<!redline_)start_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
         if start_match:
             result['start_date'] = _parse_date_match(start_match) or False
         
-        # Search for end_date (use negative lookbehind to exclude redline_end_date)
+        # Search for end_date (negative lookbehind prevents matching 'redline_end_date:')
         end_match = re.search(rf'(?<!redline_)end_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
         if end_match:
             result['end_date'] = _parse_date_match(end_match) or False

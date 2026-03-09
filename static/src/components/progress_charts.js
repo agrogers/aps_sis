@@ -610,7 +610,7 @@ export class ProgressCharts {
         const hasPrediction = predictionData.some(v => v > 0);
 
         // Pre-compute y-axis label colours: red if progress < redline (excluding non-highlighted subjects)
-        const excludeNamesLower = excludeFromAverage.map(n => this.cleanSubjectName(n).toLowerCase());
+        const excludeNamesLower = excludeFromAverage.filter(n => n).map(n => this.cleanSubjectName(n).toLowerCase());
         const barLabelColors = this.state.progressBarData.map(item => {
             if (!redlineForToday) return '#666';
             const cleanedName = (this.cleanSubjectName(item.subject_name) || '').toLowerCase();
@@ -905,7 +905,7 @@ export class ProgressCharts {
                     pointHitRadius: 0,
                     fill: false,
                     spanGaps: true,
-                    isPace: true
+                    isPace: true  // Reuse isPace flag to exclude from tooltips (same filter applies)
                 });
             }
 
