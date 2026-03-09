@@ -785,7 +785,9 @@ export class ApexDashboard extends Component {
             datasets: [{
                 label: 'Tasks by Subject',
                 data: counts,
-                backgroundColor: colors,
+                backgroundColor: colors.map(c => c + '80'),
+                borderColor: colors,
+                borderWidth: 2,
                 hoverOffset: 4,
             }]
         };

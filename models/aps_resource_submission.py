@@ -1028,6 +1028,7 @@ class APSResourceSubmission(models.Model):
         - pace_data: PACE information from resource notes (including redline dates)
         - subject_colors: Color mapping for subjects
         - exclude_from_average: Subject names to exclude from redline highlight
+        - exclude: Subjects to completely exclude from the chart
         """
         from datetime import datetime, timedelta
         import re
@@ -1046,22 +1047,36 @@ class APSResourceSubmission(models.Model):
                 'pace_data': {},
                 'subject_colors': {},
                 'exclude_from_average': [],
+                'exclude': [],
             }
         
-        # Parse exclude_from_average from resource notes
+        # Parse exclude_from_average and exclude from resource notes
         exclude_from_average = []
+        exclude = []
         for resource in progress_resources:
             if resource.notes:
                 notes_text = resource.notes
                 if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                    notes_text = re.sub(r'<[^>]+>', '', str(notes_text))
+                    notes_text = str(notes_text)
+                    notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
+                    notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
+                    notes_text = re.sub(r'<[^>]+>', '', notes_text)
                 notes_text = html_lib.unescape(str(notes_text))
-                match = re.search(r'exclude_from_average:\s*(.+?)(?:\n|$)', notes_text, re.IGNORECASE)
+                notes_text = notes_text.replace('\xa0', ' ')
+                
+                match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
                 if match:
                     for subject_name in match.group(1).split(','):
                         cleaned_name = subject_name.strip()
                         if cleaned_name and cleaned_name not in exclude_from_average:
                             exclude_from_average.append(cleaned_name)
+                
+                match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+                if match:
+                    for subject_name in match.group(1).split(','):
+                        cleaned_name = subject_name.strip()
+                        if cleaned_name and cleaned_name not in exclude:
+                            exclude.append(cleaned_name)
         
         # Build domain for submissions
         domain = [
@@ -1081,12 +1096,17 @@ class APSResourceSubmission(models.Model):
                 'pace_data': {},
                 'subject_colors': {},
                 'exclude_from_average': exclude_from_average,
+                'exclude': exclude,
             }
         
         # Get all subjects from submissions
         all_subjects = self.env['op.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
+        
+        # Filter out excluded subjects
+        if exclude:
+            all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
         
         # Get subject colors (with automatic color generation for subjects without categories)
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
@@ -1098,6 +1118,8 @@ class APSResourceSubmission(models.Model):
         
         for submission in submissions:
             for subject in submission.subjects:
+                if subject.name in exclude:
+                    continue
                 if subject.id not in subject_data:
                     subject_data[subject.id] = []
                 
@@ -1172,6 +1194,7 @@ class APSResourceSubmission(models.Model):
             'pace_data': pace_info,
             'subject_colors': subject_colors,
             'exclude_from_average': exclude_from_average,
+            'exclude': exclude,
             'period_start': period_start_date,  # For zoom reference
             'period_end': datetime.now().date().isoformat()  # Today as period end
         }
@@ -1206,26 +1229,36 @@ class APSResourceSubmission(models.Model):
                 'exclude_from_average': []
             }
         
-        # Parse exclude_from_average from resource notes
+        # Parse exclude_from_average and exclude from resource notes
         exclude_from_average = []
+        exclude = []
         for resource in progress_resources:
             if resource.notes:
                 # Strip HTML tags if present
                 notes_text = resource.notes
                 if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                    notes_text = re.sub(r'<[^>]+>', '', str(notes_text))
+                    notes_text = str(notes_text)
+                    notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
+                    notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
+                    notes_text = re.sub(r'<[^>]+>', '', notes_text)
                 # Decode HTML entities (e.g., &nbsp; -> space)
                 import html
                 notes_text = html.unescape(str(notes_text))
-                # Look for exclude_from_average: directive
-                match = re.search(r'exclude_from_average:\s*(.+?)(?:\n|$)', notes_text, re.IGNORECASE)
+                notes_text = notes_text.replace('\xa0', ' ')
+                
+                match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
                 if match:
-                    subjects_str = match.group(1)
-                    # Split by comma and strip whitespace
-                    for subject_name in subjects_str.split(','):
+                    for subject_name in match.group(1).split(','):
                         cleaned_name = subject_name.strip()
                         if cleaned_name and cleaned_name not in exclude_from_average:
                             exclude_from_average.append(cleaned_name)
+                
+                match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+                if match:
+                    for subject_name in match.group(1).split(','):
+                        cleaned_name = subject_name.strip()
+                        if cleaned_name and cleaned_name not in exclude:
+                            exclude.append(cleaned_name)
         
         # Build domain for submissions
         domain = [
@@ -1250,6 +1283,10 @@ class APSResourceSubmission(models.Model):
         for sub in submissions:
             all_subjects |= sub.subjects
         
+        # Filter out excluded subjects
+        if exclude:
+            all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+        
         # Get subject colors
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
         
@@ -1271,6 +1308,8 @@ class APSResourceSubmission(models.Model):
                 }
             
             for subject in submission.subjects:
+                if subject.name in exclude:
+                    continue
                 date_to_use = submission.date_submitted or submission.date_completed
                 if not date_to_use:
                     continue
@@ -1346,7 +1385,8 @@ class APSResourceSubmission(models.Model):
             'subject_colors': subject_colors,
             'pace_average': pace_average,
             'redline_average': redline_average,
-            'exclude_from_average': exclude_from_average
+            'exclude_from_average': exclude_from_average,
+            'exclude': exclude,
         }
 
     @api.model
