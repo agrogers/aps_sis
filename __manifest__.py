@@ -42,6 +42,8 @@
 	'assets': {
 		'web.assets_backend': [
             'aps_sis/static/src/lib/chart.js',
+            'aps_sis/static/src/lib/katex/katex.min.js',
+            'aps_sis/static/src/lib/katex/auto-render.min.js',
 			'aps_sis/static/src/js/hide_g2_popup.js',
 			'aps_sis/static/src/js/utils/color_utils.js',
 			'aps_sis/static/src/js/utils/svg_progress_utils.js',
@@ -50,6 +52,7 @@
 			'aps_sis/static/src/css/ui_tweaks.css',
             'aps_sis/static/src/css/statusbar_colors.css',
 			'aps_sis/static/src/css/aps_sis.css',
+			'aps_sis/static/src/css/math_formula.css',
 			'aps_sis/static/src/js/percentpie_ranged_widget.js',
 			'aps_sis/static/src/xml/percentpie_ranged_field.xml',
 			'aps_sis/static/src/js/url_icon_widget.js',
@@ -70,6 +73,7 @@
             'aps_sis/static/src/xml/breadcrumb_widget.xml',
             'aps_sis/static/src/js/badge_decorator_widget.js',
             'aps_sis/static/src/xml/badge_decorator_field.xml',
+            'aps_sis/static/src/js/math_formula_renderer.js',
             'aps_sis/static/src/components/**/*.js',
             'aps_sis/static/src/components/**/*.xml',
             'aps_sis/static/src/components/**/*.scss',

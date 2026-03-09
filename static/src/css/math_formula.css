@@ -1,0 +1,29 @@
+/* ============================================================
+   APS Math Formula Rendering Styles
+   Complementary CSS for KaTeX-rendered formulas in HTML fields.
+   ============================================================ */
+
+/* Inline math spans — prevent them from disrupting line flow */
+.o_field_html .katex {
+    font-size: 1em;
+    vertical-align: middle;
+}
+
+/* Display (block) math — add modest top/bottom spacing */
+.o_field_html .katex-display {
+    margin: 0.5em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Ensure KaTeX renders above any Odoo z-index stacking */
+.o_field_html .katex-html {
+    position: relative;
+}
+
+/* In list views, constrain display math so it doesn't blow out the row */
+.o_list_table .o_field_html .katex-display {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
