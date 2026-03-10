@@ -29,11 +29,12 @@
  *     Clicking it restores the original LaTeX into the editor so the user
  *     can make changes.  Clicking "View" re-renders the updated LaTeX.
  *
- *     Save protection: capture-phase listeners on the save button and Ctrl+S
- *     restore the original LaTeX back into the editor before Odoo reads the
- *     field value, ensuring the LaTeX source (not the rendered HTML) is saved.
- *     After the save Odoo patches the DOM, the MutationObserver fires, and
- *     the field is re-rendered automatically.
+ *     No save-protection listeners are needed.  Odoo's OdooEditor maintains
+ *     its own internal model that is only updated by editor event handlers;
+ *     our direct renderMathInElement() DOM changes are ignored by the editor
+ *     and never affect what gets saved.  After a save Odoo patches the DOM
+ *     from the server response, the MutationObserver fires, and the field is
+ *     re-rendered automatically.
  */
 
 import { registry } from "@web/core/registry";
@@ -65,12 +66,6 @@ const PROCESSED_ATTR = "data-aps-math";
 // certain the observer has already processed (and skipped) our own mutation
 // before we clear the flag.  2.5× the debounce gives comfortable headroom.
 const RENDERING_CLEANUP_DELAY_MS = 500;
-
-// After calling _restoreAllForSave() we wait this long before force-re-rendering
-// any field still in "saving" state.  Covers the case where Odoo does not update
-// the DOM after a save (content unchanged on the server) so the MutationObserver
-// never fires.  1 500 ms is generous enough for most network conditions.
-const SAVE_FALLBACK_DELAY_MS = 1500;
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -158,74 +153,6 @@ function _setHtml(el, html) {
     _renderingInProgress.add(el);
     el.innerHTML = html;
     setTimeout(() => _renderingInProgress.delete(el), RENDERING_CLEANUP_DELAY_MS);
-}
-
-// ── Save protection ───────────────────────────────────────────────────────────
-
-/**
- * Prepare all editable HTML fields for an imminent record save:
- *
- *  "view" mode fields — the editorEl currently holds KaTeX-rendered HTML.
- *    Restore the original LaTeX so Odoo reads and saves the correct source.
- *    Mark as "saving"; the MutationObserver re-renders after Odoo updates the DOM.
- *
- *  "edit" mode fields — the editorEl already holds LaTeX (user is editing).
- *    Nothing to restore, but update the WeakMap entry to capture any edits
- *    made during this session so that the re-render after save uses the new
- *    LaTeX, not the pre-session original.
- *
- * Must run BEFORE Odoo reads the field value (use capture-phase listeners).
- */
-function _restoreAllForSave() {
-    document.querySelectorAll(`.o_field_html[${PROCESSED_ATTR}="view"]`).forEach((fieldEl) => {
-        const editorEl = fieldEl.querySelector(".odoo-editor-editable");
-        if (!editorEl) return;
-        const orig = _originalHtmlMap.get(editorEl);
-        if (orig === undefined) return;
-        // Restore LaTeX HTML — Odoo will now read the correct source.
-        _setHtml(editorEl, orig);
-        fieldEl.setAttribute(PROCESSED_ATTR, "saving");
-    });
-
-    // If the user saves while in "edit" mode, the editorEl already has the
-    // current (edited) LaTeX — no restore needed.  But update the WeakMap so
-    // that when _processEditableField re-renders after save it uses the new
-    // content, not the original pre-session LaTeX.
-    document.querySelectorAll(`.o_field_html[${PROCESSED_ATTR}="edit"]`).forEach((fieldEl) => {
-        const editorEl = fieldEl.querySelector(".odoo-editor-editable");
-        if (editorEl) {
-            _originalHtmlMap.set(editorEl, editorEl.innerHTML);
-        }
-    });
-
-    // Fallback: if Odoo does NOT update the DOM after saving (e.g. the server
-    // returns the same content), the MutationObserver never fires and the field
-    // stays in "saving" state.  Force a re-render after a generous timeout.
-    setTimeout(() => {
-        if (!window.renderMathInElement) return;
-        document.querySelectorAll(`.o_field_html[${PROCESSED_ATTR}="saving"]`).forEach((fieldEl) => {
-            const editorEl = fieldEl.querySelector(".odoo-editor-editable");
-            if (editorEl) _processEditableField(fieldEl, editorEl);
-        });
-    }, SAVE_FALLBACK_DELAY_MS);
-}
-
-function _installSaveProtection() {
-    // Save button click
-    document.addEventListener("click", (e) => {
-        if (e.target && e.target.closest(
-            ".o_form_button_save, .o_form_button_save_manually, [data-action='save']"
-        )) {
-            _restoreAllForSave();
-        }
-    }, true);
-
-    // Ctrl+S / Cmd+S keyboard shortcut
-    document.addEventListener("keydown", (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === "s" && !e.defaultPrevented) {
-            _restoreAllForSave();
-        }
-    }, true);
 }
 
 // ── Readonly-field rendering ─────────────────────────────────────────────────
@@ -369,9 +296,6 @@ function _processContainer(container) {
         ".o_field_html:not(.o_readonly_modifier)"
     );
     editableFields.forEach((fieldEl) => {
-        // Skip "saving" state — the field will be re-processed by the observer
-        // once Odoo updates the DOM after the save completes.
-        if (fieldEl.getAttribute(PROCESSED_ATTR) === "saving") return;
         const editorEl = fieldEl.querySelector(".odoo-editor-editable");
         if (editorEl) {
             _processEditableField(fieldEl, editorEl);
@@ -401,8 +325,6 @@ registry.category("services").add("aps_math_renderer", {
         _loadKaTeX().then(() => {
             _processContainer(document.body);
         });
-
-        _installSaveProtection();
 
         const observer = new MutationObserver((mutations) => {
             let shouldProcess = false;
