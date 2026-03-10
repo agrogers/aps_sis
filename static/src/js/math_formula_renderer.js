@@ -347,6 +347,7 @@ function _processEditableField(fieldEl, editorEl) {
     if (!rendered) return;
 
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
+    editorEl.setAttribute("contenteditable", "false");
 
     // Make the editor non-editable while formulas are displayed so the user
     // cannot accidentally edit KaTeX-rendered HTML.  This is safe: we are only
@@ -372,6 +373,7 @@ function _processEditableField(fieldEl, editorEl) {
             editorEl.setAttribute("contenteditable", "true");
             btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
+            editorEl.setAttribute("contenteditable", "true");
             editorEl.focus();
         } else {
             // Switch to view mode: re-inject rendered formulas on current content.
@@ -382,6 +384,7 @@ function _processEditableField(fieldEl, editorEl) {
             editorEl.setAttribute("contenteditable", "false");
             btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
+            editorEl.setAttribute("contenteditable", "false");
         }
     });
 
