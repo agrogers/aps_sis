@@ -157,33 +157,6 @@ function _containsLatex(text) {
 }
 
 /**
- * Synchronously hide the content elements of HTML fields that appear to
- * contain LaTeX, so that raw formula text is never visible to the user while
- * KaTeX is loading or the debounced render is pending.
- *
- * Uses visibility:hidden (not display:none) so the field still occupies its
- * normal layout space — this eliminates any reflow/shift when the rendered
- * preview is shown immediately after.
- *
- * The aps-math-pending class is removed inside _processReadonlyField /
- * _processEditableField before _buildPreview is called, which means the
- * content is always un-hidden even if KaTeX is unavailable or no real
- * formulas are found.
- */
-function _markPendingFields(container) {
-    if (!container || typeof container.querySelectorAll !== "function") return;
-    // Only operate on unprocessed fields (.o_field_html without PROCESSED_ATTR)
-    container.querySelectorAll(`.o_field_html:not([${PROCESSED_ATTR}])`).forEach((fieldEl) => {
-        const contentEl =
-            fieldEl.querySelector(".odoo-editor-editable") ||
-            fieldEl.querySelector(":scope > div");
-        if (contentEl && _containsLatex(contentEl.textContent)) {
-            contentEl.classList.add("aps-math-pending");
-        }
-    });
-}
-
-/**
  * Build and return a rendered preview div from *sourceEl*'s innerHTML.
  * Returns null if KaTeX made no visible change (no real formulas present).
  */
@@ -223,11 +196,6 @@ function _processReadonlyField(fieldEl) {
         fieldEl.querySelector(".odoo-editor-editable") ||
         fieldEl.querySelector(":scope > div");
     if (!contentEl) return;
-
-    // Always remove the pending class first so content is un-hidden even if
-    // we bail early below (no LaTeX found, or KaTeX unavailable).
-    contentEl.classList.remove("aps-math-pending");
-
     if (!_containsLatex(contentEl.textContent)) return;
 
     const preview = _buildPreview(contentEl);
@@ -275,10 +243,6 @@ function _processEditableField(fieldEl, editorEl) {
     if (existingBtn)     existingBtn.remove();
     editorEl.style.display = "";
     fieldEl.removeAttribute(PROCESSED_ATTR);
-
-    // Always remove the pending class here so content is un-hidden even if
-    // we bail early below (no LaTeX found, or KaTeX unavailable).
-    editorEl.classList.remove("aps-math-pending");
 
     // ── Fresh evaluation ─────────────────────────────────────────────────────
     if (!_containsLatex(editorEl.textContent)) return;
@@ -388,14 +352,6 @@ registry.category("services").add("aps_math_renderer", {
     start() {
         // Load KaTeX CSS and JS (both dynamically, bypassing Odoo bundler)
         _ensureKaTeXCSS();
-
-        // Synchronously hide fields that contain LaTeX before KaTeX finishes
-        // loading.  This prevents the flash of raw formula text during the
-        // async script download.  The hiding is done with visibility:hidden
-        // (not display:none) so the field keeps its layout space and no shift
-        // occurs when the rendered preview replaces the hidden content.
-        _markPendingFields(document.body);
-
         _loadKaTeX().then(() => {
             // Initial render of any HTML fields already in the DOM
             _processContainer(document.body);
@@ -450,9 +406,6 @@ registry.category("services").add("aps_math_renderer", {
                 if (shouldProcess) break;
             }
             if (shouldProcess) {
-                // Synchronously hide newly appearing fields that contain LaTeX
-                // so raw formula text is never visible during the debounce window.
-                _markPendingFields(document.body);
                 _scheduleProcess(document.body);
             }
         });

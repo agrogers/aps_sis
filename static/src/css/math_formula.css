@@ -28,18 +28,6 @@
     text-overflow: ellipsis;
 }
 
-/* ── Pending (pre-render) content — hidden until KaTeX renders ───────────── */
-
-/* Applied synchronously to content elements of fields containing LaTeX,
-   before the async KaTeX download completes.  visibility:hidden (not
-   display:none) keeps the element in the layout so no shift occurs when
-   the rendered preview replaces it.  Removed by the JS processing functions
-   before _buildPreview is called, so content is always un-hidden even if
-   KaTeX is unavailable or no real formulas are found. */
-.aps-math-pending {
-    visibility: hidden;
-}
-
 /* ── Editable-field rendered preview ─────────────────────────────────────── */
 
 /* The preview div we inject to show rendered math for editable fields.
