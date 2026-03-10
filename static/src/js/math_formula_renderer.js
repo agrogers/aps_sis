@@ -22,13 +22,15 @@
  *
  * Behaviour by field type:
  *   Readonly fields (o_readonly_modifier class present):
- *     Math is rendered directly in-place.
+ *     A rendered preview div is created from the field content and shown in
+ *     place of the editor div.  No toggle button is added.
  *
  *   Editable fields that contain LaTeX:
  *     A rendered preview div replaces the live editor visually.  A small
- *     toggle button at the top of the field lets the user switch between the
- *     rendered view and the raw editor.  The editor div's innerHTML is never
- *     modified, so Odoo always saves the original LaTeX source.
+ *     "Edit" button floats at the top-right corner of the field and lets the
+ *     user switch between the rendered view and the raw editor.
+ *     The editor div's innerHTML is never modified, so Odoo always saves the
+ *     original LaTeX source.
  */
 
 import { registry } from "@web/core/registry";
@@ -52,8 +54,10 @@ const MATH_OPTIONS = {
 
 const KATEX_BASE = "/aps_sis/static/src/lib/katex";
 
-// Attribute set on .o_field_html wrappers we have already processed so that
-// re-runs of _processContainer skip them.
+// Attribute on .o_field_html that tracks our current display state:
+//   "view"     — preview shown (editable field, formula mode)
+//   "edit"     — raw editor shown (user clicked Edit button)
+//   "readonly" — preview shown (readonly field, no toggle)
 const PROCESSED_ATTR = "data-aps-math";
 
 // ── Dynamic script loading that bypasses Odoo's AMD module system ────────────
@@ -153,71 +157,114 @@ function _containsLatex(text) {
 }
 
 /**
- * Render math in a single DOM element.
- * Guards against rendering inside active editors (contenteditable="true").
+ * Build and return a rendered preview div from *sourceEl*'s innerHTML.
+ * Returns null if KaTeX made no visible change (no real formulas present).
  */
-function _renderMathIn(el) {
-    if (!el || !window.renderMathInElement) return;
-    // Do not modify live editor content — the raw LaTeX must stay untouched
-    // so that the correct value is saved to the database.
-    if (el.getAttribute("contenteditable") === "true") return;
-    if (el.querySelector('[contenteditable="true"]')) return;
+function _buildPreview(sourceEl) {
+    const preview = document.createElement("div");
+    preview.className = "aps-math-preview";
+    preview.innerHTML = sourceEl.innerHTML;
     try {
-        window.renderMathInElement(el, MATH_OPTIONS);
-    } catch (err) {
-        // Silently swallow errors so a broken formula never breaks the UI
-        console.debug("[APS Math] KaTeX error:", err);
+        window.renderMathInElement(preview, MATH_OPTIONS);
+    } catch (e) {
+        console.debug("[APS Math] KaTeX error:", e);
+        return null;
     }
+    // If nothing changed there are no real formulas
+    if (preview.innerHTML === sourceEl.innerHTML) return null;
+    return preview;
+}
+
+// ── Readonly-field rendering ─────────────────────────────────────────────────
+
+/**
+ * For a readonly HTML field (.o_field_html.o_readonly_modifier):
+ *  - Creates a rendered preview from the content element's HTML.
+ *  - Hides the original content element, shows the preview.
+ *  - No toggle button is added (user cannot edit anyway).
+ *
+ * Uses the preview approach rather than rendering in-place so that we never
+ * modify a potentially contenteditable div (Odoo 18 may leave contenteditable
+ * on the editor div even in readonly mode).
+ */
+function _processReadonlyField(fieldEl) {
+    if (fieldEl.getAttribute(PROCESSED_ATTR) === "readonly") return;
+
+    // Find the content container.  Prefer the Odoo editor div; fall back to
+    // any direct block-level child div.
+    const contentEl =
+        fieldEl.querySelector(".odoo-editor-editable") ||
+        fieldEl.querySelector(":scope > div");
+    if (!contentEl) return;
+    if (!_containsLatex(contentEl.textContent)) return;
+
+    const preview = _buildPreview(contentEl);
+    if (!preview) return;
+
+    fieldEl.setAttribute(PROCESSED_ATTR, "readonly");
+    contentEl.insertAdjacentElement("afterend", preview);
+    contentEl.style.display = "none";
 }
 
 // ── Editable-field overlay toggle ────────────────────────────────────────────
 
 /**
- * For an editable HTML field (.o_field_html without o_readonly_modifier) that
- * contains LaTeX:
+ * For an editable HTML field (.o_field_html without o_readonly_modifier):
  *
- *  1. A rendered preview div (.aps-math-preview) is created from the editor's
- *     current innerHTML and injected immediately after the editor div.
- *  2. The live editor div is hidden (display:none).  Its innerHTML is never
- *     changed, so Odoo always reads — and saves — the original LaTeX source.
- *  3. A small toggle button is inserted at the top of the field widget so the
- *     user can switch between the rendered preview and the raw editor.
+ *  1. Cleans up any previously injected preview/button (handles re-processing
+ *     after a record save where OWL patches the field in-place rather than
+ *     recreating the DOM element).
+ *  2. Checks for LaTeX; if none found, leaves the field unmodified.
+ *  3. Creates a rendered preview div after the editor div and hides the editor.
+ *  4. Inserts a small "Edit" button that floats at the top-right corner of
+ *     the field wrapper, toggling between rendered view and raw editor.
  *
- * When the user toggles to "edit" mode the editor is shown and focused.
- * When they toggle back to "view" mode the preview is rebuilt from the
- * editor's current content (picking up any edits the user made).
+ * The editor div's innerHTML is NEVER modified so Odoo always reads and saves
+ * the original LaTeX source.
  */
 function _processEditableField(fieldEl, editorEl) {
-    // Skip if already processed by us
-    if (fieldEl.hasAttribute(PROCESSED_ATTR)) return;
-    // Skip if no LaTeX delimiters in the field content
+    const mode = fieldEl.getAttribute(PROCESSED_ATTR);
+
+    // While the user is actively typing (editor has focus), don't disrupt them.
+    if (mode === "edit") {
+        const editorHasFocus =
+            editorEl === document.activeElement ||
+            editorEl.contains(document.activeElement);
+        if (editorHasFocus) return;
+    }
+
+    // ── Clean up previously injected elements ────────────────────────────────
+    // This handles the case where OWL patches the field in-place after a save
+    // (the same .o_field_html DOM element is reused, so our PROCESSED_ATTR and
+    // injected children survive the patch).
+    const existingPreview = fieldEl.querySelector(":scope > .aps-math-preview");
+    const existingBtn    = fieldEl.querySelector(":scope > .aps-math-edit-toggle");
+    if (existingPreview) existingPreview.remove();
+    if (existingBtn)     existingBtn.remove();
+    editorEl.style.display = "";
+    fieldEl.removeAttribute(PROCESSED_ATTR);
+
+    // ── Fresh evaluation ─────────────────────────────────────────────────────
     if (!_containsLatex(editorEl.textContent)) return;
 
-    // Render math into a throw-away clone first to confirm real formulas exist
-    const preview = document.createElement("div");
-    preview.className = "aps-math-preview";
-    preview.innerHTML = editorEl.innerHTML;
-    try {
-        window.renderMathInElement(preview, MATH_OPTIONS);
-    } catch (e) {
-        console.debug("[APS Math] KaTeX error:", e);
-        return;
-    }
-    // If rendering made no visible change there are no real formulas — bail
-    if (preview.innerHTML === editorEl.innerHTML) return;
+    const preview = _buildPreview(editorEl);
+    if (!preview) return;
 
-    // Mark this field as processed (value tracks current display mode)
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
-
-    // Insert the rendered preview right after the editor div and hide editor
     editorEl.insertAdjacentElement("afterend", preview);
     editorEl.style.display = "none";
 
-    // ── Toggle button ────────────────────────────────────────────────────────
+    // ── Toggle button (floats top-right, zero extra form space) ─────────────
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "aps-math-edit-toggle btn btn-sm btn-outline-secondary mb-1";
-    btn.innerHTML = '<i class="fa fa-pencil me-1"></i>Edit formula';
+    btn.className = "aps-math-edit-toggle btn btn-sm btn-outline-secondary";
+    btn.title = "This html field contains formulas";
+    btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
+
+    // Ensure the field wrapper is a positioning context for the absolute button
+    if (getComputedStyle(fieldEl).position === "static") {
+        fieldEl.style.position = "relative";
+    }
 
     btn.addEventListener("click", () => {
         const viewing = fieldEl.getAttribute(PROCESSED_ATTR) === "view";
@@ -225,7 +272,7 @@ function _processEditableField(fieldEl, editorEl) {
             // Switch to edit mode: show raw editor, hide preview
             preview.style.display = "none";
             editorEl.style.display = "";
-            btn.innerHTML = '<i class="fa fa-eye me-1"></i>View formula';
+            btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
             editorEl.focus();
         } else {
@@ -239,14 +286,14 @@ function _processEditableField(fieldEl, editorEl) {
             }
             editorEl.style.display = "none";
             preview.style.display = "";
-            btn.innerHTML = '<i class="fa fa-pencil me-1"></i>Edit formula';
+            btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
         }
     });
 
-    // Place the toggle button as the very first child of the field widget so
-    // it sits above both the editor div and the preview div.
-    fieldEl.insertBefore(btn, fieldEl.firstChild);
+    // Append the button as the last child — it is absolutely positioned so
+    // it floats over the top-right corner and takes no layout space.
+    fieldEl.appendChild(btn);
 }
 
 // ── Container processing ─────────────────────────────────────────────────────
@@ -254,24 +301,23 @@ function _processEditableField(fieldEl, editorEl) {
 /**
  * Process all HTML fields inside *container*:
  *
- *  • Readonly fields (o_readonly_modifier present) — render math directly
- *    in-place inside the .odoo-editor-editable div.
- *  • Editable fields (no o_readonly_modifier) that contain LaTeX — delegate
- *    to _processEditableField which creates a rendered preview + toggle.
+ *  • Readonly fields (o_readonly_modifier present) — show a rendered preview;
+ *    no toggle button; original content div hidden.
+ *  • Editable fields (no o_readonly_modifier) — show rendered preview by
+ *    default with an "Edit" button floating at top-right to toggle raw editor.
  */
 function _processContainer(container) {
     if (!container || typeof container.querySelectorAll !== "function") return;
 
     // ── 1. Readonly fields ───────────────────────────────────────────────────
-    // In Odoo 18 the readonly modifier adds the class o_readonly_modifier to
-    // the outermost .o_field_html div (user-confirmed class name).
-    // The alternative selector handles contexts where a dedicated readonly
-    // wrapper class is used instead.
-    const readonlyEditors = container.querySelectorAll(
-        ".o_field_html.o_readonly_modifier .odoo-editor-editable, " +
-        ".o_field_html_readonly .odoo-editor-editable"
+    // In Odoo 18 the wrapper div carries classes:
+    //   o_field_widget  o_readonly_modifier  o_field_html
+    // We match on the combination .o_field_html.o_readonly_modifier.
+    // The fallback selector handles alternative readonly class names.
+    const readonlyFields = container.querySelectorAll(
+        ".o_field_html.o_readonly_modifier, .o_field_html_readonly"
     );
-    readonlyEditors.forEach(_renderMathIn);
+    readonlyFields.forEach(_processReadonlyField);
 
     // ── 2. Editable fields ───────────────────────────────────────────────────
     const editableFields = container.querySelectorAll(
@@ -297,7 +343,7 @@ function _scheduleProcess(container) {
         if (window.renderMathInElement) {
             _processContainer(container || document.body);
         }
-    }, 80);
+    }, 200);
 }
 
 // ── Odoo service registration ────────────────────────────────────────────────
@@ -311,14 +357,29 @@ registry.category("services").add("aps_math_renderer", {
             _processContainer(document.body);
         });
 
-        // Watch for new or replaced HTML field content as Odoo navigates
-        // between records or reloads field values after saves.
+        // Watch for DOM changes that indicate an HTML field appeared or its
+        // content was updated (e.g., Odoo navigation, record save).
         const observer = new MutationObserver((mutations) => {
             let shouldProcess = false;
             for (const mutation of mutations) {
+                // ── Case A: Odoo updates odoo-editor-editable content in-place
+                //    after a save (OWL patches children rather than replacing
+                //    the whole .o_field_html element).  Only trigger when the
+                //    editor does not have focus so we don't disrupt live typing.
+                if (
+                    mutation.type === "childList" &&
+                    mutation.target.classList &&
+                    mutation.target.classList.contains("odoo-editor-editable") &&
+                    !mutation.target.contains(document.activeElement)
+                ) {
+                    shouldProcess = true;
+                    break;
+                }
+
+                // ── Case B: Odoo adds or replaces field widget elements
+                //    (navigation to a new record, tab switch, etc.)
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
-                    // Quick check: does this subtree contain an HTML field?
                     if (
                         node.classList.contains("odoo-editor-editable") ||
                         node.classList.contains("o_field_html") ||
@@ -331,6 +392,17 @@ registry.category("services").add("aps_math_renderer", {
                         break;
                     }
                 }
+
+                // ── Case C: The o_readonly_modifier class is added/removed
+                //    (field switches between editable and readonly at runtime)
+                if (
+                    mutation.type === "attributes" &&
+                    mutation.target.classList &&
+                    mutation.target.classList.contains("o_field_html")
+                ) {
+                    shouldProcess = true;
+                }
+
                 if (shouldProcess) break;
             }
             if (shouldProcess) {
@@ -338,7 +410,12 @@ registry.category("services").add("aps_math_renderer", {
             }
         });
 
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, {
+            childList:  true,
+            subtree:    true,
+            attributes: true,
+            attributeFilter: ["class"],
+        });
 
         return {};
     },
