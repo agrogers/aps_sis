@@ -61,25 +61,10 @@
 
 /* ── Rendered (view) mode — prevent accidental edits in the rendered field ── */
 
-/* While in "view" mode the editorEl contains KaTeX-rendered HTML.
-   Disable pointer events on the entire field wrapper so that no mouse/touch
-   event reaches the odoo-editor-editable or any ancestor listener.  Without
-   a pointer event there is no selectionchange fired on document, so Odoo's
-   Wysiwyg component never has a reason to show the o-we-toolbar popup.
-
-   Note: pointer-events:none on a parent propagates to all children, so we
-   also re-enable it explicitly on the Edit/View toggle button below. */
-.o_field_html[data-aps-math="view"] {
-    pointer-events: none;
-}
-
-/* Re-enable pointer events only for our toggle button so it stays clickable. */
-.o_field_html[data-aps-math="view"] > .aps-math-edit-toggle {
-    pointer-events: auto;
-}
-
-/* Belt-and-suspenders: also block selection inside the editable just in case
-   any future browser change allows selection through pointer-events:none. */
+/* Block text-selection inside the editable while formulas are displayed.
+   The Wysiwyg toolbar is suppressed by the selectionchange capture-phase guard
+   in math_formula_renderer.js; pointer events are intentionally left enabled
+   so that links, TOC anchors, and buttons inside the content remain clickable. */
 .o_field_html[data-aps-math="view"] > .odoo-editor-editable {
     user-select: none;
     caret-color: transparent;
