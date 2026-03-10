@@ -22,13 +22,16 @@
  *
  * Behaviour by field type:
  *   Readonly fields (o_readonly_modifier class present):
- *     A rendered preview div is created from the field content and shown in
- *     place of the editor div.  No toggle button is added.
+ *     A rendered preview div is created from the field content.  Both the
+ *     original source div and the preview are placed in the same CSS Grid cell
+ *     (grid-area 1/1) so they overlap; the source is visibility:hidden so
+ *     headings remain at their correct scroll positions for TOC navigation.
  *
  *   Editable fields that contain LaTeX:
- *     A rendered preview div replaces the live editor visually.  A small
- *     "Edit" button floats at the top-right corner of the field and lets the
- *     user switch between the rendered view and the raw editor.
+ *     Same grid-stacking approach.  A small "Edit" button floats at the
+ *     top-right corner of the field and lets the user switch between the
+ *     rendered view and the raw editor (data-aps-math="edit"), which CSS
+ *     handles by hiding the preview and restoring the source's visibility.
  *     The editor div's innerHTML is never modified, so Odoo always saves the
  *     original LaTeX source.
  */
@@ -157,44 +160,6 @@ function _containsLatex(text) {
 }
 
 /**
- * Strip id attributes from *el* and all its descendants, saving each
- * original value in a data-aps-orig-id attribute so it can be restored
- * later by _restoreIds.
- *
- * This is called whenever we hide an element alongside a visible clone that
- * was built from the same innerHTML.  Without stripping, both the hidden
- * original and the visible preview carry the same ids, and browser anchor
- * navigation (#heading) silently targets the first match — the hidden one —
- * so in-page TOC links appear not to work.
- */
-function _stripIds(el) {
-    if (el.id) {
-        el.setAttribute("data-aps-orig-id", el.id);
-        el.removeAttribute("id");
-    }
-    el.querySelectorAll("[id]").forEach((child) => {
-        child.setAttribute("data-aps-orig-id", child.id);
-        child.removeAttribute("id");
-    });
-}
-
-/**
- * Restore id attributes previously removed by _stripIds.
- * Called when the previously-hidden element is shown again so that anchor
- * navigation continues to work without the preview.
- */
-function _restoreIds(el) {
-    if (el.hasAttribute("data-aps-orig-id")) {
-        el.id = el.getAttribute("data-aps-orig-id");
-        el.removeAttribute("data-aps-orig-id");
-    }
-    el.querySelectorAll("[data-aps-orig-id]").forEach((child) => {
-        child.id = child.getAttribute("data-aps-orig-id");
-        child.removeAttribute("data-aps-orig-id");
-    });
-}
-
-/**
  * Build and return a rendered preview div from *sourceEl*'s innerHTML.
  * Returns null if KaTeX made no visible change (no real formulas present).
  */
@@ -218,12 +183,11 @@ function _buildPreview(sourceEl) {
 /**
  * For a readonly HTML field (.o_field_html.o_readonly_modifier):
  *  - Creates a rendered preview from the content element's HTML.
- *  - Hides the original content element, shows the preview.
+ *  - Both source and preview are placed in the same CSS Grid cell (grid-area
+ *    1/1) via the data-aps-math="readonly" attribute.  CSS makes the source
+ *    visibility:hidden so it is invisible but still occupies its correct
+ *    layout position — Odoo's TOC links can still scroll to headings inside it.
  *  - No toggle button is added (user cannot edit anyway).
- *
- * Uses the preview approach rather than rendering in-place so that we never
- * modify a potentially contenteditable div (Odoo 18 may leave contenteditable
- * on the editor div even in readonly mode).
  */
 function _processReadonlyField(fieldEl) {
     if (fieldEl.getAttribute(PROCESSED_ATTR) === "readonly") return;
@@ -240,11 +204,9 @@ function _processReadonlyField(fieldEl) {
     if (!preview) return;
 
     fieldEl.setAttribute(PROCESSED_ATTR, "readonly");
+    // Insert preview after the source element.  CSS grid-area:1/1 on both
+    // puts them in the same cell; source is visibility:hidden via CSS.
     contentEl.insertAdjacentElement("afterend", preview);
-    contentEl.style.display = "none";
-    // Strip ids from the hidden original so that in-page anchor links
-    // (e.g., TOC entries) target the visible preview's ids instead.
-    _stripIds(contentEl);
 }
 
 // ── Editable-field overlay toggle ────────────────────────────────────────────
@@ -256,12 +218,15 @@ function _processReadonlyField(fieldEl) {
  *     after a record save where OWL patches the field in-place rather than
  *     recreating the DOM element).
  *  2. Checks for LaTeX; if none found, leaves the field unmodified.
- *  3. Creates a rendered preview div after the editor div and hides the editor.
+ *  3. Creates a rendered preview div after the editor div.  CSS Grid area
+ *     stacking (triggered by data-aps-math="view") overlays the preview on
+ *     the source; the source is visibility:hidden so TOC links still work.
  *  4. Inserts a small "Edit" button that floats at the top-right corner of
  *     the field wrapper, toggling between rendered view and raw editor.
  *
  * The editor div's innerHTML is NEVER modified so Odoo always reads and saves
- * the original LaTeX source.
+ * the original LaTeX source.  All visibility transitions (view ↔ edit) are
+ * handled entirely by CSS via the data-aps-math attribute value.
  */
 function _processEditableField(fieldEl, editorEl) {
     const mode = fieldEl.getAttribute(PROCESSED_ATTR);
@@ -282,10 +247,8 @@ function _processEditableField(fieldEl, editorEl) {
     const existingBtn    = fieldEl.querySelector(":scope > .aps-math-edit-toggle");
     if (existingPreview) existingPreview.remove();
     if (existingBtn)     existingBtn.remove();
-    editorEl.style.display = "";
-    // Restore any ids that were stripped when the editor was last hidden so
-    // that the fresh evaluation sees the full, unmodified content.
-    _restoreIds(editorEl);
+    // Removing data-aps-math also removes the CSS grid stacking rule and the
+    // visibility:hidden on the editor element — no inline style manipulation needed.
     fieldEl.removeAttribute(PROCESSED_ATTR);
 
     // ── Fresh evaluation ─────────────────────────────────────────────────────
@@ -294,12 +257,10 @@ function _processEditableField(fieldEl, editorEl) {
     const preview = _buildPreview(editorEl);
     if (!preview) return;
 
+    // Setting data-aps-math="view" triggers CSS grid stacking and makes the
+    // editor visibility:hidden while the preview is visible.
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
     editorEl.insertAdjacentElement("afterend", preview);
-    editorEl.style.display = "none";
-    // Strip ids from the hidden editor so anchor navigation targets the
-    // visible preview's ids (avoids broken TOC links).
-    _stripIds(editorEl);
 
     // ── Toggle button (floats top-right, zero extra form space) ─────────────
     const btn = document.createElement("button");
@@ -307,37 +268,27 @@ function _processEditableField(fieldEl, editorEl) {
     btn.className = "aps-math-edit-toggle btn btn-sm btn-outline-secondary";
     btn.title = "This html field contains formulas";
     btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
-
-    // Ensure the field wrapper is a positioning context for the absolute button
-    if (getComputedStyle(fieldEl).position === "static") {
-        fieldEl.style.position = "relative";
-    }
+    // position:relative on the field wrapper is set by CSS (.o_field_html[data-aps-math])
 
     btn.addEventListener("click", () => {
         const viewing = fieldEl.getAttribute(PROCESSED_ATTR) === "view";
         if (viewing) {
-            // Switch to edit mode: show raw editor, hide preview
-            preview.style.display = "none";
-            editorEl.style.display = "";
-            // Restore ids so the editor's anchors are reachable while editing
-            _restoreIds(editorEl);
+            // Switch to edit mode: CSS hides preview and restores editor
+            // visibility when data-aps-math changes to "edit".
             btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
             editorEl.focus();
         } else {
             // Switch back to view mode: rebuild preview from current editor
-            // content (captures any edits the user just made), then hide editor
+            // content (captures any edits the user just made).
             preview.innerHTML = editorEl.innerHTML;
             try {
                 window.renderMathInElement(preview, MATH_OPTIONS);
             } catch (e) {
                 console.debug("[APS Math] KaTeX error:", e);
             }
-            editorEl.style.display = "none";
-            // Strip ids from the now-hidden editor; preview has the same ids
-            _stripIds(editorEl);
-            preview.style.display = "";
             btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
+            // CSS re-applies grid stacking and visibility:hidden on editor.
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
         }
     });
