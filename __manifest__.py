@@ -42,8 +42,6 @@
 	'assets': {
 		'web.assets_backend': [
             'aps_sis/static/src/lib/chart.js',
-            'aps_sis/static/src/lib/katex/katex.min.js',
-            'aps_sis/static/src/lib/katex/auto-render.min.js',
 			'aps_sis/static/src/js/hide_g2_popup.js',
 			'aps_sis/static/src/js/utils/color_utils.js',
 			'aps_sis/static/src/js/utils/svg_progress_utils.js',

@@ -10,10 +10,15 @@
  *   \(...\)  — inline math (alternative)
  *   \[...\]  — display math (alternative)
  *
- * This renderer runs as an Odoo service and uses a MutationObserver to
- * detect new or updated HTML field content, re-rendering math whenever
- * the DOM changes.  It only processes read-only HTML fields so that the
- * raw LaTeX source is preserved in the database and visible when editing.
+ * KaTeX and its auto-render extension are loaded dynamically (not through
+ * Odoo's asset bundler) to avoid a conflict with Odoo's AMD module loader.
+ * Both libraries are UMD bundles that call define(["katex"], ...) which
+ * Odoo's bundler misinterprets as module dependencies.  By temporarily
+ * setting define.amd = false before each <script> tag is appended, the
+ * scripts fall through to the plain-global export path (window.katex /
+ * window.renderMathInElement) and Odoo's module system is left unaffected.
+ * The define.amd flag is restored in each script's onload handler, which
+ * fires after the script has fully executed.
  */
 
 import { registry } from "@web/core/registry";
@@ -35,16 +40,95 @@ const MATH_OPTIONS = {
     ignoredClasses: ["katex", "katex-html"],
 };
 
-// CSS is loaded dynamically (NOT via Odoo's asset bundler) so that the
-// relative `fonts/` URLs inside katex.min.css resolve correctly.
+const KATEX_BASE = "/aps_sis/static/src/lib/katex";
+
+// ── Dynamic script loading that bypasses Odoo's AMD module system ────────────
+
+/**
+ * Load a plain-JS (UMD) library as a browser global, bypassing Odoo's AMD
+ * module loader.
+ *
+ * Odoo sets window.define with define.amd = {} (truthy), which causes UMD
+ * bundles to take the AMD path.  Temporarily clearing define.amd to false
+ * before the <script> tag is appended means the scripts execute with AMD
+ * detection disabled.  Because script.onload fires *after* the script has
+ * fully executed, restoring define.amd there guarantees that the rest of
+ * Odoo's module system is unaffected.
+ *
+ * @param {string} src  Absolute URL path to the script
+ * @returns {Promise<void>}
+ */
+function _loadScriptAsGlobal(src) {
+    return new Promise((resolve, reject) => {
+        // Skip if already loaded — use a safe array search instead of CSS
+        // attribute selector to avoid any escaping concerns with the src path.
+        if (Array.from(document.scripts).some((s) => s.getAttribute("src") === src)) {
+            resolve();
+            return;
+        }
+
+        // Save and disable AMD so UMD bundles fall back to window.* exports
+        const savedAmd = window.define && window.define.amd;
+        if (window.define) {
+            window.define.amd = false;
+        }
+
+        const _restore = () => {
+            if (window.define) {
+                // Use explicit undefined-check to correctly restore any falsy
+                // original value (e.g. false) rather than replacing it with {}
+                window.define.amd = savedAmd !== undefined ? savedAmd : {};
+            }
+        };
+
+        const script = document.createElement("script");
+        script.src = src;
+        script.onload = () => { _restore(); resolve(); };
+        script.onerror = () => {
+            _restore();
+            reject(new Error(`[APS Math] Failed to load ${src}`));
+        };
+
+        document.head.appendChild(script);
+        // NOTE: The script executes asynchronously (download + parse + run),
+        // but define.amd is already false at the moment of execution.
+        // onload is only called after execution, so define.amd is restored
+        // at exactly the right time.
+    });
+}
+
+/**
+ * Load KaTeX CSS dynamically so that the relative fonts/ URLs inside
+ * katex.min.css resolve correctly (Odoo's bundler would rebase the paths).
+ */
 let _cssLoaded = false;
 function _ensureKaTeXCSS() {
     if (_cssLoaded) return;
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "/aps_sis/static/src/lib/katex/katex.min.css";
+    link.href = `${KATEX_BASE}/katex.min.css`;
     document.head.appendChild(link);
     _cssLoaded = true;
+}
+
+/**
+ * Load katex.min.js then auto-render.min.js sequentially (auto-render
+ * requires window.katex to already be present).
+ * Returns a Promise that resolves once both are ready.
+ */
+let _katexLoadPromise = null;
+function _loadKaTeX() {
+    if (_katexLoadPromise) return _katexLoadPromise;
+    _katexLoadPromise = _loadScriptAsGlobal(`${KATEX_BASE}/katex.min.js`)
+        .then(() => _loadScriptAsGlobal(`${KATEX_BASE}/auto-render.min.js`))
+        .catch((err) => {
+            // Log the failure but keep _katexLoadPromise set so callers share
+            // the same resolved/rejected state and don't silently retry on
+            // each MutationObserver fire.  Math formulas will simply not
+            // render if the scripts cannot be loaded.
+            console.warn(err.message);
+        });
+    return _katexLoadPromise;
 }
 
 // ── Rendering helpers ────────────────────────────────────────────────────────
@@ -93,7 +177,10 @@ function _scheduleProcess(container) {
     clearTimeout(_pendingTimer);
     _pendingTimer = setTimeout(() => {
         _pendingTimer = null;
-        _processContainer(container || document.body);
+        // Only run if KaTeX has finished loading
+        if (window.renderMathInElement) {
+            _processContainer(container || document.body);
+        }
     }, 80);
 }
 
@@ -101,12 +188,12 @@ function _scheduleProcess(container) {
 
 registry.category("services").add("aps_math_renderer", {
     start() {
-        // Load KaTeX CSS (fonts need relative path resolution, so this must
-        // be a dynamic <link> rather than an Odoo asset bundle entry).
+        // Load KaTeX CSS and JS (both dynamically, bypassing Odoo bundler)
         _ensureKaTeXCSS();
-
-        // Render any HTML fields already present when the service starts.
-        _scheduleProcess(document.body);
+        _loadKaTeX().then(() => {
+            // Initial render of any HTML fields already in the DOM
+            _processContainer(document.body);
+        });
 
         // Watch for new or replaced HTML field content as Odoo navigates
         // between records or reloads field values after saves.
