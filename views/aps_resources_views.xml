@@ -121,6 +121,7 @@
     <record id="view_aps_resources_form" model="ir.ui.view">
         <field name="name">aps.resources.form</field>
         <field name="model">aps.resources</field>
+        <field name="priority" eval="10"/>
         <field name="arch" type="xml">
             <form
                 context="{

@@ -126,6 +126,7 @@ export class ResourceLinksField extends Component {
         );
         this.action.doAction({
             type: 'ir.actions.act_window',
+            name: linkData.name || 'Resource Notes',
             res_model: 'aps.resources',
             res_id: linkData.id,
             view_mode: 'form',
