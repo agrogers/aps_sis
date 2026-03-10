@@ -332,6 +332,9 @@ function _processEditableField(fieldEl, editorEl) {
         _restoreRawFormulas(editorEl);
         setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
     }
+    // Ensure the editor is editable before we re-evaluate (in case it was left
+    // in contenteditable=false from a previous view-mode rendering).
+    editorEl.setAttribute("contenteditable", "true");
     fieldEl.removeAttribute(PROCESSED_ATTR);
 
     if (!_containsLatex(editorEl.textContent)) return;
@@ -344,6 +347,12 @@ function _processEditableField(fieldEl, editorEl) {
     if (!rendered) return;
 
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
+
+    // Make the editor non-editable while formulas are displayed so the user
+    // cannot accidentally edit KaTeX-rendered HTML.  This is safe: we are only
+    // changing a single attribute — no DOM structure changes that OWL could
+    // object to.  We restore it in every path that leaves view mode.
+    editorEl.setAttribute("contenteditable", "false");
 
     // ── Toggle button (floats top-right, zero extra form space) ─────────────
     const btn = document.createElement("button");
@@ -359,6 +368,8 @@ function _processEditableField(fieldEl, editorEl) {
             _renderingInProgress.add(editorEl);
             _restoreRawFormulas(editorEl);
             setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
+            // Allow the user to edit the restored LaTeX.
+            editorEl.setAttribute("contenteditable", "true");
             btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
             editorEl.focus();
@@ -367,6 +378,8 @@ function _processEditableField(fieldEl, editorEl) {
             _renderingInProgress.add(editorEl);
             _injectRenderedFormulas(editorEl);
             setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
+            // Lock the editor to prevent accidental edits on KaTeX HTML.
+            editorEl.setAttribute("contenteditable", "false");
             btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
         }
