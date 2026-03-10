@@ -387,7 +387,9 @@ function _processEditableField(fieldEl, editorEl) {
         }
     });
 
-    fieldEl.appendChild(btn);
+    // Insert the button before the editor so float:right anchors it at the top
+    // of the field. position:sticky then keeps it visible while scrolling down.
+    fieldEl.insertBefore(btn, editorEl);
 }
 
 // ── Container processing ─────────────────────────────────────────────────────

@@ -28,19 +28,14 @@
     text-overflow: ellipsis;
 }
 
-/* ── Edit toggle button — floats over the top-right corner ───────────────── */
+/* ── Edit toggle button — floats top-right and stays sticky while scrolling ── */
 
-/* Any field that we have processed gets position:relative so the
-   absolutely-positioned Edit button has a containing block. */
-.o_field_html[data-aps-math] {
-    position: relative;
-}
-
-/* The button is absolutely positioned so it takes no layout space. */
+/* Sticky positioning is relative to the nearest scrolling ancestor (not the
+   nearest positioned ancestor), so no special wrapper is needed. */
 .aps-math-edit-toggle {
-    position: absolute;
+    position: sticky;
     top: 4px;
-    right: 4px;
+    float: right;
     z-index: 10;
     display: inline-flex;
     align-items: center;
@@ -52,6 +47,8 @@
     transition: opacity 0.15s;
     /* Prevent the button from widening the field */
     white-space: nowrap;
+    /* Small left margin so it doesn't sit flush against the field edge */
+    margin-left: 4px;
 }
 
 .aps-math-edit-toggle:hover,
