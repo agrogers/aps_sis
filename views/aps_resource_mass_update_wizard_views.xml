@@ -61,10 +61,23 @@
                                     <group colspan="8"><field name="has_question_value" invisible="not update_has_question"/></group>
 
                                     <group colspan="4">
+                                        <field name="update_question" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_question" class="mb-0">Question</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
                                         <field name="update_has_answer" nolabel="1" widget="boolean_toggle"/>
                                         <label for="update_has_answer" class="mb-0">Has Answer</label>
                                     </group>
                                     <group colspan="8"><field name="has_answer_value" invisible="not update_has_answer"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_answer" class="mb-0">Answer</label>
+                                    </group>
+                                    <group colspan="8"/>
+
 
                                     <group colspan="4">
                                         <field name="update_has_notes" nolabel="1" widget="boolean_toggle"/>
@@ -73,16 +86,34 @@
                                     <group colspan="8"><field name="has_notes_value" invisible="not update_has_notes"/></group>
 
                                     <group colspan="4">
+                                        <field name="update_notes" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_notes" class="mb-0">Notes</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
                                         <field name="update_has_lesson_plan" nolabel="1" widget="boolean_toggle"/>
                                         <label for="update_has_lesson_plan" class="mb-0">Has Lesson Plan</label>
                                     </group>
                                     <group colspan="8"><field name="has_lesson_plan_value" invisible="not update_has_lesson_plan"/></group>
 
                                     <group colspan="4">
+                                        <field name="update_lesson_plan" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_lesson_plan" class="mb-0">Lesson Plan</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
                                         <field name="update_has_default_answer" nolabel="1" widget="boolean_toggle"/>
                                         <label for="update_has_default_answer" class="mb-0">Has Default Answer</label>
                                     </group>
                                     <group colspan="8"><field name="has_default_answer_value" invisible="not update_has_default_answer"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_default_answer" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_default_answer" class="mb-0">Default Answer</label>
+                                    </group>
+                                    <group colspan="8"/>
 
                                     <group colspan="4">
                                         <field name="update_has_child_resources" nolabel="1" widget="boolean_toggle"/>
@@ -107,36 +138,6 @@
                                         <label for="update_allow_subject_editing" class="mb-0">Allow Subject Editing</label>
                                     </group>
                                     <group colspan="8"><field name="allow_subject_editing_value" invisible="not update_allow_subject_editing"/></group>
-
-                                    <group colspan="4">
-                                        <field name="update_question" nolabel="1" widget="boolean_toggle"/>
-                                        <label for="update_question" class="mb-0">Question</label>
-                                    </group>
-                                    <group colspan="8"/>
-
-                                    <group colspan="4">
-                                        <field name="update_answer" nolabel="1" widget="boolean_toggle"/>
-                                        <label for="update_answer" class="mb-0">Answer</label>
-                                    </group>
-                                    <group colspan="8"/>
-
-                                    <group colspan="4">
-                                        <field name="update_notes" nolabel="1" widget="boolean_toggle"/>
-                                        <label for="update_notes" class="mb-0">Notes</label>
-                                    </group>
-                                    <group colspan="8"/>
-
-                                    <group colspan="4">
-                                        <field name="update_lesson_plan" nolabel="1" widget="boolean_toggle"/>
-                                        <label for="update_lesson_plan" class="mb-0">Lesson Plan</label>
-                                    </group>
-                                    <group colspan="8"/>
-
-                                    <group colspan="4">
-                                        <field name="update_default_answer" nolabel="1" widget="boolean_toggle"/>
-                                        <label for="update_default_answer" class="mb-0">Default Answer</label>
-                                    </group>
-                                    <group colspan="8"/>
 
                                 </group>
                                 <group string="Resources to Update" colspan="4">
