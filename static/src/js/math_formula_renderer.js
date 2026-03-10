@@ -387,9 +387,11 @@ function _processEditableField(fieldEl, editorEl) {
         }
     });
 
-    // Insert the button before the editor so float:right anchors it at the top
-    // of the field. position:sticky then keeps it visible while scrolling down.
-    fieldEl.insertBefore(btn, editorEl);
+    // Prepend the button so float:right anchors it at the top of the field.
+    // position:sticky then keeps it visible while scrolling down.
+    // (editorEl may not be a direct child of fieldEl, so insertBefore(btn, editorEl)
+    // would throw a NotFoundError — prepend is always safe.)
+    fieldEl.prepend(btn);
 }
 
 // ── Container processing ─────────────────────────────────────────────────────
