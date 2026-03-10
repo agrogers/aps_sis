@@ -116,6 +116,17 @@ class APSResourceSubmission(models.Model):
         related='resource_id.supporting_resources_buttons',
         help='Links to resources associated with this submission (e.g., main resource and supporting resources).'
     )
+    resource_notes = fields.Html(
+        string='Notes',
+        related='resource_id.notes',
+        readonly=True,
+        help='Notes from the associated resource.'
+    )
+    resource_has_notes = fields.Selection(
+        string='Has Notes',
+        related='resource_id.has_notes',
+        readonly=True,
+    )
     type_icon = fields.Image(
         string='Type Icon',
         compute="_compute_type_icon",

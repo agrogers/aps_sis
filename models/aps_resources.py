@@ -267,10 +267,11 @@ class APSResource(models.Model):
 
 
     @api.depends('url', 'name', 'display_name', 'type_icon', 'type_id.name',
-                 'supporting_resource_ids', 'supporting_resource_ids.url', 
+                 'supporting_resource_ids', 'supporting_resource_ids.url',
                  'supporting_resource_ids.name', 'supporting_resource_ids.display_name',
                  'supporting_resource_ids.type_icon', 'supporting_resource_ids.type_id.name',
-                 'supporting_resource_ids.sequence')
+                 'supporting_resource_ids.sequence', 'supporting_resource_ids.notes',
+                 'supporting_resource_ids.has_notes', 'supporting_resource_ids.has_question')
     def _compute_supporting_resources_buttons(self):
         """Compute JSON data for resource links widget."""
         for resource in self:
@@ -286,9 +287,11 @@ class APSResource(models.Model):
                     'is_main': True,
                     'out_of_marks': resource.marks,
                 })
-            # Add supporting resources that have URLs and real ids
+            # Add supporting resources with URLs, or notes-only resources (no URL, no question)
             for supporting in resource.supporting_resource_ids.sorted('sequence'):
-                if supporting.url and isinstance(supporting.id, int):
+                if not isinstance(supporting.id, int):
+                    continue
+                if supporting.url:
                     links.append({
                         'id': supporting.id,
                         'name': supporting.name or supporting.display_name,
@@ -297,6 +300,18 @@ class APSResource(models.Model):
                         'type_name': supporting.type_id.name if supporting.type_id else 'Resource',
                         'is_main': False,
                         'out_of_marks': supporting.marks,
+                    })
+                elif supporting.notes and supporting.has_question == 'no':
+                    # Resource has notes but no URL and no question — show a notes popup
+                    links.append({
+                        'id': supporting.id,
+                        'name': supporting.name or supporting.display_name,
+                        'url': None,
+                        'icon_url': f'/web/image/aps.resources/{supporting.id}/type_icon' if supporting.type_icon else False,
+                        'type_name': supporting.type_id.name if supporting.type_id else 'Resource',
+                        'is_main': False,
+                        'out_of_marks': supporting.marks,
+                        'link_type': 'notes',
                     })
             resource.supporting_resources_buttons = links
 

@@ -25,6 +25,7 @@
 		'views/aps_resource_task_views.xml',
 		'views/aps_resource_submission_views.xml',
 		'views/aps_resource_submission_views_for_students.xml',
+		'views/aps_resource_notes_popup_views.xml',
 		'views/aps_dashboard_views.xml',
 		'views/aps_submission_mass_update_wizard_views.xml',
 		'views/aps_resource_mass_update_wizard_views.xml',

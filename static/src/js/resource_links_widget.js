@@ -117,7 +117,30 @@ export class ResourceLinksField extends Component {
         return Array.isArray(value) ? value : [];
     }
 
+    async openNotesPopup(linkData) {
+        // Resolve the popup view ID from its XML external ID
+        const [, viewId] = await this.orm.call(
+            'ir.model.data',
+            'check_object_reference',
+            ['aps_sis', 'view_aps_resource_notes_popup']
+        );
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            res_model: 'aps.resources',
+            res_id: linkData.id,
+            view_mode: 'form',
+            views: [[viewId, 'form']],
+            target: 'new',
+        });
+    }
+
     openUrl(linkData) {
+        // Handle notes popup for supporting resources that have notes but no URL
+        if (linkData && linkData.link_type === 'notes') {
+            this.openNotesPopup(linkData);
+            return;
+        }
+
         const url = typeof linkData === 'string' ? linkData : linkData.url;
         
         if (!url) return;

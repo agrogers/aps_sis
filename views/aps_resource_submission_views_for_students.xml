@@ -153,6 +153,9 @@
                         <page string="ℚuestion" name="question_page" class="default-page" invisible="has_question=='no'">
                             <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
                         </page>
+                        <page string="📝 Notes" name="resource_notes_page" invisible="resource_has_notes == 'no' or not resource_notes">
+                            <field name="resource_notes" nolabel="1" readonly="1"/>
+                        </page>
                         <page string="ⓘ" name="information_page" >
                             <group>
                                 <group>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Popup form view to display resource notes -->
+    <record id="view_aps_resource_notes_popup" model="ir.ui.view">
+        <field name="name">aps.resource.notes.popup</field>
+        <field name="model">aps.resources</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false" edit="false">
+                <sheet>
+                    <group>
+                        <field name="name" readonly="1" nolabel="1" class="fs-4 fw-bold"/>
+                    </group>
+                    <field name="notes" nolabel="1" readonly="1"/>
+                </sheet>
+                <footer>
+                    <button special="cancel" string="Close" class="btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>
