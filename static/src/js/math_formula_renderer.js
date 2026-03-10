@@ -19,6 +19,16 @@
  * window.renderMathInElement) and Odoo's module system is left unaffected.
  * The define.amd flag is restored in each script's onload handler, which
  * fires after the script has fully executed.
+ *
+ * Behaviour by field type:
+ *   Readonly fields (o_readonly_modifier class present):
+ *     Math is rendered directly in-place.
+ *
+ *   Editable fields that contain LaTeX:
+ *     A rendered preview div replaces the live editor visually.  A small
+ *     toggle button at the top of the field lets the user switch between the
+ *     rendered view and the raw editor.  The editor div's innerHTML is never
+ *     modified, so Odoo always saves the original LaTeX source.
  */
 
 import { registry } from "@web/core/registry";
@@ -41,6 +51,10 @@ const MATH_OPTIONS = {
 };
 
 const KATEX_BASE = "/aps_sis/static/src/lib/katex";
+
+// Attribute set on .o_field_html wrappers we have already processed so that
+// re-runs of _processContainer skip them.
+const PROCESSED_ATTR = "data-aps-math";
 
 // ── Dynamic script loading that bypasses Odoo's AMD module system ────────────
 
@@ -133,6 +147,11 @@ function _loadKaTeX() {
 
 // ── Rendering helpers ────────────────────────────────────────────────────────
 
+/** Quick test: does this text contain any LaTeX delimiter? */
+function _containsLatex(text) {
+    return /\$|\\\(|\\\[/.test(text);
+}
+
 /**
  * Render math in a single DOM element.
  * Guards against rendering inside active editors (contenteditable="true").
@@ -151,22 +170,119 @@ function _renderMathIn(el) {
     }
 }
 
+// ── Editable-field overlay toggle ────────────────────────────────────────────
+
 /**
- * Find and process all readonly HTML fields inside *container*.
- * Both the Odoo-18 `.o_readonly` variant and the `.o_field_html_readonly`
- * selector used in some contexts are handled.
+ * For an editable HTML field (.o_field_html without o_readonly_modifier) that
+ * contains LaTeX:
+ *
+ *  1. A rendered preview div (.aps-math-preview) is created from the editor's
+ *     current innerHTML and injected immediately after the editor div.
+ *  2. The live editor div is hidden (display:none).  Its innerHTML is never
+ *     changed, so Odoo always reads — and saves — the original LaTeX source.
+ *  3. A small toggle button is inserted at the top of the field widget so the
+ *     user can switch between the rendered preview and the raw editor.
+ *
+ * When the user toggles to "edit" mode the editor is shown and focused.
+ * When they toggle back to "view" mode the preview is rebuilt from the
+ * editor's current content (picking up any edits the user made).
+ */
+function _processEditableField(fieldEl, editorEl) {
+    // Skip if already processed by us
+    if (fieldEl.hasAttribute(PROCESSED_ATTR)) return;
+    // Skip if no LaTeX delimiters in the field content
+    if (!_containsLatex(editorEl.textContent)) return;
+
+    // Render math into a throw-away clone first to confirm real formulas exist
+    const preview = document.createElement("div");
+    preview.className = "aps-math-preview";
+    preview.innerHTML = editorEl.innerHTML;
+    try {
+        window.renderMathInElement(preview, MATH_OPTIONS);
+    } catch (e) {
+        console.debug("[APS Math] KaTeX error:", e);
+        return;
+    }
+    // If rendering made no visible change there are no real formulas — bail
+    if (preview.innerHTML === editorEl.innerHTML) return;
+
+    // Mark this field as processed (value tracks current display mode)
+    fieldEl.setAttribute(PROCESSED_ATTR, "view");
+
+    // Insert the rendered preview right after the editor div and hide editor
+    editorEl.insertAdjacentElement("afterend", preview);
+    editorEl.style.display = "none";
+
+    // ── Toggle button ────────────────────────────────────────────────────────
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "aps-math-edit-toggle btn btn-sm btn-outline-secondary mb-1";
+    btn.innerHTML = '<i class="fa fa-pencil me-1"></i>Edit formula';
+
+    btn.addEventListener("click", () => {
+        const viewing = fieldEl.getAttribute(PROCESSED_ATTR) === "view";
+        if (viewing) {
+            // Switch to edit mode: show raw editor, hide preview
+            preview.style.display = "none";
+            editorEl.style.display = "";
+            btn.innerHTML = '<i class="fa fa-eye me-1"></i>View formula';
+            fieldEl.setAttribute(PROCESSED_ATTR, "edit");
+            editorEl.focus();
+        } else {
+            // Switch back to view mode: rebuild preview from current editor
+            // content (captures any edits the user just made), then hide editor
+            preview.innerHTML = editorEl.innerHTML;
+            try {
+                window.renderMathInElement(preview, MATH_OPTIONS);
+            } catch (e) {
+                console.debug("[APS Math] KaTeX error:", e);
+            }
+            editorEl.style.display = "none";
+            preview.style.display = "";
+            btn.innerHTML = '<i class="fa fa-pencil me-1"></i>Edit formula';
+            fieldEl.setAttribute(PROCESSED_ATTR, "view");
+        }
+    });
+
+    // Place the toggle button as the very first child of the field widget so
+    // it sits above both the editor div and the preview div.
+    fieldEl.insertBefore(btn, fieldEl.firstChild);
+}
+
+// ── Container processing ─────────────────────────────────────────────────────
+
+/**
+ * Process all HTML fields inside *container*:
+ *
+ *  • Readonly fields (o_readonly_modifier present) — render math directly
+ *    in-place inside the .odoo-editor-editable div.
+ *  • Editable fields (no o_readonly_modifier) that contain LaTeX — delegate
+ *    to _processEditableField which creates a rendered preview + toggle.
  */
 function _processContainer(container) {
     if (!container || typeof container.querySelectorAll !== "function") return;
 
-    // Selector: the inner editable div of a readonly HTML field widget.
-    // .o_field_html.o_readonly        — standard Odoo 18 read mode
-    // .o_field_html_readonly           — alternative class used in some contexts
-    const editableDivs = container.querySelectorAll(
-        ".o_field_html.o_readonly .odoo-editor-editable, " +
+    // ── 1. Readonly fields ───────────────────────────────────────────────────
+    // In Odoo 18 the readonly modifier adds the class o_readonly_modifier to
+    // the outermost .o_field_html div (user-confirmed class name).
+    // The alternative selector handles contexts where a dedicated readonly
+    // wrapper class is used instead.
+    const readonlyEditors = container.querySelectorAll(
+        ".o_field_html.o_readonly_modifier .odoo-editor-editable, " +
         ".o_field_html_readonly .odoo-editor-editable"
     );
-    editableDivs.forEach(_renderMathIn);
+    readonlyEditors.forEach(_renderMathIn);
+
+    // ── 2. Editable fields ───────────────────────────────────────────────────
+    const editableFields = container.querySelectorAll(
+        ".o_field_html:not(.o_readonly_modifier)"
+    );
+    editableFields.forEach((fieldEl) => {
+        const editorEl = fieldEl.querySelector(".odoo-editor-editable");
+        if (editorEl) {
+            _processEditableField(fieldEl, editorEl);
+        }
+    });
 }
 
 // ── Debounced scheduling ─────────────────────────────────────────────────────
