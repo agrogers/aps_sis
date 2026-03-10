@@ -1,0 +1,68 @@
+/* ============================================================
+   APS Math Formula Rendering Styles
+   Complementary CSS for KaTeX-rendered formulas in HTML fields.
+   ============================================================ */
+
+/* Inline math spans — prevent them from disrupting line flow */
+.o_field_html .katex {
+    font-size: 1em;
+    vertical-align: middle;
+}
+
+/* Display (block) math — add modest top/bottom spacing */
+.o_field_html .katex-display {
+    margin: 0.5em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Ensure KaTeX renders above any Odoo z-index stacking */
+.o_field_html .katex-html {
+    position: relative;
+}
+
+/* In list views, constrain display math so it doesn't blow out the row */
+.o_list_table .o_field_html .katex-display {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Edit toggle button — floats top-right and stays sticky while scrolling ── */
+
+/* Sticky positioning is relative to the nearest scrolling ancestor (not the
+   nearest positioned ancestor), so no special wrapper is needed. */
+.aps-math-edit-toggle {
+    position: sticky;
+    top: 4px;
+    float: right;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    line-height: 1.4;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+    /* Prevent the button from widening the field */
+    white-space: nowrap;
+    /* Small left margin so it doesn't sit flush against the field edge */
+    margin-left: 4px;
+}
+
+.aps-math-edit-toggle:hover,
+.aps-math-edit-toggle:focus-visible {
+    opacity: 1;
+}
+
+/* ── Rendered (view) mode — prevent accidental edits in the rendered field ── */
+
+/* Block text-selection inside the editable while formulas are displayed.
+   The Wysiwyg toolbar is suppressed by the selectionchange capture-phase guard
+   in math_formula_renderer.js; pointer events are intentionally left enabled
+   so that links, TOC anchors, and buttons inside the content remain clickable. */
+.o_field_html[data-aps-math="view"] > .odoo-editor-editable {
+    user-select: none;
+    caret-color: transparent;
+}
