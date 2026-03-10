@@ -96,12 +96,6 @@ const FORMULA_RE = /\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\
  */
 const _renderingInProgress = new Set();
 
-/**
- * WeakMap from .o_field_html element → capture-phase guard function.
- * Used by _attachViewGuard / _detachViewGuard to track and remove listeners.
- */
-const _viewGuards = new WeakMap();
-
 // ── Dynamic script loading that bypasses Odoo's AMD module system ────────────
 
 function _loadScriptAsGlobal(src) {
@@ -277,37 +271,6 @@ function _restoreRawFormulas(editorEl) {
 // ── Readonly-field rendering ─────────────────────────────────────────────────
 
 /**
- * Attach a capture-phase pointerdown/mousedown listener to fieldEl that stops
- * events from reaching Odoo's Wysiwyg listeners (and therefore prevents the
- * editor toolbar from appearing) while the field is locked in view mode.
- *
- * Clicks directed at our own Edit/View toggle button are intentionally allowed
- * through so the toggle still works.
- */
-function _attachViewGuard(fieldEl) {
-    if (_viewGuards.has(fieldEl)) return; // already attached
-    const guard = (e) => {
-        if (!e.target.closest(".aps-math-edit-toggle")) {
-            e.stopPropagation();
-        }
-    };
-    _viewGuards.set(fieldEl, guard);
-    fieldEl.addEventListener("pointerdown", guard, true);
-    fieldEl.addEventListener("mousedown", guard, true);
-}
-
-/**
- * Remove the capture-phase guard added by _attachViewGuard.
- */
-function _detachViewGuard(fieldEl) {
-    const guard = _viewGuards.get(fieldEl);
-    if (!guard) return;
-    fieldEl.removeEventListener("pointerdown", guard, true);
-    fieldEl.removeEventListener("mousedown", guard, true);
-    _viewGuards.delete(fieldEl);
-}
-
-/**
  * Render KaTeX directly in the content element of a readonly HTML field.
  * No copy is created — the original element is rendered in-place so headings
  * remain in the same DOM element and TOC scroll links work correctly.
@@ -369,9 +332,8 @@ function _processEditableField(fieldEl, editorEl) {
         _restoreRawFormulas(editorEl);
         setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
     }
-    // Ensure the editor is editable and any toolbar guard is removed before we
-    // re-evaluate (in case this field was left in view mode from a prior cycle).
-    _detachViewGuard(fieldEl);
+    // Ensure the editor is editable before we re-evaluate (in case it was left
+    // in contenteditable=false from a previous view-mode rendering).
     editorEl.setAttribute("contenteditable", "true");
     fieldEl.removeAttribute(PROCESSED_ATTR);
 
@@ -386,14 +348,13 @@ function _processEditableField(fieldEl, editorEl) {
 
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
 
-    // Lock the editor while formulas are displayed:
-    //   • contenteditable=false — prevents the browser from treating the element
-    //     as an editing host so no caret or text input is possible.
-    //   • _attachViewGuard — adds a capture-phase pointerdown/mousedown listener
-    //     that stops events before Odoo's Wysiwyg component sees them, preventing
-    //     the editor toolbar (o-we-toolbar) from appearing on click.
+    // Lock the editor while formulas are displayed so the user cannot
+    // accidentally edit KaTeX-rendered HTML.
+    // CSS (data-aps-math="view" selector) applies pointer-events:none to the
+    // entire field wrapper — this prevents any pointer event from reaching the
+    // odoo-editor-editable or any ancestor, so document.selectionchange is
+    // never fired and Odoo's Wysiwyg toolbar (o-we-toolbar) never appears.
     editorEl.setAttribute("contenteditable", "false");
-    _attachViewGuard(fieldEl);
 
     // ── Toggle button (floats top-right, zero extra form space) ─────────────
     const btn = document.createElement("button");
@@ -411,7 +372,6 @@ function _processEditableField(fieldEl, editorEl) {
             setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
             // Unlock the editor so the user can type LaTeX.
             editorEl.setAttribute("contenteditable", "true");
-            _detachViewGuard(fieldEl);
             btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
             editorEl.focus();
@@ -422,7 +382,6 @@ function _processEditableField(fieldEl, editorEl) {
             setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
             // Lock the editor again.
             editorEl.setAttribute("contenteditable", "false");
-            _attachViewGuard(fieldEl);
             btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
         }
