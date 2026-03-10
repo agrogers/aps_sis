@@ -157,6 +157,44 @@ function _containsLatex(text) {
 }
 
 /**
+ * Strip id attributes from *el* and all its descendants, saving each
+ * original value in a data-aps-orig-id attribute so it can be restored
+ * later by _restoreIds.
+ *
+ * This is called whenever we hide an element alongside a visible clone that
+ * was built from the same innerHTML.  Without stripping, both the hidden
+ * original and the visible preview carry the same ids, and browser anchor
+ * navigation (#heading) silently targets the first match — the hidden one —
+ * so in-page TOC links appear not to work.
+ */
+function _stripIds(el) {
+    if (el.id) {
+        el.setAttribute("data-aps-orig-id", el.id);
+        el.removeAttribute("id");
+    }
+    el.querySelectorAll("[id]").forEach((child) => {
+        child.setAttribute("data-aps-orig-id", child.id);
+        child.removeAttribute("id");
+    });
+}
+
+/**
+ * Restore id attributes previously removed by _stripIds.
+ * Called when the previously-hidden element is shown again so that anchor
+ * navigation continues to work without the preview.
+ */
+function _restoreIds(el) {
+    if (el.hasAttribute("data-aps-orig-id")) {
+        el.id = el.getAttribute("data-aps-orig-id");
+        el.removeAttribute("data-aps-orig-id");
+    }
+    el.querySelectorAll("[data-aps-orig-id]").forEach((child) => {
+        child.id = child.getAttribute("data-aps-orig-id");
+        child.removeAttribute("data-aps-orig-id");
+    });
+}
+
+/**
  * Build and return a rendered preview div from *sourceEl*'s innerHTML.
  * Returns null if KaTeX made no visible change (no real formulas present).
  */
@@ -204,6 +242,9 @@ function _processReadonlyField(fieldEl) {
     fieldEl.setAttribute(PROCESSED_ATTR, "readonly");
     contentEl.insertAdjacentElement("afterend", preview);
     contentEl.style.display = "none";
+    // Strip ids from the hidden original so that in-page anchor links
+    // (e.g., TOC entries) target the visible preview's ids instead.
+    _stripIds(contentEl);
 }
 
 // ── Editable-field overlay toggle ────────────────────────────────────────────
@@ -242,6 +283,9 @@ function _processEditableField(fieldEl, editorEl) {
     if (existingPreview) existingPreview.remove();
     if (existingBtn)     existingBtn.remove();
     editorEl.style.display = "";
+    // Restore any ids that were stripped when the editor was last hidden so
+    // that the fresh evaluation sees the full, unmodified content.
+    _restoreIds(editorEl);
     fieldEl.removeAttribute(PROCESSED_ATTR);
 
     // ── Fresh evaluation ─────────────────────────────────────────────────────
@@ -253,6 +297,9 @@ function _processEditableField(fieldEl, editorEl) {
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
     editorEl.insertAdjacentElement("afterend", preview);
     editorEl.style.display = "none";
+    // Strip ids from the hidden editor so anchor navigation targets the
+    // visible preview's ids (avoids broken TOC links).
+    _stripIds(editorEl);
 
     // ── Toggle button (floats top-right, zero extra form space) ─────────────
     const btn = document.createElement("button");
@@ -272,6 +319,8 @@ function _processEditableField(fieldEl, editorEl) {
             // Switch to edit mode: show raw editor, hide preview
             preview.style.display = "none";
             editorEl.style.display = "";
+            // Restore ids so the editor's anchors are reachable while editing
+            _restoreIds(editorEl);
             btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
             editorEl.focus();
@@ -285,6 +334,8 @@ function _processEditableField(fieldEl, editorEl) {
                 console.debug("[APS Math] KaTeX error:", e);
             }
             editorEl.style.display = "none";
+            // Strip ids from the now-hidden editor; preview has the same ids
+            _stripIds(editorEl);
             preview.style.display = "";
             btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
