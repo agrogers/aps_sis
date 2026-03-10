@@ -21,27 +21,35 @@
  *     because headings remain in the same DOM element.
  *
  *   Editable fields that contain LaTeX:
- *     The original LaTeX HTML is stored in a WeakMap (in memory only — never
- *     persisted to the database).  renderMathInElement() is then called
- *     directly on the odoo-editor-editable div so only one copy of the
- *     content is ever in the DOM.
+ *     A surgical approach is used to keep Odoo's OWL component DOM references
+ *     intact.  The odoo-editor-editable element is NEVER replaced wholesale:
  *
- *     A small "Edit" button floats at the top-right corner of the field.
- *     Clicking it restores the original LaTeX into the editor so the user
- *     can make changes.  Clicking "View" re-renders the updated LaTeX.
+ *       — Each formula text node is replaced with a
+ *         <span data-aps-formula-id data-aps-formula-raw> containing KaTeX
+ *         HTML.  data-aps-formula-raw holds the original LaTeX string in the
+ *         DOM attribute (in memory only — never written to the database).
+ *
+ *       — The structural DOM above each formula span (paragraphs, headings,
+ *         odoo-editor-editable itself) is completely untouched, so OWL's
+ *         Wysiwyg component keeps all its element references valid.
+ *
+ *       — An "Edit" button (floats top-right, zero layout space) allows the
+ *         user to restore each span back to its raw LaTeX text node so they
+ *         can edit normally in Odoo's HTML editor.  "View" re-runs the
+ *         surgical injection on the current editor content.
  *
  *     No save-protection listeners are needed.  Odoo's OdooEditor maintains
- *     its own internal model that is only updated by editor event handlers;
- *     our direct renderMathInElement() DOM changes are ignored by the editor
- *     and never affect what gets saved.  After a save Odoo patches the DOM
- *     from the server response, the MutationObserver fires, and the field is
- *     re-rendered automatically.
+ *     its own internal model updated only by editor event handlers; our
+ *     surgical DOM changes are invisible to the save path.  After a save
+ *     Odoo patches the DOM from the server response and the MutationObserver
+ *     fires, causing formulas to be re-rendered automatically.
  */
 
 import { registry } from "@web/core/registry";
 
 // ── KaTeX configuration ──────────────────────────────────────────────────────
 
+// Used by renderMathInElement for readonly fields.
 const MATH_OPTIONS = {
     delimiters: [
         { left: "$$", right: "$$", display: true },
@@ -57,31 +65,34 @@ const MATH_OPTIONS = {
 const KATEX_BASE = "/aps_sis/static/src/lib/katex";
 
 // Attribute on .o_field_html that tracks our current display state:
-//   "view"     — KaTeX rendered in-place (editable field)
-//   "edit"     — original LaTeX restored for editing (user clicked Edit)
-//   "readonly" — KaTeX rendered in-place (readonly field, no toggle)
+//   "view"     — formulas rendered (editable field, toggle shown)
+//   "edit"     — raw LaTeX restored for editing (user clicked Edit)
+//   "readonly" — formulas rendered (readonly field, no toggle)
 const PROCESSED_ATTR = "data-aps-math";
 
-// How long to mark an editorEl as "rendering in progress" after we set its
-// innerHTML.  Must exceed the MutationObserver debounce (200 ms) so we are
-// certain the observer has already processed (and skipped) our own mutation
-// before we clear the flag.  2.5× the debounce gives comfortable headroom.
+// Must exceed the MutationObserver debounce (200 ms) so we are certain the
+// observer has already processed (and skipped) our own mutations before we
+// clear the in-progress guard.
 const RENDERING_CLEANUP_DELAY_MS = 500;
+
+// ── Formula detection and matching ───────────────────────────────────────────
+
+/** Quick test: does this text contain any LaTeX delimiter? */
+function _containsLatex(text) {
+    return /\$|\\\(|\\\[/.test(text);
+}
+
+/**
+ * Matches delimited LaTeX formula strings in a plain-text string.
+ * $$ must come before $ to prevent partial match on display math.
+ */
+const FORMULA_RE = /\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)/g;
 
 // ── State ────────────────────────────────────────────────────────────────────
 
 /**
- * Stores the original LaTeX HTML string for each editorEl while the field
- * is displaying the KaTeX-rendered version.  Kept in memory only — never
- * written to the database.  Used to restore raw LaTeX for editing or to
- * detect what changed before re-rendering.
- */
-const _originalHtmlMap = new WeakMap();
-
-/**
- * Set of editorEl elements where WE are currently setting innerHTML
- * programmatically (rendering or restoring).  The MutationObserver skips
- * these elements to prevent an infinite render → observe → render loop.
+ * Set of odoo-editor-editable elements currently being modified by us.
+ * The MutationObserver skips these to prevent re-trigger loops.
  */
 const _renderingInProgress = new Set();
 
@@ -138,23 +149,123 @@ function _loadKaTeX() {
     return _katexLoadPromise;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Surgical formula helpers ──────────────────────────────────────────────────
 
-/** Quick test: does this text contain any LaTeX delimiter? */
-function _containsLatex(text) {
-    return /\$|\\\(|\\\[/.test(text);
+/**
+ * Render a single delimited formula string (e.g. "$E=mc^2$") to an HTML
+ * string using katex.renderToString.  Returns null on unexpected JS error
+ * (KaTeX errors are rendered inline by KaTeX itself when throwOnError is false).
+ */
+function _renderOneFormula(raw) {
+    let inner, isDisplay;
+    if (raw.startsWith("$$")) {
+        inner = raw.slice(2, -2);
+        isDisplay = true;
+    } else if (raw.startsWith("$")) {
+        inner = raw.slice(1, -1);
+        isDisplay = false;
+    } else if (raw.startsWith("\\[")) {
+        inner = raw.slice(2, -2);
+        isDisplay = true;
+    } else { // \(...\)
+        inner = raw.slice(2, -2);
+        isDisplay = false;
+    }
+    try {
+        return window.katex.renderToString(inner.trim(), {
+            displayMode: isDisplay,
+            throwOnError: false,
+        });
+    } catch (e) {
+        console.debug("[APS Math] KaTeX renderToString error:", e);
+        return null;
+    }
 }
 
 /**
- * Set innerHTML on *el* and mark *el* as "in-progress" so the MutationObserver
- * ignores the mutation.  The in-progress mark is cleared after the observer's
- * debounce window (500 ms > 200 ms debounce) to ensure we never permanently
- * block observation.
+ * Walk *editorEl*'s text nodes and replace each LaTeX formula with a
+ *   <span data-aps-formula-id="N" data-aps-formula-raw="…">…KaTeX HTML…</span>
+ *
+ * The raw LaTeX string is stored in data-aps-formula-raw so it can be
+ * restored later.  This is kept in the DOM attribute (in memory only) —
+ * it is never written to the database.
+ *
+ * Only text nodes are touched; the structural element tree (including the
+ * odoo-editor-editable element itself) is never replaced, so OWL keeps all
+ * its element references valid.
+ *
+ * Returns true if at least one formula was rendered.
  */
-function _setHtml(el, html) {
-    _renderingInProgress.add(el);
-    el.innerHTML = html;
-    setTimeout(() => _renderingInProgress.delete(el), RENDERING_CLEANUP_DELAY_MS);
+function _injectRenderedFormulas(editorEl) {
+    // Collect text nodes first — the TreeWalker is live; modifying the DOM
+    // while iterating can cause nodes to be skipped.
+    const textNodes = [];
+    const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+        // Skip text nodes already inside one of our formula spans.
+        if (node.parentElement && node.parentElement.closest("[data-aps-formula-id]")) {
+            continue;
+        }
+        textNodes.push(node);
+    }
+
+    let totalRendered = 0;
+    for (const textNode of textNodes) {
+        const text = textNode.nodeValue;
+
+        const frag = document.createDocumentFragment();
+        let last = 0;
+        let nodeRendered = 0;
+        let m;
+
+        FORMULA_RE.lastIndex = 0;
+        while ((m = FORMULA_RE.exec(text)) !== null) {
+            const raw = m[0];
+            const html = _renderOneFormula(raw);
+            if (html === null) continue;
+
+            // Text before this formula.
+            if (m.index > last) {
+                frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+            }
+
+            // Formula span — raw LaTeX stored in data attribute (never in DB).
+            const span = document.createElement("span");
+            span.dataset.apsFormulaId = String(++totalRendered);
+            span.dataset.apsFormulaRaw = raw;
+            span.innerHTML = html;
+            frag.appendChild(span);
+
+            last = m.index + raw.length;
+            nodeRendered++;
+        }
+
+        if (nodeRendered === 0) continue;
+
+        // Remaining text after the last formula.
+        if (last < text.length) {
+            frag.appendChild(document.createTextNode(text.slice(last)));
+        }
+
+        textNode.parentNode.replaceChild(frag, textNode);
+    }
+
+    return totalRendered > 0;
+}
+
+/**
+ * Find all formula spans injected by _injectRenderedFormulas and replace each
+ * one with a text node containing the original raw LaTeX string.
+ * This reverses the injection for Edit mode.
+ */
+function _restoreRawFormulas(editorEl) {
+    editorEl.querySelectorAll("[data-aps-formula-id]").forEach((span) => {
+        const raw = span.dataset.apsFormulaRaw;
+        if (raw && span.parentNode) {
+            span.parentNode.replaceChild(document.createTextNode(raw), span);
+        }
+    });
 }
 
 // ── Readonly-field rendering ─────────────────────────────────────────────────
@@ -185,23 +296,25 @@ function _processReadonlyField(fieldEl) {
     fieldEl.setAttribute(PROCESSED_ATTR, "readonly");
 }
 
-// ── Editable-field in-place rendering ────────────────────────────────────────
+// ── Editable-field surgical rendering ────────────────────────────────────────
 
 /**
- * Render KaTeX directly in the odoo-editor-editable div, storing the original
- * LaTeX HTML in _originalHtmlMap (in memory only) for later restoration.
+ * Surgically render LaTeX formulas inside an editable HTML field.
+ *
+ * Only individual formula text nodes are replaced — the odoo-editor-editable
+ * element and all other structural elements are never modified, so OWL's
+ * Wysiwyg component keeps all its DOM references intact.
  *
  * Flow:
- *   1. Cleanup: remove any previously injected button; restore original LaTeX
- *      if the field was previously in "view" or "edit" mode.
- *   2. Check for LaTeX; skip if none.
- *   3. Store original HTML in memory, render KaTeX in-place, set data-aps-math="view".
- *   4. Add floating "Edit" button that swaps between raw LaTeX and rendered view.
+ *   1. If previously processed, restore raw formula text nodes first so we
+ *      evaluate the current LaTeX source, not stale KaTeX HTML.
+ *   2. Walk text nodes; replace each LaTeX formula with a rendered span.
+ *   3. Inject an Edit/View toggle button that swaps between raw and rendered.
  */
 function _processEditableField(fieldEl, editorEl) {
     const mode = fieldEl.getAttribute(PROCESSED_ATTR);
 
-    // Don't disrupt the user while they are actively editing.
+    // Don't disrupt the user while they are actively editing in edit mode.
     if (mode === "edit") {
         const hasFocus =
             editorEl === document.activeElement ||
@@ -209,41 +322,27 @@ function _processEditableField(fieldEl, editorEl) {
         if (hasFocus) return;
     }
 
-    // ── Clean up any previously injected button ──────────────────────────────
+    // Remove any previously injected toggle button.
     fieldEl.querySelector(":scope > .aps-math-edit-toggle")?.remove();
 
-    // ── Restore original LaTeX if we previously modified the editor HTML ─────
-    // This covers re-processing after a save or a field content refresh.
+    // Restore raw formula text nodes if we previously injected rendered spans,
+    // so the content we're about to evaluate is the unmodified LaTeX source.
     if (mode === "view" || mode === "edit") {
-        const stored = _originalHtmlMap.get(editorEl);
-        if (stored !== undefined) {
-            _setHtml(editorEl, stored);
-            _originalHtmlMap.delete(editorEl);
-        }
+        _renderingInProgress.add(editorEl);
+        _restoreRawFormulas(editorEl);
+        setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
     }
     fieldEl.removeAttribute(PROCESSED_ATTR);
 
-    // ── Fresh evaluation from the (now LaTeX) content ────────────────────────
     if (!_containsLatex(editorEl.textContent)) return;
 
-    const originalHTML = editorEl.innerHTML;
-
-    // Render KaTeX directly into the editor element.
+    // Surgically inject rendered spans, guarding against re-trigger loops.
     _renderingInProgress.add(editorEl);
-    try {
-        window.renderMathInElement(editorEl, MATH_OPTIONS);
-    } catch (e) {
-        console.debug("[APS Math] KaTeX error:", e);
-        _renderingInProgress.delete(editorEl);
-        return;
-    }
+    const rendered = _injectRenderedFormulas(editorEl);
     setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
 
-    // If nothing changed there were no real formulas — nothing to do.
-    if (editorEl.innerHTML === originalHTML) return;
+    if (!rendered) return;
 
-    // Store original LaTeX in memory (not in the database).
-    _originalHtmlMap.set(editorEl, originalHTML);
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
 
     // ── Toggle button (floats top-right, zero extra form space) ─────────────
@@ -256,27 +355,17 @@ function _processEditableField(fieldEl, editorEl) {
     btn.addEventListener("click", () => {
         const isViewing = fieldEl.getAttribute(PROCESSED_ATTR) === "view";
         if (isViewing) {
-            // ── Switch to edit mode: restore original LaTeX from memory ──────
-            const orig = _originalHtmlMap.get(editorEl);
-            if (orig !== undefined) {
-                _setHtml(editorEl, orig);
-            }
+            // Switch to edit mode: restore raw LaTeX text nodes from data attrs.
+            _renderingInProgress.add(editorEl);
+            _restoreRawFormulas(editorEl);
+            setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
             btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
             editorEl.focus();
         } else {
-            // ── Switch back to view mode: capture any edits and re-render ────
-            // Store the current (possibly edited) LaTeX as the new original
-            // in memory.  Odoo's model already holds this value since it is
-            // updated by the editor's own event handlers — we only track it
-            // here so we can restore it if the user clicks Edit again.
-            _originalHtmlMap.set(editorEl, editorEl.innerHTML);
+            // Switch to view mode: re-inject rendered formulas on current content.
             _renderingInProgress.add(editorEl);
-            try {
-                window.renderMathInElement(editorEl, MATH_OPTIONS);
-            } catch (e) {
-                console.debug("[APS Math] KaTeX error:", e);
-            }
+            _injectRenderedFormulas(editorEl);
             setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
             btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
