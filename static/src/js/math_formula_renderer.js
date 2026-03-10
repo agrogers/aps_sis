@@ -427,10 +427,48 @@ function _scheduleProcess(container) {
     }, 200);
 }
 
+// ── Toolbar-suppression selectionchange guard ─────────────────────────────────
+
+/**
+ * Capture-phase selectionchange handler that prevents Odoo's Wysiwyg toolbar
+ * (o-we-toolbar) from appearing while a formula-rendered field is in view mode.
+ *
+ * Registered once on the document during service start (before any form view
+ * or Wysiwyg component mounts) so it always runs first.  If the new selection
+ * lies inside a [data-aps-math="view"] field, removeAllRanges() collapses it
+ * before Odoo's bubble-phase handler reads it → toolbar never triggers.
+ *
+ * Re-entrance is safe: removeAllRanges() fires another selectionchange, but
+ * that new event has rangeCount === 0 and returns immediately.
+ */
+function _onSelectionChange() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    const node = range.commonAncestorContainer;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (el && el.closest(`[${PROCESSED_ATTR}="view"]`)) {
+        sel.removeAllRanges();
+    }
+}
+
 // ── Odoo service registration ────────────────────────────────────────────────
 
 registry.category("services").add("aps_math_renderer", {
     start() {
+        // ── Prevent Odoo's Wysiwyg toolbar from appearing in formula-rendered fields ──
+        //
+        // The toolbar (o-we-toolbar) is triggered by document.selectionchange, which
+        // the Wysiwyg OWL component fires programmatically during its own initialisation
+        // (e.g. focusing the editor to place a caret).  This event:
+        //   • fires directly on document — stopPropagation() has no effect
+        //   • is fired by the browser's selection engine — pointer-events:none has no effect
+        //
+        // _onSelectionChange is intentionally permanent for this service's lifetime.
+        // Odoo v18 services have no stop() lifecycle, and the MutationObserver
+        // below is similarly never disconnected.
+        document.addEventListener("selectionchange", _onSelectionChange, true);
+
         _ensureKaTeXCSS();
         _loadKaTeX().then(() => {
             _processContainer(document.body);
