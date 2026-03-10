@@ -12,28 +12,28 @@
  *
  * KaTeX and its auto-render extension are loaded dynamically (not through
  * Odoo's asset bundler) to avoid a conflict with Odoo's AMD module loader.
- * Both libraries are UMD bundles that call define(["katex"], ...) which
- * Odoo's bundler misinterprets as module dependencies.  By temporarily
- * setting define.amd = false before each <script> tag is appended, the
- * scripts fall through to the plain-global export path (window.katex /
- * window.renderMathInElement) and Odoo's module system is left unaffected.
- * The define.amd flag is restored in each script's onload handler, which
- * fires after the script has fully executed.
  *
  * Behaviour by field type:
+ *
  *   Readonly fields (o_readonly_modifier class present):
- *     A rendered preview div is created from the field content.  Both the
- *     original source div and the preview are placed in the same CSS Grid cell
- *     (grid-area 1/1) so they overlap; the source is visibility:hidden so
- *     headings remain at their correct scroll positions for TOC navigation.
+ *     renderMathInElement() is called directly on the content div.  No copy
+ *     is created — the original element is rendered in-place.  TOC links work
+ *     because headings remain in the same DOM element.
  *
  *   Editable fields that contain LaTeX:
- *     Same grid-stacking approach.  A small "Edit" button floats at the
- *     top-right corner of the field and lets the user switch between the
- *     rendered view and the raw editor (data-aps-math="edit"), which CSS
- *     handles by hiding the preview and restoring the source's visibility.
- *     The editor div's innerHTML is never modified, so Odoo always saves the
- *     original LaTeX source.
+ *     The original LaTeX HTML is stored in a WeakMap.  renderMathInElement()
+ *     is then called directly on the odoo-editor-editable div so only one
+ *     copy of the content is ever in the DOM.
+ *
+ *     A small "Edit" button floats at the top-right corner of the field.
+ *     Clicking it restores the original LaTeX into the editor so the user
+ *     can make changes.  Clicking "View" re-renders the updated LaTeX.
+ *
+ *     Save protection: capture-phase listeners on the save button and Ctrl+S
+ *     restore the original LaTeX back into the editor before Odoo reads the
+ *     field value, ensuring the LaTeX source (not the rendered HTML) is saved.
+ *     After the save Odoo patches the DOM, the MutationObserver fires, and
+ *     the field is re-rendered automatically.
  */
 
 import { registry } from "@web/core/registry";
@@ -48,47 +48,55 @@ const MATH_OPTIONS = {
         { left: "\\[", right: "\\]", display: true  },
     ],
     throwOnError: false,
-    // Never process content inside these tags (avoids double-rendering or
-    // corrupting code blocks that might legitimately contain $ characters)
     ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
-    // Skip elements that have already been rendered by KaTeX
     ignoredClasses: ["katex", "katex-html"],
 };
 
 const KATEX_BASE = "/aps_sis/static/src/lib/katex";
 
 // Attribute on .o_field_html that tracks our current display state:
-//   "view"     — preview shown (editable field, formula mode)
-//   "edit"     — raw editor shown (user clicked Edit button)
-//   "readonly" — preview shown (readonly field, no toggle)
+//   "view"     — KaTeX rendered in-place (editable field)
+//   "edit"     — original LaTeX restored for editing (user clicked Edit)
+//   "readonly" — KaTeX rendered in-place (readonly field, no toggle)
 const PROCESSED_ATTR = "data-aps-math";
+
+// How long to mark an editorEl as "rendering in progress" after we set its
+// innerHTML.  Must exceed the MutationObserver debounce (200 ms) so we are
+// certain the observer has already processed (and skipped) our own mutation
+// before we clear the flag.  2.5× the debounce gives comfortable headroom.
+const RENDERING_CLEANUP_DELAY_MS = 500;
+
+// After calling _restoreAllForSave() we wait this long before force-re-rendering
+// any field still in "saving" state.  Covers the case where Odoo does not update
+// the DOM after a save (content unchanged on the server) so the MutationObserver
+// never fires.  1 500 ms is generous enough for most network conditions.
+const SAVE_FALLBACK_DELAY_MS = 1500;
+
+// ── State ────────────────────────────────────────────────────────────────────
+
+/**
+ * Stores the original LaTeX HTML string for each editorEl while the field
+ * is displaying the KaTeX-rendered version.  Used to restore for editing
+ * or before a save.
+ */
+const _originalHtmlMap = new WeakMap();
+
+/**
+ * Set of editorEl elements where WE are currently setting innerHTML
+ * programmatically (rendering or restoring).  The MutationObserver skips
+ * these elements to prevent an infinite render → observe → render loop.
+ */
+const _renderingInProgress = new Set();
 
 // ── Dynamic script loading that bypasses Odoo's AMD module system ────────────
 
-/**
- * Load a plain-JS (UMD) library as a browser global, bypassing Odoo's AMD
- * module loader.
- *
- * Odoo sets window.define with define.amd = {} (truthy), which causes UMD
- * bundles to take the AMD path.  Temporarily clearing define.amd to false
- * before the <script> tag is appended means the scripts execute with AMD
- * detection disabled.  Because script.onload fires *after* the script has
- * fully executed, restoring define.amd there guarantees that the rest of
- * Odoo's module system is unaffected.
- *
- * @param {string} src  Absolute URL path to the script
- * @returns {Promise<void>}
- */
 function _loadScriptAsGlobal(src) {
     return new Promise((resolve, reject) => {
-        // Skip if already loaded — use a safe array search instead of CSS
-        // attribute selector to avoid any escaping concerns with the src path.
         if (Array.from(document.scripts).some((s) => s.getAttribute("src") === src)) {
             resolve();
             return;
         }
 
-        // Save and disable AMD so UMD bundles fall back to window.* exports
         const savedAmd = window.define && window.define.amd;
         if (window.define) {
             window.define.amd = false;
@@ -96,8 +104,6 @@ function _loadScriptAsGlobal(src) {
 
         const _restore = () => {
             if (window.define) {
-                // Use explicit undefined-check to correctly restore any falsy
-                // original value (e.g. false) rather than replacing it with {}
                 window.define.amd = savedAmd !== undefined ? savedAmd : {};
             }
         };
@@ -111,17 +117,9 @@ function _loadScriptAsGlobal(src) {
         };
 
         document.head.appendChild(script);
-        // NOTE: The script executes asynchronously (download + parse + run),
-        // but define.amd is already false at the moment of execution.
-        // onload is only called after execution, so define.amd is restored
-        // at exactly the right time.
     });
 }
 
-/**
- * Load KaTeX CSS dynamically so that the relative fonts/ URLs inside
- * katex.min.css resolve correctly (Odoo's bundler would rebase the paths).
- */
 let _cssLoaded = false;
 function _ensureKaTeXCSS() {
     if (_cssLoaded) return;
@@ -132,27 +130,18 @@ function _ensureKaTeXCSS() {
     _cssLoaded = true;
 }
 
-/**
- * Load katex.min.js then auto-render.min.js sequentially (auto-render
- * requires window.katex to already be present).
- * Returns a Promise that resolves once both are ready.
- */
 let _katexLoadPromise = null;
 function _loadKaTeX() {
     if (_katexLoadPromise) return _katexLoadPromise;
     _katexLoadPromise = _loadScriptAsGlobal(`${KATEX_BASE}/katex.min.js`)
         .then(() => _loadScriptAsGlobal(`${KATEX_BASE}/auto-render.min.js`))
         .catch((err) => {
-            // Log the failure but keep _katexLoadPromise set so callers share
-            // the same resolved/rejected state and don't silently retry on
-            // each MutationObserver fire.  Math formulas will simply not
-            // render if the scripts cannot be loaded.
             console.warn(err.message);
         });
     return _katexLoadPromise;
 }
 
-// ── Rendering helpers ────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Quick test: does this text contain any LaTeX delimiter? */
 function _containsLatex(text) {
@@ -160,107 +149,172 @@ function _containsLatex(text) {
 }
 
 /**
- * Build and return a rendered preview div from *sourceEl*'s innerHTML.
- * Returns null if KaTeX made no visible change (no real formulas present).
+ * Set innerHTML on *el* and mark *el* as "in-progress" so the MutationObserver
+ * ignores the mutation.  The in-progress mark is cleared after the observer's
+ * debounce window (500 ms > 200 ms debounce) to ensure we never permanently
+ * block observation.
  */
-function _buildPreview(sourceEl) {
-    const preview = document.createElement("div");
-    preview.className = "aps-math-preview";
-    preview.innerHTML = sourceEl.innerHTML;
-    try {
-        window.renderMathInElement(preview, MATH_OPTIONS);
-    } catch (e) {
-        console.debug("[APS Math] KaTeX error:", e);
-        return null;
-    }
-    // If nothing changed there are no real formulas
-    if (preview.innerHTML === sourceEl.innerHTML) return null;
-    return preview;
+function _setHtml(el, html) {
+    _renderingInProgress.add(el);
+    el.innerHTML = html;
+    setTimeout(() => _renderingInProgress.delete(el), RENDERING_CLEANUP_DELAY_MS);
+}
+
+// ── Save protection ───────────────────────────────────────────────────────────
+
+/**
+ * Prepare all editable HTML fields for an imminent record save:
+ *
+ *  "view" mode fields — the editorEl currently holds KaTeX-rendered HTML.
+ *    Restore the original LaTeX so Odoo reads and saves the correct source.
+ *    Mark as "saving"; the MutationObserver re-renders after Odoo updates the DOM.
+ *
+ *  "edit" mode fields — the editorEl already holds LaTeX (user is editing).
+ *    Nothing to restore, but update the WeakMap entry to capture any edits
+ *    made during this session so that the re-render after save uses the new
+ *    LaTeX, not the pre-session original.
+ *
+ * Must run BEFORE Odoo reads the field value (use capture-phase listeners).
+ */
+function _restoreAllForSave() {
+    document.querySelectorAll(`.o_field_html[${PROCESSED_ATTR}="view"]`).forEach((fieldEl) => {
+        const editorEl = fieldEl.querySelector(".odoo-editor-editable");
+        if (!editorEl) return;
+        const orig = _originalHtmlMap.get(editorEl);
+        if (orig === undefined) return;
+        // Restore LaTeX HTML — Odoo will now read the correct source.
+        _setHtml(editorEl, orig);
+        fieldEl.setAttribute(PROCESSED_ATTR, "saving");
+    });
+
+    // If the user saves while in "edit" mode, the editorEl already has the
+    // current (edited) LaTeX — no restore needed.  But update the WeakMap so
+    // that when _processEditableField re-renders after save it uses the new
+    // content, not the original pre-session LaTeX.
+    document.querySelectorAll(`.o_field_html[${PROCESSED_ATTR}="edit"]`).forEach((fieldEl) => {
+        const editorEl = fieldEl.querySelector(".odoo-editor-editable");
+        if (editorEl) {
+            _originalHtmlMap.set(editorEl, editorEl.innerHTML);
+        }
+    });
+
+    // Fallback: if Odoo does NOT update the DOM after saving (e.g. the server
+    // returns the same content), the MutationObserver never fires and the field
+    // stays in "saving" state.  Force a re-render after a generous timeout.
+    setTimeout(() => {
+        if (!window.renderMathInElement) return;
+        document.querySelectorAll(`.o_field_html[${PROCESSED_ATTR}="saving"]`).forEach((fieldEl) => {
+            const editorEl = fieldEl.querySelector(".odoo-editor-editable");
+            if (editorEl) _processEditableField(fieldEl, editorEl);
+        });
+    }, SAVE_FALLBACK_DELAY_MS);
+}
+
+function _installSaveProtection() {
+    // Save button click
+    document.addEventListener("click", (e) => {
+        if (e.target && e.target.closest(
+            ".o_form_button_save, .o_form_button_save_manually, [data-action='save']"
+        )) {
+            _restoreAllForSave();
+        }
+    }, true);
+
+    // Ctrl+S / Cmd+S keyboard shortcut
+    document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "s" && !e.defaultPrevented) {
+            _restoreAllForSave();
+        }
+    }, true);
 }
 
 // ── Readonly-field rendering ─────────────────────────────────────────────────
 
 /**
- * For a readonly HTML field (.o_field_html.o_readonly_modifier):
- *  - Creates a rendered preview from the content element's HTML.
- *  - Both source and preview are placed in the same CSS Grid cell (grid-area
- *    1/1) via the data-aps-math="readonly" attribute.  CSS makes the source
- *    visibility:hidden so it is invisible but still occupies its correct
- *    layout position — Odoo's TOC links can still scroll to headings inside it.
- *  - No toggle button is added (user cannot edit anyway).
+ * Render KaTeX directly in the content element of a readonly HTML field.
+ * No copy is created — the original element is rendered in-place so headings
+ * remain in the same DOM element and TOC scroll links work correctly.
  */
 function _processReadonlyField(fieldEl) {
     if (fieldEl.getAttribute(PROCESSED_ATTR) === "readonly") return;
 
-    // Find the content container.  Prefer the Odoo editor div; fall back to
-    // any direct block-level child div.
     const contentEl =
         fieldEl.querySelector(".odoo-editor-editable") ||
         fieldEl.querySelector(":scope > div");
     if (!contentEl) return;
     if (!_containsLatex(contentEl.textContent)) return;
 
-    const preview = _buildPreview(contentEl);
-    if (!preview) return;
+    const beforeHtml = contentEl.innerHTML;
+    try {
+        window.renderMathInElement(contentEl, MATH_OPTIONS);
+    } catch (e) {
+        console.debug("[APS Math] KaTeX error:", e);
+        return;
+    }
+    if (contentEl.innerHTML === beforeHtml) return; // no real formulas found
 
     fieldEl.setAttribute(PROCESSED_ATTR, "readonly");
-    // Insert preview after the source element.  CSS grid-area:1/1 on both
-    // puts them in the same cell; source is visibility:hidden via CSS.
-    contentEl.insertAdjacentElement("afterend", preview);
 }
 
-// ── Editable-field overlay toggle ────────────────────────────────────────────
+// ── Editable-field in-place rendering ────────────────────────────────────────
 
 /**
- * For an editable HTML field (.o_field_html without o_readonly_modifier):
+ * Render KaTeX directly in the odoo-editor-editable div, storing the original
+ * LaTeX HTML in _originalHtmlMap for later restoration.
  *
- *  1. Cleans up any previously injected preview/button (handles re-processing
- *     after a record save where OWL patches the field in-place rather than
- *     recreating the DOM element).
- *  2. Checks for LaTeX; if none found, leaves the field unmodified.
- *  3. Creates a rendered preview div after the editor div.  CSS Grid area
- *     stacking (triggered by data-aps-math="view") overlays the preview on
- *     the source; the source is visibility:hidden so TOC links still work.
- *  4. Inserts a small "Edit" button that floats at the top-right corner of
- *     the field wrapper, toggling between rendered view and raw editor.
- *
- * The editor div's innerHTML is NEVER modified so Odoo always reads and saves
- * the original LaTeX source.  All visibility transitions (view ↔ edit) are
- * handled entirely by CSS via the data-aps-math attribute value.
+ * Flow:
+ *   1. Cleanup: remove any previously injected button; restore original LaTeX
+ *      if the field was previously in "view" or "edit" mode.
+ *   2. Check for LaTeX; skip if none.
+ *   3. Store original HTML, render KaTeX in-place, set data-aps-math="view".
+ *   4. Add floating "Edit" button that swaps between raw LaTeX and rendered view.
  */
 function _processEditableField(fieldEl, editorEl) {
     const mode = fieldEl.getAttribute(PROCESSED_ATTR);
 
-    // While the user is actively typing (editor has focus), don't disrupt them.
+    // Don't disrupt the user while they are actively editing.
     if (mode === "edit") {
-        const editorHasFocus =
+        const hasFocus =
             editorEl === document.activeElement ||
             editorEl.contains(document.activeElement);
-        if (editorHasFocus) return;
+        if (hasFocus) return;
     }
 
-    // ── Clean up previously injected elements ────────────────────────────────
-    // This handles the case where OWL patches the field in-place after a save
-    // (the same .o_field_html DOM element is reused, so our PROCESSED_ATTR and
-    // injected children survive the patch).
-    const existingPreview = fieldEl.querySelector(":scope > .aps-math-preview");
-    const existingBtn    = fieldEl.querySelector(":scope > .aps-math-edit-toggle");
-    if (existingPreview) existingPreview.remove();
-    if (existingBtn)     existingBtn.remove();
-    // Removing data-aps-math also removes the CSS grid stacking rule and the
-    // visibility:hidden on the editor element — no inline style manipulation needed.
+    // ── Clean up any previously injected button ──────────────────────────────
+    fieldEl.querySelector(":scope > .aps-math-edit-toggle")?.remove();
+
+    // ── Restore original LaTeX if we previously modified the editor HTML ─────
+    // This covers re-processing after a save or a field content refresh.
+    if (mode === "view" || mode === "edit") {
+        const stored = _originalHtmlMap.get(editorEl);
+        if (stored !== undefined) {
+            _setHtml(editorEl, stored);
+            _originalHtmlMap.delete(editorEl);
+        }
+    }
     fieldEl.removeAttribute(PROCESSED_ATTR);
 
-    // ── Fresh evaluation ─────────────────────────────────────────────────────
+    // ── Fresh evaluation from the (now LaTeX) content ────────────────────────
     if (!_containsLatex(editorEl.textContent)) return;
 
-    const preview = _buildPreview(editorEl);
-    if (!preview) return;
+    const originalHTML = editorEl.innerHTML;
 
-    // Setting data-aps-math="view" triggers CSS grid stacking and makes the
-    // editor visibility:hidden while the preview is visible.
+    // Render KaTeX directly into the editor element.
+    _renderingInProgress.add(editorEl);
+    try {
+        window.renderMathInElement(editorEl, MATH_OPTIONS);
+    } catch (e) {
+        console.debug("[APS Math] KaTeX error:", e);
+        _renderingInProgress.delete(editorEl);
+        return;
+    }
+    setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
+
+    // If nothing changed there were no real formulas — nothing to do.
+    if (editorEl.innerHTML === originalHTML) return;
+
+    _originalHtmlMap.set(editorEl, originalHTML);
     fieldEl.setAttribute(PROCESSED_ATTR, "view");
-    editorEl.insertAdjacentElement("afterend", preview);
 
     // ── Toggle button (floats top-right, zero extra form space) ─────────────
     const btn = document.createElement("button");
@@ -268,64 +322,56 @@ function _processEditableField(fieldEl, editorEl) {
     btn.className = "aps-math-edit-toggle btn btn-sm btn-outline-secondary";
     btn.title = "This html field contains formulas";
     btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
-    // position:relative on the field wrapper is set by CSS (.o_field_html[data-aps-math])
 
     btn.addEventListener("click", () => {
-        const viewing = fieldEl.getAttribute(PROCESSED_ATTR) === "view";
-        if (viewing) {
-            // Switch to edit mode: CSS hides preview and restores editor
-            // visibility when data-aps-math changes to "edit".
+        const isViewing = fieldEl.getAttribute(PROCESSED_ATTR) === "view";
+        if (isViewing) {
+            // ── Switch to edit mode: restore original LaTeX ──────────────────
+            const orig = _originalHtmlMap.get(editorEl);
+            if (orig !== undefined) {
+                _setHtml(editorEl, orig);
+            }
             btn.innerHTML = '<i class="fa fa-eye" aria-hidden="true"></i> View';
             fieldEl.setAttribute(PROCESSED_ATTR, "edit");
             editorEl.focus();
         } else {
-            // Switch back to view mode: rebuild preview from current editor
-            // content (captures any edits the user just made).
-            preview.innerHTML = editorEl.innerHTML;
+            // ── Switch back to view mode: capture any edits and re-render ────
+            // Store the current (possibly edited) LaTeX as the new original.
+            _originalHtmlMap.set(editorEl, editorEl.innerHTML);
+            _renderingInProgress.add(editorEl);
             try {
-                window.renderMathInElement(preview, MATH_OPTIONS);
+                window.renderMathInElement(editorEl, MATH_OPTIONS);
             } catch (e) {
                 console.debug("[APS Math] KaTeX error:", e);
             }
+            setTimeout(() => _renderingInProgress.delete(editorEl), RENDERING_CLEANUP_DELAY_MS);
             btn.innerHTML = '<i class="fa fa-pencil" aria-hidden="true"></i> Edit';
-            // CSS re-applies grid stacking and visibility:hidden on editor.
             fieldEl.setAttribute(PROCESSED_ATTR, "view");
         }
     });
 
-    // Append the button as the last child — it is absolutely positioned so
-    // it floats over the top-right corner and takes no layout space.
     fieldEl.appendChild(btn);
 }
 
 // ── Container processing ─────────────────────────────────────────────────────
 
-/**
- * Process all HTML fields inside *container*:
- *
- *  • Readonly fields (o_readonly_modifier present) — show a rendered preview;
- *    no toggle button; original content div hidden.
- *  • Editable fields (no o_readonly_modifier) — show rendered preview by
- *    default with an "Edit" button floating at top-right to toggle raw editor.
- */
 function _processContainer(container) {
     if (!container || typeof container.querySelectorAll !== "function") return;
 
-    // ── 1. Readonly fields ───────────────────────────────────────────────────
-    // In Odoo 18 the wrapper div carries classes:
-    //   o_field_widget  o_readonly_modifier  o_field_html
-    // We match on the combination .o_field_html.o_readonly_modifier.
-    // The fallback selector handles alternative readonly class names.
+    // Readonly fields — render in-place, no toggle button.
     const readonlyFields = container.querySelectorAll(
         ".o_field_html.o_readonly_modifier, .o_field_html_readonly"
     );
     readonlyFields.forEach(_processReadonlyField);
 
-    // ── 2. Editable fields ───────────────────────────────────────────────────
+    // Editable fields — render in-place with Edit/View toggle button.
     const editableFields = container.querySelectorAll(
         ".o_field_html:not(.o_readonly_modifier)"
     );
     editableFields.forEach((fieldEl) => {
+        // Skip "saving" state — the field will be re-processed by the observer
+        // once Odoo updates the DOM after the save completes.
+        if (fieldEl.getAttribute(PROCESSED_ATTR) === "saving") return;
         const editorEl = fieldEl.querySelector(".odoo-editor-editable");
         if (editorEl) {
             _processEditableField(fieldEl, editorEl);
@@ -341,7 +387,6 @@ function _scheduleProcess(container) {
     clearTimeout(_pendingTimer);
     _pendingTimer = setTimeout(() => {
         _pendingTimer = null;
-        // Only run if KaTeX has finished loading
         if (window.renderMathInElement) {
             _processContainer(container || document.body);
         }
@@ -352,34 +397,31 @@ function _scheduleProcess(container) {
 
 registry.category("services").add("aps_math_renderer", {
     start() {
-        // Load KaTeX CSS and JS (both dynamically, bypassing Odoo bundler)
         _ensureKaTeXCSS();
         _loadKaTeX().then(() => {
-            // Initial render of any HTML fields already in the DOM
             _processContainer(document.body);
         });
 
-        // Watch for DOM changes that indicate an HTML field appeared or its
-        // content was updated (e.g., Odoo navigation, record save).
+        _installSaveProtection();
+
         const observer = new MutationObserver((mutations) => {
             let shouldProcess = false;
             for (const mutation of mutations) {
-                // ── Case A: Odoo updates odoo-editor-editable content in-place
-                //    after a save (OWL patches children rather than replacing
-                //    the whole .o_field_html element).  Only trigger when the
-                //    editor does not have focus so we don't disrupt live typing.
+                // ── Case A: Content of odoo-editor-editable changed (e.g., after save).
+                //    Skip mutations we caused ourselves (in-place rendering / restoration).
+                //    Also skip while the editor has focus (user is actively typing).
                 if (
                     mutation.type === "childList" &&
                     mutation.target.classList &&
                     mutation.target.classList.contains("odoo-editor-editable") &&
+                    !_renderingInProgress.has(mutation.target) &&
                     !mutation.target.contains(document.activeElement)
                 ) {
                     shouldProcess = true;
                     break;
                 }
 
-                // ── Case B: Odoo adds or replaces field widget elements
-                //    (navigation to a new record, tab switch, etc.)
+                // ── Case B: New field widget elements added (SPA navigation, tab switch).
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
                     if (
@@ -395,8 +437,7 @@ registry.category("services").add("aps_math_renderer", {
                     }
                 }
 
-                // ── Case C: The o_readonly_modifier class is added/removed
-                //    (field switches between editable and readonly at runtime)
+                // ── Case C: o_readonly_modifier class added/removed at runtime.
                 if (
                     mutation.type === "attributes" &&
                     mutation.target.classList &&

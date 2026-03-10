@@ -28,32 +28,15 @@
     text-overflow: ellipsis;
 }
 
-/* ── Editable-field rendered preview ─────────────────────────────────────── */
-
-/* The preview div we inject to show rendered math for editable fields.
-   Match the visual appearance of the readonly editor. */
-.aps-math-preview {
-    min-height: 1.5em;
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-
-.aps-math-preview .katex {
-    font-size: 1em;
-    vertical-align: middle;
-}
-
-.aps-math-preview .katex-display {
-    margin: 0.5em 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
 /* ── Edit toggle button — floats over the top-right corner ───────────────── */
 
-/* The button is absolutely positioned so it takes no layout space.
-   position:relative on the .o_field_html wrapper is applied by CSS via the
-   .o_field_html[data-aps-math] rule below. */
+/* Any field that we have processed gets position:relative so the
+   absolutely-positioned Edit button has a containing block. */
+.o_field_html[data-aps-math] {
+    position: relative;
+}
+
+/* The button is absolutely positioned so it takes no layout space. */
 .aps-math-edit-toggle {
     position: absolute;
     top: 4px;
@@ -76,51 +59,15 @@
     opacity: 1;
 }
 
-/* === Grid stacking: keep original in layout so TOC scroll targets work ======
- *
- * Problem: display:none removes an element from the layout, so scrollIntoView()
- * becomes a no-op.  Odoo's TOC widget (and Bootstrap's delegated click handler)
- * try to scroll to headings inside the original content element — which with
- * display:none means no scroll happens.
- *
- * Solution: use CSS Grid area stacking instead.
- *   - Both the original source element and the rendered preview share the same
- *     grid-area (1/1), so they overlap in the same layout cell.
- *   - The cell height = max(source height, preview height) — no JS sizing needed.
- *   - The source element gets visibility:hidden (NOT display:none), so it is
- *     invisible but still occupies its correct layout position.  scrollIntoView()
- *     on any of its child headings will scroll to the right Y coordinate, which
- *     is where the preview's corresponding content also appears.
- *   - In "edit" mode the preview is hidden via display:none (CSS only, no JS).
- * ============================================================================ */
+/* ── Rendered (view) mode — prevent accidental edits in the rendered field ── */
 
-/* Ensure positioning context for the floating Edit button in all formula states */
-.o_field_html[data-aps-math] {
-    position: relative;
-}
-
-/* Grid stacking context: view and readonly states overlay preview on source */
-.o_field_html[data-aps-math="view"],
-.o_field_html[data-aps-math="readonly"] {
-    display: grid;
-}
-
-/* Both source and preview share grid cell 1/1 (same row and column) */
-.o_field_html[data-aps-math="view"] > .odoo-editor-editable,
-.o_field_html[data-aps-math="readonly"] > .odoo-editor-editable,
-.o_field_html[data-aps-math="view"] > .aps-math-preview,
-.o_field_html[data-aps-math="readonly"] > .aps-math-preview {
-    grid-area: 1 / 1;
-}
-
-/* Source stays in layout (for scroll) but is visually hidden */
-.o_field_html[data-aps-math="view"] > .odoo-editor-editable,
-.o_field_html[data-aps-math="readonly"] > .odoo-editor-editable {
-    visibility: hidden;
-}
-
-/* In edit mode the preview hides; handled entirely by CSS */
-.o_field_html[data-aps-math="edit"] > .aps-math-preview {
-    display: none;
+/* While in "view" mode the editorEl contains KaTeX-rendered HTML.
+   Block pointer events and text selection so the user does not accidentally
+   start editing the rendered output.  The Edit button (above) still works
+   because it is a sibling of the editorEl, not a descendant. */
+.o_field_html[data-aps-math="view"] > .odoo-editor-editable {
+    pointer-events: none;
+    user-select: none;
+    caret-color: transparent;
 }
 
