@@ -102,6 +102,21 @@ registry.category("services").add("aps_toc_position_toggle", {
             let shouldProcess = false;
 
             for (const mutation of mutations) {
+                // ── Case A: Content of odoo-editor-editable changed.
+                //    This is the primary trigger for editable fields: Odoo loads
+                //    the field value (including any TOC) as children of this element
+                //    after the wrapper is already in the DOM.
+                if (
+                    mutation.type === "childList" &&
+                    mutation.target.classList &&
+                    mutation.target.classList.contains("odoo-editor-editable")
+                ) {
+                    shouldProcess = true;
+                    break;
+                }
+
+                // ── Case B: New field / TOC elements added (SPA nav, tab switch,
+                //    readonly fields rendered server-side all at once).
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
                     if (
@@ -118,6 +133,17 @@ registry.category("services").add("aps_toc_position_toggle", {
                     }
                 }
                 if (shouldProcess) break;
+
+                // ── Case C: o_readonly_modifier class added/removed at runtime.
+                if (
+                    mutation.type === "attributes" &&
+                    mutation.target.classList &&
+                    mutation.target.classList.contains("o_field_html")
+                ) {
+                    shouldProcess = true;
+                }
+
+                if (shouldProcess) break;
             }
 
             if (shouldProcess) {
@@ -128,6 +154,8 @@ registry.category("services").add("aps_toc_position_toggle", {
         observer.observe(document.body, {
             childList: true,
             subtree: true,
+            attributes: true,
+            attributeFilter: ["class"],
         });
 
         return {};
