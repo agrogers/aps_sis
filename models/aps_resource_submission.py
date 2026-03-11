@@ -422,7 +422,14 @@ class APSResourceSubmission(models.Model):
 
     def _recalculate_score_from_children(self):
         """For records with auto_score=True, recalculate score and answer summary
-        from child resource submissions for the same student and submission label."""
+        from child resource submissions for the same student and submission label.
+
+        The parent score is only updated when *every* contributing child has at
+        least one submission in the 'submitted' or 'complete' state for the same
+        student and label.  When a child resource has multiple submissions with the
+        same label the one with the highest score is used so that duplicate entries
+        do not distort the total.
+        """
         for record in self:
             if not record.auto_score:
                 continue
@@ -436,25 +443,55 @@ class APSResourceSubmission(models.Model):
             if not contributing_children:
                 continue
 
-            domain = [
+            base_domain = [
                 ('resource_id', 'in', contributing_children.ids),
                 ('student_id', '=', record.student_id.id),
             ]
             if record.submission_label:
-                domain.append(('submission_label', '=', record.submission_label))
+                base_domain.append(('submission_label', '=', record.submission_label))
 
-            child_submissions = self.search(domain).sorted(
+            # Guard: every contributing child must have at least one submitted or
+            # completed submission (same student, same label) before we update the
+            # parent.  If any child is missing one we skip this parent entirely.
+            submitted_resource_ids = set(
+                self.search(base_domain + [('state', 'in', ('submitted', 'complete'))]).mapped('resource_id.id')
+            )
+            if not all(c.id in submitted_resource_ids for c in contributing_children):
+                continue
+
+            child_submissions = self.search(base_domain).sorted(
                 lambda s: (s.submission_order or 999, s.submission_name or '')
             )
 
             if not child_submissions:
                 continue
 
+            # Deduplicate: for each contributing child resource keep only the
+            # submission with the best (highest) score.  This handles the edge
+            # case where a child resource has two submissions sharing the same
+            # label and resource ID.
+            best_per_resource = {}
+            for sub in child_submissions:
+                rid = sub.resource_id.id
+                sub_score = sub.score if sub.score != sentinel_zero else 0.0
+                existing = best_per_resource.get(rid)
+                if existing is None:
+                    best_per_resource[rid] = sub
+                else:
+                    existing_score = existing.score if existing.score != sentinel_zero else 0.0
+                    if sub_score > existing_score:
+                        best_per_resource[rid] = sub
+
+            deduplicated = sorted(
+                best_per_resource.values(),
+                key=lambda s: (s.submission_order or 999, s.submission_name or ''),
+            )
+
             total_score = 0.0
             total_out_of = 0.0
             lines = []
 
-            for child_sub in child_submissions:
+            for child_sub in deduplicated:
                 score = child_sub.score if child_sub.score != sentinel_zero else 0.0
                 out_of = child_sub.out_of_marks or 0.0
                 name = child_sub.submission_name or child_sub.display_name or '?'
@@ -756,8 +793,9 @@ class APSResourceSubmission(models.Model):
             if to_recalculate:
                 to_recalculate._recalculate_score_from_children()
 
-        # When score changes (for any reason), check if a parent submission needs updating
-        if 'score' in vals:
+        # When score changes (for any reason), or a submission reaches a
+        # submitted/complete state, check if a parent submission needs updating.
+        if 'score' in vals or vals.get('state') in ('submitted', 'complete'):
             self._check_and_update_parent_score()
 
         if 'review_requested_by' in vals:
