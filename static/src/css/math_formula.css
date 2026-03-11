@@ -75,13 +75,31 @@
     opacity: 1;
 }
 
-/* ── Sticky anchor for the floating TOC panel ───────────────────────────────
+/* ── Overflow fix: allow sticky positioning within HTML fields ───────────────
 
-   Same zero-height technique as .aps-float-buttons, placed just below the
-   button row (top:36px ≈ button-row top:4px + ~32px button height).
-   flex row-reverse right-aligns the panel without using float.             */
+   Odoo sets overflow:auto on the div immediately above .odoo-editor-editable,
+   which breaks position:sticky for any descendant.  Override to overflow:visible
+   so the floating TOC button and the TOC panel itself can be sticky relative
+   to the page scroll container.  :has() scopes the rule precisely to that
+   wrapper div without affecting any other overflow-auto element on the page.  */
 
-.aps-toc-float-anchor {
+.o_field_html .overflow-auto:has(> .odoo-editor-editable),
+.o_field_html_readonly .overflow-auto:has(> .odoo-editor-editable) {
+    overflow: visible;
+}
+
+/* ── Floating TOC panel ─────────────────────────────────────────────────────
+
+   When float mode is active the TOC element itself becomes a zero-height
+   sticky container (same technique as .aps-float-buttons).  Its children
+   overflow out of the zero-height box and appear as a right-aligned panel.
+
+   Because the element stays in its original DOM position:
+     • all JS event listeners (hover highlights, click-to-scroll) are intact
+     • all CSS ancestor selectors (indentation, hover styles) still match
+     • no DOM moves, placeholder spans, or save guards are required            */
+
+[data-aps-toc="float"] .o_embedded_toc_content {
     position: sticky;
     top: 36px;
     height: 0;
@@ -93,16 +111,10 @@
     pointer-events: none;
 }
 
-/*
- * The original TOC element moved into the anchor when float mode is active.
- * It is wrapped in a display:contents div (.odoo-editor-editable .o_field_html)
- * so all of Odoo's ancestor-scoped CSS rules for the TOC still match after
- * the element is moved out of the editor DOM.
- * The `any-depth` descendant combinator (space) is intentional — the element
- * is one wrapper deep inside .aps-toc-float-anchor.
- */
-.aps-toc-float-anchor .o_embedded_toc_content {
+/* Direct child of the TOC element becomes the visible panel. */
+[data-aps-toc="float"] .o_embedded_toc_content > * {
     pointer-events: all;
+    height: auto;
     /* Shrink to fit content but cap at 1/4 of the field width. */
     width: max-content;
     max-width: 25%;
@@ -117,9 +129,9 @@
 }
 
 /* No wrapping for links/items inside the floating panel; truncate with ellipsis. */
-.aps-toc-float-anchor .o_embedded_toc_content a,
-.aps-toc-float-anchor .o_embedded_toc_content li,
-.aps-toc-float-anchor .o_embedded_toc_content span {
+[data-aps-toc="float"] .o_embedded_toc_content a,
+[data-aps-toc="float"] .o_embedded_toc_content li,
+[data-aps-toc="float"] .o_embedded_toc_content span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
