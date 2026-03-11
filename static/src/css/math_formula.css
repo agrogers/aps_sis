@@ -85,7 +85,7 @@
 
 .o_field_html .overflow-auto:has(> .odoo-editor-editable),
 .o_field_html_readonly .overflow-auto:has(> .odoo-editor-editable) {
-    overflow: visible;
+    overflow: visible !important;
 }
 
 /* ── Floating TOC panel ─────────────────────────────────────────────────────
@@ -99,53 +99,29 @@
      • all CSS ancestor selectors (indentation, hover styles) still match
      • no DOM moves, placeholder spans, or save guards are required            */
 
-[data-aps-toc="float"] .o_embedded_toc_content {
+[data-aps-toc="float"] [data-embedded="tableOfContent"] {
     position: sticky;
-    top: 36px;
-    height: 0;
-    overflow: visible;
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: flex-start;
-    z-index: 5;
-    pointer-events: none;
+    top: 20px;
+    height: 0px;
+    outline: none;
 }
 
 /* Direct child of the TOC element becomes the visible panel. */
-[data-aps-toc="float"] .o_embedded_toc_content > * {
+[data-aps-toc="float"] .o_embedded_toc_content {
+    z-index: 5;
     pointer-events: all;
     height: auto;
     /* Shrink to fit content but cap at 1/4 of the field width. */
     width: max-content;
-    max-width: 25%;
-    background: #fff;
+    max-width: 20%;
+    background: #ffffffbd;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-    padding: 10px 14px;
+    padding: 5px 5px;
     font-size: 0.8em;
-    max-height: 60vh;
+    max-height: 70vh;
     overflow-y: auto;
     overflow-x: hidden;
-    border-radius: 3px;
-}
-
-/* No wrapping for links/items inside the floating panel; truncate with ellipsis. */
-[data-aps-toc="float"] .o_embedded_toc_content a,
-[data-aps-toc="float"] .o_embedded_toc_content li,
-[data-aps-toc="float"] .o_embedded_toc_content span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-    max-width: 100%;
-}
-
-/* ── Rendered (view) mode — prevent accidental edits in the rendered field ── */
-
-/* Block text-selection inside the editable while formulas are displayed.
-   The Wysiwyg toolbar is suppressed by the selectionchange capture-phase guard
-   in math_formula_renderer.js; pointer events are intentionally left enabled
-   so that links, TOC anchors, and buttons inside the content remain clickable. */
-.o_field_html[data-aps-math="view"] > .odoo-editor-editable {
-    user-select: none;
-    caret-color: transparent;
+    border-radius: 5px;
+    margin-left: auto;
+    margin-right: -30px;
 }
