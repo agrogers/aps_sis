@@ -22,10 +22,19 @@
  *
  *   .aps-float-buttons    — sticky top:4px,  z-index:10 — shared with the
  *                           math-formula edit-toggle button.
- *   .aps-toc-float-anchor — sticky top:36px, z-index:5  — holds a clone of
- *                           the TOC element when float mode is active.
+ *   .aps-toc-float-anchor — sticky top:36px, z-index:5  — holds the original
+ *                           TOC element when float mode is active.
  *
- * The floating panel is styled via .aps-toc-float-anchor in math_formula.css.
+ * DOM-move (not clone) strategy
+ * ──────────────────────────────
+ * The TOC element is MOVED (not cloned) into the anchor.  This preserves all
+ * JavaScript event listeners attached by Odoo's HTML editor (hover highlights,
+ * click-to-scroll navigation, etc.) and keeps ancestor CSS selectors matching
+ * via a display:contents wrapper that carries the original parent classes.
+ * A hidden placeholder <span> is left at the original position so the element
+ * can be moved back on deactivation or before form save.
+ *
+ * The MutationObserver is paused during DOM moves to prevent re-process loops.
  */
 
 import { registry } from "@web/core/registry";
@@ -42,35 +51,92 @@ const BTN_CLASS = "aps-toc-float-toggle";
 // Shared button-row wrapper (also used by math_formula_renderer.js).
 const BTNS_WRAPPER_CLASS = "aps-float-buttons";
 
-// Sticky anchor that holds the TOC clone when float mode is active.
+// Sticky anchor that holds the original TOC when float mode is active.
 const TOC_ANCHOR_CLASS = "aps-toc-float-anchor";
 
-// Class added to the cloned TOC so CSS can distinguish it from the original.
-const TOC_CLONE_CLASS = "aps-toc-clone";
+// Class on the invisible placeholder that marks the TOC's original position.
+const TOC_PLACEHOLDER_CLASS = "aps-toc-placeholder";
 
-// Selector that matches only the original TOC, not any injected clone.
-const TOC_ORIGINAL_SELECTOR = `${TOC_SELECTOR}:not(.${TOC_CLONE_CLASS})`;
+// MutationObserver options — stored once so _withObserverPaused can re-observe.
+const OBSERVER_OPTIONS = {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class"],
+};
+
+// Module-level reference to the observer so helpers can pause it during moves.
+let _observer = null;
+
+// ── Observer helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Temporarily disconnect the observer, run fn(), then reconnect.
+ * Prevents our own DOM moves from triggering further re-process cycles.
+ */
+function _withObserverPaused(fn) {
+    if (_observer) _observer.disconnect();
+    try {
+        fn();
+    } finally {
+        if (_observer) _observer.observe(document.body, OBSERVER_OPTIONS);
+    }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Return true if fieldEl contains an embedded TOC (excluding clones). */
+/** Return true if fieldEl contains an embedded TOC. */
 function _hasToc(fieldEl) {
-    return !!fieldEl.querySelector(TOC_ORIGINAL_SELECTOR);
+    return !!fieldEl.querySelector(TOC_SELECTOR);
+}
+
+/**
+ * Restore the TOC element from the floating anchor back to its original
+ * inline position (tracked by a placeholder span).
+ *
+ * Called both at the start of each _processTocField run (ensures the TOC
+ * is always back in the editor before we rebuild the UI) and directly when
+ * deactivating float mode via the button.
+ */
+function _restoreTocToInline(fieldEl) {
+    const anchor = fieldEl.querySelector(`:scope > .${TOC_ANCHOR_CLASS}`);
+    if (!anchor) return;
+    // The TOC lives inside a display:contents context wrapper inside the anchor.
+    const tocEl = anchor.querySelector(TOC_SELECTOR);
+    if (!tocEl) return;
+    const placeholder = fieldEl.querySelector(`.${TOC_PLACEHOLDER_CLASS}`);
+    _withObserverPaused(() => {
+        if (placeholder) {
+            placeholder.parentNode.insertBefore(tocEl, placeholder);
+            placeholder.remove();
+        } else {
+            // Fallback: prepend to the editor element or the field itself.
+            const editorEl =
+                fieldEl.querySelector(".odoo-editor-editable") || fieldEl;
+            editorEl.prepend(tocEl);
+        }
+    });
 }
 
 // ── Per-field processing ─────────────────────────────────────────────────────
 
 /**
  * Ensure fieldEl has exactly one TOC toggle button injected into the shared
- * button wrapper, and a sticky TOC anchor sibling ready for float mode.
- * Safe to call multiple times — removes any stale elements first.
+ * button wrapper, and a sticky TOC anchor ready for float mode.
+ * Safe to call multiple times — restores and rebuilds on each call.
  */
 function _processTocField(fieldEl) {
-    if (!_hasToc(fieldEl)) return;
+    // Always restore the TOC to its inline position before we tear down and
+    // rebuild the UI.  This ensures the editor DOM is consistent during
+    // re-processing (e.g. when Odoo switches between edit/readonly modes).
+    _restoreTocToInline(fieldEl);
 
-    // Remove any previously injected button and anchor (e.g. after DOM refresh).
+    // Remove stale UI from the previous run.
     fieldEl.querySelector(`.${BTN_CLASS}`)?.remove();
     fieldEl.querySelector(`:scope > .${TOC_ANCHOR_CLASS}`)?.remove();
+    fieldEl.querySelector(`.${TOC_PLACEHOLDER_CLASS}`)?.remove();
+
+    if (!_hasToc(fieldEl)) return;
 
     // ── Button wrapper ──────────────────────────────────────────────────────
     // Shared with math_formula_renderer.js.  Created here if not already present.
@@ -93,24 +159,47 @@ function _processTocField(fieldEl) {
     btn.type = "button";
     btn.className = `${BTN_CLASS} btn btn-sm btn-outline-secondary`;
 
-    /** Sync button text/title and TOC anchor content to the current float state. */
+    /**
+     * Sync button label and panel content to the current float state.
+     *
+     * When activating:  move the original TOC element (not a clone) into
+     *   tocAnchor, wrapped in a display:contents div that carries the
+     *   original parent classes (.odoo-editor-editable, .o_field_html) so
+     *   Odoo's ancestor-scoped CSS rules (indentation, hover styles, etc.)
+     *   continue to match.  A hidden placeholder <span> is left in the
+     *   TOC's original position for later restoration.
+     *
+     * When deactivating: move the TOC back to the placeholder position.
+     */
     const syncState = () => {
         const isFloating = fieldEl.getAttribute(TOC_ATTR) === "float";
         if (isFloating) {
             btn.innerHTML = '<i class="fa fa-times" aria-hidden="true"></i> TOC';
             btn.title = "Restore table of contents to inline position";
-            // Populate anchor with a fresh clone of the original TOC.
-            const tocEl = fieldEl.querySelector(TOC_ORIGINAL_SELECTOR);
-            if (tocEl) {
-                tocAnchor.innerHTML = "";
-                const clone = tocEl.cloneNode(true);
-                clone.classList.add(TOC_CLONE_CLASS);
-                tocAnchor.appendChild(clone);
+
+            const tocEl = fieldEl.querySelector(TOC_SELECTOR);
+            if (tocEl && !tocAnchor.contains(tocEl)) {
+                _withObserverPaused(() => {
+                    // Leave a hidden placeholder at the original position.
+                    const placeholder = document.createElement("span");
+                    placeholder.className = TOC_PLACEHOLDER_CLASS;
+                    placeholder.hidden = true;
+                    tocEl.insertAdjacentElement("beforebegin", placeholder);
+
+                    // Wrap in a display:contents element that provides the same
+                    // CSS ancestor context as the original editor parent so that
+                    // Odoo's scoped TOC styles (indentation, hover, etc.) match.
+                    const ctxWrapper = document.createElement("div");
+                    ctxWrapper.className = "odoo-editor-editable o_field_html";
+                    ctxWrapper.style.display = "contents";
+                    ctxWrapper.appendChild(tocEl);
+                    tocAnchor.appendChild(ctxWrapper);
+                });
             }
         } else {
             btn.innerHTML = '<i class="fa fa-list" aria-hidden="true"></i> TOC';
             btn.title = "Float table of contents";
-            tocAnchor.innerHTML = "";
+            _restoreTocToInline(fieldEl);
         }
     };
 
@@ -124,7 +213,8 @@ function _processTocField(fieldEl) {
         syncState();
     });
 
-    // Sync to any pre-existing float state (e.g. field re-processed after save).
+    // Sync to any pre-existing float state (e.g. field re-processed after a
+    // SPA navigation while float was active).
     syncState();
 
     // Prepend so the TOC button appears to the right of any existing buttons
@@ -160,7 +250,29 @@ registry.category("services").add("aps_toc_position_toggle", {
     start() {
         _processContainer(document.body);
 
-        const observer = new MutationObserver((mutations) => {
+        // ── Save guard ────────────────────────────────────────────────────────
+        // If a floating TOC is active when the user saves the form, the
+        // original TOC element is outside odoo-editor-editable and would be
+        // omitted from the serialised content, causing data loss.  Move all
+        // floating TOCs back to inline before Odoo's save handler fires.
+        // The closest() call exits immediately for the vast majority of clicks
+        // (non-save buttons), so the per-click cost is negligible.
+        document.addEventListener(
+            "click",
+            (e) => {
+                if (!e.target.closest(".o_form_button_save, [name='button_save']"))
+                    return;
+                document
+                    .querySelectorAll(`[${TOC_ATTR}="float"]`)
+                    .forEach((fieldEl) => {
+                        fieldEl.removeAttribute(TOC_ATTR);
+                        _restoreTocToInline(fieldEl);
+                    });
+            },
+            true // capture: runs before Odoo's save click handler
+        );
+
+        _observer = new MutationObserver((mutations) => {
             let shouldProcess = false;
 
             for (const mutation of mutations) {
@@ -179,14 +291,15 @@ registry.category("services").add("aps_toc_position_toggle", {
 
                 // ── Case B: New field / TOC elements added (SPA nav, tab switch,
                 //    readonly fields rendered server-side all at once).
-                //    Exclude our own injected clones to avoid a re-process loop.
+                //    Nodes inside .aps-toc-float-anchor are our own moves —
+                //    exclude them to avoid re-process loops.
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                    if (node.closest(`.${TOC_ANCHOR_CLASS}`)) continue;
                     if (
                         node.classList.contains("o_field_html") ||
                         node.classList.contains("o_field_html_readonly") ||
-                        (node.classList.contains("o_embedded_toc_content") &&
-                            !node.classList.contains(TOC_CLONE_CLASS)) ||
+                        node.classList.contains("o_embedded_toc_content") ||
                         (node.querySelector &&
                             node.querySelector(
                                 `.o_field_html ${TOC_SELECTOR}, .o_field_html_readonly ${TOC_SELECTOR}`
@@ -215,13 +328,9 @@ registry.category("services").add("aps_toc_position_toggle", {
             }
         });
 
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ["class"],
-        });
+        _observer.observe(document.body, OBSERVER_OPTIONS);
 
         return {};
     },
 });
+

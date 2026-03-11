@@ -93,8 +93,15 @@
     pointer-events: none;
 }
 
-/* The cloned TOC element placed inside the anchor when float mode is active. */
-.aps-toc-float-anchor > .o_embedded_toc_content {
+/*
+ * The original TOC element moved into the anchor when float mode is active.
+ * It is wrapped in a display:contents div (.odoo-editor-editable .o_field_html)
+ * so all of Odoo's ancestor-scoped CSS rules for the TOC still match after
+ * the element is moved out of the editor DOM.
+ * The `any-depth` descendant combinator (space) is intentional — the element
+ * is one wrapper deep inside .aps-toc-float-anchor.
+ */
+.aps-toc-float-anchor .o_embedded_toc_content {
     pointer-events: all;
     /* Shrink to fit content but cap at 1/4 of the field width. */
     width: max-content;
@@ -110,20 +117,14 @@
 }
 
 /* No wrapping for links/items inside the floating panel; truncate with ellipsis. */
-.aps-toc-float-anchor > .o_embedded_toc_content a,
-.aps-toc-float-anchor > .o_embedded_toc_content li,
-.aps-toc-float-anchor > .o_embedded_toc_content span {
+.aps-toc-float-anchor .o_embedded_toc_content a,
+.aps-toc-float-anchor .o_embedded_toc_content li,
+.aps-toc-float-anchor .o_embedded_toc_content span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     display: block;
     max-width: 100%;
-}
-
-/* Hide the original inline TOC when the floating clone panel is active. */
-.o_field_html[data-aps-toc="float"] .o_embedded_toc_content:not(.aps-toc-clone),
-.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content:not(.aps-toc-clone) {
-    display: none;
 }
 
 /* ── Rendered (view) mode — prevent accidental edits in the rendered field ── */
