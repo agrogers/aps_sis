@@ -26,3 +26,19 @@
     max-width: 1000px !important;
     /* width: 100% !important; */
 }
+
+/* TABLE OF CONTENTS */
+
+.o_embedded_toc_content {
+    line-height: 0.95em;
+    font-weight: 300;
+    
+}
+
+.o_embedded_toc_link_depth_0 {
+    font-size: 1.1em;
+    font-weight: 600 !important;
+}
+.o_embedded_toc_link_depth_2, .o_embedded_toc_link_depth_3, .o_embedded_toc_link_depth_4, .o_embedded_toc_link_depth_5   {
+    font-size: 0.9em;
+}
