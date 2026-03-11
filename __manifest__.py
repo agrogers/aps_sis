@@ -74,6 +74,7 @@
             'aps_sis/static/src/js/badge_decorator_widget.js',
             'aps_sis/static/src/xml/badge_decorator_field.xml',
             'aps_sis/static/src/js/math_formula_renderer.js',
+            'aps_sis/static/src/js/toc_position_toggle.js',
             'aps_sis/static/src/components/**/*.js',
             'aps_sis/static/src/components/**/*.xml',
             'aps_sis/static/src/components/**/*.scss',
