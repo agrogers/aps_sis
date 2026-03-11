@@ -56,6 +56,75 @@
     opacity: 1;
 }
 
+/* ── TOC float-toggle button — same visual style as .aps-math-edit-toggle ── */
+
+.aps-toc-float-toggle {
+    position: sticky;
+    top: 4px;
+    float: right;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    line-height: 1.4;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    margin-left: 4px;
+}
+
+.aps-toc-float-toggle:hover,
+.aps-toc-float-toggle:focus-visible {
+    opacity: 1;
+}
+
+/* ── Floating TOC panel (activated by data-aps-toc="float" on the field) ── */
+
+/* Make the field a positioning context so the absolute TOC is contained. */
+.o_field_html[data-aps-toc="float"],
+.o_field_html_readonly[data-aps-toc="float"] {
+    position: relative;
+}
+
+/*
+ * Float the TOC panel to the top-right, below the sticky control buttons
+ * (approx 34 px tall at top:4px).  Width is capped at 25 % of the field.
+ * z-index 5 keeps it above content but below the z-index:10 buttons.
+ */
+.o_field_html[data-aps-toc="float"] .o_embedded_toc_content,
+.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content {
+    position: absolute;
+    top: 38px;
+    right: 0;
+    width: 25%;
+    z-index: 5;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    padding: 10px 14px;
+    font-size: 0.8em;
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Ensure the panel is readable against any field background */
+    border-radius: 3px;
+}
+
+/* Prevent text wrapping inside the floating TOC; use ellipsis on overflow. */
+.o_field_html[data-aps-toc="float"] .o_embedded_toc_content a,
+.o_field_html[data-aps-toc="float"] .o_embedded_toc_content li,
+.o_field_html[data-aps-toc="float"] .o_embedded_toc_content span,
+.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content a,
+.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content li,
+.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    max-width: 100%;
+}
+
 /* ── Rendered (view) mode — prevent accidental edits in the rendered field ── */
 
 /* Block text-selection inside the editable while formulas are displayed.
