@@ -12,7 +12,20 @@
  *   float            — TOC panel overlays the field content, anchored to the
  *                      top-right corner, below the control buttons.
  *
- * The floating panel is styled via data-aps-toc="float" in math_formula.css.
+ * Layout technique — zero-height sticky wrappers
+ * ───────────────────────────────────────────────
+ * Both the button and the floating TOC panel live inside zero-height
+ * (height:0; overflow:visible) sticky divs.  Because the containers have
+ * zero height they take no space in the document flow, so the field's text
+ * content is never pushed aside by the button.  pointer-events:none on the
+ * container (re-enabled on children) lets clicks pass through to the field.
+ *
+ *   .aps-float-buttons    — sticky top:4px,  z-index:10 — shared with the
+ *                           math-formula edit-toggle button.
+ *   .aps-toc-float-anchor — sticky top:36px, z-index:5  — holds a clone of
+ *                           the TOC element when float mode is active.
+ *
+ * The floating panel is styled via .aps-toc-float-anchor in math_formula.css.
  */
 
 import { registry } from "@web/core/registry";
@@ -26,48 +39,97 @@ const TOC_SELECTOR = ".o_embedded_toc_content";
 // Class added to the injected toggle button so it can be found / removed.
 const BTN_CLASS = "aps-toc-float-toggle";
 
+// Shared button-row wrapper (also used by math_formula_renderer.js).
+const BTNS_WRAPPER_CLASS = "aps-float-buttons";
+
+// Sticky anchor that holds the TOC clone when float mode is active.
+const TOC_ANCHOR_CLASS = "aps-toc-float-anchor";
+
+// Class added to the cloned TOC so CSS can distinguish it from the original.
+const TOC_CLONE_CLASS = "aps-toc-clone";
+
+// Selector that matches only the original TOC, not any injected clone.
+const TOC_ORIGINAL_SELECTOR = `${TOC_SELECTOR}:not(.${TOC_CLONE_CLASS})`;
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Return true if fieldEl contains an embedded TOC. */
+/** Return true if fieldEl contains an embedded TOC (excluding clones). */
 function _hasToc(fieldEl) {
-    return !!fieldEl.querySelector(TOC_SELECTOR);
+    return !!fieldEl.querySelector(TOC_ORIGINAL_SELECTOR);
 }
 
 // ── Per-field processing ─────────────────────────────────────────────────────
 
 /**
- * Ensure fieldEl has exactly one TOC toggle button injected.
- * Safe to call multiple times — removes any stale button first.
+ * Ensure fieldEl has exactly one TOC toggle button injected into the shared
+ * button wrapper, and a sticky TOC anchor sibling ready for float mode.
+ * Safe to call multiple times — removes any stale elements first.
  */
 function _processTocField(fieldEl) {
     if (!_hasToc(fieldEl)) return;
 
-    // Remove any previously injected button (e.g. after DOM refresh).
-    fieldEl.querySelector(`:scope > .${BTN_CLASS}`)?.remove();
+    // Remove any previously injected button and anchor (e.g. after DOM refresh).
+    fieldEl.querySelector(`.${BTN_CLASS}`)?.remove();
+    fieldEl.querySelector(`:scope > .${TOC_ANCHOR_CLASS}`)?.remove();
 
+    // ── Button wrapper ──────────────────────────────────────────────────────
+    // Shared with math_formula_renderer.js.  Created here if not already present.
+    let btnsWrapper = fieldEl.querySelector(`:scope > .${BTNS_WRAPPER_CLASS}`);
+    if (!btnsWrapper) {
+        btnsWrapper = document.createElement("div");
+        btnsWrapper.className = BTNS_WRAPPER_CLASS;
+        fieldEl.prepend(btnsWrapper);
+    }
+
+    // ── TOC sticky anchor ───────────────────────────────────────────────────
+    // Inserted directly after the button wrapper so its sticky top:36px places
+    // the panel just below the button row.
+    const tocAnchor = document.createElement("div");
+    tocAnchor.className = TOC_ANCHOR_CLASS;
+    btnsWrapper.insertAdjacentElement("afterend", tocAnchor);
+
+    // ── Toggle button ───────────────────────────────────────────────────────
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `${BTN_CLASS} btn btn-sm btn-outline-secondary`;
-    btn.title = "Toggle table of contents position";
-    btn.innerHTML = '<i class="fa fa-list" aria-hidden="true"></i> TOC';
+
+    /** Sync button text/title and TOC anchor content to the current float state. */
+    const syncState = () => {
+        const isFloating = fieldEl.getAttribute(TOC_ATTR) === "float";
+        if (isFloating) {
+            btn.innerHTML = '<i class="fa fa-times" aria-hidden="true"></i> TOC';
+            btn.title = "Restore table of contents to inline position";
+            // Populate anchor with a fresh clone of the original TOC.
+            const tocEl = fieldEl.querySelector(TOC_ORIGINAL_SELECTOR);
+            if (tocEl) {
+                tocAnchor.innerHTML = "";
+                const clone = tocEl.cloneNode(true);
+                clone.classList.add(TOC_CLONE_CLASS);
+                tocAnchor.appendChild(clone);
+            }
+        } else {
+            btn.innerHTML = '<i class="fa fa-list" aria-hidden="true"></i> TOC';
+            btn.title = "Float table of contents";
+            tocAnchor.innerHTML = "";
+        }
+    };
 
     btn.addEventListener("click", () => {
         const isFloating = fieldEl.getAttribute(TOC_ATTR) === "float";
         if (isFloating) {
             fieldEl.removeAttribute(TOC_ATTR);
-            btn.innerHTML = '<i class="fa fa-list" aria-hidden="true"></i> TOC';
-            btn.title = "Float table of contents";
         } else {
             fieldEl.setAttribute(TOC_ATTR, "float");
-            btn.innerHTML = '<i class="fa fa-times" aria-hidden="true"></i> TOC';
-            btn.title = "Restore table of contents to inline position";
         }
+        syncState();
     });
 
-    // Prepend so float:right anchors it top-right.  Both this button and the
-    // math-formula edit toggle use float:right; the browser stacks them
-    // horizontally (last-prepended appears leftmost).
-    fieldEl.prepend(btn);
+    // Sync to any pre-existing float state (e.g. field re-processed after save).
+    syncState();
+
+    // Prepend so the TOC button appears to the right of any existing buttons
+    // (flex-direction:row-reverse means first-in-DOM = rightmost visually).
+    btnsWrapper.prepend(btn);
 }
 
 // ── Container scan ────────────────────────────────────────────────────────────
@@ -117,12 +179,14 @@ registry.category("services").add("aps_toc_position_toggle", {
 
                 // ── Case B: New field / TOC elements added (SPA nav, tab switch,
                 //    readonly fields rendered server-side all at once).
+                //    Exclude our own injected clones to avoid a re-process loop.
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
                     if (
                         node.classList.contains("o_field_html") ||
                         node.classList.contains("o_field_html_readonly") ||
-                        node.classList.contains("o_embedded_toc_content") ||
+                        (node.classList.contains("o_embedded_toc_content") &&
+                            !node.classList.contains(TOC_CLONE_CLASS)) ||
                         (node.querySelector &&
                             node.querySelector(
                                 `.o_field_html ${TOC_SELECTOR}, .o_field_html_readonly ${TOC_SELECTOR}`

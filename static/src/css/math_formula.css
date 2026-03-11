@@ -28,15 +28,35 @@
     text-overflow: ellipsis;
 }
 
-/* ── Edit toggle button — floats top-right and stays sticky while scrolling ── */
+/* ── Shared sticky button overlay — wraps all field action buttons ─────────
 
-/* Sticky positioning is relative to the nearest scrolling ancestor (not the
-   nearest positioned ancestor), so no special wrapper is needed. */
-.aps-math-edit-toggle {
+   Zero-height sticky container: height:0 means the row takes no space in
+   the document flow, so text beneath it is never pushed aside.
+   overflow:visible lets the buttons render outside the zero-height box.
+   pointer-events:none passes clicks through to content below; each button
+   re-enables them for itself.                                               */
+
+.aps-float-buttons {
     position: sticky;
     top: 4px;
-    float: right;
+    height: 0;
+    overflow: visible;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    gap: 4px;
     z-index: 10;
+    pointer-events: none;
+}
+
+.aps-float-buttons > * {
+    pointer-events: all;
+}
+
+/* ── Field action buttons (inside .aps-float-buttons) ── */
+
+.aps-math-edit-toggle,
+.aps-toc-float-toggle {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
@@ -45,61 +65,40 @@
     line-height: 1.4;
     opacity: 0.55;
     transition: opacity 0.15s;
-    /* Prevent the button from widening the field */
     white-space: nowrap;
-    /* Small left margin so it doesn't sit flush against the field edge */
-    margin-left: 4px;
 }
 
 .aps-math-edit-toggle:hover,
-.aps-math-edit-toggle:focus-visible {
-    opacity: 1;
-}
-
-/* ── TOC float-toggle button — same visual style as .aps-math-edit-toggle ── */
-
-.aps-toc-float-toggle {
-    position: sticky;
-    top: 4px;
-    float: right;
-    z-index: 10;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.7rem;
-    padding: 1px 6px;
-    line-height: 1.4;
-    opacity: 0.55;
-    transition: opacity 0.15s;
-    white-space: nowrap;
-    margin-left: 4px;
-}
-
+.aps-math-edit-toggle:focus-visible,
 .aps-toc-float-toggle:hover,
 .aps-toc-float-toggle:focus-visible {
     opacity: 1;
 }
 
-/* ── Floating TOC panel (activated by data-aps-toc="float" on the field) ── */
+/* ── Sticky anchor for the floating TOC panel ───────────────────────────────
 
-/* Make the field a positioning context so the absolute TOC is contained. */
-.o_field_html[data-aps-toc="float"],
-.o_field_html_readonly[data-aps-toc="float"] {
-    position: relative;
+   Same zero-height technique as .aps-float-buttons, placed just below the
+   button row (top:36px ≈ button-row top:4px + ~32px button height).
+   flex row-reverse right-aligns the panel without using float.             */
+
+.aps-toc-float-anchor {
+    position: sticky;
+    top: 36px;
+    height: 0;
+    overflow: visible;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    z-index: 5;
+    pointer-events: none;
 }
 
-/*
- * Float the TOC panel to the top-right, below the sticky control buttons
- * (approx 34 px tall at top:4px).  Width is capped at 25 % of the field.
- * z-index 5 keeps it above content but below the z-index:10 buttons.
- */
-.o_field_html[data-aps-toc="float"] .o_embedded_toc_content,
-.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content {
-    position: absolute;
-    top: 38px;
-    right: 0;
-    width: 25%;
-    z-index: 5;
+/* The cloned TOC element placed inside the anchor when float mode is active. */
+.aps-toc-float-anchor > .o_embedded_toc_content {
+    pointer-events: all;
+    /* Shrink to fit content but cap at 1/4 of the field width. */
+    width: max-content;
+    max-width: 25%;
     background: #fff;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
     padding: 10px 14px;
@@ -107,22 +106,24 @@
     max-height: 60vh;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Ensure the panel is readable against any field background */
     border-radius: 3px;
 }
 
-/* Prevent text wrapping inside the floating TOC; use ellipsis on overflow. */
-.o_field_html[data-aps-toc="float"] .o_embedded_toc_content a,
-.o_field_html[data-aps-toc="float"] .o_embedded_toc_content li,
-.o_field_html[data-aps-toc="float"] .o_embedded_toc_content span,
-.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content a,
-.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content li,
-.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content span {
+/* No wrapping for links/items inside the floating panel; truncate with ellipsis. */
+.aps-toc-float-anchor > .o_embedded_toc_content a,
+.aps-toc-float-anchor > .o_embedded_toc_content li,
+.aps-toc-float-anchor > .o_embedded_toc_content span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     display: block;
     max-width: 100%;
+}
+
+/* Hide the original inline TOC when the floating clone panel is active. */
+.o_field_html[data-aps-toc="float"] .o_embedded_toc_content:not(.aps-toc-clone),
+.o_field_html_readonly[data-aps-toc="float"] .o_embedded_toc_content:not(.aps-toc-clone) {
+    display: none;
 }
 
 /* ── Rendered (view) mode — prevent accidental edits in the rendered field ── */
