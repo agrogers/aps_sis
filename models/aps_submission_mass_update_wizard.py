@@ -58,6 +58,8 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
         ('skipped', 'Skipped'),
         ], string='Value',
         )
+    update_subjects = fields.Boolean(string='Subjects')
+    subjects_value = fields.Many2many('op.subject', 'submission_mass_update_wizard_subject_rel', 'wizard_id', 'subject_id', string='Value')
     update_question = fields.Boolean(string='Question')
     question_value = fields.Html(string='Value')
     update_answer = fields.Boolean(string='Answer')
@@ -150,6 +152,9 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
 
         if self.update_notification_state:
             updates['notification_state'] = self.notification_state_value
+
+        if self.update_subjects:
+            updates['subjects'] = [(6, 0, self.subjects_value.ids)]
 
         if self.update_question:
             updates['question'] = self.question_value
