@@ -61,7 +61,7 @@
                             invisible="state != 'assigned'"/>
                     <widget name="web_ribbon" title="Reassigned" bg_color="text-bg-secondary"  
                             invisible="state != 'reassigned'"/>
-                    <button name="action_create_submission" string="Create Submission" type="object" class="btn-secondary" context="{'default_task_id': id, 'default_assigned_by': uid}"/>
+                    <button name="action_create_submission" string="Create Submission" type="object" class="btn-secondary" context="{'default_task_id': id, 'default_assigned_by': uid}" groups="aps_sis.group_aps_teacher"/>
                 </header>
                 <sheet>
                     <group col="2">
@@ -116,6 +116,19 @@
                     </notebook>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- Student task form view: inherits teacher form, but opens student submission form on click -->
+    <record id="view_aps_resource_task_form_for_students" model="ir.ui.view">
+        <field name="name">aps.resource.task.form.for.students</field>
+        <field name="model">aps.resource.task</field>
+        <field name="inherit_id" ref="view_aps_resource_task_form"/>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_student'))]"/>
+        <field name="arch" type="xml">
+            <field name="submission_ids" position="attributes">
+                <attribute name="context">{'form_view_ref': 'aps_sis.view_aps_resource_submission_form_for_students'}</attribute>
+            </field>
         </field>
     </record>
 
