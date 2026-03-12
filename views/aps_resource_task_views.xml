@@ -88,7 +88,7 @@
                     </group>
                     <notebook>
                         <page string="Submissions">
-                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}">
+                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}" groups="aps_sis.group_aps_teacher">
                                 <list default_order="date_submitted desc">
                                     <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
                                     <field name="submission_name" optional="show"/>
@@ -112,23 +112,28 @@
                                             title="Open in full view"/>
                                 </list>
                             </field>
+                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form_for_students'}" groups="aps_sis.group_aps_student">
+                                <list default_order="date_submitted desc">
+                                    <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
+                                    <field name="submission_name" optional="show"/>
+                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
+                                    <field name="score" optional="hide"/>
+                                    <field name="date_submitted" widget="datetime" optional="hide"/>
+                                    <field name="date_completed" widget="datetime" optional="hide"/>
+                                    <field name="result_percent"  widget="percentpie_ranged" optional="hide"/>
+                                    <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
+                                    <!-- This button opens the full form view in the main area -->
+                                    <button string="Open" 
+                                            type="object" 
+                                            name="get_formview_action" 
+                                            icon="fa-external-link" 
+                                            title="Open in full view"/>
+                                </list>
+                            </field>
                         </page>
                     </notebook>
                 </sheet>
             </form>
-        </field>
-    </record>
-
-    <!-- Student task form view: inherits teacher form, but opens student submission form on click -->
-    <record id="view_aps_resource_task_form_for_students" model="ir.ui.view">
-        <field name="name">aps.resource.task.form.for.students</field>
-        <field name="model">aps.resource.task</field>
-        <field name="inherit_id" ref="view_aps_resource_task_form"/>
-        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_student'))]"/>
-        <field name="arch" type="xml">
-            <field name="submission_ids" position="attributes">
-                <attribute name="context">{'form_view_ref': 'aps_sis.view_aps_resource_submission_form_for_students'}</attribute>
-            </field>
         </field>
     </record>
 
