@@ -322,8 +322,8 @@ function _processEditableField(fieldEl, editorEl) {
         if (hasFocus) return;
     }
 
-    // Remove any previously injected toggle button.
-    fieldEl.querySelector(":scope > .aps-math-edit-toggle")?.remove();
+    // Remove any previously injected toggle button (may be inside the wrapper).
+    fieldEl.querySelector(".aps-math-edit-toggle")?.remove();
 
     // Restore raw formula text nodes if we previously injected rendered spans,
     // so the content we're about to evaluate is the unmodified LaTeX source.
@@ -356,7 +356,11 @@ function _processEditableField(fieldEl, editorEl) {
     // never fired and Odoo's Wysiwyg toolbar (o-we-toolbar) never appears.
     editorEl.setAttribute("contenteditable", "false");
 
-    // ── Toggle button (floats top-right, zero extra form space) ─────────────
+    // ── Toggle button (inside shared zero-height sticky wrapper) ─────────────
+    // The .aps-float-buttons wrapper uses height:0; overflow:visible so it
+    // takes no space in the document flow — the button overlays the content
+    // without pushing text aside.  Created here if toc_position_toggle.js
+    // hasn't run yet; the TOC service will reuse the same wrapper.
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "aps-math-edit-toggle btn btn-sm btn-outline-secondary";
@@ -387,11 +391,17 @@ function _processEditableField(fieldEl, editorEl) {
         }
     });
 
-    // Prepend the button so float:right anchors it at the top of the field.
-    // position:sticky then keeps it visible while scrolling down.
-    // (editorEl may not be a direct child of fieldEl, so insertBefore(btn, editorEl)
-    // would throw a NotFoundError — prepend is always safe.)
-    fieldEl.prepend(btn);
+    // Put the button in the shared wrapper (created by toc_position_toggle.js
+    // if that service ran first, otherwise create it now).
+    // Prepend the button inside the wrapper so it appears to the left of any
+    // previously-added buttons (flex-direction:row-reverse reverses visual order).
+    let btnsWrapper = fieldEl.querySelector(":scope > .aps-float-buttons");
+    if (!btnsWrapper) {
+        btnsWrapper = document.createElement("div");
+        btnsWrapper.className = "aps-float-buttons";
+        fieldEl.prepend(btnsWrapper);
+    }
+    btnsWrapper.prepend(btn);
 }
 
 // ── Container processing ─────────────────────────────────────────────────────
