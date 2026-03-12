@@ -61,7 +61,7 @@
                             invisible="state != 'assigned'"/>
                     <widget name="web_ribbon" title="Reassigned" bg_color="text-bg-secondary"  
                             invisible="state != 'reassigned'"/>
-                    <button name="action_create_submission" string="Create Submission" type="object" class="btn-secondary" context="{'default_task_id': id, 'default_assigned_by': uid}"/>
+                    <button name="action_create_submission" string="Create Submission" type="object" class="btn-secondary" context="{'default_task_id': id, 'default_assigned_by': uid}" groups="aps_sis.group_aps_teacher"/>
                 </header>
                 <sheet>
                     <group col="2">
@@ -88,7 +88,7 @@
                     </group>
                     <notebook>
                         <page string="Submissions">
-                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}">
+                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}" groups="aps_sis.group_aps_teacher">
                                 <list default_order="date_submitted desc">
                                     <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
                                     <field name="submission_name" optional="show"/>
@@ -103,6 +103,24 @@
                                     <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                                    <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
+                                    <!-- This button opens the full form view in the main area -->
+                                    <button string="Open" 
+                                            type="object" 
+                                            name="get_formview_action" 
+                                            icon="fa-external-link" 
+                                            title="Open in full view"/>
+                                </list>
+                            </field>
+                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form_for_students'}" groups="aps_sis.group_aps_student">
+                                <list default_order="date_submitted desc">
+                                    <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
+                                    <field name="submission_name" optional="show"/>
+                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
+                                    <field name="score" optional="hide"/>
+                                    <field name="date_submitted" widget="datetime" optional="hide"/>
+                                    <field name="date_completed" widget="datetime" optional="hide"/>
+                                    <field name="result_percent"  widget="percentpie_ranged" optional="hide"/>
                                     <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
                                     <!-- This button opens the full form view in the main area -->
                                     <button string="Open" 
