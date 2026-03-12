@@ -182,7 +182,7 @@
                             <group string="Share" invisible="not id" groups="aps_sis.group_aps_teacher">
                                 <label for="share_url" string="Share URL"/>
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <field name="share_url" widget="share_url" nolabel="1" class="flex-grow-1"/>
+                                    <field name="share_url" widget="CopyClipboardChar" nolabel="1" class="flex-grow-1"/>
                                     <button name="action_generate_share_token" type="object"
                                             string="Regenerate URL" icon="fa-refresh"
                                             class="btn btn-sm btn-outline-warning"

@@ -42,6 +42,10 @@
     <template id="resource_share_page" name="Resource Share Page">
         <t t-call="portal.portal_layout">
             <t t-set="additional_title" t-value="resource.name or resource.display_name"/>
+            <!-- Inject KaTeX CSS into the page <head> -->
+            <t t-set="head">
+                <link rel="stylesheet" t-att-href="'/aps_sis/static/src/lib/katex/katex.min.css'"/>
+            </t>
             <div class="o_portal_wrap">
                 <div class="container py-5">
                     <div class="row justify-content-center">
@@ -50,7 +54,7 @@
                             <!-- Title card -->
                             <div class="card shadow-sm mb-4">
                                 <div class="card-body p-4">
-                                    <h1 class="h2 mb-1 fw-bold" t-esc="resource.name or resource.display_name"/>
+                                    <h1 class="aps-share-h1 mb-1 fw-bold" t-esc="resource.name or resource.display_name"/>
                                     <t t-if="resource.display_name and resource.name and resource.display_name != resource.name">
                                         <p class="text-muted small mb-0" t-esc="resource.display_name"/>
                                     </t>
@@ -72,7 +76,7 @@
                                         <h5 class="mb-0 aps-card-header-title">Notes</h5>
                                     </div>
                                     <div class="card-body p-4">
-                                        <div class="aps-notes-content" t-out="resource.notes"/>
+                                        <div class="aps-notes-content" id="aps-notes-content" t-out="notes_html"/>
                                     </div>
                                 </div>
                             </t>
@@ -90,14 +94,57 @@
                     </div>
                 </div>
             </div>
+
+            <!-- KaTeX JS (loaded at end of body for performance) -->
+            <script t-att-src="'/aps_sis/static/src/lib/katex/katex.min.js'"><!-- --></script>
+            <script t-att-src="'/aps_sis/static/src/lib/katex/auto-render.min.js'"><!-- --></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var el = document.getElementById('aps-notes-content');
+                    if (el &amp;&amp; window.renderMathInElement) {
+                        renderMathInElement(el, {
+                            delimiters: [
+                                { left: '$$', right: '$$', display: true },
+                                { left: '$',  right: '$',  display: false },
+                                { left: '\\(', right: '\\)', display: false },
+                                { left: '\\[', right: '\\]', display: true }
+                            ],
+                            throwOnError: false
+                        });
+                    }
+                });
+            </script>
+
             <style>
+                /* ── Heading scale (notes are often authored with large headings) ── */
+                .aps-share-h1 { font-size: 1.6rem; }
+                .aps-notes-content h1 { font-size: 1.4rem; }
+                .aps-notes-content h2 { font-size: 1.25rem; }
+                .aps-notes-content h3 { font-size: 1.1rem; }
+                .aps-notes-content h4,
+                .aps-notes-content h5,
+                .aps-notes-content h6 { font-size: 1rem; }
+
+                /* ── Subjects ── */
                 .aps-subject-badge { font-size: 0.85rem; }
+
+                /* ── Card section labels ── */
                 .aps-card-header-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
                                          letter-spacing: 0.08em; color: #6c757d; }
-                .aps-notes-content img { max-width: 100%; height: auto; }
+
+                /* ── Notes content general ── */
+                .aps-notes-content img  { max-width: 100%; height: auto; }
                 .aps-notes-content table { width: 100%; border-collapse: collapse; }
                 .aps-notes-content table td,
                 .aps-notes-content table th { border: 1px solid #dee2e6; padding: 0.4rem 0.6rem; }
+
+                /* ── Generated TOC ── */
+                .aps-share-toc-list a { text-decoration: none; color: #495057; font-size: 0.9rem; }
+                .aps-share-toc-list a:hover { color: #0d6efd; text-decoration: underline; }
+                .aps-share-toc-list li { padding-top: 2px; padding-bottom: 2px; }
+
+                /* ── KaTeX display math ── */
+                .aps-notes-content .katex-display { overflow-x: auto; overflow-y: hidden; }
             </style>
         </t>
     </template>
