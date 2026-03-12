@@ -38,4 +38,114 @@
             </div>
         </t>
     </template>
+
+    <template id="resource_share_page" name="Resource Share Page">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title" t-value="resource.name or resource.display_name"/>
+            <!-- Inject KaTeX CSS into the page <head> -->
+            <t t-set="head">
+                <link rel="stylesheet" t-att-href="'/aps_sis/static/src/lib/katex/katex.min.css'"/>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-9 col-xl-8">
+
+                            <!-- Title card -->
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-body p-4">
+                                    <h1 class="aps-share-h1 mb-1 fw-bold" t-esc="resource.name or resource.display_name"/>
+                                    <t t-if="resource.display_name and resource.name and resource.display_name != resource.name">
+                                        <p class="text-muted small mb-0" t-esc="resource.display_name"/>
+                                    </t>
+                                    <t t-if="resource.subjects">
+                                        <div class="mt-3">
+                                            <t t-foreach="resource.subjects" t-as="subject">
+                                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 me-1 mb-1 px-3 py-2 aps-subject-badge"
+                                                      t-esc="subject.name"/>
+                                            </t>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+
+                            <!-- Notes card -->
+                            <t t-if="resource.has_notes in ('yes', 'use_parent') and resource.notes">
+                                <div class="card shadow-sm mb-4">
+                                    <div class="card-header bg-light py-2 px-4">
+                                        <h5 class="mb-0 aps-card-header-title">Notes</h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="aps-notes-content" id="aps-notes-content" t-out="notes_html"/>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <!-- Empty state -->
+                            <t t-if="resource.has_notes not in ('yes', 'use_parent') and not resource.subjects">
+                                <div class="alert alert-light text-muted text-center py-4">
+                                    No additional details are available for this resource.
+                                </div>
+                            </t>
+
+                            <p class="text-center text-muted small mt-4">Shared via APEX</p>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KaTeX JS (loaded at end of body for performance) -->
+            <script t-att-src="'/aps_sis/static/src/lib/katex/katex.min.js'"><!-- --></script>
+            <script t-att-src="'/aps_sis/static/src/lib/katex/auto-render.min.js'"><!-- --></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var el = document.getElementById('aps-notes-content');
+                    if (el &amp;&amp; window.renderMathInElement) {
+                        renderMathInElement(el, {
+                            delimiters: [
+                                { left: '$$', right: '$$', display: true },
+                                { left: '$',  right: '$',  display: false },
+                                { left: '\\(', right: '\\)', display: false },
+                                { left: '\\[', right: '\\]', display: true }
+                            ],
+                            throwOnError: false
+                        });
+                    }
+                });
+            </script>
+
+            <style>
+                /* ── Heading scale (notes are often authored with large headings) ── */
+                .aps-share-h1 { font-size: 1.6rem; }
+                .aps-notes-content h1 { font-size: 1.4rem; }
+                .aps-notes-content h2 { font-size: 1.25rem; }
+                .aps-notes-content h3 { font-size: 1.1rem; }
+                .aps-notes-content h4,
+                .aps-notes-content h5,
+                .aps-notes-content h6 { font-size: 1rem; }
+
+                /* ── Subjects ── */
+                .aps-subject-badge { font-size: 0.85rem; }
+
+                /* ── Card section labels ── */
+                .aps-card-header-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+                                         letter-spacing: 0.08em; color: #6c757d; }
+
+                /* ── Notes content general ── */
+                .aps-notes-content img  { max-width: 100%; height: auto; }
+                .aps-notes-content table { width: 100%; border-collapse: collapse; }
+                .aps-notes-content table td,
+                .aps-notes-content table th { border: 1px solid #dee2e6; padding: 0.4rem 0.6rem; }
+
+                /* ── Generated TOC ── */
+                .aps-share-toc-list a { text-decoration: none; color: #495057; font-size: 0.9rem; }
+                .aps-share-toc-list a:hover { color: #0d6efd; text-decoration: underline; }
+                .aps-share-toc-list li { padding-top: 2px; padding-bottom: 2px; }
+
+                /* ── KaTeX display math ── */
+                .aps-notes-content .katex-display { overflow-x: auto; overflow-y: hidden; }
+            </style>
+        </t>
+    </template>
 </odoo>

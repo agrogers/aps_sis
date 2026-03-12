@@ -94,3 +94,61 @@ class TestAPSResource(TransactionCase):
         bc = root.display_name_breadcrumb
         # A single-entry breadcrumb means parentId is falsy in the widget
         self.assertEqual(len(bc), 1, "Root breadcrumb must have exactly one entry")
+
+    # --- Share URL tests ---
+
+    def test_share_token_auto_generated_on_create(self):
+        """A new resource must have a share_token set automatically."""
+        resource = self.env['aps.resources'].create({'name': 'Shareable Resource'})
+        self.assertTrue(resource.share_token, "share_token must be set on create")
+
+    def test_share_token_is_unique(self):
+        """Each new resource receives a distinct share_token."""
+        r1 = self.env['aps.resources'].create({'name': 'Resource 1'})
+        r2 = self.env['aps.resources'].create({'name': 'Resource 2'})
+        self.assertNotEqual(r1.share_token, r2.share_token)
+
+    def test_share_url_contains_token(self):
+        """share_url includes the share_token as a path component."""
+        resource = self.env['aps.resources'].create({'name': 'Shared'})
+        self.assertIn(resource.share_token, resource.share_url)
+        self.assertIn('/resource/share/', resource.share_url)
+
+    def test_share_token_not_copied_on_duplicate(self):
+        """Duplicating a resource must generate a new, distinct share_token."""
+        original = self.env['aps.resources'].create({'name': 'Original'})
+        copy = original.copy()
+        self.assertTrue(copy.share_token, "Copied resource must have a share_token")
+        self.assertNotEqual(original.share_token, copy.share_token)
+
+    def test_action_generate_share_token_changes_token(self):
+        """action_generate_share_token must replace the token with a new UUID."""
+        resource = self.env['aps.resources'].create({'name': 'Regen Test'})
+        old_token = resource.share_token
+        resource.action_generate_share_token()
+        self.assertNotEqual(resource.share_token, old_token)
+        self.assertTrue(resource.share_token)
+
+    def test_action_generate_share_token_updates_share_url(self):
+        """After regenerating the token the share_url reflects the new token."""
+        resource = self.env['aps.resources'].create({'name': 'URL Regen'})
+        old_url = resource.share_url
+        resource.action_generate_share_token()
+        self.assertNotEqual(resource.share_url, old_url)
+        self.assertIn(resource.share_token, resource.share_url)
+
+    def test_share_token_lookup(self):
+        """The controller domain [('share_token', '=', token)] resolves correctly."""
+        resource = self.env['aps.resources'].create({'name': 'Lookup Test'})
+        found = self.env['aps.resources'].sudo().search(
+            [('share_token', '=', resource.share_token)], limit=1
+        )
+        self.assertEqual(found, resource)
+
+    def test_invalid_share_token_returns_no_record(self):
+        """An unknown token must not match any resource."""
+        found = self.env['aps.resources'].sudo().search(
+            [('share_token', '=', 'invalid-token-that-does-not-exist')], limit=1
+        )
+        self.assertFalse(found)
+

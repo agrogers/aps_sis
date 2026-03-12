@@ -1,6 +1,6 @@
 {
 	'name': 'APEX - Academic Progress and Excellence',
-	'version': '18.0.1.0.35',
+	'version': '18.0.1.0.36',
 	'icon': '/aps_sis/static/description/icon.png',
 	'category': 'Tools',
 	'summary': 'Allow the assigning and tracking of academic tasks such as homework, exams etc.',
@@ -81,6 +81,7 @@
             'aps_sis/static/src/js/image_result_widget.js',
             'aps_sis/static/src/xml/image_result_widget.xml',
             'aps_sis/static/src/css/image_result_widget.css',
+            'aps_sis/static/src/js/share_url_widget.js',
 		],
 	},
 	'installable': True,

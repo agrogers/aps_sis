@@ -1,4 +1,5 @@
 import re
+import uuid
 import base64
 import requests
 from html.parser import HTMLParser
@@ -246,6 +247,19 @@ class APSResource(models.Model):
         store=True,
         help='Stored list of [{id, label}] entries representing the ancestor chain for the breadcrumb pills widget.',
     )
+    share_token = fields.Char(
+        string='Share Token',
+        copy=False,
+        readonly=True,
+        index=True,
+        default=lambda self: str(uuid.uuid4()),
+        help='Unique token used to generate a public share URL for this resource.',
+    )
+    share_url = fields.Char(
+        string='Share URL',
+        compute='_compute_share_url',
+        help='Public URL to share this resource with anyone.',
+    )
 # region Computed Fields and Overrides
     @api.depends('subjects')
     def _compute_subject_icons(self):
@@ -256,6 +270,19 @@ class APSResource(models.Model):
             else:
                 record.subject_icons = False
 
+    @api.depends('share_token')
+    def _compute_share_url(self):
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
+        for rec in self:
+            if rec.share_token:
+                rec.share_url = f'{base_url}/resource/share/{rec.share_token}'
+            else:
+                rec.share_url = False
+
+    def action_generate_share_token(self):
+        """(Re)generate the share token, invalidating any previously shared links."""
+        self.ensure_one()
+        self.share_token = str(uuid.uuid4())
 
     @api.depends('type_id', 'type_id.icon')
     def _compute_type_icon(self):
