@@ -71,6 +71,9 @@
                                     <group colspan="4"><field name="update_notification_state" nolabel="1" widget="boolean_toggle"/><label for="update_notification_state" class="mb-0">Notification State</label></group>
                                     <group colspan="8"><field name="notification_state_value" invisible="not update_notification_state"/></group>
 
+                                    <group colspan="4"><field name="update_subjects" nolabel="1" widget="boolean_toggle"/><label for="update_subjects" class="mb-0">Subjects</label></group>
+                                    <group colspan="8"><field name="subjects_value" widget="many2many_tags" invisible="not update_subjects"/></group>
+
                                     <group colspan="4">
                                         <field name="update_question" nolabel="1" widget="boolean_toggle"/>
                                         <label for="update_question" class="mb-0">Question</label>
