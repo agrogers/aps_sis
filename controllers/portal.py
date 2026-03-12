@@ -36,3 +36,13 @@ class APSPortal(CustomerPortal):
             'default_url': '/my/submissions',
         })
         return http.request.render('aps_sis.portal_my_submissions', values)
+
+    @http.route('/resource/share/<string:token>', type='http', auth='public', website=True)
+    def resource_share(self, token, **kw):
+        resource = http.request.env['aps.resources'].sudo().search(
+            [('share_token', '=', token)], limit=1
+        )
+        if not resource:
+            return http.request.not_found()
+        return http.request.render('aps_sis.resource_share_page', {'resource': resource})
+

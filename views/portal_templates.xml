@@ -38,4 +38,60 @@
             </div>
         </t>
     </template>
+
+    <template id="resource_share_page" name="Resource Share Page">
+        <t t-call="web.layout">
+            <t t-set="head">
+                <meta name="robots" content="noindex"/>
+                <style>
+                    .aps-share-page { max-width: 860px; margin: 0 auto; padding: 2rem 1rem; }
+                    .aps-share-header { border-bottom: 2px solid #dee2e6; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+                    .aps-share-section { margin-bottom: 2rem; }
+                    .aps-share-section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+                                               letter-spacing: 0.08em; color: #6c757d; margin-bottom: 0.5rem; }
+                    .aps-subject-badge { display: inline-block; background: #e9ecef; color: #495057;
+                                         border-radius: 1rem; padding: 0.25rem 0.75rem;
+                                         font-size: 0.85rem; margin: 0.2rem; }
+                    .aps-notes-content img { max-width: 100%; height: auto; }
+                    .aps-notes-content table { width: 100%; border-collapse: collapse; }
+                    .aps-notes-content table td, .aps-notes-content table th {
+                        border: 1px solid #dee2e6; padding: 0.4rem 0.6rem; }
+                    .aps-share-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #dee2e6;
+                                        font-size: 0.8rem; color: #6c757d; text-align: center; }
+                </style>
+            </t>
+            <div class="aps-share-page">
+                <div class="aps-share-header">
+                    <h1 class="mb-1" t-esc="resource.name or resource.display_name"/>
+                    <t t-if="resource.display_name and resource.name and resource.display_name != resource.name">
+                        <p class="text-muted mb-0" style="font-size:0.9rem;" t-esc="resource.display_name"/>
+                    </t>
+                </div>
+
+                <t t-if="resource.subjects">
+                    <div class="aps-share-section">
+                        <div class="aps-share-section-title">Subjects</div>
+                        <t t-foreach="resource.subjects" t-as="subject">
+                            <span class="aps-subject-badge" t-esc="subject.name"/>
+                        </t>
+                    </div>
+                </t>
+
+                <t t-if="resource.has_notes in ('yes', 'use_parent') and resource.notes">
+                    <div class="aps-share-section">
+                        <div class="aps-share-section-title">Notes</div>
+                        <div class="aps-notes-content" t-out="resource.notes"/>
+                    </div>
+                </t>
+
+                <t t-if="resource.has_notes == 'no' and not resource.subjects">
+                    <p class="text-muted">No additional details are available for this resource.</p>
+                </t>
+
+                <div class="aps-share-footer">
+                    Shared via APEX
+                </div>
+            </div>
+        </t>
+    </template>
 </odoo>
