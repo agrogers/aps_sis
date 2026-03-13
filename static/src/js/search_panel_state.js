@@ -1,6 +1,6 @@
 import { patch } from "@web/core/utils/patch";
-import { SearchPanel } from "@web/search/search_panel/search_panel";
-import { onMounted, onPatched } from "@odoo/owl";
+import { SearchModel } from "@web/search/search_model";
+import { user } from "@web/core/user";
 
 const STORAGE_PREFIX = "aps_searchpanel";
 
@@ -11,6 +11,9 @@ function getStorageKey(resModel, userId) {
 /**
  * Collect the current active state of each section, keyed by fieldName so the
  * state survives across page loads (section map IDs are re-generated each time).
+ *
+ * For filters, the value IDs are the many2many record IDs which are stable.
+ * For categories, activeValueId is the many2one record ID which is also stable.
  */
 function collectSectionState(sections) {
     const state = {};
@@ -35,79 +38,109 @@ function collectSectionState(sections) {
 }
 
 /**
- * Patch Odoo's SearchPanel to persist the selected category/filter values in
- * localStorage so that the panel always opens with the user's last-used state.
+ * Patch Odoo 18's SearchModel to persist search panel filter/category
+ * selections in localStorage so that panels always open with the user's
+ * last-used state.
  *
- * The storage key is `aps_searchpanel:<userId>:<resModel>`, giving each user
- * their own independent state for every model that has a search panel.
+ * Storage key: `aps_searchpanel:<userId>:<resModel>` — per-user, per-model.
+ *
+ * We patch SearchModel (not SearchPanel) to avoid any OWL lifecycle-hook
+ * registration issues that can occur when patching OWL component prototypes.
+ * All patched methods are plain JavaScript, so the patch is always reliable.
  */
-patch(SearchPanel.prototype, {
-    setup() {
-        super.setup();
-
-        const resModel = this.env.searchModel?.resModel;
-        const userId = this.env.services.user?.userId;
-        if (!resModel || !userId) {
-            console.debug(
-                "[search_panel_state] Skipping state persistence: resModel or userId unavailable."
-            );
-            return;
+patch(SearchModel.prototype, {
+    /**
+     * Called after categories and filters have their values fetched.
+     * Restore the saved selection on the FIRST fetch only — subsequent
+     * re-fetches happen when the domain changes and we must not override
+     * the user's current live selection.
+     */
+    async _fetchSections(categoriesToLoad, filtersToLoad) {
+        await super._fetchSections(categoriesToLoad, filtersToLoad);
+        if (!this._apsStateRestored) {
+            this._apsStateRestored = true;
+            this._apsRestoreSearchPanelState();
         }
+    },
 
-        const storageKey = getStorageKey(resModel, userId);
+    /** Save state whenever a category value is toggled by the user. */
+    toggleCategoryValue(sectionId, valueId) {
+        super.toggleCategoryValue(sectionId, valueId);
+        if (!this._apsRestoringState) {
+            this._apsSaveSearchPanelState();
+        }
+    },
 
-        // Track the last persisted snapshot to avoid redundant localStorage writes.
-        let _lastSavedSnapshot = null;
+    /** Save state whenever filter values are toggled by the user. */
+    toggleFilterValues(sectionId, valueIds, forceTo = null) {
+        super.toggleFilterValues(sectionId, valueIds, forceTo);
+        if (!this._apsRestoringState) {
+            this._apsSaveSearchPanelState();
+        }
+    },
 
-        // After the initial render the sections are populated — restore saved state.
-        onMounted(() => {
+    /** Save state whenever sections are cleared by the user. */
+    clearSections(sectionIds) {
+        super.clearSections(sectionIds);
+        if (!this._apsRestoringState) {
+            this._apsSaveSearchPanelState();
+        }
+    },
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    _apsSaveSearchPanelState() {
+        try {
+            if (!this.sections?.size) return;
+            const userId = user.userId;
+            const resModel = this.resModel;
+            if (!resModel || !userId) return;
+            const state = collectSectionState(this.sections);
+            localStorage.setItem(getStorageKey(resModel, userId), JSON.stringify(state));
+        } catch (err) {
+            console.debug("[search_panel_state] Failed to save state:", err);
+        }
+    },
+
+    _apsRestoreSearchPanelState() {
+        try {
+            if (!this.sections?.size) return;
+            const userId = user.userId;
+            const resModel = this.resModel;
+            if (!resModel || !userId) return;
+            const saved = localStorage.getItem(getStorageKey(resModel, userId));
+            if (!saved) return;
+            const savedState = JSON.parse(saved);
+            if (!savedState) return;
+
+            // Directly mutate section state so we trigger _notify() only once
+            // (via the normal flow after _fetchSections resolves), rather than
+            // once per toggled value.
+            this._apsRestoringState = true;
             try {
-                const saved = localStorage.getItem(storageKey);
-                if (!saved) return;
-                const savedState = JSON.parse(saved);
-                if (!savedState || !this.model?.sections?.size) return;
-
-                for (const [sectionId, section] of this.model.sections) {
-                    const sectionSaved = savedState[section.fieldName];
-                    if (!sectionSaved || sectionSaved.type !== section.type) continue;
-
+                for (const [, section] of this.sections) {
+                    const saved = savedState[section.fieldName];
+                    if (!saved || saved.type !== section.type) continue;
                     if (section.type === "category") {
-                        const valId = sectionSaved.activeValueId;
-                        if (
-                            valId &&
-                            valId !== section.activeValueId &&
-                            section.values?.has(valId)
-                        ) {
-                            this.model.toggleSearchPanelSectionValue(sectionId, valId);
+                        const valId = saved.activeValueId;
+                        if (valId && section.values?.has(valId)) {
+                            section.activeValueId = valId;
                         }
                     } else if (section.type === "filter") {
-                        for (const vId of sectionSaved.checkedIds || []) {
-                            if (
-                                section.values?.has(vId) &&
-                                !section.values.get(vId).checked
-                            ) {
-                                this.model.toggleSearchPanelSectionValue(sectionId, vId);
-                            }
+                        for (const vId of saved.checkedIds || []) {
+                            const value = section.values?.get(vId);
+                            if (value) value.checked = true;
                         }
                     }
                 }
-            } catch (err) {
-                console.debug("[search_panel_state] Failed to restore state:", err);
+            } finally {
+                this._apsRestoringState = false;
             }
-        });
-
-        // After each re-render save the current state only when it has changed.
-        onPatched(() => {
-            try {
-                if (!this.model?.sections?.size) return;
-                const state = collectSectionState(this.model.sections);
-                const snapshot = JSON.stringify(state);
-                if (snapshot === _lastSavedSnapshot) return;
-                _lastSavedSnapshot = snapshot;
-                localStorage.setItem(storageKey, snapshot);
-            } catch (err) {
-                console.debug("[search_panel_state] Failed to save state:", err);
-            }
-        });
+        } catch (err) {
+            console.debug("[search_panel_state] Failed to restore state:", err);
+        }
     },
 });
+
