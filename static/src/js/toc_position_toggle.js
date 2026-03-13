@@ -89,6 +89,10 @@ function _processTocField(fieldEl) {
     });
 
     // Sync to any pre-existing float state (e.g. after SPA navigation).
+    // Default to floating if no explicit mode has been set yet.
+    if (!fieldEl.hasAttribute(TOC_ATTR)) {
+        fieldEl.setAttribute(TOC_ATTR, "float");
+    }
     syncState();
 
     // Prepend so the TOC button appears to the right of any existing buttons

@@ -243,13 +243,13 @@
         <field name="name">aps.resource.submission.form</field>
         <field name="model">aps.resource.submission</field>
         <field name="arch" type="xml">
-            <form>
+            <form create="false" delete="true" edit="true">
                 <header>
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
                     <button name="action_open_submission_student_view" string="Student View" type="object" class="btn-secondary" />
                     <separator/>
-                    <separator/>
+                    <!-- <separator/> -->
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty" type="object" class="btn-secondary"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
                     <button name="action_resubmit" string="Resubmit" type="object" class="btn-secondary" invisible="state in ['assigned']"/>
@@ -274,8 +274,8 @@
                         <page string="ⓘ Details">
                             <group>
                                 <group string="Submission Details">
-                                    <field name="task_id" invisible="1"/>
-                                    <field name="student_id"/>
+                                    <field name="task_id" readonly="1"/>
+                                    <!-- <field name="student_id"/> -->
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="allow_subject_editing"  widget="boolean_toggle" />

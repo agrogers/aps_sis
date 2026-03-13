@@ -55,8 +55,7 @@
 
 /* ── Field action buttons (inside .aps-float-buttons) ── */
 
-.aps-math-edit-toggle,
-.aps-toc-float-toggle {
+.aps-math-edit-toggle {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
@@ -69,59 +68,8 @@
 }
 
 .aps-math-edit-toggle:hover,
-.aps-math-edit-toggle:focus-visible,
-.aps-toc-float-toggle:hover,
-.aps-toc-float-toggle:focus-visible {
+.aps-math-edit-toggle:focus-visible {
     opacity: 1;
 }
 
-/* ── Overflow fix: allow sticky positioning within HTML fields ───────────────
 
-   Odoo sets overflow:auto on the div immediately above .odoo-editor-editable,
-   which breaks position:sticky for any descendant.  Override to overflow:visible
-   so the floating TOC button and the TOC panel itself can be sticky relative
-   to the page scroll container.  :has() scopes the rule precisely to that
-   wrapper div without affecting any other overflow-auto element on the page.  */
-
-.o_field_html .overflow-auto:has(> .odoo-editor-editable),
-.o_field_html_readonly .overflow-auto:has(> .odoo-editor-editable) {
-    overflow: visible !important;
-}
-
-/* ── Floating TOC panel ─────────────────────────────────────────────────────
-
-   When float mode is active the TOC element itself becomes a zero-height
-   sticky container (same technique as .aps-float-buttons).  Its children
-   overflow out of the zero-height box and appear as a right-aligned panel.
-
-   Because the element stays in its original DOM position:
-     • all JS event listeners (hover highlights, click-to-scroll) are intact
-     • all CSS ancestor selectors (indentation, hover styles) still match
-     • no DOM moves, placeholder spans, or save guards are required            */
-
-[data-aps-toc="float"] [data-embedded="tableOfContent"] {
-    position: sticky;
-    top: 20px;
-    height: 0px;
-    outline: none;
-}
-
-/* Direct child of the TOC element becomes the visible panel. */
-[data-aps-toc="float"] .o_embedded_toc_content {
-    z-index: 5;
-    pointer-events: all;
-    height: auto;
-    /* Shrink to fit content but cap at 1/4 of the field width. */
-    width: max-content;
-    max-width: 20%;
-    background: #ffffffbd;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-    padding: 5px 5px;
-    font-size: 0.8em;
-    max-height: 70vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    border-radius: 5px;
-    margin-left: auto;
-    margin-right: -30px;
-}

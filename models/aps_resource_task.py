@@ -13,6 +13,7 @@ class APSResourceTask(models.Model):
 
     display_name = fields.Char(compute='_compute_display_name', store=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', required=True)
+    subject_ids = fields.Many2many(related='resource_id.subjects', string='Subjects', readonly=True)
     student_id = fields.Many2one('res.partner', string='Student', domain=[('is_student', '=', True)], required=True)
     submission_count = fields.Integer(
         string='Attempts', 
@@ -27,14 +28,16 @@ class APSResourceTask(models.Model):
         ('assigned', 'Assigned'),
         ('reassigned', 'Reassigned'),
         ('due', 'Due'),
+        ('early', 'Early'),
+        ('on-time', 'On Time'),
         ('submitted', 'Submitted'),
         ('overdue', 'Overdue'),
         ('complete', 'Complete'),
         ('late', 'Late'),
     ], string='State', default='created',
         decoration_success="state == 'complete'",
-        decoration_warning="state == 'created' or state == 'late'",
-        decoration_info="state in ['assigned', 'due', 'reassigned', 'submitted']",
+        decoration_warning="state in ['created', 'late', 'early']",
+        decoration_info="state in ['assigned', 'due', 'reassigned', 'submitted', 'on-time']",
         decoration_danger="state == 'overdue'")
     date_assigned = fields.Date(string='Date Assigned', compute='_compute_date_assigned', store=True)
     date_due = fields.Date(string='Due Date', compute='_compute_date_due', store=True)
@@ -50,7 +53,15 @@ class APSResourceTask(models.Model):
         compute="_compute_type_icon",
         store=True
     )
+    is_current_user_faculty = fields.Boolean(compute='_compute_is_current_user_faculty')
 
+
+    @api.depends()
+    def _compute_is_current_user_faculty(self):
+        employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
+        faculty = self.env['op.faculty'].search([('emp_id', '=', employee.id)], limit=1) if employee else False
+        for record in self:
+            record.is_current_user_faculty = bool(faculty)
 
     @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
     def _compute_type_icon(self):
@@ -84,26 +95,37 @@ class APSResourceTask(models.Model):
         return result
 
     def _update_state_from_submissions(self):
-        """Update task state based on submission states."""
+        """Update task state based on submission states.
+        
+        Priority order:
+        1. Overdue — if any submission is overdue (assigned + due_status == 'late')
+        2. Assigned — if any submission is still in 'assigned' state
+        3. Otherwise use the due_status of the most recent submission:
+           - 'late' on submission → 'late' on task
+           - 'complete'/'submitted' submission → map to task state
+        """
         for task in self:
             if not task.submission_ids:
-                # No submissions, keep current state
                 continue
-            
-            # State priority: complete > submitted > assigned
-            state_priority = {'assigned': 1, 'submitted': 2, 'complete': 3}
-            
-            # Find the highest priority state among all submissions
-            submission_states = task.submission_ids.mapped('state')
-            priorities = [state_priority.get(state, 0) for state in submission_states]
-            min_priority = min(priorities) if priorities else 0
-            
-            # Map back to state
-            # priority_to_state = {1: 'assigned', 2: 'reassigned', 3: 'due', 4: 'submitted', 5: 'overdue', 6: 'complete'}
-            priority_to_state = {1: 'assigned', 1: 'submitted', 3: 'complete'}
-            new_state = priority_to_state.get(min_priority, task.state)
-            
-            # Update state if different
+
+            submissions = task.submission_ids
+
+            # 1. Overdue: any submission that is assigned but past due
+            if any(s.state == 'assigned' and s.due_status == 'late' for s in submissions):
+                new_state = 'overdue'
+
+            # 2. Assigned: any submission still in assigned state (not yet overdue)
+            elif any(s.state == 'assigned' for s in submissions):
+                new_state = 'assigned'
+
+            # 3. All submissions are submitted/complete — use the most recent
+            else:
+                most_recent = submissions.sorted(
+                    lambda s: s.date_assigned or s.create_date or fields.Date.today(),
+                    reverse=True
+                )[:1]
+                new_state = most_recent.due_status
+
             if task.state != new_state:
                 task.state = new_state
 

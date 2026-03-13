@@ -8,17 +8,29 @@
             <search>
                 <field name="resource_id"/>
                 <field name="student_id"/>
+                <field name="subject_ids"/>
                 <field name="state"/>
                 <field name="date_due"/>
                 <filter name="overdue" string="Overdue" domain="[('date_due', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
                 <filter name="due_today" string="Due Today" domain="[('date_due', '=', context_today().strftime('%Y-%m-%d'))]"/>
                 <filter name="due_soon" string="Due Soon" domain="[('date_due', '&gt;=', context_today().strftime('%Y-%m-%d')), ('date_due', '&lt;=', (context_today() + relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="filter_assigned" string="Assigned" domain="[('state', 'in', ['assigned', 'reassigned'])]"/>
+                <filter name="filter_submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="filter_complete" string="Complete" domain="[('state', '=', 'complete')]"/>
+                <filter name="filter_incomplete" string="Incomplete" domain="[('state', 'not in', ['complete', 'late'])]"/>
                 <group expand="0" string="Group By">
                     <filter name="group_by_resource" string="Resource" context="{'group_by':'resource_id'}"/>
                     <filter name="group_by_student" string="Student" context="{'group_by':'student_id'}"/>
                     <filter name="group_by_state" string="State" context="{'group_by':'state'}"/>
+                    <filter name="group_by_subject" string="Subject" context="{'group_by':'subject_ids'}"/>
                     <filter name="group_by_due_date" string="Due Date" context="{'group_by':'date_due'}"/>
                 </group>
+                <searchpanel>
+                    <field name="subject_ids" icon="fa-book" select="multi" enable_counters="1"/>
+                    <field name="state" icon="fa-tasks" select="multi" enable_counters="1"/>
+                    <field name="student_id" icon="fa-user" select="multi" enable_counters="1"/>
+                </searchpanel>
             </search>
         </field>
     </record>
@@ -29,13 +41,21 @@
         <field name="model">aps.resource.task</field>
         <field name="arch" type="xml">
             <list>
+                <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
                 <field name="resource_id"/>
-                <field name="student_id"/>
-                <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
-                <field name="state" widget="badge" decoration-muted="state == 'created'" decoration-info="state in ['assigned', 'reassigned', 'submitted']" decoration-warning="state == 'due'" decoration-danger="state in ['overdue', 'late']" decoration-success="state == 'complete'"/>
-                <field name="last_result" widget="percentpie_ranged" />
-                <field name="best_result" widget="percentpie_ranged" />
-                <field name="submission_count"/>
+                <field name="subject_ids" widget="many2many_tags" optional="hide"/>
+                <field name="student_id" optional="hide"/>
+                <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="state" widget="badge" 
+                    decoration-warning="state == 'assigned'" 
+                    decoration-info="state in ['on-time', 'submitted', 'completed']" 
+                    decoration-danger="state in ['overdue', 'late']" 
+                    decoration-success="state == 'early'" optional="show"/>
+                <field name="weighted_result" widget="percentpie_ranged" optional="show" invisible="submission_count &lt;= 1"/>
+                <field name="avg_result" widget="percentpie_ranged" optional="show" invisible="submission_count &lt;= 1"/>
+                <field name="best_result" widget="percentpie_ranged" optional="show" invisible="submission_count &lt;= 1"/>
+                <field name="last_result" widget="percentpie_ranged"  optional="show"/>
+                <field name="submission_count" optional="hide"/>
                 <field name="create_date" optional="hide"/>
             </list>
         </field>
@@ -45,8 +65,9 @@
         <field name="name">aps.resource.task.form</field>
         <field name="model">aps.resource.task</field>
         <field name="arch" type="xml">
-            <form>
+            <form create="false">
                 <header>
+                    
                     <widget name="web_ribbon" title="Due Today" bg_color="bg-warning"
                             invisible="state != 'due'"/>
                     <widget name="web_ribbon" title="Overdue" bg_color="bg-danger" 
@@ -55,33 +76,42 @@
                             invisible="state != 'submitted'"/>
                     <widget name="web_ribbon" title="Complete" bg_color="bg-success" 
                             invisible="state != 'complete'"/>
-                    <widget name="web_ribbon" title="Late" bg_color="bg-warning" 
+                    <!-- <widget name="web_ribbon" title="Late" bg_color="bg-warning" 
                             invisible="state != 'late'"/>
                     <widget name="web_ribbon" title="Assigned"  bg_color="text-bg-secondary" 
                             invisible="state != 'assigned'"/>
                     <widget name="web_ribbon" title="Reassigned" bg_color="text-bg-secondary"  
-                            invisible="state != 'reassigned'"/>
+                            invisible="state != 'reassigned'"/> -->
                     <button name="action_create_submission" string="Create Submission" type="object" class="btn-secondary" context="{'default_task_id': id, 'default_assigned_by': uid}" groups="aps_sis.group_aps_teacher"/>
                 </header>
                 <sheet>
                     <group col="2">
                         <group colspan="2">
-                            <div class="d-flex align-items-center gap-1">
+                            <div class="d-flex align-items-center gap-1 w-100">
                                 <field name="type_icon" widget="image_result" options="{'size': [55, 55], 'task_id': 'id'}" nolabel="1" style="width:64px" readonly="1"/>
-                                <field name="resource_id" readonly="1"/>
+                                <field name="resource_id" readonly="1" options="{'no_open': 'not is_current_user_faculty and True'}"/>
+                                <div class="ms-auto">
+                                    <field name="state" nolabel="1" widget="badge" style="font-size: 1.4em;"
+                                        decoration-warning="state == 'assigned'" 
+                                        decoration-info="state in ['on-time', 'submitted', 'completed']" 
+                                        decoration-danger="state in ['overdue', 'late']" 
+                                        decoration-success="state == 'early'" />
+                                </div>
                             </div>
                         </group>
 
                         <group string="Task Details">
-                            <field name="state"/>
-                            <field name="student_id" readonly="id"/>
+                            <!-- <field name="is_current_user_faculty" invisible="0"/> -->
+                            <field name="state" readonly="not is_current_user_faculty"/>
+                            <field name="subject_ids" widget="many2many_tags"/>
+                            <field name="student_id" readonly="1" options="{'no_open': 'not is_current_user_faculty and True'}"/>
                             <field name="date_assigned" widget="datetime"/>
                             <field name="date_due" widget="datetime"/>
                         </group>
                         <group string="Scoring">
                             <field name="submission_count"/>
                             <field name="last_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
-                            <field name="avg_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
+                            <field name="avg_result" widget="percentpie_ranged" options="{'sentinel': 0.00}" invisible="submission_count &lt;= 1"/>
                             <field name="weighted_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
                             <field name="best_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
                         </group>
@@ -94,6 +124,7 @@
                                     <field name="submission_name" optional="show"/>
                                     <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
                                     <field name="score" optional="hide"/>
+                                    <field name="out_of_marks" optional="hide"/>
                                     <field name="assigned_by" optional="hide"/>
                                     <field name="date_submitted" widget="datetime" optional="hide"/>
                                     <field name="date_completed" widget="datetime" optional="hide"/>

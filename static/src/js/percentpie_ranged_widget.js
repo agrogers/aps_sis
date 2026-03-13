@@ -23,7 +23,8 @@ export class PercentPieRangedField extends Component {
     }
 
     get formattedValue() {
-        return formatFloat(this.value, { trailingZeros: false }) + "%";
+        // return formatFloat(this.value, { trailingZeros: false }) + "%";
+        return formatFloat(this.value, { digits: [16, 0] }) + "%";
     }
 
     get color() {

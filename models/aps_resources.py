@@ -521,6 +521,8 @@ class APSResource(models.Model):
                     
                     if words_to_remove > 0:
                         current_name = ''.join(child_words[words_to_remove:]).strip()
+                        # Strip leading punctuation left over after word removal
+                        current_name = re.sub(r'^[\s:;.,\-–—()\[\]{}]+', '', current_name).strip()
                 
                 # Find overlapping characters between start of current_name and end of parent_display
                 overlap_length = 0
@@ -542,7 +544,7 @@ class APSResource(models.Model):
                 if overlap_length > 0:
                     remaining_name = current_name[overlap_length:].lstrip()
                     # Strip any "." that appear at the start of the remaining name
-                    remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
+                    remaining_name = re.sub(r'^[\s:;.,\-–—()\[\]{}]+', '', remaining_name).strip()
                     if remaining_name:
                         rec.display_name = parent_display + separator + remaining_name
                     else:

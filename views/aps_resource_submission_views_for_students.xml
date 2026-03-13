@@ -159,8 +159,12 @@
                         <page string="ⓘ" name="information_page" >
                             <group>
                                 <group>
-                                    <field name="task_id" invisible="1"/>
-                                    <field name="student_id" readonly="1"/>
+                                    <label for="task_id"/>
+                                    <div class="o_row">
+                                        <button name="action_open_task" type="object" class="btn btn-link btn-sm p-0 ms-1" icon="fa-external-link" title="Open Task" invisible="not task_id"/>
+                                        <field name="task_id" readonly="1" class="oe_inline"/>
+                                    </div>
+                                    <!-- <field name="student_id" readonly="1"/> -->
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" readonly="1" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>

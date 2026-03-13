@@ -56,7 +56,7 @@ class APSResourceSubmission(models.Model):
         tracking=True)
     date_due = fields.Date(string='Due Date', tracking=True)
     score = fields.Float(string='Score', digits=(16, 2), tracking=True, default=sentinel_zero)
-    out_of_marks = fields.Float(string='Out of Marks', related='resource_id.marks', store=True, readonly=True)
+    out_of_marks = fields.Float(string='Out of Marks', digits=(16, 1), store=True, tracking=True)
     result_percent = fields.Integer(string='Result %', compute='_compute_result_percent', store=True, tracking=True)
     due_status = fields.Selection([
         ('late', 'Late'),
@@ -736,6 +736,20 @@ class APSResourceSubmission(models.Model):
             'views': [(view_id, 'form')] if view_id else [],  # only include if view exists
         }
 
+    def action_open_task(self):
+        """Open the linked task's form view."""
+        self.ensure_one()
+        if not self.task_id:
+            return False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.task_id.display_name,
+            'res_model': 'aps.resource.task',
+            'view_mode': 'form',
+            'res_id': self.task_id.id,
+            'target': 'current',
+        }
+
 # endregion - Action Methods
 
 # region - Overrides and records methods
@@ -837,6 +851,18 @@ class APSResourceSubmission(models.Model):
                 task = self.env['aps.resource.task'].browse(vals['task_id'])
                 if task.resource_id and task.resource_id.question:
                     vals['question'] = task.resource_id.question
+
+        # Default out_of_marks from the linked resource if not explicitly set
+        for vals in vals_list:
+            if 'out_of_marks' not in vals:
+                resource = None
+                if 'resource_id' in vals:
+                    resource = self.env['aps.resources'].browse(vals['resource_id'])
+                elif 'task_id' in vals:
+                    task = self.env['aps.resource.task'].browse(vals['task_id'])
+                    resource = task.resource_id
+                if resource:
+                    vals['out_of_marks'] = resource.marks
 
         submissions = super().create(vals_list)
         # Update task states for newly created submissions
