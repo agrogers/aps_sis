@@ -11,21 +11,14 @@ access_aps_submission_mass_update_wizard_teacher,aps.submission.mass.update.wiza
 access_aps_resource_mass_update_wizard_teacher,aps.resource.mass.update.wizard.teacher,model_aps_resource_mass_update_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_subject_category_teacher,aps.subject.category.teacher,model_aps_subject_category,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_subject_category_student,aps.subject.category.student,model_aps_subject_category,aps_sis.group_aps_student,1,0,0,0
-
 access_aps_resources_student_full,aps.resources.student.full,model_aps_resources,aps_sis.group_aps_student,1,0,1,0
 access_aps_resource_types_student_full,aps.resource.types.student.full,model_aps_resource_types,aps_sis.group_aps_student,1,0,0,0
 access_aps_resource_tags_student_full,aps.resource.tags.student.full,model_aps_resource_tags,aps_sis.group_aps_student,1,0,0,0
 access_aps_resource_task_student_full,aps.resource.task.student.full,model_aps_resource_task,aps_sis.group_aps_student,1,1,1,0
 access_aps_resource_submission_student,aps.resource.submission.student.full,model_aps_resource_submission,aps_sis.group_aps_student,1,1,1,0
-
-
-
-# Tab Focus Config – teachers manage, everyone reads
 access_aps_tab_focus_config_teacher,aps.tab.focus.config.teacher,model_aps_tab_focus_config,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_tab_focus_config_student,aps.tab.focus.config.student,model_aps_tab_focus_config,aps_sis.group_aps_student,1,0,0,0
 access_aps_tab_focus_config_user,aps.tab.focus.config.user,model_aps_tab_focus_config,base.group_user,1,0,0,0
-
-# Tab Focus State – all users can manage their own records (record rule enforced in security XML)
 access_aps_tab_focus_state_teacher,aps.tab.focus.state.teacher,model_aps_tab_focus_state,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_tab_focus_state_student,aps.tab.focus.state.student,model_aps_tab_focus_state,aps_sis.group_aps_student,1,1,1,1
 access_aps_tab_focus_state_user,aps.tab.focus.state.user,model_aps_tab_focus_state,base.group_user,1,1,1,1
