@@ -151,7 +151,7 @@ patch(SearchModel.prototype, {
             // blockNotification=true (when sectionsPromise is awaited) or fire
             // before useEffect registers the listener (when it is not awaited).
             if (anyRestored) {
-                setTimeout(() => this._notify(), 0);
+                setTimeout(() => this._notify(), 1000);
             }
         } catch (err) {
             console.debug("[search_panel_state] Failed to restore state:", err);
