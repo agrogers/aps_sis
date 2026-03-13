@@ -50,6 +50,26 @@ function collectSectionState(sections) {
  */
 patch(SearchModel.prototype, {
     /**
+     * Intercept load() to capture whether any searchpanel_default_* context
+     * keys were passed by the caller.  Odoo's _extractSearchDefaultsFromGlobalContext()
+     * deletes those keys from globalContext before _fetchSections is called, so
+     * this is the only opportunity to read them.
+     *
+     * If defaults were supplied by the view/action we must NOT restore our
+     * saved state — the caller's explicit defaults should win.
+     */
+    async load(config) {
+        const ctx = config?.context || {};
+        const searchPanelDefaultPattern = /^searchpanel_default_/;
+        this._apsHasPanelDefaults = Object.keys(ctx).some((k) =>
+            searchPanelDefaultPattern.test(k)
+        );
+        // Reset restore flag so a fresh load always re-evaluates whether to restore.
+        this._apsStateRestored = false;
+        return super.load(config);
+    },
+
+    /**
      * Called after categories and filters have their values fetched.
      * Restore the saved selection on the FIRST fetch only — subsequent
      * re-fetches happen when the domain changes and we must not override
@@ -107,6 +127,10 @@ patch(SearchModel.prototype, {
     _apsRestoreSearchPanelState() {
         try {
             if (!this.sections?.size) return;
+            // If the view/action supplied explicit searchpanel_default_* context keys,
+            // those caller-provided defaults take priority — do not overwrite them with
+            // whatever the user last selected in a previous session.
+            if (this._apsHasPanelDefaults) return;
             const userId = user.userId;
             const resModel = this.resModel;
             if (!resModel || !userId) return;
