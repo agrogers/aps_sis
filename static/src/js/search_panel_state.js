@@ -115,28 +115,39 @@ patch(SearchModel.prototype, {
             const savedState = JSON.parse(saved);
             if (!savedState) return;
 
-            // Directly mutate section state so we trigger _notify() only once
-            // (via the normal flow after _fetchSections resolves), rather than
-            // once per toggled value.
+            // Directly mutate all sections in one pass, then call _notify() once
+            // to recalculate the search domain and re-query the list view.
+            let anyRestored = false;
             this._apsRestoringState = true;
             try {
                 for (const [, section] of this.sections) {
-                    const saved = savedState[section.fieldName];
-                    if (!saved || saved.type !== section.type) continue;
+                    const savedSection = savedState[section.fieldName];
+                    if (!savedSection || savedSection.type !== section.type) continue;
                     if (section.type === "category") {
-                        const valId = saved.activeValueId;
+                        const valId = savedSection.activeValueId;
                         if (valId && section.values?.has(valId)) {
                             section.activeValueId = valId;
+                            anyRestored = true;
                         }
                     } else if (section.type === "filter") {
-                        for (const vId of saved.checkedIds || []) {
+                        for (const vId of savedSection.checkedIds || []) {
                             const value = section.values?.get(vId);
-                            if (value) value.checked = true;
+                            if (value) {
+                                value.checked = true;
+                                anyRestored = true;
+                            }
                         }
                     }
                 }
             } finally {
                 this._apsRestoringState = false;
+            }
+
+            // Without this call the sections show the restored visual state but
+            // the domain is never recalculated, so the list still shows all records
+            // until the user manually interacts with a filter.
+            if (anyRestored) {
+                this._notify();
             }
         } catch (err) {
             console.debug("[search_panel_state] Failed to restore state:", err);
