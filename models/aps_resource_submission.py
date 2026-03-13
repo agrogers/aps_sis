@@ -1152,7 +1152,15 @@ class APSResourceSubmission(models.Model):
         all_subjects = self.env['op.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
-        
+
+        # Restrict to subjects the student is currently enrolled in
+        enrolled_subject_ids_set = set()
+        student_record = self.env['op.student'].search([('partner_id', '=', student_id)], limit=1)
+        if student_record:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_subject_ids_set = set(running_courses.mapped('subject_ids').ids)
+            all_subjects = all_subjects.filtered(lambda s: s.id in enrolled_subject_ids_set)
+
         # Filter out excluded subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
@@ -1164,10 +1172,11 @@ class APSResourceSubmission(models.Model):
         subject_data = {}  # {subject_id: [(date, result_percent), ...]}
         current_progress = {}  # {subject_id: {'result_percent': x, 'date': y}}
         pace_info = {}  # {resource_id: {start_date, end_date, redline_start_date, redline_end_date, resource_name}}
-        
+        all_subject_ids_set = set(all_subjects.ids)  # enrolled + not excluded
+
         for submission in submissions:
             for subject in submission.subjects:
-                if subject.name in exclude:
+                if subject.id not in all_subject_ids_set:
                     continue
                 if subject.id not in subject_data:
                     subject_data[subject.id] = []
