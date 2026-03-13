@@ -83,6 +83,7 @@
             'aps_sis/static/src/xml/image_result_widget.xml',
             'aps_sis/static/src/css/image_result_widget.css',
             'aps_sis/static/src/js/share_url_widget.js',
+            'aps_sis/static/src/js/search_panel_state.js',
 		],
 	},
 	'installable': True,
