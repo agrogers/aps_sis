@@ -1,5 +1,5 @@
 import json
-from odoo import models, fields, api
+from odoo import models, fields, api, exceptions
 
 
 class ApsTabFocusConfig(models.Model):
@@ -63,7 +63,7 @@ class ApsTabFocusConfig(models.Model):
                     if not isinstance(parsed, list):
                         raise ValueError('Must be a JSON array')
                 except (ValueError, TypeError):
-                    raise models.ValidationError(
+                    raise exceptions.ValidationError(
                         'Tab Priority must be a valid JSON array of tab name strings, '
                         'e.g. ["tab1", "tab2"]'
                     )
