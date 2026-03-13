@@ -1,6 +1,7 @@
 import { patch } from "@web/core/utils/patch";
 import { FormController } from "@web/views/form/form_controller";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
 import { onMounted, onWillUnmount } from "@odoo/owl";
 
 // ─── Session-level caches (survive multiple form opens within the same page load) ───
@@ -193,7 +194,6 @@ patch(FormController.prototype, {
         super.setup(...arguments);
 
         const orm = useService('orm');
-        const userService = useService('user');
 
         // Per-instance debounce timer stored on `this` so onWillUnmount can
         // reliably reference the same timer regardless of closure quirks.
@@ -210,7 +210,7 @@ patch(FormController.prototype, {
             const modelName = this.model?.root?.resModel;
             if (!modelName) return;
 
-            const userId = userService.userId;
+            const userId = user.userId;
             const recordId = this.model?.root?.resId || 0;
 
             // Store the ORM service reference for the periodic flush.
