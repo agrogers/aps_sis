@@ -47,5 +47,13 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
+
+        <!-- Tab Focus State: users can only read/write their own state records -->
+        <record id="rule_aps_tab_focus_state_own" model="ir.rule">
+            <field name="name">Tab Focus State: Own Records Only</field>
+            <field name="model_id" ref="model_aps_tab_focus_state"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
     </data>
 </odoo>

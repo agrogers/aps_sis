@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ═══════════════════════════════════════════
+             Tab Focus Config – list view
+        ═══════════════════════════════════════════ -->
+        <record id="view_aps_tab_focus_config_list" model="ir.ui.view">
+            <field name="name">aps.tab.focus.config.list</field>
+            <field name="model">aps.tab.focus.config</field>
+            <field name="arch" type="xml">
+                <list string="Tab Focus Configuration">
+                    <field name="model_name"/>
+                    <field name="save_mode"/>
+                    <field name="default_tab"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
+             Tab Focus Config – form view
+        ═══════════════════════════════════════════ -->
+        <record id="view_aps_tab_focus_config_form" model="ir.ui.view">
+            <field name="name">aps.tab.focus.config.form</field>
+            <field name="model">aps.tab.focus.config</field>
+            <field name="arch" type="xml">
+                <form string="Tab Focus Configuration">
+                    <sheet>
+                        <group>
+                            <group string="Model">
+                                <field name="model_name"
+                                       placeholder="e.g. aps.resources"/>
+                                <field name="save_mode"/>
+                            </group>
+                            <group string="Default Tab">
+                                <field name="default_tab"
+                                       placeholder="Leave blank to use form default"/>
+                                <field name="tab_priority"
+                                       widget="text"
+                                       placeholder='e.g. ["summary", "details", "history"]'/>
+                            </group>
+                        </group>
+                        <div class="o_form_sheet_bg">
+                            <div class="alert alert-info" role="alert">
+                                <strong>How it works</strong>
+                                <ul class="mb-0 mt-1">
+                                    <li><b>No Saving</b> – tab focus is not remembered (default for all models not listed here).</li>
+                                    <li><b>Per Form</b> – the last tab the user clicked on any record of this model is restored on every open.</li>
+                                    <li><b>Per Record</b> – each record individually remembers its last tab; falls back to the per-form state when a record has no saved state.</li>
+                                </ul>
+                                <hr class="my-1"/>
+                                <strong>Tab Priority</strong> is a JSON array of tab names tried in order when no saved state is available
+                                (e.g. <code>["summary","details"]</code>). The first <em>visible</em> tab in the list is used.
+                            </div>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
+             Tab Focus Config – action
+        ═══════════════════════════════════════════ -->
+        <record id="action_aps_tab_focus_config" model="ir.actions.act_window">
+            <field name="name">Tab Focus Configuration</field>
+            <field name="res_model">aps.tab.focus.config</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No tab focus configuration found.
+                </p>
+                <p>
+                    Create an entry here to control how notebook tab focus is
+                    remembered for a particular Odoo model.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_aps_tab_focus_config_list" model="ir.actions.act_window.view">
+            <field name="sequence">1</field>
+            <field name="view_mode">list</field>
+            <field name="view_id" ref="view_aps_tab_focus_config_list"/>
+            <field name="act_window_id" ref="action_aps_tab_focus_config"/>
+        </record>
+
+        <record id="action_aps_tab_focus_config_form" model="ir.actions.act_window.view">
+            <field name="sequence">2</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_aps_tab_focus_config_form"/>
+            <field name="act_window_id" ref="action_aps_tab_focus_config"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
+             Tab Focus State – list view  (admin view)
+        ═══════════════════════════════════════════ -->
+        <record id="view_aps_tab_focus_state_list" model="ir.ui.view">
+            <field name="name">aps.tab.focus.state.list</field>
+            <field name="model">aps.tab.focus.state</field>
+            <field name="arch" type="xml">
+                <list string="Tab Focus State" create="false" edit="false">
+                    <field name="user_id"/>
+                    <field name="model_name"/>
+                    <field name="record_id"/>
+                    <field name="tab_name"/>
+                    <field name="write_date" optional="show"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
+             Tab Focus State – action  (admin view)
+        ═══════════════════════════════════════════ -->
+        <record id="action_aps_tab_focus_state" model="ir.actions.act_window">
+            <field name="name">Tab Focus State</field>
+            <field name="res_model">aps.tab.focus.state</field>
+            <field name="view_mode">list</field>
+        </record>
+
+        <record id="action_aps_tab_focus_state_list" model="ir.actions.act_window.view">
+            <field name="sequence">1</field>
+            <field name="view_mode">list</field>
+            <field name="view_id" ref="view_aps_tab_focus_state_list"/>
+            <field name="act_window_id" ref="action_aps_tab_focus_state"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
+             Menu item – under APS SIS Configuration
+        ═══════════════════════════════════════════ -->
+        <menuitem
+            id="menu_aps_tab_focus_config"
+            name="Tab Focus"
+            parent="menu_apex_configuration"
+            action="action_aps_tab_focus_config"
+            sequence="50"
+            groups="aps_sis.group_aps_teacher"/>
+
+    </data>
+</odoo>

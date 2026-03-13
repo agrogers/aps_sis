@@ -1,3 +1,4 @@
+from . import aps_tab_focus
 from . import aps_resource_tags
 from . import aps_resources
 from . import aps_resource_types
