@@ -143,11 +143,15 @@ patch(SearchModel.prototype, {
                 this._apsRestoringState = false;
             }
 
-            // Without this call the sections show the restored visual state but
-            // the domain is never recalculated, so the list still shows all records
-            // until the user manually interacts with a filter.
+            // Schedule _notify() as a macrotask (setTimeout 0) so it fires AFTER:
+            //   1. load() sets blockNotification = false (unblocks _notify)
+            //   2. onWillStart resolves and the component mounts
+            //   3. useBus useEffect registers the "update" event listener
+            // Calling _notify() synchronously here would either be blocked by
+            // blockNotification=true (when sectionsPromise is awaited) or fire
+            // before useEffect registers the listener (when it is not awaited).
             if (anyRestored) {
-                this._notify();
+                setTimeout(() => this._notify(), 0);
             }
         } catch (err) {
             console.debug("[search_panel_state] Failed to restore state:", err);
