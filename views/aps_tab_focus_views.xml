@@ -10,9 +10,10 @@
             <field name="model">aps.tab.focus.forms</field>
             <field name="arch" type="xml">
                 <list string="Tab Focus – Form Registry" create="false">
+                    <field name="display_name" optional="show"/>
                     <field name="model_name"/>
-                    <field name="form_name"/>
-                    <field name="tab_ids" widget="many2many_tags" readonly="1"/>
+                    <field name="form_name" optional="hide"/>
+                    <field name="tab_ids" widget="many2many_tags" readonly="1" optional="show"/>
                     <field name="user_ids" widget="many2many_tags" optional="show"/>
                 </list>
             </field>
@@ -26,6 +27,9 @@
             <field name="model">aps.tab.focus.forms</field>
             <field name="arch" type="xml">
                 <form string="Tab Focus – Form Registry">
+                    <header>
+                        <button name="action_sync_tabs_from_arch" type="object" string="Sync Tabs from View" class="btn-primary" icon="fa-refresh"/>
+                    </header>
                     <sheet>
                         <group>
                             <group string="Form Identity">
@@ -90,6 +94,8 @@
             <field name="arch" type="xml">
                 <list string="Tab Focus Configuration">
                     <field name="model_name"/>
+                    <field name="display_name"/>
+                    <field name="form_name"/>
                     <field name="form_name"/>
                     <field name="save_mode"/>
                     <field name="default_tab_id" optional="show"/>
@@ -105,6 +111,9 @@
             <field name="model">aps.tab.focus.config</field>
             <field name="arch" type="xml">
                 <form string="Tab Focus Configuration">
+                    <header>
+                        <button name="action_sync_tabs_from_arch" type="object" string="Sync Tabs from View" class="btn-secondary" icon="fa-refresh"/>
+                    </header>
                     <sheet>
                         <group>
                             <group string="Form">

@@ -11,7 +11,8 @@ import { onMounted, onWillUnmount } from "@odoo/owl";
  * @type {Object.<string, {save_mode:string, default_tab:{string:string,name:string}|false, tab_priority:{string:string,name:string}[]}>}
  */
 const _configCache = {};
-let _configsLoaded = false;
+let _configsLoadedAt = 0;
+const CONFIG_TTL_MS = 5 * 60 * 1000;  // re-fetch configs every 5 minutes
 /** @type {Promise|null} */
 let _configsLoadingPromise = null;
 
@@ -78,7 +79,7 @@ function _setLS(userId, modelName, recordId, tabString) {
  */
 function _collectTabs(rootEl) {
     const buttons = rootEl.querySelectorAll(
-        '.o_notebook_headers button, .o_notebook_tabs button',
+        '.o_notebook_headers .nav-link, .o_notebook_tabs .nav-link',
     );
     const tabs = [];
     for (const btn of buttons) {
@@ -100,7 +101,7 @@ function _collectTabs(rootEl) {
  * Results are cached in _configCache for the lifetime of the browser tab.
  */
 async function _ensureConfigsLoaded(orm) {
-    if (_configsLoaded) return;
+    if (_configsLoadedAt && (Date.now() - _configsLoadedAt < CONFIG_TTL_MS)) return;
     if (_configsLoadingPromise) return _configsLoadingPromise;
 
     _configsLoadingPromise = orm
@@ -109,7 +110,7 @@ async function _ensureConfigsLoaded(orm) {
             for (const [key, cfg] of Object.entries(configs)) {
                 _configCache[key] = cfg;
             }
-            _configsLoaded = true;
+            _configsLoadedAt = Date.now();
             _configsLoadingPromise = null;
         })
         .catch(() => {
@@ -204,7 +205,7 @@ function _findTabElement(rootEl, tabInfo) {
     }
     if (tabInfo.string) {
         const allButtons = rootEl.querySelectorAll(
-            '.o_notebook_headers button, .o_notebook_tabs button',
+            '.o_notebook_headers .nav-link, .o_notebook_tabs .nav-link',
         );
         for (const btn of allButtons) {
             if (btn.textContent.trim() === tabInfo.string) return btn;
@@ -256,7 +257,7 @@ patch(FormController.prototype, {
         this._tabFocusDebounceTimer = null;
 
         onMounted(async () => {
-            const rootEl = this.el || this.root?.el;
+            const rootEl = this.rootRef?.el;
             if (!rootEl) return;
 
             // Only act if the form contains a notebook.
@@ -349,7 +350,7 @@ patch(FormController.prototype, {
             if (saveMode === 'none') return;
 
             const tabButtons = rootEl.querySelectorAll(
-                '.o_notebook_headers button, .o_notebook_tabs button',
+                '.o_notebook_headers .nav-link, .o_notebook_tabs .nav-link',
             );
             tabButtons.forEach((tab) => {
                 tab.addEventListener('click', () => {

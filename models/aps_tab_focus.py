@@ -1,3 +1,5 @@
+from lxml import etree
+
 from odoo import models, fields, api, exceptions
 
 
@@ -7,6 +9,7 @@ class ApsTabFocusFormTab(models.Model):
     _name = 'aps.tab.focus.form.tab'
     _description = 'Tab Focus – Form Tab'
     _order = 'form_id, sequence, id'
+    _rec_name = 'tab_string'
 
     form_id = fields.Many2one(
         'aps.tab.focus.forms',
@@ -39,12 +42,26 @@ class ApsTabFocusForms(models.Model):
     _description = 'Tab Focus – Form Registry'
     _order = 'model_name, form_name'
 
-    model_name = fields.Char(string='Model Name', required=True, index=True)
+    model_name = fields.Char(string='Model Name', required=True, index=True, readonly=True)
     form_name = fields.Char(
         string='Form Name',
         required=True,
+        readonly=True,
         help='Identifier for the specific form view (view XML-ID or numeric view ID).',
     )
+    display_name = fields.Char(compute='_compute_display_name')
+
+    @api.depends('form_name', 'model_name')
+    def _compute_display_name(self):
+        for rec in self:
+            raw = rec.form_name or ''
+            # If form_name is numeric, look up the ir.ui.view name
+            if raw.isdigit():
+                view = self.env['ir.ui.view'].browse(int(raw))
+                if view.exists():
+                    raw = view.name or raw
+            # Convert dotted/underscored name to title case
+            rec.display_name = raw.replace('.', ' ').replace('_', ' ').strip().title()
     tab_ids = fields.One2many(
         'aps.tab.focus.form.tab',
         'form_id',
@@ -126,6 +143,60 @@ class ApsTabFocusForms(models.Model):
                 ])
 
         return rec.id
+
+    def action_sync_tabs_from_arch(self):
+        """Parse the raw view arch XML and sync all <page> tabs into the registry.
+
+        This captures every notebook page defined in the view, including those
+        that may be invisible to certain users or record states.
+        """
+        self.ensure_one()
+        view = None
+        form_name = self.form_name or ''
+        if form_name.isdigit():
+            view = self.env['ir.ui.view'].browse(int(form_name))
+        else:
+            # form_name may be an XML-ID like "module.view_name_form"
+            view = self.env.ref(form_name, raise_if_not_found=False)
+        if not view or not view.exists():
+            return
+
+        # Get the combined arch (with all inherited views applied)
+        arch_str = view.get_combined_arch()
+        if isinstance(arch_str, str):
+            arch = etree.fromstring(arch_str.encode('utf-8'))
+        else:
+            arch = arch_str
+        pages = arch.iter('page')
+
+        existing_strings = {t.tab_string: t for t in self.tab_ids}
+        existing_names = {t.tab_name: t for t in self.tab_ids if t.tab_name}
+        max_seq = max(self.tab_ids.mapped('sequence') or [0])
+        new_tab_vals = []
+
+        for page in pages:
+            page_string = page.get('string', '').strip()
+            page_name = page.get('name', '').strip()
+            if not page_string:
+                continue
+            # Skip if already registered (by string or by name)
+            if page_string in existing_strings:
+                # Update the name attr if it was missing
+                if page_name and not existing_strings[page_string].tab_name:
+                    existing_strings[page_string].tab_name = page_name
+                continue
+            if page_name and page_name in existing_names:
+                continue
+            max_seq += 10
+            new_tab_vals.append({
+                'form_id': self.id,
+                'sequence': max_seq,
+                'tab_string': page_string,
+                'tab_name': page_name,
+            })
+
+        if new_tab_vals:
+            self.env['aps.tab.focus.form.tab'].create(new_tab_vals)
 
 
 class ApsTabFocusConfigTab(models.Model):
@@ -229,6 +300,10 @@ class ApsTabFocusConfig(models.Model):
             'A Tab Focus configuration for this form already exists.',
         ),
     ]
+
+    def action_sync_tabs_from_arch(self):
+        self.ensure_one()
+        self.forms_id.action_sync_tabs_from_arch()
 
     @api.model
     def get_configs_for_js(self):
