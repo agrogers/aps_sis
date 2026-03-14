@@ -403,20 +403,56 @@ div[name="score"].fixed-score-width {
     background-color: rgba(128, 128, 128, 0.1) !important;
 }
 
-/* Target the specific cell type in Odoo 18 list views 
-.o_list_table td.o_percentpie_ranged_cell {
-    text-align: left !important;
-    justify-content: left !important; 
-    display: flex !important;         
+.o_form_view .nav-tabs a.nav-link.tab-with-icon  {
+    position: relative;
+    padding-left: 32px !important;  /* space for icon – adjust as needed */
+}
+
+.o_form_view .nav-tabs a.nav-link.tab-with-icon::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;               /* your icon size */
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Per-tab images */
+.o_form_view .nav-tabs a.nav-link.student-answer-tab::before {
+    background-image: url('/aps_sis/static/src/img/work.svg');
+}
+
+.o_form_view .nav-tabs a.nav-link.teacher-feedback-tab::before {
+    background-image: url('/aps_sis/static/src/img/chat.svg');
+}
+
+.o_form_view .nav-tabs a.nav-link.model-answer-tab::before {
+    background-image: url('/aps_sis/static/src/img/correct.svg');
+}
+
+.o_form_view .nav-tabs a.nav-link.question-tab::before {
+    background-image: url('/aps_sis/static/src/img/question.svg');
+}
+
+.o_form_view .nav-tabs a.nav-link.notes-tab::before {
+    background-image: url('/aps_sis/static/src/img/note.svg');
+}
+
+.o_form_view .nav-tabs a.nav-link.information-tab::before {
+    background-image: url('/aps_sis/static/src/img/information_2.svg');
+}
+.o_form_view .nav-tabs a.nav-link.information-tab {
+    color:#00000000;
+    padding-left: 16px !important;  /* space for icon */
 }
 
 
-
-/* Targets the specific header for your field 
-.o_list_table th.o_percentpie_ranged_cell[data-name="result_percent"] {
-    text-align: left !important;
-    justify-content: left !important; 
-    display: flex; 
-    vertical-align: middle !important
-    
-} */
+/* Optional: nicer active tab */
+.o_form_view .nav-tabs .custom-tab-icon a.nav-link.active::before {
+    opacity: 1;
+    /* or add: filter: brightness(1.1); for highlight */
+}

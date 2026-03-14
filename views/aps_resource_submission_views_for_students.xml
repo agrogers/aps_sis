@@ -109,7 +109,7 @@
                     
 
                     <notebook >
-                        <page string="Student Answer"  name="student_answer_page" >
+                        <page string="Student Answer" class="tab-with-icon student-answer-tab" name="student_answer_page" >
                             <group class="container-fluid">
                                 <div class="row flex-nowrap">
                                 <group class="col">
@@ -141,22 +141,19 @@
                             <field name="answer" nolabel="1" placeholder="Enter your answer here." readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" invisible="state != 'assigned' and not answer"/>
 
                         </page>
-                        <page string="🗪 Teacher Feedback" invisible="state=='assigned' or not has_feedback"  name="feedback_page" >
+                        <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" invisible="state=='assigned' or not has_feedback"  name="feedback_page" >
                             <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="🗹 Model Answer" invisible="not model_answer or state=='assigned' or model_answer_is_notes" name="model_answer_page">
+                        <page string="Model Answer" class=" tab-with-icon model-answer-tab" invisible="not model_answer or state=='assigned' or model_answer_is_notes" name="model_answer_page">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
-                        <page string="🗹 Notes" invisible="not model_answer or state=='assigned' or not model_answer_is_notes" name="model_answer_notes_page">
-                            <field name="model_answer" nolabel="1" placeholder="Notes for this submission."/>
-                        </page>
-                        <page string="ℚuestion" name="question_page" class="default-page" invisible="has_question=='no'">
+                        <page string="Question" name="question_page" class="default-page tab-with-icon question-tab" invisible="has_question=='no'">
                             <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
                         </page>
-                        <page string="📝 Notes" name="resource_notes_page" invisible="resource_has_notes == 'no' or not resource_notes">
+                        <page string="Notes" name="resource_notes_page" class="tab-with-icon notes-tab" invisible="resource_has_notes == 'no' or not resource_notes">
                             <field name="resource_notes" nolabel="1" readonly="1"/>
                         </page>
-                        <page string="ⓘ" name="information_page" >
+                        <page string="." name="information_page"  class="tab-with-icon information-tab">
                             <group>
                                 <group>
                                     <label for="task_id"/>

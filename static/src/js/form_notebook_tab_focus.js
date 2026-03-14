@@ -309,15 +309,15 @@ patch(FormController.prototype, {
                 tabString = _getLS(userId, modelName, recordId);
             }
 
-            // 2. Per-form state fallback (most recently used tab for this model).
-            if (!tabString && (saveMode === 'per_form' || saveMode === 'per_record')) {
-                tabString = _getLS(userId, modelName, 0);
-            }
-
-            // 3. Default tab from configuration (a {string, name} descriptor).
+            // 2. Default tab from configuration (a {string, name} descriptor).
             if (!tabString && config?.default_tab) {
                 const defEl = _findTabElement(rootEl, config.default_tab);
                 if (defEl) tabString = config.default_tab.string;
+            }
+
+            // 3. Per-form state fallback (most recently used tab for this model).
+            if (!tabString && (saveMode === 'per_form' || saveMode === 'per_record')) {
+                tabString = _getLS(userId, modelName, 0);
             }
 
             // 4. Tab priority list – first visible tab wins (requirement #9).

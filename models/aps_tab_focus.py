@@ -40,28 +40,33 @@ class ApsTabFocusForms(models.Model):
 
     _name = 'aps.tab.focus.forms'
     _description = 'Tab Focus – Form Registry'
-    _order = 'model_name, form_name'
+    _order = 'model_name, form_id'
+
+    display_name = fields.Char(string='Display Name', compute='_compute_form_name')
 
     model_name = fields.Char(string='Model Name', required=True, index=True, readonly=True)
-    form_name = fields.Char(
-        string='Form Name',
+    form_id = fields.Char(
+        string='Form ID',
         required=True,
         readonly=True,
         help='Identifier for the specific form view (view XML-ID or numeric view ID).',
     )
-    display_name = fields.Char(compute='_compute_display_name')
+    form_name = fields.Char(string='Form Name', compute='_compute_form_name')
 
-    @api.depends('form_name', 'model_name')
-    def _compute_display_name(self):
+    @api.depends('form_id')
+    def _compute_form_name(self):
         for rec in self:
-            raw = rec.form_name or ''
-            # If form_name is numeric, look up the ir.ui.view name
+            raw = rec.form_id or ''
+            # If form_id is numeric, look up the ir.ui.view name
             if raw.isdigit():
                 view = self.env['ir.ui.view'].browse(int(raw))
                 if view.exists():
                     raw = view.name or raw
             # Convert dotted/underscored name to title case
-            rec.display_name = raw.replace('.', ' ').replace('_', ' ').strip().title()
+            result = raw.replace('.', ' ').replace('_', ' ').strip().title()
+            rec.form_name = result
+            rec.display_name = result
+            
     tab_ids = fields.One2many(
         'aps.tab.focus.form.tab',
         'form_id',
@@ -84,13 +89,13 @@ class ApsTabFocusForms(models.Model):
     _sql_constraints = [
         (
             'model_form_uniq',
-            'unique(model_name, form_name)',
+            'unique(model_name, form_id)',
             'A form registry entry for this model/form already exists.',
         ),
     ]
 
     @api.model
-    def register_form(self, model_name, form_name, tabs):
+    def register_form(self, model_name, form_id, tabs):
         """Register or update a form and its tabs.
 
         Called from the browser the first time (or whenever new tabs appear).
@@ -104,7 +109,7 @@ class ApsTabFocusForms(models.Model):
         user = self.env.user
         rec = self.search([
             ('model_name', '=', model_name),
-            ('form_name', '=', form_name),
+            ('form_id', '=', form_id),
         ], limit=1)
 
         if not rec:
@@ -119,7 +124,7 @@ class ApsTabFocusForms(models.Model):
             ]
             rec = self.create({
                 'model_name': model_name,
-                'form_name': form_name,
+                'form_id': form_id,
                 'tab_ids': [(0, 0, v) for v in tab_vals],
                 'user_ids': [(4, user.id)],
             })
@@ -152,12 +157,12 @@ class ApsTabFocusForms(models.Model):
         """
         self.ensure_one()
         view = None
-        form_name = self.form_name or ''
-        if form_name.isdigit():
-            view = self.env['ir.ui.view'].browse(int(form_name))
+        form_id = self.form_id or ''
+        if form_id.isdigit():
+            view = self.env['ir.ui.view'].browse(int(form_id))
         else:
-            # form_name may be an XML-ID like "module.view_name_form"
-            view = self.env.ref(form_name, raise_if_not_found=False)
+            # form_id may be an XML-ID like "module.view_name_form"
+            view = self.env.ref(form_id, raise_if_not_found=False)
         if not view or not view.exists():
             return
 
@@ -231,7 +236,7 @@ class ApsTabFocusConfigTab(models.Model):
 class ApsTabFocusConfig(models.Model):
     _name = 'aps.tab.focus.config'
     _description = 'Tab Focus Configuration'
-    _order = 'model_name, form_name'
+    _order = 'model_name, form_id'
 
     forms_id = fields.Many2one(
         'aps.tab.focus.forms',
@@ -247,12 +252,19 @@ class ApsTabFocusConfig(models.Model):
         store=True,
         readonly=True,
     )
+    form_id = fields.Char(
+        related='forms_id.form_id',
+        string='Form ID',
+        store=True,
+        readonly=True,
+    )
     form_name = fields.Char(
         related='forms_id.form_name',
         string='Form Name',
         store=True,
         readonly=True,
     )
+
     save_mode = fields.Selection(
         [
             ('none', 'No Saving (default)'),
@@ -315,7 +327,7 @@ class ApsTabFocusConfig(models.Model):
         configs = self.search([])
         result = {}
         for c in configs:
-            key = f"{c.model_name}|{c.form_name}"
+            key = f"{c.model_name}|{c.form_id}"
             result[key] = {
                 'save_mode': c.save_mode,
                 'default_tab': (

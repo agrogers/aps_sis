@@ -10,9 +10,9 @@
             <field name="model">aps.tab.focus.forms</field>
             <field name="arch" type="xml">
                 <list string="Tab Focus – Form Registry" create="false">
-                    <field name="display_name" optional="show"/>
+                    <field name="form_name" optional="show"/>
                     <field name="model_name"/>
-                    <field name="form_name" optional="hide"/>
+                    <field name="form_id" optional="hide"/>
                     <field name="tab_ids" widget="many2many_tags" readonly="1" optional="show"/>
                     <field name="user_ids" widget="many2many_tags" optional="show"/>
                 </list>
@@ -35,6 +35,7 @@
                             <group string="Form Identity">
                                 <field name="model_name" readonly="1"/>
                                 <field name="form_name" readonly="1"/>
+                                <field name="form_id" readonly="1"/>
                             </group>
                             <group string="Visitors">
                                 <field name="user_ids" widget="many2many_tags" readonly="1"/>
@@ -94,8 +95,6 @@
             <field name="arch" type="xml">
                 <list string="Tab Focus Configuration">
                     <field name="model_name"/>
-                    <field name="display_name"/>
-                    <field name="form_name"/>
                     <field name="form_name"/>
                     <field name="save_mode"/>
                     <field name="default_tab_id" optional="show"/>
@@ -121,7 +120,7 @@
                                        options="{'no_create': True}"
                                        help="Select the form to configure.  Open a form in the app first so it appears here."/>
                                 <field name="model_name" readonly="1"/>
-                                <field name="form_name" readonly="1"/>
+                                <field name="form_id" readonly="1"/>
                                 <field name="save_mode"/>
                             </group>
                             <group string="Default Tab">
