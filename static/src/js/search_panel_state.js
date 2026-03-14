@@ -167,15 +167,34 @@ patch(SearchModel.prototype, {
                 this._apsRestoringState = false;
             }
 
-            // Schedule _notify() as a macrotask (setTimeout 0) so it fires AFTER:
-            //   1. load() sets blockNotification = false (unblocks _notify)
-            //   2. onWillStart resolves and the component mounts
-            //   3. useBus useEffect registers the "update" event listener
-            // Calling _notify() synchronously here would either be blocked by
-            // blockNotification=true (when sectionsPromise is awaited) or fire
-            // before useEffect registers the listener (when it is not awaited).
+            // Wait for _notify() to become effective using requestAnimationFrame.
+            //
+            // We cannot call _notify() synchronously here because:
+            //   1. blockNotification = true while inside load() — _notify() is a no-op.
+            //   2. useBus registers the "update" listener via useEffect, which only
+            //      runs after OWL's first render (after onWillStart resolves).
+            //
+            // requestAnimationFrame fires before each browser paint (~16 ms).
+            // OWL schedules its render as a microtask (Promise.resolve()), so by the
+            // time the next animation frame fires, load() has completed (clearing
+            // blockNotification), and OWL has fully rendered and run useEffect to
+            // register the listener.  We keep retrying each frame until
+            // blockNotification is false, making the timing deterministic rather than
+            // relying on an arbitrary fixed delay.
             if (anyRestored) {
-                setTimeout(() => this._notify(), 1000);
+                const model = this;
+                let retries = 0;
+                const MAX_RETRIES = 100; // ~1.6 s safety cap at 16 ms/frame
+                const tryNotify = () => {
+                    if (!model.blockNotification) {
+                        model._notify();
+                    } else if (retries++ < MAX_RETRIES) {
+                        requestAnimationFrame(tryNotify);
+                    } else {
+                        console.warn("[search_panel_state] _notify() still blocked after max retries — saved filter state may not have applied.");
+                    }
+                };
+                requestAnimationFrame(tryNotify);
             }
         } catch (err) {
             console.debug("[search_panel_state] Failed to restore state:", err);
