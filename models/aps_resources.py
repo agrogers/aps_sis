@@ -260,7 +260,52 @@ class APSResource(models.Model):
         compute='_compute_share_url',
         help='Public URL to share this resource with anyone.',
     )
+    is_recently_viewed = fields.Boolean(
+        string='Recently Viewed',
+        compute='_compute_is_recently_viewed',
+        search='_search_is_recently_viewed',
+    )
 # region Computed Fields and Overrides
+    def _compute_is_recently_viewed(self):
+        ViewHistory = self.env.get('view.history')
+        if ViewHistory is None:
+            for rec in self:
+                rec.is_recently_viewed = False
+            return
+        history = ViewHistory.sudo().search([
+            ('user_id', '=', self.env.user.id),
+            ('model', '=', 'aps.resources'),
+            ('res_id', 'in', self.ids),
+            ], order='viewed_at desc, id desc',
+            limit=33
+        )
+        
+
+        viewed_ids = set(history.mapped('res_id'))
+        for rec in self:
+            rec.is_recently_viewed = rec.id in viewed_ids
+
+    def _search_is_recently_viewed(self, operator, value):
+        ViewHistory = self.env.get('view.history')
+        if ViewHistory is None:
+            return [('id', '=', False)]
+        # value can be True/False (boolean) or an integer limit
+        if isinstance(value, int) and value > 1:
+            limit = value
+            positive = operator == '='
+        else:
+            limit = 33
+            positive = (operator == '=' and value) or (operator == '!=' and not value)
+        history = ViewHistory.sudo().search([
+            ('user_id', '=', self.env.user.id),
+            ('model', '=', 'aps.resources'),
+        ], order='viewed_at desc', limit=limit)
+
+        viewed_ids = list(dict.fromkeys(history.mapped('res_id')))[:limit]
+        if positive:
+            return [('id', 'in', viewed_ids)]
+        return [('id', 'not in', viewed_ids)]
+
     @api.depends('subjects')
     def _compute_subject_icons(self):
         for record in self:

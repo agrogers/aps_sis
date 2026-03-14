@@ -351,6 +351,9 @@
                 <field name="category"/>
                 <field name="marks"/>
                 <field name="subjects"/>
+                <filter name="recently_viewed_25" string="Recently Viewed (25)" domain="[('is_recently_viewed', '=', 25)]"/>
+                <filter name="recently_viewed_50" string="Recently Viewed (50)" domain="[('is_recently_viewed', '=', 50)]"/>
+                <separator/>
                 <filter name="has_parent" string="Has Parent" domain="[('parent_ids','!=',False)]"/>
                 <filter name="no_parent" string="Root Resources" domain="[('parent_ids','=',False)]"/>
                 <filter name="has_url" string="Has URL" domain="[('url','!=',False)]"/>
