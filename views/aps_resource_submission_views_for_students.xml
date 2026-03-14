@@ -64,7 +64,6 @@
         <field name="priority">5</field>
         <field name="arch" type="xml">
             <form create="false" delete="false">
-                <field name="default_notebook_page_per_user" invisible="1" readonly="0"/> <!-- Hidden field to store per-user default tab preferences -->
                <header>
                     <button name="action_open_submission" string="Submission Details" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
