@@ -277,9 +277,7 @@ class APSResource(models.Model):
             ('model', '=', 'aps.resources'),
             ('res_id', 'in', self.ids),
             ], order='viewed_at desc, id desc',
-            limit=33
         )
-        
 
         viewed_ids = set(history.mapped('res_id'))
         for rec in self:
@@ -294,13 +292,13 @@ class APSResource(models.Model):
             limit = value
             positive = operator == '='
         else:
-            limit = 33
+            limit = 10
             positive = (operator == '=' and value) or (operator == '!=' and not value)
         history = ViewHistory.sudo().search([
             ('user_id', '=', self.env.user.id),
             ('model', '=', 'aps.resources'),
-        ], order='viewed_at desc', limit=limit)
-
+        ], order='viewed_at desc', limit=limit*2)  # The history saves an entry for every visit to a record, which means there is often duplicates. Doubling the limit will usually get enough to avoid the duplicates.
+        
         viewed_ids = list(dict.fromkeys(history.mapped('res_id')))[:limit]
         if positive:
             return [('id', 'in', viewed_ids)]
