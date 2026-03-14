@@ -6,11 +6,21 @@ import { onMounted, onWillUnmount } from "@odoo/owl";
 
 // ─── Session-level caches (survive multiple form opens within the same page load) ───
 
-/** @type {Object.<string, {save_mode:string, default_tab:string|false, tab_priority:string[]|null}>} */
+/**
+ * Config cache keyed by "model_name|form_name".
+ * @type {Object.<string, {save_mode:string, default_tab:{string:string,name:string}|false, tab_priority:{string:string,name:string}[]}>}
+ */
 const _configCache = {};
 let _configsLoaded = false;
 /** @type {Promise|null} */
 let _configsLoadingPromise = null;
+
+/**
+ * Set of "model_name|form_name" keys for forms that have already been
+ * registered in aps.tab.focus.forms during this browser session.
+ * @type {Set<string>}
+ */
+const _registeredForms = new Set();
 
 /**
  * userId → true when that user's states have been pre-loaded from DB into
@@ -26,8 +36,8 @@ let _orm = null;
 
 /**
  * Dirty states waiting to be flushed to the DB.
- * Key: `${userId}|${modelName}|${recordId}`
- * @type {Map<string, {model_name:string, record_id:number, tab_name:string}>}
+ * Key: `${userId}|${modelName}|${formName}|${recordId}`
+ * @type {Map<string, {model_name:string, record_id:number, tab_string:string}>}
  */
 const _dirtyStates = new Map();
 
@@ -50,18 +60,43 @@ function _getLS(userId, modelName, recordId) {
     }
 }
 
-function _setLS(userId, modelName, recordId, tabName) {
+function _setLS(userId, modelName, recordId, tabString) {
     try {
-        localStorage.setItem(_lsKey(userId, modelName, recordId), tabName);
+        localStorage.setItem(_lsKey(userId, modelName, recordId), tabString);
     } catch {
         // localStorage unavailable (private mode, storage full, etc.)
     }
 }
 
+// ─── Tab collection helpers ──────────────────────────────────────────────────
+
+/**
+ * Collect all notebook tab buttons from rootEl and return them as an array of
+ * {string, name} objects.  Tabs are identified by their visible string label
+ * (textContent), which is always present.  The name attribute is included when
+ * available, but tabs without one are still captured.
+ */
+function _collectTabs(rootEl) {
+    const buttons = rootEl.querySelectorAll(
+        '.o_notebook_headers button, .o_notebook_tabs button',
+    );
+    const tabs = [];
+    for (const btn of buttons) {
+        const label = btn.textContent.trim();
+        if (!label) continue;
+        tabs.push({
+            string: label,
+            name: btn.getAttribute('name') || '',
+        });
+    }
+    return tabs;
+}
+
 // ─── DB helpers ─────────────────────────────────────────────────────────────
 
 /**
- * Ensure all tab-focus configurations are loaded from the DB.
+ * Ensure all tab-focus configurations are loaded from the DB via the
+ * ``get_configs_for_js`` Python method.
  * Results are cached in _configCache for the lifetime of the browser tab.
  */
 async function _ensureConfigsLoaded(orm) {
@@ -69,24 +104,10 @@ async function _ensureConfigsLoaded(orm) {
     if (_configsLoadingPromise) return _configsLoadingPromise;
 
     _configsLoadingPromise = orm
-        .searchRead(
-            'aps.tab.focus.config',
-            [],
-            ['model_name', 'save_mode', 'default_tab', 'tab_priority'],
-        )
-        .then((records) => {
-            for (const r of records) {
-                // Parse tab_priority once here so we don't repeat JSON.parse on every form open.
-                let parsedPriority = null;
-                if (r.tab_priority) {
-                    try {
-                        const p = JSON.parse(r.tab_priority);
-                        parsedPriority = Array.isArray(p) ? p : null;
-                    } catch {
-                        parsedPriority = null;
-                    }
-                }
-                _configCache[r.model_name] = { ...r, _tab_priority_parsed: parsedPriority };
+        .call('aps.tab.focus.config', 'get_configs_for_js', [])
+        .then((configs) => {
+            for (const [key, cfg] of Object.entries(configs)) {
+                _configCache[key] = cfg;
             }
             _configsLoaded = true;
             _configsLoadingPromise = null;
@@ -110,7 +131,7 @@ async function _ensureStatesLoaded(orm, userId) {
         .call('aps.tab.focus.state', 'get_states_for_user', [])
         .then((states) => {
             for (const s of states) {
-                _setLS(userId, s.model_name, s.record_id, s.tab_name);
+                _setLS(userId, s.model_name, s.record_id, s.tab_string);
             }
             _statesLoadedForUser.add(userId);
             _statesLoadingPromise = null;
@@ -120,6 +141,21 @@ async function _ensureStatesLoaded(orm, userId) {
         });
 
     return _statesLoadingPromise;
+}
+
+/**
+ * Register a form and its tabs in aps.tab.focus.forms (once per session).
+ * Failures are silently swallowed so a registration error never breaks the form.
+ */
+async function _registerForm(orm, modelName, formName, tabs) {
+    const key = `${modelName}|${formName}`;
+    if (_registeredForms.has(key)) return;
+    _registeredForms.add(key);  // optimistically mark to avoid duplicate calls
+    try {
+        await orm.call('aps.tab.focus.forms', 'register_form', [modelName, formName, tabs]);
+    } catch {
+        _registeredForms.delete(key);  // allow retry on next visit if it failed
+    }
 }
 
 // ─── Periodic / deferred DB flush ───────────────────────────────────────────
@@ -148,40 +184,60 @@ function _schedulePeriodicFlush() {
     window.addEventListener('beforeunload', _flush);
 }
 
-function _markDirty(modelName, recordId, tabName) {
+function _markDirty(modelName, recordId, tabString) {
     const key = `${modelName}|${recordId}`;
-    _dirtyStates.set(key, { model_name: modelName, record_id: recordId, tab_name: tabName });
+    _dirtyStates.set(key, { model_name: modelName, record_id: recordId, tab_string: tabString });
 }
 
 // ─── Tab resolution helpers ──────────────────────────────────────────────────
 
 /**
- * Given a list of candidate tab names (in priority order), return the first
- * one whose corresponding header element is present and visible in rootEl.
+ * Find a tab button in rootEl that matches a {string, name} descriptor.
+ * Tries name-attribute match first, falls back to text-content match.
  */
-function _firstVisibleTab(rootEl, names) {
-    for (const name of names) {
-        const tab = rootEl.querySelector(
-            `.o_notebook_headers [name="${name}"], .o_notebook_tabs [name="${name}"]`,
+function _findTabElement(rootEl, tabInfo) {
+    if (tabInfo.name) {
+        const byName = rootEl.querySelector(
+            `.o_notebook_headers [name="${tabInfo.name}"], .o_notebook_tabs [name="${tabInfo.name}"]`,
         );
-        if (tab && !tab.closest('.d-none') && tab.offsetParent !== null) {
-            return name;
+        if (byName) return byName;
+    }
+    if (tabInfo.string) {
+        const allButtons = rootEl.querySelectorAll(
+            '.o_notebook_headers button, .o_notebook_tabs button',
+        );
+        for (const btn of allButtons) {
+            if (btn.textContent.trim() === tabInfo.string) return btn;
         }
     }
     return null;
 }
 
 /**
- * Activate a notebook tab by name.  Returns true if the tab was found and
- * clicked.
+ * Given a list of candidate tab descriptors ({string, name}) in priority
+ * order, return the string label of the first one whose tab header element is
+ * present and visible in rootEl.
  */
-function _activateTab(rootEl, tabName) {
-    if (!tabName) return false;
-    const tab = rootEl.querySelector(
-        `.o_notebook_headers [name="${tabName}"], .o_notebook_tabs [name="${tabName}"]`,
-    );
-    if (tab && tab.click) {
-        tab.click();
+function _firstVisibleTab(rootEl, tabInfoList) {
+    for (const tabInfo of tabInfoList) {
+        const el = _findTabElement(rootEl, tabInfo);
+        if (el && !el.closest('.d-none') && el.offsetParent !== null) {
+            return tabInfo.string;
+        }
+    }
+    return null;
+}
+
+/**
+ * Activate a notebook tab by its string label (or name attr).
+ * Returns true if the tab was found and clicked.
+ */
+function _activateTab(rootEl, tabString) {
+    if (!tabString) return false;
+    // Try to find by string first; also try by name in case string is stored as name.
+    const el = _findTabElement(rootEl, { string: tabString, name: tabString });
+    if (el && el.click) {
+        el.click();
         return true;
     }
     return false;
@@ -210,6 +266,13 @@ patch(FormController.prototype, {
             const modelName = this.model?.root?.resModel;
             if (!modelName) return;
 
+            // Derive a stable form identifier.  Prefer the arch XML-ID (e.g.
+            // "module.view_name_form") when available; fall back to the numeric
+            // view ID from the environment config.
+            const formName =
+                this.props?.archInfo?.xmlid ||
+                String(this.env?.config?.viewId || 'default');
+
             const userId = user.userId;
             const recordId = this.model?.root?.resId || 0;
 
@@ -219,10 +282,17 @@ patch(FormController.prototype, {
                 _schedulePeriodicFlush();
             }
 
+            // Collect tab info from the DOM (string label + optional name attr).
+            const tabsOnForm = _collectTabs(rootEl);
+
+            // Register this form+tabs in aps.tab.focus.forms (fire-and-forget).
+            _registerForm(orm, modelName, formName, tabsOnForm);
+
             // Load configs + states (cached after first call).
             await _ensureConfigsLoaded(orm);
 
-            const config = _configCache[modelName];
+            const configKey = `${modelName}|${formName}`;
+            const config = _configCache[configKey];
             const saveMode = config?.save_mode || 'none';
 
             if (saveMode !== 'none') {
@@ -231,64 +301,70 @@ patch(FormController.prototype, {
 
             // ── Determine the tab to activate ────────────────────────────────
 
-            let tabName = null;
+            let tabString = null;
 
             // 1. Per-record state (only in per_record mode with a real record).
             if (saveMode === 'per_record' && recordId) {
-                tabName = _getLS(userId, modelName, recordId);
+                tabString = _getLS(userId, modelName, recordId);
             }
 
             // 2. Per-form state fallback (most recently used tab for this model).
-            if (!tabName && (saveMode === 'per_form' || saveMode === 'per_record')) {
-                tabName = _getLS(userId, modelName, 0);
+            if (!tabString && (saveMode === 'per_form' || saveMode === 'per_record')) {
+                tabString = _getLS(userId, modelName, 0);
             }
 
-            // 3. Default tab from configuration.
-            if (!tabName && config?.default_tab) {
-                tabName = config.default_tab;
+            // 3. Default tab from configuration (a {string, name} descriptor).
+            if (!tabString && config?.default_tab) {
+                const defEl = _findTabElement(rootEl, config.default_tab);
+                if (defEl) tabString = config.default_tab.string;
             }
 
-            // 4. Tab priority list – first visible tab wins (satisfies requirement #9).
-            if (!tabName && config?._tab_priority_parsed) {
-                tabName = _firstVisibleTab(rootEl, config._tab_priority_parsed);
+            // 4. Tab priority list – first visible tab wins (requirement #9).
+            if (!tabString && config?.tab_priority?.length) {
+                tabString = _firstVisibleTab(rootEl, config.tab_priority);
             }
 
             // 5. Fallback: context default_notebook_page (existing Odoo mechanism).
-            if (!tabName) {
-                tabName = this.props.context?.default_notebook_page || null;
+            if (!tabString) {
+                tabString = this.props.context?.default_notebook_page || null;
             }
 
             // 6. Fallback: any tab element carrying the CSS class "default-page".
-            if (!tabName) {
+            if (!tabString) {
                 const el = rootEl.querySelector(
                     '.o_notebook_headers .default-page, .o_notebook_tabs .default-page',
                 );
-                tabName = el?.getAttribute('name') || el?.getAttribute('data-name') || null;
+                if (el) {
+                    tabString =
+                        el.getAttribute('name') ||
+                        el.textContent.trim() ||
+                        null;
+                }
             }
 
             // Activate the resolved tab.
-            _activateTab(rootEl, tabName);
+            _activateTab(rootEl, tabString);
 
             // ── Listen for tab changes ────────────────────────────────────────
             if (saveMode === 'none') return;
 
-            const tabs = rootEl.querySelectorAll(
-                '.o_notebook_headers [name], .o_notebook_tabs [name]',
+            const tabButtons = rootEl.querySelectorAll(
+                '.o_notebook_headers button, .o_notebook_tabs button',
             );
-            tabs.forEach((tab) => {
+            tabButtons.forEach((tab) => {
                 tab.addEventListener('click', () => {
-                    const newTabName = tab.getAttribute('name');
-                    if (!newTabName) return;
+                    const newTabString = tab.textContent.trim();
+                    if (!newTabString) return;
 
                     // Save per-record state.
                     if (saveMode === 'per_record' && recordId) {
-                        _setLS(userId, modelName, recordId, newTabName);
-                        _markDirty(modelName, recordId, newTabName);
+                        _setLS(userId, modelName, recordId, newTabString);
+                        _markDirty(modelName, recordId, newTabString);
                     }
 
                     // Always update per-form (most-recently-used) state.
-                    _setLS(userId, modelName, 0, newTabName);
-                    _markDirty(modelName, 0, newTabName);
+                    _setLS(userId, modelName, 0, newTabString);
+                    _markDirty(modelName, 0, newTabString);
 
                     // Debounced DB flush (30 s after last change).
                     if (this._tabFocusDebounceTimer) clearTimeout(this._tabFocusDebounceTimer);

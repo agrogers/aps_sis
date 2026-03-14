@@ -3,6 +3,85 @@
     <data>
 
         <!-- ═══════════════════════════════════════════
+             Tab Focus Forms – list view  (auto-populated registry)
+        ═══════════════════════════════════════════ -->
+        <record id="view_aps_tab_focus_forms_list" model="ir.ui.view">
+            <field name="name">aps.tab.focus.forms.list</field>
+            <field name="model">aps.tab.focus.forms</field>
+            <field name="arch" type="xml">
+                <list string="Tab Focus – Form Registry" create="false">
+                    <field name="model_name"/>
+                    <field name="form_name"/>
+                    <field name="tab_ids" widget="many2many_tags" readonly="1"/>
+                    <field name="user_ids" widget="many2many_tags" optional="show"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
+             Tab Focus Forms – form view
+        ═══════════════════════════════════════════ -->
+        <record id="view_aps_tab_focus_forms_form" model="ir.ui.view">
+            <field name="name">aps.tab.focus.forms.form</field>
+            <field name="model">aps.tab.focus.forms</field>
+            <field name="arch" type="xml">
+                <form string="Tab Focus – Form Registry">
+                    <sheet>
+                        <group>
+                            <group string="Form Identity">
+                                <field name="model_name" readonly="1"/>
+                                <field name="form_name" readonly="1"/>
+                            </group>
+                            <group string="Visitors">
+                                <field name="user_ids" widget="many2many_tags" readonly="1"/>
+                            </group>
+                        </group>
+                        <separator string="Tabs"/>
+                        <field name="tab_ids">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="tab_string"/>
+                                <field name="tab_name" optional="show"/>
+                            </list>
+                        </field>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
+             Tab Focus Forms – action
+        ═══════════════════════════════════════════ -->
+        <record id="action_aps_tab_focus_forms" model="ir.actions.act_window">
+            <field name="name">Tab Focus – Form Registry</field>
+            <field name="res_model">aps.tab.focus.forms</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No forms have been visited yet.
+                </p>
+                <p>
+                    This registry is populated automatically the first time any
+                    user opens a form that contains notebook tabs.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_aps_tab_focus_forms_list" model="ir.actions.act_window.view">
+            <field name="sequence">1</field>
+            <field name="view_mode">list</field>
+            <field name="view_id" ref="view_aps_tab_focus_forms_list"/>
+            <field name="act_window_id" ref="action_aps_tab_focus_forms"/>
+        </record>
+
+        <record id="action_aps_tab_focus_forms_form" model="ir.actions.act_window.view">
+            <field name="sequence">2</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_aps_tab_focus_forms_form"/>
+            <field name="act_window_id" ref="action_aps_tab_focus_forms"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════
              Tab Focus Config – list view
         ═══════════════════════════════════════════ -->
         <record id="view_aps_tab_focus_config_list" model="ir.ui.view">
@@ -11,8 +90,9 @@
             <field name="arch" type="xml">
                 <list string="Tab Focus Configuration">
                     <field name="model_name"/>
+                    <field name="form_name"/>
                     <field name="save_mode"/>
-                    <field name="default_tab"/>
+                    <field name="default_tab_id" optional="show"/>
                 </list>
             </field>
         </record>
@@ -27,30 +107,48 @@
                 <form string="Tab Focus Configuration">
                     <sheet>
                         <group>
-                            <group string="Model">
-                                <field name="model_name"
-                                       placeholder="e.g. aps.resources"/>
+                            <group string="Form">
+                                <field name="forms_id"
+                                       options="{'no_create': True}"
+                                       help="Select the form to configure.  Open a form in the app first so it appears here."/>
+                                <field name="model_name" readonly="1"/>
+                                <field name="form_name" readonly="1"/>
                                 <field name="save_mode"/>
                             </group>
                             <group string="Default Tab">
-                                <field name="default_tab"
+                                <field name="default_tab_id"
+                                       domain="[('form_id', '=', forms_id)]"
+                                       options="{'no_create': True}"
                                        placeholder="Leave blank to use form default"/>
-                                <field name="tab_priority"
-                                       widget="text"
-                                       placeholder='e.g. ["summary", "details", "history"]'/>
                             </group>
                         </group>
-                        <div class="o_form_sheet_bg">
+                        <separator string="Tab Priority"/>
+                        <p class="text-muted mb-2">
+                            Drag rows into the order you prefer.  When no saved
+                            state is available, the first <em>visible</em> tab
+                            from this list is activated.
+                        </p>
+                        <field name="tab_priority_ids">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="tab_id"
+                                       domain="[('form_id', '=', parent.forms_id)]"
+                                       options="{'no_create': True}"/>
+                                <field name="tab_string" readonly="1"/>
+                            </list>
+                        </field>
+                        <div class="o_form_sheet_bg mt-3">
                             <div class="alert alert-info" role="alert">
                                 <strong>How it works</strong>
                                 <ul class="mb-0 mt-1">
-                                    <li><b>No Saving</b> – tab focus is not remembered (default for all models not listed here).</li>
+                                    <li><b>No Saving</b> – tab focus is not remembered (default for all forms not listed here).</li>
                                     <li><b>Per Form</b> – the last tab the user clicked on any record of this model is restored on every open.</li>
                                     <li><b>Per Record</b> – each record individually remembers its last tab; falls back to the per-form state when a record has no saved state.</li>
                                 </ul>
                                 <hr class="my-1"/>
-                                <strong>Tab Priority</strong> is a JSON array of tab names tried in order when no saved state is available
-                                (e.g. <code>["summary","details"]</code>). The first <em>visible</em> tab in the list is used.
+                                The <strong>Form Registry</strong> is populated automatically when users navigate
+                                the application.  Visit the form you want to configure first, then return here
+                                to create a configuration entry.
                             </div>
                         </div>
                     </sheet>
@@ -70,8 +168,9 @@
                     No tab focus configuration found.
                 </p>
                 <p>
-                    Create an entry here to control how notebook tab focus is
-                    remembered for a particular Odoo model.
+                    Visit a form first (so it appears in the Form Registry), then
+                    create an entry here to control how notebook tab focus is
+                    remembered for that form.
                 </p>
             </field>
         </record>
@@ -124,11 +223,19 @@
         </record>
 
         <!-- ═══════════════════════════════════════════
-             Menu item – under APS SIS Configuration
+             Menu items – under APS SIS Configuration
         ═══════════════════════════════════════════ -->
         <menuitem
+            id="menu_aps_tab_focus_forms"
+            name="Tab Focus – Form Registry"
+            parent="menu_apex_configuration"
+            action="action_aps_tab_focus_forms"
+            sequence="49"
+            groups="aps_sis.group_aps_teacher"/>
+
+        <menuitem
             id="menu_aps_tab_focus_config"
-            name="Tab Focus"
+            name="Tab Focus Configuration"
             parent="menu_apex_configuration"
             action="action_aps_tab_focus_config"
             sequence="50"
