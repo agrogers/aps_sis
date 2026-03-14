@@ -74,9 +74,15 @@ patch(SearchModel.prototype, {
      * Restore the saved selection on the FIRST fetch only — subsequent
      * re-fetches happen when the domain changes and we must not override
      * the user's current live selection.
+     *
+     * Guard: if no categories or filters are being loaded then this model has
+     * no search panel — skip restore entirely to avoid any interference with
+     * views that don't use a search panel.
      */
     async _fetchSections(categoriesToLoad, filtersToLoad) {
         await super._fetchSections(categoriesToLoad, filtersToLoad);
+        // No search panel sections → nothing to restore.
+        if (!categoriesToLoad.length && !filtersToLoad.length) return;
         if (!this._apsStateRestored) {
             this._apsStateRestored = true;
             this._apsRestoreSearchPanelState();
