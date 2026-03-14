@@ -167,34 +167,71 @@ patch(SearchModel.prototype, {
                 this._apsRestoringState = false;
             }
 
-            // Wait for _notify() to become effective using requestAnimationFrame.
+            // Wait for the list table to appear in the DOM before calling _notify().
             //
-            // We cannot call _notify() synchronously here because:
-            //   1. blockNotification = true while inside load() — _notify() is a no-op.
-            //   2. useBus registers the "update" listener via useEffect, which only
-            //      runs after OWL's first render (after onWillStart resolves).
+            // blockNotification clears before the list has rendered, so polling it
+            // fires too early — _notify() would trigger before the view's "update"
+            // listener is registered.  Instead, we watch for the o_list_table element
+            // to be added via MutationObserver.  That element only appears once OWL
+            // has finished its render cycle and the list controller has fetched and
+            // painted the first page of records, which guarantees:
+            //   1. load() has completed (blockNotification = false)
+            //   2. useBus useEffect has registered the "update" listener
             //
-            // requestAnimationFrame fires before each browser paint (~16 ms).
-            // OWL schedules its render as a microtask (Promise.resolve()), so by the
-            // time the next animation frame fires, load() has completed (clearing
-            // blockNotification), and OWL has fully rendered and run useEffect to
-            // register the listener.  We keep retrying each frame until
-            // blockNotification is false, making the timing deterministic rather than
-            // relying on an arbitrary fixed delay.
+            // A 5 s safety-cap setTimeout calls _notify() as a last resort in case
+            // the observer never fires (e.g., the view is not a list view).
             if (anyRestored) {
                 const model = this;
-                let retries = 0;
-                const MAX_RETRIES = 100; // ~1.6 s safety cap at 16 ms/frame
-                const tryNotify = () => {
-                    if (!model.blockNotification) {
-                        model._notify();
-                    } else if (retries++ < MAX_RETRIES) {
-                        requestAnimationFrame(tryNotify);
-                    } else {
-                        console.warn("[search_panel_state] _notify() still blocked after max retries — saved filter state may not have applied.");
+                let notified = false;
+
+                const doNotify = () => {
+                    if (notified) return;
+                    notified = true;
+                    if (observer) {
+                        observer.disconnect();
+                        observer = null;
                     }
+                    model._notify();
                 };
-                requestAnimationFrame(tryNotify);
+
+                // Observe document.body because SearchModel has no reference to the
+                // view's DOM container.  The observer is always self-terminating: it
+                // disconnects as soon as o_list_table appears (typically within one
+                // paint cycle) or after the 5 s safety timeout, so the broad scope
+                // does not produce lasting overhead.
+                //
+                // `observer` is declared before observe() is called.  Both the
+                // MutationObserver callback and the setTimeout closure capture it by
+                // reference; because MutationObserver callbacks and setTimeout callbacks
+                // are always asynchronous, `observer` is guaranteed to be assigned by
+                // the time either fires.
+                let observer = new MutationObserver((mutations) => {
+                    for (const mutation of mutations) {
+                        for (const node of mutation.addedNodes) {
+                            if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                            // Fire as soon as the list table (or its wrapper) is added.
+                            if (
+                                node.classList?.contains("o_list_table") ||
+                                node.querySelector?.(".o_list_table")
+                            ) {
+                                doNotify();
+                                return;
+                            }
+                        }
+                    }
+                });
+                observer.observe(document.body, { childList: true, subtree: true });
+
+                // Safety cap: if the list never renders (e.g. Kanban, pivot), give up
+                // after 5 s so the observer doesn't leak.
+                setTimeout(() => {
+                    if (!notified) {
+                        console.warn(
+                            "[search_panel_state] List table never appeared — applying saved filter state anyway."
+                        );
+                        doNotify();
+                    }
+                }, 5000);
             }
         } catch (err) {
             console.debug("[search_panel_state] Failed to restore state:", err);
