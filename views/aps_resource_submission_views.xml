@@ -271,7 +271,7 @@
 
                     <field name="model_answer_is_notes" invisible="1"/>
                     <notebook>
-                        <page string="ⓘ Details">
+                        <page string="Details" name="information_page"  class="tab-with-icon details-tab">
                             <group>
                                 <group string="Submission Details">
                                     <field name="task_id" readonly="1"/>
@@ -322,19 +322,19 @@
                                 </group>
                             </group>
                         </page>
-                        <page string="Student Answer">
+                        <page string="Student Answer" class="tab-with-icon student-answer-tab" name="student_answer_page" >
                             <field name="answer" nolabel="1" placeholder="Enter your answer here."/>
                         </page>
-                        <page string="🗪 Teacher Feedback">
+                        <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab">
                             <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="🗹 Model Answer" invisible="not model_answer or model_answer_is_notes">
+                        <page string="Model Answer" class=" tab-with-icon model-answer-tab" invisible="not model_answer or model_answer_is_notes">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission." readonly="1"/>
                         </page>
-                        <page string="🗹 Notes" invisible="not model_answer or not model_answer_is_notes">
+                        <page string="Notes" name="resource_notes_page" class="tab-with-icon notes-tab" invisible="not model_answer or not model_answer_is_notes">
                             <field name="model_answer" nolabel="1" placeholder="Notes for this submission." readonly="1"/>
                         </page>
-                        <page string="ℚuestion" invisible="has_question=='no'">
+                        <page string="Question" name="question_page" class="default-page tab-with-icon question-tab" invisible="has_question=='no'">
                             <field name="question" nolabel="1" readonly=""/>
                         </page>
                     </notebook>

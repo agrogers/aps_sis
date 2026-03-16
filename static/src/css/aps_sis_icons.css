@@ -1,0 +1,86 @@
+
+.o_form_view .nav-tabs a.nav-link.tab-with-icon  {
+    position: relative;
+    padding-left: 32px !important;  /* space for icon – adjust as needed */
+}
+
+.o_form_view .nav-tabs a.nav-link.tab-with-icon::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;               /* your icon size */
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Per-tab images */
+.o_form_view .nav-tabs a.nav-link.student-answer-tab.active::before {
+    filter: none;
+}
+.o_form_view .nav-tabs a.nav-link.student-answer-tab::before {
+    background-image: url('/aps_sis/static/src/img/work.svg');
+    filter: grayscale(1);
+}
+
+.o_form_view .nav-tabs a.nav-link.teacher-feedback-tab.active::before {
+    filter: none;
+}
+.o_form_view .nav-tabs a.nav-link.teacher-feedback-tab::before {
+    background-image: url('/aps_sis/static/src/img/chat.svg');
+    filter: grayscale(1);
+}
+
+.o_form_view .nav-tabs a.nav-link.model-answer-tab.active::before {
+    filter: none;
+}
+.o_form_view .nav-tabs a.nav-link.model-answer-tab::before {
+    background-image: url('/aps_sis/static/src/img/correct.svg');
+    filter: grayscale(1);
+}
+
+.o_form_view .nav-tabs a.nav-link.question-tab.active::before {
+    filter: none;
+}
+.o_form_view .nav-tabs a.nav-link.question-tab::before {
+    background-image: url('/aps_sis/static/src/img/question.svg');
+    filter: grayscale(1);
+}
+
+.o_form_view .nav-tabs a.nav-link.notes-tab.active::before {
+    filter: none;
+}
+.o_form_view .nav-tabs a.nav-link.notes-tab::before {
+    background-image: url('/aps_sis/static/src/img/note.svg');
+    filter: grayscale(1);
+}
+
+.o_form_view .nav-tabs a.nav-link.details-tab.active::before {
+    filter: none;
+}
+.o_form_view .nav-tabs a.nav-link.details-tab::before {
+    background-image: url('/aps_sis/static/src/img/information_2.svg');
+    filter: grayscale(1);
+}
+
+.o_form_view .nav-tabs a.nav-link.information-tab.active::before {
+    filter: none;
+}
+.o_form_view .nav-tabs a.nav-link.information-tab::before {
+    background-image: url('/aps_sis/static/src/img/information_2.svg');
+    filter: grayscale(1);
+}
+.o_form_view .nav-tabs a.nav-link.information-tab {
+    color:#00000000;
+    padding-left: 16px !important;  /* space for icon */
+}
+
+
+/* Optional: nicer active tab */
+.o_form_view .nav-tabs .custom-tab-icon a.nav-link.active::before {
+    opacity: 1;
+    /* or add: filter: brightness(1.1); for highlight */
+}

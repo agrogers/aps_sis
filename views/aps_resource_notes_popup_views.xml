@@ -18,4 +18,19 @@
         </field>
     </record>
 
+    <!-- Action to open notes popup -->
+    <record id="action_aps_resource_notes_popup" model="ir.actions.act_window">
+        <field name="name">Resource Notes</field>
+        <field name="res_model">aps.resources</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_aps_resource_notes_popup_view" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_resource_notes_popup"/>
+        <field name="act_window_id" ref="action_aps_resource_notes_popup"/>
+    </record>
+
 </odoo>

@@ -118,20 +118,15 @@ export class ResourceLinksField extends Component {
     }
 
     async openNotesPopup(linkData) {
-        // Resolve the popup view ID from its XML external ID
-        const [, viewId] = await this.orm.call(
-            'ir.model.data',
-            'check_object_reference',
-            ['aps_sis', 'view_aps_resource_notes_popup']
-        );
         this.action.doAction({
             type: 'ir.actions.act_window',
             name: linkData.name || 'Resource Notes',
             res_model: 'aps.resources',
             res_id: linkData.id,
             view_mode: 'form',
-            views: [[viewId, 'form']],
+            views: [[false, 'form']],
             target: 'new',
+            context: { form_view_ref: 'aps_sis.view_aps_resource_notes_popup' },
         });
     }
 
