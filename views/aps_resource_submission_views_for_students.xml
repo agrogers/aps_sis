@@ -74,8 +74,9 @@
                     <button name="action_mark_unsubmitted" string="Unsubmit" type="object" class="btn-secondary" invisible="state != 'submitted'"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-primary" invisible="state != 'assigned'"/>
                     <button name="action_resubmit" string="Resubmit" type="object" class="btn-secondary" invisible="state in ['assigned']"/>
-                    <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-secondary" invisible="state not in ['assigned'] or not is_current_user_faculty"/>
+                    <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state not in ['assigned'] or not is_current_user_faculty"/>
                     <button name="action_mark_complete" string="Mark Complete" type="object" class="btn-primary" invisible="state != 'submitted' or not is_current_user_faculty"/>
+                    <button name="action_mark_complete_next" string="Complete>" type="object" class="btn-primary" invisible="state != 'submitted' or not is_current_user_faculty" context="{'generic_form_action': True, 'move_to_next_record': True, 'preserve_form_res_ids': True, 'success_toast_title': 'Done', 'success_toast_message': 'Processed 1 submission(s).', 'success_toast_type': 'success'}"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon" title="Late" bg_color="bg-danger" invisible="due_status != 'late'"/> 

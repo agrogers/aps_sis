@@ -63,6 +63,7 @@
 			'aps_sis/static/src/js/resource_links_widget.js',
 			# 'aps_sis/static/src/js/form_notebook_default_page.js',
 			'aps_sis/static/src/js/submission_list_score_refresh.js',
+			'aps_sis/static/src/js/submission_complete_next_context.js',
              
 			'aps_sis/static/src/xml/resource_links_field.xml',
 			'aps_sis/static/src/js/clickable_many2many_tags.js',
