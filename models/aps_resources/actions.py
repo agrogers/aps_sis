@@ -146,6 +146,42 @@ class APSResource(models.Model):
             'target': 'current',
         }
 
+    def action_open_linked_resource(self):
+        """Open this linked resource in form view with navigation across all sibling linked resources.
+
+        Uses the ``current_parent_id`` value injected by the inline list's field context to
+        retrieve the full set of sibling IDs.  Returning a ``list,form`` action with both
+        ``domain`` and ``res_id`` causes Odoo's client to open the form directly for this
+        record while still setting up pager navigation across all siblings.
+        """
+        self.ensure_one()
+        parent_id = self.env.context.get('current_parent_id')
+        if parent_id:
+            parent = self.env['aps.resources'].browse(parent_id)
+            sibling_ids = parent.child_ids.ids
+        else:
+            # Fallback: no parent context (e.g. called outside the inline list).
+            # Open only this record; no sibling navigation will be available.
+            sibling_ids = [self.id]
+
+        ctx = dict(self.env.context)
+        if parent_id:
+            ctx.update({
+                'default_parent_ids': [(6, 0, [parent_id])],
+                'default_primary_parent_id': parent_id,
+            })
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Linked Resources',
+            'res_model': 'aps.resources',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', sibling_ids)],
+            'res_id': self.id,
+            'context': ctx,
+            'target': 'current',
+        }
+
     def action_open_supporting_resources_list(self):
         """Open supporting resources in a standard list/form view with navigation."""
         self.ensure_one()
