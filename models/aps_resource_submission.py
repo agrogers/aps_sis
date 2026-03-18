@@ -87,6 +87,7 @@ class APSResourceSubmission(models.Model):
         tracking=True,
     )
     is_current_user_faculty = fields.Boolean(compute='_compute_is_current_user_faculty')
+    is_current_user_reviewed = fields.Boolean(compute='_compute_is_current_user_reviewed')
     model_answer = fields.Html(
         string='Model Answer',
         related='resource_id.answer',
@@ -382,6 +383,12 @@ class APSResourceSubmission(models.Model):
         faculty = self._get_current_faculty()
         for record in self:
             record.is_current_user_faculty = bool(faculty)
+
+    @api.depends('reviewed_by')
+    def _compute_is_current_user_reviewed(self):
+        faculty = self._get_current_faculty()
+        for record in self:
+            record.is_current_user_reviewed = bool(faculty) and (faculty in record.reviewed_by)
 
     @api.depends('resource_id.has_answer', 'resource_id.primary_parent_id.has_answer')
     def _compute_model_answer_is_notes(self):
