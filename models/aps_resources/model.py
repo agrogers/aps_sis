@@ -130,6 +130,60 @@ class APSResource(models.Model):
         default=False,
         help='If enabled, users can edit the subjects associated with this resource. This is useful for resources that are shared across multiple subjects, where the subject association may need to be customized at the submission level.',
     )
+
+    # Auto Assign fields
+    auto_assign = fields.Boolean(
+        string='Auto Assign',
+        default=False,
+        help='If enabled, this resource will be automatically assigned to students on a recurring schedule.',
+    )
+    auto_assign_date = fields.Date(
+        string='Next Assign Date',
+        default=fields.Date.today,
+        help='The cron job will run on this date and then advance it by the frequency.',
+    )
+    auto_assign_end_date = fields.Date(
+        string='End Date',
+        help='Optional. Auto assignment stops after this date.',
+    )
+    auto_assign_frequency = fields.Integer(
+        string='Frequency (days)',
+        default=7,
+        help='Number of days between automatic assignments.',
+    )
+    auto_assign_time = fields.Float(
+        string='Time Assigned',
+        default=0.0,
+        help='Time of day (decimal) when the submission becomes active, e.g. 14.5 = 14:30.',
+    )
+    auto_assign_all_students = fields.Boolean(
+        string='Assign All Students',
+        default=True,
+        help='If enabled, all students enrolled in the linked subjects will be assigned.',
+    )
+    auto_assign_student_ids = fields.Many2many(
+        'res.partner',
+        'aps_resources_auto_assign_students_rel',
+        'resource_id',
+        'partner_id',
+        string='Students',
+        domain=[('is_student', '=', True)],
+        help='Students to assign when "Assign All Students" is disabled.',
+    )
+    auto_assign_notify_student = fields.Boolean(
+        string='Notify Student',
+        default=True,
+        help='If enabled, students will receive a notification when assigned.',
+    )
+    auto_assign_custom_name = fields.Char(
+        string='Custom Name',
+        help='Overrides the default resource name. The assignment date will be appended automatically.',
+    )
+    auto_assign_log = fields.Text(
+        string='Log',
+        readonly=True,
+        help='Record of automatic assignment runs.',
+    )
     points_scale = fields.Integer(
         string='Points Scale', help="Scales the default points allocated to a resource.",
         default=1

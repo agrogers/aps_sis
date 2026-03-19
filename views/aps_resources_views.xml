@@ -175,6 +175,7 @@
                                     <field name="has_lesson_plan" widget="boolean_toggle"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
+                                    <field name="auto_assign" widget="boolean_toggle"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px', 'show_name':True}" />
                                     <field name="child_count"/>
                             </group>
@@ -291,7 +292,28 @@
                         </page>
                         <page string="Lesson Plan" invisible="not has_lesson_plan" groups="aps_sis.group_aps_teacher">
                             <field name="lesson_plan" nolabel="1" readonly="0"/>
-                        </page>                        
+                        </page>
+                        <page string="Auto Assign" invisible="not auto_assign" groups="aps_sis.group_aps_teacher">
+                            <group>
+                                <group string="Schedule">
+                                    <field name="auto_assign_date"/>
+                                    <field name="auto_assign_end_date"/>
+                                    <field name="auto_assign_frequency"/>
+                                    <field name="auto_assign_time" widget="float_time"/>
+                                    <field name="auto_assign_custom_name"/>
+                                </group>
+                                <group string="Students">
+                                    <field name="auto_assign_all_students" widget="boolean_toggle"/>
+                                    <field name="auto_assign_student_ids" widget="many2many_tags"
+                                           options="{'no_create': True}"
+                                           invisible="auto_assign_all_students"/>
+                                    <field name="auto_assign_notify_student" widget="boolean_toggle"/>
+                                </group>
+                            </group>
+                            <group string="Log">
+                                <field name="auto_assign_log" nolabel="1" readonly="1"/>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter groups="aps_sis.group_aps_teacher"/>
