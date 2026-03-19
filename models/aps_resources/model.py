@@ -114,6 +114,8 @@ class APSResource(models.Model):
     child_count = fields.Integer(string='Total Children', compute='_compute_child_count')
     has_multiple_parents = fields.Boolean(string='Has Multiple Parents', compute='_compute_has_multiple_parents')
     supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]")
+    supporting_resource_count = fields.Integer(string='Supporting Resources Count', compute='_compute_supporting_resource_count')
+    recent_submission_count = fields.Integer(string='Recent Submissions', compute='_compute_recent_submission_count')
     supporting_resources_buttons = fields.Json(
         string='Resource Links',
         compute='_compute_supporting_resources_buttons',

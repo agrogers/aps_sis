@@ -1,6 +1,6 @@
 import re
-from datetime import datetime
-from odoo import models, api
+from datetime import datetime, timedelta
+from odoo import models, fields, api
 
 
 class APSResource(models.Model):
@@ -131,6 +131,35 @@ class APSResource(models.Model):
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_resource_id': self.id},
+        }
+
+    def action_open_all_submissions(self):
+        """Open all submissions associated with this resource regardless of state."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Submissions: {self.name}',
+            'res_model': 'aps.resource.submission',
+            'view_mode': 'list,form',
+            'domain': [('resource_id', '=', self.id)],
+            'target': 'current',
+        }
+
+    def action_open_recent_submissions(self):
+        """Open submissions for this resource that are in 'submitted' state and submitted in the last 7 days."""
+        self.ensure_one()
+        seven_days_ago = fields.Date.today() - timedelta(days=7)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Recent Submissions: {self.name}',
+            'res_model': 'aps.resource.submission',
+            'view_mode': 'list,form',
+            'domain': [
+                ('resource_id', '=', self.id),
+                ('state', '=', 'submitted'),
+                ('date_submitted', '>=', seven_days_ago),
+            ],
+            'target': 'current',
         }
 
     def action_open_child_resources_list(self):
