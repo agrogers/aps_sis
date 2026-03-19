@@ -1,5 +1,5 @@
 from odoo.tests.common import TransactionCase
-from odoo.addons.aps_sis.models.aps_resource_submission import sentinel_zero
+from odoo.addons.aps_sis.models.aps_submission.constants import sentinel_zero
 
 
 class TestAPSResourceSubmissionAutoScore(TransactionCase):
