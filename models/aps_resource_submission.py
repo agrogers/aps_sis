@@ -1368,7 +1368,20 @@ class APSResourceSubmission(models.Model):
         # Filter out excluded subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
-        
+
+        # Restrict to subjects students are currently enrolled in
+        student_enrolled_subjects = {}  # {partner_id: set(enrolled_subject_ids)}
+        all_enrolled_subject_ids = set()
+        partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
+        student_records = self.env['op.student'].search([('partner_id', 'in', partner_ids)])
+        for student_record in student_records:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
+            all_enrolled_subject_ids.update(enrolled_ids)
+        if all_enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
         # Get subject colors
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
         
@@ -1377,7 +1390,8 @@ class APSResourceSubmission(models.Model):
         pace_values = []
         redline_values = []
         processed_resources_for_pace = set()
-        
+        all_subject_ids_set = set(all_subjects.ids)  # enrolled + not excluded
+
         for submission in submissions:
             student_id = submission.student_id.id
             if not student_id:
@@ -1390,7 +1404,10 @@ class APSResourceSubmission(models.Model):
                 }
             
             for subject in submission.subjects:
-                if subject.name in exclude:
+                if subject.id not in all_subject_ids_set:
+                    continue
+                student_enrolled = student_enrolled_subjects.get(student_id)
+                if student_enrolled is not None and subject.id not in student_enrolled:
                     continue
                 date_to_use = submission.date_submitted or submission.date_completed
                 if not date_to_use:
