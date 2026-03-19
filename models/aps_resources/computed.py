@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 from odoo import models, fields, api
 
 
@@ -85,6 +86,22 @@ class APSResource(models.Model):
         for rec in self:
             # Count resources that have this resource as a parent
             rec.child_count = self.search_count([('parent_ids', 'in', rec.id)])
+
+    @api.depends('supporting_resource_ids')
+    def _compute_supporting_resource_count(self):
+        for rec in self:
+            rec.supporting_resource_count = len(rec.supporting_resource_ids)
+
+    @api.depends('task_ids.submission_ids', 'task_ids.submission_ids.state',
+                 'task_ids.submission_ids.date_submitted')
+    def _compute_recent_submission_count(self):
+        seven_days_ago = fields.Date.today() - timedelta(days=7)
+        for rec in self:
+            rec.recent_submission_count = self.env['aps.resource.submission'].search_count([
+                ('resource_id', '=', rec.id),
+                ('state', '=', 'submitted'),
+                ('date_submitted', '>=', seven_days_ago),
+            ])
 
     @api.depends('parent_ids')
     def _compute_has_multiple_parents(self):

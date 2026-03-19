@@ -131,6 +131,28 @@
                     <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher"/>
                 </header>
                 <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_open_all_submissions" type="object"
+                                class="oe_stat_button" icon="fa-inbox"
+                                invisible="total_submissions == 0">
+                            <field name="total_submissions" widget="statinfo" string="Submissions"/>
+                        </button>
+                        <button name="action_open_recent_submissions" type="object"
+                                class="oe_stat_button" icon="fa-clock-o"
+                                invisible="recent_submission_count == 0">
+                            <field name="recent_submission_count" widget="statinfo" string="Recent"/>
+                        </button>
+                        <button name="action_open_child_resources_list" type="object"
+                                class="oe_stat_button" icon="fa-link"
+                                invisible="child_count == 0">
+                            <field name="child_count" widget="statinfo" string="Linked"/>
+                        </button>
+                        <button name="action_open_supporting_resources_list" type="object"
+                                class="oe_stat_button" icon="fa-life-ring"
+                                invisible="supporting_resource_count == 0">
+                            <field name="supporting_resource_count" widget="statinfo" string="Supporting"/>
+                        </button>
+                    </div>
                     <div class="aps_ribbon" invisible="not type_id">
                         <field name="type_icon" widget="image" options="{'size': [40, 40]}" class="me-2" nolabel="1"/>
                         <field name="display_name_breadcrumb" widget="breadcrumb_pills" nolabel="1"
