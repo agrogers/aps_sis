@@ -419,6 +419,7 @@ div[name="score"].fixed-score-width {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
+    filter: grayscale(1);
 }
 
 /* Per-tab images */
@@ -452,7 +453,7 @@ div[name="score"].fixed-score-width {
 
 
 /* Optional: nicer active tab */
-.o_form_view .nav-tabs .custom-tab-icon a.nav-link.active::before {
-    opacity: 1;
-    /* or add: filter: brightness(1.1); for highlight */
+.o_form_view .nav-tabs a.nav-link.active.tab-with-icon::before {
+    /* opacity: 1; */
+    filter: none;
 }
