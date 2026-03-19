@@ -318,7 +318,13 @@ class APSResourceSubmission(models.Model):
 
     @api.model
     def recompute_submission_active_status(self):
-        """Recompute active status for all submissions. Called by cron job daily."""
+        """Cron entrypoint: run auto-assign then recompute submission active flags."""
+        try:
+            # Reuse this minute-based cron to drive scheduled resource auto-assignment.
+            self.env['aps.resources'].run_auto_assign()
+        except Exception as exc:
+            _logger.exception('Auto-assign step failed during recompute cron: %s', exc)
+
         submissions = self.search([])
         submissions._compute_submission_active()
 
