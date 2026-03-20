@@ -128,7 +128,9 @@
                     'tree_view_ref': 'view_aps_resources_form_brief',
                     'form_view_ref': 'view_aps_resources_form_brief'}">
                 <header>
-                    <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher"/>
+                    <field name="auto_assign" invisible="1"/>
+                    <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher" invisible="auto_assign"/>
+                    <button name="action_assign_students" string="Assign Students (Auto)" type="object" class="btn-success" groups="aps_sis.group_aps_teacher" invisible="not auto_assign"/>
                 </header>
                 <sheet>
                     <div name="button_box" class="oe_button_box">
