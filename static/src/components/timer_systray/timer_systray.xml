@@ -1,27 +1,61 @@
 <templates xml:space="preserve">
 
-    <!-- ── System Tray Timer Button ─────────────────────────────────────── -->
+    <!-- ── System Tray Timer ─────────────────────────────────────────────── -->
     <t t-name="aps_sis.TimerSystrayItem" owl="1">
-        <div class="o_menu_systray_item aps-timer-systray d-flex align-items-center gap-1 px-2">
-            <t t-if="!state.running">
-                <button class="btn btn-sm btn-success aps-timer-btn"
-                        title="Start Timer"
-                        t-on-click="onStart">
-                    <i class="fa fa-play me-1"/>
-                    <span>Start</span>
-                </button>
-            </t>
-            <t t-else="">
-                <span class="aps-timer-elapsed text-warning fw-bold small me-1"
-                      t-esc="elapsedLabel"/>
-                <button class="btn btn-sm btn-danger aps-timer-btn"
-                        title="Stop Timer"
-                        t-on-click="onStop">
-                    <i class="fa fa-stop me-1"/>
-                    <span>Stop</span>
-                </button>
-            </t>
-        </div>
+        <!--
+            Only render when the user is inside the APEX (APS) module.
+            The timer continues running in the background when switching apps.
+        -->
+        <t t-if="isApexModule">
+            <div class="o_menu_systray_item aps-timer-systray d-flex align-items-center gap-1 px-2">
+
+                <!-- ── Not running: plain play button (icon only) ── -->
+                <t t-if="!state.running">
+                    <button class="btn btn-sm btn-success aps-timer-btn"
+                            title="Start Timer"
+                            t-on-click="onStart">
+                        <i class="fa fa-play"/>
+                    </button>
+                </t>
+
+                <!-- ── Running and NOT paused ──
+                     Left  : elapsed-time button → clicking PAUSES the timer
+                     Right : red stop button (icon only) → stops and opens edit dialog
+                -->
+                <t t-elif="!state.paused">
+                    <button class="btn btn-sm btn-warning aps-timer-count-btn fw-bold"
+                            title="Click to pause timer"
+                            t-on-click="onPause">
+                        <i class="fa fa-clock-o me-1"/>
+                        <span t-esc="elapsedLabel"/>
+                    </button>
+                    <button class="btn btn-sm btn-danger aps-timer-btn"
+                            title="Stop Timer"
+                            t-on-click="onStop">
+                        <i class="fa fa-stop"/>
+                    </button>
+                </t>
+
+                <!-- ── Running and PAUSED ──
+                     Left  : frozen elapsed-time display (shows ⏸, disabled button)
+                     Right : gray pause icon → clicking RESUMES the timer
+                -->
+                <t t-else="">
+                    <button class="btn btn-sm btn-outline-secondary aps-timer-count-btn fw-bold"
+                            title="Timer is paused"
+                            disabled="disabled">
+                        <i class="fa fa-pause me-1"/>
+                        <span t-esc="elapsedLabel"/>
+                    </button>
+                    <button class="btn btn-sm btn-secondary aps-timer-btn"
+                            title="Click to resume timer"
+                            t-on-click="onResume">
+                        <i class="fa fa-pause"/>
+                    </button>
+                </t>
+
+            </div>
+        </t>
     </t>
 
     <!-- ── Stop Timer Dialog ────────────────────────────────────────────── -->
@@ -57,11 +91,12 @@
                     </select>
                 </div>
 
-                <!-- Pause minutes -->
+                <!-- Pause minutes (pre-filled from tracked pauses) -->
                 <div class="mb-3">
                     <label class="form-label">Pause / Break (minutes)</label>
-                    <input type="number" class="form-control" min="0" step="1"
+                    <input type="number" class="form-control" min="0" step="0.5"
                            t-model="state.pause_minutes"/>
+                    <div class="form-text text-muted">Auto-calculated from pauses — you can adjust if needed.</div>
                 </div>
 
                 <!-- Outside school hours -->
