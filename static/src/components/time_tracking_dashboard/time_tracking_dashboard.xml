@@ -1,0 +1,102 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.TimeTrackingDashboard" owl="1">
+        <div class="vh-100 overflow-auto bg-light p-4">
+
+            <!-- Header -->
+            <div class="row mb-4 align-items-center bg-white shadow-sm p-3 mx-0 rounded">
+                <div class="col-md-6">
+                    <h1 class="text-primary fw-bold mb-0">
+                        <i class="fa fa-clock-o me-2"/>Time Tracking Dashboard
+                    </h1>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" t-on-change="onChangeDays">
+                        <option value="14">Last 14 Days</option>
+                        <option value="30" selected="selected">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="180">Last 6 Months</option>
+                        <option value="365">Last Year</option>
+                    </select>
+                </div>
+                <div class="col-md-2 text-end">
+                    <button class="btn btn-outline-primary btn-sm" t-on-click="openTimeList">
+                        <i class="fa fa-list me-1"/> All Entries
+                    </button>
+                </div>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="d-flex justify-content-center align-items-center" style="height: 400px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- Row 1: Weekly comparison + Doughnut -->
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-4">
+                        <div class="bg-white shadow-sm p-4 rounded h-100">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fa fa-bar-chart me-1 text-primary"/>
+                                Study Time: This Week vs Last Week
+                            </h5>
+                            <t t-if="state.weeklyComparison.length === 0">
+                                <div class="d-flex justify-content-center align-items-center" style="height: 280px;">
+                                    <p class="text-muted">No data yet — start the timer to record study time.</p>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div style="height: 300px; position: relative;">
+                                    <canvas t-ref="weeklyChart"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="bg-white shadow-sm p-4 rounded h-100">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fa fa-pie-chart me-1 text-success"/>
+                                Time Breakdown by Subject
+                            </h5>
+                            <t t-if="state.subjectDoughnut.labels.length === 0">
+                                <div class="d-flex justify-content-center align-items-center" style="height: 280px;">
+                                    <p class="text-muted">No subject data yet.</p>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div style="height: 300px; position: relative;">
+                                    <canvas t-ref="doughnutChart"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Historical stacked bar -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="bg-white shadow-sm p-4 rounded">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fa fa-area-chart me-1 text-info"/>
+                                Subject Time History (stacked)
+                            </h5>
+                            <t t-if="state.historyBar.labels.length === 0">
+                                <div class="d-flex justify-content-center align-items-center" style="height: 280px;">
+                                    <p class="text-muted">No historical data yet.</p>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div style="height: 360px; position: relative;">
+                                    <canvas t-ref="historyChart"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+        </div>
+    </t>
+</templates>

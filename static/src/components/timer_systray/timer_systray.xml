@@ -1,0 +1,94 @@
+<templates xml:space="preserve">
+
+    <!-- ── System Tray Timer Button ─────────────────────────────────────── -->
+    <t t-name="aps_sis.TimerSystrayItem" owl="1">
+        <div class="o_menu_systray_item aps-timer-systray d-flex align-items-center gap-1 px-2">
+            <t t-if="!state.running">
+                <button class="btn btn-sm btn-success aps-timer-btn"
+                        title="Start Timer"
+                        t-on-click="onStart">
+                    <i class="fa fa-play me-1"/>
+                    <span>Start</span>
+                </button>
+            </t>
+            <t t-else="">
+                <span class="aps-timer-elapsed text-warning fw-bold small me-1"
+                      t-esc="elapsedLabel"/>
+                <button class="btn btn-sm btn-danger aps-timer-btn"
+                        title="Stop Timer"
+                        t-on-click="onStop">
+                    <i class="fa fa-stop me-1"/>
+                    <span>Stop</span>
+                </button>
+            </t>
+        </div>
+    </t>
+
+    <!-- ── Stop Timer Dialog ────────────────────────────────────────────── -->
+    <t t-name="aps_sis.TimerStopDialog" owl="1">
+        <Dialog title="'Save Time Entry'" size="'md'">
+            <t t-set-slot="default">
+                <div class="mb-3 text-center">
+                    <span class="badge bg-primary fs-5 px-3 py-2">
+                        <i class="fa fa-clock-o me-1"/>
+                        Duration: <t t-esc="formattedDuration"/>
+                    </span>
+                </div>
+
+                <!-- Subject (first, most important field) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Subject</label>
+                    <select class="form-select" t-model="state.subject_id">
+                        <option value="">-- Select Subject --</option>
+                        <t t-foreach="props.subjects" t-as="subj" t-key="subj.id">
+                            <option t-att-value="subj.id" t-esc="subj.name"/>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Student / Partner -->
+                <div class="mb-3">
+                    <label class="form-label">Student</label>
+                    <select class="form-select" t-model="state.partner_id">
+                        <option value="">-- Select Student --</option>
+                        <t t-foreach="props.partners" t-as="partner" t-key="partner.id">
+                            <option t-att-value="partner.id" t-esc="partner.name"/>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Pause minutes -->
+                <div class="mb-3">
+                    <label class="form-label">Pause / Break (minutes)</label>
+                    <input type="number" class="form-control" min="0" step="1"
+                           t-model="state.pause_minutes"/>
+                </div>
+
+                <!-- Outside school hours -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="outsideHoursCheck"
+                           t-model="state.is_outside_school_hours"/>
+                    <label class="form-check-label" for="outsideHoursCheck">
+                        Outside School Hours
+                    </label>
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" rows="3"
+                              t-model="state.notes" placeholder="Optional notes…"/>
+                </div>
+            </t>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onSave">
+                    <i class="fa fa-save me-1"/> Save
+                </button>
+                <button class="btn btn-secondary ms-2" t-on-click="onDiscard">
+                    <i class="fa fa-trash me-1"/> Discard
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

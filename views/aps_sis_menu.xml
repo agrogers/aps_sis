@@ -64,4 +64,9 @@
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student"/>
 
+    <!-- Time Tracking Menus -->
+    <menuitem id="menu_apex_time_tracking" name="Time Tracking" parent="menu_apex_root" sequence="60" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_time_tracking_entries" name="Time Entries" parent="menu_apex_time_tracking" action="action_aps_time_tracking" sequence="10" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_time_tracking_dashboard" name="Dashboard" parent="menu_apex_time_tracking" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
+
 </odoo>
