@@ -36,7 +36,7 @@
         <field name="model">aps.time.tracking</field>
         <field name="arch" type="xml">
             <list string="Time Entries" decoration-muted="not stop_time">
-                <field name="subject_icon" widget="image" string=" " optional="show" width="32"/>
+                <field name="subject_icon" widget="image" string=" " optional="show" options="{'size': [32, 32]}"/>
                 <field name="subject_id" optional="show"/>
                 <field name="partner_id" optional="show"/>
                 <field name="date" optional="show"/>

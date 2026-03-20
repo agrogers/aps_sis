@@ -71,24 +71,34 @@
 
                 <!-- Subject (first, most important field) -->
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Subject</label>
-                    <select class="form-select" t-model="state.subject_id">
+                    <label class="form-label fw-bold">Subject <span class="text-danger">*</span></label>
+                    <select class="form-select" t-att-class="{'is-invalid': state.subjectError}" t-model="state.subject_id">
                         <option value="">-- Select Subject --</option>
                         <t t-foreach="props.subjects" t-as="subj" t-key="subj.id">
                             <option t-att-value="subj.id" t-esc="subj.name"/>
                         </t>
                     </select>
+                    <div t-if="state.subjectError" class="invalid-feedback">
+                        Please select a subject.
+                    </div>
                 </div>
 
-                <!-- Student / Partner -->
+                <!-- Current User (readonly) -->
                 <div class="mb-3">
                     <label class="form-label">Student</label>
-                    <select class="form-select" t-model="state.partner_id">
-                        <option value="">-- Select Student --</option>
-                        <t t-foreach="props.partners" t-as="partner" t-key="partner.id">
-                            <option t-att-value="partner.id" t-esc="partner.name"/>
-                        </t>
-                    </select>
+                    <input type="text" class="form-control" readonly="1" t-att-value="props.partnerName"/>
+                </div>
+
+                <!-- Start / Stop times -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" t-model="state.start_time"/>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Stop Time</label>
+                        <input type="datetime-local" class="form-control" t-model="state.stop_time"/>
+                    </div>
                 </div>
 
                 <!-- Pause minutes (pre-filled from tracked pauses) -->

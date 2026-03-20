@@ -144,6 +144,28 @@ class APSTimeTracking(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
 
     @api.model
+    def get_timer_dialog_defaults(self):
+        """Return current user's partner and their available subjects."""
+        partner = self.env.user.partner_id
+        student = self.env['op.student'].search([('user_id', '=', self.env.uid)], limit=1)
+        subjects = []
+        if student:
+            course_details = self.env['op.student.course'].search([
+                ('student_id', '=', student.id),
+                ('state', '=', 'running'),
+            ])
+            subject_records = course_details.mapped('subject_ids')
+            subjects = [{'id': s.id, 'name': s.name} for s in subject_records.sorted('name')]
+        if not subjects:
+            all_subjects = self.env['op.subject'].search([], order='name asc')
+            subjects = [{'id': s.id, 'name': s.name} for s in all_subjects]
+        return {
+            'partner_id': partner.id,
+            'partner_name': partner.display_name,
+            'subjects': subjects,
+        }
+
+    @api.model
     def start_timer(self, partner_id=None, subject_id=None):
         """Create a new in-progress timer entry and return its id."""
         vals = {

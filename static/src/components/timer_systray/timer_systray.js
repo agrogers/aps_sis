@@ -22,7 +22,8 @@ export class TimerStopDialog extends Component {
     static props = {
         entry: { type: Object },
         subjects: { type: Array },
-        partners: { type: Array },
+        partnerName: { type: String },
+        partnerId: { type: Number },
         pauseMinutes: { type: Number, optional: true },
         onSave: { type: Function },
         onDiscard: { type: Function },
@@ -31,16 +32,13 @@ export class TimerStopDialog extends Component {
 
     setup() {
         this.orm = useService("orm");
-        // Safely extract IDs from either [id, name] array or raw id
         const subjectId = Array.isArray(this.props.entry.subject_id)
             ? this.props.entry.subject_id[0]
             : (this.props.entry.subject_id || false);
-        const partnerId = Array.isArray(this.props.entry.partner_id)
-            ? this.props.entry.partner_id[0]
-            : (this.props.entry.partner_id || false);
         this.state = useState({
             subject_id: subjectId,
-            partner_id: partnerId,
+            start_time: this._utcToLocal(this.props.entry.start_time),
+            stop_time: this._utcToLocal(this.props.entry.stop_time),
             notes: this.props.entry.notes || "",
             // Pre-fill pause_minutes from the tracked pauses; user can override
             pause_minutes: this.props.pauseMinutes !== undefined
@@ -48,20 +46,52 @@ export class TimerStopDialog extends Component {
                 : (this.props.entry.pause_minutes || 0),
             is_outside_school_hours: this.props.entry.is_outside_school_hours || false,
             total_minutes: this.props.entry.total_minutes || 0,
+            subjectError: false,
         });
     }
 
+    /** Convert an Odoo UTC datetime string to a local datetime-local input value. */
+    _utcToLocal(utcStr) {
+        if (!utcStr) return "";
+        // Odoo sends "YYYY-MM-DD HH:MM:SS" in UTC
+        const d = new Date(utcStr.replace(" ", "T") + "Z");
+        // Format as YYYY-MM-DDTHH:MM for datetime-local input
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    /** Convert a datetime-local input value back to Odoo UTC string. */
+    _localToUtc(localStr) {
+        if (!localStr) return false;
+        const d = new Date(localStr);
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+    }
+
     get formattedDuration() {
-        const mins = Math.round(this.state.total_minutes);
+        let mins = 0;
+        if (this.state.start_time && this.state.stop_time) {
+            const start = new Date(this.state.start_time);
+            const stop = new Date(this.state.stop_time);
+            const diff = (stop - start) / 60000 - (parseFloat(this.state.pause_minutes) || 0);
+            mins = Math.max(0, Math.round(diff));
+        }
         const h = Math.floor(mins / 60);
         const m = mins % 60;
         return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
 
     async onSave() {
+        if (!this.state.subject_id) {
+            this.state.subjectError = true;
+            return;
+        }
+        this.state.subjectError = false;
         await this.orm.write("aps.time.tracking", [this.props.entry.id], {
-            subject_id: this.state.subject_id || false,
-            partner_id: this.state.partner_id || false,
+            subject_id: parseInt(this.state.subject_id) || false,
+            partner_id: this.props.partnerId,
+            start_time: this._localToUtc(this.state.start_time),
+            stop_time: this._localToUtc(this.state.stop_time),
             notes: this.state.notes,
             pause_minutes: parseFloat(this.state.pause_minutes) || 0,
             is_outside_school_hours: this.state.is_outside_school_hours,
@@ -95,7 +125,8 @@ export class TimerSystrayItem extends Component {
             entryId: _timer.entryId,
             elapsedSeconds: _timer.elapsedSeconds,
             subjects: [],
-            partners: [],
+            partnerId: null,
+            partnerName: "",
         });
 
         // If the timer was already running when this component mounted (e.g. after an
@@ -149,18 +180,11 @@ export class TimerSystrayItem extends Component {
     }
 
     // ── Data helpers ──────────────────────────────────────────────────────────
-    async _loadSubjectsAndPartners() {
-        const [subjects, partners] = await Promise.all([
-            this.orm.searchRead("op.subject", [], ["id", "name"], { order: "name asc" }),
-            this.orm.searchRead(
-                "res.partner",
-                [["is_student", "=", true]],
-                ["id", "name"],
-                { order: "name asc" }
-            ),
-        ]);
-        this.state.subjects = subjects;
-        this.state.partners = partners;
+    async _loadDialogDefaults() {
+        const defaults = await this.orm.call("aps.time.tracking", "get_timer_dialog_defaults", [], {});
+        this.state.subjects = defaults.subjects;
+        this.state.partnerId = defaults.partner_id;
+        this.state.partnerName = defaults.partner_name;
     }
 
     // ── User actions ──────────────────────────────────────────────────────────
@@ -168,7 +192,7 @@ export class TimerSystrayItem extends Component {
     async onStart() {
         if (_timer.running) return;
 
-        await this._loadSubjectsAndPartners();
+        await this._loadDialogDefaults();
 
         const entryId = await this.orm.call("aps.time.tracking", "start_timer", [], {});
 
@@ -244,12 +268,13 @@ export class TimerSystrayItem extends Component {
             {}
         );
 
-        await this._loadSubjectsAndPartners();
+        await this._loadDialogDefaults();
 
         this.dialog.add(TimerStopDialog, {
             entry,
             subjects: this.state.subjects,
-            partners: this.state.partners,
+            partnerId: this.state.partnerId,
+            partnerName: this.state.partnerName,
             pauseMinutes,
             onSave: () => {
                 this.state.entryId = null;
