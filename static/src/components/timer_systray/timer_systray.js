@@ -116,14 +116,7 @@ export class TimerSystrayItem extends Component {
         this.orm = useService("orm");
         this.dialog = useService("dialog");
         this.action = useService("action");
-
-        let menuService = null;
-        try {
-            menuService = useService("menu");
-        } catch (e) {
-            console.warn("TimerSystray: menu service not available", e);
-        }
-        this.menuService = menuService;
+        this.menuService = useService("menu");
 
         // Local reactive state mirrors the global _timer so OWL re-renders correctly
         this.state = useState({
@@ -155,7 +148,6 @@ export class TimerSystrayItem extends Component {
 
     // ── Visibility: only render UI when user is inside the APEX module ────────
     get isApexModule() {
-        if (!this.menuService) return true;
         const app = this.menuService.getCurrentApp();
         return app ? app.xmlid === "aps_sis.menu_apex_root" : false;
     }
