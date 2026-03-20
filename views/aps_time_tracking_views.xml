@@ -36,10 +36,10 @@
         <field name="model">aps.time.tracking</field>
         <field name="arch" type="xml">
             <list string="Time Entries" decoration-muted="not stop_time">
-                <field name="subject_icon" widget="image" string=" " optional="show" width="32"/>
+                <field name="subject_icon" widget="image" string=" " optional="show" options="{'size': [24, 24]}"/>
+                <field name="date" optional="show"/>
                 <field name="subject_id" optional="show"/>
                 <field name="partner_id" optional="show"/>
-                <field name="date" optional="show"/>
                 <field name="start_time" optional="show"/>
                 <field name="stop_time" optional="show"/>
                 <field name="pause_minutes" optional="hide"/>

@@ -144,6 +144,28 @@ class APSTimeTracking(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
 
     @api.model
+    def get_timer_dialog_defaults(self):
+        """Return current user's partner and their available subjects."""
+        partner = self.env.user.partner_id
+        student = self.env['op.student'].search([('user_id', '=', self.env.uid)], limit=1)
+        subjects = []
+        if student:
+            course_details = self.env['op.student.course'].search([
+                ('student_id', '=', student.id),
+                ('state', '=', 'running'),
+            ])
+            subject_records = course_details.mapped('subject_ids')
+            subjects = [{'id': s.id, 'name': s.name} for s in subject_records.sorted('name')]
+        if not subjects:
+            all_subjects = self.env['op.subject'].search([], order='name asc')
+            subjects = [{'id': s.id, 'name': s.name} for s in all_subjects]
+        return {
+            'partner_id': partner.id,
+            'partner_name': partner.display_name,
+            'subjects': subjects,
+        }
+
+    @api.model
     def start_timer(self, partner_id=None, subject_id=None):
         """Create a new in-progress timer entry and return its id."""
         vals = {
@@ -164,17 +186,26 @@ class APSTimeTracking(models.Model):
 
     def _entry_summary(self, entry):
         """Return a dict describing a timer entry for the frontend dialog."""
+        import pytz
+        user_tz = pytz.timezone(self.env.user.tz or 'UTC')
+
+        def to_local_str(dt):
+            if not dt:
+                return False
+            return dt.replace(tzinfo=pytz.utc).astimezone(user_tz).strftime('%Y-%m-%d %H:%M:%S')
+
         return {
             'id': entry.id,
             'partner_id': [entry.partner_id.id, entry.partner_id.display_name] if entry.partner_id else False,
             'subject_id': [entry.subject_id.id, entry.subject_id.name] if entry.subject_id else False,
             'date': str(entry.date) if entry.date else False,
-            'start_time': fields.Datetime.to_string(entry.start_time) if entry.start_time else False,
-            'stop_time': fields.Datetime.to_string(entry.stop_time) if entry.stop_time else False,
+            'start_time': to_local_str(entry.start_time),
+            'stop_time': to_local_str(entry.stop_time),
             'pause_minutes': entry.pause_minutes,
             'total_minutes': entry.total_minutes,
             'notes': entry.notes or '',
             'is_outside_school_hours': entry.is_outside_school_hours,
+            'tz': self.env.user.tz or 'UTC',
         }
 
     @api.model
