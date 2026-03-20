@@ -308,7 +308,7 @@ registry.category("systray").add(
     "aps_sis.timer",
     {
         Component: TimerSystrayItem,
-        sequence: 9999,
+        sequence: 9,
     },
-    { sequence: 9999 }
+    { sequence: 9 }
 );
