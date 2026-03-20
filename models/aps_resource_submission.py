@@ -1109,10 +1109,11 @@ class APSResourceSubmission(models.Model):
     def get_progress_data_for_dashboard(self, student_id, period_start_date):
         """
         Get student progress data for dashboard charts.
-        Fetches submissions for resources with ' Progress' in the name.
+        Progress resources are identified by their 'Progress' type_id.
         Returns:
-        - line_data: List of progress data points over time by subject
-        - bar_data: Current progress percentage by subject
+        - line_data: Progress data points over time by subject, drawn from all active
+          submitted/completed submissions for the student (regardless of resource type)
+        - bar_data: Current progress percentage by subject (from Progress-type resources)
         - pace_data: PACE information from resource notes (including redline dates)
         - subject_colors: Color mapping for subjects
         - exclude_from_average: Subject names to exclude from redline highlight
@@ -1123,9 +1124,9 @@ class APSResourceSubmission(models.Model):
         import html as html_lib
         from markupsafe import Markup
         
-        # Find all resources with ' Progress' in the name
+        # Find all resources with the 'Progress' type_id
         progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
+            ('type_id.name', '=', 'Progress')
         ])
         
         if not progress_resources:
@@ -1166,18 +1167,26 @@ class APSResourceSubmission(models.Model):
                         if cleaned_name and cleaned_name not in exclude:
                             exclude.append(cleaned_name)
         
-        # Build domain for submissions
-        domain = [
+        # Build domain for Progress-resource submissions (used for bar chart and pace data)
+        progress_domain = [
             ('resource_id', 'in', progress_resources.ids),
             ('student_id', '=', student_id),
             ('submission_active', '=', True),
             ('state', 'in', ['submitted', 'complete'])
         ]
         
-        # Fetch submissions
-        submissions = self.search(domain, order='date_submitted asc')
+        # Fetch submissions from Progress-type resources (for bar chart and pace info)
+        progress_submissions = self.search(progress_domain, order='date_submitted asc')
         
-        if not submissions:
+        # Fetch ALL relevant student submissions for the subject line chart
+        all_submissions_domain = [
+            ('student_id', '=', student_id),
+            ('submission_active', '=', True),
+            ('state', 'in', ['submitted', 'complete'])
+        ]
+        all_submissions = self.search(all_submissions_domain, order='date_submitted asc')
+        
+        if not progress_submissions and not all_submissions:
             return {
                 'line_data': [],
                 'bar_data': [],
@@ -1187,9 +1196,9 @@ class APSResourceSubmission(models.Model):
                 'exclude': exclude,
             }
         
-        # Get all subjects from submissions
+        # Collect subjects from all submissions (superset that includes progress submissions)
         all_subjects = self.env['op.subject']
-        for sub in submissions:
+        for sub in all_submissions:
             all_subjects |= sub.subjects
         
         # Filter out excluded subjects
@@ -1199,19 +1208,16 @@ class APSResourceSubmission(models.Model):
         # Get subject colors (with automatic color generation for subjects without categories)
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
         
-        # Group submissions by subject and build historical data
+        # Build subject data for the line chart from ALL relevant submissions
         subject_data = {}  # {subject_id: [(date, result_percent), ...]}
-        current_progress = {}  # {subject_id: {'result_percent': x, 'date': y}}
-        pace_info = {}  # {resource_id: {start_date, end_date, redline_start_date, redline_end_date, resource_name}}
         
-        for submission in submissions:
+        for submission in all_submissions:
             for subject in submission.subjects:
                 if subject.name in exclude:
                     continue
                 if subject.id not in subject_data:
                     subject_data[subject.id] = []
                 
-                # Only use submitted or completed dates since we're filtering for those states
                 date_to_use = submission.date_submitted or submission.date_completed
                 if date_to_use:
                     subject_data[subject.id].append({
@@ -1220,7 +1226,18 @@ class APSResourceSubmission(models.Model):
                         'subject_id': subject.id,
                         'subject_name': subject.name,
                     })
-                    
+        
+        # Build bar data and pace info from Progress-type resource submissions
+        current_progress = {}  # {subject_id: {'result_percent': x, 'date': y}}
+        pace_info = {}  # {resource_id: {start_date, end_date, redline_start_date, redline_end_date, resource_name}}
+        
+        for submission in progress_submissions:
+            for subject in submission.subjects:
+                if subject.name in exclude:
+                    continue
+                
+                date_to_use = submission.date_submitted or submission.date_completed
+                if date_to_use:
                     # Track latest result for bar chart (most recent submission by date)
                     if subject.id not in current_progress:
                         current_progress[subject.id] = {
@@ -1234,37 +1251,37 @@ class APSResourceSubmission(models.Model):
                                 'result_percent': submission.result_percent,
                                 'date': date_to_use
                             }
-                
-                # Get PACE/redline dates from resource notes
-                # Note: resource.subjects is a Many2many field - one resource can have multiple subjects
-                # The PACE dates from the resource's notes field apply to ALL subjects linked to that resource
-                # Store PACE info once per resource (not per subject) to avoid duplicate PACE lines
-                if submission.resource_id and submission.resource_id.id not in pace_info:
-                    pace_dates = submission.resource_id.get_pace_dates()
-                    if any([
-                        pace_dates['start_date'],
-                        pace_dates['end_date'],
-                        pace_dates['redline_start_date'],
-                        pace_dates['redline_end_date'],
-                    ]):
-                        pace_info[submission.resource_id.id] = {
-                            'start_date': pace_dates['start_date'].isoformat() if pace_dates['start_date'] else False,
-                            'end_date': pace_dates['end_date'].isoformat() if pace_dates['end_date'] else False,
-                            'redline_start_date': pace_dates['redline_start_date'].isoformat() if pace_dates['redline_start_date'] else False,
-                            'redline_end_date': pace_dates['redline_end_date'].isoformat() if pace_dates['redline_end_date'] else False,
-                            'resource_name': submission.resource_id.name,
-                        }
+            
+            # Get PACE/redline dates from resource notes
+            # Note: resource.subjects is a Many2many field - one resource can have multiple subjects
+            # The PACE dates from the resource's notes field apply to ALL subjects linked to that resource
+            # Store PACE info once per resource (not per subject) to avoid duplicate PACE lines
+            if submission.resource_id and submission.resource_id.id not in pace_info:
+                pace_dates = submission.resource_id.get_pace_dates()
+                if any([
+                    pace_dates['start_date'],
+                    pace_dates['end_date'],
+                    pace_dates['redline_start_date'],
+                    pace_dates['redline_end_date'],
+                ]):
+                    pace_info[submission.resource_id.id] = {
+                        'start_date': pace_dates['start_date'].isoformat() if pace_dates['start_date'] else False,
+                        'end_date': pace_dates['end_date'].isoformat() if pace_dates['end_date'] else False,
+                        'redline_start_date': pace_dates['redline_start_date'].isoformat() if pace_dates['redline_start_date'] else False,
+                        'redline_end_date': pace_dates['redline_end_date'].isoformat() if pace_dates['redline_end_date'] else False,
+                        'resource_name': submission.resource_id.name,
+                    }
         
         # Return all data points (sorted by date) - no filtering by period
         # Frontend will handle zooming to the selected period
         all_subject_data = {}
         
         for subject_id, data_points in subject_data.items():
-            # Sort by date and remove duplicates
+            # Sort by date
             sorted_points = sorted(data_points, key=lambda x: x['date'])
             all_subject_data[subject_id] = sorted_points
         
-        # Build bar data (current progress)
+        # Build bar data (current progress from Progress-type resources)
         bar_data = []
         for subject_id, progress_data in current_progress.items():
             subject = all_subjects.filtered(lambda s: s.id == subject_id)
@@ -1272,7 +1289,7 @@ class APSResourceSubmission(models.Model):
                 bar_data.append({
                     'subject_id': subject_id,
                     'subject_name': subject.name,
-                    'progress': progress_data['result_percent'],  # Extract result_percent from dict
+                    'progress': progress_data['result_percent'],
                     'color': subject_colors.get(subject_id, '#6c757d')  # Fallback to gray
                 })
         
@@ -1303,9 +1320,9 @@ class APSResourceSubmission(models.Model):
         import re
         from markupsafe import Markup
         
-        # Find all resources with ' Progress' in the name
+        # Find all resources with the 'Progress' type_id
         progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
+            ('type_id.name', '=', 'Progress')
         ])
         
         if not progress_resources:
