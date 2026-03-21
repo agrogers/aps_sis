@@ -1,0 +1,119 @@
+<templates xml:space="preserve">
+
+    <!-- ── System Tray Timer Button ─────────────────────────────────────── -->
+    <t t-name="aps_sis.TimerSystrayItem" owl="1">
+        <div class="o_menu_systray_item aps-timer-systray d-flex align-items-center gap-1 px-2">
+            <t t-if="!state.running">
+                <button class="btn btn-sm btn-success aps-timer-btn"
+                        title="Start Timer"
+                        t-on-click="onStart">
+                    <i class="fa fa-hourglass-start"/>
+                    
+                </button>
+            </t>
+            <t t-else="">
+                <t t-if="!state.paused">
+                    <button class="btn btn-sm btn-warning aps-timer-btn"
+                            title="Pause Timer"
+                            t-on-click="onPause">
+                        <i class="fa fa-pause me-1"/>
+                        <span t-esc="elapsedLabel" class="font-monospace"/>
+                    </button>
+                </t>
+                <t t-else="">
+                    <button class="btn btn-sm btn-success aps-timer-btn"
+                            title="Resume Timer"
+                            t-on-click="onResume">
+                        <i class="fa fa-hourglass-start me-1"/>
+                        <span t-esc="elapsedLabel" class="font-monospace"/>
+                    </button>
+                </t>
+                <button class="btn btn-sm btn-danger aps-timer-btn"
+                        title="Stop Timer"
+                        t-on-click="onStop">
+                    <i class="fa fa-stop"/>
+                </button>
+            </t>
+        </div>
+    </t>
+
+    <!-- ── Stop Timer Dialog ────────────────────────────────────────────── -->
+    <t t-name="aps_sis.TimerStopDialog" owl="1">
+        <Dialog title="'Save Time Entry'" size="'md'">
+            <t t-set-slot="default">
+                <div class="mb-3">
+                    <label class="form-label fw-bold"><i class="fa fa-clock-o me-1"/>Duration (minutes)</label>
+                    <input type="number" class="form-control" min="0" step="1"
+                           t-model="state.total_minutes" t-on-change="onDurationChange"/>
+                </div>
+
+                <!-- Subject (required) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Subject <span class="text-danger">*</span></label>
+                    <select class="form-select" t-att-class="{'is-invalid': state.subjectError}" t-model="state.subject_id">
+                        <option value="">-- Select Subject --</option>
+                        <t t-foreach="props.subjects" t-as="subj" t-key="subj.id">
+                            <option t-att-value="subj.id" t-esc="subj.name"/>
+                        </t>
+                    </select>
+                    <div t-if="state.subjectError" class="invalid-feedback">Please select a subject.</div>
+                </div>
+
+                <!-- Current User (readonly) -->
+                <div class="mb-3">
+                    <label class="form-label">Student</label>
+                    <input type="text" class="form-control" readonly="1" t-att-value="props.partnerName"/>
+                </div>
+
+                <!-- Start / Stop times -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" step="60" name="start_time"
+                               t-model="state.start_time" t-on-change="onTimeChange"/>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Stop Time</label>
+                        <input type="datetime-local" class="form-control" step="60" name="stop_time"
+                               t-model="state.stop_time" t-on-change="onTimeChange"/>
+                    </div>
+                </div>
+
+                <!-- Pause minutes -->
+                <div class="mb-3">
+                    <label class="form-label">Pause / Break (minutes)</label>
+                    <input type="number" class="form-control" min="0" step="1"
+                           t-model="state.pause_minutes" t-on-change="onPauseChange"/>
+                </div>
+
+                <!-- Outside school hours -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="outsideHoursCheck"
+                           t-model="state.is_outside_school_hours"/>
+                    <label class="form-check-label" for="outsideHoursCheck">
+                        Outside School Hours
+                    </label>
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" rows="3"
+                              t-model="state.notes" placeholder="Optional notes…"/>
+                </div>
+            </t>
+            <t t-set-slot="footer">
+                <div t-if="state.validationError" class="alert alert-danger py-1 px-2 mb-0 me-auto" role="alert">
+                    <i class="fa fa-exclamation-triangle me-1"/><t t-esc="state.validationError"/>
+                </div>
+                <button class="btn btn-primary" t-on-click="onSave">
+                    <i class="fa fa-save me-1"/> Save
+                </button>
+                <button class="btn btn-secondary ms-2" t-on-click="onDiscard">
+                    <i class="fa fa-trash me-1"/> Discard
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>
