@@ -1,5 +1,6 @@
 from odoo import models, fields, api
-from datetime import datetime, time
+from odoo.exceptions import ValidationError
+from datetime import datetime, time, timedelta
 
 
 SCHOOL_START_HOUR = 8      # 08:00
@@ -11,6 +12,20 @@ class APSTimeTracking(models.Model):
     _name = 'aps.time.tracking'
     _description = 'Time Tracking Entry'
     _order = 'start_time desc'
+
+    display_name = fields.Char(compute='_compute_display_name')
+
+    @api.depends('partner_id', 'subject_id', 'date')
+    def _compute_display_name(self):
+        for rec in self:
+            parts = []
+            if rec.partner_id:
+                parts.append(rec.partner_id.display_name)
+            if rec.subject_id:
+                parts.append(rec.subject_id.name)
+            if rec.date:
+                parts.append(str(rec.date))
+            rec.display_name = ' - '.join(parts) if parts else f'Time Entry #{rec.id}'
 
     def _compute_is_current_user_teacher(self):
         teacher_group = self.env.ref('aps_sis.group_aps_teacher', raise_if_not_found=False)
@@ -32,7 +47,7 @@ class APSTimeTracking(models.Model):
         'op.subject',
         string='Subject',
         index=True,
-        required=False,
+        required=True,
     )
 
     date = fields.Date(
@@ -99,6 +114,42 @@ class APSTimeTracking(models.Model):
                 rec.total_minutes = max(0.0, (delta.total_seconds() / 60.0) - (rec.pause_minutes or 0.0))
             else:
                 rec.total_minutes = 0.0
+
+    @api.onchange('total_minutes', 'pause_minutes')
+    def _onchange_total_minutes(self):
+        """When total_minutes or pause changes, fill the missing time field."""
+        if self.total_minutes > 0:
+            offset = timedelta(minutes=self.total_minutes + (self.pause_minutes or 0.0))
+            if self.stop_time and not self.start_time:
+                self.start_time = self.stop_time - offset
+            elif self.start_time and not self.stop_time:
+                self.stop_time = self.start_time + offset
+            elif self.stop_time:
+                # Both exist — anchor on stop_time
+                self.start_time = self.stop_time - offset
+
+    @api.onchange('start_time')
+    def _onchange_start_time(self):
+        """When start_time is set/changed, fill stop_time if total_minutes exists but stop doesn't."""
+        if self.start_time and self.total_minutes > 0 and not self.stop_time:
+            offset = timedelta(minutes=self.total_minutes + (self.pause_minutes or 0.0))
+            self.stop_time = self.start_time + offset
+
+    @api.onchange('stop_time')
+    def _onchange_stop_time(self):
+        """When stop_time is set/changed, fill start_time if total_minutes exists but start doesn't."""
+        if self.stop_time and self.total_minutes > 0 and not self.start_time:
+            offset = timedelta(minutes=self.total_minutes + (self.pause_minutes or 0.0))
+            self.start_time = self.stop_time - offset
+
+    @api.constrains('start_time', 'stop_time')
+    def _check_duration_limit(self):
+        for rec in self:
+            if rec.start_time and rec.stop_time:
+                if rec.stop_time < rec.start_time:
+                    raise ValidationError("Stop time cannot be before start time.")
+                if (rec.stop_time - rec.start_time) > timedelta(hours=24):
+                    raise ValidationError("Start and stop time cannot be more than 24 hours apart.")
 
     @api.depends('start_time', 'is_outside_school_hours')
     def _compute_is_outside_school_hours(self):
@@ -272,14 +323,37 @@ class APSTimeTracking(models.Model):
         # ── Doughnut – total minutes by subject (over requested days) ─────────
         history_start = today - timedelta(days=days - 1)
         recs_all = self.search([('date', '>=', history_start)])
-        doughnut_totals = {}
+        doughnut_totals = {}  # {subject_name: minutes}
+        doughnut_subject_ids = {}  # {subject_name: subject_id}
         for r in recs_all:
             subj = r.subject_id.name if r.subject_id else 'Unknown'
             doughnut_totals[subj] = doughnut_totals.get(subj, 0.0) + (r.total_minutes or 0.0)
+            if r.subject_id and subj not in doughnut_subject_ids:
+                doughnut_subject_ids[subj] = r.subject_id.id
+
+        # Get subject colors for doughnut
+        subject_color_map = self.env['op.subject'].get_subject_colors_map()
+        all_op_subjects = self.env['op.subject'].search([])
+        name_to_color = {}
+        for s in all_op_subjects:
+            color = subject_color_map.get(s.id)
+            if color:
+                name_to_color[s.name] = color
+
+        doughnut_default_colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+            '#9966FF', '#FF9F40', '#C9CBCF', '#E7E9ED',
+        ]
+        doughnut_labels = list(doughnut_totals.keys())
+        doughnut_colors = [
+            name_to_color.get(lbl, doughnut_default_colors[i % len(doughnut_default_colors)])
+            for i, lbl in enumerate(doughnut_labels)
+        ]
 
         subject_doughnut = {
-            'labels': list(doughnut_totals.keys()),
-            'data': [round(v, 1) for v in doughnut_totals.values()],
+            'labels': doughnut_labels,
+            'data': [round(doughnut_totals[lbl], 1) for lbl in doughnut_labels],
+            'colors': doughnut_colors,
         }
 
         # ── Historical stacked bar ─────────────────────────────────────────────
@@ -308,14 +382,7 @@ class APSTimeTracking(models.Model):
             '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
             '#9966FF', '#FF9F40', '#C9CBCF', '#E7E9ED',
         ]
-        # Try to use subject category colors
-        subject_color_map = self.env['op.subject'].get_subject_colors_map()
-        all_op_subjects = self.env['op.subject'].search([])
-        name_to_color = {}
-        for s in all_op_subjects:
-            color = subject_color_map.get(s.id)
-            if color:
-                name_to_color[s.name] = color
+        # Try to use subject category colors (reuse name_to_color from doughnut above)
 
         history_datasets = []
         for idx, subj in enumerate(bar_subjects):
@@ -323,8 +390,9 @@ class APSTimeTracking(models.Model):
             history_datasets.append({
                 'label': subj,
                 'data': [round(bar_data.get(lbl, {}).get(subj, 0.0), 1) for lbl in bar_labels],
-                'backgroundColor': color,
-                'borderWidth': 1,
+                'backgroundColor': color + '80',
+                'borderColor': color,
+                'borderWidth': 2,
             })
 
         history_bar = {

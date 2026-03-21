@@ -7,7 +7,7 @@
                 <button class="btn btn-sm btn-success aps-timer-btn"
                         title="Start Timer"
                         t-on-click="onStart">
-                    <i class="fa fa-play"/>
+                    <i class="fa fa-hourglass-start"/>
                     
                 </button>
             </t>
@@ -17,15 +17,15 @@
                             title="Pause Timer"
                             t-on-click="onPause">
                         <i class="fa fa-pause me-1"/>
-                        <span t-esc="elapsedLabel" class="o_monospace_text"/>
+                        <span t-esc="elapsedLabel" class="font-monospace"/>
                     </button>
                 </t>
                 <t t-else="">
                     <button class="btn btn-sm btn-success aps-timer-btn"
                             title="Resume Timer"
                             t-on-click="onResume">
-                        <i class="fa fa-play me-1"/>
-                        <span t-esc="elapsedLabel"/>
+                        <i class="fa fa-hourglass-start me-1"/>
+                        <span t-esc="elapsedLabel" class="font-monospace"/>
                     </button>
                 </t>
                 <button class="btn btn-sm btn-danger aps-timer-btn"
@@ -69,12 +69,12 @@
                 <div class="row mb-3">
                     <div class="col-6">
                         <label class="form-label">Start Time</label>
-                        <input type="datetime-local" class="form-control" step="60"
+                        <input type="datetime-local" class="form-control" step="60" name="start_time"
                                t-model="state.start_time" t-on-change="onTimeChange"/>
                     </div>
                     <div class="col-6">
                         <label class="form-label">Stop Time</label>
-                        <input type="datetime-local" class="form-control" step="60"
+                        <input type="datetime-local" class="form-control" step="60" name="stop_time"
                                t-model="state.stop_time" t-on-change="onTimeChange"/>
                     </div>
                 </div>
@@ -83,7 +83,7 @@
                 <div class="mb-3">
                     <label class="form-label">Pause / Break (minutes)</label>
                     <input type="number" class="form-control" min="0" step="1"
-                           t-model="state.pause_minutes"/>
+                           t-model="state.pause_minutes" t-on-change="onPauseChange"/>
                 </div>
 
                 <!-- Outside school hours -->
@@ -103,6 +103,9 @@
                 </div>
             </t>
             <t t-set-slot="footer">
+                <div t-if="state.validationError" class="alert alert-danger py-1 px-2 mb-0 me-auto" role="alert">
+                    <i class="fa fa-exclamation-triangle me-1"/><t t-esc="state.validationError"/>
+                </div>
                 <button class="btn btn-primary" t-on-click="onSave">
                     <i class="fa fa-save me-1"/> Save
                 </button>

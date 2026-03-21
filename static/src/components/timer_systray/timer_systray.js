@@ -35,6 +35,7 @@ export class TimerStopDialog extends Component {
             is_outside_school_hours: this.props.entry.is_outside_school_hours || false,
             total_minutes: this.props.entry.total_minutes || 0,
             subjectError: false,
+            validationError: "",
         });
     }
 
@@ -51,36 +52,93 @@ export class TimerStopDialog extends Component {
         }
     }
 
-    onTimeChange() {
-        this._recomputeDuration();
+    _offsetMs() {
+        return ((parseFloat(this.state.total_minutes) || 0) + (parseFloat(this.state.pause_minutes) || 0)) * 60000;
+    }
+
+    _toLocal16(dt) {
+        // Format a Date to "YYYY-MM-DDTHH:MM" in local time for datetime-local input
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+    }
+
+    _fillMissingTime() {
+        // Mirror Python onchange('total_minutes', 'pause_minutes')
+        if (this.state.total_minutes > 0) {
+            const offsetMs = this._offsetMs();
+            if (this.state.stop_time && !this.state.start_time) {
+                this.state.start_time = this._toLocal16(new Date(new Date(this.state.stop_time).getTime() - offsetMs));
+            } else if (this.state.start_time && !this.state.stop_time) {
+                this.state.stop_time = this._toLocal16(new Date(new Date(this.state.start_time).getTime() + offsetMs));
+            } else if (this.state.stop_time) {
+                // Both exist — anchor on stop_time
+                this.state.start_time = this._toLocal16(new Date(new Date(this.state.stop_time).getTime() - offsetMs));
+            }
+        }
+    }
+
+    onTimeChange(ev) {
+        const field = ev.target.name; // "start_time" or "stop_time"
+        // If both times now exist, recompute duration
+        if (this.state.start_time && this.state.stop_time) {
+            this._recomputeDuration();
+        } else if (field === "start_time" && this.state.start_time && this.state.total_minutes > 0 && !this.state.stop_time) {
+            // Mirror Python _onchange_start_time
+            const offsetMs = this._offsetMs();
+            this.state.stop_time = this._toLocal16(new Date(new Date(this.state.start_time).getTime() + offsetMs));
+        } else if (field === "stop_time" && this.state.stop_time && this.state.total_minutes > 0 && !this.state.start_time) {
+            // Mirror Python _onchange_stop_time
+            const offsetMs = this._offsetMs();
+            this.state.start_time = this._toLocal16(new Date(new Date(this.state.stop_time).getTime() - offsetMs));
+        }
     }
 
     onDurationChange() {
-        // Recalculate start_time = stop_time - duration
-        if (this.state.stop_time) {
-            const stop = new Date(this.state.stop_time);
-            const durationMs = (parseFloat(this.state.total_minutes) || 0) * 60000;
-            const pauseMs = (parseFloat(this.state.pause_minutes) || 0) * 60000;
-            const start = new Date(stop.getTime() - durationMs - pauseMs);
-            this.state.start_time = start.toISOString().slice(0, 16);
+        this._fillMissingTime();
+    }
+
+    onPauseChange() {
+        // Changing pause should re-derive times just like duration change
+        if (this.state.start_time && this.state.stop_time) {
+            this._recomputeDuration();
+        } else {
+            this._fillMissingTime();
         }
     }
 
-    async onSave() {
+    _validate() {
         if (!this.state.subject_id) {
             this.state.subjectError = true;
-            return;
+            return "Please select a subject.";
         }
         this.state.subjectError = false;
+        if (this.state.start_time && this.state.stop_time) {
+            const start = new Date(this.state.start_time);
+            const stop = new Date(this.state.stop_time);
+            if (stop < start) {
+                return "Stop time cannot be before start time.";
+            }
+            if ((stop - start) > 24 * 60 * 60 * 1000) {
+                return "Start and stop time cannot be more than 24 hours apart.";
+            }
+        }
+        return null;
+    }
+
+    async onSave() {
+        const error = this._validate();
+        if (error) {
+            this.state.validationError = error;
+            return;
+        }
+        this.state.validationError = "";
         // Convert local times back to UTC for Odoo
-        const tz = this.props.entry.tz || "UTC";
         const toUTC = (localStr) => {
             if (!localStr) return false;
-            // Parse as local time in the user's timezone
             const dt = new Date(localStr.replace(" ", "T"));
             return dt.toISOString().replace("T", " ").slice(0, 19);
         };
-        await this.orm.write("aps.time.tracking", [this.props.entry.id], {
+        const vals = {
             subject_id: parseInt(this.state.subject_id),
             partner_id: this.props.partnerId,
             start_time: toUTC(this.state.start_time),
@@ -90,7 +148,8 @@ export class TimerStopDialog extends Component {
             notes: this.state.notes,
             pause_minutes: parseFloat(this.state.pause_minutes) || 0,
             is_outside_school_hours: this.state.is_outside_school_hours,
-        });
+        };
+        await this.orm.create("aps.time.tracking", [vals]);
         this.props.onSave();
         this.props.close();
     }
@@ -115,7 +174,7 @@ export class TimerSystrayItem extends Component {
         this.state = useState({
             running: false,
             paused: false,
-            entryId: null,
+            startedAt: null,
             elapsedSeconds: 0,
             pausedSeconds: 0,
             subjects: [],
@@ -161,8 +220,7 @@ export class TimerSystrayItem extends Component {
 
         await this._loadDialogDefaults();
 
-        const entryId = await this.orm.call("aps.time.tracking", "start_timer", [], {});
-        this.state.entryId = entryId;
+        this.state.startedAt = new Date();
         this.state.running = true;
         this.state.paused = false;
         this.state.elapsedSeconds = 0;
@@ -195,7 +253,7 @@ export class TimerSystrayItem extends Component {
     }
 
     async onStop() {
-        if (!this.state.running || !this.state.entryId) return;
+        if (!this.state.running) return;
 
         // Capture any in-progress pause
         if (this.state.paused && this._pauseStart) {
@@ -208,24 +266,27 @@ export class TimerSystrayItem extends Component {
         this.state.running = false;
         this.state.paused = false;
 
+        const now = new Date();
+        const startedAt = this.state.startedAt || now;
         const pauseMinutes = Math.round(this.state.pausedSeconds / 60 * 10) / 10;
+        const diffMs = now - startedAt;
+        const totalMinutes = diffMs > 0 ? Math.round(Math.max(0, diffMs / 60000 - pauseMinutes)) : 0;
 
-        const entry = await this.orm.call(
-            "aps.time.tracking",
-            "stop_timer",
-            [this.state.entryId],
-            {}
-        );
-
-        // Apply accumulated pause to entry before showing dialog
-        entry.pause_minutes = pauseMinutes;
-        // Recompute total after pause
-        if (entry.start_time && entry.stop_time) {
-            const start = new Date(entry.start_time.replace(" ", "T"));
-            const stop = new Date(entry.stop_time.replace(" ", "T"));
-            const diffMs = stop - start;
-            entry.total_minutes = diffMs > 0 ? Math.max(0, diffMs / 60000 - pauseMinutes) : 0;
-        }
+        // Build a local entry object (no DB record yet)
+        const fmt = (dt) => {
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+        };
+        const entry = {
+            start_time: fmt(startedAt),
+            stop_time: fmt(now),
+            pause_minutes: pauseMinutes,
+            total_minutes: totalMinutes,
+            notes: "",
+            is_outside_school_hours: false,
+            subject_id: false,
+            tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
 
         await this._loadDialogDefaults();
 
@@ -235,18 +296,12 @@ export class TimerSystrayItem extends Component {
             partnerId: this.state.partnerId,
             partnerName: this.state.partnerName,
             onSave: () => {
-                this.state.entryId = null;
+                this.state.startedAt = null;
                 this.state.elapsedSeconds = 0;
                 this.state.pausedSeconds = 0;
             },
-            onDiscard: async () => {
-                // Delete the entry if discarded
-                try {
-                    await this.orm.unlink("aps.time.tracking", [entry.id]);
-                } catch (e) {
-                    console.warn("Timer: could not delete discarded entry", entry.id, e);
-                }
-                this.state.entryId = null;
+            onDiscard: () => {
+                this.state.startedAt = null;
                 this.state.elapsedSeconds = 0;
                 this.state.pausedSeconds = 0;
             },

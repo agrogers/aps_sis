@@ -57,7 +57,7 @@
                     <div class="col-lg-6 mb-4">
                         <div class="bg-white shadow-sm p-4 rounded h-100">
                             <h5 class="fw-bold mb-3">
-                                <i class="fa fa-pie-chart me-1 text-success"/>
+                                <i class="fa fa-pie-chart me-1"/>
                                 Time Breakdown by Subject
                             </h5>
                             <t t-if="state.subjectDoughnut.labels.length === 0">
@@ -79,8 +79,8 @@
                     <div class="col-12">
                         <div class="bg-white shadow-sm p-4 rounded">
                             <h5 class="fw-bold mb-3">
-                                <i class="fa fa-area-chart me-1 text-info"/>
-                                Subject Time History (stacked)
+                                <i class="fa fa-area-chart me-1 "/>
+                                Subject Time History
                             </h5>
                             <t t-if="state.historyBar.labels.length === 0">
                                 <div class="d-flex justify-content-center align-items-center" style="height: 280px;">

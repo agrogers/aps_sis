@@ -92,17 +92,17 @@ export class TimeTrackingDashboard extends Component {
                 labels,
                 datasets: [
                     {
-                        label: "This Week",
-                        data: thisWeek,
-                        backgroundColor: "rgba(54, 162, 235, 0.7)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                    {
                         label: "Last Week",
                         data: lastWeek,
                         backgroundColor: "rgba(255, 206, 86, 0.7)",
                         borderColor: "rgba(255, 206, 86, 1)",
+                        borderWidth: 1,
+                    },
+                    {
+                        label: "This Week",
+                        data: thisWeek,
+                        backgroundColor: "rgba(54, 162, 235, 0.7)",
+                        borderColor: "rgba(54, 162, 235, 1)",
                         borderWidth: 1,
                     },
                 ],
@@ -134,14 +134,17 @@ export class TimeTrackingDashboard extends Component {
         if (!el) return;
         if (this._doughnutChart) return;
 
-        const { labels, data } = this.state.subjectDoughnut;
+        const { labels, data, colors } = this.state.subjectDoughnut;
         if (!labels || !labels.length) return;
 
         const defaultColors = [
             "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0",
             "#9966FF", "#FF9F40", "#C9CBCF", "#E7E9ED",
         ];
-        const backgroundColors = labels.map((_, i) => defaultColors[i % defaultColors.length]);
+        const borderColors = colors && colors.length
+            ? colors
+            : labels.map((_, i) => defaultColors[i % defaultColors.length]);
+        const backgroundColors = borderColors.map(c => c + '80');
 
         this._doughnutChart = new Chart(el, {
             type: "doughnut",
@@ -150,6 +153,8 @@ export class TimeTrackingDashboard extends Component {
                 datasets: [{
                     data,
                     backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 2,
                     hoverOffset: 6,
                 }],
             },
