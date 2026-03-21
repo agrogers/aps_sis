@@ -514,17 +514,17 @@ div[name="score"].fixed-score-width {
 
 /* Lift the card above its neighbours on hover */
 .apex-leaderboard-entry:hover {
-    transform: translateY(-6px) scale(1.08);
+    transform: translateY(-6px) scale(1.25);
     z-index: 10;
 }
 
 /* ---- Avatar shell: the coloured ring ---- */
 .apex-leaderboard-avatar-shell {
     position: relative;
-    width: 64px;
-    height: 64px;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
-    padding: 3px;                           /* ring thickness */
+    padding: 2px;                           /* ring thickness */
     background: var(--ring-color, #adb5bd);
     box-shadow: 0 0 0 3px var(--ring-color, #adb5bd),
                 0 4px 12px rgba(0, 0, 0, 0.18);

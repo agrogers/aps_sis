@@ -140,7 +140,7 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="bg-white shadow-sm p-4 rounded">
-                        <h3 class="fw-bold mb-1">🏆 Leaderboard</h3>
+                        <h3 class="fw-bold mb-1">🏆 Top 9 Leaderboard (<t t-raw="state.period_name"/>)</h3>
                         <t t-if="state.loadingLeaderboard">
                             <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
                                 <div class="spinner-border text-primary" role="status">
