@@ -48,28 +48,42 @@
     <!-- APS SIS Menu Structure -->
     <menuitem id="menu_apex_root" name="APEX" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
 
+    <menuitem id="menu_apex_resources" name="Resources" parent="menu_apex_root" action="action_aps_resources" sequence="9" groups="aps_sis.group_aps_teacher"/>
+
     <menuitem id="menu_apex_submissions" name="Submissions" parent="menu_apex_root" action="action_aps_resource_submissions" sequence="10" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_students" name="Student Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_score" name="Enter Scores" parent="menu_apex_submissions" action="action_aps_resource_submissions_score" sequence="40" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_task_list" name="Tasks" parent="menu_apex_submissions" action="action_aps_resource_tasks" sequence="250" groups="aps_sis.group_aps_teacher"/>
 
-    <menuitem id="menu_apex_configuration" name="Configuration" parent="menu_apex_root" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_resources" name="Resources" parent="menu_apex_configuration" action="action_aps_resources" sequence="10" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_resource_types" name="Resource Types" parent="menu_apex_configuration" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_teacher"/>    
-    <menuitem id="menu_apex_resource_tags" name="Resource Tags" parent="menu_apex_configuration" action="action_aps_resource_tags" sequence="16" groups="aps_sis.group_aps_teacher"/>    
+    <menuitem id="menu_apex_dashboard_overview" parent="menu_apex_root" 
+              action="action_apex_dashboard" name="Dashboard" sequence="20"/>
     
-    <menuitem id="menu_apex_resource_custom_names" name="Custom Names" parent="menu_apex_configuration" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_avatars" name="Avatars" parent="menu_apex_configuration" action="action_aps_avatars" sequence="210" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_avatar_categories" name="Avatar Categories" parent="menu_apex_configuration" action="action_aps_avatar_categories" sequence="220" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_avatar_bulk_upload" name="Bulk Upload Avatars" parent="menu_apex_configuration" action="action_aps_avatar_bulk_upload_client" sequence="230" groups="aps_sis.group_aps_teacher"/>
+
+    <menuitem id="menu_apex_settings" name="Settings" parent="menu_apex_root" action="" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resources_heading" name="Resources" parent="menu_apex_settings" sequence="100" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resource_types" name="Resource Types" parent="menu_apex_resources_heading" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_teacher"/>    
+    <menuitem id="menu_apex_resource_tags" name="Resource Tags" parent="menu_apex_resources_heading" action="action_aps_resource_tags" sequence="16" groups="aps_sis.group_aps_teacher"/>    
+    <menuitem id="menu_apex_resource_custom_names" name="Custom Names" parent="menu_apex_resources_heading" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_avatars_heading" name="Avatars" parent="menu_apex_settings" sequence="200" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_avatars" name="Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatars" sequence="210" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_avatar_categories" name="Avatar Categories" parent="menu_apex_avatars_heading" action="action_aps_avatar_categories" sequence="220" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_avatar_bulk_upload" name="Bulk Upload Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatar_bulk_upload_client" sequence="230" groups="aps_sis.group_aps_teacher"/>
+    
+    <!-- Time Tracking Menus teachers -->
+    <menuitem id="menu_apex_time_tracking_heading" name="Time Tracking" parent="menu_apex_settings" sequence="60" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_time_tracking_entries" name="Time Entries" parent="menu_apex_time_tracking_heading" action="action_aps_time_tracking" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_time_tracking_dashboard" name="Dashboard" parent="menu_apex_time_tracking_heading" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_teacher"/>
+
     <!-- Student Menus -->
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student"/>
 
-    <!-- Time Tracking Menus -->
-    <menuitem id="menu_apex_time_tracking" name="Time Tracking" parent="menu_apex_root" sequence="60" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
-    <menuitem id="menu_apex_time_tracking_entries" name="Time Entries" parent="menu_apex_time_tracking" action="action_aps_time_tracking" sequence="10" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
-    <menuitem id="menu_apex_time_tracking_dashboard" name="Dashboard" parent="menu_apex_time_tracking" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
+    <!-- Time Tracking Menus Students -->
+    <menuitem id="menu_apex_time_tracking_student" name="Time Tracking" parent="menu_apex_root" sequence="60" groups="aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_time_tracking_entries_student" name="Time Entries" parent="menu_apex_time_tracking_student" action="action_aps_time_tracking" sequence="10" groups="aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_time_tracking_dashboard_student" name="Dashboard" parent="menu_apex_time_tracking_student" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_student"/>
+
+
 
 </odoo>

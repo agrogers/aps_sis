@@ -89,7 +89,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         resource = self.env['aps.resources'].browse(res.get('resource_id'))
-        # res['custom_submission_name'] = resource.display_name
+        res['custom_submission_name'] = resource.display_name
         label = resource.display_name
         if res.get('date_assigned'):
             label += f' ({res["date_assigned"]})'

@@ -193,7 +193,7 @@
                                     <field name="has_notes"/>
                                     <field name="has_question"/>
                                     <field name="has_answer"/>
-                                    <field name="has_default_answer" invisible="has_answer=='no'"/>
+                                    <field name="has_default_answer" widget="boolean_toggle"/>
                                     <field name="has_child_resources" />
                                     <field name="has_supporting_resources" />
                                     <field name="has_lesson_plan" widget="boolean_toggle"/>
@@ -206,11 +206,11 @@
                             </group>
                             <group string="Share" invisible="not id" groups="aps_sis.group_aps_teacher">
                                 <label for="share_url" string="Share URL"/>
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <div class="d-flex align-items-center gap-2">
                                     <field name="share_url" widget="CopyClipboardChar" nolabel="1" class="flex-grow-1"/>
                                     <button name="action_generate_share_token" type="object"
-                                            string="Regenerate URL" icon="fa-refresh"
-                                            class="btn btn-sm btn-outline-warning"
+                                            string="Regenerate" icon="fa-refresh"
+                                            class="btn btn-sm btn-outline-warning flex-shrink-0"
                                             title="Generate a new share URL (existing links will stop working)"
                                             invisible="not id"/>
                                 </div>

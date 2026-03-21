@@ -139,31 +139,25 @@ class APSResource(models.Model):
     def action_open_all_submissions(self):
         """Open all submissions associated with this resource regardless of state."""
         self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Submissions: {self.name}',
-            'res_model': 'aps.resource.submission',
-            'view_mode': 'list,form',
-            'domain': [('resource_id', '=', self.id)],
-            'target': 'current',
-        }
+        action = self.env['ir.actions.act_window']._for_xml_id('aps_sis.action_aps_resource_submissions')
+        action['name'] = f'Submissions: {self.name}'
+        action['domain'] = [('resource_id', '=', self.id)]
+        action['context'] = {}
+        return action
 
     def action_open_recent_submissions(self):
         """Open submissions for this resource that are in 'submitted' state and submitted in the last 7 days."""
         self.ensure_one()
         seven_days_ago = fields.Date.today() - timedelta(days=7)
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Recent Submissions: {self.name}',
-            'res_model': 'aps.resource.submission',
-            'view_mode': 'list,form',
-            'domain': [
-                ('resource_id', '=', self.id),
-                ('state', '=', 'submitted'),
-                ('date_submitted', '>=', seven_days_ago),
-            ],
-            'target': 'current',
-        }
+        action = self.env['ir.actions.act_window']._for_xml_id('aps_sis.action_aps_resource_submissions')
+        action['name'] = f'Recent Submissions: {self.name}'
+        action['domain'] = [
+            ('resource_id', '=', self.id),
+            ('state', '=', 'submitted'),
+            ('date_submitted', '>=', str(seven_days_ago)),
+        ]
+        action['context'] = {}
+        return action
 
     def action_open_child_resources_list(self):
         """Open child resources in a standard list/form view with navigation."""
