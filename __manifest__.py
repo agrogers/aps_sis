@@ -89,6 +89,7 @@
             'aps_sis/static/src/xml/avatar_bulk_upload.xml',
             'aps_sis/static/src/js/avatar_selector.js',
             'aps_sis/static/src/xml/avatar_selector.xml',
+            'aps_sis/static/src/js/avatar_systray_patch.js',
 		],
 	},
 	'installable': True,
