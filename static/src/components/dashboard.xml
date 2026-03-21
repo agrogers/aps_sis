@@ -184,6 +184,30 @@
                 </div>
             </div>
 
+            <!-- Completion Leaderboard Prediction -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="bg-white shadow-sm p-4 rounded">
+                        <h3 class="fw-bold mb-1">🎯 Completion Leaderboard Prediction</h3>
+                        <t t-if="state.loadingCompletionLeaderboard">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading completion leaderboard...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-elif="!state.completionLeaderboardData or state.completionLeaderboardData.length === 0">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <p class="text-muted">No completion prediction data available</p>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <Leaderboard entries="state.completionLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
             <!-- Progress Tracking Row -->
             <div class="row mb-4">
                 <div class="col-lg-6 mb-4">
