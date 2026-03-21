@@ -488,7 +488,7 @@ div[name="score"].fixed-score-width {
     right: 50px;              /* align with the points text right edge */
     bottom: 13px;               /* align with the points text baseline */
     height: 4px;
-    background: #dee2e6;
+    background: var(--track-bg, #dee2e6);
     border-radius: 5px;
     z-index: 0;
 }
