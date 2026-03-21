@@ -3,6 +3,7 @@ import { Dialog } from "@web/core/dialog/dialog";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
+import { user } from "@web/core/user";
 
 /* ─── Avatar Picker Dialog ─── */
 
@@ -120,6 +121,15 @@ class AvatarSelectorField extends Component {
                 this.props.record.update({
                     [this.props.name]: id ? [id, name] : false,
                 });
+                // If editing the current user's profile, notify systray
+                const recModel = this.props.record.resModel;
+                const recId = this.props.record.resId;
+                if ((recModel === "res.users" && recId === user.userId) ||
+                    (recModel === "op.student")) {
+                    this.env.bus.dispatchEvent(
+                        new CustomEvent("aps-avatar-changed", { detail: id })
+                    );
+                }
             },
         });
     }
