@@ -467,7 +467,7 @@ div[name="score"].fixed-score-width {
 .apex-leaderboard-wrap {
     width: 100%;
     overflow-x: auto;           /* scroll on very narrow screens */
-    padding: 0.0rem 1.5rem 1rem;
+    padding: 0.0rem 1rem;
 }
 
 /* The horizontal rail that holds entries + spacers */
@@ -476,7 +476,7 @@ div[name="score"].fixed-score-width {
     align-items: flex-end;      /* cards sit on a common baseline */
     min-width: 480px;           /* prevent collapse on tiny screens */
     min-height: 140px;
-    padding-bottom: 0.5rem;
+    padding: 0 50px 0.5rem;     /* side padding so edge entries aren't clipped */
     position: relative;
 }
 
@@ -485,11 +485,11 @@ div[name="score"].fixed-score-width {
     content: "";
     position: absolute;
     left: 0;
-    right: 0;
-    bottom: 22px;               /* align with the points text baseline */
+    right: 50px;              /* align with the points text right edge */
+    bottom: 13px;               /* align with the points text baseline */
     height: 4px;
     background: #dee2e6;
-    border-radius: 2px;
+    border-radius: 5px;
     z-index: 0;
 }
 
@@ -504,7 +504,8 @@ div[name="score"].fixed-score-width {
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
-    width: 90px;
+    width: 0;                   /* zero flex footprint so spacers control spacing */
+    overflow: visible;          /* let content render beyond the 0-width cell */
     position: relative;
     z-index: 1;
     transition: transform 0.2s ease, z-index 0s;
@@ -573,6 +574,10 @@ div[name="score"].fixed-score-width {
     text-overflow: ellipsis;
     white-space: nowrap;
     color: #343a40;
+    background-color: whitesmoke;
+    padding: 0rem 0.4rem;
+    border-radius: 4px;
+    border: solid 1px white;
 }
 
 /* ---- Points label ---- */
@@ -580,20 +585,22 @@ div[name="score"].fixed-score-width {
     font-size: 0.65rem;
     color: #6c757d;
     text-align: center;
-    margin-top: 0.1rem;
+    margin-top: 0rem;
+    line-height: 0.9rem;
+    background-color: whitesmoke;
+    padding: 0rem 0.4rem;
+    border-radius: 4px;
+    /* border: solid 1px white; */
 }
 
 /* ---- Proportional spacer between cards ---- */
 .apex-leaderboard-spacer {
     flex-shrink: 0;
-    min-width: 16px;            /* always keep at least a small gap */
+    min-width: 4px;             /* allow tighter clustering */
 }
 
 /* 1st-place card is taller to emphasise it */
-.apex-leaderboard-entry[data-rank="1"] .apex-leaderboard-avatar-shell {
+/* .apex-leaderboard-entry[data-rank="1"] .apex-leaderboard-avatar-shell {
     width: 78px;
     height: 78px;
-}
-.apex-leaderboard-entry[data-rank="1"] {
-    width: 100px;
-}
+} */

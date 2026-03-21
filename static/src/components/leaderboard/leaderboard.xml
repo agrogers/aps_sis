@@ -23,7 +23,7 @@
 
                         <div class="apex-leaderboard-name" t-esc="entry.student_name"/>
                         <div class="apex-leaderboard-points">
-                            <t t-esc="entry.total_points"/> pts
+                            <t t-esc="entry.total_points"/>
                         </div>
 
                     </div>

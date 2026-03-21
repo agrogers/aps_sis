@@ -663,7 +663,7 @@ export class ApexDashboard extends Component {
             const data = await this.orm.call(
                 "aps.resource.submission",
                 "get_leaderboard_data",
-                [domain],
+                [domain], 15
             );
             this.state.leaderboardData = data || [];
         } catch (error) {

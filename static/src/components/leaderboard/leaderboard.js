@@ -10,7 +10,7 @@ export class Leaderboard extends Component {
     get displayEntries() {
         const sorted = [...(this.props.entries || [])]
             .sort((a, b) => a.rank - b.rank)
-            .slice(0, 5);
+            .slice(0, 15);
         return sorted.reverse();
     }
 
@@ -31,9 +31,9 @@ export class Leaderboard extends Component {
     // Border / ring colour for each rank position.
     getRingColor(rank) {
         const palette = {
-            1: "#FFD700", // Gold  – 1st place
+            1: "#3498db", // Blue  – 1st place
             2: "#e74c3c", // Red   – 2nd place
-            3: "#3498db", // Blue  – 3rd place
+            3: "#FFD700", // Gold  – 3rd place
         };
         return palette[rank] || "#adb5bd"; // Grey for 4th / 5th
     }
