@@ -1,7 +1,7 @@
 <templates xml:space="preserve">
     <t t-name="apex_dashboard.Leaderboard" owl="1">
         <div class="apex-leaderboard-wrap">
-            <div class="apex-leaderboard-track">
+            <div class="apex-leaderboard-track" t-att-style="trackBg ? '--track-bg:' + trackBg : ''">
                 <t t-foreach="displayEntries" t-as="entry" t-key="entry.student_id">
 
                     <!-- Student card -->
