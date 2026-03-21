@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_aps_avatar_bulk_upload_form" model="ir.ui.view">
+        <field name="name">aps.avatar.bulk.upload.form</field>
+        <field name="model">aps.avatar.bulk.upload</field>
+        <field name="arch" type="xml">
+            <form string="Bulk Upload Avatars">
+                <sheet>
+                    <group>
+                        <field name="category_id"
+                               help="Default category applied to all uploaded avatars. Can be overridden per line."/>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="image" widget="image" options="{'size': [48, 48]}"/>
+                            <field name="name" string="Name (from filename)"/>
+                            <field name="category_id" string="Category"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button name="action_upload" type="object" string="Upload Avatars"
+                            class="btn-primary"
+                            invisible="not line_ids"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_avatar_bulk_upload" model="ir.actions.act_window">
+        <field name="name">Bulk Upload Avatars</field>
+        <field name="res_model">aps.avatar.bulk.upload</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

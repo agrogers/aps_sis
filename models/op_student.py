@@ -5,6 +5,11 @@ class OpStudent(models.Model):
     _inherit = 'op.student'
 
     show_all_courses = fields.Boolean('Show All Courses', default=False)
+    avatar_id = fields.Many2one(
+        'aps.avatar',
+        string='Avatar',
+        help='Select an avatar image to display on this student\'s profile.',
+    )
     course_detail_ids_filtered = fields.One2many('op.student.course', compute='_compute_course_detail_ids_filtered', string='Course Details')
 
     def _compute_full_name(self):
