@@ -484,10 +484,10 @@ div[name="score"].fixed-score-width {
 .apex-leaderboard-track::before {
     content: "";
     position: absolute;
-    left: 0;
+    left: 50PX;
     right: 50px;              /* align with the points text right edge */
-    bottom: 13px;               /* align with the points text baseline */
-    height: 4px;
+    bottom: 12px;               /* align with the points text baseline */
+    height: 6px;
     background: var(--track-bg, #dee2e6);
     border-radius: 5px;
     z-index: 0;
@@ -534,6 +534,7 @@ div[name="score"].fixed-score-width {
 .apex-leaderboard-entry:hover .apex-leaderboard-avatar-shell {
     box-shadow: 0 0 0 4px var(--ring-color, #adb5bd),
                 0 8px 24px rgba(0, 0, 0, 0.30);
+    
 }
 
 /* The avatar image fills the circle */
@@ -593,7 +594,7 @@ div[name="score"].fixed-score-width {
     text-align: center;
     margin-top: 0rem;
     line-height: 0.9rem;
-    background-color: whitesmoke;
+    background-color: rgba(245, 245, 245, 0.8);
     padding: 0rem 0.4rem;
     border-radius: 4px;
     /* border: solid 1px white; */

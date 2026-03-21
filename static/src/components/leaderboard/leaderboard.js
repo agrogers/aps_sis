@@ -100,7 +100,7 @@ export class Leaderboard extends Component {
             // Three colour zones: red → dark-grey → light-grey.
             return `linear-gradient(to right,` +
                 ` #dc3545 0%, #dc3545 ${redlineRel}%,` +
-                ` #495057 ${redlineRel}%, #495057 ${paceRel}%,` +
+                ` #ffd000 ${redlineRel}%, #ffd000 ${paceRel}%,` +
                 ` #dee2e6 ${paceRel}%, #dee2e6 100%)`;
         }
 
