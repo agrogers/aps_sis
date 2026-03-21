@@ -1097,6 +1097,137 @@ class APSResourceSubmission(models.Model):
         )
     
     @api.model
+    def get_progress_leaderboard_data(self, limit=30):
+        """Return top N students by average progress across enrolled, non-excluded subjects.
+
+        Uses the same subject inclusion/exclusion logic as the Progress charts:
+        - Resources with ' Progress' in the name are used
+        - Subjects in the resource notes 'exclude:' list are completely excluded
+        - Only subjects the student is currently enrolled in are counted
+        - Each student's most-recent result_percent per subject is averaged
+        - Returns up to `limit` students ranked by average progress (descending)
+
+        Each entry contains: rank, student_id, student_name, total_points (= rounded avg %)
+        """
+        import re
+        from markupsafe import Markup
+
+        progress_resources = self.env['aps.resources'].search([
+            ('name', 'ilike', ' Progress')
+        ])
+        if not progress_resources:
+            return []
+
+        # Parse 'exclude:' subject names from resource notes
+        exclude = []
+        for resource in progress_resources:
+            if not resource.notes:
+                continue
+            notes_text = resource.notes
+            if isinstance(notes_text, Markup) or '<' in str(notes_text):
+                notes_text = str(notes_text)
+                notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'<[^>]+>', '', notes_text)
+            import html
+            notes_text = html.unescape(str(notes_text))
+            notes_text = notes_text.replace('\xa0', ' ')
+            match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+            if match:
+                for subject_name in match.group(1).split(','):
+                    cleaned_name = subject_name.strip()
+                    if cleaned_name and cleaned_name not in exclude:
+                        exclude.append(cleaned_name)
+
+        # Fetch all active submitted/complete submissions for progress resources
+        submissions = self.search([
+            ('resource_id', 'in', progress_resources.ids),
+            ('submission_active', '=', True),
+            ('state', 'in', ['submitted', 'complete']),
+        ], order='date_submitted asc')
+        if not submissions:
+            return []
+
+        # Collect all subjects referenced in these submissions, then filter out excluded ones
+        all_subjects = self.env['op.subject']
+        for sub in submissions:
+            all_subjects |= sub.subjects
+        if exclude:
+            all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+
+        # Restrict to subjects students are currently enrolled in
+        student_enrolled_subjects = {}
+        all_enrolled_subject_ids = set()
+        partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
+        student_records = self.env['op.student'].search([('partner_id', 'in', partner_ids)])
+        for student_record in student_records:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
+            all_enrolled_subject_ids.update(enrolled_ids)
+        if all_enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
+        all_subject_ids_set = set(all_subjects.ids)
+
+        # Build per-student, per-subject latest progress (result_percent)
+        student_progress = {}
+        for submission in submissions:
+            student_id = submission.student_id.id
+            if not student_id:
+                continue
+            if student_id not in student_progress:
+                student_progress[student_id] = {
+                    'name': submission.student_id.name,
+                    'subjects': {},
+                }
+            for subject in submission.subjects:
+                if subject.id not in all_subject_ids_set:
+                    continue
+                student_enrolled = student_enrolled_subjects.get(student_id)
+                if student_enrolled is not None and subject.id not in student_enrolled:
+                    continue
+                date_to_use = submission.date_submitted or submission.date_completed
+                if not date_to_use:
+                    continue
+                existing = student_progress[student_id]['subjects'].get(subject.id)
+                if existing is None or date_to_use > existing['date']:
+                    student_progress[student_id]['subjects'][subject.id] = {
+                        'result_percent': submission.result_percent,
+                        'date': date_to_use,
+                    }
+
+        # Calculate average progress per student and build sorted leaderboard
+        leaderboard = []
+        for student_id, student_info in student_progress.items():
+            progresses = [
+                info['result_percent']
+                for info in student_info['subjects'].values()
+                if info['result_percent'] is not None
+            ]
+            if not progresses:
+                continue
+            avg_progress = sum(progresses) / len(progresses)
+            leaderboard.append({
+                'student_id': student_id,
+                'student_name': student_info['name'],
+                'avg_progress': avg_progress,
+            })
+
+        leaderboard.sort(key=lambda x: x['avg_progress'], reverse=True)
+        leaderboard = leaderboard[:limit]
+
+        return [
+            {
+                'rank': i + 1,
+                'student_id': entry['student_id'],
+                'student_name': entry['student_name'],
+                'total_points': round(entry['avg_progress']),
+            }
+            for i, entry in enumerate(leaderboard)
+        ]
+
+    @api.model
     def get_leaderboard_data(self, domain, limit=5):
         """Return top N students by points for the leaderboard.
 
