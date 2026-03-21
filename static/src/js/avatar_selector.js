@@ -109,7 +109,7 @@ class AvatarSelectorField extends Component {
 
     get imageUrl() {
         const id = this.avatarId;
-        return id ? `/web/image/aps.avatar/${encodeURIComponent(id)}/image/80x80` : false;
+        return id ? `/web/image/aps.avatar/${encodeURIComponent(id)}/image/30x30` : false;
     }
 
     openPicker() {

@@ -143,15 +143,37 @@
     </record>
 
 
-    <!-- ─── User profile form — show avatar below profile picture ─── -->
+    <!-- ─── User profile form (HR/employee) — show avatar over profile picture ─── -->
 
     <record id="view_res_users_profile_avatar" model="ir.ui.view">
         <field name="name">res.users.profile.inherit.avatar</field>
         <field name="model">res.users</field>
         <field name="inherit_id" ref="hr.res_users_view_form_profile"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='image_1920']" position="after">
-                <div style="float:right;clear:right;text-align:center;margin-bottom:8px;">
+            <!-- Remove orphaned base_avatar_wrapper left by the base form extension
+                 (HR's intermediate view removes image_1920 from it, leaving an orphan) -->
+            <xpath expr="//div[@name='base_avatar_wrapper']" position="replace"/>
+            <xpath expr="//field[@class='oe_avatar']" position="replace">
+                <div style="position:relative;float:right;margin-bottom:10px;">
+                    <field name="image_1920" widget="image" class="oe_avatar"
+                           options='{"zoom": true, "preview_image":"avatar_128"}'/>
+                    <field name="avatar_id" widget="avatar_selector"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ─── User preferences form (base/student) — show avatar over profile picture ─── -->
+
+    <record id="view_res_users_simple_avatar" model="ir.ui.view">
+        <field name="name">res.users.simple.inherit.avatar</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='image_1920']" position="replace">
+                <div name="base_avatar_wrapper" style="position:relative;float:right;margin-bottom:10px;">
+                    <field name="image_1920" readonly="0" widget="image" class="oe_avatar"
+                           options='{"preview_image": "avatar_128"}'/>
                     <field name="avatar_id" widget="avatar_selector"/>
                 </div>
             </xpath>

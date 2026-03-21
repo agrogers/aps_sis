@@ -1,24 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
-<!-- ─── Field Widget ─── -->
+<!-- ─── Field Widget (30px badge) ─── -->
 <t t-name="aps_sis.AvatarSelectorField">
-    <div class="o_field_avatar_selector text-center"
+    <div class="o_field_avatar_selector"
          t-on-click="openPicker"
-         t-att-style="props.readonly ? '' : 'cursor:pointer;'">
+         style="position:absolute;top:-4px;right:-4px;z-index:2;cursor:pointer;">
         <t t-if="imageUrl">
             <img t-att-src="imageUrl"
-                 class="rounded"
-                 style="width:80px;height:80px;object-fit:contain;border:2px solid #dee2e6;"/>
-            <div><small class="text-muted" t-esc="avatarName"/></div>
+                 class="rounded-circle"
+                 style="width:40px;height:40px;object-fit:cover;background:#fff;border:3px solid #fff;box-shadow:0 0 0 1px #dee2e6;"
+                 t-att-title="avatarName"/>
         </t>
         <t t-else="">
-            <div class="rounded d-flex align-items-center justify-content-center mx-auto"
-                 style="width:80px;height:80px;border:2px dashed #ccc;background:#f8f9fa;">
-                <i class="fa fa-user-circle-o fa-2x text-muted"/>
-            </div>
-            <div t-if="!props.readonly">
-                <small class="text-primary">Choose Avatar</small>
+            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                 style="width:40px;height:40px;background:#f8f9fa;border:2px dashed #adb5bd;"
+                 title="Choose Avatar">
+                <i class="fa fa-user-circle-o text-muted" style="font-size:14px;"/>
             </div>
         </t>
     </div>
