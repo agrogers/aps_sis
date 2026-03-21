@@ -1097,6 +1097,34 @@ class APSResourceSubmission(models.Model):
         )
     
     @api.model
+    def get_leaderboard_data(self, domain, limit=5):
+        """Return top N students by points for the leaderboard.
+
+        Each entry contains:
+          rank, student_id, student_name, total_points, image_url
+        """
+        groups = self.sudo().read_group(
+            domain=domain,
+            fields=["points:sum"],
+            groupby=["student_id"],
+            orderby="points:sum desc",
+            lazy=True,
+        )[:limit]
+
+        result = []
+        for i, group in enumerate(groups):
+            student_id = group['student_id'][0]
+            student_name = group['student_id'][1]
+            total_points = group['points'] or 0
+            result.append({
+                'rank': i + 1,
+                'student_id': student_id,
+                'student_name': student_name,
+                'total_points': total_points,
+            })
+        return result
+
+    @api.model
     def read_submission_data(self, domain, fields, orderby=False, limit=False):
         return self.env['aps.resource.submission'].sudo().search_read(
                 domain=domain,

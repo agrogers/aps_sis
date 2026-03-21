@@ -457,3 +457,124 @@ div[name="score"].fixed-score-width {
     /* opacity: 1; */
     filter: none;
 }
+
+
+/* ============================================================
+   Dashboard Leaderboard
+   ============================================================ */
+
+/* Outer wrapper – gives a white card look */
+.apex-leaderboard-wrap {
+    width: 100%;
+    overflow-x: auto;           /* scroll on very narrow screens */
+    padding: 0.5rem 1.5rem 1rem;
+}
+
+/* The horizontal rail that holds entries + spacers */
+.apex-leaderboard-track {
+    display: flex;
+    align-items: flex-end;      /* cards sit on a common baseline */
+    min-width: 480px;           /* prevent collapse on tiny screens */
+    min-height: 170px;
+    padding-bottom: 0.5rem;
+}
+
+/* ---- Individual student card ---- */
+.apex-leaderboard-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 90px;
+    position: relative;         /* needed for z-index stacking on hover */
+    z-index: 0;
+    transition: transform 0.2s ease, z-index 0s;
+    cursor: default;
+}
+
+/* Lift the card above its neighbours on hover */
+.apex-leaderboard-entry:hover {
+    transform: translateY(-6px) scale(1.08);
+    z-index: 10;
+}
+
+/* ---- Avatar shell: the coloured ring ---- */
+.apex-leaderboard-avatar-shell {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    padding: 3px;                           /* ring thickness */
+    background: var(--ring-color, #adb5bd);
+    box-shadow: 0 0 0 3px var(--ring-color, #adb5bd),
+                0 4px 12px rgba(0, 0, 0, 0.18);
+    transition: box-shadow 0.2s ease;
+}
+
+.apex-leaderboard-entry:hover .apex-leaderboard-avatar-shell {
+    box-shadow: 0 0 0 4px var(--ring-color, #adb5bd),
+                0 8px 24px rgba(0, 0, 0, 0.30);
+}
+
+/* The avatar image fills the circle */
+.apex-leaderboard-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e9ecef;        /* fallback while loading */
+    display: block;
+}
+
+/* Medal / rank badge in the bottom-right of the avatar */
+.apex-leaderboard-medal {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    font-size: 1.1rem;
+    line-height: 1;
+    background: #fff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.20);
+}
+
+/* ---- Name label ---- */
+.apex-leaderboard-name {
+    margin-top: 0.55rem;
+    font-size: 0.70rem;
+    font-weight: 600;
+    text-align: center;
+    max-width: 88px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #343a40;
+}
+
+/* ---- Points label ---- */
+.apex-leaderboard-points {
+    font-size: 0.65rem;
+    color: #6c757d;
+    text-align: center;
+    margin-top: 0.1rem;
+}
+
+/* ---- Proportional spacer between cards ---- */
+.apex-leaderboard-spacer {
+    flex-shrink: 0;
+    min-width: 16px;            /* always keep at least a small gap */
+}
+
+/* 1st-place card is taller to emphasise it */
+.apex-leaderboard-entry[data-rank="1"] .apex-leaderboard-avatar-shell {
+    width: 78px;
+    height: 78px;
+}
+.apex-leaderboard-entry[data-rank="1"] {
+    width: 100px;
+}

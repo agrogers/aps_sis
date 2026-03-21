@@ -136,6 +136,30 @@
                 </t>
             </div>
 
+            <!-- Leaderboard -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="bg-white shadow-sm p-4 rounded">
+                        <h3 class="fw-bold mb-3">🏆 Leaderboard</h3>
+                        <t t-if="state.loadingLeaderboard">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading leaderboard...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-elif="!state.leaderboardData or state.leaderboardData.length === 0">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <p class="text-muted">No leaderboard data available for this period</p>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <Leaderboard entries="state.leaderboardData"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
             <!-- Progress Tracking Row -->
             <div class="row mb-4">
                 <div class="col-lg-6 mb-4">

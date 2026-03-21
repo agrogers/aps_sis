@@ -6,6 +6,7 @@ import { KpiGauge } from "./kpi_gauge/kpi_gauge";
 import { ChartRenderer } from "./chart_renderer/chart_renderer";
 import { Domain } from "@web/core/domain";
 import { ProgressCharts } from "./progress_charts";
+import { Leaderboard } from "./leaderboard/leaderboard";
 
 
 export class ApexDashboard extends Component {
@@ -63,6 +64,9 @@ export class ApexDashboard extends Component {
             // Student comparison
             studentComparisonData: null,
             loadingStudentComparison: true,
+            // Leaderboard
+            leaderboardData: [],
+            loadingLeaderboard: true,
         });
 
         
@@ -567,12 +571,13 @@ export class ApexDashboard extends Component {
         // Load KPIs first (fastest to load, most important for user)
         await this.fetchKPIs();
 
-        // Then load charts, doughnuts, and progress data in parallel
+        // Then load charts, doughnuts, progress data and leaderboard in parallel
         await Promise.all([
             this.fetchChartData(),
             this.fetchDoughnutData(),
             this.progressCharts.fetchProgressData(),
-            this.progressCharts.fetchStudentComparisonData()
+            this.progressCharts.fetchStudentComparisonData(),
+            this.fetchLeaderboard(),
         ]);
 
         // Now that KPIs are loaded → the rank card should exist
@@ -645,6 +650,28 @@ export class ApexDashboard extends Component {
         await this.calculateStudentRank();
 
         this.state.loadingKPIs = false;
+    }
+
+    async fetchLeaderboard() {
+        this.state.loadingLeaderboard = true;
+        try {
+            const domain = [
+                ['submission_active', '=', true],
+                ['points', '>', 0],
+                ['date_assigned', '>=', this.getPeriodStartDateStr()],
+            ];
+            const data = await this.orm.call(
+                "aps.resource.submission",
+                "get_leaderboard_data",
+                [domain],
+            );
+            this.state.leaderboardData = data || [];
+        } catch (error) {
+            console.error("Error fetching leaderboard data:", error);
+            this.state.leaderboardData = [];
+        } finally {
+            this.state.loadingLeaderboard = false;
+        }
     }
 
     async fetchChartData() {
@@ -1021,6 +1048,6 @@ export class ApexDashboard extends Component {
 }
 
 ApexDashboard.template = "apex_dashboard.Dashboard";
-ApexDashboard.components = { KpiCard, KpiGauge, ChartRenderer };
+ApexDashboard.components = { KpiCard, KpiGauge, ChartRenderer, Leaderboard };
 
 registry.category("actions").add("apex_dashboard_main", ApexDashboard);
