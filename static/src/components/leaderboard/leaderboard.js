@@ -59,6 +59,6 @@ export class Leaderboard extends Component {
             if (entry.has_image) return partnerUrl;
             return avatarUrl || partnerUrl;
         }
-        return avatarUrl || '/web/static/img/placeholder.png';
+        return avatarUrl || partnerUrl;
     }
 }
