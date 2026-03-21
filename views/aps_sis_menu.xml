@@ -60,6 +60,9 @@
     <menuitem id="menu_apex_resource_tags" name="Resource Tags" parent="menu_apex_configuration" action="action_aps_resource_tags" sequence="16" groups="aps_sis.group_aps_teacher"/>    
     
     <menuitem id="menu_apex_resource_custom_names" name="Custom Names" parent="menu_apex_configuration" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_avatars" name="Avatars" parent="menu_apex_configuration" action="action_aps_avatars" sequence="210" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_avatar_categories" name="Avatar Categories" parent="menu_apex_configuration" action="action_aps_avatar_categories" sequence="220" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_avatar_bulk_upload" name="Bulk Upload Avatars" parent="menu_apex_configuration" action="action_aps_avatar_bulk_upload_client" sequence="230" groups="aps_sis.group_aps_teacher"/>
     <!-- Student Menus -->
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student"/>
