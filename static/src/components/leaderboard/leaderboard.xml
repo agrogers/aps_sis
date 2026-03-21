@@ -12,7 +12,7 @@
                         <div class="apex-leaderboard-avatar-shell">
                             <img
                                 class="apex-leaderboard-avatar"
-                                t-att-src="getImageUrl(entry.student_id)"
+                                t-att-src="getImageUrl(entry)"
                                 t-att-alt="entry.student_name"
                                 onerror="this.onerror=null;this.src='/web/static/img/placeholder.png';"
                             />

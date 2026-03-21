@@ -1140,7 +1140,7 @@ class APSResourceSubmission(models.Model):
                         exclude.append(cleaned_name)
 
         # Fetch all active submitted/complete submissions for progress resources
-        submissions = self.search([
+        submissions = self.sudo().search([
             ('resource_id', 'in', progress_resources.ids),
             ('submission_active', '=', True),
             ('state', 'in', ['submitted', 'complete']),
@@ -1159,7 +1159,7 @@ class APSResourceSubmission(models.Model):
         student_enrolled_subjects = {}
         all_enrolled_subject_ids = set()
         partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
-        student_records = self.env['op.student'].search([('partner_id', 'in', partner_ids)])
+        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
         for student_record in student_records:
             running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
             enrolled_ids = set(running_courses.mapped('subject_ids').ids)
@@ -1217,7 +1217,7 @@ class APSResourceSubmission(models.Model):
         leaderboard.sort(key=lambda x: x['avg_progress'], reverse=True)
         leaderboard = leaderboard[:limit]
 
-        return [
+        result = [
             {
                 'rank': i + 1,
                 'student_id': entry['student_id'],
@@ -1226,6 +1226,21 @@ class APSResourceSubmission(models.Model):
             }
             for i, entry in enumerate(leaderboard)
         ]
+
+        # Enrich with avatar and partner image info
+        partner_ids = [r['student_id'] for r in result]
+        partners = self.env['res.partner'].sudo().browse(partner_ids)
+        user_data = self.env['res.users'].sudo().search_read(
+            [('partner_id', 'in', partner_ids)],
+            ['partner_id', 'avatar_id'],
+        )
+        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
+        image_map = {p.id: bool(p.image_128) for p in partners}
+        for entry in result:
+            entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            entry['has_image'] = image_map.get(entry['student_id'], False)
+
+        return result
 
     @api.model
     def get_leaderboard_data(self, domain, limit=5):
@@ -1253,6 +1268,20 @@ class APSResourceSubmission(models.Model):
                 'student_name': student_name,
                 'total_points': total_points,
             })
+
+        # Enrich with avatar and partner image info
+        partner_ids = [r['student_id'] for r in result]
+        partners = self.env['res.partner'].sudo().browse(partner_ids)
+        user_data = self.env['res.users'].sudo().search_read(
+            [('partner_id', 'in', partner_ids)],
+            ['partner_id', 'avatar_id'],
+        )
+        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
+        image_map = {p.id: bool(p.image_128) for p in partners}
+        for entry in result:
+            entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            entry['has_image'] = image_map.get(entry['student_id'], False)
+
         return result
 
     @api.model

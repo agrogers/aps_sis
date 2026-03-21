@@ -544,6 +544,7 @@ div[name="score"].fixed-score-width {
     object-fit: cover;
     background: #e9ecef;        /* fallback while loading */
     display: block;
+    border: 2px solid #fff;     /* white inner ring */
 }
 
 .avatar-kanban-card .o_kanban_record  {

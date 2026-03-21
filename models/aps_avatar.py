@@ -1,6 +1,7 @@
 import base64
 import logging
 import os
+import random
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
@@ -79,3 +80,50 @@ class ApsAvatar(models.Model):
             })
         created = self.create(vals_list)
         return {'ids': created.ids, 'count': len(created)}
+
+    @api.model
+    def action_assign_random_avatars(self):
+        """Assign a random avatar to every user that doesn't have one yet."""
+        all_avatars = self.search([])
+        if not all_avatars:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Avatars',
+                    'message': 'There are no avatars to assign. Please create some first.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+
+        users_without = self.env['res.users'].search([
+            ('avatar_id', '=', False),
+            ('share', '=', False),
+        ])
+        if not users_without:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'All Set',
+                    'message': 'Every user already has an avatar assigned.',
+                    'type': 'info',
+                    'sticky': False,
+                },
+            }
+
+        avatar_ids = all_avatars.ids
+        for user in users_without:
+            user.avatar_id = random.choice(avatar_ids)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Avatars Assigned',
+                'message': f'Assigned random avatars to {len(users_without)} user(s).',
+                'type': 'success',
+                'sticky': False,
+            },
+        }

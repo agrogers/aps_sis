@@ -39,6 +39,7 @@
 
     <!-- ─── Avatar Views ─── -->
 
+
     <record id="view_aps_avatar_list" model="ir.ui.view">
         <field name="name">aps.avatar.list</field>
         <field name="model">aps.avatar</field>
@@ -123,24 +124,17 @@
         <field name="name">Avatars</field>
         <field name="res_model">aps.avatar</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="search_view_id" ref="view_aps_avatar_search"/>
     </record>
 
 
-    <!-- ─── Avatar Search View ─── -->
-
-    <record id="view_aps_avatar_search" model="ir.ui.view">
-        <field name="name">aps.avatar.search</field>
-        <field name="model">aps.avatar</field>
-        <field name="arch" type="xml">
-            <search string="Search Avatars">
-                <searchpanel>
-                    <field name="category_id" string="Category" icon="fa-folder" enable_counters="1"/>
-                </searchpanel>
-                <field name="name"/>
-                <field name="category_id"/>
-            </search>
-        </field>
+    <!-- Server action: assign random avatars to users without one -->
+    <record id="action_assign_random_avatars" model="ir.actions.server">
+        <field name="name">Assign Random Avatars</field>
+        <field name="model_id" ref="model_aps_avatar"/>
+        <field name="binding_model_id" ref="model_aps_avatar"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = env['aps.avatar'].action_assign_random_avatars()</field>
     </record>
 
 
@@ -190,8 +184,14 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='image_1920']" position="replace">
                 <div name="base_avatar_wrapper" style="position:relative;float:right;margin-bottom:10px;">
+                    <!-- Students: profile image is read-only -->
+                    <field name="image_1920" readonly="1" widget="image" class="oe_avatar"
+                           options='{"preview_image": "avatar_128"}'
+                           groups="aps_sis.group_aps_student"/>
+                    <!-- Teachers / Managers: profile image is editable -->
                     <field name="image_1920" readonly="0" widget="image" class="oe_avatar"
-                           options='{"preview_image": "avatar_128"}'/>
+                           options='{"preview_image": "avatar_128"}'
+                           groups="aps_sis.group_aps_teacher"/>
                     <field name="avatar_id" widget="avatar_selector"/>
                 </div>
             </xpath>

@@ -154,7 +154,7 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <Leaderboard entries="state.leaderboardData"/>
+                            <Leaderboard entries="state.leaderboardData" isFaculty="state.isFaculty"/>
                         </t>
                     </div>
                 </div>
@@ -178,7 +178,7 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <Leaderboard entries="state.progressLeaderboardData" displayLimit="30" valueSuffix="'%'"/>
+                            <Leaderboard entries="state.progressLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty"/>
                         </t>
                     </div>
                 </div>

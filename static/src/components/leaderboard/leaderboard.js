@@ -6,6 +6,7 @@ export class Leaderboard extends Component {
         entries: { type: Array, optional: true },
         displayLimit: { type: Number, optional: true },
         valueSuffix: { type: String, optional: true },
+        isFaculty: { type: Boolean, optional: true },
     };
 
     // Returns entries sorted rank-N first, rank-1 last (left → right display order).
@@ -46,8 +47,18 @@ export class Leaderboard extends Component {
         return labels[rank] || `#${rank}`;
     }
 
-    // Odoo serves partner avatars at this URL.
-    getImageUrl(studentId) {
-        return `/web/image/res.partner/${studentId}/image_128`;
+    // Image URL based on viewer role and available images.
+    // Students see game avatars; teachers see partner photos (with avatar fallback).
+    getImageUrl(entry) {
+        const avatarUrl = entry.avatar_id
+            ? `/web/image/aps.avatar/${entry.avatar_id}/image/128x128`
+            : false;
+        const partnerUrl = `/web/image/res.partner/${entry.student_id}/image_128`;
+
+        if (this.props.isFaculty) {
+            if (entry.has_image) return partnerUrl;
+            return avatarUrl || partnerUrl;
+        }
+        return avatarUrl || '/web/static/img/placeholder.png';
     }
 }

@@ -22,3 +22,4 @@ access_aps_avatar_teacher,aps.avatar.teacher,model_aps_avatar,aps_sis.group_aps_
 access_aps_avatar_student,aps.avatar.student,model_aps_avatar,aps_sis.group_aps_student,1,0,0,0
 access_aps_time_tracking_teacher,aps.time.tracking.teacher,model_aps_time_tracking,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_time_tracking_student,aps.time.tracking.student,model_aps_time_tracking,aps_sis.group_aps_student,1,1,1,1
+access_op_subject_aps_student,op.subject.aps.student,model_op_subject,aps_sis.group_aps_student,1,0,0,0
