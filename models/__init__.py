@@ -8,6 +8,7 @@ from . import aps_assign_students_wizard
 from . import aps_dashboard
 from . import aps_submission_mass_update_wizard
 from . import aps_resource_mass_update_wizard
+from . import res_users
 from . import op_program_level
 from . import op_course
 from . import op_subject

@@ -134,10 +134,26 @@
         <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
         <field name="arch" type="xml">
             <!-- Add the avatar selector below the profile image in the header area -->
-            <xpath expr="//field[@name='image']" position="after">
+            <xpath expr="//field[@name='image_1920']" position="after">
                 <field name="avatar_id" widget="many2one"
                        options="{'no_create': True}"
                        string="Avatar"/>
+            </xpath>
+        </field>
+    </record>
+
+
+    <!-- ─── User profile form — show avatar below profile picture ─── -->
+
+    <record id="view_res_users_profile_avatar" model="ir.ui.view">
+        <field name="name">res.users.profile.inherit.avatar</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="hr.res_users_view_form_profile"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='image_1920']" position="after">
+                <div style="float:right;clear:right;text-align:center;margin-bottom:8px;">
+                    <field name="avatar_id" widget="avatar_selector"/>
+                </div>
             </xpath>
         </field>
     </record>

@@ -1,4 +1,6 @@
+import base64
 import logging
+import os
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
@@ -57,3 +59,23 @@ class ApsAvatar(models.Model):
                 raise ValidationError(
                     "An avatar can only be assigned to one student at a time."
                 )
+
+    @api.model
+    def bulk_create_from_files(self, files, category_id):
+        """Create avatar records from a list of {name, data} dicts.
+
+        :param files: list of dicts with 'name' (filename str) and 'data' (base64 str)
+        :param category_id: int or False
+        :return: dict with created avatar ids
+        """
+        vals_list = []
+        for f in files:
+            fname = f.get('name', '')
+            name = os.path.splitext(fname)[0] if fname else 'Avatar'
+            vals_list.append({
+                'name': name,
+                'image': f.get('data', ''),
+                'category_id': category_id or False,
+            })
+        created = self.create(vals_list)
+        return {'ids': created.ids, 'count': len(created)}

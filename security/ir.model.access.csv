@@ -20,5 +20,3 @@ access_aps_avatar_category_teacher,aps.avatar.category.teacher,model_aps_avatar_
 access_aps_avatar_category_student,aps.avatar.category.student,model_aps_avatar_category,aps_sis.group_aps_student,1,0,0,0
 access_aps_avatar_teacher,aps.avatar.teacher,model_aps_avatar,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_avatar_student,aps.avatar.student,model_aps_avatar,aps_sis.group_aps_student,1,0,0,0
-access_aps_avatar_bulk_upload_teacher,aps.avatar.bulk.upload.teacher,model_aps_avatar_bulk_upload,aps_sis.group_aps_teacher,1,1,1,1
-access_aps_avatar_bulk_upload_line_teacher,aps.avatar.bulk.upload.line.teacher,model_aps_avatar_bulk_upload_line,aps_sis.group_aps_teacher,1,1,1,1
