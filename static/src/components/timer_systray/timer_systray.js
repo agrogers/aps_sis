@@ -23,9 +23,9 @@ export class TimerStopDialog extends Component {
         const subjectId = Array.isArray(this.props.entry.subject_id)
             ? this.props.entry.subject_id[0]
             : (this.props.entry.subject_id || false);
-        // datetime-local inputs need "T" separator
-        const startTime = (this.props.entry.start_time || "").replace(" ", "T");
-        const stopTime = (this.props.entry.stop_time || "").replace(" ", "T");
+        // datetime-local inputs need "T" separator; strip seconds for step=60
+        const startTime = (this.props.entry.start_time || "").replace(" ", "T").slice(0, 16);
+        const stopTime = (this.props.entry.stop_time || "").replace(" ", "T").slice(0, 16);
         this.state = useState({
             subject_id: subjectId,
             start_time: startTime,
@@ -44,7 +44,7 @@ export class TimerStopDialog extends Component {
             const stop = new Date(this.state.stop_time);
             const diffMs = stop - start;
             if (diffMs > 0) {
-                this.state.total_minutes = Math.max(0, diffMs / 60000 - (parseFloat(this.state.pause_minutes) || 0));
+                this.state.total_minutes = Math.round(Math.max(0, diffMs / 60000 - (parseFloat(this.state.pause_minutes) || 0)));
             } else {
                 this.state.total_minutes = 0;
             }
@@ -55,11 +55,15 @@ export class TimerStopDialog extends Component {
         this._recomputeDuration();
     }
 
-    get formattedDuration() {
-        const mins = Math.round(this.state.total_minutes);
-        const h = Math.floor(mins / 60);
-        const m = mins % 60;
-        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    onDurationChange() {
+        // Recalculate start_time = stop_time - duration
+        if (this.state.stop_time) {
+            const stop = new Date(this.state.stop_time);
+            const durationMs = (parseFloat(this.state.total_minutes) || 0) * 60000;
+            const pauseMs = (parseFloat(this.state.pause_minutes) || 0) * 60000;
+            const start = new Date(stop.getTime() - durationMs - pauseMs);
+            this.state.start_time = start.toISOString().slice(0, 16);
+        }
     }
 
     async onSave() {
@@ -81,6 +85,8 @@ export class TimerStopDialog extends Component {
             partner_id: this.props.partnerId,
             start_time: toUTC(this.state.start_time),
             stop_time: toUTC(this.state.stop_time),
+            total_minutes: parseInt(this.state.total_minutes) || 0,
+            date: this.state.start_time ? new Date(this.state.start_time).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
             notes: this.state.notes,
             pause_minutes: parseFloat(this.state.pause_minutes) || 0,
             is_outside_school_hours: this.state.is_outside_school_hours,

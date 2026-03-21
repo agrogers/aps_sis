@@ -12,27 +12,38 @@ class APSTimeTracking(models.Model):
     _description = 'Time Tracking Entry'
     _order = 'start_time desc'
 
-    # ── Relational ────────────────────────────────────────────────────────────
+    def _compute_is_current_user_teacher(self):
+        teacher_group = self.env.ref('aps_sis.group_aps_teacher', raise_if_not_found=False)
+        is_teacher = teacher_group and teacher_group in self.env.user.groups_id
+        for rec in self:
+            rec.is_current_user_teacher = is_teacher
+
     partner_id = fields.Many2one(
         'res.partner',
-        string='Student / Person',
+        string='Person',
         domain=[('is_student', '=', True)],
+        default=lambda self: self.env.user.partner_id.id,
         index=True,
+    )
+    is_current_user_teacher = fields.Boolean(
+        compute='_compute_is_current_user_teacher',
     )
     subject_id = fields.Many2one(
         'op.subject',
         string='Subject',
         index=True,
+        required=False,
     )
 
-    # ── Time fields ───────────────────────────────────────────────────────────
     date = fields.Date(
         string='Date',
         compute='_compute_date',
         store=True,
+        readonly=False,
+        default=fields.Date.context_today,
         index=True,
     )
-    start_time = fields.Datetime(string='Start Time', required=True)
+    start_time = fields.Datetime(string='Start Time')
     stop_time = fields.Datetime(string='Stop Time')
     pause_minutes = fields.Float(string='Pause (minutes)', default=0.0)
 
@@ -40,6 +51,7 @@ class APSTimeTracking(models.Model):
         string='Total Minutes',
         compute='_compute_total_minutes',
         store=True,
+        readonly=False,
     )
 
     # ── Meta ──────────────────────────────────────────────────────────────────

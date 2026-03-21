@@ -10,15 +10,16 @@
                 <sheet>
                     <group>
                         <group>
+                            <field name="is_current_user_teacher" invisible="1"/>
+                            <field name="date"/>
                             <field name="subject_id" options="{'no_create': True}"/>
-                            <field name="partner_id" options="{'no_create': True}"/>
+                            <field name="partner_id" options="{'no_create': True}" readonly="not is_current_user_teacher"/>
+                            <field name="total_minutes"/>
                         </group>
                         <group>
-                            <field name="date" readonly="1"/>
                             <field name="start_time"/>
                             <field name="stop_time"/>
                             <field name="pause_minutes"/>
-                            <field name="total_minutes" readonly="1"/>
                             <field name="is_outside_school_hours"/>
                         </group>
                     </group>

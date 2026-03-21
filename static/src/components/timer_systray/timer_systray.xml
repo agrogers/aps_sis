@@ -17,7 +17,7 @@
                             title="Pause Timer"
                             t-on-click="onPause">
                         <i class="fa fa-pause me-1"/>
-                        <span t-esc="elapsedLabel"/>
+                        <span t-esc="elapsedLabel" class="o_monospace_text"/>
                     </button>
                 </t>
                 <t t-else="">
@@ -41,11 +41,10 @@
     <t t-name="aps_sis.TimerStopDialog" owl="1">
         <Dialog title="'Save Time Entry'" size="'md'">
             <t t-set-slot="default">
-                <div class="mb-3 text-center">
-                    <span class="badge bg-secondary fs-5 px-3 py-2">
-                        <i class="fa fa-clock-o me-1"/>
-                        Duration: <t t-esc="formattedDuration"/>
-                    </span>
+                <div class="mb-3">
+                    <label class="form-label fw-bold"><i class="fa fa-clock-o me-1"/>Duration (minutes)</label>
+                    <input type="number" class="form-control" min="0" step="1"
+                           t-model="state.total_minutes" t-on-change="onDurationChange"/>
                 </div>
 
                 <!-- Subject (required) -->
@@ -70,12 +69,12 @@
                 <div class="row mb-3">
                     <div class="col-6">
                         <label class="form-label">Start Time</label>
-                        <input type="datetime-local" class="form-control" step="1"
+                        <input type="datetime-local" class="form-control" step="60"
                                t-model="state.start_time" t-on-change="onTimeChange"/>
                     </div>
                     <div class="col-6">
                         <label class="form-label">Stop Time</label>
-                        <input type="datetime-local" class="form-control" step="1"
+                        <input type="datetime-local" class="form-control" step="60"
                                t-model="state.stop_time" t-on-change="onTimeChange"/>
                     </div>
                 </div>
