@@ -1243,6 +1243,199 @@ class APSResourceSubmission(models.Model):
         return result
 
     @api.model
+    def get_completion_leaderboard_data(self, limit=30):
+        """Return top N students ranked by predicted total progress at the course deadline.
+
+        Uses the same subject inclusion/exclusion and enrolment logic as
+        get_progress_leaderboard_data and mirrors the _calculatePredictionData
+        logic from the frontend (progress_charts.js).
+
+        For each student / subject:
+        - Calculate daily progress rate from the student's historical line data
+          (first to last submitted data-point for that subject).
+        - Determine the deadline: the latest end_date across all progress resources.
+        - Project: predicted_total = min(current + daily_rate * days_remaining, 100)
+        - Average the predicted totals across all enrolled, non-excluded subjects.
+
+        Returns up to `limit` students ranked by predicted average (descending).
+        Each entry: rank, student_id, student_name, total_points (= rounded predicted %)
+        """
+        import re
+        import html
+        from datetime import date as date_type
+        from markupsafe import Markup
+
+        progress_resources = self.env['aps.resources'].search([
+            ('name', 'ilike', ' Progress')
+        ])
+        if not progress_resources:
+            return []
+
+        # --- Parse exclude list from resource notes (same as get_progress_leaderboard_data) ---
+        exclude = []
+        for resource in progress_resources:
+            if not resource.notes:
+                continue
+            notes_text = resource.notes
+            if isinstance(notes_text, Markup) or '<' in str(notes_text):
+                notes_text = str(notes_text)
+                notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'<[^>]+>', '', notes_text)
+            notes_text = html.unescape(str(notes_text))
+            notes_text = notes_text.replace('\xa0', ' ')
+            match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+            if match:
+                for subject_name in match.group(1).split(','):
+                    cleaned_name = subject_name.strip()
+                    if cleaned_name and cleaned_name not in exclude:
+                        exclude.append(cleaned_name)
+
+        # --- Determine global deadline (latest end_date across all progress resources) ---
+        deadline = None
+        for resource in progress_resources:
+            pace_dates = resource.get_pace_dates()
+            if pace_dates.get('end_date'):
+                if deadline is None or pace_dates['end_date'] > deadline:
+                    deadline = pace_dates['end_date']
+
+        today = date_type.today()
+        if deadline and deadline > today:
+            days_remaining = (deadline - today).days
+        else:
+            days_remaining = 0  # No future deadline → no projection, use current progress
+
+        # --- Fetch submissions ---
+        submissions = self.sudo().search([
+            ('resource_id', 'in', progress_resources.ids),
+            ('submission_active', '=', True),
+            ('state', 'in', ['submitted', 'complete']),
+        ], order='date_submitted asc')
+        if not submissions:
+            return []
+
+        # --- Collect subjects, apply exclude filter ---
+        all_subjects = self.env['op.subject']
+        for sub in submissions:
+            all_subjects |= sub.subjects
+        if exclude:
+            all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+
+        # --- Restrict to enrolled subjects ---
+        student_enrolled_subjects = {}
+        all_enrolled_subject_ids = set()
+        partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
+        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        for student_record in student_records:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
+            all_enrolled_subject_ids.update(enrolled_ids)
+        if all_enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
+        all_subject_ids_set = set(all_subjects.ids)
+
+        # --- Build per-student, per-subject historical data ---
+        # Dates are normalised to date objects at extraction to avoid mixed-type arithmetic.
+        # student_history: {student_id: {subject_id: [(date, result_percent), ...]}}
+        student_history = {}
+        student_names = {}
+        for submission in submissions:
+            student_id = submission.student_id.id
+            if not student_id:
+                continue
+            student_names[student_id] = submission.student_id.name
+            if student_id not in student_history:
+                student_history[student_id] = {}
+            student_enrolled = student_enrolled_subjects.get(student_id)
+            for subject in submission.subjects:
+                if subject.id not in all_subject_ids_set:
+                    continue
+                if student_enrolled is not None and subject.id not in student_enrolled:
+                    continue
+                date_to_use = submission.date_submitted or submission.date_completed
+                if not date_to_use:
+                    continue
+                # Normalise to a date object (Odoo datetime fields return datetime instances)
+                if hasattr(date_to_use, 'date'):
+                    date_to_use = date_to_use.date()
+                if subject.id not in student_history[student_id]:
+                    student_history[student_id][subject.id] = []
+                student_history[student_id][subject.id].append(
+                    (date_to_use, submission.result_percent or 0)
+                )
+
+        # --- Calculate predicted total progress per student ---
+        leaderboard = []
+        for student_id, subjects in student_history.items():
+            predicted_totals = []
+            for subject_id, data_points in subjects.items():
+                if not data_points:
+                    continue
+                # Sort ascending by date
+                sorted_points = sorted(data_points, key=lambda x: x[0])
+                current_progress = sorted_points[-1][1]  # Latest result_percent
+
+                if current_progress >= 100:
+                    predicted_totals.append(100.0)
+                    continue
+
+                # Calculate daily rate from first to last data point
+                first_date, first_progress = sorted_points[0]
+                last_date, last_progress = sorted_points[-1]
+                days_between = (last_date - first_date).days
+
+                if days_between > 0:
+                    daily_rate = (last_progress - first_progress) / days_between
+                else:
+                    daily_rate = 0
+
+                if daily_rate > 0 and days_remaining > 0:
+                    predicted_total = min(current_progress + daily_rate * days_remaining, 100.0)
+                else:
+                    predicted_total = current_progress
+
+                predicted_totals.append(predicted_total)
+
+            if not predicted_totals:
+                continue
+            avg_predicted = sum(predicted_totals) / len(predicted_totals)
+            leaderboard.append({
+                'student_id': student_id,
+                'student_name': student_names.get(student_id, ''),
+                'avg_predicted': avg_predicted,
+            })
+
+        leaderboard.sort(key=lambda x: x['avg_predicted'], reverse=True)
+        leaderboard = leaderboard[:limit]
+
+        result = [
+            {
+                'rank': i + 1,
+                'student_id': entry['student_id'],
+                'student_name': entry['student_name'],
+                'total_points': round(entry['avg_predicted']),
+            }
+            for i, entry in enumerate(leaderboard)
+        ]
+
+        # --- Enrich with avatar / image info ---
+        partner_ids = [r['student_id'] for r in result]
+        partners = self.env['res.partner'].sudo().browse(partner_ids)
+        user_data = self.env['res.users'].sudo().search_read(
+            [('partner_id', 'in', partner_ids)],
+            ['partner_id', 'avatar_id'],
+        )
+        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
+        image_map = {p.id: bool(p.image_128) for p in partners}
+        for entry in result:
+            entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            entry['has_image'] = image_map.get(entry['student_id'], False)
+
+        return result
+
+    @api.model
     def get_leaderboard_data(self, domain, limit=5):
         """Return top N students by points for the leaderboard.
 
