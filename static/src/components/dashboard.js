@@ -67,6 +67,9 @@ export class ApexDashboard extends Component {
             // Leaderboard
             leaderboardData: [],
             loadingLeaderboard: true,
+            // Progress Leaderboard
+            progressLeaderboardData: [],
+            loadingProgressLeaderboard: true,
         });
 
         
@@ -578,6 +581,7 @@ export class ApexDashboard extends Component {
             this.progressCharts.fetchProgressData(),
             this.progressCharts.fetchStudentComparisonData(),
             this.fetchLeaderboard(),
+            this.fetchProgressLeaderboard(),
         ]);
 
         // Now that KPIs are loaded → the rank card should exist
@@ -671,6 +675,23 @@ export class ApexDashboard extends Component {
             this.state.leaderboardData = [];
         } finally {
             this.state.loadingLeaderboard = false;
+        }
+    }
+
+    async fetchProgressLeaderboard() {
+        this.state.loadingProgressLeaderboard = true;
+        try {
+            const data = await this.orm.call(
+                "aps.resource.submission",
+                "get_progress_leaderboard_data",
+                [], { limit: 30 }
+            );
+            this.state.progressLeaderboardData = data || [];
+        } catch (error) {
+            console.error("Error fetching progress leaderboard data:", error);
+            this.state.progressLeaderboardData = [];
+        } finally {
+            this.state.loadingProgressLeaderboard = false;
         }
     }
 

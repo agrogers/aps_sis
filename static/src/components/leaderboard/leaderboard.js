@@ -4,13 +4,16 @@ export class Leaderboard extends Component {
     static template = "apex_dashboard.Leaderboard";
     static props = {
         entries: { type: Array, optional: true },
+        displayLimit: { type: Number, optional: true },
+        valueSuffix: { type: String, optional: true },
     };
 
-    // Returns entries sorted rank-5 first, rank-1 last (left → right display order).
+    // Returns entries sorted rank-N first, rank-1 last (left → right display order).
     get displayEntries() {
+        const limit = this.props.displayLimit ?? 15;
         const sorted = [...(this.props.entries || [])]
             .sort((a, b) => a.rank - b.rank)
-            .slice(0, 15);
+            .slice(0, limit);
         return sorted.reverse();
     }
 
