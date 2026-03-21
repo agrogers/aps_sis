@@ -91,7 +91,7 @@
         <field name="name">aps.avatar.kanban</field>
         <field name="model">aps.avatar</field>
         <field name="arch" type="xml">
-            <kanban string="Avatars" style="--Kanban__card-width: 150px;">
+            <kanban string="Avatars" class="avatar-kanban-card">
                 <field name="id"/>
                 <field name="name"/>
                 <field name="image"/>
@@ -123,6 +123,24 @@
         <field name="name">Avatars</field>
         <field name="res_model">aps.avatar</field>
         <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_aps_avatar_search"/>
+    </record>
+
+
+    <!-- ─── Avatar Search View ─── -->
+
+    <record id="view_aps_avatar_search" model="ir.ui.view">
+        <field name="name">aps.avatar.search</field>
+        <field name="model">aps.avatar</field>
+        <field name="arch" type="xml">
+            <search string="Search Avatars">
+                <searchpanel>
+                    <field name="category_id" string="Category" icon="fa-folder" enable_counters="1"/>
+                </searchpanel>
+                <field name="name"/>
+                <field name="category_id"/>
+            </search>
+        </field>
     </record>
 
 

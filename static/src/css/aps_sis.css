@@ -546,6 +546,11 @@ div[name="score"].fixed-score-width {
     display: block;
 }
 
+.avatar-kanban-card .o_kanban_record  {
+    width: 220px;
+    max-width: 220px;
+    flex: 0 0 220px;
+}
 /* Medal / rank badge in the bottom-right of the avatar */
 .apex-leaderboard-medal {
     position: absolute;
