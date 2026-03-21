@@ -162,10 +162,7 @@
         <field name="model">res.users</field>
         <field name="inherit_id" ref="hr.res_users_view_form_profile"/>
         <field name="arch" type="xml">
-            <!-- Remove orphaned base_avatar_wrapper left by the base form extension
-                 (HR's intermediate view removes image_1920 from it, leaving an orphan) -->
-            <xpath expr="//div[@name='base_avatar_wrapper']" position="replace"/>
-            <xpath expr="//field[@class='oe_avatar']" position="replace">
+            <xpath expr="//field[@name='image_1920']" position="replace">
                 <div style="position:relative;float:right;margin-bottom:10px;">
                     <field name="image_1920" widget="image" class="oe_avatar"
                            options='{"zoom": true, "preview_image":"avatar_128"}'/>
