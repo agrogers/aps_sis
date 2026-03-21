@@ -467,7 +467,7 @@ div[name="score"].fixed-score-width {
 .apex-leaderboard-wrap {
     width: 100%;
     overflow-x: auto;           /* scroll on very narrow screens */
-    padding: 0.5rem 1.5rem 1rem;
+    padding: 0.0rem 1.5rem 1rem;
 }
 
 /* The horizontal rail that holds entries + spacers */
@@ -475,8 +475,27 @@ div[name="score"].fixed-score-width {
     display: flex;
     align-items: flex-end;      /* cards sit on a common baseline */
     min-width: 480px;           /* prevent collapse on tiny screens */
-    min-height: 170px;
+    min-height: 140px;
     padding-bottom: 0.5rem;
+    position: relative;
+}
+
+/* Thick horizontal line running behind the points row */
+.apex-leaderboard-track::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 22px;               /* align with the points text baseline */
+    height: 4px;
+    background: #dee2e6;
+    border-radius: 2px;
+    z-index: 0;
+}
+
+/* Ensure cards sit above the line */
+.apex-leaderboard-entry {
+    z-index: 1;
 }
 
 /* ---- Individual student card ---- */
@@ -486,8 +505,8 @@ div[name="score"].fixed-score-width {
     align-items: center;
     flex-shrink: 0;
     width: 90px;
-    position: relative;         /* needed for z-index stacking on hover */
-    z-index: 0;
+    position: relative;
+    z-index: 1;
     transition: transform 0.2s ease, z-index 0s;
     cursor: default;
 }
@@ -531,7 +550,7 @@ div[name="score"].fixed-score-width {
     position: absolute;
     bottom: -6px;
     right: -6px;
-    font-size: 1.1rem;
+    font-size: 0.8rem;
     line-height: 1;
     background: #fff;
     border-radius: 50%;
