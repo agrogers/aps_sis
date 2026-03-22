@@ -606,6 +606,17 @@ div[name="score"].fixed-score-width {
     min-width: 4px;             /* allow tighter clustering */
 }
 
+/* Current user's card is always slightly elevated (1.1×) to stand out */
+.apex-leaderboard-entry--current-user {
+    transform: translateY(-3px) scale(1.1);
+    z-index: 2;
+}
+
+.apex-leaderboard-entry--current-user:hover {
+    transform: translateY(-6px) scale(1.25);
+    z-index: 10;
+}
+
 /* 1st-place card is taller to emphasise it */
 /* .apex-leaderboard-entry[data-rank="1"] .apex-leaderboard-avatar-shell {
     width: 78px;

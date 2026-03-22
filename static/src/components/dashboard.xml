@@ -154,7 +154,7 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <Leaderboard entries="state.leaderboardData" isFaculty="state.isFaculty"/>
+                            <Leaderboard entries="state.leaderboardData" isFaculty="state.isFaculty" currentUserPartnerId="user.partnerId"/>
                         </t>
                     </div>
                 </div>
@@ -178,7 +178,7 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <Leaderboard entries="state.progressLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty" trackMode="'progress'" redlinePercent="state.redlineForToday" pacePercent="state.paceForToday"/>
+                            <Leaderboard entries="state.progressLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty" trackMode="'progress'" redlinePercent="state.redlineForToday" pacePercent="state.paceForToday" currentUserPartnerId="user.partnerId"/>
                         </t>
                     </div>
                 </div>
@@ -202,7 +202,7 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <Leaderboard entries="state.completionLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty" trackMode="'completion'"/>
+                            <Leaderboard entries="state.completionLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty" trackMode="'completion'" currentUserPartnerId="user.partnerId"/>
                         </t>
                     </div>
                 </div>
