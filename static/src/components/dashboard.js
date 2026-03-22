@@ -20,6 +20,7 @@ export class ApexDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.user = useService("user");
         
         const savedSettings = this.loadSettings();
 
