@@ -1097,6 +1097,53 @@ class APSResourceSubmission(models.Model):
         )
     
     @api.model
+    def _get_progress_resources(self):
+        """Return all resources whose type name contains 'Progress'."""
+        return self.env['aps.resources'].search([
+            ('type_id.name', 'ilike', 'Progress')
+        ])
+
+    @staticmethod
+    def _parse_resource_notes_excludes(resources):
+        """Parse 'exclude:' and 'exclude_from_average:' lists from resource notes.
+
+        Returns (exclude, exclude_from_average) — two lists of subject name strings.
+        """
+        import re
+        import html as html_lib
+        from markupsafe import Markup
+
+        exclude = []
+        exclude_from_average = []
+        for resource in resources:
+            if not resource.notes:
+                continue
+            notes_text = resource.notes
+            if isinstance(notes_text, Markup) or '<' in str(notes_text):
+                notes_text = str(notes_text)
+                notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'<[^>]+>', '', notes_text)
+            notes_text = html_lib.unescape(str(notes_text))
+            notes_text = notes_text.replace('\xa0', ' ')
+
+            match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+            if match:
+                for name in match.group(1).split(','):
+                    cleaned = name.strip()
+                    if cleaned and cleaned not in exclude_from_average:
+                        exclude_from_average.append(cleaned)
+
+            match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+            if match:
+                for name in match.group(1).split(','):
+                    cleaned = name.strip()
+                    if cleaned and cleaned not in exclude:
+                        exclude.append(cleaned)
+
+        return exclude, exclude_from_average
+    
+    @api.model
     def get_progress_leaderboard_data(self, limit=30):
         """Return top N students by average progress across enrolled, non-excluded subjects.
 
@@ -1109,35 +1156,11 @@ class APSResourceSubmission(models.Model):
 
         Each entry contains: rank, student_id, student_name, total_points (= rounded avg %)
         """
-        import re
-        from markupsafe import Markup
-
-        progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
-        ])
+        progress_resources = self._get_progress_resources()
         if not progress_resources:
             return []
 
-        # Parse 'exclude:' subject names from resource notes
-        exclude = []
-        for resource in progress_resources:
-            if not resource.notes:
-                continue
-            notes_text = resource.notes
-            if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                notes_text = str(notes_text)
-                notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
-                notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
-                notes_text = re.sub(r'<[^>]+>', '', notes_text)
-            import html
-            notes_text = html.unescape(str(notes_text))
-            notes_text = notes_text.replace('\xa0', ' ')
-            match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-            if match:
-                for subject_name in match.group(1).split(','):
-                    cleaned_name = subject_name.strip()
-                    if cleaned_name and cleaned_name not in exclude:
-                        exclude.append(cleaned_name)
+        exclude, _exclude_from_avg = self._parse_resource_notes_excludes(progress_resources)
 
         # Fetch all active submitted/complete submissions for progress resources
         submissions = self.sudo().search([
@@ -1260,36 +1283,13 @@ class APSResourceSubmission(models.Model):
         Returns up to `limit` students ranked by predicted average (descending).
         Each entry: rank, student_id, student_name, total_points (= rounded predicted %)
         """
-        import re
-        import html
         from datetime import date as date_type
-        from markupsafe import Markup
 
-        progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
-        ])
+        progress_resources = self._get_progress_resources()
         if not progress_resources:
             return []
 
-        # --- Parse exclude list from resource notes (same as get_progress_leaderboard_data) ---
-        exclude = []
-        for resource in progress_resources:
-            if not resource.notes:
-                continue
-            notes_text = resource.notes
-            if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                notes_text = str(notes_text)
-                notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
-                notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
-                notes_text = re.sub(r'<[^>]+>', '', notes_text)
-            notes_text = html.unescape(str(notes_text))
-            notes_text = notes_text.replace('\xa0', ' ')
-            match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-            if match:
-                for subject_name in match.group(1).split(','):
-                    cleaned_name = subject_name.strip()
-                    if cleaned_name and cleaned_name not in exclude:
-                        exclude.append(cleaned_name)
+        exclude, _exclude_from_avg = self._parse_resource_notes_excludes(progress_resources)
 
         # --- Determine global deadline (latest end_date across all progress resources) ---
         deadline = None
@@ -1500,14 +1500,8 @@ class APSResourceSubmission(models.Model):
         - exclude: Subjects to completely exclude from the chart
         """
         from datetime import datetime, timedelta
-        import re
-        import html as html_lib
-        from markupsafe import Markup
         
-        # Find all resources with ' Progress' in the name
-        progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
-        ])
+        progress_resources = self._get_progress_resources()
         
         if not progress_resources:
             return {
@@ -1519,33 +1513,7 @@ class APSResourceSubmission(models.Model):
                 'exclude': [],
             }
         
-        # Parse exclude_from_average and exclude from resource notes
-        exclude_from_average = []
-        exclude = []
-        for resource in progress_resources:
-            if resource.notes:
-                notes_text = resource.notes
-                if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                    notes_text = str(notes_text)
-                    notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'<[^>]+>', '', notes_text)
-                notes_text = html_lib.unescape(str(notes_text))
-                notes_text = notes_text.replace('\xa0', ' ')
-                
-                match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude_from_average:
-                            exclude_from_average.append(cleaned_name)
-                
-                match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude:
-                            exclude.append(cleaned_name)
+        exclude, exclude_from_average = self._parse_resource_notes_excludes(progress_resources)
         
         # Build domain for submissions
         domain = [
@@ -1681,13 +1649,8 @@ class APSResourceSubmission(models.Model):
         - exclude_from_average: List of subject names to exclude from average calculation
         """
         from datetime import datetime
-        import re
-        from markupsafe import Markup
         
-        # Find all resources with ' Progress' in the name
-        progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
-        ])
+        progress_resources = self._get_progress_resources()
         
         if not progress_resources:
             return {
@@ -1698,36 +1661,7 @@ class APSResourceSubmission(models.Model):
                 'exclude_from_average': []
             }
         
-        # Parse exclude_from_average and exclude from resource notes
-        exclude_from_average = []
-        exclude = []
-        for resource in progress_resources:
-            if resource.notes:
-                # Strip HTML tags if present
-                notes_text = resource.notes
-                if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                    notes_text = str(notes_text)
-                    notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'<[^>]+>', '', notes_text)
-                # Decode HTML entities (e.g., &nbsp; -> space)
-                import html
-                notes_text = html.unescape(str(notes_text))
-                notes_text = notes_text.replace('\xa0', ' ')
-                
-                match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude_from_average:
-                            exclude_from_average.append(cleaned_name)
-                
-                match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude:
-                            exclude.append(cleaned_name)
+        exclude, exclude_from_average = self._parse_resource_notes_excludes(progress_resources)
         
         # Build domain for submissions
         domain = [
