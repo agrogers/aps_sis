@@ -152,3 +152,96 @@ class TestAPSResource(TransactionCase):
         )
         self.assertFalse(found)
 
+    # --- Display name edge-case tests ---
+
+    def _make_chain(self, *names):
+        """Helper: create a resource chain and return all records.
+
+        ``_make_chain('A', 'B', 'C')`` creates three resources where
+        B's primary parent is A and C's primary parent is B.
+        Returns a list of records ``[A, B, C]``.
+        """
+        records = []
+        parent = None
+        for name in names:
+            vals = {'name': name}
+            if parent:
+                vals['parent_ids'] = [(6, 0, [parent.id])]
+                vals['primary_parent_id'] = parent.id
+            rec = self.env['aps.resources'].create(vals)
+            records.append(rec)
+            parent = rec
+        return records
+
+    def test_display_name_no_false_overlap_ict_textbook(self):
+        """ICT > Textbook must NOT strip the leading 'T' from Textbook.
+
+        Regression: the overlap detector matched the last char of 'ICT'
+        with the first char of 'Textbook', producing 'ICT 🢒 extbook'.
+        """
+        parent, child = self._make_chain('ICT', 'Textbook')
+        self.assertEqual(child.display_name, 'ICT 🢒 Textbook')
+
+    def test_display_name_three_level_chain(self):
+        """A three-level chain should concatenate all ancestors."""
+        gp, p, c = self._make_chain('Year 10', 'Math', 'Algebra')
+        self.assertEqual(c.display_name, 'Year 10 🢒 Math 🢒 Algebra')
+
+    def test_display_name_bracket_dedup(self):
+        """Bracketed text matching the parent should be removed from child."""
+        parent, child = self._make_chain('Year 10 Math', 'Equations (Year 10 Math)')
+        self.assertIn('Equations', child.display_name)
+        # The bracketed '(Year 10 Math)' should be stripped
+        self.assertNotIn('(Year 10 Math)', child.display_name)
+
+    def test_display_name_leading_word_dedup(self):
+        """Leading words in the child that appear in the parent's last segment
+        should be removed to avoid redundancy."""
+        parent, child = self._make_chain('Ch 14: File Management', 'File Management Video Overview')
+        # 'File Management' duplicates the parent tail — only 'Video Overview' should remain
+        self.assertIn('Video Overview', child.display_name)
+        # Should not have double "File Management"
+        count = child.display_name.count('File Management')
+        self.assertEqual(count, 1, f"'File Management' appears {count} times in '{child.display_name}'")
+
+    def test_display_name_no_overlap_short_names(self):
+        """Short parent names must not corrupt short child names."""
+        cases = [
+            ('A', 'B', 'A 🢒 B'),
+            ('AB', 'CD', 'AB 🢒 CD'),
+            ('IT', 'Tasks', 'IT 🢒 Tasks'),
+        ]
+        for pname, cname, expected in cases:
+            parent, child = self._make_chain(pname, cname)
+            self.assertEqual(
+                child.display_name, expected,
+                f"Chain '{pname}' > '{cname}' gave '{child.display_name}', expected '{expected}'",
+            )
+
+    def test_display_name_identical_parent_child(self):
+        """When parent and child have the same name, the child display_name
+        should still include the parent (no empty segment)."""
+        parent, child = self._make_chain('Topic A', 'Topic A')
+        # The overlap logic should collapse but the parent must still appear
+        self.assertTrue(child.display_name.startswith('Topic A'))
+
+    def test_display_name_real_overlap(self):
+        """A genuine word-boundary overlap should be collapsed.
+
+        E.g. parent 'Year 10 Intro' and child 'Intro to Functions' overlap on
+        the full word 'Intro'.
+        """
+        parent, child = self._make_chain('Year 10 Intro', 'Intro to Functions')
+        self.assertIn('Year 10 Intro', child.display_name)
+        self.assertIn('to Functions', child.display_name)
+        self.assertEqual(child.display_name.count('Intro'), 1)
+
+    def test_display_name_no_partial_word_overlap(self):
+        """Mid-word overlaps must NOT be collapsed.
+
+        'Alge' at end of parent overlaps start of 'Algebra' but breaks
+        mid-word — both segments should appear in full.
+        """
+        parent, child = self._make_chain('Intro to Alge', 'Algebra Basics')
+        self.assertEqual(child.display_name, 'Intro to Alge 🢒 Algebra Basics')
+

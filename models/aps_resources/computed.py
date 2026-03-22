@@ -206,7 +206,17 @@ class APSResource(models.Model):
                             break
 
                 # Remove overlapping characters from current_name
-                if overlap_length > 0:
+                # Only collapse if the overlap falls on word boundaries to avoid
+                # partial-word matches (e.g. "Alge" matching "Algebra").
+                if overlap_length >= 3:
+                    child_boundary = (overlap_length >= current_len or
+                                      not current_name[overlap_length].isalnum())
+                    parent_start = parent_len - overlap_length
+                    parent_boundary = (parent_start == 0 or
+                                       not parent_display[parent_start - 1].isalnum())
+                    if not (child_boundary and parent_boundary):
+                        overlap_length = 0
+                if overlap_length >= 3:
                     remaining_name = current_name[overlap_length:].lstrip()
                     # Strip any "." that appear at the start of the remaining name
                     remaining_name = re.sub(r'^[\s:;.,\-–—()\[\]{}]+', '', remaining_name).strip()
