@@ -118,8 +118,9 @@ export class Leaderboard extends Component {
             // the edge colour — so negative or >100 values produce the correct slice.
             const stops = [
                 { pct: 0,   color: '#dc3545' },   // red
-                { pct: 30,  color: '#fd7e14' },   // orange
-                { pct: 60,  color: '#ffc107' },   // yellow
+                { pct: 50,   color: '#dc3545' },   // red
+                { pct: 70,  color: '#fd7e14' },   // orange
+                { pct: 90,  color: '#ffc107' },   // yellow
                 { pct: 100, color: '#28a745' },   // green
             ];
 

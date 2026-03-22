@@ -74,6 +74,7 @@ export class ApexDashboard extends Component {
             loadingProgressLeaderboard: true,
             // Completion Leaderboard Prediction
             completionLeaderboardData: [],
+            completionDeadline: false,
             loadingCompletionLeaderboard: true,
         });
 
@@ -709,10 +710,12 @@ export class ApexDashboard extends Component {
                 "get_completion_leaderboard_data",
                 [], { limit: 30 }
             );
-            this.state.completionLeaderboardData = data || [];
+            this.state.completionLeaderboardData = data?.entries || [];
+            this.state.completionDeadline = data?.deadline || false;
         } catch (error) {
             console.error("Error fetching completion leaderboard data:", error);
             this.state.completionLeaderboardData = [];
+            this.state.completionDeadline = false;
         } finally {
             this.state.loadingCompletionLeaderboard = false;
         }

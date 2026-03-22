@@ -194,7 +194,7 @@ class APSResourceSubmission(models.Model):
         for record in self:
             if record.state in ['complete', 'submitted'] and record.date_submitted:
                 if not record.date_due:
-                    points = 3  # on time if no due date
+                    points = 1  # on time if no due date. This means that the user has chosen to resubmit something. Set the points low so they can't easily resubmit multiple times to farm points but still give them some points for resubmitting. 
                 else:
                     days_from_due_date = record.date_submitted - record.date_due
                     days_diff = days_from_due_date.days
@@ -1287,7 +1287,7 @@ class APSResourceSubmission(models.Model):
 
         progress_resources = self._get_progress_resources()
         if not progress_resources:
-            return []
+            return {'entries': [], 'deadline': False}
 
         exclude, _exclude_from_avg = self._parse_resource_notes_excludes(progress_resources)
 
@@ -1312,7 +1312,7 @@ class APSResourceSubmission(models.Model):
             ('state', 'in', ['submitted', 'complete']),
         ], order='date_submitted asc')
         if not submissions:
-            return []
+            return {'entries': [], 'deadline': deadline.isoformat() if deadline else False}
 
         # --- Collect subjects, apply exclude filter ---
         all_subjects = self.env['op.subject']
@@ -1433,7 +1433,10 @@ class APSResourceSubmission(models.Model):
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
             entry['has_image'] = image_map.get(entry['student_id'], False)
 
-        return result
+        return {
+            'entries': result,
+            'deadline': deadline.isoformat() if deadline else False,
+        }
 
     @api.model
     def get_leaderboard_data(self, domain, limit=5):

@@ -141,6 +141,7 @@
                 <div class="col-12">
                     <div class="bg-white shadow-sm p-4 rounded">
                         <h3 class="fw-bold mb-1">🏆 Top 9 Leaderboard (<t t-raw="state.period_name"/>)</h3>
+                        <p class="text-muted">Points are awarded for completed work and early submissions.</p>
                         <t t-if="state.loadingLeaderboard">
                             <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
                                 <div class="spinner-border text-primary" role="status">
@@ -165,6 +166,7 @@
                 <div class="col-12">
                     <div class="bg-white shadow-sm p-4 rounded">
                         <h3 class="fw-bold mb-1">📈 Progress Leaderboard</h3>
+                        <p class="text-muted">How much of the IGCSE course you have completed. Try to stay in the <span style="background: #dee2e6; border-radius:3px; padding: 0px 3px 3px 3px">gray zone</span>.</p>
                         <t t-if="state.loadingProgressLeaderboard">
                             <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
                                 <div class="spinner-border text-primary" role="status">
@@ -188,7 +190,11 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="bg-white shadow-sm p-4 rounded">
-                        <h3 class="fw-bold mb-1">🎯 Completion Leaderboard Prediction</h3>
+                        <h3 class="fw-bold mb-1">🎯 Completion Prediction Leaderboard</h3>
+                         <p class="text-muted">This is how much of the IGCSE course we predict you will complete by
+                            <t t-if="state.completionDeadline"><b><t t-esc="state.completionDeadline"/></b></t>
+                            <t t-else="">the end of the course</t>
+                            based on your current pace. Try to stay in the <span style="background: #27a143b6; border-radius:3px; padding: 0px 3px 3px 3px">green zone</span>.</p>
                         <t t-if="state.loadingCompletionLeaderboard">
                             <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
                                 <div class="spinner-border text-primary" role="status">
