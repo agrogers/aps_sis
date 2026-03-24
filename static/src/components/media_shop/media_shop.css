@@ -1,0 +1,88 @@
+/* ═══════════════════════════════════════════════════════
+   APEX Media Shop
+   ═══════════════════════════════════════════════════════ */
+
+.aps-media-shop {
+    background: #f8f9fa;
+    min-height: 0;
+}
+
+.aps-media-shop__toolbar {
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+}
+
+.aps-media-shop__points {
+    font-size: .9rem !important;
+    letter-spacing: .02em;
+}
+
+/* ── Sidebar ── */
+.aps-media-shop__sidebar {
+    background: #fff;
+    flex-shrink: 0;
+}
+.aps-media-shop__sidebar .list-group-item {
+    font-size: .85rem;
+    border-left: none;
+    border-right: none;
+    border-radius: 0 !important;
+}
+.aps-media-shop__sidebar .list-group-item.active {
+    background-color: var(--o-cc1-btn-primary, #007bff);
+    border-color: var(--o-cc1-btn-primary, #007bff);
+    color: #fff;
+}
+
+/* ── Card grid ── */
+.aps-media-shop__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.aps-media-shop__card {
+    transition: transform .15s ease, box-shadow .15s ease;
+    position: relative;
+    overflow: hidden;
+    border-radius: .5rem;
+}
+.aps-media-shop__card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .12) !important;
+}
+
+/* Image container */
+.aps-media-shop__img-wrap {
+    background: #fff;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.aps-media-shop__img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: .5rem;
+}
+
+/* Owned card overlay */
+.aps-media-shop__card--owned .aps-media-shop__img-wrap {
+    opacity: .85;
+}
+
+/* Unaffordable card */
+.aps-media-shop__card--unaffordable .aps-media-shop__img-wrap {
+    filter: grayscale(60%) opacity(70%);
+}
+
+/* Owned badge (top-right corner) */
+.aps-media-shop__owned-badge {
+    position: absolute;
+    top: .5rem;
+    right: .5rem;
+    z-index: 2;
+}

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="aps_sis.ApsMyCollection">
+    <div class="aps-my-collection d-flex flex-column h-100">
+
+        <!-- ── Header ── -->
+        <div class="aps-my-collection__header bg-white border-bottom px-4 py-3 d-flex align-items-center gap-3">
+            <h4 class="m-0 fw-bold flex-grow-1">
+                <i class="fa fa-th-large me-2 text-primary"/>My Collection
+            </h4>
+            <div class="badge bg-warning text-dark fs-6 px-3 py-2">
+                <i class="fa fa-star me-1"/>
+                <span t-esc="state.pointsBalance"/> pts available
+            </div>
+        </div>
+
+        <!-- ── Body ── -->
+        <div class="flex-grow-1 overflow-auto p-4">
+
+            <!-- Loading -->
+            <div t-if="state.loading" class="d-flex justify-content-center align-items-center" style="min-height:200px;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading…</span>
+                </div>
+            </div>
+
+            <!-- Empty -->
+            <div t-elif="!state.groups.length and !state.uncollected.length"
+                 class="text-center text-muted py-5">
+                <i class="fa fa-image fa-3x d-block mb-3" style="opacity:.3;"/>
+                <h5>No media items found</h5>
+                <p>Visit the <strong>Media Shop</strong> to start your collection!</p>
+            </div>
+
+            <!-- Collection groups -->
+            <t t-foreach="state.groups" t-as="group" t-key="group.id">
+                <div class="aps-my-collection__group mb-5">
+                    <!-- Collection heading -->
+                    <h5 class="aps-my-collection__group-title">
+                        <t t-esc="group.name"/>
+                        <span class="ms-2 badge bg-secondary" style="font-size:.75rem;">
+                            <t t-esc="group.ownedCount"/>/<t t-esc="group.items.length"/>
+                        </span>
+                    </h5>
+                    <div class="aps-my-collection__grid">
+                        <t t-foreach="group.items" t-as="item" t-key="item.id">
+                            <t t-call="aps_sis.ApsMyCollectionItem"/>
+                        </t>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Items without a collection -->
+            <div t-if="state.uncollected.length" class="aps-my-collection__group mb-5">
+                <h5 class="aps-my-collection__group-title text-muted">
+                    <i class="fa fa-folder-open-o me-1"/>Uncategorised
+                </h5>
+                <div class="aps-my-collection__grid">
+                    <t t-foreach="state.uncollected" t-as="item" t-key="item.id">
+                        <t t-call="aps_sis.ApsMyCollectionItem"/>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+
+<!-- ── Individual item card (sub-template) ── -->
+<t t-name="aps_sis.ApsMyCollectionItem">
+    <div class="aps-my-collection__item"
+         t-att-class="{
+             'aps-my-collection__item--owned': item.owned,
+             'aps-my-collection__item--unowned': !item.owned,
+             'aps-my-collection__item--unavailable': !item.available or item.stock_available &lt;= 0
+         }"
+         t-att-title="item.name"
+         t-on-click="() => this.buy(item)">
+
+        <!-- Item image -->
+        <div class="aps-my-collection__img-wrap">
+            <img t-att-src="imageUrl(item.id)"
+                 loading="lazy"
+                 t-att-alt="item.name"/>
+
+            <!-- Owned overlay -->
+            <div t-if="item.owned" class="aps-my-collection__owned-badge">
+                <i class="fa fa-check-circle"/> Owned
+            </div>
+
+            <!-- Unowned overlay -->
+            <div t-elif="!item.available or item.stock_available &lt;= 0"
+                 class="aps-my-collection__buy-overlay">
+                <span class="aps-my-collection__buy-label">Unavailable</span>
+            </div>
+            <div t-else="" class="aps-my-collection__buy-overlay">
+                <span class="aps-my-collection__buy-label"
+                      t-att-class="{'text-warning': !canAfford(item)}">
+                    <i class="fa fa-shopping-cart me-1"/>
+                    Buy for <t t-esc="item.cost"/> pts
+                </span>
+            </div>
+        </div>
+
+        <!-- Name below image -->
+        <div class="aps-my-collection__item-name text-truncate" t-att-title="item.name">
+            <t t-esc="item.name"/>
+        </div>
+    </div>
+</t>
+
+</templates>

@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 
 class ApsMediaType(models.Model):
@@ -65,6 +66,16 @@ class ApsMediaType(models.Model):
         for rec in self:
             rec.media_count = count_map.get(rec.id, 0)
 
+    def action_view_media(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'{self.name} — Media Items',
+            'res_model': 'aps.media',
+            'view_mode': 'kanban,list,form',
+            'domain': [('type_id', '=', self.id)],
+        }
+
 
 class ApsMediaCollection(models.Model):
     """A named collection that groups related media items together.
@@ -101,6 +112,16 @@ class ApsMediaCollection(models.Model):
         count_map = {r['collection_id'][0]: r['collection_id_count'] for r in counts}
         for rec in self:
             rec.media_count = count_map.get(rec.id, 0)
+
+    def action_view_media(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'{self.name} — Media Items',
+            'res_model': 'aps.media',
+            'view_mode': 'kanban,list,form',
+            'domain': [('collection_id', '=', self.id)],
+        }
 
 
 class ApsMediaCategory(models.Model):
@@ -223,6 +244,81 @@ class ApsMedia(models.Model):
         string='Owner Records',
         readonly=True,
     )
+
+    def action_buy(self):
+        """Purchase this media item for the current user.
+
+        Checks that:
+        - The item is currently in stock.
+        - The current user's partner has sufficient points balance.
+
+        On success:
+        - Creates or updates the ``aps.user.media`` record (status = purchased).
+        - Decrements ``stock_available`` and the user's ``points_balance``.
+        - Increments ``qty_sold`` and records the sale date.
+
+        Returns a client-side notification action.
+        """
+        self.ensure_one()
+        user = self.env.user
+        partner = user.partner_id
+
+        # Guard: stock check (with row-level lock to prevent overselling)
+        item = self.with_for_update().browse(self.id)
+        if item.stock_available <= 0:
+            raise UserError(
+                f'"{self.name}" is currently out of stock.'
+            )
+
+        # Guard: already owned
+        existing = self.env['aps.user.media'].search([
+            ('partner_id', '=', partner.id),
+            ('media_id', '=', self.id),
+            ('status', 'in', ['purchased', 'for_sale']),
+        ], limit=1)
+        if existing:
+            raise UserError(
+                f'You already own "{self.name}".'
+            )
+
+        # Guard: sufficient points
+        if user.points_balance < self.cost:
+            raise UserError(
+                f'Insufficient points. "{self.name}" costs {self.cost} points '
+                f'but you only have {user.points_balance}.'
+            )
+
+        today = fields.Date.today()
+
+        # Create ownership record
+        self.env['aps.user.media'].create({
+            'partner_id': partner.id,
+            'media_id': self.id,
+            'cost': self.cost,
+            'status': 'purchased',
+            'date_purchased': today,
+        })
+
+        # Update item stock / sales counters
+        self.write({
+            'stock_available': self.stock_available - 1,
+            'qty_sold': (self.qty_sold or 0) + 1,
+            'date_sold': today,
+        })
+
+        # Deduct points from user via write() for proper ORM processing
+        user.write({'points_balance': user.points_balance - self.cost})
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Purchase Successful',
+                'message': f'You purchased "{self.name}" for {self.cost} points.',
+                'type': 'success',
+                'sticky': False,
+            },
+        }
 
 
 class ApsUserMedia(models.Model):

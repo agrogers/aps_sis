@@ -79,10 +79,24 @@
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student"/>
 
+    <!-- Media Menus (student) -->
+    <menuitem id="menu_apex_media_root_student" name="Media" parent="menu_apex_root" sequence="50" groups="aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_media_shop_student" name="Shop" parent="menu_apex_media_root_student" action="action_aps_media_shop" sequence="10" groups="aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_my_collection_student" name="My Collection" parent="menu_apex_media_root_student" action="action_aps_my_collection" sequence="20" groups="aps_sis.group_aps_student"/>
+
     <!-- Time Tracking Menus Students -->
     <menuitem id="menu_apex_time_tracking_student" name="Time Tracking" parent="menu_apex_root" sequence="60" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_time_tracking_entries_student" name="Time Entries" parent="menu_apex_time_tracking_student" action="action_aps_time_tracking" sequence="10" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_time_tracking_dashboard_student" name="Dashboard" parent="menu_apex_time_tracking_student" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_student"/>
+
+    <!-- Media admin menus (teacher/manager) -->
+    <menuitem id="menu_apex_media_heading" name="Media" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_items" name="Media Items" parent="menu_apex_media_heading" action="action_aps_media" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_types" name="Media Types" parent="menu_apex_media_heading" action="action_aps_media_types" sequence="20" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_collections" name="Collections" parent="menu_apex_media_heading" action="action_aps_media_collections" sequence="30" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_categories" name="Categories" parent="menu_apex_media_heading" action="action_aps_media_categories" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_user_media" name="User Media" parent="menu_apex_media_heading" action="action_aps_user_media" sequence="50" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_user_media_settings" name="User Media Settings" parent="menu_apex_media_heading" action="action_aps_user_media_settings" sequence="60" groups="aps_sis.group_aps_teacher"/>
 
 
 
