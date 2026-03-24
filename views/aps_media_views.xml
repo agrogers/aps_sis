@@ -496,4 +496,26 @@
         <field name="tag">aps_my_collection</field>
     </record>
 
+
+    <!-- ═══════════════════════════════════════════════════════
+         BULK UPLOAD CLIENT ACTION + SERVER ACTION BINDING
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="action_aps_media_bulk_upload_client" model="ir.actions.client">
+        <field name="name">Bulk Upload Media</field>
+        <field name="tag">aps_media_bulk_upload</field>
+    </record>
+
+    <!-- Bound server action — adds "Bulk Upload Media" button to the top
+         of all list and kanban views for aps.media (Teachers only). -->
+    <record id="action_aps_media_bulk_upload_server" model="ir.actions.server">
+        <field name="name">Bulk Upload Media</field>
+        <field name="model_id" ref="model_aps_media"/>
+        <field name="binding_model_id" ref="model_aps_media"/>
+        <field name="binding_type">action</field>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_teacher'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = env['aps.media'].action_open_bulk_upload()</field>
+    </record>
+
 </odoo>

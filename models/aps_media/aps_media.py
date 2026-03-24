@@ -1,3 +1,5 @@
+import os
+
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
@@ -246,6 +248,50 @@ class ApsMedia(models.Model):
         string='Owner Records',
         readonly=True,
     )
+
+    @api.model
+    def bulk_create_from_files(self, files, collection_id, category_ids, cost, stock_available):
+        """Create media item records from a list of image files.
+
+        Called from the OWL MediaBulkUpload client action.
+
+        :param files: list of dicts ``{'name': str, 'data': str}`` where
+            *name* is the original filename and *data* is the base64-encoded
+            image content (no data-URI prefix).
+        :param collection_id: int or False — the collection to assign to each item.
+            If ``-1`` a new collection is expected to have already been handled
+            by the caller; pass ``False`` for no collection.
+        :param category_ids: list of int — existing ``aps.media.category`` ids.
+        :param cost: int — point cost to assign to each created item.
+        :param stock_available: int — initial stock for each created item.
+        :return: dict ``{'ids': [int, …], 'count': int}``
+        """
+        vals_list = []
+        for idx, f in enumerate(files):
+            fname = f.get('name', '')
+            name = os.path.splitext(fname)[0] if fname else f'Media Item {idx + 1}'
+            vals = {
+                'name': name,
+                'image': f.get('data', ''),
+                'collection_id': collection_id or False,
+                'cost': cost or 0,
+                'stock_available': stock_available or 0,
+            }
+            if category_ids:
+                vals['category_ids'] = [(6, 0, category_ids)]
+            vals_list.append(vals)
+
+        created = self.create(vals_list)
+        return {'ids': created.ids, 'count': len(created)}
+
+    @api.model
+    def action_open_bulk_upload(self):
+        """Return the client action for the Media Bulk Upload screen."""
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'aps_media_bulk_upload',
+            'name': 'Bulk Upload Media',
+        }
 
     def action_buy(self):
         """Purchase this media item for the current user.

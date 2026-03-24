@@ -92,6 +92,7 @@
     <!-- Media admin menus (teacher/manager) -->
     <menuitem id="menu_apex_media_heading" name="Media" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_media_items" name="Media Items" parent="menu_apex_media_heading" action="action_aps_media" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_bulk_upload" name="Bulk Upload Media" parent="menu_apex_media_heading" action="action_aps_media_bulk_upload_client" sequence="15" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_media_types" name="Media Types" parent="menu_apex_media_heading" action="action_aps_media_types" sequence="20" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_media_collections" name="Collections" parent="menu_apex_media_heading" action="action_aps_media_collections" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_media_categories" name="Categories" parent="menu_apex_media_heading" action="action_aps_media_categories" sequence="40" groups="aps_sis.group_aps_teacher"/>

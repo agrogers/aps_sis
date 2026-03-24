@@ -90,6 +90,8 @@
             'aps_sis/static/src/js/share_url_widget.js',
             'aps_sis/static/src/js/avatar_bulk_upload.js',
             'aps_sis/static/src/xml/avatar_bulk_upload.xml',
+            'aps_sis/static/src/js/media_bulk_upload.js',
+            'aps_sis/static/src/xml/media_bulk_upload.xml',
             'aps_sis/static/src/js/avatar_selector.js',
             'aps_sis/static/src/xml/avatar_selector.xml',
             'aps_sis/static/src/js/avatar_systray_patch.js',

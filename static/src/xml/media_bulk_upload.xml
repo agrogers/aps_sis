@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="aps_sis.MediaBulkUpload">
+    <div class="o_action d-flex flex-column vh-100 bg-view">
+
+        <!-- ── Header ── -->
+        <div class="p-3 border-bottom bg-white d-flex align-items-center gap-3">
+            <h2 class="mb-0">
+                <i class="fa fa-upload me-2 text-primary"/>Bulk Upload Media Items
+            </h2>
+        </div>
+
+        <div class="p-4 overflow-auto flex-grow-1">
+
+            <!-- ── Settings row ── -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Settings applied to all uploaded items</h5>
+
+                    <div class="row g-3 align-items-start">
+
+                        <!-- Collection -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="media_collection_select">Collection</label>
+                            <select id="media_collection_select"
+                                    class="form-select"
+                                    t-on-change="onCollectionChange"
+                                    t-att-disabled="state.uploading">
+                                <option value="">-- No Collection --</option>
+                                <t t-foreach="state.collections" t-as="col" t-key="col.id">
+                                    <option t-att-value="col.id"
+                                            t-att-selected="state.collectionId === col.id">
+                                        <t t-esc="col.name"/>
+                                    </option>
+                                </t>
+                                <option value="__new__">＋ Create New Collection…</option>
+                            </select>
+                            <!-- New-collection name input (shown when __new__ is selected) -->
+                            <input t-if="state.showNewCollection"
+                                   type="text"
+                                   class="form-control mt-2"
+                                   placeholder="New collection name…"
+                                   t-on-input="onNewCollectionName"
+                                   t-att-disabled="state.uploading"
+                                   id="media_new_collection_name"/>
+                        </div>
+
+                        <!-- Categories -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Categories</label>
+                            <!-- Existing categories -->
+                            <div class="border rounded p-2 mb-2" style="max-height:140px;overflow-y:auto;">
+                                <div t-if="!state.categories.length" class="text-muted small">
+                                    No categories defined yet.
+                                </div>
+                                <div t-foreach="state.categories" t-as="cat" t-key="cat.id"
+                                     class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           t-att-id="'cat_' + cat.id"
+                                           t-att-value="cat.id"
+                                           t-att-checked="state.checkedCategoryIds.includes(cat.id)"
+                                           t-att-disabled="state.uploading"
+                                           t-on-change="(ev) => this.toggleCategory(cat.id, ev)"/>
+                                    <label class="form-check-label" t-att-for="'cat_' + cat.id">
+                                        <t t-esc="cat.name"/>
+                                    </label>
+                                </div>
+                            </div>
+                            <!-- New categories (comma-separated) -->
+                            <input type="text"
+                                   class="form-control form-control-sm"
+                                   placeholder="New categories (comma-separated)…"
+                                   t-att-value="state.newCategoryNames"
+                                   t-att-disabled="state.uploading"
+                                   t-on-input="(ev) => { state.newCategoryNames = ev.target.value; }"/>
+                            <small class="text-muted">Separate new names with commas. Existing names are looked up automatically.</small>
+                        </div>
+
+                        <!-- Cost and Stock -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="media_cost">Cost (points)</label>
+                            <input type="number" id="media_cost"
+                                   class="form-control mb-3"
+                                   t-att-value="state.cost"
+                                   min="0"
+                                   t-att-disabled="state.uploading"
+                                   t-on-change="onCostChange"/>
+
+                            <label class="form-label fw-bold" for="media_stock">Initial Stock</label>
+                            <input type="number" id="media_stock"
+                                   class="form-control"
+                                   t-att-value="state.stockAvailable"
+                                   min="0"
+                                   t-att-disabled="state.uploading"
+                                   t-on-change="onStockChange"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── File picker row ── -->
+            <div class="row mb-4 g-3 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label fw-bold">Select Images</label>
+                    <input type="file" class="form-control"
+                           accept="image/*" multiple="multiple"
+                           t-on-change="onFileSelect"
+                           t-att-disabled="state.uploading"/>
+                </div>
+            </div>
+
+            <!-- ── File previews ── -->
+            <t t-if="state.files.length">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="text-muted">
+                        <t t-esc="state.files.length"/> file(s) selected
+                    </span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-danger btn-sm"
+                                t-on-click="clearAll"
+                                t-att-disabled="state.uploading">
+                            <i class="fa fa-trash me-1"/>Clear All
+                        </button>
+                        <button class="btn btn-primary btn-sm"
+                                t-on-click="upload"
+                                t-att-disabled="state.uploading">
+                            <t t-if="state.uploading">
+                                <i class="fa fa-spinner fa-spin me-1"/>Uploading…
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-upload me-1"/>Upload
+                                <t t-esc="state.files.length"/> Item(s)
+                            </t>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <t t-foreach="state.files" t-as="file" t-key="file_index">
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                            <div class="card h-100 text-center position-relative">
+                                <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1 rounded-circle p-0"
+                                        style="width:24px;height:24px;line-height:24px;z-index:1;"
+                                        t-on-click="() => this.removeFile(file_index)"
+                                        t-att-disabled="state.uploading">
+                                    <i class="fa fa-times" style="font-size:12px;"/>
+                                </button>
+                                <img t-att-src="file.dataUrl"
+                                     class="card-img-top p-2"
+                                     style="height:120px;object-fit:contain;"
+                                     t-att-alt="file.name"/>
+                                <div class="card-body p-2">
+                                    <small class="text-truncate d-block" t-att-title="file.name">
+                                        <t t-esc="file.name"/>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </t>
+
+            <!-- ── Empty state ── -->
+            <t t-if="!state.files.length">
+                <div class="text-center text-muted py-5">
+                    <i class="fa fa-images fa-3x mb-3 d-block" style="opacity:0.3;"/>
+                    <p class="mb-1">No files selected yet.</p>
+                    <p>Set the collection, categories and defaults above, then click the file picker to select one or more images.</p>
+                </div>
+            </t>
+
+        </div>
+    </div>
+</t>
+
+</templates>
