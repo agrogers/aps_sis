@@ -354,3 +354,40 @@ class TestAPSResourceSubmissionProgressOrdering(TransactionCase):
                 10,
             )
         )
+
+    def test_collapse_progress_points_keeps_highest_same_day_score(self):
+        submission_model = self.env['aps.resource.submission']
+        points = [
+            {
+                'date': '2026-03-24',
+                'result_percent': 40,
+                'subject_id': 11,
+                'subject_name': 'Math',
+            },
+            {
+                'date': '2026-03-24',
+                'result_percent': 72,
+                'subject_id': 11,
+                'subject_name': 'Math',
+            },
+            {
+                'date': '2026-03-25',
+                'result_percent': 65,
+                'subject_id': 11,
+                'subject_name': 'Math',
+            },
+            {
+                'date': '2026-03-25',
+                'result_percent': 55,
+                'subject_id': 11,
+                'subject_name': 'Math',
+            },
+        ]
+
+        collapsed = submission_model._collapse_progress_points_by_date(points)
+
+        self.assertEqual(len(collapsed), 2)
+        self.assertEqual(collapsed[0]['date'], '2026-03-24')
+        self.assertEqual(collapsed[0]['result_percent'], 72)
+        self.assertEqual(collapsed[1]['date'], '2026-03-25')
+        self.assertEqual(collapsed[1]['result_percent'], 65)

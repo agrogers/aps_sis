@@ -1171,6 +1171,37 @@ class APSResourceSubmission(models.Model):
         )
 
     @api.model
+    def _collapse_progress_points_by_date(self, data_points):
+        """Return one point per date, keeping the highest score for that day."""
+        points_by_date = {}
+
+        for point in data_points or []:
+            date_value = point.get('date')
+            if not date_value:
+                continue
+
+            normalized_date = fields.Date.to_date(date_value)
+            if not normalized_date:
+                continue
+
+            date_key = normalized_date.isoformat()
+            candidate = dict(point)
+            candidate['date'] = date_key
+
+            existing = points_by_date.get(date_key)
+            if not existing or self._should_replace_progress_result(
+                existing,
+                date_key,
+                candidate.get('result_percent'),
+            ):
+                points_by_date[date_key] = candidate
+
+        return sorted(
+            points_by_date.values(),
+            key=lambda p: self._progress_result_sort_key(p.get('date'), p.get('result_percent')),
+        )
+
+    @api.model
     def _get_avatar_and_image_maps(self, partner_ids):
         """Return avatar and image maps without forcing filestore binary reads."""
         if not partner_ids:
@@ -1670,12 +1701,7 @@ class APSResourceSubmission(models.Model):
         all_subject_data = {}
         
         for subject_id, data_points in subject_data.items():
-            # Sort by date and remove duplicates
-            sorted_points = sorted(
-                data_points,
-                key=lambda x: self._progress_result_sort_key(x['date'], x['result_percent'])
-            )
-            all_subject_data[subject_id] = sorted_points
+            all_subject_data[subject_id] = self._collapse_progress_points_by_date(data_points)
         
         # Build bar data (current progress, split into >120 days old and last 120 days)
         cutoff_date = (datetime.now().date() - timedelta(days=120))
