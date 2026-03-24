@@ -42,8 +42,7 @@
 		'views/aps_sis_menu.xml',
 		'views/op_student_course_views.xml',
 		'reports/submission_report.xml',
-		'wizard/submission_report_wizard_views.xml',
-        'views/aps_dashboard_views.xml'
+		'wizard/submission_report_wizard_views.xml'
 	],
 	'assets': {
 		'web.assets_backend': [

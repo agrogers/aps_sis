@@ -1,3 +1,4 @@
+from odoo import fields
 from odoo.tests.common import TransactionCase
 from odoo.addons.aps_sis.models.aps_resource_submission import sentinel_zero
 
@@ -294,10 +295,10 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
     def test_toggling_flag_updates_parent_score_immediately(self):
         """Toggling score_contributes_to_parent on a child resource should immediately
         re-trigger the parent submission recalculation."""
-        # Set all child scores first
-        self.child_sub_a.write({'score': 2.0, 'auto_score': False})
-        self.child_sub_b.write({'score': 4.0, 'auto_score': False})
-        self.child_sub_c.write({'score': 3.0, 'auto_score': False})
+        # Set all child scores and submit so they are eligible for parent aggregation.
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_b.write({'score': 4.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_c.write({'score': 3.0, 'auto_score': False, 'state': 'submitted'})
 
         self.parent_submission.invalidate_recordset()
         # All three children contribute: 2+4+3 = 9
@@ -312,3 +313,44 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.child_resource_c.write({'score_contributes_to_parent': True})
         self.parent_submission.invalidate_recordset()
         self.assertEqual(self.parent_submission.score, 9.0)
+
+
+class TestAPSResourceSubmissionProgressOrdering(TransactionCase):
+    """Regression tests for current-progress selection used by dashboard APIs."""
+
+    def test_same_day_higher_result_wins(self):
+        submission_model = self.env['aps.resource.submission']
+        existing = {
+            'date': fields.Date.to_date('2026-03-24'),
+            'result_percent': 45,
+        }
+
+        self.assertTrue(
+            submission_model._should_replace_progress_result(
+                existing,
+                fields.Date.to_date('2026-03-24'),
+                70,
+            )
+        )
+        self.assertFalse(
+            submission_model._should_replace_progress_result(
+                existing,
+                fields.Date.to_date('2026-03-24'),
+                30,
+            )
+        )
+
+    def test_newer_date_wins_before_result(self):
+        submission_model = self.env['aps.resource.submission']
+        existing = {
+            'date': fields.Date.to_date('2026-03-23'),
+            'result_percent': 95,
+        }
+
+        self.assertTrue(
+            submission_model._should_replace_progress_result(
+                existing,
+                fields.Date.to_date('2026-03-24'),
+                10,
+            )
+        )

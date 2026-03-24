@@ -6,7 +6,7 @@ class ResUsers(models.Model):
 
     avatar_id = fields.Many2one(
         'aps.avatar',
-        string='Avatar',
+        string='Profile Avatar',
     )
     avatar_image = fields.Image(
         related='avatar_id.image',

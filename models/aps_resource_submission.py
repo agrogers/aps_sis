@@ -1142,6 +1142,50 @@ class APSResourceSubmission(models.Model):
                         exclude.append(cleaned)
 
         return exclude, exclude_from_average
+
+    @api.model
+    def _progress_result_sort_key(self, date_value, result_percent):
+        """Sort progress snapshots by date, then result percent.
+
+        This keeps "current progress" selection consistent across the dashboard,
+        progress leaderboard, completion leaderboard, and student comparison chart.
+        """
+        normalized_date = fields.Date.to_date(date_value) if date_value else False
+        normalized_result = result_percent if result_percent is not None else float('-inf')
+        return (
+            normalized_date.toordinal() if normalized_date else -1,
+            normalized_result,
+        )
+
+    @api.model
+    def _should_replace_progress_result(self, existing, date_value, result_percent):
+        """Return True when a candidate progress snapshot should replace the current one."""
+        if not date_value:
+            return False
+
+        existing_date = existing.get('date') if existing else False
+        existing_result = existing.get('result_percent') if existing else False
+        return self._progress_result_sort_key(date_value, result_percent) > self._progress_result_sort_key(
+            existing_date,
+            existing_result,
+        )
+
+    @api.model
+    def _get_avatar_and_image_maps(self, partner_ids):
+        """Return avatar and image maps without forcing filestore binary reads."""
+        if not partner_ids:
+            return {}, {}
+
+        user_data = self.env['res.users'].sudo().search_read(
+            [('partner_id', 'in', partner_ids)],
+            ['partner_id', 'avatar_id'],
+        )
+        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
+
+        # bin_size=True returns metadata/size marker for binaries instead of reading file contents.
+        partners = self.env['res.partner'].sudo().browse(partner_ids).with_context(bin_size=True)
+        image_map = {p.id: bool(p.image_128) for p in partners}
+        return avatar_map, image_map
     
     @api.model
     def get_progress_leaderboard_data(self, limit=30):
@@ -1214,10 +1258,10 @@ class APSResourceSubmission(models.Model):
                 if not date_to_use:
                     continue
                 existing = student_progress[student_id]['subjects'].get(subject.id)
-                if existing is None or date_to_use > existing['date']:
+                if self._should_replace_progress_result(existing, date_to_use, submission.result_percent):
                     student_progress[student_id]['subjects'][subject.id] = {
                         'result_percent': submission.result_percent,
-                        'date': date_to_use,
+                        'date': fields.Date.to_date(date_to_use),
                     }
 
         # Calculate average progress per student and build sorted leaderboard
@@ -1252,13 +1296,7 @@ class APSResourceSubmission(models.Model):
 
         # Enrich with avatar and partner image info
         partner_ids = [r['student_id'] for r in result]
-        partners = self.env['res.partner'].sudo().browse(partner_ids)
-        user_data = self.env['res.users'].sudo().search_read(
-            [('partner_id', 'in', partner_ids)],
-            ['partner_id', 'avatar_id'],
-        )
-        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
-        image_map = {p.id: bool(p.image_128) for p in partners}
+        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
         for entry in result:
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
             entry['has_image'] = image_map.get(entry['student_id'], False)
@@ -1374,7 +1412,10 @@ class APSResourceSubmission(models.Model):
                 if not data_points:
                     continue
                 # Sort ascending by date
-                sorted_points = sorted(data_points, key=lambda x: x[0])
+                sorted_points = sorted(
+                    data_points,
+                    key=lambda x: self._progress_result_sort_key(x[0], x[1]),
+                )
                 current_progress = sorted_points[-1][1]  # Latest result_percent
 
                 if current_progress >= 100:
@@ -1424,13 +1465,7 @@ class APSResourceSubmission(models.Model):
 
         # --- Enrich with avatar / image info ---
         partner_ids = [r['student_id'] for r in result]
-        partners = self.env['res.partner'].sudo().browse(partner_ids)
-        user_data = self.env['res.users'].sudo().search_read(
-            [('partner_id', 'in', partner_ids)],
-            ['partner_id', 'avatar_id'],
-        )
-        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
-        image_map = {p.id: bool(p.image_128) for p in partners}
+        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
         for entry in result:
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
             entry['has_image'] = image_map.get(entry['student_id'], False)
@@ -1469,13 +1504,7 @@ class APSResourceSubmission(models.Model):
 
         # Enrich with avatar and partner image info
         partner_ids = [r['student_id'] for r in result]
-        partners = self.env['res.partner'].sudo().browse(partner_ids)
-        user_data = self.env['res.users'].sudo().search_read(
-            [('partner_id', 'in', partner_ids)],
-            ['partner_id', 'avatar_id'],
-        )
-        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
-        image_map = {p.id: bool(p.image_128) for p in partners}
+        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
         for entry in result:
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
             entry['has_image'] = image_map.get(entry['student_id'], False)
@@ -1609,18 +1638,12 @@ class APSResourceSubmission(models.Model):
                     })
                     
                     # Track latest result for bar chart (most recent submission by date)
-                    if subject.id not in current_progress:
+                    existing = current_progress.get(subject.id)
+                    if self._should_replace_progress_result(existing, date_to_use, submission.result_percent):
                         current_progress[subject.id] = {
                             'result_percent': submission.result_percent,
-                            'date': date_to_use
+                            'date': fields.Date.to_date(date_to_use)
                         }
-                    else:
-                        # Update if this is a more recent submission
-                        if date_to_use > current_progress[subject.id]['date']:
-                            current_progress[subject.id] = {
-                                'result_percent': submission.result_percent,
-                                'date': date_to_use
-                            }
                 
                 # Get PACE/redline dates from resource notes
                 # Note: resource.subjects is a Many2many field - one resource can have multiple subjects
@@ -1648,7 +1671,10 @@ class APSResourceSubmission(models.Model):
         
         for subject_id, data_points in subject_data.items():
             # Sort by date and remove duplicates
-            sorted_points = sorted(data_points, key=lambda x: x['date'])
+            sorted_points = sorted(
+                data_points,
+                key=lambda x: self._progress_result_sort_key(x['date'], x['result_percent'])
+            )
             all_subject_data[subject_id] = sorted_points
         
         # Build bar data (current progress, split into >120 days old and last 120 days)
@@ -1783,18 +1809,12 @@ class APSResourceSubmission(models.Model):
                     continue
                 
                 # Track latest result for each subject (most recent submission)
-                if subject.id not in student_progress[student_id]['subjects']:
+                existing = student_progress[student_id]['subjects'].get(subject.id)
+                if self._should_replace_progress_result(existing, date_to_use, submission.result_percent):
                     student_progress[student_id]['subjects'][subject.id] = {
                         'result_percent': submission.result_percent,
-                        'date': date_to_use
+                        'date': fields.Date.to_date(date_to_use)
                     }
-                else:
-                    # Update if this is a more recent submission
-                    if date_to_use > student_progress[student_id]['subjects'][subject.id]['date']:
-                        student_progress[student_id]['subjects'][subject.id] = {
-                            'result_percent': submission.result_percent,
-                            'date': date_to_use
-                        }
             
             # Calculate PACE and redline for averaging (process each resource only once)
             if submission.resource_id and submission.resource_id.id not in processed_resources_for_pace:

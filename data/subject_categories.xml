@@ -6,56 +6,56 @@
             <field name="name">Science</field>
             <field name="code">SCI</field>
             <field name="description">Subjects related to natural sciences, physics, chemistry, biology, etc.</field>
-            <field name="color">1</field>
+            <field name="color_rgb">#4e79a7</field>
         </record>
 
         <record id="subject_category_mathematics" model="aps.subject.category">
             <field name="name">Mathematics</field>
             <field name="code">MATH</field>
             <field name="description">Mathematics and related quantitative subjects.</field>
-            <field name="color">2</field>
+            <field name="color_rgb">#59a14f</field>
         </record>
 
         <record id="subject_category_language" model="aps.subject.category">
             <field name="name">Language</field>
             <field name="code">LANG</field>
             <field name="description">Language arts, literature, foreign languages, etc.</field>
-            <field name="color">3</field>
+            <field name="color_rgb">#e15759</field>
         </record>
 
         <record id="subject_category_social_studies" model="aps.subject.category">
             <field name="name">Social Studies</field>
             <field name="code">SOCIAL</field>
             <field name="description">History, geography, civics, economics, etc.</field>
-            <field name="color">4</field>
+            <field name="color_rgb">#f28e2b</field>
         </record>
 
         <record id="subject_category_arts" model="aps.subject.category">
             <field name="name">Arts</field>
             <field name="code">ARTS</field>
             <field name="description">Visual arts, music, drama, creative subjects.</field>
-            <field name="color">5</field>
+            <field name="color_rgb">#b07aa1</field>
         </record>
 
         <record id="subject_category_physical_education" model="aps.subject.category">
             <field name="name">Physical Education</field>
             <field name="code">PE</field>
             <field name="description">Physical education, health, sports.</field>
-            <field name="color">6</field>
+            <field name="color_rgb">#76b7b2</field>
         </record>
 
         <record id="subject_category_technology" model="aps.subject.category">
             <field name="name">Technology</field>
             <field name="code">TECH</field>
             <field name="description">Computer science, information technology, engineering.</field>
-            <field name="color">7</field>
+            <field name="color_rgb">#edc948</field>
         </record>
 
         <record id="subject_category_other" model="aps.subject.category">
             <field name="name">Other</field>
             <field name="code">OTHER</field>
             <field name="description">Other subjects that don't fit standard categories.</field>
-            <field name="color">8</field>
+            <field name="color_rgb">#9c755f</field>
         </record>
     </data>
 </odoo>

@@ -34,11 +34,7 @@ class APSResourceTask(models.Model):
         ('overdue', 'Overdue'),
         ('complete', 'Complete'),
         ('late', 'Late'),
-    ], string='State', default='created',
-        decoration_success="state == 'complete'",
-        decoration_warning="state in ['created', 'late', 'early']",
-        decoration_info="state in ['assigned', 'due', 'reassigned', 'submitted', 'on-time']",
-        decoration_danger="state == 'overdue'")
+    ], string='State', default='created')
     date_assigned = fields.Date(string='Date Assigned', compute='_compute_date_assigned', store=True)
     date_due = fields.Date(string='Due Date', compute='_compute_date_due', store=True)
     latest_submission_text = fields.Char(
