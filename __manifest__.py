@@ -96,6 +96,8 @@
             'aps_sis/static/src/xml/avatar_selector.xml',
             'aps_sis/static/src/js/avatar_systray_patch.js',
             'aps_sis/static/src/xml/avatar_systray.xml',
+            'aps_sis/static/src/js/media_wallpaper_service.js',
+            'aps_sis/static/src/css/media_wallpaper.css',
 		],
 	},
 	'installable': True,

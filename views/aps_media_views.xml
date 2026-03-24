@@ -454,6 +454,8 @@
                             <group>
                                 <field name="enable_wallpaper"/>
                                 <field name="use_icons_as_wallpaper" invisible="not enable_wallpaper"/>
+                                <field name="wallpaper_quad" invisible="not enable_wallpaper"/>
+                                <field name="wallpaper_refresh_minutes" invisible="not enable_wallpaper"/>
                                 <field name="wallpaper_collection_ids" widget="many2many_tags" invisible="not enable_wallpaper"/>
                             </group>
                         </page>
