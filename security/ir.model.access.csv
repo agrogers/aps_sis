@@ -25,3 +25,15 @@ access_aps_time_tracking_student,aps.time.tracking.student,model_aps_time_tracki
 access_aps_submission_report_wizard_teacher,aps.submission.report.wizard.teacher,model_aps_submission_report_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_dashboard_teacher,aps.dashboard.teacher,model_aps_dashboard,aps_sis.group_aps_teacher,1,1,1,1
 access_op_subject_aps_student,op.subject.aps.student,model_op_subject,aps_sis.group_aps_student,1,0,0,0
+access_aps_media_type_teacher,aps.media.type.teacher,model_aps_media_type,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_media_type_student,aps.media.type.student,model_aps_media_type,aps_sis.group_aps_student,1,0,0,0
+access_aps_media_collection_teacher,aps.media.collection.teacher,model_aps_media_collection,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_media_collection_student,aps.media.collection.student,model_aps_media_collection,aps_sis.group_aps_student,1,0,0,0
+access_aps_media_category_teacher,aps.media.category.teacher,model_aps_media_category,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_media_category_student,aps.media.category.student,model_aps_media_category,aps_sis.group_aps_student,1,0,0,0
+access_aps_media_teacher,aps.media.teacher,model_aps_media,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_media_student,aps.media.student,model_aps_media,aps_sis.group_aps_student,1,0,0,0
+access_aps_user_media_teacher,aps.user.media.teacher,model_aps_user_media,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_user_media_student,aps.user.media.student,model_aps_user_media,aps_sis.group_aps_student,1,1,1,1
+access_aps_user_media_settings_teacher,aps.user.media.settings.teacher,model_aps_user_media_settings,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_user_media_settings_student,aps.user.media.settings.student,model_aps_user_media_settings,aps_sis.group_aps_student,1,1,1,0
