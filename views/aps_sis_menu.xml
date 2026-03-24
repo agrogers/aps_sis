@@ -80,9 +80,9 @@
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student"/>
 
     <!-- Media Menus (student) -->
-    <menuitem id="menu_apex_media_root_student" name="Media" parent="menu_apex_root" sequence="50" groups="aps_sis.group_aps_student"/>
-    <menuitem id="menu_apex_media_shop_student" name="Shop" parent="menu_apex_media_root_student" action="action_aps_media_shop" sequence="10" groups="aps_sis.group_aps_student"/>
-    <menuitem id="menu_apex_my_collection_student" name="My Collection" parent="menu_apex_media_root_student" action="action_aps_my_collection" sequence="20" groups="aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_media_root_student" name="Media" parent="menu_apex_root" sequence="50" groups="aps_sis.group_aps_student,aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_shop_student" name="Shop" parent="menu_apex_media_root_student" action="action_aps_media_shop" sequence="10" groups="aps_sis.group_aps_student,aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_my_collection_student" name="My Collection" parent="menu_apex_media_root_student" action="action_aps_my_collection" sequence="20" groups="aps_sis.group_aps_student,aps_sis.group_aps_teacher"/>
 
     <!-- Time Tracking Menus Students -->
     <menuitem id="menu_apex_time_tracking_student" name="Time Tracking" parent="menu_apex_root" sequence="60" groups="aps_sis.group_aps_student"/>

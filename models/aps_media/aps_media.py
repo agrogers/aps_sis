@@ -53,6 +53,7 @@ class ApsMediaType(models.Model):
     media_count = fields.Integer(
         string='Media Items',
         compute='_compute_media_count',
+        store=True,
     )
 
     @api.depends('media_ids')
@@ -100,6 +101,7 @@ class ApsMediaCollection(models.Model):
     media_count = fields.Integer(
         string='Media Items',
         compute='_compute_media_count',
+        store=True,
     )
 
     @api.depends('media_ids')
