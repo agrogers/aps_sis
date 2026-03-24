@@ -95,14 +95,32 @@ export class ChartRenderer extends Component {
                         data: this.props.data.map(d => d.assigned),
                         backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[0], 40)),
                         borderColor: Array(chartData.labels.length).fill(datasetColors[0]),
-                        borderWidth: 1
+                        borderWidth: 1,
+                        stack: 'assigned'
                     },
                     {
-                        label: 'Submitted',
-                        data: this.props.data.map(d => d.submitted),
-                        backgroundColor: Array(chartData.labels.length).fill(this.lightenColor(datasetColors[1], 40)),
-                        borderColor: Array(chartData.labels.length).fill(datasetColors[1]),
-                        borderWidth: 1
+                        label: 'Submitted - Early',
+                        data: this.props.data.map(d => d.submitted_early ?? 0),
+                        backgroundColor: Array(chartData.labels.length).fill('rgb(40 167 69)'),
+                        borderColor: Array(chartData.labels.length).fill('rgb(40 167 69)'),
+                        borderWidth: 1,
+                        stack: 'submitted'
+                    },
+                    {
+                        label: 'Submitted - On Time',
+                        data: this.props.data.map(d => d.submitted_on_time ?? 0),
+                        backgroundColor: Array(chartData.labels.length).fill('rgb(150, 157, 163)'),
+                        borderColor: Array(chartData.labels.length).fill('rgb(150, 157, 163)'),
+                        borderWidth: 1,
+                        stack: 'submitted'
+                    },
+                    {
+                        label: 'Submitted - Late',
+                        data: this.props.data.map(d => d.submitted_late ?? 0),
+                        backgroundColor: Array(chartData.labels.length).fill('rgb(220 53 69)'),
+                        borderColor: Array(chartData.labels.length).fill('rgb(220 53 69)'),
+                        borderWidth: 1,
+                        stack: 'submitted'
                     },
                     // {
                     //     label: 'Finalised',

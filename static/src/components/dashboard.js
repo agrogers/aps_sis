@@ -737,7 +737,7 @@ export class ApexDashboard extends Component {
         const dataDomain = Domain.or([submittedDomain, assignedDomain]).toList();
         // console.log("Combined OR:", JSON.stringify(dataDomain));
 
-        const allSubmissions = await this.orm.searchRead("aps.resource.submission", dataDomain, ["date_assigned", "date_submitted", "date_completed"]);
+        const allSubmissions = await this.orm.searchRead("aps.resource.submission", dataDomain, ["date_assigned", "date_submitted", "date_completed", "due_status"]);
 
         const chartData = [];
         const dateMap = {};
@@ -747,7 +747,14 @@ export class ApexDashboard extends Component {
         let currentDate = new Date(startDate);
         while (currentDate <= today) {
             const dateStr = currentDate.toISOString().split('T')[0];
-            dateMap[dateStr] = { assigned: 0, submitted: 0, finalized: 0 };
+            dateMap[dateStr] = {
+                assigned: 0,
+                submitted: 0,
+                submitted_early: 0,
+                submitted_on_time: 0,
+                submitted_late: 0,
+                finalized: 0,
+            };
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
@@ -757,19 +764,71 @@ export class ApexDashboard extends Component {
             }
             if (sub.date_submitted && dateMap[sub.date_submitted]) {
                 dateMap[sub.date_submitted].submitted++;
+                if (sub.due_status === 'early') {
+                    dateMap[sub.date_submitted].submitted_early++;
+                } else if (sub.due_status === 'late') {
+                    dateMap[sub.date_submitted].submitted_late++;
+                } else {
+                    dateMap[sub.date_submitted].submitted_on_time++;
+                }
             }
             if (sub.date_completed && dateMap[sub.date_completed]) {
                 dateMap[sub.date_completed].finalized++;
             }
         });
 
-        for (const dateStr in dateMap) {
-            chartData.push({
-                date: dateStr,
-                assigned: dateMap[dateStr].assigned,
-                submitted: dateMap[dateStr].submitted,
-                finalized: dateMap[dateStr].finalized
-            });
+        // Keep daily grouping for <= 30 days; switch to weekly buckets for larger ranges.
+        if (this.state.period > 30) {
+            const weekMap = {};
+            for (const dateStr in dateMap) {
+                const d = new Date(`${dateStr}T00:00:00`);
+                // Use Monday as start of week.
+                const day = d.getDay();
+                const diffToMonday = (day + 6) % 7;
+                d.setDate(d.getDate() - diffToMonday);
+                const weekStart = d.toISOString().split('T')[0];
+
+                if (!weekMap[weekStart]) {
+                    weekMap[weekStart] = {
+                        assigned: 0,
+                        submitted: 0,
+                        submitted_early: 0,
+                        submitted_on_time: 0,
+                        submitted_late: 0,
+                        finalized: 0,
+                    };
+                }
+                weekMap[weekStart].assigned += dateMap[dateStr].assigned;
+                weekMap[weekStart].submitted += dateMap[dateStr].submitted;
+                weekMap[weekStart].submitted_early += dateMap[dateStr].submitted_early;
+                weekMap[weekStart].submitted_on_time += dateMap[dateStr].submitted_on_time;
+                weekMap[weekStart].submitted_late += dateMap[dateStr].submitted_late;
+                weekMap[weekStart].finalized += dateMap[dateStr].finalized;
+            }
+
+            for (const weekStart in weekMap) {
+                chartData.push({
+                    date: `Wk ${weekStart}`,
+                    assigned: weekMap[weekStart].assigned,
+                    submitted: weekMap[weekStart].submitted,
+                    submitted_early: weekMap[weekStart].submitted_early,
+                    submitted_on_time: weekMap[weekStart].submitted_on_time,
+                    submitted_late: weekMap[weekStart].submitted_late,
+                    finalized: weekMap[weekStart].finalized,
+                });
+            }
+        } else {
+            for (const dateStr in dateMap) {
+                chartData.push({
+                    date: dateStr,
+                    assigned: dateMap[dateStr].assigned,
+                    submitted: dateMap[dateStr].submitted,
+                    submitted_early: dateMap[dateStr].submitted_early,
+                    submitted_on_time: dateMap[dateStr].submitted_on_time,
+                    submitted_late: dateMap[dateStr].submitted_late,
+                    finalized: dateMap[dateStr].finalized
+                });
+            }
         }
         this.state.chartData = chartData;
 

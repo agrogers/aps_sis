@@ -1283,7 +1283,7 @@ class APSResourceSubmission(models.Model):
         Returns up to `limit` students ranked by predicted average (descending).
         Each entry: rank, student_id, student_name, total_points (= rounded predicted %)
         """
-        from datetime import date as date_type
+        from datetime import date as date_type, timedelta
 
         progress_resources = self._get_progress_resources()
         if not progress_resources:
@@ -1381,9 +1381,11 @@ class APSResourceSubmission(models.Model):
                     predicted_totals.append(100.0)
                     continue
 
-                # Calculate daily rate from first to last data point
-                first_date, first_progress = sorted_points[0]
+                # Calculate daily rate using only the last 4 months of data
                 last_date, last_progress = sorted_points[-1]
+                four_months_ago = today - timedelta(days=120)
+                recent_points = [(d, p) for d, p in sorted_points if d >= four_months_ago]
+                first_date, first_progress = recent_points[0] if len(recent_points) >= 2 else sorted_points[0]
                 days_between = (last_date - first_date).days
 
                 if days_between > 0:
@@ -1501,6 +1503,9 @@ class APSResourceSubmission(models.Model):
         - subject_colors: Color mapping for subjects
         - exclude_from_average: Subject names to exclude from redline highlight
         - exclude: Subjects to completely exclude from the chart
+
+        Only subjects currently enrolled by the student (running course subject_ids)
+        are included in chart data.
         """
         from datetime import datetime, timedelta
         
@@ -1543,10 +1548,38 @@ class APSResourceSubmission(models.Model):
         all_subjects = self.env['op.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
+
+        # Restrict to the student's currently enrolled subjects (running courses only)
+        student_record = self.env['op.student'].sudo().search([
+            ('partner_id', '=', student_id)
+        ], limit=1)
+        enrolled_subject_ids = set()
+        if student_record:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_subject_ids = set(running_courses.mapped('subject_ids').ids)
+        if enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in enrolled_subject_ids)
+        else:
+            all_subjects = self.env['op.subject']
         
         # Filter out excluded subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+
+        # Nothing left after enrollment/exclude filtering
+        if not all_subjects:
+            return {
+                'line_data': [],
+                'bar_data': [],
+                'pace_data': {},
+                'subject_colors': {},
+                'exclude_from_average': exclude_from_average,
+                'exclude': exclude,
+                'period_start': period_start_date,
+                'period_end': datetime.now().date().isoformat(),
+            }
+
+        allowed_subject_ids = set(all_subjects.ids)
         
         # Get subject colors (with automatic color generation for subjects without categories)
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
@@ -1559,6 +1592,8 @@ class APSResourceSubmission(models.Model):
         for submission in submissions:
             for subject in submission.subjects:
                 if subject.name in exclude:
+                    continue
+                if subject.id not in allowed_subject_ids:
                     continue
                 if subject.id not in subject_data:
                     subject_data[subject.id] = []
@@ -1616,16 +1651,26 @@ class APSResourceSubmission(models.Model):
             sorted_points = sorted(data_points, key=lambda x: x['date'])
             all_subject_data[subject_id] = sorted_points
         
-        # Build bar data (current progress)
+        # Build bar data (current progress, split into >120 days old and last 120 days)
+        cutoff_date = (datetime.now().date() - timedelta(days=120))
+        cutoff_str = cutoff_date.isoformat()
         bar_data = []
         for subject_id, progress_data in current_progress.items():
             subject = all_subjects.filtered(lambda s: s.id == subject_id)
             if subject:
+                current_pct = progress_data['result_percent']
+                # Find the last data point on or before the 120-day cutoff
+                sorted_pts = all_subject_data.get(subject_id, [])
+                pts_at_cutoff = [p for p in sorted_pts if p['date'][:10] <= cutoff_str]
+                progress_old = pts_at_cutoff[-1]['result_percent'] if pts_at_cutoff else 0
+                progress_recent = max(0, current_pct - progress_old)
                 bar_data.append({
                     'subject_id': subject_id,
                     'subject_name': subject.name,
-                    'progress': progress_data['result_percent'],  # Extract result_percent from dict
-                    'color': subject_colors.get(subject_id, '#6c757d')  # Fallback to gray
+                    'progress': current_pct,
+                    'progress_old': progress_old,
+                    'progress_recent': progress_recent,
+                    'color': subject_colors.get(subject_id, '#6c757d'),
                 })
         
         return {
