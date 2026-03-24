@@ -1180,6 +1180,7 @@ class APSResourceSubmission(models.Model):
         
         # Fetch ALL relevant student submissions for the subject line chart
         all_submissions_domain = [
+            ('resource_id', 'in', progress_resources.ids),
             ('student_id', '=', student_id),
             ('submission_active', '=', True),
             ('state', 'in', ['submitted', 'complete'])
