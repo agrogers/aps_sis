@@ -82,7 +82,7 @@
                     <t t-foreach="state.ancestors" t-as="ancestor" t-key="ancestor.id">
                         <li class="resource-tree-node">
                             <div class="resource-tree-row d-flex align-items-center gap-2"
-                                 t-att-style="'padding-left: ' + (ancestor_index * 20) + 'px'">
+                                 t-att-style="this.rowStyleForDepth(ancestor_index)">
 
                                 <img t-if="ancestor.type_id"
                                      t-att-src="'/web/image/aps.resource.types/' + ancestor.type_id + '/icon'"

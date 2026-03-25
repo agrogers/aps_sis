@@ -37,7 +37,8 @@ class ResourceTreeNode extends Component {
     }
 
     get rowStyle() {
-        return `padding-left: ${this.props.depth * 20}px`;
+        const fontSize = Math.max(0.75, 1 - this.props.depth * 0.07).toFixed(2);
+        return `padding-left: ${this.props.depth * 20}px; font-size: ${fontSize}em`;
     }
 
     onClick(ev) {
@@ -129,6 +130,12 @@ export class ResourceTreeWidget extends Component {
             views: [[false, "form"]],
             target: "current",
         });
+    }
+
+    /** Return an inline-style string for a row at the given depth. */
+    rowStyleForDepth(depth) {
+        const fontSize = Math.max(0.75, 1 - depth * 0.07).toFixed(2);
+        return `padding-left: ${depth * 20}px; font-size: ${fontSize}em`;
     }
 }
 

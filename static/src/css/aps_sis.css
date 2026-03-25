@@ -685,16 +685,16 @@ a.resource-tree-link:hover {
 /* Type icon (32 × 32, rounded) */
 .resource-tree-icon {
     flex-shrink: 0;
-    width: 24px;
-    height: 24px;
+    width: 1.5em;
+    height: 1.5em;
     object-fit: contain;
     border-radius: 4px;
 }
 
 .resource-tree-icon-placeholder {
     display: inline-block;
-    width: 24px;
-    height: 24px;
+    width: 1.5em;
+    height: 1.5em;
 }
 
 /* Type badge (muted pill) */
