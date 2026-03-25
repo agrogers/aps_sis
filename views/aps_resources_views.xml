@@ -128,9 +128,33 @@
                     'tree_view_ref': 'view_aps_resources_form_brief',
                     'form_view_ref': 'view_aps_resources_form_brief'}">
                 <header>
-                    <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher"/>
+                    <field name="auto_assign" invisible="1"/>
+                    <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher" invisible="auto_assign"/>
+                    <button name="action_assign_students" string="Assign Students (Auto)" type="object" class="btn-success" groups="aps_sis.group_aps_teacher" invisible="not auto_assign"/>
                 </header>
                 <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_open_all_submissions" type="object"
+                                class="oe_stat_button" icon="fa-inbox"
+                                invisible="total_submissions == 0">
+                            <field name="total_submissions" widget="statinfo" string="Submissions"/>
+                        </button>
+                        <button name="action_open_recent_submissions" type="object"
+                                class="oe_stat_button" icon="fa-clock-o"
+                                invisible="recent_submission_count == 0">
+                            <field name="recent_submission_count" widget="statinfo" string="Recent"/>
+                        </button>
+                        <button name="action_open_child_resources_list" type="object"
+                                class="oe_stat_button" icon="fa-link"
+                                invisible="child_count == 0">
+                            <field name="child_count" widget="statinfo" string="Linked"/>
+                        </button>
+                        <button name="action_open_supporting_resources_list" type="object"
+                                class="oe_stat_button" icon="fa-life-ring"
+                                invisible="supporting_resource_count == 0">
+                            <field name="supporting_resource_count" widget="statinfo" string="Supporting"/>
+                        </button>
+                    </div>
                     <div class="aps_ribbon" invisible="not type_id">
                         <field name="type_icon" widget="image" options="{'size': [40, 40]}" class="me-2" nolabel="1"/>
                         <field name="display_name_breadcrumb" widget="breadcrumb_pills" nolabel="1"
@@ -169,23 +193,24 @@
                                     <field name="has_notes"/>
                                     <field name="has_question"/>
                                     <field name="has_answer"/>
-                                    <field name="has_default_answer" invisible="has_answer=='no'"/>
+                                    <field name="has_default_answer" widget="boolean_toggle"/>
                                     <field name="has_child_resources" />
                                     <field name="has_supporting_resources" />
                                     <field name="has_lesson_plan" widget="boolean_toggle"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
+                                    <field name="auto_assign" widget="boolean_toggle"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px', 'show_name':True}" />
                                     <field name="child_count"/>
                             </group>
                             </group>
                             <group string="Share" invisible="not id" groups="aps_sis.group_aps_teacher">
                                 <label for="share_url" string="Share URL"/>
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <div class="d-flex align-items-center gap-2">
                                     <field name="share_url" widget="CopyClipboardChar" nolabel="1" class="flex-grow-1"/>
                                     <button name="action_generate_share_token" type="object"
-                                            string="Regenerate URL" icon="fa-refresh"
-                                            class="btn btn-sm btn-outline-warning"
+                                            string="Regenerate" icon="fa-refresh"
+                                            class="btn btn-sm btn-outline-warning flex-shrink-0"
                                             title="Generate a new share URL (existing links will stop working)"
                                             invisible="not id"/>
                                 </div>
@@ -291,7 +316,28 @@
                         </page>
                         <page string="Lesson Plan" invisible="not has_lesson_plan" groups="aps_sis.group_aps_teacher">
                             <field name="lesson_plan" nolabel="1" readonly="0"/>
-                        </page>                        
+                        </page>
+                        <page string="Auto Assign" invisible="not auto_assign" groups="aps_sis.group_aps_teacher">
+                            <group>
+                                <group string="Schedule">
+                                    <field name="auto_assign_date"/>
+                                    <field name="auto_assign_end_date"/>
+                                    <field name="auto_assign_frequency"/>
+                                    <field name="auto_assign_time" widget="float_time"/>
+                                    <field name="auto_assign_custom_name"/>
+                                </group>
+                                <group string="Students">
+                                    <field name="auto_assign_all_students" widget="boolean_toggle"/>
+                                    <field name="auto_assign_student_ids" widget="many2many_tags"
+                                           options="{'no_create': True}"
+                                           invisible="auto_assign_all_students"/>
+                                    <field name="auto_assign_notify_student" widget="boolean_toggle"/>
+                                </group>
+                            </group>
+                            <group string="Log">
+                                <field name="auto_assign_log" nolabel="1" readonly="1"/>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter groups="aps_sis.group_aps_teacher"/>
@@ -351,8 +397,8 @@
                 <field name="category"/>
                 <field name="marks"/>
                 <field name="subjects"/>
-                <filter name="recently_viewed_25" string="Recently Viewed (25)" domain="[('is_recently_viewed', '=', 25)]"/>
-                <filter name="recently_viewed_50" string="Recently Viewed (50)" domain="[('is_recently_viewed', '=', 50)]"/>
+                <filter name="recently_viewed_50" string="Recent 50" domain="[('is_recently_viewed', '=', 50)]"/>
+                <filter name="recently_viewed_100" string="Recent 100" domain="[('is_recently_viewed', '=', 100)]"/>
                 <separator/>
                 <filter name="has_parent" string="Has Parent" domain="[('parent_ids','!=',False)]"/>
                 <filter name="no_parent" string="Root Resources" domain="[('parent_ids','=',False)]"/>

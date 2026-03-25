@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<!-- Override UserMenu to show avatar image when set -->
+<t t-inherit="web.UserMenu" t-inherit-mode="extension" owl="1">
+    <xpath expr="//img[hasclass('o_user_avatar')]" position="replace">
+        <img class="o_avatar o_user_avatar rounded"
+             t-att-src="avatarState and avatarState.source ? avatarState.source : source"
+             alt="User"/>
+    </xpath>
+</t>
+
+</templates>

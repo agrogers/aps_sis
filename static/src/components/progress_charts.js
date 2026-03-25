@@ -239,6 +239,8 @@ export class ProgressCharts {
                 .map(item => ({
                     subject_name: this.cleanSubjectName(item.subject_name),
                     progress: item.progress,
+                    progress_old: item.progress_old ?? 0,
+                    progress_recent: item.progress_recent ?? item.progress ?? 0,
                     color: item.color,
                     subject_id: item.subject_id
                 }))
@@ -555,8 +557,12 @@ export class ProgressCharts {
                 return new Date(a.x).getTime() - new Date(b.x).getTime();
             });
 
-            const firstPoint = sorted[0];
             const lastPoint = sorted[sorted.length - 1];
+            // Use only data points within the last 4 months for the rate calculation
+            const fourMonthsAgo = new Date(today);
+            fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
+            const recentPoints = sorted.filter(p => new Date(p.x) >= fourMonthsAgo);
+            const firstPoint = recentPoints.length >= 2 ? recentPoints[0] : sorted[0];
             const daysBetween = (new Date(lastPoint.x) - new Date(firstPoint.x)) / (1000 * 60 * 60 * 24);
 
             if (daysBetween <= 0) return 0;
@@ -569,6 +575,84 @@ export class ProgressCharts {
             const predictedTotal = Math.min(currentProgress + dailyRate * daysRemaining, 100);
             return Math.max(0, predictedTotal - currentProgress);
         });
+    }
+
+    /**
+     * Split the "last 4 months" progress segment into 4 monthly chunks
+     * (oldest month -> most recent month), aligned to progressBarData.
+     *
+     * Returns [m1, m2, m3, m4] where each array contains per-subject values.
+     */
+    _calculateRecentMonthlySegments() {
+        const dayMs = 24 * 60 * 60 * 1000;
+        const today = new Date();
+        const b0 = new Date(today.getTime() - 120 * dayMs);
+        const b1 = new Date(today.getTime() - 90 * dayMs);
+        const b2 = new Date(today.getTime() - 60 * dayMs);
+        const b3 = new Date(today.getTime() - 30 * dayMs);
+
+        const progressAt = (sortedPoints, boundaryDate) => {
+            let val = 0;
+            for (const p of sortedPoints) {
+                const d = new Date(p.x);
+                if (d <= boundaryDate) {
+                    val = p.y || 0;
+                } else {
+                    break;
+                }
+            }
+            return val;
+        };
+
+        const m1 = [];
+        const m2 = [];
+        const m3 = [];
+        const m4 = [];
+
+        for (const item of (this.state.progressBarData || [])) {
+            const currentProgress = item.progress || 0;
+            const totalRecent = Math.max(0, item.progress_recent ?? currentProgress);
+
+            // Find this subject's historical dataset in progressLineData
+            const subjectDataset = (this.state.progressLineData || []).find(
+                ds => !ds.isPace && ds.label === item.subject_name
+            );
+
+            if (!subjectDataset || !subjectDataset.data || subjectDataset.data.length === 0) {
+                // Fallback: put all recent progress in the latest bucket.
+                m1.push(0);
+                m2.push(0);
+                m3.push(0);
+                m4.push(totalRecent);
+                continue;
+            }
+
+            const sorted = [...subjectDataset.data].sort((a, b) => {
+                return new Date(a.x).getTime() - new Date(b.x).getTime();
+            });
+
+            const p0 = progressAt(sorted, b0);
+            const p1 = progressAt(sorted, b1);
+            const p2 = progressAt(sorted, b2);
+            const p3 = progressAt(sorted, b3);
+            const p4 = currentProgress;
+
+            const s1 = Math.max(0, p1 - p0);
+            const s2 = Math.max(0, p2 - p1);
+            const s3 = Math.max(0, p3 - p2);
+            let s4 = Math.max(0, p4 - p3);
+
+            // Keep exact parity with the existing 4-month total when rounding/edge cases differ.
+            const diff = totalRecent - (s1 + s2 + s3 + s4);
+            s4 = Math.max(0, s4 + diff);
+
+            m1.push(s1);
+            m2.push(s2);
+            m3.push(s3);
+            m4.push(s4);
+        }
+
+        return [m1, m2, m3, m4];
     }
 
     /**
@@ -602,6 +686,8 @@ export class ProgressCharts {
 
         const labels = this.state.progressBarData.map(item => item.subject_name);
         const data = this.state.progressBarData.map(item => item.progress);
+        const dataOld = this.state.progressBarData.map(item => item.progress_old ?? 0);
+        const [recentMonth1, recentMonth2, recentMonth3, recentMonth4] = this._calculateRecentMonthlySegments();
         const colors = this.state.progressBarData.map(item => item.color);
         const paceForToday = this.state.paceForToday;
         const redlineForToday = this.state.redlineForToday || 0;
@@ -624,18 +710,50 @@ export class ProgressCharts {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Current Progress',
-                        data: data,
-                        backgroundColor: colors.map(c => c + '80'),
+                        // Dataset 0: progress earned more than 4 months ago (faded)
+                        label: 'Progress (>4 months ago)',
+                        data: dataOld,
+                        backgroundColor: colors.map(c => c + '50'),
                         borderColor: colors,
-                        borderWidth: 2
+                        borderWidth: 2,
                     },
                     {
+                        // Dataset 1: oldest month within the last 4 months
+                        label: 'Month 1 (oldest)',
+                        data: recentMonth1,
+                        backgroundColor: colors.map(c => c + 'cc'),
+                        borderColor: colors,
+                        borderWidth: 2,
+                    },
+                    {
+                        // Dataset 2
+                        label: 'Month 2',
+                        data: recentMonth2,
+                        backgroundColor: colors.map(c => c + 'cc'),
+                        borderColor: colors,
+                        borderWidth: 2,
+                    },
+                    {
+                        // Dataset 3
+                        label: 'Month 3',
+                        data: recentMonth3,
+                        backgroundColor: colors.map(c => c + 'cc'),
+                        borderColor: colors,
+                        borderWidth: 2,
+                    },
+                    {
+                        // Dataset 4: most recent month
+                        label: 'Month 4 (recent)',
+                        data: recentMonth4,
+                        backgroundColor: colors.map(c => c + 'cc'),
+                        borderColor: colors,
+                        borderWidth: 2,
+                    },
+                    {
+                        // Dataset 5: predicted additional progress to deadline (dashed border via plugin)
                         label: 'Predicted Progress',
                         data: predictionData,
                         backgroundColor: 'rgba(220, 220, 220, 0.2)',
-                        // borderColor and borderWidth intentionally omitted here;
-                        // the dashed border is drawn by the predictionDashedBorder plugin below.
                         borderWidth: 0
                     }
                 ]
@@ -652,9 +770,31 @@ export class ProgressCharts {
                         callbacks: {
                             label: (context) => {
                                 if (context.datasetIndex === 0) {
-                                    return 'Progress: ' + Math.round(context.parsed.x) + '%';
+                                    return context.parsed.x > 0
+                                        ? 'Before 4 months: ' + Math.round(context.parsed.x) + '%'
+                                        : null;
                                 }
-                                if (context.datasetIndex === 1 && context.parsed.x > 0) {
+                                if (context.datasetIndex === 1) {
+                                    return context.parsed.x > 0
+                                        ? 'Month 1: +' + Math.round(context.parsed.x) + '%'
+                                        : null;
+                                }
+                                if (context.datasetIndex === 2) {
+                                    return context.parsed.x > 0
+                                        ? 'Month 2: +' + Math.round(context.parsed.x) + '%'
+                                        : null;
+                                }
+                                if (context.datasetIndex === 3) {
+                                    return context.parsed.x > 0
+                                        ? 'Month 3: +' + Math.round(context.parsed.x) + '%'
+                                        : null;
+                                }
+                                if (context.datasetIndex === 4) {
+                                    return context.parsed.x > 0
+                                        ? 'Month 4: +' + Math.round(context.parsed.x) + '%'
+                                        : null;
+                                }
+                                if (context.datasetIndex === 5 && context.parsed.x > 0) {
                                     const current = data[context.dataIndex] || 0;
                                     const predicted = Math.round(current + context.parsed.x);
                                     return 'Predicted by deadline: ' + predicted + '%';
@@ -741,11 +881,49 @@ export class ProgressCharts {
                     }
                 },
                 {
+                    id: 'monthlyLeftBorders',
+                    afterDatasetsDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        // Monthly segments are datasets 1..4.
+                        const firstMonthlyIndex = 1;
+                        const lastMonthlyIndex = 4;
+
+                        ctx.save();
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([3, 2]);
+
+                        for (let dsIndex = firstMonthlyIndex; dsIndex <= lastMonthlyIndex; dsIndex++) {
+                            const meta = chart.getDatasetMeta(dsIndex);
+                            if (!meta || !meta.data) continue;
+
+                            meta.data.forEach((bar, index) => {
+                                const ds = chart.data.datasets[dsIndex];
+                                const v = (ds && ds.data && ds.data[index]) || 0;
+                                if (!v) return;
+
+                                const x = bar.base;
+                                const top = bar.y - bar.height / 2;
+                                const bottom = bar.y + bar.height / 2;
+                                const insetY = 2;
+
+                                ctx.beginPath();
+                                ctx.moveTo(x, top + insetY);
+                                ctx.lineTo(x, bottom - insetY);
+                                ctx.stroke();
+                            });
+                        }
+
+                        ctx.restore();
+                    }
+                },
+                {
                     id: 'predictionDashedBorder',
                     afterDatasetsDraw: (chart) => {
                         if (!hasPrediction) return;
 
-                        const meta = chart.getDatasetMeta(1);
+                        const predictedDatasetIndex = chart.data.datasets.length - 1;
+                        const meta = chart.getDatasetMeta(predictedDatasetIndex);
                         if (!meta || !meta.data) return;
 
                         const ctx = chart.ctx;
@@ -765,7 +943,11 @@ export class ProgressCharts {
                             const barHeight = bar.height;
 
                             if (right > left) {
-                                ctx.strokeRect(left, top, right - left, barHeight);
+                                // Draw inside the bar bounds so the dashed border does not appear thicker.
+                                const inset = ctx.lineWidth / 2;
+                                const width = Math.max(0, right - left - ctx.lineWidth);
+                                const height = Math.max(0, barHeight - ctx.lineWidth);
+                                ctx.strokeRect(left + inset, top + inset, width, height);
                             }
                         });
 

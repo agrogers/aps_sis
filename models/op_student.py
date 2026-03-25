@@ -5,7 +5,16 @@ class OpStudent(models.Model):
     _inherit = 'op.student'
 
     show_all_courses = fields.Boolean('Show All Courses', default=False)
-    course_detail_ids_filtered = fields.One2many('op.student.course', compute='_compute_course_detail_ids_filtered', string='Course Details')
+    avatar_id = fields.Many2one(
+        'aps.avatar',
+        string='Profile Avatar',
+        help='Select an avatar image to display on this student\'s profile.',
+    )
+    course_detail_ids_filtered = fields.One2many(
+        'op.student.course',
+        compute='_compute_course_detail_ids_filtered',
+        string='Filtered Course Details',
+    )
 
     def _compute_full_name(self):
         """Compute the full name from first, middle, and last names."""

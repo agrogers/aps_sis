@@ -1,0 +1,42 @@
+<templates xml:space="preserve">
+    <t t-name="apex_dashboard.Leaderboard" owl="1">
+        <div class="apex-leaderboard-wrap">
+            <div class="apex-leaderboard-track" t-att-style="trackBg ? '--track-bg:' + trackBg : ''">
+                <t t-foreach="displayEntries" t-as="entry" t-key="entry.student_id">
+
+                    <!-- Student card -->
+                    <div class="apex-leaderboard-entry"
+                         t-att-class="{'apex-leaderboard-entry--current-user': isCurrentUser(entry)}"
+                         t-att-data-rank="entry.rank"
+                         t-att-style="'--ring-color:' + getRingColor(entry.rank)">
+
+                        <div class="apex-leaderboard-avatar-shell">
+                            <img
+                                class="apex-leaderboard-avatar"
+                                t-att-src="getImageUrl(entry)"
+                                t-att-alt="entry.student_name"
+                                onerror="this.onerror=null;this.src='/web/static/img/placeholder.png';"
+                            />
+                            <span class="apex-leaderboard-medal">
+                                <t t-esc="getRingLabel(entry.rank)"/>
+                            </span>
+                        </div>
+
+                        <div class="apex-leaderboard-name" t-esc="entry.student_name"/>
+                        <div class="apex-leaderboard-points">
+                            <t t-esc="entry.total_points"/><t t-if="props.valueSuffix" t-esc="props.valueSuffix"/>
+                        </div>
+
+                    </div>
+
+                    <!-- Proportional spacer — omit after the last entry -->
+                    <t t-if="!entry_last">
+                        <div class="apex-leaderboard-spacer"
+                             t-att-style="'flex-grow:' + spacerWeights[entry_index]"/>
+                    </t>
+
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

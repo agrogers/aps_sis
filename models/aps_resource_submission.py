@@ -88,6 +88,7 @@ class APSResourceSubmission(models.Model):
         tracking=True,
     )
     is_current_user_faculty = fields.Boolean(compute='_compute_is_current_user_faculty')
+    is_current_user_reviewed = fields.Boolean(compute='_compute_is_current_user_reviewed')
     model_answer = fields.Html(
         string='Model Answer',
         related='resource_id.answer',
@@ -194,7 +195,7 @@ class APSResourceSubmission(models.Model):
         for record in self:
             if record.state in ['complete', 'submitted'] and record.date_submitted:
                 if not record.date_due:
-                    points = 3  # on time if no due date
+                    points = 1  # on time if no due date. This means that the user has chosen to resubmit something. Set the points low so they can't easily resubmit multiple times to farm points but still give them some points for resubmitting. 
                 else:
                     days_from_due_date = record.date_submitted - record.date_due
                     days_diff = days_from_due_date.days
@@ -318,7 +319,13 @@ class APSResourceSubmission(models.Model):
 
     @api.model
     def recompute_submission_active_status(self):
-        """Recompute active status for all submissions. Called by cron job daily."""
+        """Cron entrypoint: run auto-assign then recompute submission active flags."""
+        try:
+            # Reuse this minute-based cron to drive scheduled resource auto-assignment.
+            self.env['aps.resources'].run_auto_assign()
+        except Exception as exc:
+            _logger.exception('Auto-assign step failed during recompute cron: %s', exc)
+
         submissions = self.search([])
         submissions._compute_submission_active()
 
@@ -383,6 +390,12 @@ class APSResourceSubmission(models.Model):
         faculty = self._get_current_faculty()
         for record in self:
             record.is_current_user_faculty = bool(faculty)
+
+    @api.depends('reviewed_by')
+    def _compute_is_current_user_reviewed(self):
+        faculty = self._get_current_faculty()
+        for record in self:
+            record.is_current_user_reviewed = bool(faculty) and (faculty in record.reviewed_by)
 
     @api.depends('resource_id.has_answer', 'resource_id.primary_parent_id.has_answer')
     def _compute_model_answer_is_notes(self):
@@ -1163,6 +1176,452 @@ class APSResourceSubmission(models.Model):
         )
     
     @api.model
+    def _get_progress_resources(self):
+        """Return all resources whose type name contains 'Progress'."""
+        return self.env['aps.resources'].search([
+            ('type_id.name', 'ilike', 'Progress')
+        ])
+
+    @staticmethod
+    def _parse_resource_notes_excludes(resources):
+        """Parse 'exclude:' and 'exclude_from_average:' lists from resource notes.
+
+        Returns (exclude, exclude_from_average) — two lists of subject name strings.
+        """
+        import re
+        import html as html_lib
+        from markupsafe import Markup
+
+        exclude = []
+        exclude_from_average = []
+        for resource in resources:
+            if not resource.notes:
+                continue
+            notes_text = resource.notes
+            if isinstance(notes_text, Markup) or '<' in str(notes_text):
+                notes_text = str(notes_text)
+                notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
+                notes_text = re.sub(r'<[^>]+>', '', notes_text)
+            notes_text = html_lib.unescape(str(notes_text))
+            notes_text = notes_text.replace('\xa0', ' ')
+
+            match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+            if match:
+                for name in match.group(1).split(','):
+                    cleaned = name.strip()
+                    if cleaned and cleaned not in exclude_from_average:
+                        exclude_from_average.append(cleaned)
+
+            match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
+            if match:
+                for name in match.group(1).split(','):
+                    cleaned = name.strip()
+                    if cleaned and cleaned not in exclude:
+                        exclude.append(cleaned)
+
+        return exclude, exclude_from_average
+
+    @api.model
+    def _progress_result_sort_key(self, date_value, result_percent):
+        """Sort progress snapshots by date, then result percent.
+
+        This keeps "current progress" selection consistent across the dashboard,
+        progress leaderboard, completion leaderboard, and student comparison chart.
+        """
+        normalized_date = fields.Date.to_date(date_value) if date_value else False
+        normalized_result = result_percent if result_percent is not None else float('-inf')
+        return (
+            normalized_date.toordinal() if normalized_date else -1,
+            normalized_result,
+        )
+
+    @api.model
+    def _should_replace_progress_result(self, existing, date_value, result_percent):
+        """Return True when a candidate progress snapshot should replace the current one."""
+        if not date_value:
+            return False
+
+        existing_date = existing.get('date') if existing else False
+        existing_result = existing.get('result_percent') if existing else False
+        return self._progress_result_sort_key(date_value, result_percent) > self._progress_result_sort_key(
+            existing_date,
+            existing_result,
+        )
+
+    @api.model
+    def _collapse_progress_points_by_date(self, data_points):
+        """Return one point per date, keeping the highest score for that day."""
+        points_by_date = {}
+
+        for point in data_points or []:
+            date_value = point.get('date')
+            if not date_value:
+                continue
+
+            normalized_date = fields.Date.to_date(date_value)
+            if not normalized_date:
+                continue
+
+            date_key = normalized_date.isoformat()
+            candidate = dict(point)
+            candidate['date'] = date_key
+
+            existing = points_by_date.get(date_key)
+            if not existing or self._should_replace_progress_result(
+                existing,
+                date_key,
+                candidate.get('result_percent'),
+            ):
+                points_by_date[date_key] = candidate
+
+        return sorted(
+            points_by_date.values(),
+            key=lambda p: self._progress_result_sort_key(p.get('date'), p.get('result_percent')),
+        )
+
+    @api.model
+    def _get_avatar_and_image_maps(self, partner_ids):
+        """Return avatar and image maps without forcing filestore binary reads."""
+        if not partner_ids:
+            return {}, {}
+
+        user_data = self.env['res.users'].sudo().search_read(
+            [('partner_id', 'in', partner_ids)],
+            ['partner_id', 'avatar_id'],
+        )
+        avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
+
+        # bin_size=True returns metadata/size marker for binaries instead of reading file contents.
+        partners = self.env['res.partner'].sudo().browse(partner_ids).with_context(bin_size=True)
+        image_map = {p.id: bool(p.image_128) for p in partners}
+        return avatar_map, image_map
+    
+    @api.model
+    def get_progress_leaderboard_data(self, limit=30):
+        """Return top N students by average progress across enrolled, non-excluded subjects.
+
+        Uses the same subject inclusion/exclusion logic as the Progress charts:
+        - Resources with ' Progress' in the name are used
+        - Subjects in the resource notes 'exclude:' list are completely excluded
+        - Only subjects the student is currently enrolled in are counted
+        - Each student's most-recent result_percent per subject is averaged
+        - Returns up to `limit` students ranked by average progress (descending)
+
+        Each entry contains: rank, student_id, student_name, total_points (= rounded avg %)
+        """
+        progress_resources = self._get_progress_resources()
+        if not progress_resources:
+            return []
+
+        exclude, _exclude_from_avg = self._parse_resource_notes_excludes(progress_resources)
+
+        # Fetch all active submitted/complete submissions for progress resources
+        submissions = self.sudo().search([
+            ('resource_id', 'in', progress_resources.ids),
+            ('submission_active', '=', True),
+            ('state', 'in', ['submitted', 'complete']),
+        ], order='date_submitted asc')
+        if not submissions:
+            return []
+
+        # Collect all subjects referenced in these submissions, then filter out excluded ones
+        all_subjects = self.env['op.subject']
+        for sub in submissions:
+            all_subjects |= sub.subjects
+        if exclude:
+            all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+
+        # Restrict to subjects students are currently enrolled in
+        student_enrolled_subjects = {}
+        all_enrolled_subject_ids = set()
+        partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
+        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        for student_record in student_records:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
+            all_enrolled_subject_ids.update(enrolled_ids)
+        if all_enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
+        all_subject_ids_set = set(all_subjects.ids)
+
+        # Build per-student, per-subject latest progress (result_percent)
+        student_progress = {}
+        for submission in submissions:
+            student_id = submission.student_id.id
+            if not student_id:
+                continue
+            if student_id not in student_progress:
+                student_progress[student_id] = {
+                    'name': submission.student_id.name,
+                    'subjects': {},
+                }
+            for subject in submission.subjects:
+                if subject.id not in all_subject_ids_set:
+                    continue
+                student_enrolled = student_enrolled_subjects.get(student_id)
+                if student_enrolled is not None and subject.id not in student_enrolled:
+                    continue
+                date_to_use = submission.date_submitted or submission.date_completed
+                if not date_to_use:
+                    continue
+                existing = student_progress[student_id]['subjects'].get(subject.id)
+                if self._should_replace_progress_result(existing, date_to_use, submission.result_percent):
+                    student_progress[student_id]['subjects'][subject.id] = {
+                        'result_percent': submission.result_percent,
+                        'date': fields.Date.to_date(date_to_use),
+                    }
+
+        # Calculate average progress per student and build sorted leaderboard
+        leaderboard = []
+        for student_id, student_info in student_progress.items():
+            progresses = [
+                info['result_percent']
+                for info in student_info['subjects'].values()
+                if info['result_percent'] is not None
+            ]
+            if not progresses:
+                continue
+            avg_progress = sum(progresses) / len(progresses)
+            leaderboard.append({
+                'student_id': student_id,
+                'student_name': student_info['name'],
+                'avg_progress': avg_progress,
+            })
+
+        leaderboard.sort(key=lambda x: x['avg_progress'], reverse=True)
+        leaderboard = leaderboard[:limit]
+
+        result = [
+            {
+                'rank': i + 1,
+                'student_id': entry['student_id'],
+                'student_name': entry['student_name'],
+                'total_points': round(entry['avg_progress']),
+            }
+            for i, entry in enumerate(leaderboard)
+        ]
+
+        # Enrich with avatar and partner image info
+        partner_ids = [r['student_id'] for r in result]
+        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
+        for entry in result:
+            entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            entry['has_image'] = image_map.get(entry['student_id'], False)
+
+        return result
+
+    @api.model
+    def get_completion_leaderboard_data(self, limit=30):
+        """Return top N students ranked by predicted total progress at the course deadline.
+
+        Uses the same subject inclusion/exclusion and enrolment logic as
+        get_progress_leaderboard_data and mirrors the _calculatePredictionData
+        logic from the frontend (progress_charts.js).
+
+        For each student / subject:
+        - Calculate daily progress rate from the student's historical line data
+          (first to last submitted data-point for that subject).
+        - Determine the deadline: the latest end_date across all progress resources.
+        - Project: predicted_total = min(current + daily_rate * days_remaining, 100)
+        - Average the predicted totals across all enrolled, non-excluded subjects.
+
+        Returns up to `limit` students ranked by predicted average (descending).
+        Each entry: rank, student_id, student_name, total_points (= rounded predicted %)
+        """
+        from datetime import date as date_type, timedelta
+
+        progress_resources = self._get_progress_resources()
+        if not progress_resources:
+            return {'entries': [], 'deadline': False}
+
+        exclude, _exclude_from_avg = self._parse_resource_notes_excludes(progress_resources)
+
+        # --- Determine global deadline (latest end_date across all progress resources) ---
+        deadline = None
+        for resource in progress_resources:
+            pace_dates = resource.get_pace_dates()
+            if pace_dates.get('end_date'):
+                if deadline is None or pace_dates['end_date'] > deadline:
+                    deadline = pace_dates['end_date']
+
+        today = date_type.today()
+        if deadline and deadline > today:
+            days_remaining = (deadline - today).days
+        else:
+            days_remaining = 0  # No future deadline → no projection, use current progress
+
+        # --- Fetch submissions ---
+        submissions = self.sudo().search([
+            ('resource_id', 'in', progress_resources.ids),
+            ('submission_active', '=', True),
+            ('state', 'in', ['submitted', 'complete']),
+        ], order='date_submitted asc')
+        if not submissions:
+            return {'entries': [], 'deadline': deadline.isoformat() if deadline else False}
+
+        # --- Collect subjects, apply exclude filter ---
+        all_subjects = self.env['op.subject']
+        for sub in submissions:
+            all_subjects |= sub.subjects
+        if exclude:
+            all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+
+        # --- Restrict to enrolled subjects ---
+        student_enrolled_subjects = {}
+        all_enrolled_subject_ids = set()
+        partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
+        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        for student_record in student_records:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
+            all_enrolled_subject_ids.update(enrolled_ids)
+        if all_enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
+        all_subject_ids_set = set(all_subjects.ids)
+
+        # --- Build per-student, per-subject historical data ---
+        # Dates are normalised to date objects at extraction to avoid mixed-type arithmetic.
+        # student_history: {student_id: {subject_id: [(date, result_percent), ...]}}
+        student_history = {}
+        student_names = {}
+        for submission in submissions:
+            student_id = submission.student_id.id
+            if not student_id:
+                continue
+            student_names[student_id] = submission.student_id.name
+            if student_id not in student_history:
+                student_history[student_id] = {}
+            student_enrolled = student_enrolled_subjects.get(student_id)
+            for subject in submission.subjects:
+                if subject.id not in all_subject_ids_set:
+                    continue
+                if student_enrolled is not None and subject.id not in student_enrolled:
+                    continue
+                date_to_use = submission.date_submitted or submission.date_completed
+                if not date_to_use:
+                    continue
+                # Normalise to a date object (Odoo datetime fields return datetime instances)
+                if hasattr(date_to_use, 'date'):
+                    date_to_use = date_to_use.date()
+                if subject.id not in student_history[student_id]:
+                    student_history[student_id][subject.id] = []
+                student_history[student_id][subject.id].append(
+                    (date_to_use, submission.result_percent or 0)
+                )
+
+        # --- Calculate predicted total progress per student ---
+        leaderboard = []
+        for student_id, subjects in student_history.items():
+            predicted_totals = []
+            for subject_id, data_points in subjects.items():
+                if not data_points:
+                    continue
+                # Sort ascending by date
+                sorted_points = sorted(
+                    data_points,
+                    key=lambda x: self._progress_result_sort_key(x[0], x[1]),
+                )
+                current_progress = sorted_points[-1][1]  # Latest result_percent
+
+                if current_progress >= 100:
+                    predicted_totals.append(100.0)
+                    continue
+
+                # Calculate daily rate using only the last 4 months of data
+                last_date, last_progress = sorted_points[-1]
+                four_months_ago = today - timedelta(days=120)
+                recent_points = [(d, p) for d, p in sorted_points if d >= four_months_ago]
+                first_date, first_progress = recent_points[0] if len(recent_points) >= 2 else sorted_points[0]
+                days_between = (last_date - first_date).days
+
+                if days_between > 0:
+                    daily_rate = (last_progress - first_progress) / days_between
+                else:
+                    daily_rate = 0
+
+                if daily_rate > 0 and days_remaining > 0:
+                    predicted_total = min(current_progress + daily_rate * days_remaining, 100.0)
+                else:
+                    predicted_total = current_progress
+
+                predicted_totals.append(predicted_total)
+
+            if not predicted_totals:
+                continue
+            avg_predicted = sum(predicted_totals) / len(predicted_totals)
+            leaderboard.append({
+                'student_id': student_id,
+                'student_name': student_names.get(student_id, ''),
+                'avg_predicted': avg_predicted,
+            })
+
+        leaderboard.sort(key=lambda x: x['avg_predicted'], reverse=True)
+        leaderboard = leaderboard[:limit]
+
+        result = [
+            {
+                'rank': i + 1,
+                'student_id': entry['student_id'],
+                'student_name': entry['student_name'],
+                'total_points': round(entry['avg_predicted']),
+            }
+            for i, entry in enumerate(leaderboard)
+        ]
+
+        # --- Enrich with avatar / image info ---
+        partner_ids = [r['student_id'] for r in result]
+        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
+        for entry in result:
+            entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            entry['has_image'] = image_map.get(entry['student_id'], False)
+
+        return {
+            'entries': result,
+            'deadline': deadline.isoformat() if deadline else False,
+        }
+
+    @api.model
+    def get_leaderboard_data(self, domain, limit=5):
+        """Return top N students by points for the leaderboard.
+
+        Each entry contains:
+          rank, student_id, student_name, total_points, image_url
+        """
+        groups = self.sudo().read_group(
+            domain=domain,
+            fields=["points:sum"],
+            groupby=["student_id"],
+            orderby="points:sum desc",
+            lazy=True,
+        )[:limit]
+
+        result = []
+        for i, group in enumerate(groups):
+            student_id = group['student_id'][0]
+            student_name = group['student_id'][1]
+            total_points = group['points'] or 0
+            result.append({
+                'rank': i + 1,
+                'student_id': student_id,
+                'student_name': student_name,
+                'total_points': total_points,
+            })
+
+        # Enrich with avatar and partner image info
+        partner_ids = [r['student_id'] for r in result]
+        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
+        for entry in result:
+            entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            entry['has_image'] = image_map.get(entry['student_id'], False)
+
+        return result
+
+    @api.model
     def read_submission_data(self, domain, fields, orderby=False, limit=False):
         return self.env['aps.resource.submission'].sudo().search_read(
                 domain=domain,
@@ -1183,16 +1642,13 @@ class APSResourceSubmission(models.Model):
         - subject_colors: Color mapping for subjects
         - exclude_from_average: Subject names to exclude from redline highlight
         - exclude: Subjects to completely exclude from the chart
+
+        Only subjects currently enrolled by the student (running course subject_ids)
+        are included in chart data.
         """
         from datetime import datetime, timedelta
-        import re
-        import html as html_lib
-        from markupsafe import Markup
         
-        # Find all resources with ' Progress' in the name
-        progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
-        ])
+        progress_resources = self._get_progress_resources()
         
         if not progress_resources:
             return {
@@ -1204,33 +1660,7 @@ class APSResourceSubmission(models.Model):
                 'exclude': [],
             }
         
-        # Parse exclude_from_average and exclude from resource notes
-        exclude_from_average = []
-        exclude = []
-        for resource in progress_resources:
-            if resource.notes:
-                notes_text = resource.notes
-                if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                    notes_text = str(notes_text)
-                    notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'<[^>]+>', '', notes_text)
-                notes_text = html_lib.unescape(str(notes_text))
-                notes_text = notes_text.replace('\xa0', ' ')
-                
-                match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude_from_average:
-                            exclude_from_average.append(cleaned_name)
-                
-                match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude:
-                            exclude.append(cleaned_name)
+        exclude, exclude_from_average = self._parse_resource_notes_excludes(progress_resources)
         
         # Build domain for submissions
         domain = [
@@ -1257,10 +1687,38 @@ class APSResourceSubmission(models.Model):
         all_subjects = self.env['op.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
+
+        # Restrict to the student's currently enrolled subjects (running courses only)
+        student_record = self.env['op.student'].sudo().search([
+            ('partner_id', '=', student_id)
+        ], limit=1)
+        enrolled_subject_ids = set()
+        if student_record:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_subject_ids = set(running_courses.mapped('subject_ids').ids)
+        if enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in enrolled_subject_ids)
+        else:
+            all_subjects = self.env['op.subject']
         
         # Filter out excluded subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+
+        # Nothing left after enrollment/exclude filtering
+        if not all_subjects:
+            return {
+                'line_data': [],
+                'bar_data': [],
+                'pace_data': {},
+                'subject_colors': {},
+                'exclude_from_average': exclude_from_average,
+                'exclude': exclude,
+                'period_start': period_start_date,
+                'period_end': datetime.now().date().isoformat(),
+            }
+
+        allowed_subject_ids = set(all_subjects.ids)
         
         # Get subject colors (with automatic color generation for subjects without categories)
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
@@ -1273,6 +1731,8 @@ class APSResourceSubmission(models.Model):
         for submission in submissions:
             for subject in submission.subjects:
                 if subject.name in exclude:
+                    continue
+                if subject.id not in allowed_subject_ids:
                     continue
                 if subject.id not in subject_data:
                     subject_data[subject.id] = []
@@ -1288,18 +1748,12 @@ class APSResourceSubmission(models.Model):
                     })
                     
                     # Track latest result for bar chart (most recent submission by date)
-                    if subject.id not in current_progress:
+                    existing = current_progress.get(subject.id)
+                    if self._should_replace_progress_result(existing, date_to_use, submission.result_percent):
                         current_progress[subject.id] = {
                             'result_percent': submission.result_percent,
-                            'date': date_to_use
+                            'date': fields.Date.to_date(date_to_use)
                         }
-                    else:
-                        # Update if this is a more recent submission
-                        if date_to_use > current_progress[subject.id]['date']:
-                            current_progress[subject.id] = {
-                                'result_percent': submission.result_percent,
-                                'date': date_to_use
-                            }
                 
                 # Get PACE/redline dates from resource notes
                 # Note: resource.subjects is a Many2many field - one resource can have multiple subjects
@@ -1326,20 +1780,28 @@ class APSResourceSubmission(models.Model):
         all_subject_data = {}
         
         for subject_id, data_points in subject_data.items():
-            # Sort by date and remove duplicates
-            sorted_points = sorted(data_points, key=lambda x: x['date'])
-            all_subject_data[subject_id] = sorted_points
+            all_subject_data[subject_id] = self._collapse_progress_points_by_date(data_points)
         
-        # Build bar data (current progress)
+        # Build bar data (current progress, split into >120 days old and last 120 days)
+        cutoff_date = (datetime.now().date() - timedelta(days=120))
+        cutoff_str = cutoff_date.isoformat()
         bar_data = []
         for subject_id, progress_data in current_progress.items():
             subject = all_subjects.filtered(lambda s: s.id == subject_id)
             if subject:
+                current_pct = progress_data['result_percent']
+                # Find the last data point on or before the 120-day cutoff
+                sorted_pts = all_subject_data.get(subject_id, [])
+                pts_at_cutoff = [p for p in sorted_pts if p['date'][:10] <= cutoff_str]
+                progress_old = pts_at_cutoff[-1]['result_percent'] if pts_at_cutoff else 0
+                progress_recent = max(0, current_pct - progress_old)
                 bar_data.append({
                     'subject_id': subject_id,
                     'subject_name': subject.name,
-                    'progress': progress_data['result_percent'],  # Extract result_percent from dict
-                    'color': subject_colors.get(subject_id, '#6c757d')  # Fallback to gray
+                    'progress': current_pct,
+                    'progress_old': progress_old,
+                    'progress_recent': progress_recent,
+                    'color': subject_colors.get(subject_id, '#6c757d'),
                 })
         
         return {
@@ -1366,13 +1828,8 @@ class APSResourceSubmission(models.Model):
         - exclude_from_average: List of subject names to exclude from average calculation
         """
         from datetime import datetime
-        import re
-        from markupsafe import Markup
         
-        # Find all resources with ' Progress' in the name
-        progress_resources = self.env['aps.resources'].search([
-            ('name', 'ilike', ' Progress')
-        ])
+        progress_resources = self._get_progress_resources()
         
         if not progress_resources:
             return {
@@ -1383,36 +1840,7 @@ class APSResourceSubmission(models.Model):
                 'exclude_from_average': []
             }
         
-        # Parse exclude_from_average and exclude from resource notes
-        exclude_from_average = []
-        exclude = []
-        for resource in progress_resources:
-            if resource.notes:
-                # Strip HTML tags if present
-                notes_text = resource.notes
-                if isinstance(notes_text, Markup) or '<' in str(notes_text):
-                    notes_text = str(notes_text)
-                    notes_text = re.sub(r'<br\s*/?>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'</(?:p|div|li)>', '\n', notes_text, flags=re.IGNORECASE)
-                    notes_text = re.sub(r'<[^>]+>', '', notes_text)
-                # Decode HTML entities (e.g., &nbsp; -> space)
-                import html
-                notes_text = html.unescape(str(notes_text))
-                notes_text = notes_text.replace('\xa0', ' ')
-                
-                match = re.search(r'\bexclude_from_average:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude_from_average:
-                            exclude_from_average.append(cleaned_name)
-                
-                match = re.search(r'\bexclude:\s*(.+?)(?=\b\w+:|\n|$)', notes_text, re.IGNORECASE)
-                if match:
-                    for subject_name in match.group(1).split(','):
-                        cleaned_name = subject_name.strip()
-                        if cleaned_name and cleaned_name not in exclude:
-                            exclude.append(cleaned_name)
+        exclude, exclude_from_average = self._parse_resource_notes_excludes(progress_resources)
         
         # Build domain for submissions
         domain = [
@@ -1440,7 +1868,20 @@ class APSResourceSubmission(models.Model):
         # Filter out excluded subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
-        
+
+        # Restrict to subjects students are currently enrolled in
+        student_enrolled_subjects = {}  # {partner_id: set(enrolled_subject_ids)}
+        all_enrolled_subject_ids = set()
+        partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
+        student_records = self.env['op.student'].search([('partner_id', 'in', partner_ids)])
+        for student_record in student_records:
+            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
+            all_enrolled_subject_ids.update(enrolled_ids)
+        if all_enrolled_subject_ids:
+            all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
         # Get subject colors
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
         
@@ -1449,7 +1890,8 @@ class APSResourceSubmission(models.Model):
         pace_values = []
         redline_values = []
         processed_resources_for_pace = set()
-        
+        all_subject_ids_set = set(all_subjects.ids)  # enrolled + not excluded
+
         for submission in submissions:
             student_id = submission.student_id.id
             if not student_id:
@@ -1462,25 +1904,22 @@ class APSResourceSubmission(models.Model):
                 }
             
             for subject in submission.subjects:
-                if subject.name in exclude:
+                if subject.id not in all_subject_ids_set:
+                    continue
+                student_enrolled = student_enrolled_subjects.get(student_id)
+                if student_enrolled is not None and subject.id not in student_enrolled:
                     continue
                 date_to_use = submission.date_submitted or submission.date_completed
                 if not date_to_use:
                     continue
                 
                 # Track latest result for each subject (most recent submission)
-                if subject.id not in student_progress[student_id]['subjects']:
+                existing = student_progress[student_id]['subjects'].get(subject.id)
+                if self._should_replace_progress_result(existing, date_to_use, submission.result_percent):
                     student_progress[student_id]['subjects'][subject.id] = {
                         'result_percent': submission.result_percent,
-                        'date': date_to_use
+                        'date': fields.Date.to_date(date_to_use)
                     }
-                else:
-                    # Update if this is a more recent submission
-                    if date_to_use > student_progress[student_id]['subjects'][subject.id]['date']:
-                        student_progress[student_id]['subjects'][subject.id] = {
-                            'result_percent': submission.result_percent,
-                            'date': date_to_use
-                        }
             
             # Calculate PACE and redline for averaging (process each resource only once)
             if submission.resource_id and submission.resource_id.id not in processed_resources_for_pace:

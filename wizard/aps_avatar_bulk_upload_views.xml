@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="action_aps_avatar_bulk_upload_client" model="ir.actions.client">
+        <field name="name">Bulk Upload Avatars</field>
+        <field name="tag">aps_avatar_bulk_upload</field>
+    </record>
+
+</odoo>

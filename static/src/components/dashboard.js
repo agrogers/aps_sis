@@ -1,11 +1,13 @@
 import { Component, useState, onWillStart, onMounted, onPatched } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { user } from "@web/core/user";
 import { KpiCard } from "./kpi_card/kpi_card";
 import { KpiGauge } from "./kpi_gauge/kpi_gauge";
 import { ChartRenderer } from "./chart_renderer/chart_renderer";
 import { Domain } from "@web/core/domain";
 import { ProgressCharts } from "./progress_charts";
+import { Leaderboard } from "./leaderboard/leaderboard";
 
 
 export class ApexDashboard extends Component {
@@ -19,6 +21,7 @@ export class ApexDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.user = user;
         
         const savedSettings = this.loadSettings();
 
@@ -63,6 +66,16 @@ export class ApexDashboard extends Component {
             // Student comparison
             studentComparisonData: null,
             loadingStudentComparison: true,
+            // Leaderboard
+            leaderboardData: [],
+            loadingLeaderboard: true,
+            // Progress Leaderboard
+            progressLeaderboardData: [],
+            loadingProgressLeaderboard: true,
+            // Completion Leaderboard Prediction
+            completionLeaderboardData: [],
+            completionDeadline: false,
+            loadingCompletionLeaderboard: true,
         });
 
         
@@ -567,12 +580,15 @@ export class ApexDashboard extends Component {
         // Load KPIs first (fastest to load, most important for user)
         await this.fetchKPIs();
 
-        // Then load charts, doughnuts, and progress data in parallel
+        // Then load charts, doughnuts, progress data and leaderboard in parallel
         await Promise.all([
             this.fetchChartData(),
             this.fetchDoughnutData(),
             this.progressCharts.fetchProgressData(),
-            this.progressCharts.fetchStudentComparisonData()
+            this.progressCharts.fetchStudentComparisonData(),
+            this.fetchLeaderboard(),
+            this.fetchProgressLeaderboard(),
+            this.fetchCompletionLeaderboard(),
         ]);
 
         // Now that KPIs are loaded → the rank card should exist
@@ -647,6 +663,64 @@ export class ApexDashboard extends Component {
         this.state.loadingKPIs = false;
     }
 
+    async fetchLeaderboard() {
+        this.state.loadingLeaderboard = true;
+        try {
+            const domain = [
+                ['submission_active', '=', true],
+                ['points', '>', 0],
+                ['date_assigned', '>=', this.getPeriodStartDateStr()],
+            ];
+            const data = await this.orm.call(
+                "aps.resource.submission",
+                "get_leaderboard_data",
+                [domain], { limit: 9 }
+            );
+            this.state.leaderboardData = data || [];
+        } catch (error) {
+            console.error("Error fetching leaderboard data:", error);
+            this.state.leaderboardData = [];
+        } finally {
+            this.state.loadingLeaderboard = false;
+        }
+    }
+
+    async fetchProgressLeaderboard() {
+        this.state.loadingProgressLeaderboard = true;
+        try {
+            const data = await this.orm.call(
+                "aps.resource.submission",
+                "get_progress_leaderboard_data",
+                [], { limit: 30 }
+            );
+            this.state.progressLeaderboardData = data || [];
+        } catch (error) {
+            console.error("Error fetching progress leaderboard data:", error);
+            this.state.progressLeaderboardData = [];
+        } finally {
+            this.state.loadingProgressLeaderboard = false;
+        }
+    }
+
+    async fetchCompletionLeaderboard() {
+        this.state.loadingCompletionLeaderboard = true;
+        try {
+            const data = await this.orm.call(
+                "aps.resource.submission",
+                "get_completion_leaderboard_data",
+                [], { limit: 30 }
+            );
+            this.state.completionLeaderboardData = data?.entries || [];
+            this.state.completionDeadline = data?.deadline || false;
+        } catch (error) {
+            console.error("Error fetching completion leaderboard data:", error);
+            this.state.completionLeaderboardData = [];
+            this.state.completionDeadline = false;
+        } finally {
+            this.state.loadingCompletionLeaderboard = false;
+        }
+    }
+
     async fetchChartData() {
         this.state.loadingCharts = true;
 
@@ -663,7 +737,7 @@ export class ApexDashboard extends Component {
         const dataDomain = Domain.or([submittedDomain, assignedDomain]).toList();
         // console.log("Combined OR:", JSON.stringify(dataDomain));
 
-        const allSubmissions = await this.orm.searchRead("aps.resource.submission", dataDomain, ["date_assigned", "date_submitted", "date_completed"]);
+        const allSubmissions = await this.orm.searchRead("aps.resource.submission", dataDomain, ["date_assigned", "date_submitted", "date_completed", "due_status"]);
 
         const chartData = [];
         const dateMap = {};
@@ -673,7 +747,14 @@ export class ApexDashboard extends Component {
         let currentDate = new Date(startDate);
         while (currentDate <= today) {
             const dateStr = currentDate.toISOString().split('T')[0];
-            dateMap[dateStr] = { assigned: 0, submitted: 0, finalized: 0 };
+            dateMap[dateStr] = {
+                assigned: 0,
+                submitted: 0,
+                submitted_early: 0,
+                submitted_on_time: 0,
+                submitted_late: 0,
+                finalized: 0,
+            };
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
@@ -683,19 +764,71 @@ export class ApexDashboard extends Component {
             }
             if (sub.date_submitted && dateMap[sub.date_submitted]) {
                 dateMap[sub.date_submitted].submitted++;
+                if (sub.due_status === 'early') {
+                    dateMap[sub.date_submitted].submitted_early++;
+                } else if (sub.due_status === 'late') {
+                    dateMap[sub.date_submitted].submitted_late++;
+                } else {
+                    dateMap[sub.date_submitted].submitted_on_time++;
+                }
             }
             if (sub.date_completed && dateMap[sub.date_completed]) {
                 dateMap[sub.date_completed].finalized++;
             }
         });
 
-        for (const dateStr in dateMap) {
-            chartData.push({
-                date: dateStr,
-                assigned: dateMap[dateStr].assigned,
-                submitted: dateMap[dateStr].submitted,
-                finalized: dateMap[dateStr].finalized
-            });
+        // Keep daily grouping for <= 30 days; switch to weekly buckets for larger ranges.
+        if (this.state.period > 30) {
+            const weekMap = {};
+            for (const dateStr in dateMap) {
+                const d = new Date(`${dateStr}T00:00:00`);
+                // Use Monday as start of week.
+                const day = d.getDay();
+                const diffToMonday = (day + 6) % 7;
+                d.setDate(d.getDate() - diffToMonday);
+                const weekStart = d.toISOString().split('T')[0];
+
+                if (!weekMap[weekStart]) {
+                    weekMap[weekStart] = {
+                        assigned: 0,
+                        submitted: 0,
+                        submitted_early: 0,
+                        submitted_on_time: 0,
+                        submitted_late: 0,
+                        finalized: 0,
+                    };
+                }
+                weekMap[weekStart].assigned += dateMap[dateStr].assigned;
+                weekMap[weekStart].submitted += dateMap[dateStr].submitted;
+                weekMap[weekStart].submitted_early += dateMap[dateStr].submitted_early;
+                weekMap[weekStart].submitted_on_time += dateMap[dateStr].submitted_on_time;
+                weekMap[weekStart].submitted_late += dateMap[dateStr].submitted_late;
+                weekMap[weekStart].finalized += dateMap[dateStr].finalized;
+            }
+
+            for (const weekStart in weekMap) {
+                chartData.push({
+                    date: `Wk ${weekStart}`,
+                    assigned: weekMap[weekStart].assigned,
+                    submitted: weekMap[weekStart].submitted,
+                    submitted_early: weekMap[weekStart].submitted_early,
+                    submitted_on_time: weekMap[weekStart].submitted_on_time,
+                    submitted_late: weekMap[weekStart].submitted_late,
+                    finalized: weekMap[weekStart].finalized,
+                });
+            }
+        } else {
+            for (const dateStr in dateMap) {
+                chartData.push({
+                    date: dateStr,
+                    assigned: dateMap[dateStr].assigned,
+                    submitted: dateMap[dateStr].submitted,
+                    submitted_early: dateMap[dateStr].submitted_early,
+                    submitted_on_time: dateMap[dateStr].submitted_on_time,
+                    submitted_late: dateMap[dateStr].submitted_late,
+                    finalized: dateMap[dateStr].finalized
+                });
+            }
         }
         this.state.chartData = chartData;
 
@@ -1021,6 +1154,6 @@ export class ApexDashboard extends Component {
 }
 
 ApexDashboard.template = "apex_dashboard.Dashboard";
-ApexDashboard.components = { KpiCard, KpiGauge, ChartRenderer };
+ApexDashboard.components = { KpiCard, KpiGauge, ChartRenderer, Leaderboard };
 
 registry.category("actions").add("apex_dashboard_main", ApexDashboard);

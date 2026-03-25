@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 from odoo import models, fields, api
 
 
@@ -85,6 +86,22 @@ class APSResource(models.Model):
         for rec in self:
             # Count resources that have this resource as a parent
             rec.child_count = self.search_count([('parent_ids', 'in', rec.id)])
+
+    @api.depends('supporting_resource_ids')
+    def _compute_supporting_resource_count(self):
+        for rec in self:
+            rec.supporting_resource_count = len(rec.supporting_resource_ids)
+
+    @api.depends('task_ids.submission_ids', 'task_ids.submission_ids.state',
+                 'task_ids.submission_ids.date_submitted')
+    def _compute_recent_submission_count(self):
+        seven_days_ago = fields.Date.today() - timedelta(days=7)
+        for rec in self:
+            rec.recent_submission_count = self.env['aps.resource.submission'].search_count([
+                ('resource_id', '=', rec.id),
+                ('state', '=', 'submitted'),
+                ('date_submitted', '>=', seven_days_ago),
+            ])
 
     @api.depends('parent_ids')
     def _compute_has_multiple_parents(self):
@@ -189,7 +206,17 @@ class APSResource(models.Model):
                             break
 
                 # Remove overlapping characters from current_name
-                if overlap_length > 0:
+                # Only collapse if the overlap falls on word boundaries to avoid
+                # partial-word matches (e.g. "Alge" matching "Algebra").
+                if overlap_length >= 3:
+                    child_boundary = (overlap_length >= current_len or
+                                      not current_name[overlap_length].isalnum())
+                    parent_start = parent_len - overlap_length
+                    parent_boundary = (parent_start == 0 or
+                                       not parent_display[parent_start - 1].isalnum())
+                    if not (child_boundary and parent_boundary):
+                        overlap_length = 0
+                if overlap_length >= 3:
                     remaining_name = current_name[overlap_length:].lstrip()
                     # Strip any "." that appear at the start of the remaining name
                     remaining_name = re.sub(r'^[\s:;.,\-–—()\[\]{}]+', '', remaining_name).strip()
@@ -272,3 +299,42 @@ class APSResource(models.Model):
                 break
         # If most characters match, consider similar
         return common_prefix >= min(len(word1), len(word2)) - 2
+
+    def _compute_is_recently_viewed(self):
+        ViewHistory = self.env.get('view.history')
+        if ViewHistory is None:
+            for rec in self:
+                rec.is_recently_viewed = False
+            return
+        history = ViewHistory.sudo().search([
+            ('user_id', '=', self.env.user.id),
+            ('model', '=', 'aps.resources'),
+            ('res_id', 'in', self.ids),
+            ], order='viewed_at desc, id desc',
+            limit=33
+        )
+        
+        viewed_ids = set(history.mapped('res_id'))
+        for rec in self:
+            rec.is_recently_viewed = rec.id in viewed_ids
+
+    def _search_is_recently_viewed(self, operator, value):
+        ViewHistory = self.env.get('view.history')
+        if ViewHistory is None:
+            return [('id', '=', False)]
+        # value can be True/False (boolean) or an integer limit
+        if isinstance(value, int) and value > 1:
+            limit = value
+            positive = operator == '='
+        else:
+            limit = 33
+            positive = (operator == '=' and value) or (operator == '!=' and not value)
+        history = ViewHistory.sudo().search([
+            ('user_id', '=', self.env.user.id),
+            ('model', '=', 'aps.resources'),
+        ], order='viewed_at desc', limit=limit)
+
+        viewed_ids = list(dict.fromkeys(history.mapped('res_id')))[:limit]
+        if positive:
+            return [('id', 'in', viewed_ids)]
+        return [('id', 'not in', viewed_ids)]

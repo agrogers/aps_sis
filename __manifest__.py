@@ -1,13 +1,13 @@
 {
 	'name': 'APEX - Academic Progress and Excellence',
-	'version': '18.0.1.0.39',
+	'version': '18.0.1.0.42',
 	'icon': '/aps_sis/static/description/icon.png',
 	'category': 'Tools',
 	'summary': 'Allow the assigning and tracking of academic tasks such as homework, exams etc.',
 	'description': 'APEX - Academic Progress and Excellence. Helps to track student progress. It will work with  EduCat SIS',
 	'author': 'APS',
 	'license': 'LGPL-3',
-	'depends': ['base', 'openeducat_core', 'web', 'mail', 'portal'],
+	'depends': ['base', 'openeducat_core', 'web', 'mail', 'portal', 'hr'],
 	'post_init_hook': 'post_init_hook',
 	'data': [
 		'security/groups.xml',
@@ -35,11 +35,14 @@
 		'views/op_subject_views.xml',
 		'views/op_faculty_views.xml',
 		'views/res_partner_views.xml',
+		'views/aps_avatar_views.xml',
+		'wizard/aps_avatar_bulk_upload_views.xml',
+		'views/aps_time_tracking_views.xml',
+		'views/aps_time_tracking_dashboard_views.xml',
 		'views/aps_sis_menu.xml',
 		'views/op_student_course_views.xml',
 		'reports/submission_report.xml',
-		'wizard/submission_report_wizard_views.xml',
-        'views/aps_dashboard_views.xml'
+		'wizard/submission_report_wizard_views.xml'
 	],
 	'assets': {
 		'web.assets_backend': [
@@ -84,6 +87,12 @@
             'aps_sis/static/src/xml/image_result_widget.xml',
             'aps_sis/static/src/css/image_result_widget.css',
             'aps_sis/static/src/js/share_url_widget.js',
+            'aps_sis/static/src/js/avatar_bulk_upload.js',
+            'aps_sis/static/src/xml/avatar_bulk_upload.xml',
+            'aps_sis/static/src/js/avatar_selector.js',
+            'aps_sis/static/src/xml/avatar_selector.xml',
+            'aps_sis/static/src/js/avatar_systray_patch.js',
+            'aps_sis/static/src/xml/avatar_systray.xml',
 		],
 	},
 	'installable': True,

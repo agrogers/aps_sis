@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_aps_time_tracking_dashboard" model="ir.actions.client">
+        <field name="name">Time Tracking Dashboard</field>
+        <field name="tag">aps_time_tracking_dashboard</field>
+    </record>
+</odoo>

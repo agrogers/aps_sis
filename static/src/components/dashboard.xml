@@ -136,11 +136,90 @@
                 </t>
             </div>
 
+            <!-- Leaderboard -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="bg-white shadow-sm p-4 rounded">
+                        <h3 class="fw-bold mb-1">🏆 Top 9 Leaderboard (<t t-raw="state.period_name"/>)</h3>
+                        <p class="text-muted">Points are awarded for completed work and early submissions.</p>
+                        <t t-if="state.loadingLeaderboard">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading leaderboard...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-elif="!state.leaderboardData or state.leaderboardData.length === 0">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <p class="text-muted">No leaderboard data available for this period</p>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <Leaderboard entries="state.leaderboardData" isFaculty="state.isFaculty" currentUserPartnerId="user.partnerId"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Leaderboard -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="bg-white shadow-sm p-4 rounded">
+                        <h3 class="fw-bold mb-1">📈 Progress Leaderboard</h3>
+                        <p class="text-muted">How much of the IGCSE course you have completed. Try to stay in the <span style="background: #dee2e6; border-radius:3px; padding: 0px 3px 3px 3px">gray zone</span>.</p>
+                        <t t-if="state.loadingProgressLeaderboard">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading progress leaderboard...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-elif="!state.progressLeaderboardData or state.progressLeaderboardData.length === 0">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <p class="text-muted">No progress leaderboard data available</p>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <Leaderboard entries="state.progressLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty" trackMode="'progress'" redlinePercent="state.redlineForToday" pacePercent="state.paceForToday" currentUserPartnerId="user.partnerId"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completion Leaderboard Prediction -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="bg-white shadow-sm p-4 rounded">
+                        <h3 class="fw-bold mb-1">🎯 Completion Prediction Leaderboard</h3>
+                         <p class="text-muted">This is how much of the IGCSE course we predict you will complete by
+                            <t t-if="state.completionDeadline"><b><t t-esc="state.completionDeadline"/></b></t>
+                            <t t-else="">the end of the course</t>
+                            based on your current pace. Try to stay in the <span style="background: #27a143b6; border-radius:3px; padding: 0px 3px 3px 3px">green zone</span>.</p>
+                        <t t-if="state.loadingCompletionLeaderboard">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading completion leaderboard...</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-elif="!state.completionLeaderboardData or state.completionLeaderboardData.length === 0">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 170px;">
+                                <p class="text-muted">No completion prediction data available</p>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <Leaderboard entries="state.completionLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty" trackMode="'completion'" currentUserPartnerId="user.partnerId"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
             <!-- Progress Tracking Row -->
             <div class="row mb-4">
                 <div class="col-lg-6 mb-4">
-                    <div class="bg-white shadow-sm p-4 rounded h-100">
-                        <h3 class="fw-bold mb-3">Current Progress by Subject</h3>
+                    <div class="bg-white shadow-sm rounded p-4">
+                        <h3 class="fw-bold mb-1">Current Progress by Subject</h3>
+                        <p class="text-muted">The dark coloured bar indicates the progress made in the last 4 months.</p>
                         <t t-if="state.loadingProgress">
                             <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
                                 <div class="spinner-border text-primary" role="status">

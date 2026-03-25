@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aps_sis.AvatarBulkUpload">
+        <div class="o_action d-flex flex-column vh-100 bg-view">
+            <div class="p-3 border-bottom bg-white d-flex align-items-center gap-3">
+                <h2 class="mb-0">Bulk Upload Avatars</h2>
+            </div>
+
+            <div class="p-4 overflow-auto flex-grow-1">
+                <!-- Category selector and file picker -->
+                <div class="row mb-4 g-3 align-items-end">
+                    <div class="col-auto">
+                        <label class="form-label fw-bold" for="avatar_category">Category</label>
+                        <select id="avatar_category" class="form-select"
+                                t-on-change="onCategoryChange"
+                                t-att-disabled="state.uploading">
+                            <option value="">-- No Category --</option>
+                            <t t-foreach="state.categories" t-as="cat" t-key="cat.id">
+                                <option t-att-value="cat.id"
+                                        t-att-selected="state.categoryId === cat.id">
+                                    <t t-esc="cat.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label fw-bold">Select Images</label>
+                        <input type="file" class="form-control"
+                               accept="image/*" multiple="multiple"
+                               t-on-change="onFileSelect"
+                               t-att-disabled="state.uploading"/>
+                    </div>
+                </div>
+
+                <!-- File previews -->
+                <t t-if="state.files.length">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted">
+                            <t t-esc="state.files.length"/> file(s) selected
+                        </span>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-danger btn-sm"
+                                    t-on-click="clearAll"
+                                    t-att-disabled="state.uploading">
+                                <i class="fa fa-trash me-1"/>Clear All
+                            </button>
+                            <button class="btn btn-primary btn-sm"
+                                    t-on-click="upload"
+                                    t-att-disabled="state.uploading">
+                                <t t-if="state.uploading">
+                                    <i class="fa fa-spinner fa-spin me-1"/>Uploading…
+                                </t>
+                                <t t-else="">
+                                    <i class="fa fa-upload me-1"/>Upload
+                                    <t t-esc="state.files.length"/> Avatar(s)
+                                </t>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <t t-foreach="state.files" t-as="file" t-key="file_index">
+                            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                <div class="card h-100 text-center position-relative">
+                                    <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1 rounded-circle p-0"
+                                            style="width:24px;height:24px;line-height:24px;z-index:1;"
+                                            t-on-click="() => this.removeFile(file_index)"
+                                            t-att-disabled="state.uploading">
+                                        <i class="fa fa-times" style="font-size:12px;"/>
+                                    </button>
+                                    <img t-att-src="file.dataUrl"
+                                         class="card-img-top p-2"
+                                         style="height:120px;object-fit:contain;"
+                                         t-att-alt="file.name"/>
+                                    <div class="card-body p-2">
+                                        <small class="text-truncate d-block" t-att-title="file.name">
+                                            <t t-esc="file.name"/>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+
+                <!-- Empty state -->
+                <t t-if="!state.files.length">
+                    <div class="text-center text-muted py-5">
+                        <i class="fa fa-images fa-3x mb-3 d-block" style="opacity:0.3;"/>
+                        <p class="mb-1">No files selected yet.</p>
+                        <p>Choose a category, then click the file picker above to select one or more image files.</p>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -38,7 +38,7 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='payment_responsible_id']" position="attributes">
+            <xpath expr="//field[@name='user_id']" position="attributes">
                 <attribute name="optional">hide</attribute>
             </xpath>
         </field>

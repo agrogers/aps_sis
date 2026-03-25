@@ -3,6 +3,7 @@ from odoo import models, fields, api
 class APSAssignStudentsWizardLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.line'
     _description = 'APEX Assign Students Wizard Line'
+    _order = 'sequence, id'
 
     sequence = fields.Integer(string='Sequence', default=10)
     wizard_id = fields.Many2one('aps.assign.students.wizard', required=True)
@@ -39,7 +40,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     custom_submission_name = fields.Char(string='Custom Submission Name')
     warning_message = fields.Char(string='Warning', compute='_compute_warning_message', store=False)
     submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
-    affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources', order='sequence')
+    affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources')
     
     allow_subject_editing = fields.Boolean(
         string='Allow Subject Editing',
@@ -89,7 +90,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         resource = self.env['aps.resources'].browse(res.get('resource_id'))
-        # res['custom_submission_name'] = resource.display_name
+        res['custom_submission_name'] = resource.display_name
         label = resource.display_name
         if res.get('date_assigned'):
             label += f' ({res["date_assigned"]})'

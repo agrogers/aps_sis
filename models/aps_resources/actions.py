@@ -1,6 +1,9 @@
 import re
-from datetime import datetime
-from odoo import models, api
+import logging
+from datetime import datetime, timedelta
+from odoo import models, api, fields
+
+_logger = logging.getLogger(__name__)
 
 
 class APSResource(models.Model):
@@ -133,6 +136,29 @@ class APSResource(models.Model):
             'context': {'default_resource_id': self.id},
         }
 
+    def action_open_all_submissions(self):
+        """Open all submissions associated with this resource regardless of state."""
+        self.ensure_one()
+        action = self.env['ir.actions.act_window']._for_xml_id('aps_sis.action_aps_resource_submissions')
+        action['name'] = f'Submissions: {self.name}'
+        action['domain'] = [('resource_id', '=', self.id)]
+        action['context'] = {}
+        return action
+
+    def action_open_recent_submissions(self):
+        """Open submissions for this resource that are in 'submitted' state and submitted in the last 7 days."""
+        self.ensure_one()
+        seven_days_ago = fields.Date.today() - timedelta(days=7)
+        action = self.env['ir.actions.act_window']._for_xml_id('aps_sis.action_aps_resource_submissions')
+        action['name'] = f'Recent Submissions: {self.name}'
+        action['domain'] = [
+            ('resource_id', '=', self.id),
+            ('state', '=', 'submitted'),
+            ('date_submitted', '>=', str(seven_days_ago)),
+        ]
+        action['context'] = {}
+        return action
+
     def action_open_child_resources_list(self):
         """Open child resources in a standard list/form view with navigation."""
         self.ensure_one()
@@ -163,3 +189,143 @@ class APSResource(models.Model):
         """Called by the form button to delete the record and close the form."""
         self.unlink()
         return {'type': 'ir.actions.act_window_close'}
+
+    @api.model
+    def run_auto_assign(self):
+        """Cron-called method: process all resources that have auto_assign=True and whose
+        auto_assign_date is today or in the past."""
+        today = fields.Date.today()
+        resources = self.search([
+            ('auto_assign', '=', True),
+            ('auto_assign_date', '<=', today),
+        ])
+        for resource in resources:
+            try:
+                resource._do_auto_assign(today)
+            except Exception as exc:
+                _logger.exception('Auto-assign failed for resource %s (%s): %s', resource.id, resource.display_name, exc)
+
+    def _do_auto_assign(self, today):
+        """Perform one auto-assignment run for this resource."""
+        self.ensure_one()
+
+        # Respect end date
+        if self.auto_assign_end_date and today > self.auto_assign_end_date:
+            _logger.info('Auto-assign skipped for resource %s: past end date', self.display_name)
+            return
+
+        task_model = self.env['aps.resource.task']
+        submission_model = self.env['aps.resource.submission']
+
+        # Determine students to assign
+        if self.auto_assign_all_students:
+            if self.subjects:
+                students_recs = self.env['op.student'].search([
+                    ('course_detail_ids.state', '=', 'running'),
+                    ('course_detail_ids.subject_ids', 'in', self.subjects.ids),
+                ])
+                student_partners = students_recs.mapped('partner_id')
+            else:
+                student_partners = self.env['res.partner']
+        else:
+            student_partners = self.auto_assign_student_ids
+
+        if not student_partners:
+            _logger.info('Auto-assign skipped for resource %s: no students found', self.display_name)
+            return
+
+        # Build submission name
+        base_name = self.auto_assign_custom_name or self.display_name or self.name or ''
+        submission_name = f'{base_name} ({today})'
+        submission_label = submission_name
+
+        # Date/time for submissions
+        assign_date = today
+        assign_time = self.auto_assign_time or 0.0
+        date_due = assign_date + self._default_assignment_duration()
+
+        # Collect resources to assign (this resource + all descendants, using wizard logic)
+        all_descendants = self._get_all_descendants()
+        resources_to_assign = self | all_descendants
+        top_level = self
+        separator = ' 🢒 '
+
+        assigned_count = 0
+        for resource in resources_to_assign:
+            # Compute submission name for this resource
+            if resource.id == top_level.id:
+                res_submission_name = submission_name
+            else:
+                child_name = resource.name or resource.display_name or ''
+                res_submission_name = submission_name + separator + child_name
+
+            # Question handling
+            has_question = resource.has_question
+            if has_question == 'no':
+                use_question = False
+            elif has_question == 'yes':
+                use_question = resource.question or False
+            elif has_question == 'use_parent':
+                use_question = (resource.primary_parent_id.question if resource.primary_parent_id else False) or False
+            else:
+                use_question = False
+
+            for student in student_partners:
+                # Determine subjects for this student
+                if len(self.subjects) < 2:
+                    assigned_subjects = self.subjects
+                else:
+                    student_record = self.env['op.student'].search([('partner_id', '=', student.id)], limit=1)
+                    if student_record:
+                        running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
+                        student_subjects = running_courses.mapped('subject_ids')
+                        assigned_subjects = self.subjects & student_subjects
+                    else:
+                        assigned_subjects = self.subjects
+
+                # Ensure task exists
+                task = task_model.search([
+                    ('resource_id', '=', resource.id),
+                    ('student_id', '=', student.id),
+                ], limit=1)
+                if not task:
+                    task = task_model.create({
+                        'resource_id': resource.id,
+                        'student_id': student.id,
+                        'state': 'assigned',
+                        'date_due': date_due,
+                    })
+
+                submission_model.create({
+                    'task_id': task.id,
+                    'submission_label': submission_label,
+                    'submission_name': res_submission_name,
+                    'date_assigned': assign_date,
+                    'time_assigned': assign_time,
+                    'date_due': date_due,
+                    'allow_subject_editing': self.allow_subject_editing,
+                    'state': 'assigned',
+                    'question': use_question,
+                    'has_question': has_question,
+                    'subjects': assigned_subjects.ids,
+                    'points_scale': self.points_scale,
+                    'notification_state': 'not_sent' if self.auto_assign_notify_student else 'skipped',
+                })
+                assigned_count += 1
+
+        # Advance next assign date
+        frequency = self.auto_assign_frequency or 7
+        next_date = assign_date + timedelta(days=frequency)
+
+        # Append to log
+        log_entry = (
+            f'[{datetime.now().strftime("%Y-%m-%d %H:%M")}] '
+            f'Assigned "{submission_name}": created {assigned_count} submission(s) '
+            f'for {len(student_partners)} student(s) across {len(resources_to_assign)} resource(s). '
+            f'Next run: {next_date}.'
+        )
+        existing_log = self.auto_assign_log or ''
+        self.write({
+            'auto_assign_date': next_date,
+            'auto_assign_log': f'{log_entry}\n{existing_log}'.strip(),
+        })
