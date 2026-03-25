@@ -116,7 +116,7 @@
                             <field name="best_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
                         </group>
                     </group>
-                    <notebook>
+                    <notebook class="aps-sticky-tabs">
                         <page string="Submissions">
                             <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form'}" groups="aps_sis.group_aps_teacher">
                                 <list default_order="date_submitted desc">

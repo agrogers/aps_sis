@@ -271,7 +271,7 @@
                     </group>
 
                     <field name="model_answer_is_notes" invisible="1"/>
-                    <notebook>
+                    <notebook class="aps-sticky-tabs">
                         <page string="ⓘ Details">
                             <group>
                                 <group string="Submission Details">

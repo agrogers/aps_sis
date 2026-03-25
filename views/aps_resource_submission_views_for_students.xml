@@ -108,7 +108,7 @@
                     </group>
                     
 
-                    <notebook >
+                    <notebook class="aps-sticky-tabs">
                         <page string="Student Answer" class="tab-with-icon student-answer-tab" name="student_answer_page" >
                             <group class="container-fluid">
                                 <div class="row flex-nowrap">
