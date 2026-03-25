@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!--
+        ResourceTreeNode — renders one node in the resource hierarchy tree.
+
+        Indentation is driven by the `depth` prop (20 px per level) so that both
+        ancestor rows and descendant rows share the same visual rhythm.
+
+        Supporting-resource nodes are shown in italics.
+        The currently-viewed resource is highlighted with a distinct background.
+        Children are listed inside a nested <ul> rendered immediately below.
+    -->
+    <t t-name="aps_sis.ResourceTreeNode">
+        <li class="resource-tree-node"
+            t-att-class="isCurrent ? 'resource-tree-node-current' : ''">
+            <div class="resource-tree-row d-flex align-items-center gap-2"
+                 t-att-style="rowStyle">
+
+                <!-- Type icon (32 × 32) -->
+                <img t-if="typeIconUrl"
+                     t-att-src="typeIconUrl"
+                     class="resource-tree-icon"
+                     t-att-title="props.node.type_name"
+                     t-att-alt="props.node.type_name"/>
+                <span t-else="" class="resource-tree-icon resource-tree-icon-placeholder"/>
+
+                <!-- Resource name: clickable link unless it is the current record -->
+                <a t-if="!isCurrent"
+                   href="#"
+                   class="resource-tree-link"
+                   t-att-class="isSupporting ? 'fst-italic' : ''"
+                   t-att-title="props.node.type_name ? (props.node.type_name + ': ' + props.node.name) : props.node.name"
+                   t-on-click="onClick">
+                    <t t-esc="props.node.name"/>
+                </a>
+                <span t-else=""
+                      class="resource-tree-link resource-tree-current-label fw-semibold">
+                    <t t-esc="props.node.name"/>
+                </span>
+
+                <!-- Type label badge -->
+                <span t-if="props.node.type_name"
+                      class="resource-tree-type-badge badge rounded-pill">
+                    <t t-esc="props.node.type_name"/>
+                </span>
+            </div>
+
+            <!-- Recursive children (linked first, then supporting) -->
+            <ul t-if="props.node.children and props.node.children.length"
+                class="resource-tree-children list-unstyled mb-0">
+                <t t-foreach="props.node.children" t-as="child" t-key="child.id">
+                    <ResourceTreeNode
+                        node="child"
+                        currentId="props.currentId"
+                        depth="props.depth + 1"
+                        onOpen="props.onOpen"/>
+                </t>
+            </ul>
+        </li>
+    </t>
+
+    <!--
+        ResourceTreeWidget — top-level template for the "Tree View" notebook page.
+
+        Renders:
+          1. Ancestor chain (single straight path from root to parent)
+          2. Current resource (highlighted) with full descendant subtree
+    -->
+    <t t-name="aps_sis.ResourceTreeWidget">
+        <div class="resource-tree-widget p-3">
+
+            <!-- Loading spinner -->
+            <div t-if="state.loading" class="resource-tree-loading text-muted">
+                <span class="spinner-border spinner-border-sm me-2" role="status"/>
+                Loading hierarchy&#8230;
+            </div>
+
+            <t t-elif="state.current">
+                <ul class="resource-tree list-unstyled mb-0">
+
+                    <!-- Ancestor chain: root → … → direct parent -->
+                    <t t-foreach="state.ancestors" t-as="ancestor" t-key="ancestor.id">
+                        <li class="resource-tree-node">
+                            <div class="resource-tree-row d-flex align-items-center gap-2"
+                                 t-att-style="'padding-left: ' + (ancestor_index * 20) + 'px'">
+
+                                <img t-if="ancestor.type_id"
+                                     t-att-src="'/web/image/aps.resource.types/' + ancestor.type_id + '/icon'"
+                                     class="resource-tree-icon"
+                                     t-att-title="ancestor.type_name"
+                                     t-att-alt="ancestor.type_name"/>
+                                <span t-else="" class="resource-tree-icon resource-tree-icon-placeholder"/>
+
+                                <a href="#"
+                                   class="resource-tree-link"
+                                   t-att-title="ancestor.type_name ? (ancestor.type_name + ': ' + ancestor.name) : ancestor.name"
+                                   t-on-click.prevent="() => this.openResource(ancestor.id)">
+                                    <t t-esc="ancestor.name"/>
+                                </a>
+
+                                <span t-if="ancestor.type_name"
+                                      class="resource-tree-type-badge badge rounded-pill">
+                                    <t t-esc="ancestor.type_name"/>
+                                </span>
+                            </div>
+                        </li>
+                    </t>
+
+                    <!-- Current resource and its full descendant subtree -->
+                    <ResourceTreeNode
+                        node="state.current"
+                        currentId="props.record.resId"
+                        depth="state.ancestors.length"
+                        onOpen="(id) => this.openResource(id)"/>
+                </ul>
+            </t>
+
+            <!-- Empty / unsaved record state -->
+            <div t-else="" class="text-muted fst-italic">
+                No hierarchy data available.
+            </div>
+        </div>
+    </t>
+</templates>
+

@@ -190,6 +190,74 @@ class APSResource(models.Model):
         self.unlink()
         return {'type': 'ir.actions.act_window_close'}
 
+    def get_resource_tree(self):
+        """Return the full resource hierarchy for the Tree View tab.
+
+        Returns a dict with:
+          - ancestors: list of dicts from root down to (but not including) this resource
+          - current:   dict for this resource
+          - children:  recursive list of child dicts
+
+        Each node dict has: id, name, type_id, type_name, connection_type.
+        ``connection_type`` is ``'linked'`` for mark-contributing children or
+        ``'supporting'`` for supplementary children (rendered in italics in the
+        UI).  Linked children are always listed before supporting children.
+        """
+        self.ensure_one()
+
+        def _node(resource, connection_type='linked'):
+            return {
+                'id': resource.id,
+                'name': resource.name or '',
+                'type_id': resource.type_id.id if resource.type_id else False,
+                'type_name': resource.type_id.name if resource.type_id else '',
+                'connection_type': connection_type,
+            }
+
+        # Build the ancestor chain (single path upward, no cycles)
+        ancestors = []
+        current = self
+        visited_up = {self.id}
+        while True:
+            parent = current.primary_parent_id
+            if not parent:
+                remaining = current.parent_ids.filtered(lambda p: p.id not in visited_up)
+                parent = remaining[:1] if remaining else None
+            if not parent or parent.id in visited_up:
+                break
+            visited_up.add(parent.id)
+            ancestors.insert(0, _node(parent))
+            current = parent
+
+        # Build the descendant tree (depth-first, cycle-safe)
+        def _build_children(resource, visited):
+            result = []
+            # Linked resources first (mark-contributing)
+            for child in resource.child_ids:
+                if child.id in visited:
+                    continue
+                visited.add(child.id)
+                node = _node(child, 'linked')
+                node['children'] = _build_children(child, visited)
+                result.append(node)
+            # Supporting resources second (shown in italics)
+            for child in resource.supporting_resource_ids:
+                if child.id in visited:
+                    continue
+                visited.add(child.id)
+                node = _node(child, 'supporting')
+                node['children'] = _build_children(child, visited)
+                result.append(node)
+            return result
+
+        current_node = _node(self)
+        current_node['children'] = _build_children(self, {self.id})
+
+        return {
+            'ancestors': ancestors,
+            'current': current_node,
+        }
+
     @api.model
     def run_auto_assign(self):
         """Cron-called method: process all resources that have auto_assign=True and whose

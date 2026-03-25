@@ -338,6 +338,9 @@
                                 <field name="auto_assign_log" nolabel="1" readonly="1"/>
                             </group>
                         </page>
+                        <page string="Tree View">
+                            <widget name="resource_tree_widget"/>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter groups="aps_sis.group_aps_teacher"/>

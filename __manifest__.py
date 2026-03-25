@@ -92,6 +92,8 @@
             'aps_sis/static/src/xml/avatar_selector.xml',
             'aps_sis/static/src/js/avatar_systray_patch.js',
             'aps_sis/static/src/xml/avatar_systray.xml',
+            'aps_sis/static/src/js/resource_tree_widget.js',
+            'aps_sis/static/src/xml/resource_tree_widget.xml',
 		],
 	},
 	'installable': True,

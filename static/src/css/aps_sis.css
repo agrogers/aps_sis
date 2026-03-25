@@ -632,3 +632,89 @@ div[name="score"].fixed-score-width {
     width: 78px;
     height: 78px;
 } */
+
+/* ============================================================
+   Resource Tree Widget — Tree View notebook page
+   ============================================================ */
+
+.resource-tree-widget {
+    font-size: 0.95rem;
+}
+
+.resource-tree-loading {
+    display: flex;
+    align-items: center;
+}
+
+/* Each tree row: icon + name + type badge, vertically centred */
+.resource-tree-row {
+    padding: 4px 6px;
+    border-radius: 6px;
+    min-height: 36px;
+    transition: background-color 0.15s ease;
+}
+
+.resource-tree-row:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* The currently-viewed resource: distinct highlight */
+.resource-tree-node-current > .resource-tree-row {
+    background-color: #e8f0fe;
+    border: 1px solid #b3c8f8;
+}
+
+/* Clickable resource name */
+.resource-tree-link {
+    color: inherit;
+    text-decoration: none;
+    flex: 1 1 auto;
+    word-break: break-word;
+}
+
+a.resource-tree-link:hover {
+    color: var(--bs-link-color, #0d6efd);
+    text-decoration: underline;
+}
+
+/* Non-link label for current resource */
+.resource-tree-current-label {
+    flex: 1 1 auto;
+}
+
+/* Type icon (32 × 32, rounded) */
+.resource-tree-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.resource-tree-icon-placeholder {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+}
+
+/* Type badge (muted pill) */
+.resource-tree-type-badge {
+    font-size: 0.7em;
+    font-weight: 400;
+    background-color: #f0f0f0;
+    color: #555;
+    flex-shrink: 0;
+}
+
+/* Children list: no extra margin — indentation is handled via
+   the depth-based padding-left on each row */
+.resource-tree-children {
+    margin: 0;
+    padding: 0;
+}
+
+/* Subtle connecting guide line for child items */
+.resource-tree-node {
+    position: relative;
+    list-style: none;
+}
