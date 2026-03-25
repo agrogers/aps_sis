@@ -153,8 +153,3 @@ class APSResource(models.Model):
         compute='_compute_share_url',
         help='Public URL to share this resource with anyone.',
     )
-    is_recently_viewed = fields.Boolean(
-        string='Recently Viewed',
-        compute='_compute_is_recently_viewed',
-        search='_search_is_recently_viewed',
-    )

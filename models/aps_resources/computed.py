@@ -272,23 +272,3 @@ class APSResource(models.Model):
                 break
         # If most characters match, consider similar
         return common_prefix >= min(len(word1), len(word2)) - 2
-
-    def _compute_is_recently_viewed(self):
-        ViewHistory = self.env.get('view.history')
-        if ViewHistory is None:
-            for rec in self:
-                rec.is_recently_viewed = False
-            return
-        history = ViewHistory.sudo().search([
-            ('user_id', '=', self.env.user.id),
-            ('model', '=', 'aps.resources'),
-            ('res_id', 'in', self.ids),
-            ], order='viewed_at desc, id desc',
-            limit=33
-        )
-        
-
-        viewed_ids = set(history.mapped('res_id'))
-        for rec in self:
-            rec.is_recently_viewed = rec.id in viewed_ids
-
