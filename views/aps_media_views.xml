@@ -289,7 +289,7 @@
         <field name="name">aps.media.kanban</field>
         <field name="model">aps.media</field>
         <field name="arch" type="xml">
-            <kanban string="Media Items">
+            <kanban string="Media Items" class="o_aps_media_kanban">
                 <field name="id"/>
                 <field name="name"/>
                 <field name="image"/>
@@ -337,6 +337,11 @@
                     <filter string="Type" name="group_type" context="{'group_by': 'type_id'}"/>
                     <filter string="Collection" name="group_collection" context="{'group_by': 'collection_id'}"/>
                 </group>
+                <searchpanel>
+                    <field name="type_id" icon="fa-tag" string="Type"/>
+                    <field name="collection_id" icon="fa-folder" string="Collection"/>
+                    <field name="category_ids" select="multi" icon="fa-tags" string="Category"/>
+                </searchpanel>
             </search>
         </field>
     </record>

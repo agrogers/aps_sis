@@ -8,6 +8,11 @@
     font-weight: 700;
 }
 
+/* Media kanban — compact cards (~2/3 of default width) */
+.o_aps_media_kanban {
+    --KanbanCard-width: 147px;
+}
+
 .o-paragraph {
     margin-bottom: 0.5em;
 }
