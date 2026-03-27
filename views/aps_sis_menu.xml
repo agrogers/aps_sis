@@ -69,6 +69,19 @@
     <menuitem id="menu_apex_avatars" name="Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatars" sequence="210" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_avatar_categories" name="Avatar Categories" parent="menu_apex_avatars_heading" action="action_aps_avatar_categories" sequence="220" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_avatar_bulk_upload" name="Bulk Upload Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatar_bulk_upload_client" sequence="230" groups="aps_sis.group_aps_teacher"/>
+
+    <!-- School Settings -->
+    <menuitem id="menu_apex_school_heading" name="School" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_academic_years" name="Academic Years" parent="menu_apex_school_heading" action="aps_academic_year_action" sequence="5" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_academic_terms" name="Academic Terms" parent="menu_apex_school_heading" action="aps_academic_term_action" sequence="7" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_levels" name="Academic Levels" parent="menu_apex_school_heading" action="aps_level_action" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_subjects" name="Subjects" parent="menu_apex_school_heading" action="aps_subject_action" sequence="20" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_subject_categories" name="Subject Categories" parent="menu_apex_school_heading" action="action_aps_subject_categories" sequence="25" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_classes" name="Classes" parent="menu_apex_school_heading" action="aps_class_action" sequence="30" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_teachers" name="Teachers" parent="menu_apex_school_heading" action="aps_teacher_action" sequence="35" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_students" name="Students" parent="menu_apex_school_heading" action="aps_student_action" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_student_classes" name="Enrollments" parent="menu_apex_school_heading" action="aps_student_class_action" sequence="50" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_student_class_bulk" name="Bulk Class Enrollment" parent="menu_apex_school_heading" action="action_aps_student_class_bulk_wizard" sequence="55" groups="aps_sis.group_aps_teacher"/>
     
     <!-- Time Tracking Menus teachers -->
     <menuitem id="menu_apex_time_tracking_heading" name="Time Tracking" parent="menu_apex_settings" sequence="60" groups="aps_sis.group_aps_teacher"/>

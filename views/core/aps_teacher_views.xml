@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_teacher_view_list" model="ir.ui.view">
+        <field name="name">aps.teacher.list</field>
+        <field name="model">aps.teacher</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="image_128" widget="image" class="o_image_24_max" optional="show"/>
+                <field name="name"/>
+                <field name="tutor_code" optional="show"/>
+                <field name="email" optional="show"/>
+                <field name="phone" optional="show"/>
+                <field name="partner_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="aps_teacher_view_kanban" model="ir.ui.view">
+        <field name="name">aps.teacher.kanban</field>
+        <field name="model">aps.teacher</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" default_order="name">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="tutor_code"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="image_128"/>
+                <template>
+                    <t t-name="card">
+                        <div class="d-flex align-items-center gap-2">
+                            <field name="image_128" widget="image" class="o_image_64_max rounded-circle flex-shrink-0"/>
+                            <div class="flex-grow-1 min-w-0">
+                                <strong class="d-block text-truncate">
+                                    <field name="name"/>
+                                </strong>
+                                <span t-if="record.tutor_code.value" class="badge text-bg-secondary me-1">
+                                    <t t-esc="record.tutor_code.value"/>
+                                </span>
+                                <div t-if="record.email.value" class="text-muted small text-truncate">
+                                    <i class="fa fa-envelope me-1"/>
+                                    <t t-esc="record.email.value"/>
+                                </div>
+                                <div t-if="record.phone.value" class="text-muted small">
+                                    <i class="fa fa-phone me-1"/>
+                                    <t t-esc="record.phone.value"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </template>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_teacher_view_form" model="ir.ui.view">
+        <field name="name">aps.teacher.form</field>
+        <field name="model">aps.teacher</field>
+        <field name="arch" type="xml">
+            <form string="Teacher">
+                <div class="alert alert-info" role="alert">
+                    <strong>Teachers</strong> are linked to a <strong>Contact</strong>. When the
+                    <em>Is Teacher</em> flag is set on a contact, a teacher record is automatically
+                    created here. Use the <strong>Tutor Code</strong> to assign a short identifier
+                    for scheduling and reporting purposes.
+                </div>
+                <sheet>
+                    <field name="image_128" widget="image" class="oe_avatar" options="{'preview_image': 'image_128'}"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" placeholder="Name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id" options="{'no_create': True}"/>
+                            <field name="tutor_code"/>
+                        </group>
+                        <group>
+                            <field name="email" readonly="1"/>
+                            <field name="phone" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_teacher_view_search" model="ir.ui.view">
+        <field name="name">aps.teacher.search</field>
+        <field name="model">aps.teacher</field>
+        <field name="arch" type="xml">
+            <search string="Teachers">
+                <field name="name"/>
+                <field name="tutor_code"/>
+                <field name="email"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Populate server action (shows in Actions menu) -->
+    <record id="aps_teacher_action_populate" model="ir.actions.server">
+        <field name="name">Populate from Contacts</field>
+        <field name="model_id" ref="model_aps_teacher"/>
+        <field name="binding_model_id" ref="model_aps_teacher"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_populate_from_contacts()</field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_teacher_action" model="ir.actions.act_window">
+        <field name="name">Teachers</field>
+        <field name="res_model">aps.teacher</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="aps_teacher_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No teachers yet. Tick <b>Is Teacher</b> on a contact, or use
+                <b>Actions → Populate from Contacts</b> to import all flagged contacts.
+            </p>
+        </field>
+    </record>
+
+</odoo>

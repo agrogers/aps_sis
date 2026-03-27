@@ -69,6 +69,22 @@ If a feature differs between versions, use **v18 syntax and architecture only**.
 - Invalid XPath expressions must not be produced
 - Do not rely on `context` for UI visibility logic
 
+### List View Field Attributes
+- **NEVER use `style=` on a `<field>` element inside a `<list>` view** — Odoo's RNG validator rejects it and will raise a `ValidationError` at load time.
+- To control image size in list views, use Odoo's built-in CSS helper classes on the `class=` attribute:
+  - `o_image_24_max` — 24 px
+  - `o_image_32_max` — 32 px
+  - `o_image_48_max` — 48 px
+  - `o_image_64_max` — 64 px
+- Example (correct):
+  ```xml
+  <field name="image_128" widget="image" class="o_image_24_max" optional="show"/>
+  ```
+- Example (WRONG — will fail validation):
+  ```xml
+  <field name="image_128" widget="image" style="width:24px;height:24px;" optional="show"/>
+  ```
+
 ### Binding Specific Views to Actions
 
 To force an action to use specific list and form views (e.g., when clicking a list row should open a particular form view), use `ir.actions.act_window.view` records:

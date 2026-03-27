@@ -8,6 +8,7 @@
             <list string="Subject Categories">
                 <field name="name"/>
                 <field name="code"/>
+                <field name="tag_ids" widget="many2many_tags" optional="show"/>
                 <field name="description"/>
                 <field name="active"/>
             </list>
@@ -36,6 +37,9 @@
                     </group>
                     <group string="Description">
                         <field name="description" colspan="4"/>
+                    </group>
+                    <group string="Tags">
+                        <field name="tag_ids" widget="many2many_tags" nolabel="1"/>
                     </group>
                 </sheet>
             </form>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_student_class_view_list" model="ir.ui.view">
+        <field name="name">aps.student.class.list</field>
+        <field name="model">aps.student.class</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="student_id"/>
+                <field name="home_class_id"/>
+                <field name="start_date" optional="show"/>
+                <field name="end_date" optional="show"/>
+                <field name="state" widget="badge"
+                    decoration-success="state == 'enrolled'"
+                    decoration-warning="state == 'withdrawn'"
+                    decoration-muted="state == 'finished'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_student_class_view_form" model="ir.ui.view">
+        <field name="name">aps.student.class.form</field>
+        <field name="model">aps.student.class</field>
+        <field name="arch" type="xml">
+            <form string="Student Class Enrollment">
+                <header>
+                    <button name="action_withdraw" type="object" string="Withdraw"
+                        invisible="state != 'enrolled'"
+                        class="btn-warning"
+                        confirm="Set end date to today and mark this enrollment as Withdrawn?"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="enrolled,withdrawn,finished"/>
+                </header>
+                <div class="alert alert-info" role="alert">
+                    <strong>Student Enrollments</strong> record which <strong>Classes</strong> a <strong>Student</strong> is enrolled in,
+                    along with the enrollment period. This allows a student to be enrolled in multiple classes and tracks historical class memberships.
+                </div>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="student_id"/>
+                            <field name="home_class_id"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_student_class_view_search" model="ir.ui.view">
+        <field name="name">aps.student.class.search</field>
+        <field name="model">aps.student.class</field>
+        <field name="arch" type="xml">
+            <search string="Student Enrollments">
+                <field name="student_id"/>
+                <field name="home_class_id"/>
+                <filter string="Enrolled" name="enrolled" domain="[('state', '=', 'enrolled')]"/>
+                <filter string="Withdrawn" name="withdrawn" domain="[('state', '=', 'withdrawn')]"/>
+                <filter string="Finished" name="finished" domain="[('state', '=', 'finished')]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Class" name="group_class" context="{'group_by': 'home_class_id'}"/>
+                    <filter string="Student" name="group_student" context="{'group_by': 'student_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_student_class_action" model="ir.actions.act_window">
+        <field name="name">Student Enrollments</field>
+        <field name="res_model">aps.student.class</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="aps_student_class_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Enroll a student in a class.
+            </p>
+        </field>
+    </record>
+
+</odoo>

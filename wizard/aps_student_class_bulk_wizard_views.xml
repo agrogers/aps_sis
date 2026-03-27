@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_aps_student_class_bulk_wizard_form" model="ir.ui.view">
+        <field name="name">aps.student.class.bulk.wizard.form</field>
+        <field name="model">aps.student.class.bulk.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Bulk Class Enrollment">
+                <sheet>
+                    <div class="oe_title mb16">
+                        <h4>Bulk Maintain Class Enrollments</h4>
+                    </div>
+
+                    <group>
+                        <group string="Options">
+                            <field name="academic_year_id"/>
+                            <field name="operation" widget="radio"/>
+                        </group>
+                    </group>
+
+                    <div class="o_horizontal_separator mt-4 mb-2">Selections</div>
+
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="o_field_widget mb-1">
+                                <label class="o_form_label" for="partner_ids">Students</label>
+                            </div>
+                            <field name="partner_ids"
+                                   widget="many2many_tags"
+                                   domain="[('is_student', '=', True)]"
+                                   context="{'default_is_student': True}"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   placeholder="Search and select students..."/>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="o_field_widget mb-1">
+                                <label class="o_form_label" for="class_ids">Classes</label>
+                            </div>
+                            <field name="class_ids"
+                                   widget="many2many_tags"
+                                   domain="academic_year_id and [('academic_year_id', '=', academic_year_id)] or []"
+                                   context="{'default_academic_year_id': academic_year_id}"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   placeholder="Search and select classes..."/>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3" role="alert" invisible="not has_warnings">
+                        <field name="warning_message" widget="html"/>
+                    </div>
+
+                    <field name="has_warnings" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Apply" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_student_class_bulk_wizard" model="ir.actions.act_window">
+        <field name="name">Bulk Class Enrollment</field>
+        <field name="res_model">aps.student.class.bulk.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
