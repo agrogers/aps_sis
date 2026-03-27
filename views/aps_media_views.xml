@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MEDIA TYPE  (aps.media.type)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_aps_media_type_list" model="ir.ui.view">
+        <field name="name">aps.media.type.list</field>
+        <field name="model">aps.media.type</field>
+        <field name="arch" type="xml">
+            <list string="Media Types">
+                <field name="icon" widget="image" options="{'size': [32, 32]}" string=" "/>
+                <field name="name"/>
+                <field name="cost" string="Default Cost (pts)"/>
+                <field name="stock_min" string="Min Stock"/>
+                <field name="stock_max" string="Max Stock"/>
+                <field name="stock_resupply_qty" string="Resupply Qty"/>
+                <field name="stock_resupply_delay" string="Resupply Delay (days)"/>
+                <field name="media_count" string="Items"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_media_type_form" model="ir.ui.view">
+        <field name="name">aps.media.type.form</field>
+        <field name="model">aps.media.type</field>
+        <field name="arch" type="xml">
+            <form string="Media Type">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_media"
+                                icon="fa-image"
+                                invisible="media_count == 0">
+                            <field name="media_count" widget="statinfo" string="Items"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Type Name (e.g. Avatar, Card, Wallpaper)"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Defaults">
+                            <field name="cost" string="Default Cost (points)"/>
+                            <field name="stock_min" string="Min Stock"/>
+                            <field name="stock_max" string="Max Stock"/>
+                            <field name="stock_resupply_qty" string="Resupply Quantity"/>
+                            <field name="stock_resupply_delay" string="Resupply Delay (days)"/>
+                        </group>
+                        <group string="Icon">
+                            <field name="icon" widget="image" options="{'size': [128, 128]}" nolabel="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Media Items" name="media_items">
+                            <field name="media_ids" readonly="1">
+                                <list>
+                                    <field name="image" widget="image" options="{'size': [32, 32]}" string=" "/>
+                                    <field name="name"/>
+                                    <field name="collection_id"/>
+                                    <field name="cost" string="Cost (pts)"/>
+                                    <field name="stock_available"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_media_type_search" model="ir.ui.view">
+        <field name="name">aps.media.type.search</field>
+        <field name="model">aps.media.type</field>
+        <field name="arch" type="xml">
+            <search string="Media Types">
+                <field name="name" string="Type"/>
+                <separator/>
+                <filter string="Has Items" name="has_items" domain="[('media_count', '>', 0)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_aps_media_types" model="ir.actions.act_window">
+        <field name="name">Media Types</field>
+        <field name="res_model">aps.media.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_aps_media_type_search"/>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         MEDIA COLLECTION  (aps.media.collection)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_aps_media_collection_list" model="ir.ui.view">
+        <field name="name">aps.media.collection.list</field>
+        <field name="model">aps.media.collection</field>
+        <field name="arch" type="xml">
+            <list string="Collections">
+                <field name="name"/>
+                <field name="media_count" string="Items"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_media_collection_form" model="ir.ui.view">
+        <field name="name">aps.media.collection.form</field>
+        <field name="model">aps.media.collection</field>
+        <field name="arch" type="xml">
+            <form string="Collection">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_media"
+                                icon="fa-image"
+                                invisible="media_count == 0">
+                            <field name="media_count" widget="statinfo" string="Items"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Collection Name"/>
+                        </h1>
+                    </div>
+                    <notebook>
+                        <page string="Media Items" name="media_items">
+                            <field name="media_ids" readonly="1">
+                                <list>
+                                    <field name="image" widget="image" options="{'size': [32, 32]}" string=" "/>
+                                    <field name="name"/>
+                                    <field name="type_id"/>
+                                    <field name="cost" string="Cost (pts)"/>
+                                    <field name="stock_available"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_media_collection_search" model="ir.ui.view">
+        <field name="name">aps.media.collection.search</field>
+        <field name="model">aps.media.collection</field>
+        <field name="arch" type="xml">
+            <search string="Collections">
+                <field name="name"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_aps_media_collections" model="ir.actions.act_window">
+        <field name="name">Collections</field>
+        <field name="res_model">aps.media.collection</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_aps_media_collection_search"/>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         MEDIA CATEGORY  (aps.media.category)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_aps_media_category_list" model="ir.ui.view">
+        <field name="name">aps.media.category.list</field>
+        <field name="model">aps.media.category</field>
+        <field name="arch" type="xml">
+            <list string="Categories" editable="top">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_media_category_form" model="ir.ui.view">
+        <field name="name">aps.media.category.form</field>
+        <field name="model">aps.media.category</field>
+        <field name="arch" type="xml">
+            <form string="Category">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Category Name"/>
+                        </h1>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_media_categories" model="ir.actions.act_window">
+        <field name="name">Categories</field>
+        <field name="res_model">aps.media.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         MEDIA ITEM  (aps.media)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_aps_media_list" model="ir.ui.view">
+        <field name="name">aps.media.list</field>
+        <field name="model">aps.media</field>
+        <field name="arch" type="xml">
+            <list string="Media Items">
+                <field name="image" widget="image" options="{'size': [48, 48]}" string=" "/>
+                <field name="name"/>
+                <field name="type_id"/>
+                <field name="collection_id"/>
+                <field name="category_ids" widget="many2many_tags" optional="hide"/>
+                <field name="cost" string="Cost (pts)"/>
+                <field name="stock_available"/>
+                <field name="date_available" optional="hide"/>
+                <field name="date_unavailable" optional="hide"/>
+                <field name="qty_sold" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_media_form" model="ir.ui.view">
+        <field name="name">aps.media.form</field>
+        <field name="model">aps.media</field>
+        <field name="arch" type="xml">
+            <form string="Media Item">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Item Name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Details">
+                            <field name="type_id"/>
+                            <field name="collection_id"/>
+                            <field name="category_ids" widget="many2many_tags"/>
+                            <field name="cost" string="Cost (points)"/>
+                        </group>
+                        <group string="Image">
+                            <field name="image" widget="image" options="{'size': [256, 256]}" nolabel="1"/>
+                        </group>
+                    </group>
+                    <group string="Stock Management">
+                        <group>
+                            <field name="stock_available"/>
+                            <field name="stock_min" string="Min Stock"/>
+                            <field name="stock_max" string="Max Stock"/>
+                        </group>
+                        <group>
+                            <field name="stock_resupply_qty" string="Resupply Quantity"/>
+                            <field name="stock_resupply_delay" string="Resupply Delay (days)"/>
+                        </group>
+                    </group>
+                    <group string="Availability">
+                        <group>
+                            <field name="date_available"/>
+                            <field name="date_unavailable"/>
+                        </group>
+                        <group>
+                            <field name="qty_sold"/>
+                            <field name="date_sold"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="History" name="history">
+                            <field name="history" nolabel="1" placeholder="Chronological log of cost changes and resupply activity…"/>
+                        </page>
+                        <page string="Owners" name="owners">
+                            <field name="user_media_ids" readonly="1">
+                                <list>
+                                    <field name="partner_id"/>
+                                    <field name="status"/>
+                                    <field name="cost" string="Cost Paid"/>
+                                    <field name="date_purchased"/>
+                                    <field name="use_as"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_media_kanban" model="ir.ui.view">
+        <field name="name">aps.media.kanban</field>
+        <field name="model">aps.media</field>
+        <field name="arch" type="xml">
+            <kanban string="Media Items">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="image"/>
+                <field name="type_id"/>
+                <field name="collection_id"/>
+                <field name="cost"/>
+                <field name="stock_available"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="text-center p-2">
+                            <field name="image" widget="image" options="{'size': [80, 80]}" class="mb-2"/>
+                            <div class="fw-bold text-truncate"><field name="name"/></div>
+                            <small class="text-muted"><field name="type_id"/></small><br/>
+                            <small class="text-muted"><field name="collection_id"/></small>
+                            <div class="mt-1">
+                                <span class="badge bg-primary"><field name="cost"/> pts</span>
+                                <span t-if="record.stock_available.value > 0" class="badge bg-success ms-1">
+                                    <t t-esc="record.stock_available.value"/> in stock
+                                </span>
+                                <span t-else="" class="badge bg-danger ms-1">Out of stock</span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_aps_media_search" model="ir.ui.view">
+        <field name="name">aps.media.search</field>
+        <field name="model">aps.media</field>
+        <field name="arch" type="xml">
+            <search string="Media Items">
+                <field name="name" string="Name"/>
+                <field name="type_id"/>
+                <field name="collection_id"/>
+                <field name="category_ids" string="Category"/>
+                <separator/>
+                <filter string="In Stock" name="in_stock" domain="[('stock_available', '>', 0)]"/>
+                <filter string="Available Now" name="available_now"
+                        domain="[('date_available', '&lt;=', context_today()),
+                                  '|', ('date_unavailable', '=', False),
+                                       ('date_unavailable', '&gt;=', context_today())]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Type" name="group_type" context="{'group_by': 'type_id'}"/>
+                    <filter string="Collection" name="group_collection" context="{'group_by': 'collection_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_aps_media" model="ir.actions.act_window">
+        <field name="name">Media Items</field>
+        <field name="res_model">aps.media</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_aps_media_search"/>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         USER MEDIA  (aps.user.media)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_aps_user_media_list" model="ir.ui.view">
+        <field name="name">aps.user.media.list</field>
+        <field name="model">aps.user.media</field>
+        <field name="arch" type="xml">
+            <list string="User Media">
+                <field name="partner_id"/>
+                <field name="media_id"/>
+                <field name="status"/>
+                <field name="use_as"/>
+                <field name="cost" string="Cost Paid (pts)"/>
+                <field name="sell_price" string="Asking Price (pts)" optional="hide"/>
+                <field name="date_purchased"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_user_media_form" model="ir.ui.view">
+        <field name="name">aps.user.media.form</field>
+        <field name="model">aps.user.media</field>
+        <field name="arch" type="xml">
+            <form string="User Media">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="media_id"/>
+                            <field name="status"/>
+                            <field name="use_as"/>
+                        </group>
+                        <group>
+                            <field name="cost" string="Cost Paid (points)"/>
+                            <field name="sell_price" string="Asking Price (points)"/>
+                            <field name="date_purchased"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_user_media_search" model="ir.ui.view">
+        <field name="name">aps.user.media.search</field>
+        <field name="model">aps.user.media</field>
+        <field name="arch" type="xml">
+            <search string="User Media">
+                <field name="partner_id"/>
+                <field name="media_id"/>
+                <separator/>
+                <filter string="Wish List" name="wishlist" domain="[('status', '=', 'wishlist')]"/>
+                <filter string="Purchased" name="purchased" domain="[('status', '=', 'purchased')]"/>
+                <filter string="For Sale" name="for_sale" domain="[('status', '=', 'for_sale')]"/>
+                <filter string="Sold" name="sold" domain="[('status', '=', 'sold')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Partner" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
+                    <filter string="Media Item" name="group_media" context="{'group_by': 'media_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_aps_user_media" model="ir.actions.act_window">
+        <field name="name">User Media</field>
+        <field name="res_model">aps.user.media</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_aps_user_media_search"/>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         USER MEDIA SETTINGS  (aps.user.media.settings)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_aps_user_media_settings_list" model="ir.ui.view">
+        <field name="name">aps.user.media.settings.list</field>
+        <field name="model">aps.user.media.settings</field>
+        <field name="arch" type="xml">
+            <list string="User Media Settings">
+                <field name="partner_id"/>
+                <field name="points_available" string="Points Available"/>
+                <field name="enable_wallpaper"/>
+                <field name="enable_cards"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_user_media_settings_form" model="ir.ui.view">
+        <field name="name">aps.user.media.settings.form</field>
+        <field name="model">aps.user.media.settings</field>
+        <field name="arch" type="xml">
+            <form string="User Media Settings">
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="points_available"/>
+                    </group>
+                    <notebook>
+                        <page string="Wallpaper" name="wallpaper">
+                            <group>
+                                <field name="enable_wallpaper"/>
+                                <field name="use_icons_as_wallpaper" invisible="not enable_wallpaper"/>
+                                <field name="wallpaper_quad" invisible="not enable_wallpaper"/>
+                                <field name="wallpaper_refresh_minutes" invisible="not enable_wallpaper"/>
+                                <field name="wallpaper_collection_ids" widget="many2many_tags" invisible="not enable_wallpaper"/>
+                            </group>
+                        </page>
+                        <page string="Card Backs" name="cards">
+                            <group>
+                                <field name="enable_cards"/>
+                                <field name="use_icons_as_cards" invisible="not enable_cards"/>
+                                <field name="card_collection_ids" widget="many2many_tags" invisible="not enable_cards"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_user_media_settings" model="ir.actions.act_window">
+        <field name="name">User Media Settings</field>
+        <field name="res_model">aps.user.media.settings</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         SHOP CLIENT ACTION  (student-facing OWL component)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="action_aps_media_shop" model="ir.actions.client">
+        <field name="name">Media Shop</field>
+        <field name="tag">aps_media_shop</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         MY COLLECTION CLIENT ACTION  (student-facing OWL component)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="action_aps_my_collection" model="ir.actions.client">
+        <field name="name">My Collection</field>
+        <field name="tag">aps_my_collection</field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         BULK UPLOAD CLIENT ACTION + SERVER ACTION BINDING
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="action_aps_media_bulk_upload_client" model="ir.actions.client">
+        <field name="name">Bulk Upload Media</field>
+        <field name="tag">aps_media_bulk_upload</field>
+    </record>
+
+    <!-- Bound server action — adds "Bulk Upload Media" button to the top
+         of all list and kanban views for aps.media (Teachers only). -->
+    <record id="action_aps_media_bulk_upload_server" model="ir.actions.server">
+        <field name="name">Bulk Upload Media</field>
+        <field name="model_id" ref="model_aps_media"/>
+        <field name="binding_model_id" ref="model_aps_media"/>
+        <field name="binding_type">action</field>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_teacher'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = env['aps.media'].action_open_bulk_upload()</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_level_view_list" model="ir.ui.view">
+        <field name="name">aps.level.list</field>
+        <field name="model">aps.level</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="short_name" optional="hide"/>
+                <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" optional="show"/>
+                <field name="description" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_level_view_form" model="ir.ui.view">
+        <field name="name">aps.level.form</field>
+        <field name="model">aps.level</field>
+        <field name="arch" type="xml">
+            <form string="Academic Level">
+                <div class="alert alert-info" role="alert">
+                    <strong>Academic Levels</strong> define the year or grade groupings in the school (e.g. Year 1, Year 2, Grade 10).
+                    Levels are used to categorise <strong>Students</strong>, <strong>Subjects</strong>, and <strong>Classes</strong>, making it easy to filter and organise school data by year group.
+                </div>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Level Name (e.g. Year 1)"/>
+                        </h1>
+                        <h2>
+                            <field name="short_name" placeholder="Short Name"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_level_view_search" model="ir.ui.view">
+        <field name="name">aps.level.search</field>
+        <field name="model">aps.level</field>
+        <field name="arch" type="xml">
+            <search string="Academic Levels">
+                <field name="name"/>
+                <field name="short_name"/>
+                <field name="tag_ids"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_level_action" model="ir.actions.act_window">
+        <field name="name">Academic Levels</field>
+        <field name="res_model">aps.level</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="aps_level_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first academic level (e.g. Year 1, Year 2).
+            </p>
+        </field>
+    </record>
+
+</odoo>

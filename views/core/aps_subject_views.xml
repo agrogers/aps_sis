@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_subject_view_list" model="ir.ui.view">
+        <field name="name">aps.subject.list</field>
+        <field name="model">aps.subject</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="icon" widget="image" class="o_image_24_cover" optional="show"/>
+                <field name="name"/>
+                <field name="code" optional="show"/>
+                <field name="category_id" optional="show"/>
+                <field name="level_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_subject_view_form" model="ir.ui.view">
+        <field name="name">aps.subject.form</field>
+        <field name="model">aps.subject</field>
+        <field name="arch" type="xml">
+            <form string="Subject">
+                <div class="alert alert-info" role="alert">
+                    <strong>Subjects</strong> represent the disciplines taught at the school (e.g. Mathematics, English, Science).
+                    Each subject belongs to a <strong>Category</strong> and can be assigned to an <strong>Academic Level</strong> (e.g. Year 1).
+                    Subjects can have their own icon for visual identification and are linked to <strong>Classes</strong> which students are enrolled in.
+                </div>
+                <sheet>
+                    <field name="icon" widget="image" class="oe_avatar" nolabel="1" options="{'preview_image': 'icon'}"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Subject Name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="category_id"/>
+                            <field name="level_id"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_subject_view_search" model="ir.ui.view">
+        <field name="name">aps.subject.search</field>
+        <field name="model">aps.subject</field>
+        <field name="arch" type="xml">
+            <search string="Subjects">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="category_id"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Category" name="group_category" context="{'group_by': 'category_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_subject_action" model="ir.actions.act_window">
+        <field name="name">Subjects</field>
+        <field name="res_model">aps.subject</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="aps_subject_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first subject.
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_class_view_list" model="ir.ui.view">
+        <field name="name">aps.class.list</field>
+        <field name="model">aps.class</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="code" optional="show"/>
+                <field name="name"/>
+                <field name="subject_id" optional="show"/>
+                <field name="academic_year_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_class_view_form" model="ir.ui.view">
+        <field name="name">aps.class.form</field>
+        <field name="model">aps.class</field>
+        <field name="arch" type="xml">
+            <form string="Class">
+                <div class="alert alert-info" role="alert">
+                    <strong>Classes</strong> are a specific section or group for a <strong>Subject</strong> in a given <strong>Academic Year</strong>
+                    (e.g. Mathematics A, Year 1). The identifier (e.g. A, B, 1) combines with the subject to auto-generate the class name and code.
+                    Assign <strong>Teachers</strong> and enrol <strong>Students</strong> below.
+                </div>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Class Name"/>
+                        </h1>
+                        <h2>
+                            <field name="code" placeholder="Code"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="identifier"/>
+                            <field name="subject_id"/>
+                            <field name="academic_year_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Teachers">
+                            <field name="teacher_ids" widget="many2many_tags"
+                                   options="{'no_create': True}" nolabel="1"/>
+                        </group>
+                        <group string="Assistant Teachers">
+                            <field name="assistant_teacher_ids" widget="many2many_tags"
+                                   options="{'no_create': True}" nolabel="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Students">
+                            <field name="enrollment_ids">
+                                <list>
+                                    <field name="student_id"/>
+                                    <field name="start_date"/>
+                                    <field name="end_date"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_class_view_search" model="ir.ui.view">
+        <field name="name">aps.class.search</field>
+        <field name="model">aps.class</field>
+        <field name="arch" type="xml">
+            <search string="Classes">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="subject_id"/>
+                <field name="academic_year_id"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Subject" name="group_subject" context="{'group_by': 'subject_id'}"/>
+                    <filter string="Academic Year" name="group_year" context="{'group_by': 'academic_year_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_class_action" model="ir.actions.act_window">
+        <field name="name">Classes</field>
+        <field name="res_model">aps.class</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="aps_class_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first class.
+            </p>
+        </field>
+    </record>
+
+</odoo>

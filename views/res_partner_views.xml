@@ -11,6 +11,12 @@
                 <button name="action_open_student" type="object" class="oe_stat_button" icon="fa-graduation-cap" invisible="student_count == 0">
                     <field name="student_count" widget="statinfo" string="Student"/>
                 </button>
+                <button name="action_open_aps_student" type="object" class="oe_stat_button" icon="fa-user-graduate" invisible="aps_student_count == 0">
+                    <field name="aps_student_count" widget="statinfo" string="APS Student"/>
+                </button>
+                <button name="action_open_teacher" type="object" class="oe_stat_button" icon="fa-chalkboard-teacher" invisible="teacher_count == 0">
+                    <field name="teacher_count" widget="statinfo" string="Teacher"/>
+                </button>
             </xpath>
             <!-- Show gender field under VAT -->
             <xpath expr="//field[@name='vat']" position="after">

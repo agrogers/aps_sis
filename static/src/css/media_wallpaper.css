@@ -1,0 +1,46 @@
+/* ═══════════════════════════════════════════════════════
+   APEX Media Wallpaper — custom background on .o_content
+   ═══════════════════════════════════════════════════════ */
+
+.o_content.aps-media-wallpaper {
+    position: relative;
+}
+
+/*  Pseudo-element carries the image so we can dim it without
+    affecting the foreground content.                          */
+.o_content.aps-media-wallpaper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    background-image: var(--aps-wp-url);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 1.0;          /* subtle watermark feel */
+}
+
+/*  Keep actual content above the pseudo-element. */
+.o_content.aps-media-wallpaper > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Quad mode (2×2 tiled icons) ────────────────────── */
+.o_content.aps-media-wallpaper--quad::before {
+    /* 4 images in a 2×2 grid with padding between them.
+       Size < 50% leaves gaps; positions use percentages so
+       the gaps distribute evenly around each quadrant.     */
+    background-size: 44% 44%;
+    background-position: 3% 3%, 97% 3%, 3% 97%, 97% 97%;
+    background-repeat: no-repeat;
+}
+
+/*  Make list-view table cells semi-transparent so the
+    wallpaper image can show through the rows.          */
+.o_list_view .o_content.aps-media-wallpaper td,
+.o_list_view .o_content.aps-media-wallpaper th {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+}

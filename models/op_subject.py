@@ -1,22 +1,6 @@
 from odoo import fields, models, api
 
 
-class APSSubjectCategory(models.Model):
-    _name = 'aps.subject.category'
-    _description = 'Subject Category'
-    _order = 'name'
-
-    name = fields.Char(string='Name', required=True, translate=True)
-    code = fields.Char(string='Code', help='Short code for the category')
-    description = fields.Text(string='Description')
-    color_rgb = fields.Char(string='Color')
-    active = fields.Boolean(default=True, string='Active')
-
-    _sql_constraints = [
-        ('name_uniq', 'unique(name)', 'Category name must be unique!'),
-    ]
-
-
 class OpSubject(models.Model):
     _inherit = 'op.subject'
     _order = 'name'

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="aps_sis.ApsMediaShop">
+    <div class="aps-media-shop d-flex flex-column h-100">
+
+        <!-- ── Header toolbar ── -->
+        <div class="aps-media-shop__toolbar bg-white border-bottom px-4 py-3 d-flex flex-wrap align-items-center gap-3">
+            <div class="flex-grow-1">
+                <h4 class="m-0 fw-bold">
+                    <i class="fa fa-shopping-bag me-2 text-primary"/>Media Shop
+                </h4>
+            </div>
+            <!-- Points balance badge -->
+            <div class="aps-media-shop__points badge bg-warning text-dark fs-6 px-3 py-2">
+                <i class="fa fa-star me-1"/>
+                <span t-esc="state.pointsBalance"/> pts
+            </div>
+            <!-- Search -->
+            <div class="input-group" style="max-width:260px;">
+                <span class="input-group-text"><i class="fa fa-search"/></span>
+                <input type="text" class="form-control"
+                       placeholder="Search items…"
+                       t-att-value="state.query"
+                       t-on-input="onSearch"/>
+            </div>
+        </div>
+
+        <div class="d-flex flex-grow-1 overflow-hidden">
+
+            <!-- ── Left sidebar: filters ── -->
+            <div class="aps-media-shop__sidebar border-end overflow-auto p-3" style="min-width:180px;max-width:200px;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="text-muted text-uppercase" style="font-size:.75rem;">Filters</strong>
+                    <button t-if="state.activeCollection or state.activeType or state.query"
+                            class="btn btn-link btn-sm p-0 text-danger"
+                            t-on-click="clearFilters">Clear</button>
+                </div>
+
+                <!-- Collection filter -->
+                <div t-if="state.collections.length" class="mb-3">
+                    <div class="text-muted mb-1" style="font-size:.8rem;font-weight:600;">Collection</div>
+                    <div class="list-group list-group-flush">
+                        <t t-foreach="state.collections" t-as="col" t-key="col.id">
+                            <button type="button"
+                                    class="list-group-item list-group-item-action py-1 px-2"
+                                    t-att-class="{'active': state.activeCollection === col.id}"
+                                    t-on-click="() => this.filterCollection(col.id)">
+                                <t t-esc="col.name"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Type filter -->
+                <div t-if="state.types.length">
+                    <div class="text-muted mb-1" style="font-size:.8rem;font-weight:600;">Type</div>
+                    <div class="list-group list-group-flush">
+                        <t t-foreach="state.types" t-as="typ" t-key="typ.id">
+                            <button type="button"
+                                    class="list-group-item list-group-item-action py-1 px-2"
+                                    t-att-class="{'active': state.activeType === typ.id}"
+                                    t-on-click="() => this.filterType(typ.id)">
+                                <t t-esc="typ.name"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Main grid ── -->
+            <div class="flex-grow-1 overflow-auto p-4">
+
+                <!-- Loading spinner -->
+                <div t-if="state.loading" class="d-flex justify-content-center align-items-center h-100">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                </div>
+
+                <!-- Empty state -->
+                <div t-elif="!state.filtered.length" class="text-center text-muted py-5">
+                    <i class="fa fa-search fa-3x d-block mb-3" style="opacity:.3;"/>
+                    <h5>No items found</h5>
+                    <p>Try changing your filters or search term.</p>
+                </div>
+
+                <!-- Item grid -->
+                <div t-else="" class="aps-media-shop__grid">
+                    <t t-foreach="state.filtered" t-as="item" t-key="item.id">
+                        <div class="aps-media-shop__card card shadow-sm h-100"
+                             t-att-class="{
+                                 'aps-media-shop__card--owned': isOwned(item),
+                                 'aps-media-shop__card--unaffordable': !isOwned(item) and !canAfford(item)
+                             }">
+                            <!-- Owned badge -->
+                            <div t-if="isOwned(item)" class="aps-media-shop__owned-badge">
+                                <span class="badge bg-success"><i class="fa fa-check me-1"/>Owned</span>
+                            </div>
+                            <!-- Image -->
+                            <div class="aps-media-shop__img-wrap">
+                                <img t-att-src="imageUrl(item.id)"
+                                     class="card-img-top"
+                                     loading="lazy"
+                                     t-att-alt="item.name"/>
+                            </div>
+                            <!-- Card body -->
+                            <div class="card-body d-flex flex-column p-2">
+                                <div class="fw-semibold text-truncate mb-1" t-att-title="item.name">
+                                    <t t-esc="item.name"/>
+                                </div>
+                                <div class="text-muted small mb-1" t-if="item.type_id">
+                                    <t t-esc="item.type_id[1]"/>
+                                </div>
+                                <div class="mt-auto">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="badge bg-primary fs-6">
+                                            <i class="fa fa-star me-1"/>
+                                            <t t-esc="item.cost"/> pts
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            <t t-esc="item.stock_available"/> left
+                                        </span>
+                                    </div>
+                                    <!-- Buy button -->
+                                    <button t-if="!isOwned(item)"
+                                            class="btn btn-sm w-100"
+                                            t-att-class="{
+                                                'btn-primary': canAfford(item),
+                                                'btn-outline-secondary': !canAfford(item)
+                                            }"
+                                            t-att-disabled="state.buying or !canAfford(item)"
+                                            t-on-click="() => this.buy(item)">
+                                        <t t-if="canAfford(item)">
+                                            <i class="fa fa-shopping-cart me-1"/>Buy
+                                        </t>
+                                        <t t-else="">
+                                            <i class="fa fa-lock me-1"/>Need <t t-esc="getPointsDeficit(item)"/> more pts
+                                        </t>
+                                    </button>
+                                    <button t-else="" class="btn btn-sm btn-success w-100" disabled="1">
+                                        <i class="fa fa-check me-1"/>In Collection
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+
+</templates>
