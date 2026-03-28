@@ -49,11 +49,11 @@
 		'views/aps_time_tracking_dashboard_views.xml',
 		'views/aps_media_views.xml',
 		'wizard/aps_student_class_bulk_wizard_views.xml',
+		'wizard/aps_partner_profile_pic_views.xml',
 		'views/aps_sis_menu.xml',
 		'views/op_student_course_views.xml',
 		'reports/submission_report.xml',
 		'wizard/submission_report_wizard_views.xml',
-		'wizard/aps_partner_profile_pic_views.xml',
 	],
 	'assets': {
 		'web.assets_backend': [
