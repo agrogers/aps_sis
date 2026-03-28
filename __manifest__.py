@@ -52,7 +52,8 @@
 		'views/aps_sis_menu.xml',
 		'views/op_student_course_views.xml',
 		'reports/submission_report.xml',
-		'wizard/submission_report_wizard_views.xml'
+		'wizard/submission_report_wizard_views.xml',
+		'wizard/aps_partner_profile_pic_views.xml',
 	],
 	'assets': {
 		'web.assets_backend': [
@@ -108,6 +109,9 @@
             'aps_sis/static/src/xml/avatar_systray.xml',
             'aps_sis/static/src/js/resource_tree_widget.js',
             'aps_sis/static/src/xml/resource_tree_widget.xml',
+            'aps_sis/static/src/js/partner_profile_pic.js',
+            'aps_sis/static/src/xml/partner_profile_pic.xml',
+            'aps_sis/static/src/css/partner_profile_pic.css',
             'aps_sis/static/src/js/media_wallpaper_service.js',
             'aps_sis/static/src/css/media_wallpaper.css',
 		],

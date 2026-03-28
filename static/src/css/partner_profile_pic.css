@@ -1,0 +1,13 @@
+/* Partner Profile Pic – drag-and-drop visual feedback */
+.partner-pic-card {
+    transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+.partner-pic-card.border-primary {
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
+}
+.partner-pic-card.border-success {
+    box-shadow: 0 0 0 0.1rem rgba(25, 135, 84, 0.2);
+}
+.partner-pic-drop-zone:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}

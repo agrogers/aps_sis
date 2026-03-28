@@ -82,6 +82,7 @@
     <menuitem id="menu_apex_students" name="Students" parent="menu_apex_school_heading" action="aps_student_action" sequence="40" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_student_classes" name="Enrollments" parent="menu_apex_school_heading" action="aps_student_class_action" sequence="50" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_student_class_bulk" name="Bulk Class Enrollment" parent="menu_apex_school_heading" action="action_aps_student_class_bulk_wizard" sequence="55" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_partner_profile_pic" name="Update Profile Pictures" parent="menu_apex_school_heading" action="action_aps_partner_profile_pic_client" sequence="60" groups="aps_sis.group_aps_teacher"/>
     
     <!-- Time Tracking Menus teachers -->
     <menuitem id="menu_apex_time_tracking_heading" name="Time Tracking" parent="menu_apex_settings" sequence="60" groups="aps_sis.group_aps_teacher"/>

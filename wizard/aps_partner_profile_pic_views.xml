@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="action_aps_partner_profile_pic_client" model="ir.actions.client">
+        <field name="name">Update Profile Pictures</field>
+        <field name="tag">aps_partner_profile_pic</field>
+    </record>
+
+</odoo>

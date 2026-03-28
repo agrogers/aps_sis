@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class ResPartner(models.Model):
@@ -122,5 +122,15 @@ class ResPartner(models.Model):
                         faculty.unlink()
 
         return res
-    
+
+    @api.model
+    def bulk_update_profile_images(self, updates):
+        """Bulk-update partner profile images.
+
+        :param updates: list of dicts with 'id' (int) and 'image_1920' (base64 str)
+        """
+        for item in updates:
+            partner = self.browse(item['id'])
+            partner.write({'image_1920': item['image_1920']})
+
                 

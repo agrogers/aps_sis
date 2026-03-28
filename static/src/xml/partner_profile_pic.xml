@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aps_sis.PartnerProfilePic">
+        <div class="o_action d-flex flex-column vh-100 bg-view">
+            <!-- Header bar -->
+            <div class="p-3 border-bottom bg-white d-flex align-items-center gap-3">
+                <h2 class="mb-0">Update Profile Pictures</h2>
+                <div class="ms-auto d-flex gap-2">
+                    <button class="btn btn-primary btn-sm"
+                            t-on-click="onAddPartner"
+                            t-att-disabled="state.saving">
+                        <i class="fa fa-plus me-1"/>Add Partners
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm"
+                            t-on-click="clearAll"
+                            t-att-disabled="state.saving or !state.partners.length">
+                        <i class="fa fa-trash me-1"/>Clear All
+                    </button>
+                    <button class="btn btn-success btn-sm"
+                            t-on-click="save"
+                            t-att-disabled="state.saving or !hasChanges">
+                        <t t-if="state.saving">
+                            <i class="fa fa-spinner fa-spin me-1"/>Saving…
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-save me-1"/>Save
+                            <t t-if="changeCount"> (<t t-esc="changeCount"/>)</t>
+                        </t>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content area -->
+            <div class="p-4 overflow-auto flex-grow-1">
+                <t t-if="state.partners.length">
+                    <div class="row g-3">
+                        <t t-foreach="state.partners" t-as="partner" t-key="partner.id">
+                            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                <div t-attf-class="card h-100 text-center position-relative partner-pic-card #{partner.dragOver ? 'border-primary border-2 bg-primary-subtle' : ''} #{partner.newImage ? 'border-success border-2' : ''}"
+                                     t-on-dragover="(ev) => this.onDragOver(ev, partner_index)"
+                                     t-on-dragleave="(ev) => this.onDragLeave(ev, partner_index)"
+                                     t-on-drop="(ev) => this.onDrop(ev, partner_index)">
+                                    <!-- Remove button -->
+                                    <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1 rounded-circle p-0"
+                                            style="width:24px;height:24px;line-height:24px;z-index:1;"
+                                            t-on-click="() => this.removePartner(partner_index)"
+                                            t-att-disabled="state.saving">
+                                        <i class="fa fa-times" style="font-size:12px;"/>
+                                    </button>
+
+                                    <!-- New image badge -->
+                                    <t t-if="partner.newImage">
+                                        <span class="badge bg-success position-absolute top-0 start-0 m-1" style="z-index:1;">
+                                            <i class="fa fa-check me-1"/>New
+                                        </span>
+                                    </t>
+
+                                    <!-- Image / Placeholder (clickable for file selection) -->
+                                    <div class="partner-pic-drop-zone p-2 d-flex align-items-center justify-content-center"
+                                         style="height:140px;cursor:pointer;"
+                                         t-on-click="() => this.onClickImage(partner_index)">
+                                        <t t-if="hasImage(partner)">
+                                            <img t-att-src="getImageSrc(partner)"
+                                                 class="rounded"
+                                                 style="max-height:120px;max-width:100%;object-fit:contain;"
+                                                 t-att-alt="partner.name"/>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="text-muted d-flex flex-column align-items-center">
+                                                <i class="fa fa-user-circle fa-4x mb-2" style="opacity:0.3;"/>
+                                                <small>Drop image here</small>
+                                            </div>
+                                        </t>
+                                    </div>
+
+                                    <!-- Partner name -->
+                                    <div class="card-body p-2">
+                                        <small class="text-truncate d-block fw-bold" t-att-title="partner.name">
+                                            <t t-esc="partner.name"/>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+
+                <!-- Empty state -->
+                <t t-if="!state.partners.length">
+                    <div class="text-center text-muted py-5">
+                        <i class="fa fa-users fa-3x mb-3 d-block" style="opacity:0.3;"/>
+                        <p class="mb-1">No partners selected yet.</p>
+                        <p>Click <strong>Add Partners</strong> to search and select partners,
+                           then drag and drop images onto their cards to update profile pictures.</p>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>
