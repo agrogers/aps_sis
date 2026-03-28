@@ -129,8 +129,10 @@ class ResPartner(models.Model):
 
         :param updates: list of dicts with 'id' (int) and 'image_1920' (base64 str)
         """
-        for item in updates:
-            partner = self.browse(item['id'])
-            partner.write({'image_1920': item['image_1920']})
+        partner_ids = [item['id'] for item in updates]
+        partners = self.browse(partner_ids)
+        image_map = {item['id']: item['image_1920'] for item in updates}
+        for partner in partners:
+            partner.write({'image_1920': image_map[partner.id]})
 
                 

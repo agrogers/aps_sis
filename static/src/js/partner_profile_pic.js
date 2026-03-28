@@ -1,4 +1,3 @@
-/** @odoo-module **/
 import { Component, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
@@ -172,7 +171,7 @@ class PartnerProfilePic extends Component {
                 [updates]
             );
             this.notification.add(
-                _t("%s profile picture(s) updated.", updates.length),
+                updates.length + _t(" profile picture(s) updated."),
                 { type: "success" }
             );
             // Mark saved: move newImage into image_128, clear newImage
@@ -185,7 +184,7 @@ class PartnerProfilePic extends Component {
             }
         } catch (e) {
             this.notification.add(
-                _t("Save failed: %s", e.message || e),
+                _t("Save failed: ") + (e.message || e),
                 { type: "danger" }
             );
         } finally {
