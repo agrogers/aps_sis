@@ -265,7 +265,7 @@ class ApsMedia(models.Model):
     )
 
     @api.model
-    def bulk_create_from_files(self, files, collection_id, category_ids, cost, stock_available):
+    def bulk_create_from_files(self, files, collection_id, category_ids, cost, stock_available, type_id=False):
         """Create media item records from a list of image files.
 
         Called from the OWL MediaBulkUpload client action.
@@ -279,6 +279,7 @@ class ApsMedia(models.Model):
         :param category_ids: list of int — existing ``aps.media.category`` ids.
         :param cost: int — point cost to assign to each created item.
         :param stock_available: int — initial stock for each created item.
+        :param type_id: int or False — the ``aps.media.type`` to assign.
         :return: dict ``{'ids': [int, …], 'count': int}``
         """
         vals_list = []
@@ -288,6 +289,7 @@ class ApsMedia(models.Model):
             vals = {
                 'name': name,
                 'image': f.get('data', ''),
+                'type_id': type_id or False,
                 'collection_id': collection_id or False,
                 'cost': cost or 0,
                 'stock_available': stock_available or 0,

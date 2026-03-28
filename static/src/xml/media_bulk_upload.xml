@@ -20,9 +20,23 @@
 
                     <div class="row g-3 align-items-start">
 
-                        <!-- Collection -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold" for="media_collection_select">Collection</label>
+                        <!-- Type + Collection -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold" for="media_type_select">Type</label>
+                            <select id="media_type_select"
+                                    class="form-select"
+                                    t-on-change="onTypeChange"
+                                    t-att-disabled="state.uploading">
+                                <option value="">-- No Type --</option>
+                                <t t-foreach="state.types" t-as="tp" t-key="tp.id">
+                                    <option t-att-value="tp.id"
+                                            t-att-selected="state.typeId === tp.id">
+                                        <t t-esc="tp.name"/>
+                                    </option>
+                                </t>
+                            </select>
+
+                            <label class="form-label fw-bold mt-3" for="media_collection_select">Collection</label>
                             <select id="media_collection_select"
                                     class="form-select"
                                     t-on-change="onCollectionChange"
@@ -47,7 +61,7 @@
                         </div>
 
                         <!-- Categories -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold">Categories</label>
                             <!-- Existing categories -->
                             <div class="border rounded p-2 mb-2" style="max-height:140px;overflow-y:auto;">
@@ -78,7 +92,7 @@
                         </div>
 
                         <!-- Cost and Stock -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold" for="media_cost">Cost (points)</label>
                             <input type="number" id="media_cost"
                                    class="form-control mb-3"

@@ -27,6 +27,10 @@ class MediaBulkUpload extends Component {
         this.notification = useService("notification");
 
         this.state = useState({
+            // Type
+            types: [],
+            typeId: false,              // id of selected media type
+
             // Collection
             collections: [],
             collectionId: false,        // id of selected existing collection, or false
@@ -49,13 +53,21 @@ class MediaBulkUpload extends Component {
         });
 
         onWillStart(async () => {
-            const [collections, categories] = await Promise.all([
+            const [types, collections, categories] = await Promise.all([
+                this.orm.searchRead("aps.media.type", [], ["id", "name"], { order: "name" }),
                 this.orm.searchRead("aps.media.collection", [], ["id", "name"], { order: "name" }),
                 this.orm.searchRead("aps.media.category", [], ["id", "name"], { order: "name" }),
             ]);
+            this.state.types = types;
             this.state.collections = collections;
             this.state.categories = categories;
         });
+    }
+
+    // ── Type helper ──────────────────────────────────────────────────────
+
+    onTypeChange(ev) {
+        this.state.typeId = parseInt(ev.target.value) || false;
     }
 
     // ── Collection helpers ──────────────────────────────────────────────────
@@ -183,7 +195,7 @@ class MediaBulkUpload extends Component {
             const result = await this.orm.call(
                 "aps.media",
                 "bulk_create_from_files",
-                [payload, collectionId, categoryIds, this.state.cost, this.state.stockAvailable]
+                [payload, collectionId, categoryIds, this.state.cost, this.state.stockAvailable, this.state.typeId || false]
             );
 
             this.notification.add(
