@@ -42,6 +42,38 @@
                             <field name="active" invisible="1"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Current Year" name="classes_current">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <field name="show_add_classes" widget="boolean_toggle" nolabel="1"/>
+                                <label for="show_add_classes" string="Add Classes" class="mb-0 fw-bold"/>
+                                <div invisible="not show_add_classes" class="d-flex align-items-center gap-2">
+                                    <field name="classes_to_create" nolabel="1" style="width: 80px;"/>
+                                    <button string="Create" type="object"
+                                            name="action_create_current_year_classes"
+                                            class="btn btn-primary btn-sm"/>
+                                </div>
+                            </div>
+                            <field name="class_current_year_ids" nolabel="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="code" optional="show"/>
+                                    <field name="academic_year_id" optional="show"/>
+                                    <field name="teacher_ids" widget="many2many_tags" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Other Years" name="classes_other">
+                            <field name="class_other_year_ids" nolabel="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="code" optional="show"/>
+                                    <field name="academic_year_id" optional="show"/>
+                                    <field name="teacher_ids" widget="many2many_tags" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
