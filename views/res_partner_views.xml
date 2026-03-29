@@ -8,9 +8,6 @@
         <field name="arch" type="xml">
             <!-- Add Student button in button box if is_student -->
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_open_student" type="object" class="oe_stat_button" icon="fa-graduation-cap" invisible="student_count == 0">
-                    <field name="student_count" widget="statinfo" string="Student"/>
-                </button>
                 <button name="action_open_aps_student" type="object" class="oe_stat_button" icon="fa-user-graduate" invisible="aps_student_count == 0">
                     <field name="aps_student_count" widget="statinfo" string="APS Student"/>
                 </button>

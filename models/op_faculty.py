@@ -18,6 +18,9 @@ class OpFaculty(models.Model):
     def create(self, vals_list):
         """Ensure name is properly computed on create."""
         for vals in vals_list:
+            # Skip if linking to an existing partner — it already has a name
+            if vals.get('partner_id'):
+                continue
             # Compute name from name parts if not explicitly provided
             if 'name' not in vals or not vals.get('name'):
                 fname = vals.get('first_name') or ""
