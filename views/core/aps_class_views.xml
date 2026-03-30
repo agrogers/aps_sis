@@ -45,10 +45,12 @@
                     <group>
                         <group string="Teachers">
                             <field name="teacher_ids" widget="many2many_tags"
+                                   domain="[('is_teacher', '=', True)]"
                                    options="{'no_create': True}" nolabel="1"/>
                         </group>
                         <group string="Assistant Teachers">
                             <field name="assistant_teacher_ids" widget="many2many_tags"
+                                   domain="[('is_teacher', '=', True)]"
                                    options="{'no_create': True}" nolabel="1"/>
                         </group>
                     </group>

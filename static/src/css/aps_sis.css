@@ -650,7 +650,7 @@ div[name="score"].fixed-score-width {
 .resource-tree-row {
     padding: 4px 6px;
     border-radius: 6px;
-    min-height: 36px;
+    min-height: 1.4rem;
     transition: background-color 0.15s ease;
 }
 
