@@ -59,22 +59,46 @@
                             </div>
                             <t t-else="">
                                 <!-- Empty state -->
-                                <div t-if="!state.siblings.length"
+                                <div t-if="!siblingDropdownItems.length"
                                      class="breadcrumb-sibling-item breadcrumb-sibling-empty text-muted">
                                     No sibling resources
                                 </div>
-                                <!-- Sibling entries -->
-                                <a t-foreach="state.siblings"
-                                   t-as="sibling"
-                                   t-key="sibling.id"
-                                   href="#"
-                                   class="breadcrumb-sibling-item"
-                                   role="option"
-                                   t-att-title="sibling.name"
-                                   t-att-data-res-id="sibling.id"
-                                   t-on-click.stop.prevent="onSiblingClick">
-                                    <t t-esc="sibling.name"/>
-                                </a>
+                                <!-- Sibling entries (flat list with depth-based indentation) -->
+                                <div t-foreach="siblingDropdownItems"
+                                     t-as="item"
+                                     t-key="'item_' + item.id"
+                                     class="breadcrumb-sibling-item"
+                                     role="option"
+                                     t-att-style="item.depth > 0 ? 'padding-left: ' + (14 + item.depth * 16) + 'px;' : ''">
+                                    <!-- Resource type icon -->
+                                    <img t-if="item.icon_url"
+                                         t-att-src="item.icon_url"
+                                         class="breadcrumb-dropdown-type-icon"
+                                         alt=""
+                                         aria-hidden="true"
+                                         onerror="this.style.display='none'"/>
+                                    <!-- Clickable resource name -->
+                                    <a href="#"
+                                       class="breadcrumb-dropdown-item-name"
+                                       t-att-title="item.name"
+                                       t-att-data-res-id="item.id"
+                                       t-on-click.stop.prevent="onSiblingClick">
+                                        <t t-esc="item.name"/>
+                                    </a>
+                                    <!-- Expand arrow — only shown when item has children -->
+                                    <button t-if="item.hasChildren"
+                                            type="button"
+                                            class="breadcrumb-expand-btn"
+                                            t-att-data-item-id="item.id"
+                                            t-on-click.stop.prevent="onExpandDropdownItem"
+                                            aria-label="Show children">
+                                        <img src="/aps_sis/static/src/img/play_solid.svg"
+                                             class="breadcrumb-arrow-icon"
+                                             t-att-class="item.isExpanded ? 'breadcrumb-arrow-open' : ''"
+                                             alt=""
+                                             aria-hidden="true"/>
+                                    </button>
+                                </div>
                             </t>
                         </div>
                     </div>
@@ -132,18 +156,42 @@
                                     Loading&#8230;
                                 </div>
                                 <t t-else="">
-                                    <!-- Child entries -->
-                                    <a t-foreach="state.children"
-                                       t-as="child"
-                                       t-key="child.id"
-                                       href="#"
-                                       class="breadcrumb-sibling-item"
-                                       role="option"
-                                       t-att-title="child.name"
-                                       t-att-data-res-id="child.id"
-                                       t-on-click.stop.prevent="onChildClick">
-                                        <t t-esc="child.name"/>
-                                    </a>
+                                    <!-- Child entries (flat list with depth-based indentation) -->
+                                    <div t-foreach="childrenDropdownItems"
+                                         t-as="item"
+                                         t-key="'item_' + item.id"
+                                         class="breadcrumb-sibling-item"
+                                         role="option"
+                                         t-att-style="item.depth > 0 ? 'padding-left: ' + (14 + item.depth * 16) + 'px;' : ''">
+                                        <!-- Resource type icon -->
+                                        <img t-if="item.icon_url"
+                                             t-att-src="item.icon_url"
+                                             class="breadcrumb-dropdown-type-icon"
+                                             alt=""
+                                             aria-hidden="true"
+                                             onerror="this.style.display='none'"/>
+                                        <!-- Clickable resource name -->
+                                        <a href="#"
+                                           class="breadcrumb-dropdown-item-name"
+                                           t-att-title="item.name"
+                                           t-att-data-res-id="item.id"
+                                           t-on-click.stop.prevent="onChildClick">
+                                            <t t-esc="item.name"/>
+                                        </a>
+                                        <!-- Expand arrow — only shown when item has children -->
+                                        <button t-if="item.hasChildren"
+                                                type="button"
+                                                class="breadcrumb-expand-btn"
+                                                t-att-data-item-id="item.id"
+                                                t-on-click.stop.prevent="onExpandDropdownItem"
+                                                aria-label="Show children">
+                                            <img src="/aps_sis/static/src/img/play_solid.svg"
+                                                 class="breadcrumb-arrow-icon"
+                                                 t-att-class="item.isExpanded ? 'breadcrumb-arrow-open' : ''"
+                                                 alt=""
+                                                 aria-hidden="true"/>
+                                        </button>
+                                    </div>
                                 </t>
                             </div>
                         </div>
