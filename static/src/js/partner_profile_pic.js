@@ -144,11 +144,16 @@ class PartnerProfilePic extends Component {
         }
         if (chainStart === 0) {
             // The leftmost image in the chain falls off; discard it
-        }
-        // Shift the chain leftward from chainStart to target
-        for (let j = chainStart; j < target; j++) {
-            partners[j].newImage = partners[j + 1].newImage;
-            partners[j].newImagePreview = partners[j + 1].newImagePreview;
+            for (let j = chainStart; j < target; j++) {
+                partners[j].newImage = partners[j + 1].newImage;
+                partners[j].newImagePreview = partners[j + 1].newImagePreview;
+            }
+        } else {
+            // There's an empty slot at chainStart - 1; shift chain into it
+            for (let j = chainStart - 1; j < target; j++) {
+                partners[j].newImage = partners[j + 1].newImage;
+                partners[j].newImagePreview = partners[j + 1].newImagePreview;
+            }
         }
         // Move clicked image into target
         partners[target].newImage = partners[index].newImage;

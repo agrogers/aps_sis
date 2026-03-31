@@ -9,6 +9,8 @@ export class Leaderboard extends Component {
         isFaculty: { type: Boolean, optional: true },
         // The res.partner ID of the logged-in user; matching entries get the "is current user" style.
         currentUserPartnerId: { type: Number, optional: true },
+        // The res.partner ID of the faculty-selected student; matching entry gets a pulsing ring.
+        selectedStudentPartnerId: { optional: true },
         // trackMode: 'default' (plain grey), 'progress' (3-zone coloured), 'completion' (gradient)
         trackMode: { type: String, optional: true },
         // Used only for trackMode === 'progress'
@@ -43,6 +45,12 @@ export class Leaderboard extends Component {
     isCurrentUser(entry) {
         return this.props.currentUserPartnerId != null &&
                entry.student_id === this.props.currentUserPartnerId;
+    }
+
+    // Returns true when this entry is the faculty-selected student.
+    isSelectedStudent(entry) {
+        return !!this.props.selectedStudentPartnerId &&
+               entry.student_id === this.props.selectedStudentPartnerId;
     }
 
     // Border / ring colour for each rank position.

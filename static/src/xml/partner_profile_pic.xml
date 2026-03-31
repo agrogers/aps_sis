@@ -9,7 +9,7 @@
                 <div class="flex-grow-1 text-center">
                     <button class="btn btn-info btn-sm"
                             t-on-click="onUploadMultiplePhotos"
-                            t-att-disabled="state.saving or !state.partners.length">
+                            t-att-disabled="state.saving or !state.partners.length">    
                         <i class="fa fa-upload me-1"/>Upload Multiple Photos…
                     </button>
                 </div>
@@ -51,21 +51,21 @@
                                     <!-- Remove / shift buttons (top-right stack) -->
                                     <div class="position-absolute top-0 end-0 m-1 d-flex flex-column gap-1" style="z-index:1;">
                                         <button class="btn btn-sm btn-outline-danger rounded-circle p-0"
-                                                style="width:24px;height:24px;line-height:24px;"
+                                                style="width:24px;height:24px;line-height:0px;"
                                                 t-on-click="() => this.removePartner(partner_index)"
                                                 t-att-disabled="state.saving"
                                                 title="Remove partner">
                                             <i class="fa fa-times" style="font-size:12px;"/>
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary rounded-circle p-0"
-                                                style="width:24px;height:24px;line-height:24px;"
+                                                style="width:24px;height:24px;line-height:0px;"
                                                 t-on-click="() => this.shiftImagesRight(partner_index)"
                                                 t-att-disabled="state.saving or !this.hasImageAt(partner_index)"
                                                 title="Shift images right from here">
                                             <i class="fa fa-angle-double-right" style="font-size:12px;"/>
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary rounded-circle p-0"
-                                                style="width:24px;height:24px;line-height:24px;"
+                                                style="width:24px;height:24px;line-height:0px;"
                                                 t-on-click="() => this.shiftImagesLeft(partner_index)"
                                                 t-att-disabled="state.saving or !this.hasImageAt(partner_index)"
                                                 title="Shift images left from here">
@@ -104,7 +104,7 @@
                                             <t t-esc="partner.name"/>
                                         </small>
                                         <button class="btn btn-sm btn-outline-secondary rounded-circle p-0 mt-1"
-                                                style="width:24px;height:24px;line-height:24px;"
+                                                style="width:24px;height:24px;line-height:0px;"
                                                 t-on-click="() => this.clearImage(partner_index)"
                                                 t-att-disabled="state.saving or !this.hasImageAt(partner_index)"
                                                 title="Clear image">

@@ -6,7 +6,7 @@
 
                     <!-- Student card -->
                     <div class="apex-leaderboard-entry"
-                         t-att-class="{'apex-leaderboard-entry--current-user': isCurrentUser(entry)}"
+                         t-att-class="{'apex-leaderboard-entry--current-user': isCurrentUser(entry), 'apex-leaderboard-entry--selected': isSelectedStudent(entry)}"
                          t-att-data-rank="entry.rank"
                          t-att-style="'--ring-color:' + getRingColor(entry.rank)">
 

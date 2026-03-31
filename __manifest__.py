@@ -66,6 +66,7 @@
 			'aps_sis/static/src/css/ui_tweaks.css',
             'aps_sis/static/src/css/statusbar_colors.css',
 			'aps_sis/static/src/css/aps_sis.css',
+			'aps_sis/static/src/css/leaderboard.css',
 			'aps_sis/static/src/css/math_formula.css',
 			'aps_sis/static/src/css/toc_float.css',
 			'aps_sis/static/src/js/percentpie_ranged_widget.js',
