@@ -164,10 +164,13 @@ export class ProgressCharts {
 
         try {
             this._debug('fetchProgressData: Calling ORM...');
+            const categoryId = (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false")
+                ? parseInt(this.state.selectedSubjectCategory, 10)
+                : false;
             const progressData = await this.orm.call(
                 "aps.resource.submission",
                 "get_progress_data_for_dashboard",
-                [parseInt(this.state.selectedStudent, 10), this.component.getPeriodStartDateStr()]
+                [parseInt(this.state.selectedStudent, 10), this.component.getPeriodStartDateStr(), categoryId]
             );
             this._debug('fetchProgressData: ORM returned', {
                 hasLineData: !!progressData.line_data,
@@ -974,10 +977,13 @@ export class ProgressCharts {
 
         try {
             this._debug('fetchStudentComparisonData: Calling ORM...');
+            const comparisonCategoryId = (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false")
+                ? parseInt(this.state.selectedSubjectCategory, 10)
+                : false;
             const comparisonData = await this.orm.call(
                 "aps.resource.submission",
                 "get_student_comparison_data",
-                []
+                [comparisonCategoryId]
             );
             
             this._debug('fetchStudentComparisonData: ORM returned', {

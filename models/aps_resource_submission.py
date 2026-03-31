@@ -1631,7 +1631,7 @@ class APSResourceSubmission(models.Model):
             )
     
     @api.model
-    def get_progress_data_for_dashboard(self, student_id, period_start_date):
+    def get_progress_data_for_dashboard(self, student_id, period_start_date, category_id=False):
         """
         Get student progress data for dashboard charts.
         Fetches submissions for resources with ' Progress' in the name.
@@ -1704,6 +1704,10 @@ class APSResourceSubmission(models.Model):
         # Filter out excluded subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+
+        # Apply optional subject category filter
+        if category_id:
+            all_subjects = all_subjects.filtered(lambda s: s.category_id.id == category_id)
 
         # Nothing left after enrollment/exclude filtering
         if not all_subjects:
@@ -1816,7 +1820,7 @@ class APSResourceSubmission(models.Model):
         }
 
     @api.model
-    def get_student_comparison_data(self):
+    def get_student_comparison_data(self, category_id=False):
         """
         Get progress comparison data for all students.
         Returns the most recent progress score for each student in each subject.
@@ -1873,7 +1877,7 @@ class APSResourceSubmission(models.Model):
         student_enrolled_subjects = {}  # {partner_id: set(enrolled_subject_ids)}
         all_enrolled_subject_ids = set()
         partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
-        student_records = self.env['op.student'].search([('partner_id', 'in', partner_ids)])
+        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
         for student_record in student_records:
             running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
             enrolled_ids = set(running_courses.mapped('subject_ids').ids)
@@ -1881,6 +1885,10 @@ class APSResourceSubmission(models.Model):
             all_enrolled_subject_ids.update(enrolled_ids)
         if all_enrolled_subject_ids:
             all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
+        # Apply optional subject category filter
+        if category_id:
+            all_subjects = all_subjects.filtered(lambda s: s.category_id.id == category_id)
 
         # Get subject colors
         subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
@@ -1994,4 +2002,32 @@ class APSResourceSubmission(models.Model):
         
         current_user = self.env.user
         return teacher_group in current_user.groups_id
+
+    @api.model
+    def get_subject_categories_for_dashboard(self, student_id=False):
+        """Return subject categories available for a student's active submissions.
+
+        Uses a single SQL query to walk submissions → subjects → categories
+        instead of fetching every submission record to the client.
+        Returns a list of dicts: [{'id': int, 'name': str}, ...]
+        """
+        lang = self.env.lang or 'en_US'
+        query = """
+            SELECT DISTINCT sc.id,
+                   COALESCE(sc.name->>%s, sc.name->>'en_US',
+                            (SELECT value FROM jsonb_each_text(sc.name) LIMIT 1))
+              FROM aps_resource_submission_op_subject_rel rel
+              JOIN aps_resource_submission s ON s.id = rel.aps_resource_submission_id
+              JOIN aps_resource_task t       ON t.id = s.task_id
+              JOIN op_subject sub            ON sub.id = rel.op_subject_id
+              JOIN aps_subject_category sc   ON sc.id = sub.category_id
+             WHERE s.submission_active = true
+        """
+        params = [lang]
+        if student_id:
+            query += " AND t.student_id = %s"
+            params.append(int(student_id))
+        query += " ORDER BY 2"
+        self.env.cr.execute(query, params)
+        return [{'id': row[0], 'name': row[1]} for row in self.env.cr.fetchall()]
 # endregion - Get Data

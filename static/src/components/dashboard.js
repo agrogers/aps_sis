@@ -30,6 +30,8 @@ export class ApexDashboard extends Component {
             period_name: "",
             selectedStudent: false,
             students: [],
+            selectedSubjectCategory: false,
+            subjectCategories: [],
             isFaculty: true,
             submissions: { value: 0, percentage: 0, period: "" },
             tasks: { value: 0, percentage: 0, period: "" },
@@ -88,8 +90,9 @@ export class ApexDashboard extends Component {
             // Fetch view IDs first (needed for actions)
             await this.fetchViewIds();
 
-            // Fetch students (needed for dropdown)
+            // Fetch students first, then subject categories (depend on selected student)
             await this.fetchStudents();
+            await this.fetchSubjectCategories(true);
         });
 
         onMounted(async () => {
@@ -126,6 +129,13 @@ export class ApexDashboard extends Component {
         return domain;
     }
 
+    addSubjectFilter(domain) {
+        if (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false") {
+            domain.push(['subjects.category_id', '=', parseInt(this.state.selectedSubjectCategory, 10)]);
+        }
+        return domain;
+    }
+
     getPeriodStartDateStr() {
         // If no period selected, return today's date
         if (this.state.period === 0) {
@@ -156,14 +166,16 @@ export class ApexDashboard extends Component {
     getSubmittedTodayDomain() {
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        return this.addStudentFilter([['date_submitted', '=', todayStr], ['submission_active', '=', true]]);
+        let domain = this.addStudentFilter([['date_submitted', '=', todayStr], ['submission_active', '=', true]]);
+        return this.addSubjectFilter(domain);
     }
 
     getSubmittedYesterdayDomain() {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
-        return this.addStudentFilter([['date_submitted', '=', yesterdayStr], ['submission_active', '=', true]]);
+        let domain = this.addStudentFilter([['date_submitted', '=', yesterdayStr], ['submission_active', '=', true]]);
+        return this.addSubjectFilter(domain);
     }
 
     getTotalSubmittedDomain(options = {}) {
@@ -179,6 +191,7 @@ export class ApexDashboard extends Component {
             domain.push(['state', 'in', ['submitted', 'complete']]);
         }
 
+        this.addSubjectFilter(domain);
         return domain;
     }
 
@@ -203,6 +216,7 @@ export class ApexDashboard extends Component {
             });
         }
 
+        if (incStudentFilter) { this.addSubjectFilter(domain); }
         return domain;
     }
 
@@ -212,15 +226,18 @@ export class ApexDashboard extends Component {
         if (inludeSubmissionActive) {
             domain.push(['state','=','assigned']);
         }
+        this.addSubjectFilter(domain);
         return domain;
     }
 
     getTotalSubmissionsDomain() {
-        return this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
+        let domain = this.addStudentFilter([['date_assigned', '>=', this.getPeriodStartDateStr()], ['submission_active', '=', true]]);
+        return this.addSubjectFilter(domain);
     }
 
     getTaskDomain() {
-        return this.addStudentFilter([['create_date', '>=', this.getPeriodStartDateStr()]], 'student_id');
+        let domain = this.addStudentFilter([['create_date', '>=', this.getPeriodStartDateStr()]], 'student_id');
+        return this.addSubjectFilter(domain);
     }
 
     getOverdueDomain(includePeriod = true, includeState = true) {
@@ -233,15 +250,13 @@ export class ApexDashboard extends Component {
         if (includePeriod) {
             domain.push(['date_due','>=',this.getPeriodStartDateStr()]);
         }
-        
+        this.addSubjectFilter(domain);
         return domain;
     }
 
-    getOldOverdueDomain() {
-        return this.addStudentFilter([['date_due','>=',this.getPeriodStartDateStr()], ['state', 'in', ['assigned']]]);
-    }
     getAllOverdueDomain() {
-        return this.addStudentFilter([ ['state', 'in', ['assigned']]]);
+        let domain = this.addStudentFilter([ ['state', 'in', ['assigned']]]);
+        return this.addSubjectFilter(domain);
     }
 
     getSubmission7DaysDomain(options = {}) {
@@ -256,6 +271,7 @@ export class ApexDashboard extends Component {
         if (includeState) {
             domain.push(['state', 'in', ['assigned']]);
         }
+        this.addSubjectFilter(domain);
         return domain;
     }
 
@@ -263,6 +279,7 @@ export class ApexDashboard extends Component {
         let domain = this.addStudentFilter([]);
         domain.push(['submission_active', '=', true]);
         domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        this.addSubjectFilter(domain);
         return domain;
     }
 
@@ -272,7 +289,7 @@ export class ApexDashboard extends Component {
         domain.push(['submission_active', '=', true]);
         domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
         domain.push(['submission_name', 'not ilike', ' Progress']);
-
+        this.addSubjectFilter(domain);
         return domain;
     }
     getStudentPointsDomain() {
@@ -280,6 +297,7 @@ export class ApexDashboard extends Component {
         domain.push(['submission_active', '=', true]);
         domain.push(['points', '>', 0]);
         domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        this.addSubjectFilter(domain);
         return domain;
     }
 
@@ -345,6 +363,7 @@ export class ApexDashboard extends Component {
             ['submission_active', '=', true],
             ['points', '>', 0]
         ];
+        this.addSubjectFilter(domain);
 
         try {
             const groups = await this.orm.call(
@@ -568,6 +587,49 @@ export class ApexDashboard extends Component {
             console.error("Could not check user group, defaulting to student view", error);
             this.state.isFaculty = false;
         }
+
+        // If this is a student user with no selection, auto-select themselves.
+        // This handles new students (no submissions yet) and any case where
+        // the student list lookup didn't auto-select them.
+        if (!this.state.isFaculty && (!this.state.selectedStudent || this.state.selectedStudent === "false")) {
+            this.state.selectedStudent = user.partnerId;
+        }
+    }
+
+    async fetchSubjectCategories(restoreSaved = false) {
+        // Single server-side call that walks submissions → subjects → categories
+        // efficiently via SQL, avoiding multiple round-trips and access-rule
+        // issues on intermediate models (op.subject, aps.subject.category).
+        const studentId = (this.state.selectedStudent && this.state.selectedStudent !== 'false')
+            ? parseInt(this.state.selectedStudent, 10)
+            : false;
+
+        this.state.subjectCategories = await this.orm.call(
+            "aps.resource.submission",
+            "get_subject_categories_for_dashboard",
+            [],
+            { student_id: studentId },
+        );
+
+        if (restoreSaved) {
+            const savedSettings = this.loadSettings();
+            if (savedSettings.selectedSubjectCategory) {
+                const catId = parseInt(savedSettings.selectedSubjectCategory, 10);
+                if (this.state.subjectCategories.some(c => c.id === catId)) {
+                    this.state.selectedSubjectCategory = catId;
+                    return;
+                }
+            }
+        }
+
+        // Reset selection if it is no longer in the filtered list
+        if (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== 'false') {
+            const stillValid = this.state.subjectCategories.some(
+                c => c.id === parseInt(this.state.selectedSubjectCategory, 10));
+            if (!stillValid) {
+                this.state.selectedSubjectCategory = false;
+            }
+        }
     }
 
     async loadDashboardData() {
@@ -671,6 +733,7 @@ export class ApexDashboard extends Component {
                 ['points', '>', 0],
                 ['date_assigned', '>=', this.getPeriodStartDateStr()],
             ];
+            this.addSubjectFilter(domain);
             const data = await this.orm.call(
                 "aps.resource.submission",
                 "get_leaderboard_data",
@@ -1024,7 +1087,8 @@ export class ApexDashboard extends Component {
         try {
             const settings = {
                 period: this.state.period,
-                selectedStudent: this.state.selectedStudent
+                selectedStudent: this.state.selectedStudent,
+                selectedSubjectCategory: this.state.selectedSubjectCategory,
             };
             localStorage.setItem('aps_dashboard_settings', JSON.stringify(settings));
         } catch (error) {
@@ -1034,10 +1098,17 @@ export class ApexDashboard extends Component {
 
     async onChangePeriod() {
         this.saveSettings();
+        await this.fetchSubjectCategories();
         await this.loadDashboardData();
     }
 
     async onChangeStudent() {
+        this.saveSettings();
+        await this.fetchSubjectCategories();
+        await this.loadDashboardData();
+    }
+
+    async onChangeSubjectCategory() {
         this.saveSettings();
         await this.loadDashboardData();
     }

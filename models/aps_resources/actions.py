@@ -304,8 +304,8 @@ class APSResource(models.Model):
 
         # Build submission name
         base_name = self.auto_assign_custom_name or self.display_name or self.name or ''
-        submission_name = f'{base_name} ({today})'
-        submission_label = submission_name
+        submission_name = f'{base_name}'
+        submission_label = f'{submission_name} ({today})'
 
         # Date/time for submissions
         assign_date = today

@@ -2,11 +2,11 @@
     <t t-name="apex_dashboard.Dashboard" owl="1">
         <div class="vh-100 overflow-auto bg-muted p-4">
             <div class="row mb-4 align-items-center justify-content-between bg-white shadow-sm p-4 mx-0 rounded">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <h1 class="text-primary fw-bold mb-0">APEX Dashboard</h1>
                     <!-- <small class="text-muted" t-esc="selectedPeriodText"/> -->
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <select class="form-select" t-model="state.period" t-on-change="onChangePeriod">
                         <option value="0">Select Period</option>
                         <option value="7">Last 7 Days</option>
@@ -18,11 +18,19 @@
                         <option value="365">Last Year</option>
                     </select>
                 </div>
-                <div class="col-md-4" t-if="state.isFaculty">
+                <div class="col-md-3" t-if="state.isFaculty">
                     <select class="form-select" t-model="state.selectedStudent" t-on-change="onChangeStudent">
                         <option value="false" t-if="state.students.length > 1">All Students</option>
                         <t t-foreach="state.students" t-as="student" t-key="student.id">
                             <option t-att-value="student.id" t-esc="student.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" t-model="state.selectedSubjectCategory" t-on-change="onChangeSubjectCategory">
+                        <option value="false">All Categories</option>
+                        <t t-foreach="state.subjectCategories" t-as="cat" t-key="cat.id">
+                            <option t-att-value="cat.id" t-esc="cat.name"/>
                         </t>
                     </select>
                 </div>

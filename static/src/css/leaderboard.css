@@ -149,7 +149,11 @@
 .apex-leaderboard-entry--current-user {
     transform: translateY(-3px) scale(1.1);
     z-index: 2;
-    animation: leaderboard-flip-y 12s ease-in-out 5s infinite;
+    /* animation: leaderboard-flip-y 12s ease-in-out 5s infinite; */
+}
+
+.apex-leaderboard-entry--current-user .apex-leaderboard-avatar-shell {
+    animation: leaderboard-ring-pulse 1.4s ease-in-out infinite;
 }
 
 /* Flip occupies the first ~8% of the 10s cycle (≈0.8s), then idles */
