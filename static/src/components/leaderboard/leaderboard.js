@@ -1,4 +1,4 @@
-import { Component } from "@odoo/owl";
+import { Component, onMounted, onPatched } from "@odoo/owl";
 
 export class Leaderboard extends Component {
     static template = "apex_dashboard.Leaderboard";
@@ -17,6 +17,25 @@ export class Leaderboard extends Component {
         redlinePercent: { type: Number, optional: true },
         pacePercent: { type: Number, optional: true },
     };
+
+    setup() {
+        onMounted(() => this._restartSelectedPulse());
+        onPatched(() => this._restartSelectedPulse());
+    }
+
+    // Force-restart the ring-pulse animation after OWL patches the DOM.
+    // Browsers don't always re-trigger a CSS animation when a parent's class changes.
+    _restartSelectedPulse() {
+        if (!this.el) return;
+        const shells = this.el.querySelectorAll(
+            '.apex-leaderboard-entry--selected .apex-leaderboard-avatar-shell'
+        );
+        for (const shell of shells) {
+            shell.style.animation = 'none';
+            void shell.offsetHeight; // force reflow
+            shell.style.animation = '';
+        }
+    }
 
     // Returns entries sorted rank-N first, rank-1 last (left → right display order).
     get displayEntries() {
