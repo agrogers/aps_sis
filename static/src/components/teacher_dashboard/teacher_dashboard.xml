@@ -9,8 +9,6 @@
                         <i class="fa fa-chalkboard-teacher me-2"/>Teacher Dashboard
                     </h1>
                 </div>
-
-                <!-- Category filter -->
                 <div class="col-md-4 mt-2">
                     <label class="form-label fw-semibold mb-1">Subject Category</label>
                     <select class="form-select" t-on-change="onChangeCategory">
@@ -23,8 +21,6 @@
                         </t>
                     </select>
                 </div>
-
-                <!-- Date range filter -->
                 <div class="col-md-4 mt-2">
                     <label class="form-label fw-semibold mb-1">Date Range</label>
                     <select class="form-select" t-on-change="onChangeDays">
@@ -49,126 +45,128 @@
 
             <t t-else="">
 
-                <!-- ==================== SECTION 3: SUBJECT / EDIT RESOURCES ==================== -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white fw-bold">
-                        <i class="fa fa-book me-2 text-primary"/>
-                        Subject &amp; Recently Edited Resources
-                        <span class="badge bg-secondary ms-2">
-                            <t t-esc="state.subjectResources.length"/>
-                        </span>
+                <!-- ==================== TWO-COLUMN ROW ==================== -->
+                <div class="row g-4 mb-4">
+
+                    <!-- COLUMN 1: Subject Resources -->
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-white fw-bold">
+                                <i class="fa fa-book me-2 text-primary"/>
+                                Subject &amp; Recently Edited Resources
+                                <span class="badge bg-secondary ms-2">
+                                    <t t-esc="state.subjectResources.length"/>
+                                </span>
+                            </div>
+                            <t t-if="state.subjectResources.length === 0">
+                                <div class="card-body text-muted">No resources found for the selected filters.</div>
+                            </t>
+                            <t t-else="">
+                                <div class="aps-dashboard-scroll-list">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tbody>
+                                            <t t-foreach="state.subjectResources" t-as="res" t-key="res.id">
+                                                <tr class="aps-resource-row"
+                                                    t-on-click="() => this.openResource(res.id)">
+                                                    <td class="aps-icon-cell">
+                                                        <t t-if="res.type_id">
+                                                            <img t-att-src="typeIconUrl(res.type_id)"
+                                                                 class="aps-type-icon"
+                                                                 alt=""
+                                                                 t-att-title="res.type_id[1] or ''"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <i class="fa fa-file-o aps-type-icon-placeholder"/>
+                                                        </t>
+                                                    </td>
+                                                    <td class="fw-semibold aps-resource-name">
+                                                        <t t-esc="res.name"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </t>
+                        </div>
                     </div>
 
-                    <t t-if="state.subjectResources.length === 0">
-                        <div class="card-body text-muted">No resources found for the selected filters.</div>
-                    </t>
-                    <t t-else="">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Type</th>
-                                        <th>Subjects</th>
-                                        <th>Last Modified</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-foreach="state.subjectResources" t-as="res" t-key="res.id">
-                                        <tr>
-                                            <td><t t-esc="res.name"/></td>
-                                            <td>
-                                                <t t-if="res.type_id">
-                                                    <span class="badge bg-info text-dark">
-                                                        <t t-esc="res.type_id[1]"/>
-                                                    </span>
-                                                </t>
-                                            </td>
-                                            <td>
-                                                <t t-if="res.subjects and res.subjects.length">
-                                                    <span class="text-muted small">
-                                                        <t t-esc="res.subjects.length"/> subject(s)
-                                                    </span>
-                                                </t>
-                                            </td>
-                                            <td class="text-muted small"><t t-esc="res.write_date or ''"/></td>
-                                            <td>
-                                                <button class="btn btn-outline-primary btn-sm"
-                                                        t-on-click="() => this.openResource(res.id)">
-                                                    <i class="fa fa-eye me-1"/>View
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                </tbody>
-                            </table>
+                    <!-- COLUMN 2: Assigned Resources -->
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-white fw-bold">
+                                <i class="fa fa-tasks me-2 text-success"/>
+                                Assigned Resources
+                                <span class="badge bg-secondary ms-2">
+                                    <t t-esc="state.taskResources.length"/>
+                                </span>
+                                <span class="text-muted small fw-normal ms-2">(click row for submissions)</span>
+                            </div>
+                            <t t-if="state.taskResources.length === 0">
+                                <div class="card-body text-muted">No assigned resources found for the selected filters.</div>
+                            </t>
+                            <t t-else="">
+                                <div class="aps-dashboard-scroll-list">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th></th>
+                                                <th>Name</th>
+                                                <th>Oldest Assigned</th>
+                                                <th>Submissions</th>
+                                                <th>Overdue</th>
+                                                <th>Avg Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="state.taskResources" t-as="tr_" t-key="tr_.id">
+                                                <tr t-att-class="state.selectedResourceId === tr_.id ? 'table-primary' : ''"
+                                                    class="aps-resource-row"
+                                                    t-on-click="() => this.selectResource(tr_.id, tr_.name)">
+                                                    <td class="aps-icon-cell">
+                                                        <t t-if="tr_.type_id">
+                                                            <img t-att-src="typeIconUrl(tr_.type_id)"
+                                                                 class="aps-type-icon"
+                                                                 alt=""/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <i class="fa fa-file-o aps-type-icon-placeholder"/>
+                                                        </t>
+                                                    </td>
+                                                    <td class="fw-semibold"><t t-esc="tr_.name"/></td>
+                                                    <td class="small"><t t-esc="tr_.oldest_date_assigned or '—'"/></td>
+                                                    <td><t t-esc="tr_.total_submissions"/></td>
+                                                    <td>
+                                                        <t t-if="tr_.overdue_count > 0">
+                                                            <span class="badge bg-danger"><t t-esc="tr_.overdue_count"/></span>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </td>
+                                                    <td>
+                                                        <t t-if="tr_.avg_score">
+                                                            <span t-att-class="'aps-score-pill ' + scoreColorClass(tr_.avg_score)">
+                                                                <t t-esc="tr_.avg_score"/>%
+                                                            </span>
+                                                        </t>
+                                                        <t t-else="">—</t>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </t>
                         </div>
-                    </t>
-                </div>
-
-                <!-- ==================== SECTION 4: ASSIGNED RESOURCES ==================== -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white fw-bold">
-                        <i class="fa fa-tasks me-2 text-success"/>
-                        Assigned Resources
-                        <span class="badge bg-secondary ms-2">
-                            <t t-esc="state.taskResources.length"/>
-                        </span>
-                        <span class="text-muted small fw-normal ms-2">(click a row to view submissions)</span>
                     </div>
 
-                    <t t-if="state.taskResources.length === 0">
-                        <div class="card-body text-muted">No assigned resources found for the selected filters.</div>
-                    </t>
-                    <t t-else="">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Oldest Date Assigned</th>
-                                        <th>No. Submissions</th>
-                                        <th>No. Overdue</th>
-                                        <th>Avg Score</th>
-                                        <th>Most Recent Assignment</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-foreach="state.taskResources" t-as="tr_" t-key="tr_.id">
-                                        <tr t-att-class="state.selectedResourceId === tr_.id ? 'table-primary' : ''"
-                                            style="cursor:pointer;"
-                                            t-on-click="() => this.selectResource(tr_.id, tr_.name)">
-                                            <td class="fw-semibold"><t t-esc="tr_.name"/></td>
-                                            <td><t t-esc="tr_.oldest_date_assigned or '—'"/></td>
-                                            <td><t t-esc="tr_.total_submissions"/></td>
-                                            <td>
-                                                <t t-if="tr_.overdue_count > 0">
-                                                    <span class="badge bg-danger"><t t-esc="tr_.overdue_count"/></span>
-                                                </t>
-                                                <t t-else="">0</t>
-                                            </td>
-                                            <td>
-                                                <t t-if="tr_.avg_score">
-                                                    <t t-esc="tr_.avg_score"/>%
-                                                </t>
-                                                <t t-else="">—</t>
-                                            </td>
-                                            <td class="text-muted small"><t t-esc="tr_.most_recent_date_assigned or '—'"/></td>
-                                        </tr>
-                                    </t>
-                                </tbody>
-                            </table>
-                        </div>
-                    </t>
-                </div>
+                </div><!-- end two-column row -->
 
-                <!-- ==================== SECTION 5: SUBMISSIONS FOR SELECTED RESOURCE ==================== -->
+                <!-- ==================== SUBMISSIONS FOR SELECTED RESOURCE ==================== -->
                 <t t-if="state.selectedResourceId">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-white fw-bold">
                             <i class="fa fa-list-alt me-2 text-warning"/>
-                            Submissions — <t t-esc="state.selectedResourceName"/>
+                            Submissions — <t t-esc="firstSubmissionName"/>
                         </div>
 
                         <t t-if="state.submissionsLoading">
@@ -186,7 +184,7 @@
                                 <table class="table table-sm table-hover mb-0">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Name</th>
+                                            <th></th>
                                             <th>Student</th>
                                             <th>Status</th>
                                             <th>Date Assigned</th>
@@ -199,7 +197,16 @@
                                     <tbody>
                                         <t t-foreach="state.submissions" t-as="sub" t-key="sub.id">
                                             <tr>
-                                                <td><t t-esc="sub.display_name"/></td>
+                                                <td class="aps-icon-cell">
+                                                    <t t-if="sub.resource_type_id">
+                                                        <img t-att-src="typeIconUrl(sub.resource_type_id)"
+                                                             class="aps-type-icon"
+                                                             alt=""/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <i class="fa fa-file-o aps-type-icon-placeholder"/>
+                                                    </t>
+                                                </td>
                                                 <td><t t-esc="sub.student_id ? sub.student_id[1] : '—'"/></td>
                                                 <td>
                                                     <span t-att-class="'badge ' + stateBadgeClass(sub.state)">
@@ -211,7 +218,9 @@
                                                 <td class="small"><t t-esc="sub.date_submitted or '—'"/></td>
                                                 <td>
                                                     <t t-if="sub.result_percent">
-                                                        <t t-esc="sub.result_percent"/>%
+                                                        <span t-att-class="'aps-score-pill ' + scoreColorClass(sub.result_percent)">
+                                                            <t t-esc="sub.result_percent"/>%
+                                                        </span>
                                                     </t>
                                                     <t t-else="">—</t>
                                                 </td>

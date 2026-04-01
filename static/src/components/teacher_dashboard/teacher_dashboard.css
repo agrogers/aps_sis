@@ -9,3 +9,63 @@
 .aps-teacher-dashboard .card-header {
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
+
+/* Scrollable list: show ~5 rows then scroll */
+.aps-dashboard-scroll-list {
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+/* Clickable resource rows */
+.aps-teacher-dashboard .aps-resource-row {
+    cursor: pointer;
+}
+
+.aps-teacher-dashboard .aps-resource-name {
+    color: var(--bs-primary);
+    text-decoration: underline dotted;
+}
+
+.aps-teacher-dashboard .aps-resource-name:hover {
+    color: var(--bs-primary-dark, #0056b3);
+}
+
+/* Type icon */
+.aps-teacher-dashboard .aps-icon-cell {
+    width: 32px;
+    padding-right: 0;
+    vertical-align: middle;
+}
+
+.aps-teacher-dashboard .aps-type-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.aps-teacher-dashboard .aps-type-icon-placeholder {
+    font-size: 18px;
+    color: #aaa;
+}
+
+/* Score colour pills */
+.aps-teacher-dashboard .aps-score-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.82em;
+    font-weight: 600;
+    color: #fff;
+}
+
+.aps-teacher-dashboard .aps-score-high {
+    background-color: #28a745;
+}
+
+.aps-teacher-dashboard .aps-score-mid {
+    background-color: #fd7e14;
+}
+
+.aps-teacher-dashboard .aps-score-low {
+    background-color: #dc3545;
+}
