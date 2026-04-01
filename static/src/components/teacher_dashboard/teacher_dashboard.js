@@ -2,6 +2,17 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 
+const STORAGE_KEY = "aps_teacher_dashboard_state";
+
+function _loadStoredState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
+
 export class TeacherDashboard extends Component {
     static template = "aps_sis.TeacherDashboard";
     static props = {
@@ -16,21 +27,25 @@ export class TeacherDashboard extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
 
+        const gs = this.props.globalState || _loadStoredState();
         this.state = useState({
             loading: true,
-            categoryId: false,
-            days: 30,
+            categoryId: gs.categoryId ?? false,
+            days: gs.days ?? 30,
             categories: [],
             subjectResources: [],
             taskResources: [],
-            selectedResourceId: false,
-            selectedResourceName: "",
+            selectedResourceId: gs.selectedResourceId ?? false,
+            selectedResourceName: gs.selectedResourceName ?? "",
             submissions: [],
             submissionsLoading: false,
         });
 
         onWillStart(async () => {
-            await this._fetchData();
+            await this._fetchData({ resetSelection: false });
+            if (this.state.selectedResourceId) {
+                await this._fetchSubmissions(this.state.selectedResourceId);
+            }
         });
     }
 
@@ -50,10 +65,29 @@ export class TeacherDashboard extends Component {
     // ------------------------------------------------------------------ //
     // Data fetching
     // ------------------------------------------------------------------ //
-    async _fetchData() {
+    _saveState() {
+        const snapshot = {
+            categoryId: this.state.categoryId,
+            days: this.state.days,
+            selectedResourceId: this.state.selectedResourceId,
+            selectedResourceName: this.state.selectedResourceName,
+        };
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        } catch {
+            // localStorage full or blocked — ignore
+        }
+        if (this.props.updateActionState) {
+            this.props.updateActionState(snapshot);
+        }
+    }
+
+    async _fetchData({ resetSelection = true } = {}) {
         this.state.loading = true;
-        this.state.selectedResourceId = false;
-        this.state.submissions = [];
+        if (resetSelection) {
+            this.state.selectedResourceId = false;
+            this.state.submissions = [];
+        }
         const data = await this.orm.call(
             "aps.resources",
             "get_teacher_dashboard_data",
@@ -64,6 +98,7 @@ export class TeacherDashboard extends Component {
         this.state.subjectResources = data.subject_resources || [];
         this.state.taskResources = data.task_resources || [];
         this.state.loading = false;
+        this._saveState();
     }
 
     async _fetchSubmissions(resourceId) {
@@ -95,6 +130,7 @@ export class TeacherDashboard extends Component {
         await this._fetchData();
     }
 
+
     // ------------------------------------------------------------------ //
     // Event handlers — resource actions
     // ------------------------------------------------------------------ //
@@ -119,6 +155,7 @@ export class TeacherDashboard extends Component {
             this.state.selectedResourceName = resourceName;
             await this._fetchSubmissions(resourceId);
         }
+        this._saveState();
     }
 
     openSubmission(submissionId) {
@@ -148,6 +185,18 @@ export class TeacherDashboard extends Component {
 
     stateBadgeClass(state) {
         return (this._stateConfig[state] || {}).badgeClass || "bg-secondary";
+    }
+
+    typeIconUrl(typeId) {
+        const id = Array.isArray(typeId) ? typeId[0] : typeId;
+        return `/web/image/aps.resource.types/${id}/icon`;
+    }
+
+    scoreColorClass(score) {
+        if (score === false || score === null || score === undefined) return "aps-score-none";
+        if (score >= 80) return "aps-score-high";
+        if (score >= 50) return "aps-score-mid";
+        return "aps-score-low";
     }
 }
 

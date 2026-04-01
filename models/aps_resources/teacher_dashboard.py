@@ -46,10 +46,11 @@ class APSResource(models.Model):
                 fields.Datetime.from_string(str(start_date))
             )
             edit_domain = [('write_date', '>=', start_dt_str)]
-            combined_domain = ['|'] + edit_domain + subject_domain
+            combined_domain = edit_domain + subject_domain
         else:
             combined_domain = subject_domain
 
+        combined_domain = ['|', ('type_id.name', '=', 'Subject')] + combined_domain
         subject_resources = self.env['aps.resources'].search_read(
             combined_domain,
             ['id', 'name', 'type_id', 'subjects', 'write_date'],
@@ -116,9 +117,9 @@ class APSResource(models.Model):
         task_resources = []
         for stats in resource_stats.values():
             avg_score = (
-                round(sum(stats['scores']) / len(stats['scores']), 1)
+                round(sum(stats['scores']) / len(stats['scores']))
                 if stats['scores']
-                else 0.0
+                else 0
             )
             task_resources.append({
                 'id': stats['id'],
