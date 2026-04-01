@@ -1,0 +1,11 @@
+.aps-teacher-dashboard .table tbody tr:hover td {
+    background-color: rgba(var(--bs-primary-rgb), 0.06);
+}
+
+.aps-teacher-dashboard .table.table-hover tbody tr.table-primary td {
+    background-color: rgba(var(--bs-primary-rgb), 0.14);
+}
+
+.aps-teacher-dashboard .card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}

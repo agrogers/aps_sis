@@ -58,6 +58,10 @@
 
     <menuitem id="menu_apex_dashboard_overview" parent="menu_apex_root" 
               action="action_apex_dashboard" name="Dashboard" sequence="20"/>
+
+    <menuitem id="menu_apex_teacher_dashboard" parent="menu_apex_root"
+              action="action_aps_teacher_dashboard" name="Teacher Dashboard"
+              sequence="25" groups="aps_sis.group_aps_teacher"/>
     
 
     <menuitem id="menu_apex_settings" name="Settings" parent="menu_apex_root" action="" sequence="40" groups="aps_sis.group_aps_teacher"/>
