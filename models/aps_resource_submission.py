@@ -6,6 +6,7 @@ import pytz
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
+from odoo.tools import html_sanitize
 import logging
 from lxml import etree
 
@@ -783,6 +784,48 @@ class APSResourceSubmission(models.Model):
             })
 
         return True
+
+    def action_generate_feedback(self):
+        """Generate a structured feedback template for this submission."""
+        self.ensure_one()
+        faculty = self._get_current_faculty()
+        if not faculty:
+            raise UserError("Only faculty members can generate feedback.")
+
+        if self.feedback and self.feedback.strip():
+            raise UserError(
+                "This submission already has feedback. Clear the existing feedback before generating a new template."
+            )
+
+        parts = ['<p>']
+
+        if self.score and self.score != sentinel_zero and self.out_of_marks and self.out_of_marks > 0:
+            pct = int(round((self.score / self.out_of_marks) * 100))
+            parts.append(
+                f'<strong>Score:</strong> {self._fmt_num(self.score)} / {self._fmt_num(self.out_of_marks)} ({pct}%)<br/>'
+            )
+
+        parts.append('</p>')
+        parts.append('<p><strong>Feedback:</strong></p>')
+        parts.append('<p><br/></p>')
+
+        if self.model_answer:
+            parts.append('<p><strong>Model Answer Reference:</strong></p>')
+            parts.append(html_sanitize(self.model_answer))
+            parts.append('<p><br/></p>')
+
+        feedback_html = ''.join(parts)
+        self.write({'feedback': feedback_html})
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Feedback Generated',
+                'message': 'A feedback template has been created. Please review and edit as needed.',
+                'type': 'success',
+            },
+        }
 
     def action_open_student_dashboard(self):
         """Open the student dashboard for the current submission's student."""
