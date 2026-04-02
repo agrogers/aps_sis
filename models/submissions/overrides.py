@@ -72,6 +72,15 @@ class APSResourceSubmissionOverrides(models.Model):
         if 'score' in vals or vals.get('state') in ('submitted', 'complete'):
             self._check_and_update_parent_score()
 
+            # Update progress submissions derived from Progress-Quiz tasks
+            quiz_tasks = self.mapped('task_id').filtered(
+                lambda t: t.resource_id.tag_ids.filtered(
+                    lambda tag: tag.name == 'Progress Quiz'
+                )
+            )
+            if quiz_tasks:
+                quiz_tasks._update_progress_from_quizzes()
+
         if 'review_requested_by' in vals:
             for record in self:
                 old_ids = old_faculty_map.get(record.id, set())
@@ -129,6 +138,15 @@ class APSResourceSubmissionOverrides(models.Model):
         tasks = submissions.mapped('task_id')
         if tasks:
             tasks._update_state_from_submissions()
+
+        # Update progress submissions derived from Progress-Quiz tasks
+        quiz_tasks = tasks.filtered(
+            lambda t: t.resource_id.tag_ids.filtered(
+                lambda tag: tag.name == 'Progress Quiz'
+            )
+        )
+        if quiz_tasks:
+            quiz_tasks._update_progress_from_quizzes()
         # Log creation for debugging
         for submission in submissions:
             _logger.info(f"Created submission {submission.id} for task {submission.task_id.id}")

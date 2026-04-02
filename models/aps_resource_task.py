@@ -1,7 +1,10 @@
 from datetime import datetime
 import json
+import logging
 
 from odoo import models, fields, api
+
+_logger = logging.getLogger(__name__)
 
 class APSResourceTask(models.Model):
     _name = 'aps.resource.task'
@@ -294,3 +297,103 @@ class APSResourceTask(models.Model):
             },
             'target': 'current',
         }
+
+    def _update_progress_from_quizzes(self):
+        """Recalculate progress submissions from Progress Quiz tasks.
+
+        For each affected (student, subject) pair:
+        1. Find ALL tasks whose resource carries the "Progress Quiz" tag.
+        2. Sum contributions: weighted_result / 90 * resource.weight / 100.
+           (90 % is treated as full marks for a single quiz.)
+        3. Find the "Progress"-type resource that shares the same subject.
+        4. Create or update today's submission on that resource so that only
+           one entry per day exists.
+        """
+        quiz_tag = self.env['aps.resource.tags'].search(
+            [('name', '=', 'Progress Quiz')], limit=1,
+        )
+        if not quiz_tag:
+            return
+
+        # Collect unique (student, subject) pairs from the triggering tasks
+        student_subject_pairs = set()
+        for task in self:
+            for subject in task.resource_id.subjects:
+                student_subject_pairs.add((task.student_id.id, subject.id))
+
+        if not student_subject_pairs:
+            return
+
+        today = fields.Date.today()
+        Submission = self.env['aps.resource.submission']
+        Task = self.env['aps.resource.task']
+
+        for student_id, subject_id in student_subject_pairs:
+            # All Progress-Quiz tasks for this student & subject
+            quiz_tasks = Task.search([
+                ('student_id', '=', student_id),
+                ('resource_id.tag_ids', 'in', quiz_tag.ids),
+                ('resource_id.subjects', 'in', [subject_id]),
+            ])
+
+            total_contribution = 0.0
+            for qt in quiz_tasks:
+                if not qt.weighted_result:
+                    continue
+                
+                weight = qt.resource_id.weight or 0.0
+                total_contribution += (qt.weighted_result / 90.0) * (weight / 100.0)
+
+            # Convert fraction → percentage, cap at 100
+            progress_percent = min(round(total_contribution * 100, 2), 100.0)
+
+            # Locate the Progress-type resource for this subject
+            progress_resource = self.env['aps.resources'].search([
+                ('type_id.name', 'ilike', 'Progress'),
+                ('subjects', 'in', [subject_id]),
+            ], limit=1)
+            if not progress_resource:
+                _logger.debug(
+                    'No Progress resource for subject %s — skipping quiz→progress update.',
+                    subject_id,
+                )
+                continue
+
+            # Find or create the student's task on the Progress resource
+            progress_task = Task.search([
+                ('resource_id', '=', progress_resource.id),
+                ('student_id', '=', student_id),
+            ], limit=1)
+            if not progress_task:
+                progress_task = Task.create({
+                    'resource_id': progress_resource.id,
+                    'student_id': student_id,
+                })
+
+            # Find today's submission (avoid duplicates per day)
+            progress_sub = Submission.search([
+                ('task_id', '=', progress_task.id),
+                ('date_submitted', '=', today),
+            ], limit=1)
+
+            out_of_marks = progress_resource.marks or 100.0
+
+            if progress_sub:
+                progress_sub.write({
+                    'score': round(progress_percent * out_of_marks / 100, 2),  # This is redundant (should always be 100) but explicit for clarity
+                    'out_of_marks': out_of_marks,
+                    'state': 'complete',
+                    'auto_score': False,
+                })
+            else:
+                Submission.create({
+                    'task_id': progress_task.id,
+                    'date_assigned': today,
+                    'date_submitted': today,
+                    'state': 'complete',
+                    'score': round(progress_percent * out_of_marks / 100, 2),
+                    'out_of_marks': out_of_marks,
+                    'subjects': [(6, 0, [subject_id])],
+                    'submission_active': True,
+                    'auto_score': False,
+                })
