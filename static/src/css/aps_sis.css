@@ -489,8 +489,8 @@ div[name="score"].fixed-score-width {
 .o_form_view .nav-tabs a.nav-link.information-tab::before {
     background-image: url('/aps_sis/static/src/img/information_2.svg');
 }
-.o_form_view .nav-tabs a.nav-link.information-tab {
-    color:#00000000;
+.o_form_view .nav-tabs a.nav-link.information-tab.tab-hide-label {
+    color:#000000;
     padding-left: 16px !important;  /* space for icon */
 }
 

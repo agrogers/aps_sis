@@ -10,6 +10,12 @@
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.aps-teacher-dashboard .aps-dashboard-title-icon {
+    width: 28px;
+    height: 28px;
+    vertical-align: text-bottom;
+}
+
 /* Scrollable list: show ~5 rows then scroll */
 .aps-dashboard-scroll-list {
     max-height: 220px;

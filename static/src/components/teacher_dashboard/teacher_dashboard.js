@@ -13,6 +13,14 @@ function _loadStoredState() {
     }
 }
 
+function _normalizeResourceId(value) {
+    if (value === false || value === null || value === undefined || value === "") {
+        return false;
+    }
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? false : parsed;
+}
+
 export class TeacherDashboard extends Component {
     static template = "aps_sis.TeacherDashboard";
     static props = {
@@ -26,8 +34,15 @@ export class TeacherDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this._submissionFormViewId = null;
 
-        const gs = this.props.globalState || _loadStoredState();
+        const storedState = _loadStoredState();
+        const actionState = this.props.globalState || {};
+        const gs = {
+            ...storedState,
+            ...actionState,
+        };
+        const restoredResourceId = _normalizeResourceId(gs.selectedResourceId);
         this.state = useState({
             loading: true,
             categoryId: gs.categoryId ?? false,
@@ -35,7 +50,7 @@ export class TeacherDashboard extends Component {
             categories: [],
             subjectResources: [],
             taskResources: [],
-            selectedResourceId: gs.selectedResourceId ?? false,
+            selectedResourceId: restoredResourceId,
             selectedResourceName: gs.selectedResourceName ?? "",
             submissions: [],
             submissionsLoading: false,
@@ -97,6 +112,20 @@ export class TeacherDashboard extends Component {
         this.state.categories = data.categories || [];
         this.state.subjectResources = data.subject_resources || [];
         this.state.taskResources = data.task_resources || [];
+
+        if (this.state.selectedResourceId) {
+            const restored = this.state.taskResources.find(
+                (res) => res.id === this.state.selectedResourceId
+            );
+            if (restored) {
+                this.state.selectedResourceName = restored.name || this.state.selectedResourceName;
+            } else {
+                this.state.selectedResourceId = false;
+                this.state.selectedResourceName = "";
+                this.state.submissions = [];
+            }
+        }
+
         this.state.loading = false;
         this._saveState();
     }
@@ -158,12 +187,42 @@ export class TeacherDashboard extends Component {
         this._saveState();
     }
 
-    openSubmission(submissionId) {
+    async _getSubmissionFormViewId() {
+        if (this._submissionFormViewId) {
+            return this._submissionFormViewId;
+        }
+
+        let viewId = false;
+        try {
+            // Preferred pattern already used elsewhere in this addon static code.
+            const [, resolvedViewId] = await this.orm.call(
+                "ir.model.data",
+                "check_object_reference",
+                ["aps_sis", "view_aps_resource_submission_form"]
+            );
+            viewId = resolvedViewId || false;
+        } catch {
+            // Fallback for environments where check_object_reference may be restricted.
+            const [data] = await this.orm.searchRead(
+                "ir.model.data",
+                [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_form"]],
+                ["res_id"],
+                { limit: 1 }
+            );
+            viewId = data ? data.res_id : false;
+        }
+
+        this._submissionFormViewId = viewId;
+        return this._submissionFormViewId;
+    }
+
+    async openSubmission(submissionId) {
+        const formViewId = await this._getSubmissionFormViewId();
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "aps.resource.submission",
             res_id: submissionId,
-            views: [[false, "form"]],
+            views: [[formViewId || false, "form"]],
             target: "current",
         });
     }
@@ -190,6 +249,15 @@ export class TeacherDashboard extends Component {
     typeIconUrl(typeId) {
         const id = Array.isArray(typeId) ? typeId[0] : typeId;
         return `/web/image/aps.resource.types/${id}/icon`;
+    }
+
+    binaryIconUrl(iconData) {
+        if (!iconData) {
+            return "";
+        }
+        return iconData.startsWith("data:")
+            ? iconData
+            : `data:image/png;base64,${iconData}`;
     }
 
     scoreColorClass(score) {

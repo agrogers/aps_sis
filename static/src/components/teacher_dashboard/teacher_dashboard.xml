@@ -3,13 +3,16 @@
         <div class="aps-teacher-dashboard vh-100 overflow-auto bg-light p-4">
 
             <!-- ==================== FILTERS ==================== -->
-            <div class="row mb-4 align-items-center bg-white shadow-sm p-3 mx-0 rounded">
-                <div class="col-12 mb-2">
+            <div class="row mb-3 align-items-center bg-white shadow-sm p-2 mx-0 rounded">
+                <div class="col-md-6 mt-2">
                     <h1 class="text-primary fw-bold mb-0">
+                        <img src="/aps_sis/static/src/img/dashboard.svg"
+                             class="aps-dashboard-title-icon me-2"
+                             alt="Dashboard"/>
                         <i class="fa fa-chalkboard-teacher me-2"/>Teacher Dashboard
                     </h1>
                 </div>
-                <div class="col-md-4 mt-2">
+                <div class="col-md-3 mt-2">
                     <label class="form-label fw-semibold mb-1">Subject Category</label>
                     <select class="form-select" t-on-change="onChangeCategory">
                         <option value="">All Categories</option>
@@ -21,7 +24,7 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-4 mt-2">
+                <div class="col-md-3 mt-2">
                     <label class="form-label fw-semibold mb-1">Date Range</label>
                     <select class="form-select" t-on-change="onChangeDays">
                         <t t-foreach="dateRangeOptions" t-as="opt" t-key="opt.value">
@@ -46,50 +49,7 @@
             <t t-else="">
 
                 <!-- ==================== TWO-COLUMN ROW ==================== -->
-                <div class="row g-4 mb-4">
-
-                    <!-- COLUMN 1: Subject Resources -->
-                    <div class="col-md-6">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-white fw-bold">
-                                <i class="fa fa-book me-2 text-primary"/>
-                                Subject &amp; Recently Edited Resources
-                                <span class="badge bg-secondary ms-2">
-                                    <t t-esc="state.subjectResources.length"/>
-                                </span>
-                            </div>
-                            <t t-if="state.subjectResources.length === 0">
-                                <div class="card-body text-muted">No resources found for the selected filters.</div>
-                            </t>
-                            <t t-else="">
-                                <div class="aps-dashboard-scroll-list">
-                                    <table class="table table-sm table-hover mb-0">
-                                        <tbody>
-                                            <t t-foreach="state.subjectResources" t-as="res" t-key="res.id">
-                                                <tr class="aps-resource-row"
-                                                    t-on-click="() => this.openResource(res.id)">
-                                                    <td class="aps-icon-cell">
-                                                        <t t-if="res.type_id">
-                                                            <img t-att-src="typeIconUrl(res.type_id)"
-                                                                 class="aps-type-icon"
-                                                                 alt=""
-                                                                 t-att-title="res.type_id[1] or ''"/>
-                                                        </t>
-                                                        <t t-else="">
-                                                            <i class="fa fa-file-o aps-type-icon-placeholder"/>
-                                                        </t>
-                                                    </td>
-                                                    <td class="fw-semibold aps-resource-name">
-                                                        <t t-esc="res.name"/>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </t>
-                        </div>
-                    </div>
+                <div class="row g-4 mb-3">
 
                     <!-- COLUMN 2: Assigned Resources -->
                     <div class="col-md-6">
@@ -124,8 +84,8 @@
                                                     class="aps-resource-row"
                                                     t-on-click="() => this.selectResource(tr_.id, tr_.name)">
                                                     <td class="aps-icon-cell">
-                                                        <t t-if="tr_.type_id">
-                                                            <img t-att-src="typeIconUrl(tr_.type_id)"
+                                                        <t t-if="tr_.type_icon">
+                                                            <img t-att-src="binaryIconUrl(tr_.type_icon)"
                                                                  class="aps-type-icon"
                                                                  alt=""/>
                                                         </t>
@@ -159,14 +119,57 @@
                         </div>
                     </div>
 
+                    <!-- COLUMN 1: Subject Resources -->
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-white fw-bold">
+                                <i class="fa fa-book me-2 text-primary"/>
+                                Subject &amp; Recently Edited Resources
+                                <span class="badge bg-secondary ms-2">
+                                    <t t-esc="state.subjectResources.length"/>
+                                </span>
+                            </div>
+                            <t t-if="state.subjectResources.length === 0">
+                                <div class="card-body text-muted">No resources found for the selected filters.</div>
+                            </t>
+                            <t t-else="">
+                                <div class="aps-dashboard-scroll-list">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tbody>
+                                            <t t-foreach="state.subjectResources" t-as="res" t-key="res.id">
+                                                <tr class="aps-resource-row"
+                                                    t-on-click="() => this.openResource(res.id)">
+                                                    <td class="aps-icon-cell">
+                                                        <t t-if="res.type_id">
+                                                            <img t-att-src="typeIconUrl(res.type_id)"
+                                                                 class="aps-type-icon"
+                                                                 alt=""
+                                                                 t-att-title="res.type_id[1] or ''"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <i class="fa fa-file-o aps-type-icon-placeholder"/>
+                                                        </t>
+                                                    </td>
+                                                    <td class="fw-semibold aps-resource-name">
+                                                        <t t-esc="res.display_name"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
                 </div><!-- end two-column row -->
 
                 <!-- ==================== SUBMISSIONS FOR SELECTED RESOURCE ==================== -->
                 <t t-if="state.selectedResourceId">
-                    <div class="card shadow-sm mb-4">
+                    <div class="card shadow-sm mb-3">
                         <div class="card-header bg-white fw-bold">
                             <i class="fa fa-list-alt me-2 text-warning"/>
-                            Submissions — <t t-esc="firstSubmissionName"/>
+                            Submissions — <t t-esc="state.selectedResourceName or 'Selected Resource'"/>
                         </div>
 
                         <t t-if="state.submissionsLoading">
@@ -198,8 +201,8 @@
                                         <t t-foreach="state.submissions" t-as="sub" t-key="sub.id">
                                             <tr>
                                                 <td class="aps-icon-cell">
-                                                    <t t-if="sub.resource_type_id">
-                                                        <img t-att-src="typeIconUrl(sub.resource_type_id)"
+                                                    <t t-if="sub.type_icon">
+                                                        <img t-att-src="binaryIconUrl(sub.type_icon)"
                                                              class="aps-type-icon"
                                                              alt=""/>
                                                     </t>

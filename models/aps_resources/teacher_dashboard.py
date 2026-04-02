@@ -53,7 +53,7 @@ class APSResource(models.Model):
         combined_domain = ['|', ('type_id.name', '=', 'Subject')] + combined_domain
         subject_resources = self.env['aps.resources'].search_read(
             combined_domain,
-            ['id', 'name', 'type_id', 'subjects', 'write_date'],
+            ['id', 'name', 'display_name', 'type_id', 'subjects', 'write_date'],
             order='write_date desc',
             limit=200,
         )
@@ -90,6 +90,7 @@ class APSResource(models.Model):
                 resource_stats[rid] = {
                     'id': rid,
                     'name': task.resource_id.name or '',
+                    'type_icon': task.type_icon or task.resource_id.type_icon,
                     'oldest_date_assigned': task.date_assigned,
                     'most_recent_date_assigned': task.date_assigned,
                     'total_submissions': 0,
@@ -124,6 +125,7 @@ class APSResource(models.Model):
             task_resources.append({
                 'id': stats['id'],
                 'name': stats['name'],
+                'type_icon': stats['type_icon'],
                 'oldest_date_assigned': (
                     str(stats['oldest_date_assigned'])
                     if stats['oldest_date_assigned']
@@ -169,6 +171,7 @@ class APSResource(models.Model):
             [
                 'id',
                 'display_name',
+                'type_icon',
                 'student_id',
                 'state',
                 'date_assigned',
@@ -184,5 +187,11 @@ class APSResource(models.Model):
             for key in ['date_assigned', 'date_due', 'date_submitted']:
                 if sub[key]:
                     sub[key] = str(sub[key])
+
+        # Sort for dashboard display: Date Assigned (DESC), Student (ASC)
+        submissions.sort(
+            key=lambda sub: (sub.get('student_id') and sub['student_id'][1] or '').lower()
+        )
+        submissions.sort(key=lambda sub: sub.get('date_assigned') or '', reverse=True)
 
         return submissions

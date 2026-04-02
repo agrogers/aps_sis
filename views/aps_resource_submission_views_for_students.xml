@@ -154,7 +154,7 @@
                         <page string="Notes" name="resource_notes_page" class="tab-with-icon notes-tab" invisible="resource_has_notes == 'no' or not resource_notes">
                             <field name="resource_notes" nolabel="1" readonly="1"/>
                         </page>
-                        <page string="." name="information_page"  class="tab-with-icon information-tab">
+                        <page string="." name="information_page"  class="tab-with-icon information-tab tab-hide-label" invisible="1">
                             <group>
                                 <group>
                                     <label for="task_id"/>
