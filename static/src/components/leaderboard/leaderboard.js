@@ -67,9 +67,10 @@ export class Leaderboard extends Component {
     }
 
     // Returns true when this entry is the faculty-selected student.
+    // Use == (not ===) because the parent select's t-model may pass a string.
     isSelectedStudent(entry) {
         return !!this.props.selectedStudentPartnerId &&
-               entry.student_id === this.props.selectedStudentPartnerId;
+               entry.student_id == this.props.selectedStudentPartnerId;
     }
 
     // Border / ring colour for each rank position.

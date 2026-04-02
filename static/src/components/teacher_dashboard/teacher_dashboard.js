@@ -90,7 +90,7 @@ export class TeacherDashboard extends Component {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
         } catch {
-            // localStorage full or blocked — ignore
+            // localStorage full or blocked - ignore
         }
         if (this.props.updateActionState) {
             this.props.updateActionState(snapshot);
@@ -146,7 +146,7 @@ export class TeacherDashboard extends Component {
     }
 
     // ------------------------------------------------------------------ //
-    // Event handlers — filters
+    // Event handlers - filters
     // ------------------------------------------------------------------ //
     async onChangeCategory(ev) {
         const val = ev.target.value;
@@ -161,7 +161,7 @@ export class TeacherDashboard extends Component {
 
 
     // ------------------------------------------------------------------ //
-    // Event handlers — resource actions
+    // Event handlers - resource actions
     // ------------------------------------------------------------------ //
     openResource(resourceId) {
         this.action.doAction({
@@ -227,6 +227,16 @@ export class TeacherDashboard extends Component {
         });
     }
 
+    async openAllSubmissions() {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "aps.resource.submission",
+            views: [[false, "list"]],
+            domain: [["resource_id", "=", this.state.selectedResourceId]],
+            target: "current",
+        });
+    }
+
     // ------------------------------------------------------------------ //
     // Helpers
     // ------------------------------------------------------------------ //
@@ -265,6 +275,21 @@ export class TeacherDashboard extends Component {
         if (score >= 80) return "aps-score-high";
         if (score >= 50) return "aps-score-mid";
         return "aps-score-low";
+    }
+
+    // URL generation for right-click / middle-click "open in new tab" support.
+    // Must use real action XML IDs — Odoo 18's router looks up the action by ID
+    // and will throw "does not exist" if the generic type name is used instead.
+    getResourceUrl(resourceId) {
+        return `/web#action=aps_sis.action_aps_resources&id=${resourceId}&view_type=form`;
+    }
+
+    getSubmissionsUrl(resourceId) {
+        return `/web#action=aps_sis.action_aps_resource_submissions&view_type=list&search_default_resource_id=${resourceId}`;
+    }
+
+    getSubmissionUrl(submissionId) {
+        return `/web#action=aps_sis.action_aps_resource_submissions&id=${submissionId}&view_type=form`;
     }
 }
 

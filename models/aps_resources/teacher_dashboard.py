@@ -122,7 +122,7 @@ class APSResource(models.Model):
             stats['total_submissions'] += task.submission_count
             if task.state == 'overdue':
                 stats['overdue_count'] += 1
-            if task.avg_result is not None:
+            if task.avg_result is not None and task.avg_result >= 0:
                 stats['scores'].append(task.avg_result)
 
         task_resources = []

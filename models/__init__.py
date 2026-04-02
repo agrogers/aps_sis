@@ -5,7 +5,7 @@ from . import aps_resource_tags
 from . import aps_resources
 from . import aps_resource_types
 from . import aps_resource_task
-from . import aps_resource_submission
+from . import submissions
 from . import aps_assign_students_wizard
 from . import aps_dashboard
 from . import core

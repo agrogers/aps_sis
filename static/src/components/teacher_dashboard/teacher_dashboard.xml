@@ -81,8 +81,7 @@
                                         <tbody>
                                             <t t-foreach="state.taskResources" t-as="tr_" t-key="tr_.id">
                                                 <tr t-att-class="state.selectedResourceId === tr_.id ? 'table-primary' : ''"
-                                                    class="aps-resource-row"
-                                                    t-on-click="() => this.selectResource(tr_.id, tr_.name)">
+                                                    class="aps-resource-row">
                                                     <td class="aps-icon-cell">
                                                         <t t-if="tr_.type_icon">
                                                             <img t-att-src="binaryIconUrl(tr_.type_icon)"
@@ -93,7 +92,13 @@
                                                             <i class="fa fa-file-o aps-type-icon-placeholder"/>
                                                         </t>
                                                     </td>
-                                                    <td class="fw-semibold"><t t-esc="tr_.name"/></td>
+                                                    <td class="fw-semibold">
+                                                        <a href="#" 
+                                                           t-on-click.prevent="() => this.selectResource(tr_.id, tr_.name)"
+                                                           class="aps-resource-link">
+                                                            <t t-esc="tr_.name"/>
+                                                        </a>
+                                                    </td>
                                                     <td class="small"><t t-esc="tr_.oldest_date_assigned or '—'"/></td>
                                                     <td><t t-esc="tr_.total_submissions"/></td>
                                                     <td>
@@ -137,8 +142,7 @@
                                     <table class="table table-sm table-hover mb-0">
                                         <tbody>
                                             <t t-foreach="state.subjectResources" t-as="res" t-key="res.id">
-                                                <tr class="aps-resource-row"
-                                                    t-on-click="() => this.openResource(res.id)">
+                                                <tr class="aps-resource-row">
                                                     <td class="aps-icon-cell">
                                                         <t t-if="res.type_id">
                                                             <img t-att-src="typeIconUrl(res.type_id)"
@@ -151,7 +155,11 @@
                                                         </t>
                                                     </td>
                                                     <td class="fw-semibold aps-resource-name">
-                                                        <t t-esc="res.display_name"/>
+                                                        <a t-att-href="getResourceUrl(res.id)" 
+                                                           t-on-click.prevent="() => this.openResource(res.id)"
+                                                           class="aps-resource-link">
+                                                            <t t-esc="res.display_name"/>
+                                                        </a>
                                                     </td>
                                                 </tr>
                                             </t>
@@ -167,9 +175,16 @@
                 <!-- ==================== SUBMISSIONS FOR SELECTED RESOURCE ==================== -->
                 <t t-if="state.selectedResourceId">
                     <div class="card shadow-sm mb-3">
-                        <div class="card-header bg-white fw-bold">
-                            <i class="fa fa-list-alt me-2 text-warning"/>
-                            Submissions — <t t-esc="state.selectedResourceName or 'Selected Resource'"/>
+                        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fa fa-list-alt me-2 text-warning"/>
+                                Submissions — <t t-esc="state.selectedResourceName or 'Selected Resource'"/>
+                            </div>
+                            <a t-att-href="getSubmissionsUrl(state.selectedResourceId)" 
+                               t-on-click.prevent="openAllSubmissions"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fa fa-external-link me-1"></i>View All
+                            </a>
                         </div>
 
                         <t t-if="state.submissionsLoading">
@@ -228,10 +243,11 @@
                                                     <t t-else="">—</t>
                                                 </td>
                                                 <td>
-                                                    <button class="btn btn-outline-primary btn-sm"
-                                                            t-on-click="() => this.openSubmission(sub.id)">
-                                                        <i class="fa fa-eye me-1"/>View
-                                                    </button>
+                                                    <a t-att-href="getSubmissionUrl(sub.id)" 
+                                                       t-on-click.prevent="() => this.openSubmission(sub.id)"
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="fa fa-eye me-1"></i>View
+                                                    </a>
                                                 </td>
                                             </tr>
                                         </t>

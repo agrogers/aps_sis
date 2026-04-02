@@ -22,18 +22,16 @@
     overflow-y: auto;
 }
 
-/* Clickable resource rows */
-.aps-teacher-dashboard .aps-resource-row {
-    cursor: pointer;
-}
-
-.aps-teacher-dashboard .aps-resource-name {
+/* Clickable resource links */
+.aps-teacher-dashboard .aps-resource-link {
     color: var(--bs-primary);
     text-decoration: underline dotted;
+    text-decoration-color: rgba(var(--bs-primary-rgb), 0.5);
 }
 
-.aps-teacher-dashboard .aps-resource-name:hover {
+.aps-teacher-dashboard .aps-resource-link:hover {
     color: var(--bs-primary-dark, #0056b3);
+    text-decoration-color: var(--bs-primary);
 }
 
 /* Type icon */
