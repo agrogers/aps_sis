@@ -62,6 +62,16 @@ class APSResource(models.Model):
             if rec.get('write_date'):
                 rec['write_date'] = str(rec['write_date'])[:10]
 
+        # Keep newest first within groups, then force Subject resources to top.
+        subject_resources.sort(key=lambda rec: rec.get('write_date') or '', reverse=True)
+        subject_resources.sort(
+            key=lambda rec: not (
+                rec.get('type_id')
+                and len(rec['type_id']) > 1
+                and rec['type_id'][1] == 'Subject'
+            )
+        )
+
         # ------------------------------------------------------------------ #
         # Section 4 – Assigned Resources
         # ------------------------------------------------------------------ #

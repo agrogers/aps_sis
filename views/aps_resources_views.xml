@@ -15,6 +15,7 @@
                 <field name="type_id" optional="hide"/>
                 <field name="category" optional="hide"/>
                 <field name="marks" optional="hide"/>
+                <field name="weight" optional="hide"/>
                 <field name="points_scale" optional="hide"/>
                 <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="parent_ids" optional="hide"/>
@@ -183,6 +184,7 @@
                                     <field name="category"/>
                                     <field name="marks" widget="float_sentinel"/>
                                     <field name="score_contributes_to_parent" widget="boolean_toggle" invisible="not parent_ids"/>
+                                    <field name="weight"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="tag_ids" widget="many2many_tags" options="{'no_create': False}"/>
                                     <field name="url" widget="url_icon"/>

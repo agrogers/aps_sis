@@ -222,7 +222,7 @@ class APSResource(models.Model):
             parent = current.primary_parent_id
             if not parent:
                 remaining = current.parent_ids.filtered(lambda p: p.id not in visited_up)
-                parent = remaining[:1] if remaining else None
+                parent = remaining.sorted(key=lambda p: (p.sequence or 0, p.id))[:1] if remaining else None
             if not parent or parent.id in visited_up:
                 break
             visited_up.add(parent.id)
@@ -233,7 +233,7 @@ class APSResource(models.Model):
         def _build_children(resource, visited):
             result = []
             # Linked resources first (mark-contributing)
-            for child in resource.child_ids:
+            for child in resource.child_ids.sorted(key=lambda r: (r.sequence or 0, r.id)):
                 if child.id in visited:
                     continue
                 visited.add(child.id)
@@ -241,7 +241,7 @@ class APSResource(models.Model):
                 node['children'] = _build_children(child, visited)
                 result.append(node)
             # Supporting resources second (shown in italics)
-            for child in resource.supporting_resource_ids:
+            for child in resource.supporting_resource_ids.sorted(key=lambda r: (r.sequence or 0, r.id)):
                 if child.id in visited:
                     continue
                 visited.add(child.id)

@@ -87,6 +87,7 @@ class APSResource(models.Model):
         default='optional',
         help='Identifies which resources should be assigned to students to complete.', tracking=True)
     marks = fields.Float(string='Out of Marks', digits=(16, 1), help='Maximum marks/points for this resource')
+    weight = fields.Float(string='Weight', digits=(16, 1), help='Weight of this resource in the overall calculation')
     score_contributes_to_parent = fields.Boolean(
         string='Contributes to Parent Score',
         default=True,
