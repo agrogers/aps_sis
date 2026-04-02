@@ -251,6 +251,7 @@
                     <button name="action_open_submission_student_view" string="Student View" type="object" class="btn-secondary" />
                     <separator/>
                     <!-- <separator/> -->
+                    <button name="action_generate_feedback" string="Generate Feedback" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
                     <button name="action_mark_reviewed" string="Reviewed"  invisible="not is_current_user_faculty or is_current_user_reviewed" type="object" class="btn-secondary"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-secondary" invisible="state != 'assigned'"/>
                     <button name="action_resubmit" string="Resubmit" type="object" class="btn-secondary" invisible="state in ['assigned']"/>
