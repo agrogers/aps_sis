@@ -1,3 +1,16 @@
+/* ── Sticky notebook tabs ───────────────────────────────────────────────────
+   Add class "aps-sticky-tabs" to a <notebook> element in any form view XML to
+   make its tab row stay visible while the user scrolls through the page.
+   A subtle shadow is added so users can see the bar is separate from content. */
+
+.o_notebook.aps-sticky-tabs > .nav-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
 /* Make active tab links bold in notebooks */
 .nav-link.active {
     font-weight: 600;

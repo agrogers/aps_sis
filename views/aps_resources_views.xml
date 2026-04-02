@@ -160,7 +160,7 @@
                         <field name="display_name_breadcrumb" widget="breadcrumb_pills" nolabel="1"
                                options="{'size': '1.4em'}" style="font-weight: 600;"/>
                     </div>
-                    <notebook>
+                    <notebook class="aps-sticky-tabs">
                         <page string="Basic Information">
                             <group>
                                 <field name="name" />
