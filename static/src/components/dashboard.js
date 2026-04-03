@@ -751,10 +751,14 @@ export class ApexDashboard extends Component {
     async fetchProgressLeaderboard() {
         this.state.loadingProgressLeaderboard = true;
         try {
+            const kwargs = { limit: 30 };
+            if (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false") {
+                kwargs.category_id = parseInt(this.state.selectedSubjectCategory, 10);
+            }
             const data = await this.orm.call(
                 "aps.resource.submission",
                 "get_progress_leaderboard_data",
-                [], { limit: 30 }
+                [], kwargs
             );
             this.state.progressLeaderboardData = data || [];
         } catch (error) {
@@ -768,10 +772,14 @@ export class ApexDashboard extends Component {
     async fetchCompletionLeaderboard() {
         this.state.loadingCompletionLeaderboard = true;
         try {
+            const kwargs = { limit: 30 };
+            if (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false") {
+                kwargs.category_id = parseInt(this.state.selectedSubjectCategory, 10);
+            }
             const data = await this.orm.call(
                 "aps.resource.submission",
                 "get_completion_leaderboard_data",
-                [], { limit: 30 }
+                [], kwargs
             );
             this.state.completionLeaderboardData = data?.entries || [];
             this.state.completionDeadline = data?.deadline || false;

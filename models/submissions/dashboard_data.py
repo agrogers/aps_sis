@@ -141,7 +141,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         return avatar_map, image_map
     
     @api.model
-    def get_progress_leaderboard_data(self, limit=30):
+    def get_progress_leaderboard_data(self, limit=30, category_id=None):
         """Return top N students by average progress across enrolled, non-excluded subjects.
 
         Uses the same subject inclusion/exclusion logic as the Progress charts:
@@ -174,6 +174,8 @@ class APSResourceSubmissionDashboardData(models.Model):
             all_subjects |= sub.subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+        if category_id:
+            all_subjects = all_subjects.filtered(lambda s: s.category_id.id == category_id)
 
         # Restrict to subjects students are currently enrolled in
         student_enrolled_subjects = {}
@@ -257,7 +259,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         return result
 
     @api.model
-    def get_completion_leaderboard_data(self, limit=30):
+    def get_completion_leaderboard_data(self, limit=30, category_id=None):
         """Return top N students ranked by predicted total progress at the course deadline.
 
         Uses the same subject inclusion/exclusion and enrolment logic as
@@ -311,6 +313,8 @@ class APSResourceSubmissionDashboardData(models.Model):
             all_subjects |= sub.subjects
         if exclude:
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
+        if category_id:
+            all_subjects = all_subjects.filtered(lambda s: s.category_id.id == category_id)
 
         # --- Restrict to enrolled subjects ---
         student_enrolled_subjects = {}
