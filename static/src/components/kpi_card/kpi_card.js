@@ -7,7 +7,9 @@ export class KpiCard extends Component {
      * - value: The main numeric value to display [cite: 17]
      * - percentage: The change percentage [cite: 17]
      * - icon: The FontAwesome icon class [cite: 14]
-     * - onClick: The function to execute for drill-down actions 
+     * - onClick: The function to execute for drill-down actions
+     * - late / on_time / early: counts for the "Due Status" KPI variant
+     * - onClickLate / onClickOnTime / onClickEarly: drill-down handlers for each status
      */
     static props = {
         name: { type: String, optional: true },
@@ -20,6 +22,13 @@ export class KpiCard extends Component {
         period_name: { type: String, optional: true },
         onClick: { type: Function, optional: true },
         percentage: { type: [Number, String], optional: true },
+        // Due Status variant
+        late: { type: Number, optional: true },
+        on_time: { type: Number, optional: true },
+        early: { type: Number, optional: true },
+        onClickLate: { type: Function, optional: true },
+        onClickOnTime: { type: Function, optional: true },
+        onClickEarly: { type: Function, optional: true },
     };    
 }
 
