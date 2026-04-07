@@ -27,6 +27,7 @@
                 <field name="has_answer" optional="hide"/>
                 <field name="has_child_resources" optional="hide"/>
                 <field name="has_supporting_resources" optional="hide"/>
+                <field name="show_in_hierarchy" optional="hide"/>
                 <field name="create_date" optional="hide"/>
                 <field name="write_date" optional="hide"/>
             </list>
@@ -201,6 +202,7 @@
                                     <field name="has_lesson_plan" widget="boolean_toggle"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
+                                    <field name="show_in_hierarchy" widget="boolean_toggle"/>
                                     <field name="auto_assign" widget="boolean_toggle"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px', 'show_name':True}" />
                                     <field name="child_count"/>
@@ -416,6 +418,7 @@
                 <filter name="has_answer_use_parent" string="Uses Parent Answer" domain="[('has_answer','=','use_parent')]"/>
                 <filter name="has_child_resources" string="Has Linked Resources" domain="[('has_child_resources','=','yes')]"/>
                 <filter name="has_supporting_resources" string="Has Supporting Resources" domain="[('has_supporting_resources','=','yes')]"/>
+                <filter name="show_in_hierarchy" string="In Hierarchy" domain="[('show_in_hierarchy','=',True)]"/>
                 <separator/>
                 <filter name="category_mandatory" string="Mandatory" domain="[('category','=','mandatory')]"/>
                 <filter name="category_optional" string="Optional" domain="[('category','=','optional')]"/>

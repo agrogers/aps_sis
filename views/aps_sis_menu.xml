@@ -49,6 +49,8 @@
     <menuitem id="menu_apex_root" name="APEX" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
 
     <menuitem id="menu_apex_resources" name="Resources" parent="menu_apex_root" action="action_aps_resources" sequence="9" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resource_hierarchy" name="Resource Hierarchy" parent="menu_apex_root" action="action_aps_resource_hierarchy" sequence="8" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resource_hierarchy_table" name="Resource Hierarchy (Table)" parent="menu_apex_root" action="action_aps_resource_hierarchy_table" sequence="7" groups="aps_sis.group_aps_teacher"/>
 
     <menuitem id="menu_apex_submissions" name="Submissions" parent="menu_apex_root" action="action_aps_resource_submissions" sequence="10" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
@@ -94,6 +96,7 @@
     <menuitem id="menu_apex_time_tracking_dashboard" name="Dashboard" parent="menu_apex_time_tracking_heading" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_teacher"/>
 
     <!-- Student Menus -->
+    <menuitem id="menu_apex_subject_overview_student" name="Subject Overview" parent="menu_apex_root" action="action_aps_resource_hierarchy_table_student" sequence="25" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student"/>
 

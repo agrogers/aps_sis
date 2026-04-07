@@ -210,6 +210,11 @@ class APSResource(models.Model):
         compute='_compute_share_url',
         help='Public URL to share this resource with anyone.',
     )
+    show_in_hierarchy = fields.Boolean(
+        string='Show in Hierarchy',
+        default=False,
+        help='Include this resource in the Resource Hierarchy view.',
+    )
     is_recently_viewed = fields.Boolean(
         string='Recently Viewed',
         compute='_compute_is_recently_viewed',

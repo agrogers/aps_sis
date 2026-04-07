@@ -19,6 +19,7 @@
 		'views/aps_resource_custom_name_views.xml',		
         'views/portal_templates.xml',
 		'views/aps_resources_views.xml',
+		'views/aps_resource_hierarchy_views.xml',
 		'views/aps_resource_types_views.xml',
 		'views/aps_resource_tags_views.xml',
 		'views/aps_assign_students_wizard_views.xml',

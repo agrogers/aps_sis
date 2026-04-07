@@ -48,6 +48,15 @@
 
             <t t-else="">
 
+                <!-- ==================== RESOURCE HIERARCHY (when category selected) ==================== -->
+                <t t-if="state.categoryId">
+                    <ResourceHierarchyTable
+                        t-key="state.categoryId"
+                        embedded="true"
+                        fixedCategoryId="state.categoryId"
+                        storageKeySuffix="'_dashboard'"/>
+                </t>
+
                 <!-- ==================== TWO-COLUMN ROW ==================== -->
                 <div class="row g-4 mb-3">
 
@@ -80,7 +89,7 @@
                                         </thead>
                                         <tbody>
                                             <t t-foreach="state.taskResources" t-as="tr_" t-key="tr_.id">
-                                                <tr t-att-class="state.selectedResourceId === tr_.id ? 'table-primary' : ''"
+                                                <tr t-att-class="state.selectedResourceId === tr_.id ? 'table-primary selected-row' : ''"
                                                     class="aps-resource-row">
                                                     <td class="aps-icon-cell">
                                                         <t t-if="tr_.type_icon">

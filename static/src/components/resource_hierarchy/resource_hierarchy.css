@@ -1,0 +1,158 @@
+/* ── Resource Hierarchy ────────────────────────────────────────── */
+
+.rh_root {
+    font-family: inherit;
+}
+
+/* ── Toolbar ────────────────────────────────────────────────── */
+.rh_toolbar {
+    z-index: 10;
+}
+
+/* ── Scroll / Zoom ──────────────────────────────────────────── */
+.rh_scroll_container {
+    position: relative;
+}
+
+.rh_zoom_wrapper {
+    padding: 24px 32px 64px;
+    min-width: max-content;
+    position: relative;
+}
+
+/* ── Subject Group ──────────────────────────────────────────── */
+.rh_subject_group {
+    margin-bottom: 40px;
+}
+
+.rh_subject_header {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: var(--o-brand-primary, #714B67);
+    padding: 12px 0 8px;
+    border-bottom: 3px solid var(--o-brand-primary, #714B67);
+    margin-bottom: 24px;
+}
+
+/* ── Level rows ─────────────────────────────────────────────── */
+.rh_levels_container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.rh_level {
+    position: relative;
+}
+
+.rh_level_row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 16px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 8px 0;
+}
+
+/* ── Node wrapper (holds connector SVG + card) ──────────────── */
+.rh_node_wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 140px;
+    max-width: 280px;
+    flex-shrink: 0;
+}
+
+/* ── Connector SVGs ─────────────────────────────────────────── */
+.rh_connector_svg {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    width: 2px;
+    height: 24px;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.rh_level_connector {
+    height: 24px;
+    position: relative;
+}
+
+/* Vertical connector lines drawn by CSS */
+.rh_level_connector::before {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+/* ── Node card ──────────────────────────────────────────────── */
+.rh_node {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.15s;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+}
+
+.rh_node:hover {
+    box-shadow: 0 4px 16px rgba(113, 75, 103, 0.18);
+    transform: translateY(-2px);
+}
+
+.rh_node_name {
+    font-weight: 600;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.35;
+    color: #212529;
+}
+
+.rh_node_type {
+    padding: 0 10px 8px;
+}
+
+.rh_node_type .badge {
+    font-size: 0.72em;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+/* ── SVG connector lines (drawn by JS after mount) ──────────── */
+.rh_connector_line {
+    stroke: var(--o-brand-primary, #714B67);
+    stroke-width: 2;
+    fill: none;
+    opacity: 0.45;
+}
+
+.rh_connector_overlay {
+    z-index: 0;
+}
+
+/* Keep cards above connector lines */
+.rh_node_wrapper {
+    z-index: 1;
+}
+
+/* ── Responsive tweaks ──────────────────────────────────────── */
+@media (max-width: 768px) {
+    .rh_zoom_wrapper {
+        padding: 12px 8px 48px;
+    }
+    .rh_node_wrapper {
+        min-width: 100px;
+        max-width: 200px;
+    }
+}

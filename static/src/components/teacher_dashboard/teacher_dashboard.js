@@ -1,6 +1,7 @@
 import { Component, useState, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { ResourceHierarchyTable } from "../resource_hierarchy_table/resource_hierarchy_table";
 
 const STORAGE_KEY = "aps_teacher_dashboard_state";
 
@@ -23,6 +24,7 @@ function _normalizeResourceId(value) {
 
 export class TeacherDashboard extends Component {
     static template = "aps_sis.TeacherDashboard";
+    static components = { ResourceHierarchyTable };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },

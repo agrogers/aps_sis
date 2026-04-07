@@ -1,0 +1,17 @@
+<odoo>
+    <record id="action_aps_resource_hierarchy" model="ir.actions.client">
+        <field name="name">Resource Hierarchy</field>
+        <field name="tag">aps_resource_hierarchy</field>
+    </record>
+
+    <record id="action_aps_resource_hierarchy_table" model="ir.actions.client">
+        <field name="name">Resource Hierarchy (Table)</field>
+        <field name="tag">aps_resource_hierarchy_table</field>
+    </record>
+
+    <record id="action_aps_resource_hierarchy_table_student" model="ir.actions.client">
+        <field name="name">Subject Overview</field>
+        <field name="tag">aps_resource_hierarchy_table</field>
+        <field name="context">{'student_mode': True}</field>
+    </record>
+</odoo>

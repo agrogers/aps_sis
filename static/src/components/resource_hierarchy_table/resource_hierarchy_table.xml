@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aps_sis.ResourceHierarchyTable">
+        <div t-att-class="props.embedded ? 'rht_root d-flex flex-column' : 'rht_root d-flex flex-column vh-100 bg-100'">
+
+            <!-- ── Toolbar (hidden in embedded mode) ─────── -->
+            <t t-if="!props.embedded">
+            <div class="rht_toolbar d-flex align-items-center gap-3 px-3 py-2 bg-white border-bottom shadow-sm flex-wrap">
+                <h4 class="mb-0 fw-bold text-primary">
+                    <i class="fa fa-th me-2"/>Resource Hierarchy
+                </h4>
+
+                <!-- Depth level controls -->
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-primary" t-on-click="depthDecrease" title="Show fewer levels"
+                            t-att-disabled="state.maxVisibleDepth &lt;= 0">
+                        <i class="fa fa-minus"/>
+                    </button>
+                    <span class="btn btn-outline-primary disabled" style="min-width:80px;">
+                        Depth: <t t-esc="state.maxVisibleDepth"/>
+                    </span>
+                    <button class="btn btn-outline-primary" t-on-click="depthIncrease" title="Show more levels"
+                            t-att-disabled="state.maxVisibleDepth >= state.globalMaxDepth">
+                        <i class="fa fa-plus"/>
+                    </button>
+                </div>
+
+                <!-- Tag overlays -->
+                <t t-if="state.hierarchyTags.length">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="fw-semibold text-muted small">Tags:</span>
+                        <t t-foreach="state.hierarchyTags" t-as="tag" t-key="tag.id">
+                            <label class="rht_tag_chip d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill border small"
+                                   t-att-class="isTagActive(tag.id) ? 'rht_tag_active' : ''"
+                                   t-att-style="tag.color_hex ? 'border-color:' + tag.color_hex + ' !important;' : ''">
+                                <input type="checkbox"
+                                       class="form-check-input m-0"
+                                       t-att-checked="isTagActive(tag.id)"
+                                       t-on-change="() => this.toggleTag(tag.id)"/>
+                                <span t-esc="tag.name"/>
+                            </label>
+                        </t>
+                    </div>
+                </t>
+
+                <div class="ms-auto"/>
+
+                <!-- Subject filter -->
+                <div class="d-flex align-items-center gap-2">
+                    <label class="mb-0 fw-semibold text-muted small" for="rht_subject_filter">Subject:</label>
+                    <select id="rht_subject_filter"
+                            class="form-select form-select-sm"
+                            style="width: auto; min-width: 180px;"
+                            t-on-change="onSubjectChange">
+                        <option value="">All Subjects</option>
+                        <t t-foreach="state.subjects" t-as="subj" t-key="subj.id">
+                            <option t-att-value="subj.id"
+                                    t-att-selected="state.selectedSubjectId === subj.id">
+                                <t t-esc="subj.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Zoom controls -->
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-secondary" t-on-click="zoomOut" title="Zoom Out">
+                        <i class="fa fa-search-minus"/>
+                    </button>
+                    <button class="btn btn-outline-secondary" t-on-click="zoomReset" title="Reset Zoom">
+                        <t t-esc="Math.round(state.zoom * 100)"/>%
+                    </button>
+                    <button class="btn btn-outline-secondary" t-on-click="zoomIn" title="Zoom In">
+                        <i class="fa fa-search-plus"/>
+                    </button>
+                </div>
+            </div>
+            </t>
+
+            <!-- ── Content area ────────────────────────────── -->
+            <div class="rht_scroll_container flex-grow-1 overflow-auto">
+
+                <t t-if="state.loading">
+                    <div class="d-flex justify-content-center align-items-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading…</span>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-elif="!state.hierarchyData.length">
+                    <t t-if="!props.embedded">
+                        <div class="d-flex flex-column justify-content-center align-items-center p-5 text-muted">
+                            <i class="fa fa-th fa-3x mb-3 opacity-25"/>
+                            <p class="fs-5">No hierarchy resources found.</p>
+                            <p class="small">Enable <strong>Show in Hierarchy</strong> on resources to populate this view.</p>
+                        </div>
+                    </t>
+                </t>
+
+                <t t-else="">
+                    <div class="rht_zoom_wrapper" t-att-style="zoomStyle">
+                        <t t-foreach="state.hierarchyData" t-as="subjectGroup" t-key="subjectGroup.subject_id">
+                            <div class="rht_subject_group" t-att-style="getGroupStyle(subjectGroup)">
+                                <!-- Subject heading with icon (hidden in embedded mode) -->
+                                <t t-if="!props.embedded">
+                                <div class="rht_subject_header">
+                                    <t t-if="getSubjectIcon(subjectGroup)">
+                                        <img t-att-src="getSubjectIcon(subjectGroup)"
+                                             class="rht_subject_icon me-2"
+                                             alt=""/>
+                                    </t>
+                                    <t t-else="">
+                                        <i class="fa fa-book me-2"/>
+                                    </t>
+                                    <t t-esc="subjectGroup.subject_name"/>
+                                </div>
+                                </t>
+
+                                <!-- Hierarchy table -->
+                                <table class="rht_table" t-att-style="getTableStyle(subjectGroup)">
+                                    <t t-foreach="subjectGroup.rows" t-as="row" t-key="row_index">
+                                        <tr>
+                                            <t t-foreach="row" t-as="cell" t-key="cell.id">
+                                                <td t-att-colspan="cell.colspan"
+                                                    t-att-rowspan="cell.rowspan"
+                                                    t-att-class="getCellClass(cell) + (cell.minimized ? ' rht_cell_minimized' : '')"
+                                                    t-att-style="getCellStyle(cell)"
+                                                    t-att-title="cell.minimized ? cell.name : ''"
+                                                    t-on-click="() => this.openResource(cell.id, cell.name)">
+                                                    <div class="rht_cell_inner">
+                                                        <t t-if="!cell.minimized">
+                                                            <div class="rht_cell_name">
+                                                                <t t-esc="cell.name"/>
+                                                            </div>
+                                                        </t>
+                                                        <!-- Per-cell expand/collapse buttons -->
+                                                        <t t-if="cell.hasHiddenChildren">
+                                                            <button class="rht_cell_btn rht_cell_btn_expand"
+                                                                    title="Expand children"
+                                                                    t-on-click="(ev) => this.cellExpand(ev, cell.id)">
+                                                                <i class="fa fa-plus"/>
+                                                            </button>
+                                                        </t>
+                                                        <t t-if="cell.hasVisibleChildren">
+                                                            <button class="rht_cell_btn rht_cell_btn_collapse"
+                                                                    title="Collapse children"
+                                                                    t-on-click="(ev) => this.cellCollapse(ev, cell.id)">
+                                                                <i class="fa fa-minus"/>
+                                                            </button>
+                                                        </t>
+                                                    </div>
+                                                    <!-- Per-cell minimize toggle (top-level only, anchored to td) -->
+                                                    <t t-if="cell.depth === 0">
+                                                        <button class="rht_cell_btn rht_cell_btn_minimize"
+                                                                t-att-title="cell.minimized ? 'Show label' : 'Hide label'"
+                                                                t-on-click="(ev) => this.cellToggleMinimize(ev, cell.id)">
+                                                            <i t-att-class="cell.minimized ? 'fa fa-eye' : 'fa fa-eye-slash'"/>
+                                                        </button>
+                                                    </t>
+                                                </td>
+                                            </t>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

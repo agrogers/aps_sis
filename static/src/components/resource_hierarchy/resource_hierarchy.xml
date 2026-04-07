@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aps_sis.ResourceHierarchy">
+        <div class="rh_root d-flex flex-column vh-100 bg-100">
+            <!-- ── Toolbar ─────────────────────────────────── -->
+            <div class="rh_toolbar d-flex align-items-center gap-3 px-3 py-2 bg-white border-bottom shadow-sm">
+                <h4 class="mb-0 me-auto fw-bold text-primary">
+                    <i class="fa fa-sitemap me-2"/>Resource Hierarchy
+                </h4>
+
+                <!-- Subject filter -->
+                <div class="d-flex align-items-center gap-2">
+                    <label class="mb-0 fw-semibold text-muted small" for="rh_subject_filter">Subject:</label>
+                    <select id="rh_subject_filter"
+                            class="form-select form-select-sm"
+                            style="width: auto; min-width: 180px;"
+                            t-on-change="onSubjectChange">
+                        <option value="">All Subjects</option>
+                        <t t-foreach="state.subjects" t-as="subj" t-key="subj.id">
+                            <option t-att-value="subj.id"
+                                    t-att-selected="state.selectedSubjectId === subj.id">
+                                <t t-esc="subj.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Zoom controls -->
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-secondary" t-on-click="zoomOut" title="Zoom Out">
+                        <i class="fa fa-search-minus"/>
+                    </button>
+                    <button class="btn btn-outline-secondary" t-on-click="zoomReset" title="Reset Zoom">
+                        <t t-esc="Math.round(state.zoom * 100)"/>%
+                    </button>
+                    <button class="btn btn-outline-secondary" t-on-click="zoomIn" title="Zoom In">
+                        <i class="fa fa-search-plus"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Content area ────────────────────────────── -->
+            <div class="rh_scroll_container flex-grow-1 overflow-auto">
+                <t t-if="state.loading">
+                    <div class="d-flex justify-content-center align-items-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading…</span>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-elif="!state.hierarchyData.length">
+                    <div class="d-flex flex-column justify-content-center align-items-center p-5 text-muted">
+                        <i class="fa fa-sitemap fa-3x mb-3 opacity-25"/>
+                        <p class="fs-5">No hierarchy resources found.</p>
+                        <p class="small">Enable <strong>Show in Hierarchy</strong> on resources to populate this view.</p>
+                    </div>
+                </t>
+
+                <t t-else="">
+                    <div class="rh_zoom_wrapper" t-att-style="zoomStyle">
+                        <t t-foreach="state.hierarchyData" t-as="subjectGroup" t-key="subjectGroup.subject_id">
+                            <div class="rh_subject_group">
+                                <!-- Subject header -->
+                                <div class="rh_subject_header">
+                                    <i class="fa fa-book me-2"/>
+                                    <t t-esc="subjectGroup.subject_name"/>
+                                </div>
+
+                                <!-- Levels -->
+                                <div class="rh_levels_container">
+                                    <t t-foreach="subjectGroup.levels" t-as="level" t-key="level_index">
+                                        <div class="rh_level">
+                                            <div class="rh_level_connector" t-if="level_index > 0"/>
+                                            <div class="rh_level_row">
+                                                <t t-foreach="level" t-as="node" t-key="node.id">
+                                                    <div class="rh_node_wrapper">
+                                                        <!-- Connection lines from parents -->
+                                                        <t t-if="level_index > 0">
+                                                            <svg class="rh_connector_svg" t-att-data-node-id="node.id" t-att-data-parent-ids="this.toJSON(node.parent_ids)"/>
+                                                        </t>
+                                                        <div class="rh_node"
+                                                             t-att-data-resource-id="node.id"
+                                                             t-att-style="getNodeStyle(node)"
+                                                             t-on-click="() => this.openResource(node.id)">
+                                                            <div class="rh_node_name"
+                                                                 t-att-style="'font-size:' + getLevelFontSize(level_index, subjectGroup.levels.length) + ';padding:' + getLevelPadding(level_index)">
+                                                                <t t-esc="node.name"/>
+                                                            </div>
+                                                            <div class="rh_node_type" t-if="node.type_name">
+                                                                <span class="badge rounded-pill"
+                                                                      t-att-style="node.type_color ? 'background-color:' + node.type_color + ';color:#fff;' : ''">
+                                                                    <t t-esc="node.type_name"/>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

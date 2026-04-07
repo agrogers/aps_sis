@@ -397,3 +397,208 @@ class APSResource(models.Model):
             'auto_assign_date': next_date,
             'auto_assign_log': f'{log_entry}\n{existing_log}'.strip(),
         })
+
+    # ------------------------------------------------------------------
+    # Resource Hierarchy client-action data
+    # ------------------------------------------------------------------
+    @api.model
+    def get_hierarchy_data(self, subject_id=False):
+        """Return the full resource hierarchy for the client-action view.
+
+        Starting from resources with ``show_in_hierarchy=True``, walk down the
+        child_ids tree collecting connected resources also flagged for the
+        hierarchy.
+
+        Args:
+            subject_id: optional ``op.subject`` id to restrict to one subject.
+
+        Returns a list of subject-root dicts, each containing BFS levels.
+        """
+        # 1. Determine subjects to display
+        if subject_id:
+            subjects = self.env['op.subject'].browse(subject_id).exists()
+        else:
+            subjects = self.env['op.subject'].search([], order='name')
+
+        # 2. Find all hierarchy-eligible resources, prefetch children
+        all_resources = self.search([('show_in_hierarchy', '=', True)])
+        all_resources.mapped('child_ids')
+
+        result = []
+        for subject in subjects:
+            subject_resources = all_resources.filtered(
+                lambda r, s=subject: s in r.subjects
+            )
+            if not subject_resources:
+                continue
+
+            # Root = those whose parents are NOT in the subject set
+            root_resources = subject_resources.filtered(
+                lambda r, sr=subject_resources: not (r.parent_ids & sr)
+            )
+            if not root_resources:
+                continue
+
+            # BFS level-by-level
+            levels = []
+            current_level = root_resources.sorted(key=lambda r: (r.sequence or 0, r.name or ''))
+            visited = set(current_level.ids)
+
+            while current_level:
+                level_data = []
+                next_level = self.env['aps.resources']
+                for res in current_level:
+                    level_data.append({
+                        'id': res.id,
+                        'name': res.name or '',
+                        'type_name': res.type_id.name if res.type_id else '',
+                        'type_color': res.type_id.color if res.type_id else '',
+                        'parent_ids': (res.parent_ids & subject_resources).ids,
+                        'subject_ids': res.subjects.ids,
+                    })
+                    children = (res.child_ids & subject_resources).filtered(
+                        lambda c: c.id not in visited
+                    )
+                    for child in children:
+                        visited.add(child.id)
+                    next_level |= children
+                if level_data:
+                    levels.append(level_data)
+                current_level = next_level.sorted(
+                    key=lambda r: (r.sequence or 0, r.name or '')
+                )
+
+            if levels:
+                result.append({
+                    'subject_id': subject.id,
+                    'subject_name': subject.name or '',
+                    'levels': levels,
+                })
+
+        return result
+
+    @api.model
+    def get_hierarchy_subjects(self):
+        """Return subjects that have at least one hierarchy-visible resource."""
+        resources = self.search([('show_in_hierarchy', '=', True)])
+        subjects = resources.mapped('subjects')
+        return [
+            {
+                'id': s.id,
+                'name': s.name,
+                'color': (s.category_id.color_rgb or '') if s.category_id else '',
+                'icon': (s.icon or s.category_id.icon or False) if s.category_id else (s.icon or False),
+            }
+            for s in subjects.sorted('name')
+        ]
+
+    @api.model
+    def get_hierarchy_table_data(self, subject_id=False, category_id=False):
+        """Return hierarchy data structured for HTML table rendering.
+
+        Each subject group includes a tree with computed *colspan* values
+        and the overall *max_depth* so the JS client can build rows of
+        ``<td>`` elements with proper ``colspan`` / ``rowspan``.
+
+        Args:
+            subject_id: filter to a single subject (takes precedence).
+            category_id: filter to all subjects in this category.
+        """
+        if subject_id:
+            subjects = self.env['op.subject'].browse(subject_id).exists()
+        elif category_id:
+            subjects = self.env['op.subject'].search(
+                [('category_id', '=', category_id)], order='name',
+            )
+        else:
+            subjects = self.env['op.subject'].search([], order='name')
+
+        all_resources = self.search([('show_in_hierarchy', '=', True)])
+        all_resources.mapped('child_ids')  # prefetch
+        all_resources.mapped('tag_ids')    # prefetch
+
+        def _build_node(resource, subject_resources, visited):
+            children = (
+                (resource.child_ids & subject_resources)
+                .filtered(lambda c: c.id not in visited)
+                .sorted(key=lambda r: (r.sequence or 0, r.name or ''))
+            )
+            child_nodes = []
+            for child in children:
+                visited.add(child.id)
+                child_nodes.append(_build_node(child, subject_resources, visited))
+            colspan = sum(c['colspan'] for c in child_nodes) if child_nodes else 1
+            return {
+                'id': resource.id,
+                'name': resource.name or '',
+                'children': child_nodes,
+                'colspan': colspan,
+                'has_children': bool(child_nodes),
+                'tag_ids': resource.tag_ids.ids,
+            }
+
+        def _tree_depth(nodes):
+            """0 for leaves only, 1 if one level of children, etc."""
+            if not nodes:
+                return 0
+            max_d = 0
+            for n in nodes:
+                if n['children']:
+                    max_d = max(max_d, 1 + _tree_depth(n['children']))
+            return max_d
+
+        result = []
+        for subject in subjects:
+            subject_resources = all_resources.filtered(
+                lambda r, s=subject: s in r.subjects
+            )
+            if not subject_resources:
+                continue
+            root_resources = subject_resources.filtered(
+                lambda r, sr=subject_resources: not (r.parent_ids & sr)
+            ).sorted(key=lambda r: (r.sequence or 0, r.name or ''))
+            if not root_resources:
+                continue
+
+            visited = set()
+            root_nodes = []
+            for root in root_resources:
+                if root.id not in visited:
+                    visited.add(root.id)
+                    root_nodes.append(_build_node(root, subject_resources, visited))
+            if not root_nodes:
+                continue
+
+            cat_color = ''
+            if subject.category_id and subject.category_id.color_rgb:
+                cat_color = subject.category_id.color_rgb
+
+            # Prefer subject icon, fall back to category icon
+            icon = subject.icon or (subject.category_id.icon if subject.category_id else False) or False
+
+            result.append({
+                'subject_id': subject.id,
+                'subject_name': subject.name or '',
+                'color': cat_color,
+                'icon': icon,
+                'roots': root_nodes,
+                'total_cols': sum(n['colspan'] for n in root_nodes),
+                'max_depth': _tree_depth(root_nodes),
+            })
+
+        return result
+
+    @api.model
+    def get_hierarchy_tags(self):
+        """Return resource tags marked for hierarchy display."""
+        tags = self.env['aps.resource.tags'].search([
+            ('use_in_hierarchy', '=', True),
+        ], order='name')
+        return [
+            {
+                'id': t.id,
+                'name': t.name,
+                'color_hex': t.color_hex or '',
+            }
+            for t in tags
+        ]

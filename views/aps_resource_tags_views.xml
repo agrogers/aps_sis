@@ -8,6 +8,8 @@
             <list default_order="name">
                 <field name="name"/>
                 <field name="color" widget="color"/>
+                <field name="color_hex" optional="hide"/>
+                <field name="use_in_hierarchy"/>
             </list>
         </field>
     </record>
@@ -21,7 +23,10 @@
                     <group>
                         <group string="Details">
                             <field name="name"/>
-                            <!-- <field name="color" widget="color"/> -->
+                            <field name="color_hex" widget="color"/>
+                        </group>
+                        <group string="Hierarchy">
+                            <field name="use_in_hierarchy" widget="boolean_toggle"/>
                         </group>
                     </group>
                 </sheet>

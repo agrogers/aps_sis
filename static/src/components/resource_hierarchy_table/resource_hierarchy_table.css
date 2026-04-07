@@ -1,0 +1,249 @@
+/* ── Resource Hierarchy Table ──────────────────────────────────── */
+
+.rht_root {
+    font-family: inherit;
+}
+
+.rht_toolbar {
+    z-index: 10;
+}
+
+.rht_scroll_container {
+    position: relative;
+    overflow: auto;
+}
+
+.rht_zoom_wrapper {
+    padding: 24px 32px 64px;
+    min-width: max-content;
+    position: relative;
+    display: inline-block;
+    min-height: min-content;
+}
+
+/* ── Subject Group ──────────────────────────────────────────── */
+.rht_subject_group {
+    margin-bottom: 40px;
+}
+
+.rht_subject_header {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: var(--rht-header, var(--o-brand-primary, #714B67));
+    padding: 12px 0 12px;
+    border-bottom: 3px solid var(--rht-header, var(--o-brand-primary, #714B67));
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.rht_subject_icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+/* ── Table ──────────────────────────────────────────────────── */
+.rht_table {
+    border-collapse: separate;
+    border-spacing: 6px;
+}
+
+/* ── Cell base ──────────────────────────────────────────────── */
+.rht_cell {
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    background: #fff;
+    border-radius: 8px;
+    transition: background 0.15s, box-shadow 0.15s;
+    position: relative;
+}
+
+.rht_cell:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+    filter: brightness(0.96);
+}
+
+.rht_cell_inner {
+    position: relative;
+}
+
+.rht_cell_name {
+    font-weight: 400;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.25;
+    color: #212529;
+}
+
+/* ── Per-cell expand / collapse buttons ─────────────────────── */
+.rht_cell_btn {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 9px;
+    line-height: 18px;
+    text-align: center;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 2;
+    color: #333;
+}
+
+.rht_cell:hover .rht_cell_btn {
+    opacity: 1;
+}
+
+.rht_cell_btn:hover {
+    background: #fff;
+    border-color: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.rht_cell_btn_expand {
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.rht_cell_btn_collapse {
+    bottom: -10px;
+    left: calc(50% + 14px);
+    transform: translateX(-50%);
+}
+
+/* Show both buttons side by side when both are present */
+.rht_cell_btn_expand + .rht_cell_btn_collapse {
+    left: calc(50% + 14px);
+}
+
+/* ── Per-cell minimize toggle button ────────────────────────── */
+.rht_cell_btn_minimize {
+    top: 2px;
+    right: 2px;
+}
+
+/* ── Minimized cell ─────────────────────────────────────────── */
+.rht_cell_minimized {
+    max-width: 28px !important;
+    min-width: 28px !important;
+    width: 28px !important;
+    overflow: hidden;
+    padding: 4px 2px !important;
+}
+
+.rht_cell_minimized .rht_cell_inner {
+    min-height: 20px;
+}
+
+.rht_cell_minimized .rht_cell_btn_minimize {
+    opacity: 0.6;
+    /* position: static; */
+    display: block;
+    margin: 0 auto;
+}
+
+.rht_cell_minimized:hover .rht_cell_btn_minimize {
+    opacity: 1;
+}
+
+/* ── Tag chips in toolbar ───────────────────────────────────── */
+.rht_tag_chip {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, box-shadow 0.15s;
+    background: #fff;
+}
+
+.rht_tag_chip:hover {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.rht_tag_chip.rht_tag_active {
+    background: #f0f0f0;
+    font-weight: 600;
+}
+
+.rht_tag_chip .form-check-input {
+    width: 14px;
+    height: 14px;
+}
+
+/* ── Depth 0 — heavy solid border, largest text ─────────────── */
+.rht_depth_0 {
+    border: 3px solid var(--rht-border-0, #714B67);
+    background: var(--rht-bg-0, #f3ebf0);
+    padding: 3px 3px;
+    font-size: 1.2em;
+}
+
+.rht_depth_0:hover {
+    background: var(--rht-bg-0-hover, #ede2e9);
+}
+
+/* ── Depth 1 — dashed border ────────────────────────────────── */
+.rht_depth_1 {
+    border: 2px dashed var(--rht-border-1, #9c7a91);
+    background: var(--rht-bg-1, #f9f4f8);
+    padding: 3px 3px;
+    font-size: 1.1em;
+}
+
+.rht_depth_1:hover {
+    background: var(--rht-bg-1-hover, #f0e7ee);
+}
+
+/* ── Depth 2 — dotted border ────────────────────────────────── */
+.rht_depth_2 {
+    border: 2px dotted var(--rht-border-2, #b8a0b0);
+    background: var(--rht-bg-2, #fcf9fb);
+    padding: 3px 3px;
+    font-size: 1em;
+}
+
+.rht_depth_2:hover {
+    background: var(--rht-bg-2-hover, #f5eef3);
+}
+
+/* ── Depth 3+ — thin solid border ──────────────────────────── */
+.rht_depth_3 {
+    border: 1px solid var(--rht-border-3, #d4c5cf);
+    background: var(--rht-bg-3, #fff);
+    padding: 3px 3px;
+    font-size: 0.9em;
+}
+
+.rht_depth_3:hover {
+    background: var(--rht-bg-3-hover, #faf6f9);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .rht_zoom_wrapper {
+        padding: 12px 8px 48px;
+    }
+}
+
+/* ── Notes dialog ───────────────────────────────────────────── */
+.rht_notes_dialog_content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.rht_notes_body {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.rht_notes_body img {
+    max-width: 100%;
+    height: auto;
+}
