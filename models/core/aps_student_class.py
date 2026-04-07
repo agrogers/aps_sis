@@ -43,7 +43,6 @@ class APSStudentClass(models.Model):
         string='Status',
         default='enrolled',
         required=True,
-        tracking=True,
     )
 
     def action_withdraw(self):
