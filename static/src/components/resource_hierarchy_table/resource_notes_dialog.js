@@ -1,4 +1,4 @@
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted, onPatched, useRef } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { Dialog } from "@web/core/dialog/dialog";
 import { markup } from "@odoo/owl";
@@ -18,6 +18,7 @@ export class ResourceNotesDialog extends Component {
             loading: true,
             notes: "",
         });
+        this.notesBodyRef = useRef("notesBody");
 
         onWillStart(async () => {
             const [data] = await this.orm.read(
@@ -27,6 +28,25 @@ export class ResourceNotesDialog extends Component {
             );
             this.state.notes = data?.notes || "";
             this.state.loading = false;
+        });
+
+        onMounted(() => this._renderMath());
+        onPatched(() => this._renderMath());
+    }
+
+    _renderMath() {
+        const el = this.notesBodyRef.el;
+        if (!el || !window.renderMathInElement) return;
+        window.renderMathInElement(el, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true },
+            ],
+            throwOnError: false,
+            ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
+            ignoredClasses: ["katex", "katex-html"],
         });
     }
 
