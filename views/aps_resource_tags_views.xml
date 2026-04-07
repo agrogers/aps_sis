@@ -10,6 +10,8 @@
                 <field name="color" widget="color"/>
                 <field name="color_hex" optional="hide"/>
                 <field name="use_in_hierarchy"/>
+                <field name="color_applies_to_fill" optional="hide"/>
+                <field name="color_applies_to_border" optional="hide"/>
             </list>
         </field>
     </record>
@@ -27,6 +29,10 @@
                         </group>
                         <group string="Hierarchy">
                             <field name="use_in_hierarchy" widget="boolean_toggle"/>
+                            <field name="color_applies_to_fill" widget="boolean_toggle"
+                                   invisible="not use_in_hierarchy"/>
+                            <field name="color_applies_to_border" widget="boolean_toggle"
+                                   invisible="not use_in_hierarchy"/>
                         </group>
                     </group>
                 </sheet>

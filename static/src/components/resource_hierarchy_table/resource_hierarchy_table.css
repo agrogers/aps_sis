@@ -1,11 +1,41 @@
 /* ── Resource Hierarchy Table ──────────────────────────────────── */
 
 .rht_root {
-    font-family: inherit;
+    font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
+    font-size: 0.85rem;
 }
 
 .rht_toolbar {
     z-index: 10;
+}
+
+/* ── Embedded mode (inside dashboard) ──────────────────────── */
+.rht_embedded .rht_scroll_container {
+    overflow-x: auto !important; /* override Bootstrap's overflow-auto !important */
+    overflow-y: clip !important; /* no vertical scrollbar; container grows to content */
+    flex-grow: 0;
+    /* Hide the native scrollbar — the sticky mirror bar replaces it */
+    scrollbar-width: none;
+}
+
+.rht_embedded .rht_scroll_container::-webkit-scrollbar {
+    display: none;
+}
+
+.rht_embedded .rht_zoom_wrapper {
+    padding-bottom: 8px;
+}
+
+/* Sticky mirror scrollbar — always visible at viewport bottom */
+.rht_sticky_bar {
+    position: sticky;
+    bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 14px;
+    z-index: 50;
+    background: #f3f4f6;
+    border-top: 1px solid #dee2e6;
 }
 
 .rht_scroll_container {
@@ -14,7 +44,7 @@
 }
 
 .rht_zoom_wrapper {
-    padding: 24px 32px 64px;
+    padding: 6px 6px 6px;
     min-width: max-content;
     position: relative;
     display: inline-block;
@@ -29,10 +59,10 @@
 .rht_subject_header {
     font-size: 1.5em;
     font-weight: 700;
-    color: var(--rht-header, var(--o-brand-primary, #714B67));
-    padding: 12px 0 12px;
-    border-bottom: 3px solid var(--rht-header, var(--o-brand-primary, #714B67));
-    margin-bottom: 16px;
+    color: #374151;
+    padding: 2px 0 2px;
+    /* border-bottom: 3px solid var(--rht-header, var(--o-brand-primary, #714B67)); */
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
 }
@@ -66,12 +96,21 @@
     filter: brightness(0.96);
 }
 
+.rht_cell_no_notes {
+    cursor: default;
+}
+
+.rht_cell_no_notes:hover {
+    box-shadow: none;
+    filter: none;
+}
+
 .rht_cell_inner {
     position: relative;
 }
 
 .rht_cell_name {
-    font-weight: 400;
+    /* font-weight: 400; */
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
@@ -168,7 +207,7 @@
 }
 
 .rht_tag_chip.rht_tag_active {
-    background: #f0f0f0;
+    background: #f0f0f0; /* overridden by inline stripe when color_applies_to_fill */
     font-weight: 600;
 }
 
@@ -177,52 +216,85 @@
     height: 14px;
 }
 
-/* ── Depth 0 — heavy solid border, largest text ─────────────── */
+/* ── Depth 0 — heavy border, largest text ───────────────────── */
 .rht_depth_0 {
-    border: 3px solid var(--rht-border-0, #714B67);
-    background: var(--rht-bg-0, #f3ebf0);
-    padding: 3px 3px;
-    font-size: 1.2em;
+    padding: 6px 3px;
+    font-size: 1em;
+    font-weight: 700;
+}
+.rht_depth_0.rht_root_even {
+    background: #d1d6db;
+    border: 2px solid #717880;
+}
+.rht_depth_0.rht_root_even:hover {
+    background: #c5cbd1;
+}
+.rht_depth_0.rht_root_odd {
+    background: #e8eaed;
+    border: 2px solid #9fa7b0;
+}
+.rht_depth_0.rht_root_odd:hover {
+    background: #dce0e4;
 }
 
-.rht_depth_0:hover {
-    background: var(--rht-bg-0-hover, #ede2e9);
-}
-
-/* ── Depth 1 — dashed border ────────────────────────────────── */
+/* ── Depth 1 — medium border ────────────────────────────────── */
 .rht_depth_1 {
-    border: 2px dashed var(--rht-border-1, #9c7a91);
-    background: var(--rht-bg-1, #f9f4f8);
-    padding: 3px 3px;
-    font-size: 1.1em;
-}
-
-.rht_depth_1:hover {
-    background: var(--rht-bg-1-hover, #f0e7ee);
-}
-
-/* ── Depth 2 — dotted border ────────────────────────────────── */
-.rht_depth_2 {
-    border: 2px dotted var(--rht-border-2, #b8a0b0);
-    background: var(--rht-bg-2, #fcf9fb);
-    padding: 3px 3px;
+    padding: 6px 3px;
     font-size: 1em;
 }
-
-.rht_depth_2:hover {
-    background: var(--rht-bg-2-hover, #f5eef3);
+.rht_depth_1.rht_root_even {
+    background: #dde1e6;
+    border: 2px solid #9ca4ae;
+}
+.rht_depth_1.rht_root_even:hover {
+    background: #d2d7dc;
+}
+.rht_depth_1.rht_root_odd {
+    background: #f0f2f4;
+    border: 2px solid #bec5cc;
+}
+.rht_depth_1.rht_root_odd:hover {
+    background: #e5e8ec;
 }
 
-/* ── Depth 3+ — thin solid border ──────────────────────────── */
+/* ── Depth 2 — lighter border ───────────────────────────────── */
+.rht_depth_2 {
+    padding: 4px 3px;
+    font-size: 0.9em;
+}
+.rht_depth_2.rht_root_even {
+    background: #e6e9ec;
+    border: 2px solid #adb5bd;
+}
+.rht_depth_2.rht_root_even:hover {
+    background: #dce0e4;
+}
+.rht_depth_2.rht_root_odd {
+    background: #f5f6f8;
+    border: 2px solid #ced4da;
+}
+.rht_depth_2.rht_root_odd:hover {
+    background: #eaecef;
+}
+
+/* ── Depth 3+ — thin border ─────────────────────────────────── */
 .rht_depth_3 {
-    border: 1px solid var(--rht-border-3, #d4c5cf);
-    background: var(--rht-bg-3, #fff);
     padding: 3px 3px;
     font-size: 0.9em;
 }
-
-.rht_depth_3:hover {
-    background: var(--rht-bg-3-hover, #faf6f9);
+.rht_depth_3.rht_root_even {
+    background: #edf0f2;
+    border: 2px solid #c0c8cf;
+}
+.rht_depth_3.rht_root_even:hover {
+    background: #e3e7eb;
+}
+.rht_depth_3.rht_root_odd {
+    background: #fafbfc;
+    border: 2px solid #dde2e7;
+}
+.rht_depth_3.rht_root_odd:hover {
+    background: #f3f5f7;
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */

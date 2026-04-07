@@ -18,6 +18,8 @@ export class ResourceHierarchyTable extends Component {
         embedded: { type: Boolean, optional: true },
         fixedCategoryId: { type: Number, optional: true },
         storageKeySuffix: { type: String, optional: true },
+        // When set, activeTagIds are read from this storage key (shared with another instance)
+        sharedTagStorageKey: { type: String, optional: true },
         // Student mode: show notes dialog instead of navigating to form
         studentMode: { type: Boolean, optional: true },
     };
@@ -33,6 +35,10 @@ export class ResourceHierarchyTable extends Component {
         );
 
         const saved = this._loadStorage();
+        // If sharedTagStorageKey is set, load activeTagIds from the shared key
+        const sharedTagIds = this.props.sharedTagStorageKey
+            ? this._loadStorageByKey(this.props.sharedTagStorageKey).activeTagIds || []
+            : null;
         const ctxSubject = this.props.action?.context?.default_subject_id || false;
 
         // Per-node expand overrides: IDs whose children are force-shown
@@ -53,7 +59,7 @@ export class ResourceHierarchyTable extends Component {
             globalMaxDepth: 0,
             // Tag overlay
             hierarchyTags: [],
-            activeTagIds: new Set(saved.activeTagIds || []),
+            activeTagIds: new Set(sharedTagIds !== null ? sharedTagIds : (saved.activeTagIds || [])),
         });
 
         this.scrollRef = { el: null };
@@ -70,10 +76,53 @@ export class ResourceHierarchyTable extends Component {
         onMounted(() => {
             this._bindScrollRef();
             this._restoreScroll();
+            if (this._embedded) {
+                this._setupStickyScrollbar();
+            }
         });
 
         onPatched(() => {
             this._bindScrollRef();
+            if (this._embedded) {
+                this._setupStickyScrollbar();
+            }
+        });
+    }
+
+    // ── Sticky mirror scrollbar (embedded mode) ───────────────────────
+
+    _setupStickyScrollbar() {
+        const rootEl = document.querySelector(".rht_embedded");
+        const scrollEl = rootEl && rootEl.querySelector(".rht_scroll_container");
+        if (!rootEl || !scrollEl) return;
+
+        // Remove old bar if already present
+        const old = rootEl.querySelector(".rht_sticky_bar");
+        if (old) old.remove();
+
+        const bar = document.createElement("div");
+        bar.className = "rht_sticky_bar";
+
+        const phantom = document.createElement("div");
+        // scrollWidth is the unscaled layout width; multiply by zoom for visual width.
+        const phantomWidth = Math.round(scrollEl.scrollWidth * (this.state.zoom || 1));
+        phantom.style.cssText = `height:1px;width:${phantomWidth}px;`;
+        bar.appendChild(phantom);
+        rootEl.appendChild(bar);
+
+        // Bidirectional sync without re-entry
+        let syncing = false;
+        bar.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            scrollEl.scrollLeft = bar.scrollLeft;
+            syncing = false;
+        });
+        scrollEl.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            bar.scrollLeft = scrollEl.scrollLeft;
+            syncing = false;
         });
     }
 
@@ -82,6 +131,14 @@ export class ResourceHierarchyTable extends Component {
     _loadStorage() {
         try {
             const key = STORAGE_KEY + (this.props.storageKeySuffix || "");
+            return this._loadStorageByKey(key);
+        } catch {
+            return {};
+        }
+    }
+
+    _loadStorageByKey(key) {
+        try {
             const raw = localStorage.getItem(key);
             if (!raw) return {};
             const data = JSON.parse(raw);
@@ -237,7 +294,7 @@ export class ResourceHierarchyTable extends Component {
             rows.push([]);
         }
 
-        const walk = (node, depth) => {
+        const walk = (node, depth, rootIndex) => {
             const isLeaf = !node.children || !node.children.length;
             rows[depth].push({
                 id: node.id,
@@ -245,20 +302,22 @@ export class ResourceHierarchyTable extends Component {
                 colspan: node.colspan,
                 rowspan: isLeaf ? maxDepth - depth + 1 : 1,
                 depth: depth,
+                rootIndex: rootIndex,
                 tag_ids: node.tag_ids || [],
+                has_notes: node.has_notes || 'no',
                 hasHiddenChildren: !!node._hasHiddenChildren,
                 hasVisibleChildren: !isLeaf,
                 minimized: !!node._minimized,
             });
             if (!isLeaf) {
                 for (const child of node.children) {
-                    walk(child, depth + 1);
+                    walk(child, depth + 1, rootIndex);
                 }
             }
         };
 
-        for (const root of roots) {
-            walk(root, 0);
+        for (let i = 0; i < roots.length; i++) {
+            walk(roots[i], 0, i);
         }
 
         return rows.filter((r) => r.length > 0);
@@ -362,8 +421,11 @@ export class ResourceHierarchyTable extends Component {
         return `transform: scale(${this.state.zoom}); transform-origin: top left;`;
     }
 
-    openResource(id, name) {
+    openResource(id, name, hasNotes) {
         if (this._studentMode) {
+            if (!hasNotes || hasNotes === 'no') {
+                return;
+            }
             this.dialogService.add(ResourceNotesDialog, {
                 resourceId: id,
                 resourceName: name || "",
@@ -437,25 +499,53 @@ export class ResourceHierarchyTable extends Component {
 
     getCellClass(cell) {
         const d = Math.min(cell.depth, 3);
-        return `rht_cell rht_depth_${d}`;
+        const parity = ((cell.rootIndex ?? 0) % 2 === 0) ? 'even' : 'odd';
+        const noNotes = this._studentMode && (!cell.has_notes || cell.has_notes === 'no');
+        return `rht_cell rht_depth_${d} rht_root_${parity}${noNotes ? ' rht_cell_no_notes' : ''}`;
     }
 
     /**
-     * If any active tag matches the cell, return an inline style
-     * with the 45-degree stripe background.  First matching tag wins.
+     * Build cell inline style respecting tag color_applies_to_fill / color_applies_to_border.
+     * Multiple active tags can match: first fill-tag wins for background,
+     * first border-tag wins for border.  Both are resolved independently.
      */
     getCellStyle(cell) {
         if (!cell.tag_ids || !cell.tag_ids.length) return "";
+        let fillStyle = "";
+        let borderStyle = "";
         for (const tag of this.state.hierarchyTags) {
-            if (tag.color_hex && this.state.activeTagIds.has(tag.id) && cell.tag_ids.includes(tag.id)) {
-                return `background: ${this._tagStripeStyle(tag.color_hex)} !important;`;
+            if (!tag.color_hex) continue;
+            if (!this.state.activeTagIds.has(tag.id)) continue;
+            if (!cell.tag_ids.includes(tag.id)) continue;
+            if (!fillStyle && tag.color_applies_to_fill) {
+                fillStyle = `background: ${this._tagStripeStyle(tag.color_hex)} !important;`;
             }
+            if (!borderStyle && tag.color_applies_to_border) {
+                borderStyle = `border-color: ${tag.color_hex} !important;`;
+            }
+            if (fillStyle && borderStyle) break;
         }
-        return "";
+        return fillStyle + borderStyle;
+    }
+
+    /**
+     * Return inline style for the tag chip label in the toolbar.
+     * Active chips get the stripe fill when color_applies_to_fill is set,
+     * or a colored border when color_applies_to_border is set.
+     */
+    getTagChipStyle(tag) {
+        const parts = [];
+        if (tag.color_hex && tag.color_applies_to_border) {
+            parts.push(`border-color: ${tag.color_hex} !important`);
+        }
+        if (tag.color_hex && tag.color_applies_to_fill && this.state.activeTagIds.has(tag.id)) {
+            parts.push(`background: ${this._tagStripeStyle(tag.color_hex)} !important`);
+        }
+        return parts.join("; ");
     }
 
     getGroupStyle(group) {
-        return this._subjectColorVars(group.color);
+        return "";
     }
 
     getSubjectIcon(group) {

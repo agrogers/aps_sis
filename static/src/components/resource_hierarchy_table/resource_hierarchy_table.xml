@@ -2,13 +2,13 @@
 <templates xml:space="preserve">
 
     <t t-name="aps_sis.ResourceHierarchyTable">
-        <div t-att-class="props.embedded ? 'rht_root d-flex flex-column' : 'rht_root d-flex flex-column vh-100 bg-100'">
+        <div t-att-class="props.embedded ? 'rht_root rht_embedded d-flex flex-column' : 'rht_root d-flex flex-column vh-100 bg-100'">
 
             <!-- ── Toolbar (hidden in embedded mode) ─────── -->
             <t t-if="!props.embedded">
             <div class="rht_toolbar d-flex align-items-center gap-3 px-3 py-2 bg-white border-bottom shadow-sm flex-wrap">
                 <h4 class="mb-0 fw-bold text-primary">
-                    <i class="fa fa-th me-2"/>Resource Hierarchy
+                    <i class="fa fa-th me-2"/>Subject Overview
                 </h4>
 
                 <!-- Depth level controls -->
@@ -17,9 +17,6 @@
                             t-att-disabled="state.maxVisibleDepth &lt;= 0">
                         <i class="fa fa-minus"/>
                     </button>
-                    <span class="btn btn-outline-primary disabled" style="min-width:80px;">
-                        Depth: <t t-esc="state.maxVisibleDepth"/>
-                    </span>
                     <button class="btn btn-outline-primary" t-on-click="depthIncrease" title="Show more levels"
                             t-att-disabled="state.maxVisibleDepth >= state.globalMaxDepth">
                         <i class="fa fa-plus"/>
@@ -33,7 +30,7 @@
                         <t t-foreach="state.hierarchyTags" t-as="tag" t-key="tag.id">
                             <label class="rht_tag_chip d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill border small"
                                    t-att-class="isTagActive(tag.id) ? 'rht_tag_active' : ''"
-                                   t-att-style="tag.color_hex ? 'border-color:' + tag.color_hex + ' !important;' : ''">
+                                   t-att-style="getTagChipStyle(tag)">
                                 <input type="checkbox"
                                        class="form-check-input m-0"
                                        t-att-checked="isTagActive(tag.id)"
@@ -48,7 +45,7 @@
 
                 <!-- Subject filter -->
                 <div class="d-flex align-items-center gap-2">
-                    <label class="mb-0 fw-semibold text-muted small" for="rht_subject_filter">Subject:</label>
+                    <!-- <label class="mb-0 fw-semibold text-muted small" for="rht_subject_filter">Subject:</label> -->
                     <select id="rht_subject_filter"
                             class="form-select form-select-sm"
                             style="width: auto; min-width: 180px;"
@@ -92,7 +89,7 @@
                 <t t-elif="!state.hierarchyData.length">
                     <t t-if="!props.embedded">
                         <div class="d-flex flex-column justify-content-center align-items-center p-5 text-muted">
-                            <i class="fa fa-th fa-3x mb-3 opacity-25"/>
+                            <i class="fa fa-th fa-3x mb-1 opacity-25"/>
                             <p class="fs-5">No hierarchy resources found.</p>
                             <p class="small">Enable <strong>Show in Hierarchy</strong> on resources to populate this view.</p>
                         </div>
@@ -128,7 +125,7 @@
                                                     t-att-class="getCellClass(cell) + (cell.minimized ? ' rht_cell_minimized' : '')"
                                                     t-att-style="getCellStyle(cell)"
                                                     t-att-title="cell.minimized ? cell.name : ''"
-                                                    t-on-click="() => this.openResource(cell.id, cell.name)">
+                                                    t-on-click="() => this.openResource(cell.id, cell.name, cell.has_notes)">
                                                     <div class="rht_cell_inner">
                                                         <t t-if="!cell.minimized">
                                                             <div class="rht_cell_name">
@@ -136,7 +133,7 @@
                                                             </div>
                                                         </t>
                                                         <!-- Per-cell expand/collapse buttons -->
-                                                        <t t-if="cell.hasHiddenChildren">
+                                                        <t t-if="cell.hasHiddenChildren and !cell.minimized">
                                                             <button class="rht_cell_btn rht_cell_btn_expand"
                                                                     title="Expand children"
                                                                     t-on-click="(ev) => this.cellExpand(ev, cell.id)">

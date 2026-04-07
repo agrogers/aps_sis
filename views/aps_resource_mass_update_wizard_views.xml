@@ -139,6 +139,12 @@
                                     </group>
                                     <group colspan="8"><field name="allow_subject_editing_value" invisible="not update_allow_subject_editing"/></group>
 
+                                    <group colspan="4">
+                                        <field name="update_show_in_hierarchy" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_show_in_hierarchy" class="mb-0">Show in Hierarchy</label>
+                                    </group>
+                                    <group colspan="8"><field name="show_in_hierarchy_value" widget="boolean_toggle" invisible="not update_show_in_hierarchy"/></group>
+
                                 </group>
                                 <group string="Resources to Update" colspan="4">
                                     <field name="resource_ids" widget="many2many_tags" nolabel="1" readonly="1"/>

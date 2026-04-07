@@ -85,6 +85,9 @@ class APSResourceMassUpdateWizard(models.TransientModel):
     update_allow_subject_editing = fields.Boolean(string='Allow Subject Editing')
     allow_subject_editing_value = fields.Boolean(string='Value')
 
+    update_show_in_hierarchy = fields.Boolean(string='Show in Hierarchy')
+    show_in_hierarchy_value = fields.Boolean(string='Value')
+
     # HTML fields — toggled on Options tab, edited on their own tabs
     update_question = fields.Boolean(string='Question')
     question_value = fields.Html(string='Value')
@@ -184,6 +187,9 @@ class APSResourceMassUpdateWizard(models.TransientModel):
 
         if self.update_allow_subject_editing:
             updates['allow_subject_editing'] = self.allow_subject_editing_value
+
+        if self.update_show_in_hierarchy:
+            updates['show_in_hierarchy'] = self.show_in_hierarchy_value
 
         if self.update_question:
             updates['question'] = self.question_value

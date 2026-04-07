@@ -535,6 +535,7 @@ class APSResource(models.Model):
                 'colspan': colspan,
                 'has_children': bool(child_nodes),
                 'tag_ids': resource.tag_ids.ids,
+                'has_notes': resource.has_notes or 'no',
             }
 
         def _tree_depth(nodes):
@@ -599,6 +600,8 @@ class APSResource(models.Model):
                 'id': t.id,
                 'name': t.name,
                 'color_hex': t.color_hex or '',
+                'color_applies_to_fill': t.color_applies_to_fill,
+                'color_applies_to_border': t.color_applies_to_border,
             }
             for t in tags
         ]

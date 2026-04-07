@@ -1,6 +1,6 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.TeacherDashboard" owl="1">
-        <div class="aps-teacher-dashboard vh-100 overflow-auto bg-light p-4">
+        <div class="aps-teacher-dashboard vh-100 overflow-auto bg-light p-2">
 
             <!-- ==================== FILTERS ==================== -->
             <div class="row mb-3 align-items-center bg-white shadow-sm p-2 mx-0 rounded">
@@ -54,7 +54,8 @@
                         t-key="state.categoryId"
                         embedded="true"
                         fixedCategoryId="state.categoryId"
-                        storageKeySuffix="'_dashboard'"/>
+                        storageKeySuffix="'_dashboard'"
+                        sharedTagStorageKey="'aps_resource_hierarchy_table'"/>
                 </t>
 
                 <!-- ==================== TWO-COLUMN ROW ==================== -->
