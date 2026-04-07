@@ -138,7 +138,7 @@ class APSResource(models.Model):
             default['name'] = f"{name} (copy)"
         return super().copy(default)
 
-    @api.model
+    @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
         # Ensure primary_parent_id is set whenever parents exist on new records
