@@ -245,3 +245,152 @@ class TestAPSResource(TransactionCase):
         parent, child = self._make_chain('Intro to Alge', 'Algebra Basics')
         self.assertEqual(child.display_name, 'Intro to Alge 🢒 Algebra Basics')
 
+    # --- Custom name submission resolution tests ---
+
+    def test_resolve_names_no_custom_name(self):
+        """Without custom names, _resolve_submission_names uses default names
+        with the standard overlap-removal algorithm."""
+        exam, q1, q1a = self._make_chain('Exam1', 'Q1', 'Q1a')
+        resources = exam | q1 | q1a
+        name_map = resources._resolve_submission_names(exam)
+        self.assertEqual(name_map[exam.id], 'Exam1')
+        self.assertIn('Q1', name_map[q1.id])
+        self.assertIn('a', name_map[q1a.id])
+
+    def test_resolve_names_custom_name_on_direct_child(self):
+        """A custom name on a parent→child link replaces the child's name
+        in the submission name."""
+        exam2 = self.env['aps.resources'].create({'name': 'Exam2'})
+        q5 = self.env['aps.resources'].create({
+            'name': 'Q5',
+            'parent_ids': [(6, 0, [exam2.id])],
+            'primary_parent_id': exam2.id,
+        })
+        # Set custom name: under Exam2, Q5 is known as Q1
+        self.env['aps.resource.custom.name'].create({
+            'parent_resource_id': exam2.id,
+            'resource_id': q5.id,
+            'custom_name': 'Q1',
+        })
+        resources = exam2 | q5
+        name_map = resources._resolve_submission_names(exam2)
+        self.assertEqual(name_map[exam2.id], 'Exam2')
+        self.assertEqual(name_map[q5.id], 'Exam2 🢒 Q1')
+
+    def test_resolve_names_custom_name_cascades_to_grandchild(self):
+        """A custom name on Exam2→Q5 should cascade so Q5a becomes Q1a
+        (prefix substitution + overlap-removal).
+
+        Tree: Exam2 > Q5 (custom=Q1) > Q5a → expects Exam2 > Q1 > Q1a
+        """
+        exam2 = self.env['aps.resources'].create({'name': 'Exam2'})
+        q5 = self.env['aps.resources'].create({
+            'name': 'Q5',
+            'parent_ids': [(6, 0, [exam2.id])],
+            'primary_parent_id': exam2.id,
+        })
+        q5a = self.env['aps.resources'].create({
+            'name': 'Q5a',
+            'parent_ids': [(6, 0, [q5.id])],
+            'primary_parent_id': q5.id,
+        })
+        self.env['aps.resource.custom.name'].create({
+            'parent_resource_id': exam2.id,
+            'resource_id': q5.id,
+            'custom_name': 'Q1',
+        })
+        resources = exam2 | q5 | q5a
+        name_map = resources._resolve_submission_names(exam2)
+        self.assertEqual(name_map[exam2.id], 'Exam2')
+        self.assertEqual(name_map[q5.id], 'Exam2 🢒 Q1')
+        # Q5a → prefix Q5 substituted to Q1 → Q1a, then overlap removal with "Exam2 🢒 Q1"
+        self.assertIn('Q1', name_map[q5a.id],
+                       "Grandchild must reference Q1 (the cascaded custom name)")
+        self.assertNotIn('Q5', name_map[q5a.id],
+                          "Original name Q5 must not appear in grandchild submission name")
+
+    def test_resolve_names_deep_cascade(self):
+        """Custom name cascades three levels deep: Q5 > Q5a > Q5a.i
+
+        With custom name Q1 on Q5:
+        - Q5 → Q1
+        - Q5a → Q1a (prefix substitution)
+        - Q5a.i → Q1a.i (prefix substitution)
+        """
+        exam2 = self.env['aps.resources'].create({'name': 'Exam2'})
+        q5 = self.env['aps.resources'].create({
+            'name': 'Q5',
+            'parent_ids': [(6, 0, [exam2.id])],
+            'primary_parent_id': exam2.id,
+        })
+        q5a = self.env['aps.resources'].create({
+            'name': 'Q5a',
+            'parent_ids': [(6, 0, [q5.id])],
+            'primary_parent_id': q5.id,
+        })
+        q5ai = self.env['aps.resources'].create({
+            'name': 'Q5a.i',
+            'parent_ids': [(6, 0, [q5a.id])],
+            'primary_parent_id': q5a.id,
+        })
+        self.env['aps.resource.custom.name'].create({
+            'parent_resource_id': exam2.id,
+            'resource_id': q5.id,
+            'custom_name': 'Q1',
+        })
+        resources = exam2 | q5 | q5a | q5ai
+        name_map = resources._resolve_submission_names(exam2)
+        # Verify no descendant references "Q5"
+        for res in [q5, q5a, q5ai]:
+            self.assertNotIn('Q5', name_map[res.id],
+                             f"Resource '{res.name}': found Q5 in '{name_map[res.id]}' — "
+                             f"custom name Q1 should have cascaded")
+        # Verify the custom name prefix appears throughout
+        self.assertIn('Q1', name_map[q5.id])
+        self.assertIn('Q1', name_map[q5a.id])
+        self.assertIn('Q1', name_map[q5ai.id])
+
+    def test_resolve_names_custom_top_level_name(self):
+        """Passing a custom top_level_name overrides the top-level resource's
+        display name in all generated submission names."""
+        exam, q1 = self._make_chain('Exam1', 'Q1')
+        resources = exam | q1
+        name_map = resources._resolve_submission_names(exam, top_level_name='Final Exam')
+        self.assertEqual(name_map[exam.id], 'Final Exam')
+        self.assertIn('Final Exam', name_map[q1.id])
+
+    def test_resolve_names_no_custom_uses_default(self):
+        """Without any custom names, children use their original names
+        (same as display_name overlap-removal logic)."""
+        parent = self.env['aps.resources'].create({'name': 'Math'})
+        child = self.env['aps.resources'].create({
+            'name': 'Algebra',
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+        })
+        resources = parent | child
+        name_map = resources._resolve_submission_names(parent)
+        self.assertEqual(name_map[parent.id], 'Math')
+        self.assertEqual(name_map[child.id], 'Math 🢒 Algebra')
+
+    def test_resolve_names_out_of_order_resources(self):
+        """Resources may not be in tree order. The algorithm must still
+        correctly resolve names regardless of recordset iteration order."""
+        exam = self.env['aps.resources'].create({'name': 'Exam'})
+        q1 = self.env['aps.resources'].create({
+            'name': 'Q1',
+            'parent_ids': [(6, 0, [exam.id])],
+            'primary_parent_id': exam.id,
+        })
+        q1a = self.env['aps.resources'].create({
+            'name': 'Q1a',
+            'parent_ids': [(6, 0, [q1.id])],
+            'primary_parent_id': q1.id,
+        })
+        # Deliberately pass in reverse order
+        resources = q1a | q1 | exam
+        name_map = resources._resolve_submission_names(exam)
+        self.assertEqual(name_map[exam.id], 'Exam')
+        self.assertIn('Q1', name_map[q1.id])
+        self.assertIn('a', name_map[q1a.id])
+

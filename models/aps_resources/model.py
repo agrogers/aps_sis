@@ -149,6 +149,11 @@ class APSResource(models.Model):
         string='End Date',
         help='Optional. Auto assignment stops after this date.',
     )
+    auto_assign_due_days = fields.Integer(
+        string='Due Days',
+        default=6,
+        help='How many days before this task becomes due. 0=the same day.',
+    )
     auto_assign_frequency = fields.Integer(
         string='Frequency (days)',
         default=7,

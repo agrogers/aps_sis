@@ -1,3 +1,4 @@
+import re
 import uuid
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
@@ -169,3 +170,187 @@ class APSResource(models.Model):
         """Return the default duration for assignments (e.g., 7 days)."""
         from datetime import timedelta
         return timedelta(days=6)
+
+    def _resolve_submission_names(self, top_level_resource, top_level_name=None):
+        """Build a mapping of resource id → submission name for a set of resources
+        being assigned under *top_level_resource*.
+
+        ``self`` is the full recordset of resources to assign (including the
+        top-level resource itself).
+
+        Custom names defined via ``aps.resource.custom.name`` are respected.
+        When a custom name is found on a parent→child link the custom name
+        cascades to all descendants below that link using the same
+        overlap-removal algorithm as ``_compute_display_name``.
+
+        Returns ``dict[int, str]`` mapping resource id to its submission name.
+        """
+        separator = ' 🢒 '
+        base_name = top_level_name or top_level_resource.display_name or top_level_resource.name or ''
+
+        # Pre-load all custom name records relevant to resources in self.
+        custom_names = self.env['aps.resource.custom.name'].search([
+            ('resource_id', 'in', self.ids),
+            ('parent_resource_id', 'in', self.ids),
+        ])
+        # Build lookup: (parent_id, child_id) → custom_name
+        custom_map = {}
+        for cn in custom_names:
+            custom_map[(cn.parent_resource_id.id, cn.resource_id.id)] = cn.custom_name
+
+        # Build adjacency: parent_id → [child_ids] restricted to resources in self
+        resource_ids_set = set(self.ids)
+        children_of = {}
+        for res in self:
+            for child in res.child_ids:
+                if child.id in resource_ids_set:
+                    children_of.setdefault(res.id, []).append(child)
+
+        # Walk the tree from top_level_resource with BFS, propagating names.
+        result = {}
+        # Queue entries: (resource, accumulated_display_name, name_substitutions)
+        # name_substitutions is a list of (original_prefix, replacement_prefix) pairs
+        # that cascade from ancestor custom names to all descendants.
+        queue = [(top_level_resource, base_name, [])]
+        visited = set()
+
+        while queue:
+            resource, parent_display, inherited_subs = queue.pop(0)
+            if resource.id in visited:
+                continue
+            visited.add(resource.id)
+
+            if resource.id == top_level_resource.id:
+                effective_display = base_name
+                subs_for_children = inherited_subs
+            else:
+                # Check for a custom name on any ancestor→resource link that is in
+                # the assignment set.
+                custom_name_found = None
+                effective_name = resource.name or ''
+                for parent in resource.parent_ids:
+                    if parent.id in resource_ids_set:
+                        cn = custom_map.get((parent.id, resource.id))
+                        if cn:
+                            custom_name_found = cn
+                            break
+
+                if custom_name_found:
+                    # This resource has its own custom name — use it directly
+                    # and add a substitution rule for descendants.
+                    subs_for_children = inherited_subs + [(effective_name, custom_name_found)]
+                    effective_name = custom_name_found
+                else:
+                    # Apply inherited substitutions: replace longest matching
+                    # prefix first to avoid partial matches.
+                    subs_for_children = inherited_subs
+                    for original, replacement in sorted(
+                        inherited_subs, key=lambda s: len(s[0]), reverse=True
+                    ):
+                        if effective_name.startswith(original):
+                            effective_name = replacement + effective_name[len(original):]
+                            break
+
+                # Apply overlap-removal algorithm (same logic as _compute_display_name)
+                effective_display = self._build_display_segment(parent_display, effective_name, separator)
+
+            result[resource.id] = effective_display
+
+            # Enqueue children
+            for child in children_of.get(resource.id, []):
+                if child.id not in visited:
+                    queue.append((child, effective_display, subs_for_children))
+
+        # Resources in self that weren't reached by BFS (disjoint from the tree)
+        for res in self:
+            if res.id not in result:
+                result[res.id] = base_name + separator + (res.name or '')
+
+        # Strip ancestor prefix — keep only the selected resource's own
+        # name segment and its descendants (e.g. "A 🢒 B 🢒 C" → "C").
+        top_resolved = result.get(top_level_resource.id, '')
+        last_sep_idx = top_resolved.rfind(separator)
+        if last_sep_idx >= 0:
+            prefix = top_resolved[:last_sep_idx + len(separator)]
+            result = {
+                rid: n[len(prefix):] if n.startswith(prefix) else n
+                for rid, n in result.items()
+            }
+
+        return result
+
+    @api.model
+    def _build_display_segment(self, parent_display, child_name, separator=' 🢒 '):
+        """Combine parent_display and child_name using the same overlap-removal
+        algorithm used by ``_compute_display_name``."""
+        if not child_name:
+            return parent_display
+
+        current_name = child_name
+
+        # Remove bracketed text that matches part of the parent
+        if current_name and parent_display:
+            bracketed_texts = re.findall(r'\([^)]+\)|\[[^\]]+\]|{[^}]+}', current_name)
+            for bracketed in bracketed_texts:
+                content = bracketed[1:-1]
+                if content in parent_display:
+                    current_name = current_name.replace(bracketed, '').strip()
+
+        # Remove leading words from child that appear in parent's last segment
+        if current_name and parent_display:
+            parent_last_segment = parent_display.split(separator)[-1] if separator in parent_display else parent_display
+            parent_words = set(re.findall(r'\b[a-zA-Z]+\b', parent_last_segment.lower()))
+            child_words = re.split(r'(\s+)', current_name)
+            words_to_remove = 0
+            for word in child_words:
+                word_lower = word.lower().strip()
+                if not word_lower or word.isspace():
+                    words_to_remove += 1
+                    continue
+                if word_lower in parent_words:
+                    words_to_remove += 1
+                else:
+                    break
+            if words_to_remove > 0:
+                current_name = ''.join(child_words[words_to_remove:]).strip()
+                current_name = re.sub(r'^[\s:;.,\-–—()\[\]{}]+', '', current_name).strip()
+
+        # Find overlapping characters between end of parent and start of child
+        overlap_length = 0
+        parent_len = len(parent_display)
+        current_len = len(current_name)
+        match_found = False
+        for i in range(1, min(parent_len, current_len) + 1):
+            if current_name[:i] == parent_display[-i:]:
+                overlap_length = i
+                match_found = True
+            else:
+                if match_found:
+                    break
+
+        # Word boundary check
+        # Exception: Q-prefixed names (Q1, Q5a, etc.) allow shorter overlaps
+        # and skip the word-boundary check so Q1a collapses to "a" under Q1.
+        q_prefix = bool(re.match(r'^Q\d', current_name))
+        min_overlap = 2 if q_prefix else 3
+        if overlap_length >= min_overlap and not q_prefix:
+            child_boundary = (overlap_length >= current_len or
+                              not current_name[overlap_length].isalnum())
+            parent_start = parent_len - overlap_length
+            parent_boundary = (parent_start == 0 or
+                               not parent_display[parent_start - 1].isalnum())
+            if not (child_boundary and parent_boundary):
+                overlap_length = 0
+
+        if overlap_length >= min_overlap:
+            remaining_name = current_name[overlap_length:].lstrip()
+            remaining_name = re.sub(r'^[\s:;.,\-–—()\[\]{}]+', '', remaining_name).strip()
+            if remaining_name:
+                return parent_display + separator + remaining_name
+            else:
+                return parent_display
+        else:
+            if current_name:
+                return parent_display + separator + current_name
+            else:
+                return parent_display

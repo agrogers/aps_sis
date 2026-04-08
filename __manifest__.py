@@ -22,6 +22,7 @@
 		'views/aps_resource_hierarchy_views.xml',
 		'views/aps_resource_types_views.xml',
 		'views/aps_resource_tags_views.xml',
+		'views/aps_location_views.xml',
 		'views/aps_assign_students_wizard_views.xml',
 		'views/aps_resource_task_views.xml',
 		'views/aps_resource_submission_views.xml',

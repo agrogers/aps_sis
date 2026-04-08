@@ -2,6 +2,7 @@ from . import aps_avatar
 from . import aps_media
 from . import aps_time_tracking
 from . import aps_resource_tags
+from . import aps_location
 from . import aps_resources
 from . import aps_resource_types
 from . import aps_resource_task

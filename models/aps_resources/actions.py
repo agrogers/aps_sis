@@ -310,22 +310,20 @@ class APSResource(models.Model):
         # Date/time for submissions
         assign_date = today
         assign_time = self.auto_assign_time or 0.0
-        date_due = assign_date + self._default_assignment_duration()
+        date_due = assign_date + timedelta(days=self.auto_assign_due_days or 6)
 
         # Collect resources to assign (this resource + all descendants, using wizard logic)
         all_descendants = self._get_all_descendants()
         resources_to_assign = self | all_descendants
         top_level = self
-        separator = ' 🢒 '
+
+        # Resolve submission names using custom-name-aware helper
+        name_map = resources_to_assign._resolve_submission_names(top_level, top_level_name=submission_name)
 
         assigned_count = 0
         for resource in resources_to_assign:
             # Compute submission name for this resource
-            if resource.id == top_level.id:
-                res_submission_name = submission_name
-            else:
-                child_name = resource.name or resource.display_name or ''
-                res_submission_name = submission_name + separator + child_name
+            res_submission_name = name_map.get(resource.id, submission_name)
 
             # Question handling
             has_question = resource.has_question

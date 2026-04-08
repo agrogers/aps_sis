@@ -145,6 +145,15 @@
                                     </group>
                                     <group colspan="8"><field name="show_in_hierarchy_value" widget="boolean_toggle" invisible="not update_show_in_hierarchy"/></group>
 
+                                    <group colspan="4">
+                                        <field name="update_tags" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_tags" class="mb-0">Tags</label>
+                                    </group>
+                                    <group colspan="8" invisible="not update_tags">
+                                        <field name="tags_add_ids" widget="many2many_tags" string="Add" placeholder="Tags to add..."/>
+                                        <field name="tags_remove_ids" widget="many2many_tags" string="Remove" placeholder="Tags to remove..."/>
+                                    </group>
+
                                 </group>
                                 <group string="Resources to Update" colspan="4">
                                     <field name="resource_ids" widget="many2many_tags" nolabel="1" readonly="1"/>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_location_list" model="ir.ui.view">
+        <field name="name">aps.location.list</field>
+        <field name="model">aps.location</field>
+        <field name="arch" type="xml">
+            <list default_order="name">
+                <field name="name"/>
+                <field name="location_type"/>
+                <field name="building" optional="show"/>
+                <field name="floor" optional="hide"/>
+                <field name="capacity" optional="show"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_location_form" model="ir.ui.view">
+        <field name="name">aps.location.form</field>
+        <field name="model">aps.location</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Location Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Details">
+                            <field name="location_type"/>
+                            <field name="building"/>
+                            <field name="floor"/>
+                            <field name="capacity"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" placeholder="Additional notes about this location..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_location_search" model="ir.ui.view">
+        <field name="name">aps.location.search</field>
+        <field name="model">aps.location</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="building"/>
+                <filter string="Classrooms" name="filter_classroom" domain="[('location_type', '=', 'classroom')]"/>
+                <filter string="Sports Fields" name="filter_sports" domain="[('location_type', '=', 'sports_field')]"/>
+                <filter string="Playgrounds" name="filter_playground" domain="[('location_type', '=', 'playground')]"/>
+                <filter string="Archived" name="filter_archived" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Type" name="group_type" context="{'group_by': 'location_type'}"/>
+                    <filter string="Building" name="group_building" context="{'group_by': 'building'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_aps_locations" model="ir.actions.act_window">
+        <field name="name">Locations</field>
+        <field name="res_model">aps.location</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_filter_archived': 0}</field>
+        <field name="search_view_id" ref="view_aps_location_search"/>
+    </record>
+
+    <record id="action_aps_locations_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_location_list"/>
+        <field name="act_window_id" ref="action_aps_locations"/>
+    </record>
+
+    <record id="action_aps_locations_view_form" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_location_form"/>
+        <field name="act_window_id" ref="action_aps_locations"/>
+    </record>
+</odoo>

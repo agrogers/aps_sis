@@ -208,7 +208,11 @@ class APSResource(models.Model):
                 # Remove overlapping characters from current_name
                 # Only collapse if the overlap falls on word boundaries to avoid
                 # partial-word matches (e.g. "Alge" matching "Algebra").
-                if overlap_length >= 3:
+                # Exception: Q-prefixed names (Q1, Q5a, etc.) allow shorter overlaps
+                # and skip the word-boundary check so Q1a collapses to "a" under Q1.
+                q_prefix = bool(re.match(r'^Q\d', current_name))
+                min_overlap = 2 if q_prefix else 3
+                if overlap_length >= min_overlap and not q_prefix:
                     child_boundary = (overlap_length >= current_len or
                                       not current_name[overlap_length].isalnum())
                     parent_start = parent_len - overlap_length
@@ -216,7 +220,7 @@ class APSResource(models.Model):
                                        not parent_display[parent_start - 1].isalnum())
                     if not (child_boundary and parent_boundary):
                         overlap_length = 0
-                if overlap_length >= 3:
+                if overlap_length >= min_overlap:
                     remaining_name = current_name[overlap_length:].lstrip()
                     # Strip any "." that appear at the start of the remaining name
                     remaining_name = re.sub(r'^[\s:;.,\-–—()\[\]{}]+', '', remaining_name).strip()

@@ -242,8 +242,6 @@ class APSAssignStudentsWizard(models.TransientModel):
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
         top_level_resource = self.resource_id
-        top_level_resource_name = top_level_resource.display_name or top_level_resource.name or ''
-        separator = ' 🢒 '
         # Get all resources to assign: selected resources from the list, ordered by sequence
         selected_resources = self.env['aps.resources']
         order = 1
@@ -253,55 +251,19 @@ class APSAssignStudentsWizard(models.TransientModel):
                 # Set order on the line for later use
                 line.submission_order = order
                 order += 1
+
+        # Resolve submission names for the entire tree using custom names
+        top_name = self.custom_submission_name or None
+        name_map = selected_resources._resolve_submission_names(
+            top_level_resource, top_level_name=top_name,
+        )
+
         for index, resource in enumerate(selected_resources, start=1):
             # Find the order for this resource
             line = self.affected_resource_line_ids.filtered(lambda l: l.resource_id == resource and l.selected)
             submission_order = line.submission_order if line else 0
-            # Compute submission_name: parent 🢒 child (or just parent if same)
-            child_name = resource.name or resource.display_name or ''
-            # Naming is tricky due to possible custom names set per parent.
-            # There could be many resources are assigned. Normally they have their own names.
-            # But we might want the name, esp when assigning a single resource.
-            # Use parent-specific custom name if present, otherwise fall back to resource name/display_name
-            if self.custom_submission_name:
-                if len(selected_resources) == 1:
-                    # Only one resource assigned, use the custom name directly
-                    submission_name = self.custom_submission_name
-                else:
-                    submission_name = f"{self.custom_submission_name} ({child_name})"
-            else:
-                if resource.id == top_level_resource.id:
-                    submission_name = top_level_resource_name
-                else:
-                    child_name = resource.name or resource.display_name or ''
-                    custom_data = resource.parent_custom_name_data or []
-                    if isinstance(custom_data, (list, tuple)):
-                        for entry in custom_data:
-                            if entry.get('parent_resource_id') == top_level_resource.id and entry.get('custom_name'):
-                                child_name = entry.get('custom_name')
-                                break
-                    # Remove overlap as in _compute_display_name
-                    overlap_length = 0
-                    parent_len = len(top_level_resource_name)
-                    child_len = len(child_name)
-                    match_found = False
-                    for i in range(1, min(parent_len, child_len) + 1):
-                        if child_name[:i] == top_level_resource_name[-i:]:
-                            overlap_length = i
-                            match_found = True
-                        else:
-                            if match_found:
-                                break
-                    if overlap_length > 0:
-                        remaining_name = child_name[overlap_length:].lstrip()
-                        import re
-                        remaining_name = re.sub(r'^\.+', '', remaining_name).lstrip()
-                        if remaining_name:
-                            submission_name = top_level_resource_name + separator + remaining_name
-                        else:
-                            submission_name = top_level_resource_name
-                    else:
-                        submission_name = top_level_resource_name + separator + child_name
+            # Submission name resolved by the tree-aware helper
+            submission_name = name_map.get(resource.id, resource.name or '')
 
             # Set the question based on the resource's setting and the wizard's fields
             # If the resource is the top_level_resource, use the wizard's has_question and question field settings. 

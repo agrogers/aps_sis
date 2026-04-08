@@ -104,6 +104,20 @@ class APSResourceMassUpdateWizard(models.TransientModel):
     update_default_answer = fields.Boolean(string='Default Answer')
     default_answer_value = fields.Html(string='Value')
 
+    update_tags = fields.Boolean(string='Tags')
+    tags_add_ids = fields.Many2many(
+        'aps.resource.tags',
+        'aps_mass_update_tags_add_rel',
+        'wizard_id', 'tag_id',
+        string='Add Tags',
+    )
+    tags_remove_ids = fields.Many2many(
+        'aps.resource.tags',
+        'aps_mass_update_tags_remove_rel',
+        'wizard_id', 'tag_id',
+        string='Remove Tags',
+    )
+
     @api.model
     def _default_resource_ids(self):
         return self.env.context.get('active_ids', [])
@@ -206,10 +220,20 @@ class APSResourceMassUpdateWizard(models.TransientModel):
         if self.update_default_answer:
             updates['default_answer'] = self.default_answer_value
 
-        if not updates:
+        if not updates and not self.update_tags:
             raise UserError(_("No updates selected. Please enable at least one update option."))
 
-        self.resource_ids.write(updates)
+        if updates:
+            self.resource_ids.write(updates)
+
+        if self.update_tags:
+            tag_commands = []
+            for tag in self.tags_remove_ids:
+                tag_commands.append((3, tag.id))
+            for tag in self.tags_add_ids:
+                tag_commands.append((4, tag.id))
+            if tag_commands:
+                self.resource_ids.write({'tag_ids': tag_commands})
 
         return {
             'type': 'ir.actions.client',

@@ -327,6 +327,7 @@
                                     <field name="auto_assign_date"/>
                                     <field name="auto_assign_end_date"/>
                                     <field name="auto_assign_frequency"/>
+                                    <field name="auto_assign_due_days"/>
                                     <field name="auto_assign_time" widget="float_time"/>
                                     <field name="auto_assign_custom_name"/>
                                 </group>
