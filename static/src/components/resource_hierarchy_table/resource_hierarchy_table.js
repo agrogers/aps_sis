@@ -1,13 +1,15 @@
-import { Component, useState, onWillStart, onMounted, onPatched } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted, onPatched, onWillUnmount } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { ResourceNotesDialog } from "./resource_notes_dialog";
+import { ResourceLinkButtons } from "@aps_sis/components/resource_link_buttons/resource_link_buttons";
 
 const STORAGE_KEY = "aps_resource_hierarchy_table";
 const COL_WIDTH = 120; // px per leaf column
 
 export class ResourceHierarchyTable extends Component {
     static template = "aps_sis.ResourceHierarchyTable";
+    static components = { ResourceLinkButtons };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
@@ -60,9 +62,21 @@ export class ResourceHierarchyTable extends Component {
             // Tag overlay
             hierarchyTags: [],
             activeTagIds: new Set(sharedTagIds !== null ? sharedTagIds : (saved.activeTagIds || [])),
+            // Supporting resource link buttons in cells
+            showLinks: saved.showLinks || false,
         });
 
         this.scrollRef = { el: null };
+
+        // Touch-focus: on touch devices the first tap reveals the
+        // per-cell action buttons; tapping again acts normally.
+        this._touchFocusedCellId = null;
+        this._onDocumentTouch = this._onDocumentTouch.bind(this);
+        document.addEventListener("touchstart", this._onDocumentTouch, true);
+
+        onWillUnmount(() => {
+            document.removeEventListener("touchstart", this._onDocumentTouch, true);
+        });
 
         onWillStart(async () => {
             const promises = [this._loadHierarchyTags()];
@@ -162,6 +176,7 @@ export class ResourceHierarchyTable extends Component {
             collapsed: [...this._collapsed],
             minimized: [...this._minimized],
             activeTagIds: [...this.state.activeTagIds],
+            showLinks: this.state.showLinks,
         };
         try {
             const key = STORAGE_KEY + (this.props.storageKeySuffix || "");
@@ -308,6 +323,7 @@ export class ResourceHierarchyTable extends Component {
                 hasHiddenChildren: !!node._hasHiddenChildren,
                 hasVisibleChildren: !isLeaf,
                 minimized: !!node._minimized,
+                links: node.links || [],
             });
             if (!isLeaf) {
                 for (const child of node.children) {
@@ -399,6 +415,13 @@ export class ResourceHierarchyTable extends Component {
         this._saveStorage();
     }
 
+    // ── Supporting resource links toggle ────────────────────────────
+
+    toggleShowLinks() {
+        this.state.showLinks = !this.state.showLinks;
+        this._saveStorage();
+    }
+
     // ── Tag overlay toggle ───────────────────────────────────────────
 
     toggleTag(tagId) {
@@ -421,6 +444,66 @@ export class ResourceHierarchyTable extends Component {
         return `transform: scale(${this.state.zoom}); transform-origin: top left;`;
     }
 
+    /**
+     * Handle cell click. On touch devices the first tap only reveals
+     * the overlay buttons (expand / collapse / minimize); a second
+     * tap fires the normal openResource action.
+     */
+    onCellClick(ev, id, name, hasNotes) {
+        // Detect touch: the click was preceded by a touchstart.
+        const isTouch = ev.sourceCapabilities
+            ? ev.sourceCapabilities.firesTouchEvents
+            : ("ontouchstart" in window);
+        if (isTouch) {
+            // If button already has focus on this cell, proceed normally.
+            if (this._touchFocusedCellId === id) {
+                this._clearTouchFocus();
+                this.openResource(id, name, hasNotes);
+                return;
+            }
+            // First tap — just reveal buttons.
+            this._setTouchFocus(id);
+            return;
+        }
+        this.openResource(id, name, hasNotes);
+    }
+
+    /** Set touch-focus on a cell (shows its overlay buttons). */
+    _setTouchFocus(cellId) {
+        this._touchFocusedCellId = cellId;
+        // Add class to the matching <td> elements.
+        this._applyTouchFocusClass();
+    }
+
+    /** Clear any active touch-focus. */
+    _clearTouchFocus() {
+        this._touchFocusedCellId = null;
+        document.querySelectorAll(".rht_cell_touch_focus").forEach((el) => {
+            el.classList.remove("rht_cell_touch_focus");
+        });
+    }
+
+    /** Apply the focus CSS class to the currently focused cell <td>. */
+    _applyTouchFocusClass() {
+        // Remove from all first.
+        document.querySelectorAll(".rht_cell_touch_focus").forEach((el) => {
+            el.classList.remove("rht_cell_touch_focus");
+        });
+        if (this._touchFocusedCellId == null) return;
+        // Find the <td> by data attribute.
+        document.querySelectorAll(`[data-cell-id="${this._touchFocusedCellId}"]`).forEach((el) => {
+            el.classList.add("rht_cell_touch_focus");
+        });
+    }
+
+    /** Dismiss touch-focus when tapping outside the focused cell. */
+    _onDocumentTouch(ev) {
+        if (this._touchFocusedCellId == null) return;
+        const focusedEl = document.querySelector(".rht_cell_touch_focus");
+        if (focusedEl && focusedEl.contains(ev.target)) return;
+        this._clearTouchFocus();
+    }
+
     openResource(id, name, hasNotes) {
         if (this._studentMode) {
             if (!hasNotes || hasNotes === 'no') {
@@ -439,6 +522,42 @@ export class ResourceHierarchyTable extends Component {
             views: [[false, "form"]],
             target: "current",
         });
+    }
+
+    /** Open a notes dialog for a supporting-resource link. */
+    onNotesClick(linkData) {
+        if (!linkData) return;
+        this.dialogService.add(ResourceNotesDialog, {
+            resourceId: linkData.id,
+            resourceName: linkData.name || "",
+        });
+    }
+
+    /** Student-mode: open (or create) the latest submission for a quiz resource. */
+    async onQuizClick(linkData) {
+        if (!linkData?.id) return;
+        const action = await this.orm.call(
+            "aps.resources",
+            "action_get_or_create_submission",
+            [linkData.id],
+        );
+        this.actionService.doAction(action);
+    }
+
+    /**
+     * Link interceptor passed to ResourceLinkButtons.
+     * Returns true if the click was handled (skipping default behaviour).
+     */
+    interceptLink(linkData) {
+        if (
+            this._studentMode &&
+            linkData?.type_name &&
+            linkData.type_name.toLowerCase().includes("quiz")
+        ) {
+            this.onQuizClick(linkData);
+            return true;
+        }
+        return false;
     }
 
     // ── Color helpers ────────────────────────────────────────────────

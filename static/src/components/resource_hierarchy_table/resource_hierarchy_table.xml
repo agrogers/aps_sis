@@ -43,6 +43,14 @@
 
                 <div class="ms-auto"/>
 
+                <!-- Show supporting-resource link buttons toggle -->
+                <button class="btn btn-sm"
+                        t-att-class="state.showLinks ? 'btn-primary' : 'btn-outline-secondary'"
+                        title="Show supporting resource links"
+                        t-on-click="toggleShowLinks">
+                    <i class="fa fa-external-link me-1"/>Links
+                </button>
+
                 <!-- Subject filter -->
                 <div class="d-flex align-items-center gap-2">
                     <!-- <label class="mb-0 fw-semibold text-muted small" for="rht_subject_filter">Subject:</label> -->
@@ -125,12 +133,21 @@
                                                     t-att-class="getCellClass(cell) + (cell.minimized ? ' rht_cell_minimized' : '')"
                                                     t-att-style="getCellStyle(cell)"
                                                     t-att-title="cell.minimized ? cell.name : ''"
-                                                    t-on-click="() => this.openResource(cell.id, cell.name, cell.has_notes)">
+                                                    t-att-data-cell-id="cell.id"
+                                                    t-on-click="(ev) => this.onCellClick(ev, cell.id, cell.name, cell.has_notes)">
                                                     <div class="rht_cell_inner">
                                                         <t t-if="!cell.minimized">
                                                             <div class="rht_cell_name">
                                                                 <t t-esc="cell.name"/>
                                                             </div>
+                                                            <!-- Supporting resource link buttons -->
+                                                            <t t-if="state.showLinks and cell.links and cell.links.length">
+                                                                <ResourceLinkButtons
+                                                                    links="cell.links"
+                                                                    compact="true"
+                                                                    notesHandler.bind="onNotesClick"
+                                                                    linkInterceptor.bind="interceptLink"/>
+                                                            </t>
                                                         </t>
                                                         <!-- Per-cell expand/collapse buttons -->
                                                         <t t-if="cell.hasHiddenChildren and !cell.minimized">
@@ -148,8 +165,8 @@
                                                             </button>
                                                         </t>
                                                     </div>
-                                                    <!-- Per-cell minimize toggle (top-level only, anchored to td) -->
-                                                    <t t-if="cell.depth === 0">
+                                                    <!-- Per-cell minimize toggle (top-level, or any currently-minimized cell so it can be restored) -->
+                                                    <t t-if="cell.depth === 0 or cell.minimized">
                                                         <button class="rht_cell_btn rht_cell_btn_minimize"
                                                                 t-att-title="cell.minimized ? 'Show label' : 'Hide label'"
                                                                 t-on-click="(ev) => this.cellToggleMinimize(ev, cell.id)">

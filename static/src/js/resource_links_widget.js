@@ -4,9 +4,11 @@ import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { useService } from "@web/core/utils/hooks";
 import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
 import { createProgressCircleSvg } from "@aps_sis/js/utils/svg_progress_utils";
+import { ResourceLinkButtons, openResourceLink } from "@aps_sis/components/resource_link_buttons/resource_link_buttons";
 
 export class ResourceLinksField extends Component {
     static template = "aps_sis.ResourceLinksField";
+    static components = { ResourceLinkButtons };
     static props = { ...standardFieldProps,
         size: { type: String, optional: true },
         showName: { type: Boolean, optional: true },
@@ -117,73 +119,14 @@ export class ResourceLinksField extends Component {
         return Array.isArray(value) ? value : [];
     }
 
-    async openNotesPopup(linkData) {
-        // Resolve the popup view ID from its XML external ID
-        const [, viewId] = await this.orm.call(
-            'ir.model.data',
-            'check_object_reference',
-            ['aps_sis', 'view_aps_resource_notes_popup']
-        );
-        this.action.doAction({
-            type: 'ir.actions.act_window',
-            name: linkData.name || 'Resource Notes',
-            res_model: 'aps.resources',
-            res_id: linkData.id,
-            view_mode: 'form',
-            views: [[viewId, 'form']],
-            target: 'new',
-        });
-    }
-
     openUrl(linkData) {
-        // Handle notes popup for supporting resources that have notes but no URL
-        if (linkData && linkData.link_type === 'notes') {
-            this.openNotesPopup(linkData);
-            return;
-        }
-
-        const url = typeof linkData === 'string' ? linkData : linkData.url;
-        
-        if (!url) return;
-
-        // Check if the URL is meant to trigger an Odoo Client Action
-        // Example URL format: "action:lonely_s_game"
-        if (url.startsWith("action:")) {
-            const rawAction = url.replace("action:", "");
-            const paramIndex = rawAction.search(/[?&]/);
-            const actionTag = paramIndex === -1 ? rawAction : rawAction.slice(0, paramIndex);
-            const rawParams = paramIndex === -1 ? "" : rawAction.slice(paramIndex);
-            const params = rawParams ? rawParams.replace(/^[?&]/, "") : "";
-            const urlParams = new URLSearchParams(params);
-            const contextParams = Object.fromEntries(urlParams.entries());
-
-            this.action.doAction(actionTag, {
-                additionalContext: {
-                    active_id: this.props.record.resId,
-                    active_model: this.props.record.resModel,
-                    out_of_marks: this.props.record.data.out_of_marks || 10,
-                    submission_state: this.props.record.data.state,
-                    ...contextParams,
-                },
-                target: 'new'
-            });
-        } 
-        // Check if it's a standard Odoo internal path
-        else if (url.startsWith("/") || url.includes(window.location.origin)) {
-            // Keep it inside the Odoo SPA
-            window.location.href = url; 
-        } 
-        // External links
-        else {
-            window.open(url, "_blank"); // Open external sites in a new tab
-        }
-    }
-
-    getIconSrc(icon) {
-        if (icon) {
-            return `data:image/png;base64,${icon}`;
-        }
-        return false;
+        const context = {
+            active_id: this.props.record.resId,
+            active_model: this.props.record.resModel,
+            out_of_marks: this.props.record.data.out_of_marks || 10,
+            submission_state: this.props.record.data.state,
+        };
+        openResourceLink(linkData, { action: this.action, orm: this.orm }, context);
     }
 }
 

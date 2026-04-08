@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aps_sis.ResourceLinkButtons">
+        <!-- Compact mode: small pill buttons with icon + text for tight cells -->
+        <t t-if="props.compact">
+            <div class="rht_cell_links" t-on-click.stop="">
+                <t t-foreach="props.links" t-as="link" t-key="link.id">
+                    <a href="#"
+                       class="rht_link_btn"
+                       t-att-title="link.name"
+                       t-on-click.stop.prevent="() => this.openUrl(link)">
+                        <t t-if="link.icon_url">
+                            <img t-att-src="link.icon_url"
+                                 class="rht_link_icon"
+                                 alt=""/>
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-external-link"/>
+                        </t>
+                        <span class="rht_link_label" t-esc="link.name"/>
+                    </a>
+                </t>
+            </div>
+        </t>
+
+        <!-- Standard mode: circular icon buttons (same layout as field widget) -->
+        <t t-else="">
+            <div class="o_resource_links d-flex flex-wrap gap-2 align-items-start" t-on-click.stop="">
+                <t t-foreach="props.links" t-as="link" t-key="link.id">
+                    <div class="resource-link-cell d-flex flex-column align-items-center"
+                         t-att-style="'max-width: calc(' + props.size + ' * 2.5); text-align: center;'">
+                        <a href="#"
+                           class="resource-link-icon"
+                           t-att-title="link.name"
+                           t-on-click.stop.prevent="() => this.openUrl(link)"
+                           style="cursor: pointer; text-decoration: none;">
+                            <t t-if="link.icon_url">
+                                <img t-att-src="link.icon_url"
+                                     alt=""
+                                     t-att-style="'width: ' + props.size + '; height: ' + props.size + '; object-fit: contain;'"/>
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-external-link fa-lg text-primary"/>
+                            </t>
+                        </a>
+                        <t t-if="props.showName">
+                            <span class="resource-link-name w-100 text-center"
+                                  t-att-style="'font-size: calc(' + props.size + ' * 0.25); line-height: 1.2; margin-top: 2px;'"
+                                  t-att-title="link.name">
+                                <t t-esc="link.name"/>
+                            </span>
+                        </t>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </t>
+
+</templates>

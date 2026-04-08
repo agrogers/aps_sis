@@ -258,6 +258,57 @@ class APSResource(models.Model):
             'current': current_node,
         }
 
+    def action_get_or_create_submission(self):
+        """Return an action opening the most recent submission for the current
+        student on this resource.  If no submission exists, create a task and
+        submission first (no due date)."""
+        self.ensure_one()
+        student = self.env.user.partner_id
+
+        task_model = self.env['aps.resource.task']
+        submission_model = self.env['aps.resource.submission']
+
+        # Find existing task for this resource + student
+        task = task_model.search([
+            ('resource_id', '=', self.id),
+            ('student_id', '=', student.id),
+        ], limit=1)
+
+        submission = False
+        if task:
+            # Most recent submission
+            submission = submission_model.search([
+                ('task_id', '=', task.id),
+            ], order='id desc', limit=1)
+
+        if not submission:
+            # Create task if missing
+            if not task:
+                task = task_model.create({
+                    'resource_id': self.id,
+                    'student_id': student.id,
+                    'state': 'assigned',
+                })
+            # Create a minimal submission with no due date
+            submission = submission_model.create({
+                'task_id': task.id,
+                'submission_name': self.display_name or self.name or '',
+                'date_assigned': fields.Date.today(),
+                'state': 'assigned',
+                'question': self.question if self.has_question == 'yes' else False,
+                'has_question': self.has_question,
+                'points_scale': self.points_scale,
+                'subjects': self.subjects.ids,
+            })
+
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'aps.resource.submission',
+            'res_id': submission.id,
+            'views': [[False, 'form']],
+            'target': 'current',
+        }
+
     @api.model
     def run_auto_assign(self):
         """Cron-called method: process all resources that have auto_assign=True and whose
@@ -514,6 +565,7 @@ class APSResource(models.Model):
         all_resources = self.search([('show_in_hierarchy', '=', True)])
         all_resources.mapped('child_ids')  # prefetch
         all_resources.mapped('tag_ids')    # prefetch
+        all_resources.mapped('supporting_resources_buttons')  # prefetch
 
         def _build_node(resource, subject_resources, visited):
             children = (
@@ -534,6 +586,7 @@ class APSResource(models.Model):
                 'has_children': bool(child_nodes),
                 'tag_ids': resource.tag_ids.ids,
                 'has_notes': resource.has_notes or 'no',
+                'links': resource.supporting_resources_buttons or [],
             }
 
         def _tree_depth(nodes):
