@@ -133,12 +133,16 @@ class APSResource(models.Model):
             rec.completed_submissions = len(submissions.filtered(lambda s: s.state == 'complete'))
             rec.overdue_tasks = len(rec.task_ids.filtered(lambda t: t.date_due and t.date_due < fields.Date.today() and t.state != 'complete'))
 
-    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids')
+    @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids', 'supporting_parent_ids.display_name')
     def _compute_display_name(self):
         """Build display name from ancestor chain, removing redundant overlapping characters."""
         for rec in self:
-            # Priority: 1. primary_parent_id, 2. first parent from parent_ids, 3. just name
-            parent_to_use = rec.primary_parent_id or (rec.parent_ids and rec.parent_ids[0])
+            # Priority: 1. primary_parent_id, 2. first parent from parent_ids, 3. first supporting parent, 4. just name
+            parent_to_use = (
+                rec.primary_parent_id
+                or (rec.parent_ids and rec.parent_ids[0])
+                or (rec.supporting_parent_ids and rec.supporting_parent_ids[0])
+            )
 
             if parent_to_use:
                 parent_display = parent_to_use.display_name or parent_to_use.name or ''
