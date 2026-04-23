@@ -64,7 +64,8 @@ class APSResource(models.Model):
 
             if extracted_content:
                 # Add the note at the bottom
-                note = '<p style="font-size: 12px; color: #888; margin-top: 10px;"><em>(Displaying a part of the parent content only.)</em></p>'
+                # note = '<p style="font-size: 12px; color: #888; margin-top: 10px;"><em>(Displaying a part of the parent content only.)</em></p>'
+                note = ''
                 return f'{extracted_content}{note}'
         except Exception:
             # If parsing fails, return original

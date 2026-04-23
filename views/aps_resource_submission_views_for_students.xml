@@ -145,10 +145,10 @@
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" invisible="state=='assigned' or not has_feedback"  name="feedback_page" >
                             <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
                         </page>
-                        <page string="Model Answer" class=" tab-with-icon model-answer-tab" invisible="not model_answer or state=='assigned' or model_answer_is_notes" name="model_answer_page">
+                        <page string="Model Answer" class=" tab-with-icon model-answer-tab" invisible="not model_answer or state=='assigned' or model_answer_is_notes or has_answer == 'hidden'" name="model_answer_page">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>
                         </page>
-                        <page string="Question" name="question_page" class="default-page tab-with-icon question-tab" invisible="has_question=='no'">
+                        <page string="Question" name="question_page" class="default-page tab-with-icon question-tab" invisible="has_question == 'no' or has_question == 'hidden'">
                             <field name="question" nolabel="1" readonly="not is_current_user_faculty"/>
                         </page>
                         <page string="Notes" name="resource_notes_page" class="tab-with-icon notes-tab" invisible="resource_has_notes == 'no' or not resource_notes">

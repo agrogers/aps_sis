@@ -27,7 +27,7 @@
     margin-bottom: 0.5em;
 }
 /* Limit the width of images in HTML fields. For small images on big screens they get ridiculously wide */
-.o-wysiwyg .img-fluid {
+.o_field_html .img-fluid {
     max-width: 1000px !important;
     /* width: 100% !important; */
 }

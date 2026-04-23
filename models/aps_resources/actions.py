@@ -1,6 +1,7 @@
 import re
 import logging
 from datetime import datetime, timedelta
+from html.parser import HTMLParser
 from odoo import models, api, fields
 
 _logger = logging.getLogger(__name__)
@@ -189,6 +190,141 @@ class APSResource(models.Model):
         """Called by the form button to delete the record and close the form."""
         self.unlink()
         return {'type': 'ir.actions.act_window_close'}
+
+    # ------------------------------------------------------------------
+    # Create linked resources from Question headings
+    # ------------------------------------------------------------------
+
+    def action_create_linked_resources_from_question(self):
+        """Parse the top-most heading level from the Question HTML field and
+        create a linked child resource for each heading found at that level.
+
+        Each new resource inherits the current resource as a parent and has
+        has_question / has_answer set to 'use_parent'.
+        """
+        self.ensure_one()
+
+        if not self.question:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Question',
+                    'message': 'This resource has no Question content to parse.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+
+        headings = self._extract_top_headings_from_html(self.question)
+
+        if not headings:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Headings Found',
+                    'message': 'No headings (H1–H6) were found in the Question field.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+
+        existing_names = set(self.child_ids.mapped('name'))
+        created = self.env['aps.resources']
+        skipped = []
+        for title in headings:
+            if title in existing_names:
+                skipped.append(title)
+                continue
+            child = self.env['aps.resources'].create({
+                'name': title,
+                'has_question': 'use_parent',
+                'has_answer': 'use_parent',
+                'parent_ids': [(4, self.id)],
+                'primary_parent_id': self.id,
+                'subjects': [(6, 0, self.subjects.ids)],
+                'type_id': self.type_id.id,
+            })
+            created |= child
+
+        if not created and not skipped:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Nothing to Create',
+                    'message': 'No new headings found to create resources from.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+
+        # Mark parent as having linked resources and refresh display names
+        if created:
+            self.has_child_resources = 'yes'
+        self._compute_display_name()
+
+        msg_parts = []
+        if created:
+            msg_parts.append(f'Created {len(created)} linked resource(s).')
+        if skipped:
+            msg_parts.append(f'Skipped {len(skipped)} already existing: {", ".join(skipped)}.')
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Resources Created',
+                'message': ' '.join(msg_parts),
+                'type': 'success',
+                'sticky': bool(skipped),
+            },
+        }
+
+    @staticmethod
+    def _extract_top_headings_from_html(html_content):
+        """Return a list of text strings for every heading at the top-most
+        heading level present in *html_content*.
+
+        E.g. if the HTML contains H2 and H3 tags but no H1, only the H2
+        texts are returned (in document order).
+        """
+        class _HeadingCollector(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.headings = []          # list of (level, text)
+                self._in_heading = False
+                self._current_level = None
+                self._current_text = []
+
+            def handle_starttag(self, tag, attrs):
+                if tag in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6'):
+                    self._in_heading = True
+                    self._current_level = int(tag[1])
+                    self._current_text = []
+
+            def handle_endtag(self, tag):
+                if tag in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6'):
+                    text = ''.join(self._current_text).strip()
+                    if text:
+                        self.headings.append((self._current_level, text))
+                    self._in_heading = False
+                    self._current_level = None
+                    self._current_text = []
+
+            def handle_data(self, data):
+                if self._in_heading:
+                    self._current_text.append(data)
+
+        collector = _HeadingCollector()
+        collector.feed(html_content)
+
+        if not collector.headings:
+            return []
+
+        top_level = min(level for level, _ in collector.headings)
+        return [text for level, text in collector.headings if level == top_level]
 
     def get_resource_tree(self):
         """Return the full resource hierarchy for the Tree View tab.

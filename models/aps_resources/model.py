@@ -18,6 +18,7 @@ class APSResource(models.Model):
     has_question = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
+        ('hidden', 'Yes (Hidden)'),
         ('use_parent', 'Use Parent'),
         ], string='Has Question',
         default='no',
@@ -29,7 +30,7 @@ class APSResource(models.Model):
     has_answer = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
-        ('yes_notes', '!!! Dont Use'),
+        ('hidden', 'Yes (Hidden)'),
         ('use_parent', 'Use Parent'),
         ], string='Has Answer',
         default='no',

@@ -465,6 +465,17 @@
         <field name="context">{'default_order': 'name'}</field>
     </record>
 
+    <!-- Server action: create linked resources from Question headings -->
+    <record id="action_create_linked_resources_from_question" model="ir.actions.server">
+        <field name="name">Create Linked Resources from Question</field>
+        <field name="model_id" ref="model_aps_resources"/>
+        <field name="binding_model_id" ref="model_aps_resources"/>
+        <field name="binding_type">action</field>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_teacher'))]" />
+        <field name="state">code</field>
+        <field name="code">action = record.action_create_linked_resources_from_question()</field>
+    </record>
+
     <!-- Server action to force update all display names -->
     <record id="action_force_update_aps_resource_display_names" model="ir.actions.server">
         <field name="name">Update Resource Names</field>
