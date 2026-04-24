@@ -20,7 +20,8 @@
                 <div class="rht_notes_body aui-image-viewer-scope p-3"
                     t-ref="notesBody"
                     t-att-data-image-viewer-model="'aps.resources'"
-                    t-att-data-image-viewer-id="props.resourceId">
+                    t-att-data-image-viewer-id="props.resourceId"
+                    t-att-data-image-viewer-field="'notes'">
                     <t t-out="notesMarkup"/>
                 </div>
             </t>
