@@ -18,6 +18,7 @@
                 <field name="state"/>
                 <field name="due_status"/>
                 <field name="submission_label"/>
+                <field name="url"/>
                 <field name="assigned_by"/>
                 <field name="date_assigned"/>
                 <field name="date_due"/>
@@ -102,6 +103,7 @@
                 <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
                 <field name="submission_label" optional="hide"/>
+                <field name="url" optional="hide"/>
                 <field name="submission_order" optional="hide"/>
                 <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
@@ -143,6 +145,7 @@
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="submission_label" optional="hide" readonly="1"/>
+                <field name="url" optional="hide"/>
                 <field name="submission_order" optional="hide" readonly="1"/>
                 <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
@@ -287,6 +290,7 @@
                                     </div>
                                     <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="submission_label"/>
+                                    <field name="url" widget="url"/>
                                     <field name="supporting_resources_buttons" widget="resource_links"/>
                                     <field name="submission_active" widget="boolean_toggle" />
                                 </group>

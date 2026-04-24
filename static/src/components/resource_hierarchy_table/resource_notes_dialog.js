@@ -1,4 +1,4 @@
-import { Component, useState, onWillStart, onMounted, onPatched, useRef } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted, onPatched, onWillPatch, useRef } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { Dialog } from "@web/core/dialog/dialog";
 import { markup } from "@odoo/owl";
@@ -19,6 +19,8 @@ export class ResourceNotesDialog extends Component {
             notes: "",
         });
         this.notesBodyRef = useRef("notesBody");
+        this._notesMarkup = "";
+        this._notesScrollTop = 0;
 
         onWillStart(async () => {
             const [data] = await this.orm.read(
@@ -27,11 +29,22 @@ export class ResourceNotesDialog extends Component {
                 ["notes"],
             );
             this.state.notes = data?.notes || "";
+            this._notesMarkup = this.state.notes ? markup(this.state.notes) : "";
             this.state.loading = false;
         });
 
         onMounted(() => this._renderMath());
-        onPatched(() => this._renderMath());
+        onWillPatch(() => {
+            const el = this.notesBodyRef.el;
+            this._notesScrollTop = el ? el.scrollTop : 0;
+        });
+        onPatched(() => {
+            this._renderMath();
+            const el = this.notesBodyRef.el;
+            if (el) {
+                el.scrollTop = this._notesScrollTop;
+            }
+        });
     }
 
     _renderMath() {
@@ -51,6 +64,6 @@ export class ResourceNotesDialog extends Component {
     }
 
     get notesMarkup() {
-        return this.state.notes ? markup(this.state.notes) : "";
+        return this._notesMarkup;
     }
 }

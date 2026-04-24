@@ -14,6 +14,7 @@
                                     <field name="resource_id"/>
                                     <field name="assigned_by"/>
                                     <field name="custom_submission_name"/>
+                                    <field name="url" widget="url"/>
                                     <field name="warning_message" nolabel="1" readonly="1" class="text-warning" invisible="not warning_message"/>
                                     <field name="submission_label"/>
                                     <field name="date_assigned"/>
@@ -59,6 +60,7 @@
                                         <field name="has_answer" readonly="1" optional="hide"/>
                                         <field name="points_scale" readonly="1" optional="hide"/>
                                         <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
+                                        <field name="url" invisible="1"/>
                                         <field name="resource_id" invisible="1"/>
                                     </list>
                                 </field>

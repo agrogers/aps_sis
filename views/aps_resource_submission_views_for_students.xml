@@ -173,6 +173,7 @@
                                         <field name="time_assigned" widget="float_time" nolabel="1"/>
                                     </div>
                                     <field name="submission_label"/>
+                                    <field name="url" widget="url" readonly="1"/>
                                 </group>
                                 <group>
                                     <field name="state" readonly="not is_current_user_faculty"/>

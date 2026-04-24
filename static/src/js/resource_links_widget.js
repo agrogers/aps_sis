@@ -119,14 +119,22 @@ export class ResourceLinksField extends Component {
         return Array.isArray(value) ? value : [];
     }
 
+    _getOverrideUrl() {
+        return this.props.record.data.url || false;
+    }
+
     openUrl(linkData) {
+        const overrideUrl = this._getOverrideUrl();
+        const normalizedLinkData = overrideUrl && linkData?.is_main
+            ? { ...linkData, url: overrideUrl }
+            : linkData;
         const context = {
             active_id: this.props.record.resId,
             active_model: this.props.record.resModel,
             out_of_marks: this.props.record.data.out_of_marks || 10,
             submission_state: this.props.record.data.state,
         };
-        openResourceLink(linkData, { action: this.action, orm: this.orm }, context);
+        openResourceLink(normalizedLinkData, { action: this.action, orm: this.orm }, context);
     }
 }
 

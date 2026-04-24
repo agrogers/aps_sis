@@ -22,6 +22,11 @@ class APSResourceSubmission(models.Model):
     )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
+    url = fields.Char(
+        string='URL',
+        tracking=True,
+        help='Optional submission-specific URL override for the main assigned resource.'
+    )
     subjects = fields.Many2many('op.subject', string='Subjects')
     student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
@@ -111,7 +116,7 @@ class APSResourceSubmission(models.Model):
     )
     supporting_resources_buttons = fields.Json(
         string='Links',
-        related='resource_id.supporting_resources_buttons',
+        compute='_compute_supporting_resources_buttons',
         help='Links to resources associated with this submission (e.g., main resource and supporting resources).'
     )
     resource_notes = fields.Html(
@@ -199,6 +204,21 @@ class APSResourceSubmission(models.Model):
                 record.points = int(points * record.points_scale)
             else:
                 record.points = 0
+
+    @api.depends('resource_id.supporting_resources_buttons', 'url')
+    def _compute_supporting_resources_buttons(self):
+        for record in self:
+            links = record.resource_id.supporting_resources_buttons or []
+            if record.url:
+                overridden_links = []
+                for link in links:
+                    updated_link = dict(link)
+                    if updated_link.get('is_main'):
+                        updated_link['url'] = record.url
+                    overridden_links.append(updated_link)
+                record.supporting_resources_buttons = overridden_links
+            else:
+                record.supporting_resources_buttons = links
 
     @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
     def _compute_type_icon(self):

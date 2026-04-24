@@ -17,7 +17,10 @@
                 </div>
             </t>
             <t t-else="">
-                <div class="rht_notes_body p-3" t-ref="notesBody">
+                <div class="rht_notes_body aui-image-viewer-scope p-3"
+                    t-ref="notesBody"
+                    t-att-data-image-viewer-model="'aps.resources'"
+                    t-att-data-image-viewer-id="props.resourceId">
                     <t t-out="notesMarkup"/>
                 </div>
             </t>

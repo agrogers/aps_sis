@@ -15,6 +15,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     has_answer = fields.Selection(related='resource_id.has_answer', readonly=True)
     points_scale = fields.Integer(related='resource_id.points_scale', readonly=True)
     supporting_resources_buttons = fields.Json(related='resource_id.supporting_resources_buttons', string='Resource Links', readonly=True)    
+    url = fields.Char(string='URL', related='wizard_id.url', readonly=True)
     selected = fields.Boolean(string='Assign', default=True)
     parent_custom_name_data = fields.Json(string='Custom Names', related='resource_id.parent_custom_name_data', readonly=True, required=False)
     parent_resource_id = fields.Many2one('aps.resources', string='Resource', required=False)
@@ -37,7 +38,8 @@ class APSAssignStudentsWizard(models.TransientModel):
     date_due = fields.Date(string='Due Date', required=True)
     student_ids = fields.Many2many('res.partner', string='Students', domain=[('is_student', '=', True)], required=True)
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
-    custom_submission_name = fields.Char(string='Custom Submission Name')
+    custom_submission_name = fields.Char(string='Submission Name')
+    url = fields.Char(string='URL', help='Optional URL override for the main assigned resource.')
     warning_message = fields.Char(string='Warning', compute='_compute_warning_message', store=False)
     submission_label = fields.Char(string='Submission Label', help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework')
     affected_resource_line_ids = fields.One2many('aps.assign.students.wizard.line', 'wizard_id', string='Affected Resources')
@@ -214,12 +216,12 @@ class APSAssignStudentsWizard(models.TransientModel):
             all_descendants = self.resource_id._get_all_descendants()
             lines = [(0, 0, {
                 'resource_id': self.resource_id.id,
-                'selected': self.resource_id.has_question == 'yes',
+                'selected': self.resource_id.has_question in ['yes', 'use_parent'], # Pre-select top-level resource if it has a question or uses parent's question, otherwise leave unselected since it likely serves as a container for the child resources
                 'sequence': 10,
             })]
             sequence = 20
             for descendant in all_descendants:
-                selected = descendant.has_question == 'yes'
+                selected = descendant.has_question in ['yes', 'use_parent'] # Pre-select resources that have a question or use parent's question, otherwise leave unselected since they likely serve as containers for their child resources
                 lines.append((0, 0, {
                     'resource_id': descendant.id,
                     'parent_resource_id': self.resource_id.id,
@@ -317,13 +319,17 @@ class APSAssignStudentsWizard(models.TransientModel):
                         'state': 'assigned',
                         'date_due': self.date_due,
                     })
+                submission_name_value = submission_name
+                if resource == top_level_resource and self.custom_submission_name:
+                    submission_name_value = self.custom_submission_name
                 # Create submission. Multiple submissions allowed per task.
                 submission_model.create({
                     'task_id': task.id,
                     'assigned_by': self.assigned_by.id if self.assigned_by else False,
                     'submission_label': self.submission_label,
                     'submission_order': submission_order,
-                    'submission_name': submission_name,
+                    'submission_name': submission_name_value,
+                    'url': self.url if resource == top_level_resource else False,
                     'date_assigned': self.date_assigned,
                     'time_assigned': self.time_assigned,
                     'date_due': self.date_due,
