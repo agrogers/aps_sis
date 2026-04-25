@@ -199,6 +199,7 @@
                                     <field name="has_default_answer" widget="boolean_toggle"/>
                                     <field name="has_child_resources" />
                                     <field name="has_supporting_resources" />
+                                    <field name="ai_action"/>
                                     <field name="has_lesson_plan" widget="boolean_toggle"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
@@ -345,6 +346,9 @@
                         </page>
                         <page string="Tree View">
                             <widget name="resource_tree_widget"/>
+                        </page>
+                        <page string="AI Instructions" invisible="ai_action=='none'">
+                            <field name="ai_instructions"/>
                         </page>
                     </notebook>
                 </sheet>

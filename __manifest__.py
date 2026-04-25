@@ -54,6 +54,7 @@
 		'wizard/aps_student_class_bulk_wizard_views.xml',
 		'wizard/aps_partner_profile_pic_views.xml',
 		'views/aps_sis_menu.xml',
+		'views/aps_ai_views.xml',
 		'views/op_student_course_views.xml',
 		'reports/submission_report.xml',
 		'wizard/submission_report_wizard_views.xml',
@@ -80,6 +81,8 @@
 			# 'aps_sis/static/src/js/form_notebook_default_page.js',
 			'aps_sis/static/src/js/submission_list_score_refresh.js',
             'aps_sis/static/src/js/submission_complete_next_context.js',
+            'aps_sis/static/src/js/submission_mark_with_ai_loading.js',
+            'aps_sis/static/src/xml/submission_mark_with_ai_dialog.xml',
             
 			'aps_sis/static/src/xml/resource_links_field.xml',
 			'aps_sis/static/src/js/clickable_many2many_tags.js',

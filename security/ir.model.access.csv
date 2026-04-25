@@ -66,3 +66,7 @@ access_aps_user_media_settings_student,aps.user.media.settings.student,model_aps
 access_aps_location_teacher,aps.location.teacher,model_aps_location,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_location_student,aps.location.student,model_aps_location,aps_sis.group_aps_student,1,0,0,0
 access_aps_student_class_bulk_wizard_teacher,aps.student.class.bulk.wizard.teacher,model_aps_student_class_bulk_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_ai_provider_manager,aps.ai.provider.manager,model_aps_ai_provider,aps_sis.group_aps_manager,1,1,1,1
+access_aps_ai_model_manager,aps.ai.model.manager,model_aps_ai_model,aps_sis.group_aps_manager,1,1,1,1
+access_aps_ai_call_log_manager,aps.ai.call.log.manager,model_aps_ai_call_log,aps_sis.group_aps_manager,1,0,0,1
+access_aps_ai_run_manager,aps.ai.run.manager,model_aps_ai_run,aps_sis.group_aps_manager,1,1,1,1

@@ -4,3 +4,4 @@ from . import actions
 from . import overrides
 from . import notifications
 from . import dashboard_data
+from . import ai_feedback

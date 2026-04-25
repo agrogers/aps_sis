@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="aps_sis.AIMarkProgressDialog">
+    <Dialog title="dialogTitle" size="'lg'">
+        <div class="d-flex flex-column gap-3" style="min-height: 260px;">
+            <div class="alert alert-info mb-0">
+                You can close this dialog at any time. AI marking will continue in the background.
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge text-bg-secondary" t-if="state.state === 'queued'">Queued</span>
+                <span class="badge text-bg-primary" t-if="state.state === 'running'">Running</span>
+                <span class="badge text-bg-success" t-if="state.state === 'completed'">Completed</span>
+                <span class="badge text-bg-danger" t-if="state.state === 'failed'">Failed</span>
+                <span class="text-muted" t-if="!state.loading and state.durationMs">Elapsed: <t t-esc="formattedDuration"/></span>
+            </div>
+
+            <div class="border rounded p-3 bg-light-subtle">
+                <div class="d-flex align-items-start gap-2" t-if="!isTerminal">
+                    <i class="fa fa-spinner fa-spin mt-1 text-primary"/>
+                    <div>
+                        <div class="fw-semibold">Current status</div>
+                        <div t-esc="state.statusMessage"/>
+                    </div>
+                </div>
+                <div t-if="isTerminal">
+                    <div class="fw-semibold mb-1">Current status</div>
+                    <div t-esc="state.statusMessage"/>
+                </div>
+            </div>
+
+            <div class="border rounded p-3" t-if="state.thinkingText or state.responsePreview or !isTerminal">
+                <div class="fw-semibold mb-2">AI thinking</div>
+                <div class="small text-muted mb-2" t-if="!state.thinkingText and !state.responsePreview and !isTerminal">
+                    Waiting for streamed reasoning from the provider...
+                </div>
+                <div class="small text-muted mb-2" t-if="state.thinkingText">
+                    Live reasoning streamed from the provider when available.
+                </div>
+                <div class="border rounded bg-body-tertiary p-3" style="max-height: 220px; overflow: auto;" t-if="state.thinkingText" t-ref="thinkingPanel">
+                    <div t-out="renderedThinkingHtml"/>
+                </div>
+                <div class="small text-muted mt-3 mb-2" t-if="!state.thinkingText and state.responsePreview">
+                    The provider is not exposing reasoning tokens, so this is the visible response stream instead.
+                </div>
+                <div class="border rounded bg-body-tertiary p-3" style="max-height: 160px; overflow: auto;" t-if="!state.thinkingText and state.responsePreview" t-ref="previewPanel">
+                    <div t-out="renderedResponsePreviewHtml"/>
+                </div>
+            </div>
+
+            <div class="border rounded p-3" t-if="state.aiModelName or state.promptTokens or state.completionTokens or state.estimatedCost">
+                <div class="fw-semibold mb-2">Run details</div>
+                <div class="row g-2">
+                    <div class="col-12" t-if="state.aiModelName">
+                        <span class="text-muted">Model:</span>
+                        <span t-esc="state.aiModelName"/>
+                    </div>
+                    <div class="col-4" t-if="state.promptTokens">
+                        <span class="text-muted">Prompt:</span>
+                        <span t-esc="state.promptTokens"/>
+                    </div>
+                    <div class="col-4" t-if="state.completionTokens">
+                        <span class="text-muted">Completion:</span>
+                        <span t-esc="state.completionTokens"/>
+                    </div>
+                    <div class="col-4" t-if="state.estimatedCost">
+                        <span class="text-muted">Cost:</span>
+                        <span t-esc="state.estimatedCost.toFixed(6)"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-success mb-0" t-if="state.resultMessage">
+                <t t-esc="state.resultMessage"/>
+            </div>
+
+            <div class="alert alert-danger mb-0" t-if="state.errorMessage">
+                <div class="fw-semibold mb-1">Error</div>
+                <div style="white-space: pre-wrap;" t-esc="state.errorMessage"/>
+            </div>
+        </div>
+
+        <t t-set-slot="footer">
+            <button class="btn btn-secondary" t-on-click="props.close">Close</button>
+        </t>
+    </Dialog>
+</t>
+
+</templates>

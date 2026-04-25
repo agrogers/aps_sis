@@ -32,6 +32,17 @@
         <field name="nextcall" eval="(datetime.now() + relativedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 
+    <record id="cron_process_auto_ai_marking" model="ir.cron">
+        <field name="name">Automatic AI Marking for APEX Submissions</field>
+        <field name="model_id" ref="model_aps_resource_submission"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_process_auto_ai_marking()</field>
+        <field name="active">True</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
     <record id="cron_recompute_submission_due_status" model="ir.cron">
         <field name="name">Recompute Due Status for APEX Submissions</field>
         <field name="model_id" ref="model_aps_resource_submission"/>

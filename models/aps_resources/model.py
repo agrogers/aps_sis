@@ -74,6 +74,16 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
 
+    ai_instructions = fields.Html(
+        string='AI Instructions',
+        help='Additional instructions for AI-assisted actions related to this resource.',
+    )
+    ai_action = fields.Selection([
+        ('none', 'None'),
+        ('mark_submission', 'Mark Submission'),
+        ('mark_submission_use_answer', 'Mark Submission using Model Answer'),
+    ], string='AI Action', default='none', required=True, tracking=True)
+
     thumbnail = fields.Binary(string='Thumbnail')
 
     type_id = fields.Many2one('aps.resource.types', string='Type', ondelete='set null', store=True, tracking=True)

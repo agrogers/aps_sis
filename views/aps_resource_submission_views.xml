@@ -250,6 +250,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
                     <field name="is_current_user_reviewed" invisible="1"/>
+                    <field name="ai_action" invisible="1"/>
                     <button name="action_open_submission_student_view" string="Student View" type="object" class="btn-secondary" />
                     <separator/>
                     <!-- <separator/> -->
@@ -319,6 +320,7 @@
                                     <field name="auto_score" widget="boolean_toggle"/>
                                     <field name="active_datetime" readonly="1"/>
                                     <field name="notification_state"  />
+                                    <field name="ai_auto_mark_state" readonly="1"/>
                                     <field name="days_till_due" readonly="1"/>
                                     
                                     <field name="create_date" readonly="1"/>
@@ -330,7 +332,25 @@
                             <field name="answer" nolabel="1" placeholder="Enter your answer here."/>
                         </page>
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" name="feedback_page">
-                            <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
+                            <div class="row g-3 align-items-start">
+                                <div class="col-lg-11">
+                                    <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
+                                </div>
+                                <div class="col-lg-1 d-flex flex-column gap-2">
+                                    <button name="action_start_mark_with_ai"
+                                            string="Mark AI"
+                                            type="object"
+                                            class="btn-primary"
+                                            groups="aps_sis.group_aps_teacher"
+                                            invisible="not is_current_user_faculty or ai_action not in ['mark_submission', 'mark_submission_use_answer']"/>
+                                    <button name="action_requeue_auto_ai_marking"
+                                            string="Requeue AI"
+                                            type="object"
+                                            class="btn-secondary"
+                                            groups="aps_sis.group_aps_teacher"
+                                            invisible="not is_current_user_faculty or state != 'submitted' or ai_action not in ['mark_submission', 'mark_submission_use_answer']"/>
+                                </div>
+                            </div>
                         </page>
                         <page string="Model Answer" class="tab-with-icon model-answer-tab" name="model_answer_page" invisible="not model_answer or model_answer_is_notes">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission." readonly="1"/>

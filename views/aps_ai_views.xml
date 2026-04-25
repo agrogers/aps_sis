@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_ai_provider_search" model="ir.ui.view">
+        <field name="name">aps.ai.provider.search</field>
+        <field name="model">aps.ai.provider</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="api_base_url"/>
+                <filter name="filter_provider_enabled" string="Enabled" domain="[('enabled', '=', True)]"/>
+                <filter name="filter_provider_disabled" string="Disabled" domain="[('enabled', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_provider_enabled" string="Enabled" context="{'group_by': 'enabled'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_provider_list" model="ir.ui.view">
+        <field name="name">aps.ai.provider.list</field>
+        <field name="model">aps.ai.provider</field>
+        <field name="arch" type="xml">
+            <list default_order="priority desc, name">
+                <field name="enabled" widget="boolean_toggle"/>
+                <field name="priority"/>
+                <field name="name"/>
+                <field name="api_base_url" optional="show"/>
+                <field name="chat_completions_path" optional="hide"/>
+                <field name="timeout_seconds" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_provider_form" model="ir.ui.view">
+        <field name="name">aps.ai.provider.form</field>
+        <field name="model">aps.ai.provider</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_connection" string="Test Provider" type="object" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Provider">
+                            <field name="enabled" widget="boolean_toggle"/>
+                            <field name="priority"/>
+                            <field name="name"/>
+                            <field name="api_base_url"/>
+                            <field name="chat_completions_path"/>
+                            <field name="timeout_seconds"/>
+                        </group>
+                        <group string="Authentication">
+                            <field name="api_key_header"/>
+                            <field name="api_key_prefix"/>
+                            <field name="api_key" password="True"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                    <group string="Models">
+                        <field name="model_ids" context="{'active_test': False, 'form_view_ref': 'aps_sis.view_aps_ai_model_form'}">
+                            <list>
+                                <field name="enabled" widget="boolean_toggle"/>
+                                <field name="priority"/>
+                                <field name="name"/>
+                                <field name="model_key"/>
+                                <field name="total_estimated_cost" string="Total Cost" optional="show"/>
+                                <field name="input_cost_per_million" optional="hide"/>
+                                <field name="output_cost_per_million" optional="hide"/>
+                                <field name="temperature" optional="hide"/>
+                                <field name="max_completion_tokens" optional="hide"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_model_search" model="ir.ui.view">
+        <field name="name">aps.ai.model.search</field>
+        <field name="model">aps.ai.model</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="provider_id"/>
+                <field name="model_key"/>
+                <filter name="filter_model_enabled" string="Enabled" domain="[('enabled', '=', True)]"/>
+                <filter name="filter_model_disabled" string="Disabled" domain="[('enabled', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_model_provider" string="Provider" context="{'group_by': 'provider_id'}"/>
+                    <filter name="group_by_model_enabled" string="Enabled" context="{'group_by': 'enabled'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_model_list" model="ir.ui.view">
+        <field name="name">aps.ai.model.list</field>
+        <field name="model">aps.ai.model</field>
+        <field name="arch" type="xml">
+            <list default_order="priority desc, id">
+                <field name="enabled" widget="boolean_toggle"/>
+                <field name="priority"/>
+                <field name="name"/>
+                <field name="provider_id"/>
+                <field name="model_key"/>
+                <field name="total_estimated_cost" string="Total Cost" optional="show"/>
+                <field name="temperature" optional="hide"/>
+                <field name="max_completion_tokens" optional="hide"/>
+                <field name="input_cost_per_million" optional="hide"/>
+                <field name="output_cost_per_million" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_model_form" model="ir.ui.view">
+        <field name="name">aps.ai.model.form</field>
+        <field name="model">aps.ai.model</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_connection" string="Test Model" type="object" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Model">
+                            <field name="enabled" widget="boolean_toggle"/>
+                            <field name="priority"/>
+                            <field name="name"/>
+                            <field name="provider_id"/>
+                            <field name="model_key"/>
+                        </group>
+                        <group string="Generation">
+                            <field name="temperature"/>
+                            <field name="max_completion_tokens"/>
+                            <field name="force_json_response" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Costing">
+                            <field name="input_cost_per_million"/>
+                            <field name="output_cost_per_million"/>
+                            <field name="total_estimated_cost" readonly="True"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_call_log_search" model="ir.ui.view">
+        <field name="name">aps.ai.call.log.search</field>
+        <field name="model">aps.ai.call.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="provider_id"/>
+                <field name="model_id"/>
+                <field name="user_id"/>
+                <field name="related_display_name"/>
+                <filter name="filter_success" string="Success" domain="[('state', '=', 'success')]"/>
+                <filter name="filter_error" string="Error" domain="[('state', '=', 'error')]"/>
+                <filter name="filter_submission_feedback" string="Submission Feedback" domain="[('request_type', '=', 'submission_feedback')]"/>
+                <filter name="filter_connection_test" string="Connection Test" domain="[('request_type', '=', 'connection_test')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_provider" string="Provider" context="{'group_by': 'provider_id'}"/>
+                    <filter name="group_by_model" string="Model" context="{'group_by': 'model_id'}"/>
+                    <filter name="group_by_state" string="State" context="{'group_by': 'state'}"/>
+                    <filter name="group_by_request_type" string="Request Type" context="{'group_by': 'request_type'}"/>
+                    <filter name="group_by_user" string="Requested By" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_call_log_list" model="ir.ui.view">
+        <field name="name">aps.ai.call.log.list</field>
+        <field name="model">aps.ai.call.log</field>
+        <field name="arch" type="xml">
+            <list default_order="create_date desc, id desc" create="false" edit="false">
+                <field name="create_date" string="Date"/>
+                <field name="state" widget="badge" decoration-success="state == 'success'" decoration-danger="state == 'error'"/>
+                <field name="request_type"/>
+                <field name="user_id" optional="hide"/>
+                <field name="provider_id"/>
+                <field name="model_id"/>
+                <field name="related_display_name" string="Related Record" optional="show"/>
+                <field name="prompt_tokens" optional="hide"/>
+                <field name="completion_tokens" optional="hide"/>
+                <field name="estimated_cost" string="Estimated Price" optional="show"/>
+                <field name="duration_ms" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_call_log_form" model="ir.ui.view">
+        <field name="name">aps.ai.call.log.form</field>
+        <field name="model">aps.ai.call.log</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group string="Call">
+                            <field name="create_date"/>
+                            <field name="state"/>
+                            <field name="request_type"/>
+                            <field name="user_id"/>
+                            <field name="duration_ms"/>
+                        </group>
+                        <group string="Routing">
+                            <field name="provider_id"/>
+                            <field name="model_id"/>
+                            <field name="model_key"/>
+                            <field name="endpoint" widget="url"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Related Record">
+                            <field name="related_model"/>
+                            <field name="related_res_id"/>
+                            <field name="related_display_name"/>
+                        </group>
+                        <group string="Costing">
+                            <field name="prompt_tokens"/>
+                            <field name="completion_tokens"/>
+                            <field name="estimated_cost" string="Estimated Price"/>
+                        </group>
+                    </group>
+                    <group string="Error" invisible="not error_message">
+                        <field name="error_message" nolabel="1"/>
+                    </group>
+                    <group string="Request Payload">
+                        <field name="request_payload" nolabel="1"/>
+                    </group>
+                    <group string="Response Body">
+                        <field name="response_body" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_ai_providers" model="ir.actions.act_window">
+        <field name="name">AI Providers</field>
+        <field name="res_model">aps.ai.provider</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="search_view_id" ref="view_aps_ai_provider_search"/>
+    </record>
+
+    <record id="action_aps_ai_models" model="ir.actions.act_window">
+        <field name="name">AI Models</field>
+        <field name="res_model">aps.ai.model</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="search_view_id" ref="view_aps_ai_model_search"/>
+    </record>
+
+    <record id="action_aps_ai_call_logs" model="ir.actions.act_window">
+        <field name="name">AI Call Logs</field>
+        <field name="res_model">aps.ai.call.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_aps_ai_call_log_search"/>
+    </record>
+
+    <menuitem id="menu_apex_ai_heading" name="AI" parent="menu_apex_settings" sequence="350" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_ai_providers" name="Providers" parent="menu_apex_ai_heading" action="action_aps_ai_providers" sequence="10" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_ai_models" name="Models" parent="menu_apex_ai_heading" action="action_aps_ai_models" sequence="20" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_ai_call_logs" name="Logs" parent="menu_apex_ai_heading" action="action_aps_ai_call_logs" sequence="30" groups="aps_sis.group_aps_manager"/>
+</odoo>
