@@ -81,14 +81,11 @@ class APSResource(models.Model):
     )
     ai_use_model_answer = fields.Boolean(string='Use Model Answer')
     ai_use_question = fields.Boolean(string='Use Question')
-    ai_prompt_ids = fields.Many2many(
-        'ai_prompts',
-        'aps_resources_ai_prompts_rel',
-        'resource_id',
-        'prompt_id',
-        string='Prompts',
+    ai_model_id = fields.Many2one(
+        'aps.ai.model',
+        string='AI Model',
         domain=[('enabled', '=', True)],
-        help='Optional prompts to include with AI instructions.',
+        help='If set, this model is used for AI generation for this resource and its submissions. Leave empty to use the normal enabled-model fallback order.',
     )
     ai_use_notes = fields.Boolean(string='Use Notes')
     ai_use_supporting_resources = fields.Boolean(string='Use Supporting Resources')
@@ -112,6 +109,21 @@ class APSResource(models.Model):
         string='Additional Prompts',
         compute='_compute_ai_additional_prompt_ids',
         help='Prompts that will be included in AI calls for this resource, based on selected prompts and always-include rules.',
+    )
+    ai_active_prompts = fields.Many2many(
+        'ai_prompts',
+        string='Active Prompts',
+        compute='_compute_ai_active_prompts',
+        help='The prompt records that will actually be combined for this resource, in runtime order.',
+    )
+    ai_prompt_ids = fields.Many2many(
+        'ai_prompts',
+        'aps_resources_ai_prompts_rel',
+        'resource_id',
+        'prompt_id',
+        string='Prompts',
+        domain=[('enabled', '=', True)],
+        help='Optional prompts to include with AI instructions.',
     )
 
     thumbnail = fields.Binary(string='Thumbnail')
@@ -280,9 +292,14 @@ class APSResource(models.Model):
         'ai_prompt_ids',
         'ai_prompt_ids.enabled',
         'ai_prompt_ids.always_include',
+        'ai_prompt_ids.applies_to_ai_models',
         'ai_prompt_ids.applies_to_db_models',
+        'ai_model_id',
+        'ai_model_id.enabled',
+        'ai_model_id.provider_id.enabled',
     )
     def _compute_ai_additional_prompt_ids(self):
+        self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
         always_prompts = self.env['ai_prompts'].sudo().search([
             ('enabled', '=', True),
             ('always_include', '=', True),
@@ -295,6 +312,87 @@ class APSResource(models.Model):
             )
             # record.ai_additional_prompt_ids = (selected | always)
             record.ai_additional_prompt_ids = always
+
+    @api.depends(
+        'ai_prompt_ids',
+        'ai_prompt_ids.enabled',
+        'ai_prompt_ids.always_include',
+        'ai_prompt_ids.applies_to_ai_models',
+        'ai_prompt_ids.applies_to_db_models',
+        'ai_prompt_ids.placeholder',
+        'ai_prompt_ids.prompt_name',
+        'ai_model_id',
+        'ai_model_id.enabled',
+        'ai_model_id.provider_id.enabled',
+        'ai_action',
+        'ai_instructions',
+        'ai_use_model_answer',
+        'ai_use_question',
+        'ai_use_notes',
+        'ai_targeted_feedback',
+        'ai_answer',
+        'answer',
+        'marks',
+        'notes',
+        'question',
+    )
+    def _compute_ai_active_prompts(self):
+        ai_model_env = self.env['aps.ai.model']
+        empty_prompts = self.env['ai_prompts']
+        for record in self:
+            prompts = empty_prompts
+            try:
+                candidate_models = ai_model_env._get_generation_candidates(resource=record)
+                active_model = candidate_models[:1]
+                if active_model:
+                    prompts = active_model._collect_applicable_prompts(record.ai_prompt_ids, record._name)
+                    answer_chunk_data = False
+                    if record.ai_targeted_feedback and record.ai_answer:
+                        answer_chunk_data = active_model._build_submission_answer_chunks(record.ai_answer)
+                    dynamic_sections = active_model._build_dynamic_prompt_sections(
+                        instructions=active_model._html_to_text(record.ai_instructions),
+                        out_of_marks=record.marks if record.marks and record.marks > 0 else False,
+                        use_question=record.ai_use_question,
+                        question=active_model._html_to_text(record.question),
+                        use_model_answer=record.ai_use_model_answer or record.ai_action == 'mark_submission_use_answer',
+                        model_answer=active_model._html_to_text(record.answer),
+                        use_note=record.ai_use_notes,
+                        notes=active_model._html_to_text(record.notes),
+                        student_answer=active_model._html_to_text(record.ai_answer),
+                        student_answer_chunks=answer_chunk_data['chunks'] if answer_chunk_data else None,
+                        targeted_feedback=bool(record.ai_targeted_feedback),
+                    )
+                    active_dynamic_keys = {
+                        active_model._normalize_prompt_name(name)
+                        for name, content in dynamic_sections
+                        if content
+                    }
+                    prompts = prompts.filtered(
+                        lambda prompt: not prompt.placeholder
+                        or active_model._normalize_prompt_name(prompt.prompt_name) in active_dynamic_keys
+                    )
+            except Exception:
+                prompts = empty_prompts
+            record.ai_active_prompts = prompts
+
+    @api.onchange(
+        'ai_prompt_ids',
+        'ai_model_id',
+        'ai_action',
+        'ai_instructions',
+        'ai_use_model_answer',
+        'ai_use_question',
+        'ai_use_notes',
+        'ai_targeted_feedback',
+        'ai_answer',
+        'answer',
+        'marks',
+        'notes',
+        'question',
+    )
+    def _onchange_ai_prompt_preview_fields(self):
+        self._compute_ai_additional_prompt_ids()
+        self._compute_ai_active_prompts()
 
     @api.depends('subjects', 'subjects.category_id')
     def _compute_subject_categories(self):

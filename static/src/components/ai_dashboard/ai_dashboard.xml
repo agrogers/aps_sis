@@ -1,0 +1,154 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.AIDashboard" owl="1">
+        <div class="aps-ai-dashboard vh-100 overflow-auto p-4">
+            <div class="aps-ai-dashboard__header shadow-sm rounded-4 p-4 mb-4">
+                <div class="row align-items-center g-3">
+                    <div class="col-lg-7">
+                        <h1 class="aps-ai-dashboard__title mb-1">AI Dashboard</h1>
+                        <p class="text-muted mb-0">Usage, cost, speed, and model mix for recent AI calls.</p>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <select class="form-select" t-on-change="onChangeDays">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30" selected="selected">Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                            <option value="365">Last 365 Days</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-lg-2 text-lg-end">
+                        <button class="btn btn-outline-primary" t-on-click="openLogs">
+                            <i class="fa fa-line-chart me-1"/>Open Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="d-flex justify-content-center align-items-center" style="height: 420px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                </div>
+            </t>
+
+            <t t-else="">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6 col-xl">
+                        <div class="aps-ai-dashboard__card shadow-sm rounded-4 p-3 h-100">
+                            <div class="aps-ai-dashboard__label">Queries Run</div>
+                            <div class="aps-ai-dashboard__value"><t t-esc="state.summary.total_queries || 0"/></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl">
+                        <div class="aps-ai-dashboard__card shadow-sm rounded-4 p-3 h-100">
+                            <div class="aps-ai-dashboard__label">Total Cost</div>
+                            <div class="aps-ai-dashboard__value"><t t-esc="formatCost(state.summary.total_cost)"/></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl">
+                        <div class="aps-ai-dashboard__card shadow-sm rounded-4 p-3 h-100">
+                            <div class="aps-ai-dashboard__label">Average Time</div>
+                            <div class="aps-ai-dashboard__value"><t t-esc="formatDuration(state.summary.avg_duration_ms)"/></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl">
+                        <div class="aps-ai-dashboard__card shadow-sm rounded-4 p-3 h-100">
+                            <div class="aps-ai-dashboard__label">Success Rate</div>
+                            <div class="aps-ai-dashboard__value"><t t-esc="`${state.summary.success_rate || 0}%`"/></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl">
+                        <div class="aps-ai-dashboard__card shadow-sm rounded-4 p-3 h-100">
+                            <div class="aps-ai-dashboard__label">Top Model</div>
+                            <div class="aps-ai-dashboard__value aps-ai-dashboard__value--small"><t t-esc="state.summary.top_model_name || 'No AI calls yet'"/></div>
+                            <div class="text-muted small mt-1"><t t-esc="`${state.summary.top_model_count || 0} queries`"/></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-xl-7">
+                        <div class="aps-ai-dashboard__panel shadow-sm rounded-4 p-4 h-100">
+                            <h5 class="fw-bold mb-3">Most Used Models</h5>
+                            <t t-if="!state.modelUsage.labels.length">
+                                <p class="text-muted mb-0">No AI calls in this period.</p>
+                            </t>
+                            <t t-else="">
+                                <div class="aps-ai-dashboard__chart-wrap">
+                                    <canvas t-ref="modelChart"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="col-xl-5">
+                        <div class="aps-ai-dashboard__panel shadow-sm rounded-4 p-4 h-100">
+                            <h5 class="fw-bold mb-3">Cost by Provider</h5>
+                            <t t-if="!state.providerCost.labels.length">
+                                <p class="text-muted mb-0">No provider cost data in this period.</p>
+                            </t>
+                            <t t-else="">
+                                <div class="aps-ai-dashboard__chart-wrap aps-ai-dashboard__chart-wrap--compact">
+                                    <canvas t-ref="providerChart"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-12">
+                        <div class="aps-ai-dashboard__panel shadow-sm rounded-4 p-4">
+                            <h5 class="fw-bold mb-3">Daily Usage Trend</h5>
+                            <t t-if="!state.dailyTrend.labels.length">
+                                <p class="text-muted mb-0">No trend data in this period.</p>
+                            </t>
+                            <t t-else="">
+                                <div class="aps-ai-dashboard__chart-wrap">
+                                    <canvas t-ref="dailyChart"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="aps-ai-dashboard__panel shadow-sm rounded-4 p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h5 class="fw-bold mb-0">Model Breakdown</h5>
+                        <span class="text-muted small"><t t-esc="`${state.summary.models_used || 0} models used in this period`"/></span>
+                    </div>
+                    <t t-if="!state.modelStats.length">
+                        <p class="text-muted mb-0">No model activity in this period.</p>
+                    </t>
+                    <t t-else="">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Provider</th>
+                                        <th class="text-end">Queries</th>
+                                        <th class="text-end">Total Cost</th>
+                                        <th class="text-end">Avg Time</th>
+                                        <th class="text-end">Prompt Tokens</th>
+                                        <th class="text-end">Completion Tokens</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.modelStats" t-as="item" t-key="item.model_name">
+                                        <td><t t-esc="item.model_name"/></td>
+                                        <td><t t-esc="item.provider_name"/></td>
+                                        <td class="text-end"><t t-esc="item.count"/></td>
+                                        <td class="text-end"><t t-esc="formatCost(item.total_cost)"/></td>
+                                        <td class="text-end"><t t-esc="formatDuration(item.avg_duration_ms)"/></td>
+                                        <td class="text-end"><t t-esc="item.prompt_tokens"/></td>
+                                        <td class="text-end"><t t-esc="item.completion_tokens"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

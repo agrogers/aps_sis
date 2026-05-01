@@ -62,9 +62,9 @@
                         <field name="model_ids" context="{'active_test': False, 'form_view_ref': 'aps_sis.view_aps_ai_model_form'}">
                             <list>
                                 <field name="enabled" widget="boolean_toggle"/>
-                                <field name="priority"/>
-                                <field name="name"/>
-                                <field name="model_key"/>
+                                <field name="priority" optional="hide"/>
+                                <field name="display_name" optional="show"/>
+                                <field name="model_key" optional="hide"/>
                                 <field name="total_estimated_cost" string="Total Cost" optional="show"/>
                                 <field name="input_cost_per_million" optional="hide"/>
                                 <field name="output_cost_per_million" optional="hide"/>
@@ -83,6 +83,7 @@
         <field name="model">aps.ai.model</field>
         <field name="arch" type="xml">
             <search>
+                <field name="display_name"/>
                 <field name="name"/>
                 <field name="provider_id"/>
                 <field name="model_key"/>
@@ -101,12 +102,13 @@
         <field name="model">aps.ai.model</field>
         <field name="arch" type="xml">
             <list default_order="priority desc, id">
-                <field name="enabled" widget="boolean_toggle"/>
-                <field name="priority"/>
-                <field name="name"/>
-                <field name="provider_id"/>
-                <field name="model_key"/>
+                <field name="enabled" widget="boolean_toggle" readonly="1" optional="hide"/>
+                <field name="priority" optional="hide"/>
+                <field name="display_name" optional="show"/>
+                <field name="provider_id" optional="hide"/>
+                <field name="model_key" optional="hide"/>
                 <field name="total_estimated_cost" string="Total Cost" optional="show"/>
+                <field name="disable_reasoning" widget="boolean_toggle" optional="hide"/>
                 <field name="temperature" optional="hide"/>
                 <field name="max_completion_tokens" optional="hide"/>
                 <field name="input_cost_per_million" optional="hide"/>
@@ -136,6 +138,7 @@
                             <field name="temperature"/>
                             <field name="max_completion_tokens"/>
                             <field name="force_json_response" widget="boolean_toggle"/>
+                            <field name="disable_reasoning" widget="boolean_toggle"/>
                         </group>
                     </group>
                     <group>
@@ -189,11 +192,39 @@
                 <field name="provider_id"/>
                 <field name="model_id"/>
                 <field name="related_display_name" string="Related Record" optional="show"/>
+                <field name="prompt_names_used" optional="hide"/>
                 <field name="prompt_tokens" optional="hide"/>
                 <field name="completion_tokens" optional="hide"/>
-                <field name="estimated_cost" string="Estimated Price" optional="show"/>
+                <field name="estimated_cost" string="Estimated Price" optional="show" digits="[16,6]"/>
                 <field name="duration_ms" optional="hide"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_call_log_graph" model="ir.ui.view">
+        <field name="name">aps.ai.call.log.graph</field>
+        <field name="model">aps.ai.call.log</field>
+        <field name="arch" type="xml">
+            <graph string="AI Usage" type="bar">
+                <field name="model_id" type="row"/>
+                <field name="estimated_cost" type="measure"/>
+                <field name="duration_ms" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_aps_ai_call_log_pivot" model="ir.ui.view">
+        <field name="name">aps.ai.call.log.pivot</field>
+        <field name="model">aps.ai.call.log</field>
+        <field name="arch" type="xml">
+            <pivot string="AI Usage Pivot">
+                <field name="model_id" type="row"/>
+                <field name="provider_id" type="col"/>
+                <field name="estimated_cost" type="measure"/>
+                <field name="duration_ms" type="measure"/>
+                <field name="prompt_tokens" type="measure"/>
+                <field name="completion_tokens" type="measure"/>
+            </pivot>
         </field>
     </record>
 
@@ -204,6 +235,7 @@
             <form create="false" edit="false">
                 <sheet>
                     <group>
+                        <field name="create_date"/>
                         <group string="Call">
                             <field name="create_date"/>
                             <field name="state"/>
@@ -212,12 +244,17 @@
                             <field name="duration_ms"/>
                         </group>
                         <group string="Routing">
+                        <filter name="filter_today" string="Today" domain="[('create_date', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
+                        <filter name="filter_last_7_days" string="Last 7 Days" domain="[('create_date', '&gt;=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d 00:00:00'))]"/>
+                        <filter name="filter_last_30_days" string="Last 30 Days" domain="[('create_date', '&gt;=', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d 00:00:00'))]"/>
                             <field name="provider_id"/>
                             <field name="model_id"/>
                             <field name="model_key"/>
                             <field name="endpoint" widget="url"/>
                         </group>
                     </group>
+                            <filter name="group_by_day" string="Day" context="{'group_by': 'create_date:day'}"/>
+                            <filter name="group_by_month" string="Month" context="{'group_by': 'create_date:month'}"/>
                     <group>
                         <group string="Related Record">
                             <field name="related_model"/>
@@ -227,11 +264,14 @@
                         <group string="Costing">
                             <field name="prompt_tokens"/>
                             <field name="completion_tokens"/>
-                            <field name="estimated_cost" string="Estimated Price"/>
+                            <field name="estimated_cost" string="Estimated Price" digits="[16,6]"/>
                         </group>
                     </group>
                     <group string="Error" invisible="not error_message">
                         <field name="error_message" nolabel="1"/>
+                    </group>
+                    <group string="Prompts Used" invisible="not prompt_names_used">
+                        <field name="prompt_names_used" nolabel="1"/>
                     </group>
                     <group string="Request Payload">
                         <field name="request_payload" nolabel="1"/>
@@ -242,6 +282,11 @@
                 </sheet>
             </form>
         </field>
+    </record>
+
+    <record id="action_aps_ai_dashboard" model="ir.actions.client">
+        <field name="name">AI Dashboard</field>
+        <field name="tag">aps_ai_dashboard</field>
     </record>
 
     <record id="action_aps_ai_providers" model="ir.actions.act_window">
@@ -263,11 +308,33 @@
     <record id="action_aps_ai_call_logs" model="ir.actions.act_window">
         <field name="name">AI Call Logs</field>
         <field name="res_model">aps.ai.call.log</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">graph,pivot,list,form</field>
         <field name="search_view_id" ref="view_aps_ai_call_log_search"/>
     </record>
 
+    <record id="action_aps_ai_call_logs_view_graph" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_aps_ai_call_log_graph"/>
+        <field name="act_window_id" ref="action_aps_ai_call_logs"/>
+    </record>
+
+    <record id="action_aps_ai_call_logs_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_aps_ai_call_log_pivot"/>
+        <field name="act_window_id" ref="action_aps_ai_call_logs"/>
+    </record>
+
+    <record id="action_aps_ai_call_logs_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_ai_call_log_list"/>
+        <field name="act_window_id" ref="action_aps_ai_call_logs"/>
+    </record>
+
     <menuitem id="menu_apex_ai_heading" name="AI" parent="menu_apex_settings" sequence="350" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_ai_dashboard" name="Dashboard" parent="menu_apex_ai_heading" action="action_aps_ai_dashboard" sequence="5" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_ai_providers" name="Providers" parent="menu_apex_ai_heading" action="action_aps_ai_providers" sequence="10" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_ai_models" name="Models" parent="menu_apex_ai_heading" action="action_aps_ai_models" sequence="20" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_ai_call_logs" name="Logs" parent="menu_apex_ai_heading" action="action_aps_ai_call_logs" sequence="30" groups="aps_sis.group_aps_manager"/>

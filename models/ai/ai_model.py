@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import re
@@ -22,7 +23,11 @@ class APSAIModel(models.Model):
     _name = 'aps.ai.model'
     _description = 'APEX AI Model'
     _order = 'priority desc, id'
+    _rec_name = 'name'
 
+    _PROMPT_TEMPLATE_SECTION_SENTINEL = '__PROMPT_TEMPLATE_SECTION__'
+
+    display_name = fields.Char(compute='_compute_display_name')
     name = fields.Char(required=True)
     active = fields.Boolean(default=True)
     enabled = fields.Boolean(default=True, help='If disabled, this model will not be used for AI calls.')
@@ -30,11 +35,16 @@ class APSAIModel(models.Model):
     provider_id = fields.Many2one('aps.ai.provider', required=True, ondelete='cascade')
     model_key = fields.Char(required=True, help='Model identifier sent to the AI router.')
     temperature = fields.Float(default=0.2)
-    max_completion_tokens = fields.Integer(default=1200)
+    max_completion_tokens = fields.Integer(default=9600)
     force_json_response = fields.Boolean(
         string='Request JSON Output',
         default=False,
         help='Ask the provider for JSON-only responses when the router supports it.',
+    )
+    disable_reasoning = fields.Boolean(
+        string='Disable Reasoning',
+        default=True,
+        help='When enabled, reasoning output is never requested from this AI model even if the caller asks for it.',
     )
     input_cost_per_million = fields.Float(
         digits=(16, 6),
@@ -52,15 +62,21 @@ class APSAIModel(models.Model):
         readonly=True,
     )
     notes = fields.Text()
-    display_name = fields.Char(compute='_compute_display_name', store=True)
 
-    @api.depends('name', 'provider_id.display_name', 'model_key')
+    @api.depends('name', 'provider_id.display_name', 'model_key', 'input_cost_per_million', 'output_cost_per_million')
     def _compute_display_name(self):
         for record in self:
+            base_name = ''
             if record.provider_id and record.name:
-                record.display_name = f'{record.provider_id.display_name} / {record.name}'
+                base_name = f'{record.provider_id.display_name} / {record.name}'
             else:
-                record.display_name = record.name or record.model_key or ''
+                base_name = record.name or record.model_key or ''
+
+            cost_suffix = ' [In: %.6f | Out: %.6f]' % (
+                record.input_cost_per_million or 0.0,
+                record.output_cost_per_million or 0.0,
+            )
+            record.display_name = f'{base_name}{cost_suffix}' if base_name else cost_suffix
 
     @api.depends('call_log_ids.estimated_cost')
     def _compute_total_estimated_cost(self):
@@ -110,10 +126,24 @@ class APSAIModel(models.Model):
             return False
         return min(max(base_tokens * 2, base_tokens + 800), 4096)
 
-    def _assemble_chat_payload(
+    @api.model
+    def _get_generation_candidates(self, resource=None):
+        if resource and resource.ai_model_id:
+            model = resource.ai_model_id.sudo()
+            if not model.exists():
+                raise UserError(_('The selected AI model no longer exists.'))
+            if not model.enabled or not model.provider_id.enabled:
+                raise UserError(_('The selected AI model is disabled or its provider is disabled.'))
+            return model
+
+        return self.sudo().search(
+            [('enabled', '=', True), ('provider_id.enabled', '=', True)],
+        ).sorted(key=lambda rec: (-(rec.priority or 0), -(rec.provider_id.priority or 0), rec.id))
+
+    @api.model
+    def _build_dynamic_prompt_sections(
         self,
         instructions='',
-        external_prompt='',
         out_of_marks=False,
         use_question=False,
         question='',
@@ -122,29 +152,106 @@ class APSAIModel(models.Model):
         use_note=False,
         notes='',
         student_answer='',
+        student_answer_chunks=None,
+        targeted_feedback=False,
+    ):
+        dynamic_sections = []
+
+        if instructions and instructions.strip():
+            dynamic_sections.append(('Specific Instructions', '## AI Instructions:\n%s' % instructions.strip()))
+        if out_of_marks:
+            dynamic_sections.append(('Maximum Mark', '## Maximum Mark:\n%s' % out_of_marks))
+        if use_question and question.strip():
+            dynamic_sections.append(('Question', '## Question:\n%s' % question.strip()))
+        if use_model_answer:
+            dynamic_sections.append(('Model Answer', '## Model Answer:\n%s' % (model_answer.strip() or 'No model answer provided.')))
+        if use_note and notes.strip():
+            dynamic_sections.append(('Notes', '## Notes:\n%s' % notes.strip()))
+        if targeted_feedback and student_answer_chunks:
+            dynamic_sections.append((
+                'Student Answer',
+                'Student Answer Chunks:\n%s' % json.dumps(student_answer_chunks, indent=2, ensure_ascii=False),
+            ))
+            dynamic_sections.append(('Targeted Feedback', self._PROMPT_TEMPLATE_SECTION_SENTINEL))
+        else:
+            dynamic_sections.append(('Student Answer', 'Student Answer:\n%s' % student_answer.strip()))
+            dynamic_sections.append((
+                'Response Format',
+                'Return ONLY valid JSON with these keys:\n'
+                '{"feedback_html": string, "score": number|null, "score_comment": string|null}.\n'
+                'feedback_html must be an HTML fragment using tags such as <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, and <br>.\n'
+                'If you cannot determine a mark, set score to null and explain why in score_comment.',
+            ))
+
+        return dynamic_sections
+
+    def _assemble_chat_payload(
+        self,
+        instructions='',
+        external_prompt='',
+        prompt_records=None,
+        out_of_marks=False,
+        use_question=False,
+        question='',
+        use_model_answer=False,
+        model_answer='',
+        use_note=False,
+        notes='',
+        student_answer='',
+        student_answer_chunks=None,
+        targeted_feedback=False,
         include_reasoning=False,
     ):
         """Build an OpenAI-compatible chat payload from resolved prompt components."""
         prompt_sections = []
-        if instructions:
-            prompt_sections.append('AI Instructions:\n%s' % instructions.strip())
-        if external_prompt:
-            prompt_sections.append('Prompt Template:\n%s' % external_prompt.strip())
-        if out_of_marks:
-            prompt_sections.append('Maximum Mark:\n%s' % out_of_marks)
-        if use_question and question.strip():
-            prompt_sections.append('Question:\n%s' % question.strip())
-        if use_model_answer:
-            prompt_sections.append('Model Answer:\n%s' % (model_answer.strip() or 'No model answer provided.'))
-        if use_note and notes.strip():
-            prompt_sections.append('Notes:\n%s' % notes.strip())
-        prompt_sections.append('Student Answer:\n%s' % student_answer.strip())
-        prompt_sections.append(
-            'Return ONLY valid JSON with these keys:\n'
-            '{"feedback_html": string, "score": number|null, "score_comment": string|null}.\n'
-            'feedback_html must be an HTML fragment using tags such as <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, and <br>.\n'
-            'If you cannot determine a mark, set score to null and explain why in score_comment.'
+        prompt_names_used = []
+        dynamic_sections = self._build_dynamic_prompt_sections(
+            instructions=instructions,
+            out_of_marks=out_of_marks,
+            use_question=use_question,
+            question=question,
+            use_model_answer=use_model_answer,
+            model_answer=model_answer,
+            use_note=use_note,
+            notes=notes,
+            student_answer=student_answer,
+            student_answer_chunks=student_answer_chunks,
+            targeted_feedback=targeted_feedback,
         )
+
+        dynamic_section_map = {
+            self._normalize_prompt_name(name): (name, content)
+            for name, content in dynamic_sections
+            if content
+        }
+        used_dynamic_keys = set()
+
+        for prompt in prompt_records or self.env['ai_prompts']:
+            prompt_name = (prompt.prompt_name or '').strip()
+            prompt_key = self._normalize_prompt_name(prompt_name)
+            if prompt_key in dynamic_section_map and prompt_key not in used_dynamic_keys:
+                section_name, section_content = dynamic_section_map[prompt_key]
+                if section_content == self._PROMPT_TEMPLATE_SECTION_SENTINEL:
+                    section_content = (prompt.prompt or '').strip()
+                if not section_content:
+                    used_dynamic_keys.add(prompt_key)
+                    continue
+                prompt_sections.append(section_content)
+                prompt_names_used.append(section_name)
+                used_dynamic_keys.add(prompt_key)
+                continue
+
+            if prompt.placeholder:
+                continue
+
+            prompt_text = (prompt.prompt or '').strip()
+            if prompt_text:
+                prompt_sections.append(prompt_text)
+                prompt_names_used.append(prompt_name or 'Prompt Template')
+
+        if external_prompt and prompt_records:
+            prompt_sections.append('## Prompt Template:\n%s' % external_prompt.strip())
+            prompt_names_used.append('Prompt Template')
 
         payload = {
             'model': self.model_key,
@@ -154,6 +261,7 @@ class APSAIModel(models.Model):
                     'content': (
                         'You are an expert teacher assistant. Follow the supplied instructions exactly, '
                         'produce constructive teacher feedback for students, and when possible determine a mark.'
+                        + (' Do not return reasoning, chain-of-thought, or thinking text. Return only the final answer.' if self.disable_reasoning else '')
                     ),
                 },
                 {
@@ -164,7 +272,12 @@ class APSAIModel(models.Model):
             'temperature': self.temperature,
             'max_completion_tokens': self.max_completion_tokens,
         }
-        if include_reasoning:
+        if self.disable_reasoning:
+            payload['reasoning'] = {
+                'enabled': False,
+                'exclude': True,
+            }
+        elif include_reasoning:
             payload['reasoning'] = {
                 'enabled': True,
                 'exclude': False,
@@ -172,17 +285,25 @@ class APSAIModel(models.Model):
             }
         if self.force_json_response:
             payload['response_format'] = {'type': 'json_object'}
-        return payload
+        return payload, prompt_names_used
 
-    def _collect_applicable_prompt_text(self, selected_prompts, db_model_name):
+    @api.model
+    def _normalize_prompt_name(self, prompt_name):
+        return re.sub(r'\s+', ' ', (prompt_name or '').strip()).casefold()
+
+    def _collect_applicable_prompts(self, selected_prompts, db_model_name):
         self.ensure_one()
-        selected = (selected_prompts or self.env['ai_prompts']).filtered(lambda rec: rec.enabled and rec.prompt)
+        self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
+        selected = (selected_prompts or self.env['ai_prompts']).filtered(lambda rec: rec.enabled and (rec.prompt or rec.prompt_name))
         always = self.env['ai_prompts'].sudo().search([
             ('enabled', '=', True),
             ('always_include', '=', True),
-            ('prompt', '!=', False),
         ])
-        candidates = (selected | always)
+        placeholders = self.env['ai_prompts'].sudo().search([
+            ('enabled', '=', True),
+            ('placeholder', '=', True),
+        ])
+        candidates = (selected | always | placeholders)
 
         applicable = candidates.filtered(
             lambda rec: (
@@ -192,7 +313,7 @@ class APSAIModel(models.Model):
             )
         )
 
-        return '\n\n'.join(self._html_to_text(prompt.prompt) for prompt in applicable if prompt.prompt)
+        return applicable.sorted(key=lambda rec: ((rec.sequence or 0), rec.id))
 
     def _build_test_payload(self):
         payload = {
@@ -218,7 +339,7 @@ class APSAIModel(models.Model):
         }
         return payload
 
-    def _execute_logged_router_call(self, payload, request_type, related_record=None, stream_callback=None):
+    def _execute_logged_router_call(self, payload, request_type, related_record=None, stream_callback=None, prompt_names_used=None):
         self.ensure_one()
         request_payload = json.dumps(payload, indent=2, sort_keys=True)
         response_json = None
@@ -238,6 +359,8 @@ class APSAIModel(models.Model):
             else:
                 response_text = self._perform_router_request(payload)
                 response_json = self._parse_router_response_json(response_text)
+            response_json = self._strip_reasoning_from_response(response_json)
+            response_text = json.dumps(response_json)
             usage = response_json.get('usage') or {}
             prompt_tokens = int(usage.get('prompt_tokens') or usage.get('input_tokens') or 0)
             completion_tokens = int(usage.get('completion_tokens') or usage.get('output_tokens') or 0)
@@ -265,6 +388,7 @@ class APSAIModel(models.Model):
             duration_ms=duration_ms,
             related_record=related_record,
             error_message=error_message,
+            prompt_names_used=prompt_names_used,
         )
 
         if result is not None:
@@ -284,6 +408,7 @@ class APSAIModel(models.Model):
         duration_ms,
         related_record=None,
         error_message=None,
+        prompt_names_used=None,
     ):
         self.ensure_one()
         vals = {
@@ -298,6 +423,7 @@ class APSAIModel(models.Model):
             'completion_tokens': completion_tokens or 0,
             'estimated_cost': estimated_cost or 0.0,
             'duration_ms': duration_ms or 0,
+            'prompt_names_used': '\n'.join(prompt_names_used) if prompt_names_used else False,
             'request_payload': request_payload,
             'response_body': response_text or False,
             'error_message': error_message or False,
@@ -466,6 +592,24 @@ class APSAIModel(models.Model):
         response_json = aggregated
         response_text = json.dumps(response_json)
         return response_text, response_json
+
+    def _strip_reasoning_from_response(self, response_json):
+        if not self.disable_reasoning or not isinstance(response_json, dict):
+            return response_json
+
+        cleaned = copy.deepcopy(response_json)
+        choices = cleaned.get('choices') or []
+        for choice in choices:
+            if not isinstance(choice, dict):
+                continue
+            message = choice.get('message')
+            if isinstance(message, dict):
+                message.pop('reasoning', None)
+                message.pop('reasoning_details', None)
+            choice.pop('reasoning', None)
+            choice.pop('reasoning_details', None)
+
+        return cleaned
 
     def _extract_stream_content_piece(self, delta, choice):
         return (

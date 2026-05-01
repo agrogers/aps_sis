@@ -1,6 +1,7 @@
 from . import aps_avatar
 from . import aps_media
 from . import aps_time_tracking
+from . import ai_feedback_storage_mixin
 from . import aps_resource_tags
 from . import aps_location
 from . import aps_resources

@@ -16,7 +16,8 @@ _AUI_SKIP_CHANNEL_FORWARD_CTX = 'aui_skip_channel_forward'
 
 
 class APSResourceSubmissionAIFeedback(models.Model):
-    _inherit = 'aps.resource.submission'
+    _name = 'aps.resource.submission'
+    _inherit = ['aps.resource.submission', 'aps.ai.feedback.storage.mixin']
 
     ai_action = fields.Selection(related='resource_id.ai_action', readonly=True)
     ai_instructions = fields.Html(related='resource_id.ai_instructions', readonly=True)
@@ -24,6 +25,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
     ai_use_model_answer = fields.Boolean(related='resource_id.ai_use_model_answer', readonly=True)
     ai_use_question = fields.Boolean(related='resource_id.ai_use_question', readonly=True)
     ai_use_notes = fields.Boolean(related='resource_id.ai_use_notes', readonly=True)
+    ai_targeted_feedback = fields.Boolean(related='resource_id.ai_targeted_feedback', readonly=True)
     ai_last_model_id = fields.Many2one('aps.ai.model', string='Last AI Model', readonly=True, copy=False)
     ai_last_prompt_tokens = fields.Integer(string='Last AI Prompt Tokens', readonly=True, copy=False)
     ai_last_completion_tokens = fields.Integer(string='Last AI Completion Tokens', readonly=True, copy=False)
@@ -405,7 +407,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
         feedback_html = result.get('feedback_html') or '<p>No feedback was returned by the AI model.</p>'
         score = result.get('score')
         vals = {
-            'feedback': feedback_html,
+            **self._get_ai_feedback_result_write_vals(result),
             'ai_last_model_id': result.get('model_id'),
             'ai_last_prompt_tokens': result.get('prompt_tokens') or 0,
             'ai_last_completion_tokens': result.get('completion_tokens') or 0,

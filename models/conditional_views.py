@@ -3,6 +3,8 @@ from odoo import api, SUPERUSER_ID
 
 def post_init_hook(env):
     """Hook to conditionally create fees-related views only if fees module is installed"""
+    env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
+
     # Check if fees module is installed
     if env['ir.module.module'].search([('name', '=', 'openeducat_fees'), ('state', '=', 'installed')]):
         # Create the view records for making fees_term_id optional

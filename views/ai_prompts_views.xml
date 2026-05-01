@@ -20,8 +20,10 @@
         <field name="name">ai.prompts.list</field>
         <field name="model">ai_prompts</field>
         <field name="arch" type="xml">
-            <list default_order="prompt_name">
-                <field name="enabled" widget="boolean_toggle"/>
+            <list default_order="sequence, id">
+                <field name="sequence" widget="handle" optional="show"/>
+                <field name="enabled" widget="boolean_toggle" optional="show"/>
+                <field name="placeholder" widget="boolean_toggle" optional="show"/>
                 <field name="always_include" widget="boolean_toggle" optional="show"/>
                 <field name="prompt_name"/>
                 <field name="applies_to_ai_models" widget="many2many_tags" optional="show"/>
@@ -39,9 +41,11 @@
                 <sheet>
                     <group>
                         <group>
+                            <field name="prompt_name"/>
+                            <field name="sequence"/>
                             <field name="enabled" widget="boolean_toggle"/>
                             <field name="always_include" widget="boolean_toggle"/>
-                            <field name="prompt_name"/>
+                            <field name="placeholder" widget="boolean_toggle" />
                             <field name="applies_to_ai_models" widget="many2many_tags" options="{'no_create': True}"/>
                             <field name="applies_to_db_models" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>

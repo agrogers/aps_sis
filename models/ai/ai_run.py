@@ -189,7 +189,7 @@ class APSAIRun(models.Model):
             ai_run=self,
         )
         self._write_progress({'status_message': _('Writing AI feedback to the resource...')})
-        resource.sudo().write({'ai_feedback': result.get('feedback_html') or ''})
+        resource._apply_ai_feedback_result(result)
         duration_ms = int((time.perf_counter() - started_perf) * 1000)
         self._write_progress({
             'state': 'completed',

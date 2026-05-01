@@ -1,0 +1,161 @@
+.aps-ai-feedback-viewer {
+    align-items: stretch;
+}
+
+.aps-ai-feedback-panel {
+    height: 100%;
+    border: 1px solid #d8dee8;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: 0 12px 32px rgba(35, 59, 89, 0.08);
+    overflow: hidden;
+}
+
+.aps-ai-feedback-panel-title {
+    padding: 0.9rem 1rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #36506b;
+    background: rgba(189, 214, 239, 0.28);
+}
+
+.aps-ai-feedback-answer,
+.aps-ai-feedback-body {
+    padding: 1rem;
+}
+
+.aps-ai-feedback-answer {
+    line-height: 1.7;
+}
+
+.aps-ai-answer-chunk {
+    --aps-ai-feedback-accent: #d6992e;
+    --aps-ai-feedback-border-width: 2px;
+    border-radius: 8px;
+    padding: 0.05rem 0.12rem;
+    transition: background-color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.aps-ai-answer-chunk.is-active {
+    background: color-mix(in srgb, var(--aps-ai-feedback-accent) 16%, white);
+    box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--aps-ai-feedback-accent) 40%, white);
+}
+
+.aps-ai-answer-chunk.is-success {
+    --aps-ai-feedback-accent: #2f8f5b;
+}
+
+.aps-ai-answer-chunk.is-error {
+    --aps-ai-feedback-accent: #c74242;
+}
+
+.aps-ai-answer-chunk.is-info {
+    --aps-ai-feedback-accent: #2f6fb2;
+}
+
+.aps-ai-answer-chunk.severity-light {
+    --aps-ai-feedback-border-width: 2px;
+}
+
+.aps-ai-answer-chunk.severity-medium {
+    --aps-ai-feedback-border-width: 3px;
+}
+
+.aps-ai-answer-chunk.severity-strong {
+    --aps-ai-feedback-border-width: 4px;
+}
+
+.aps-ai-feedback-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.6rem;
+}
+
+.aps-ai-feedback-item {
+    --aps-ai-feedback-accent: #7f8ea3;
+    --aps-ai-feedback-border-width: 1px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 100%;
+    padding: 0.25rem 0.5rem;
+    border: var(--aps-ai-feedback-border-width) solid var(--aps-ai-feedback-accent);
+    border-radius: 999px;
+    background: #ffffff;
+    text-align: left;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.aps-ai-feedback-item.is-success {
+    --aps-ai-feedback-accent: #2f8f5b;
+}
+
+.aps-ai-feedback-item.is-error {
+    --aps-ai-feedback-accent: #c74242;
+}
+
+.aps-ai-feedback-item.is-info {
+    --aps-ai-feedback-accent: #2f6fb2;
+}
+
+.aps-ai-feedback-item.severity-light {
+    --aps-ai-feedback-border-width: 2px;
+}
+
+.aps-ai-feedback-item.severity-medium {
+    --aps-ai-feedback-border-width: 2px;
+}
+
+.aps-ai-feedback-item.severity-strong {
+    --aps-ai-feedback-border-width: 2px;
+}
+
+.aps-ai-feedback-item:hover,
+.aps-ai-feedback-item:focus-visible {
+    box-shadow: 0 10px 18px rgba(51, 95, 145, 0.12);
+    transform: translateY(-1px);
+}
+
+.aps-ai-feedback-item.is-active {
+    background: color-mix(in srgb, var(--aps-ai-feedback-accent) 40%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--aps-ai-feedback-accent) 18%, transparent), 0 10px 18px rgba(51, 95, 145, 0.12);
+}
+
+.aps-ai-feedback-justification {
+    --aps-ai-feedback-accent: #7f8ea3;
+    background: color-mix(in srgb, var(--aps-ai-feedback-accent) 18%, transparent);
+    /* box-shadow: 0 0 0 2px color-mix(in srgb, var(--aps-ai-feedback-accent) 30%, transparent), 0 4px 10px rgba(51, 95, 145, 0.08); */
+    font-size: 0.8rem;
+    font-style: italic;
+    border-radius: 6px;
+    padding: 0.4rem 0.7rem;
+}
+
+.aps-ai-feedback-justification.is-success {
+    --aps-ai-feedback-accent: #2f8f5b;
+}
+
+.aps-ai-feedback-justification.is-error {
+    --aps-ai-feedback-accent: #c74242;
+}
+
+.aps-ai-feedback-justification.is-info {
+    --aps-ai-feedback-accent: #2f6fb2;
+}
+.aps-ai-feedback-item-text {
+    /* font-weight: 600; */
+    color: #20354c;
+    white-space: nowrap;
+}
+
+.aps-ai-feedback-summary {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 0.9rem;
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.SubmissionFeedbackViewer">
+        <div class="aps-ai-feedback-viewer row g-3">
+            <div class="col-12 col-lg-6">
+                <div class="aps-ai-feedback-panel">
+                    <div class="aps-ai-feedback-panel-title">Student Answer</div>
+                    <div class="aps-ai-feedback-answer" t-out="answerMarkup"/>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="aps-ai-feedback-panel">
+                    <div class="aps-ai-feedback-panel-title">Feedback</div>
+                    <div class="aps-ai-feedback-body">
+                        <t t-if="hasStructuredItems">
+                            <div class="aps-ai-feedback-list">
+                                <button t-foreach="renderedFeedbackItems"
+                                        t-as="item"
+                                        t-key="item.id"
+                                        type="button"
+                                        class="aps-ai-feedback-item"
+                                    t-att-class="item.itemClass"
+                                        t-att-data-feedback-id="item.id"
+                                        t-on-click="onFeedbackClick">
+                                    <span class="aps-ai-feedback-item-text"><t t-esc="item.text or item.id"/></span>
+                                </button>
+                            </div>
+                            <t t-if="activeJustification">
+                                <div class="aps-ai-feedback-justification mt-2 w-100"
+                                     t-att-class="activeToneClass">
+                                    <span t-esc="activeJustification"/>
+                                </div>
+                            </t>
+                            <div class="aps-ai-feedback-summary mt-3" t-out="feedbackMarkup"/>
+                        </t>
+                        <t t-else="">
+                            <div t-out="feedbackMarkup"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

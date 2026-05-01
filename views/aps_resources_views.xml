@@ -352,12 +352,14 @@
                                 <group>
                                     <field name="ai_use_model_answer" widget="boolean_toggle"/>
                                     <field name="ai_use_question" widget="boolean_toggle"/>
-                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False}"/>
-                                    <field name="ai_additional_prompt_ids" widget="many2many_tags" readonly="1" options="{'no_create': True, 'no_open': True}"/>
+                                     <field name="ai_use_notes" widget="boolean_toggle"/>
+                                     <field name="ai_targeted_feedback" widget="boolean_toggle"/>
+                                     <field name="ai_test_prompt" widget="boolean_toggle"/>
                                 </group>
                                 <group>
-                                     <field name="ai_use_notes" widget="boolean_toggle"/>
-                                     <field name="ai_test_prompt" widget="boolean_toggle"/>
+                                    <field name="ai_model_id" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="ai_prompt_ids" domain="[('placeholder', '=', False)]" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False}"/>
+                                    <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False}"/>
                                 </group>
                             </group>
                             <div invisible="not ai_test_prompt" class="mt-2 mb-3">
@@ -374,12 +376,26 @@
                                         <field name="ai_answer" nolabel="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;" readonly="not ai_test_prompt"
                                             placeholder="Enter a sample student answer here to test the AI prompt."/>
                                     </div>
-                                    <div class="col-12 col-md-6">
-                                        <div class="fw-bold mb-1" invisible="not ai_feedback">AI Feedback</div>
+                                    <div class="col-12 col-md-6" invisible="not ai_feedback or ai_targeted_feedback">
+                                        <div class="fw-bold mb-1" >AI Feedback</div>
                                         <field name="ai_feedback" nolabel="1" readonly="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
                                             invisible="not ai_feedback"/>
                                     </div>
                                 </div>
+
+
+                                <group string="Targeted Feedback" class="tab-with-icon student-answer-tab" 
+                                    name="student_answer_page" invisible="not ai_targeted_feedback">
+                                    <field name="ai_targeted_feedback" invisible="1"/>
+                                    <field name="ai_answer" invisible="1"/>
+                                    <field name="ai_answer_chunks" invisible="1"/>
+                                    <field name="ai_answer_chunked_html" invisible="1"/>
+                                    <field name="ai_feedback_items" invisible="1"/>
+                                    <field name="ai_feedback_links" invisible="1"/>
+                                    <field name="ai_feedback" widget="submission_feedback_viewer" options="{'answer_field': 'ai_answer'}" nolabel="1" readonly="1"/>
+                                </group>
+
+
                             </div>
 
                             <group string="Instructions Specific to this Resource">

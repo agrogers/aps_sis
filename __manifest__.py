@@ -84,6 +84,9 @@
             'aps_sis/static/src/js/submission_complete_next_context.js',
             'aps_sis/static/src/js/submission_mark_with_ai_loading.js',
             'aps_sis/static/src/xml/submission_mark_with_ai_dialog.xml',
+			'aps_sis/static/src/js/submission_feedback_viewer.js',
+			'aps_sis/static/src/xml/submission_feedback_viewer.xml',
+			'aps_sis/static/src/css/submission_feedback_viewer.css',
             
 			'aps_sis/static/src/xml/resource_links_field.xml',
 			'aps_sis/static/src/js/clickable_many2many_tags.js',

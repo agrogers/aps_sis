@@ -141,20 +141,15 @@
                                 No answer has been supplied.
                             </div>
 
+                            <field name="answer" invisible="has_feedback"/>
+
                             <div class="row g-3" invisible="not has_feedback">
-                                <div class="col-12 col-lg-6" >
-                                    <group string="Answer" >
-                                        <field name="answer" nolabel="1" placeholder="Enter your answer here." 
-                                        readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" 
-                                        invisible="state != 'assigned' and not answer"/>
-                                    </group>
-                                </div>
-                                <div class="col-12 col-lg-6" >
-                                    <group string="Teacher Feedback" >
-                                        <field name="feedback" class="feedback" nolabel="1" placeholder="Feedback on this submission." 
-                                            readonly="not is_current_user_faculty"/>
-                                    </group>
-                                </div>
+                                <field name="ai_targeted_feedback" invisible="1"/>
+                                <field name="ai_answer_chunks" invisible="1"/>
+                                <field name="ai_answer_chunked_html" invisible="1"/>
+                                <field name="ai_feedback_items" invisible="1"/>
+                                <field name="ai_feedback_links" invisible="1"/>
+                                <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1"/>
 
                                 <field name="answer" nolabel="1" placeholder="Enter your answer here." 
                                     readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" 

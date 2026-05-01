@@ -1,3 +1,6 @@
+import json
+import re
+
 from odoo import fields
 from odoo.tests.common import TransactionCase
 from odoo.addons.aps_sis.models.aps_resource_submission import sentinel_zero
@@ -391,3 +394,76 @@ class TestAPSResourceSubmissionProgressOrdering(TransactionCase):
         self.assertEqual(collapsed[0]['result_percent'], 72)
         self.assertEqual(collapsed[1]['date'], '2026-03-25')
         self.assertEqual(collapsed[1]['result_percent'], 65)
+
+
+class TestAPSAITargetedFeedback(TransactionCase):
+
+    def test_build_submission_answer_chunks_preserves_html_block_boundaries(self):
+        ai_model = self.env['aps.ai.model']
+        answer_html = '<div>Dog</div><div>Cat</div><div>Milk</div>'
+
+        chunk_data = ai_model._build_submission_answer_chunks(answer_html)
+
+        self.assertEqual(chunk_data['chunks'], [
+            {'id': 'c1', 'text': 'Dog'},
+            {'id': 'c2', 'text': 'Cat'},
+            {'id': 'c3', 'text': 'Milk'},
+        ])
+        self.assertIn('data-chunk-id="c1"', chunk_data['chunked_html'])
+        self.assertIn('<div class="aps-ai-answer-chunk" data-chunk-id="c1">Dog</div>', chunk_data['chunked_html'])
+        self.assertIn('<div class="aps-ai-answer-chunk" data-chunk-id="c2">Cat</div>', chunk_data['chunked_html'])
+        self.assertIn('<div class="aps-ai-answer-chunk" data-chunk-id="c3">Milk</div>', chunk_data['chunked_html'])
+
+    def test_build_submission_answer_chunks_splits_html_block_into_sentences(self):
+        ai_model = self.env['aps.ai.model']
+        answer_html = '<div>Cat is an animal. Dog is also an animal.</div>'
+
+        chunk_data = ai_model._build_submission_answer_chunks(answer_html)
+
+        self.assertEqual(chunk_data['chunks'], [
+            {'id': 'c1', 'text': 'Cat is an animal.'},
+            {'id': 'c2', 'text': 'Dog is also an animal.'},
+        ])
+        self.assertIn('<div><span class="aps-ai-answer-chunk" data-chunk-id="c1">Cat is an animal.</span> <span class="aps-ai-answer-chunk" data-chunk-id="c2">Dog is also an animal.</span></div>', chunk_data['chunked_html'])
+
+    def test_build_submission_answer_chunks_preserves_full_text(self):
+        ai_model = self.env['aps.ai.model']
+        answer_html = '<p>Photosynthesis occurs in leaves, not in roots. Water is absorbed by root hairs.</p>'
+
+        chunk_data = ai_model._build_submission_answer_chunks(answer_html)
+
+        self.assertGreaterEqual(len(chunk_data['chunks']), 2)
+        self.assertEqual(chunk_data['chunks'][0]['id'], 'c1')
+        self.assertIn('data-chunk-id="c1"', chunk_data['chunked_html'])
+
+        reconstructed = ' '.join(chunk['text'] for chunk in chunk_data['chunks'])
+        normalized_original = re.sub(r'\s+', ' ', ai_model._html_to_text(answer_html)).strip()
+        normalized_reconstructed = re.sub(r'\s+', ' ', reconstructed).strip()
+        self.assertEqual(normalized_reconstructed, normalized_original)
+
+    def test_extract_targeted_feedback_filters_invalid_chunk_ids(self):
+        ai_model = self.env['aps.ai.model']
+        chunk_data = {
+            'chunks': [
+                {'id': 'c1', 'text': 'Photosynthesis occurs in leaves,'},
+                {'id': 'c2', 'text': 'not in roots.'},
+            ],
+            'chunked_html': '<span data-chunk-id="c1">Photosynthesis occurs in leaves,</span><span data-chunk-id="c2">not in roots.</span>',
+        }
+        parsed = {
+            'html': '<h3>Feedback</h3><ul><li>Photosynthesis does not occur in roots.</li></ul>',
+            'feedback': [
+                {'id': 'f1', 'type': 'concept_error', 'severity': 'major'},
+                {'id': 'f2', 'type': 'positive', 'severity': 'minor'},
+            ],
+            'links': [
+                {'feedback_id': 'f1', 'chunk_ids': ['c2', 'c404', 'c2']},
+                {'feedback_id': 'f2', 'chunk_ids': ['c999']},
+                {'feedback_id': 'f3', 'chunk_ids': ['c1']},
+            ],
+        }
+
+        targeted = ai_model._extract_targeted_feedback(parsed, json.dumps(parsed), chunk_data)
+
+        self.assertEqual(targeted['feedback_items'][0]['id'], 'f1')
+        self.assertEqual(targeted['feedback_links'], [{'feedback_id': 'f1', 'chunk_ids': ['c2']}])

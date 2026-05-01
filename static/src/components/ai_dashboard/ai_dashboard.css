@@ -1,0 +1,57 @@
+.aps-ai-dashboard {
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4f8 100%);
+}
+
+.aps-ai-dashboard__header,
+.aps-ai-dashboard__card,
+.aps-ai-dashboard__panel {
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.aps-ai-dashboard__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #12344d;
+}
+
+.aps-ai-dashboard__label {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5b7083;
+    margin-bottom: 0.45rem;
+}
+
+.aps-ai-dashboard__value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #17324d;
+    line-height: 1.1;
+}
+
+.aps-ai-dashboard__value--small {
+    font-size: 1.05rem;
+}
+
+.aps-ai-dashboard__chart-wrap {
+    position: relative;
+    height: 320px;
+}
+
+.aps-ai-dashboard__chart-wrap--compact {
+    height: 320px;
+}
+
+.aps-ai-dashboard table thead th {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #5b7083;
+    border-bottom-width: 1px;
+}
+
+.aps-ai-dashboard table tbody td {
+    color: #17324d;
+}
