@@ -348,8 +348,46 @@
                             <widget name="resource_tree_widget"/>
                         </page>
                         <page string="AI Instructions" invisible="ai_action=='none'">
-                            <field name="ai_instructions"/>
+                            <group>
+                                <group>
+                                    <field name="ai_use_model_answer" widget="boolean_toggle"/>
+                                    <field name="ai_use_question" widget="boolean_toggle"/>
+                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False}"/>
+                                    <field name="ai_additional_prompt_ids" widget="many2many_tags" readonly="1" options="{'no_create': True, 'no_open': True}"/>
+                                </group>
+                                <group>
+                                     <field name="ai_use_notes" widget="boolean_toggle"/>
+                                     <field name="ai_test_prompt" widget="boolean_toggle"/>
+                                </group>
+                            </group>
+                            <div invisible="not ai_test_prompt" class="mt-2 mb-3">
+                                <div class="fw-bold border-bottom pb-1 mb-2">AI Prompt Test</div>
+                                <div class="mb-2">
+                                    <button name="action_ai_test_mark"
+                                            string="AI Mark"
+                                            type="object"
+                                            class="btn btn-primary"/>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 col-md-6">
+                                        <div class="fw-bold mb-1">Test Answer</div>
+                                        <field name="ai_answer" nolabel="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;" readonly="not ai_test_prompt"
+                                            placeholder="Enter a sample student answer here to test the AI prompt."/>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="fw-bold mb-1" invisible="not ai_feedback">AI Feedback</div>
+                                        <field name="ai_feedback" nolabel="1" readonly="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
+                                            invisible="not ai_feedback"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <group string="Instructions Specific to this Resource">
+                                <field name="ai_instructions" nolabel="1"
+                                    placeholder="Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student's submission."/>
+                            </group>
                         </page>
+
                     </notebook>
                 </sheet>
                 <chatter groups="aps_sis.group_aps_teacher"/>
@@ -397,9 +435,9 @@
         <field name="arch" type="xml">
             <search>
                 <searchpanel>
+                    <field name="subject_categories" string="Subject Categories" icon="fa-folder-open" enable_counters="1" select="multi"/>
                     <field name="type_id" icon="fa-tag" enable_counters="1" select="multi"/>
                     <field name="subjects" icon="fa-book" enable_counters="1" select="multi"/>
-                    <field name="category" icon="fa-star" enable_counters="1"/>
                 </searchpanel>
                 <field name="name" string="All" filter_domain="['|','|','|','|',('display_name','ilike',self),('name','ilike',self),('url','ilike',self),('description','ilike',self),('category','ilike',self)]"/>
                 <field name="display_name"/>
@@ -408,6 +446,7 @@
                 <field name="description"/>
                 <field name="category"/>
                 <field name="marks"/>
+                <field name="subject_categories"/>
                 <field name="subjects"/>
                 <filter name="recently_viewed_50" string="Recent 50" domain="[('is_recently_viewed', '=', 50)]"/>
                 <filter name="recently_viewed_100" string="Recent 100" domain="[('is_recently_viewed', '=', 100)]"/>

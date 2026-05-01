@@ -135,13 +135,35 @@
                                 </div>
                             </group>
                             <field name="subjects" widget="clickable_many2many_tags" invisible="allow_subject_editing==False" no_add="True" no_open="True" options="{'no_create': True}"/>
-                            <hr/>
+                            
                             <div class="text-muted" style="font-size: 1.2em;" invisible="state == 'assigned' or answer">
+                                <hr/>
                                 No answer has been supplied.
                             </div>
-                            <field name="answer" nolabel="1" placeholder="Enter your answer here." readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" invisible="state != 'assigned' and not answer"/>
 
+                            <div class="row g-3" invisible="not has_feedback">
+                                <div class="col-12 col-lg-6" >
+                                    <group string="Answer" >
+                                        <field name="answer" nolabel="1" placeholder="Enter your answer here." 
+                                        readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" 
+                                        invisible="state != 'assigned' and not answer"/>
+                                    </group>
+                                </div>
+                                <div class="col-12 col-lg-6" >
+                                    <group string="Teacher Feedback" >
+                                        <field name="feedback" class="feedback" nolabel="1" placeholder="Feedback on this submission." 
+                                            readonly="not is_current_user_faculty"/>
+                                    </group>
+                                </div>
+
+                                <field name="answer" nolabel="1" placeholder="Enter your answer here." 
+                                    readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" 
+                                    invisible="(state != 'assigned' and not answer) or has_feedback"/>
+                                
+                            </div>
                         </page>
+
+
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" invisible="state=='assigned' or not has_feedback"  name="feedback_page" >
                             <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
                         </page>

@@ -20,6 +20,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
     ai_action = fields.Selection(related='resource_id.ai_action', readonly=True)
     ai_instructions = fields.Html(related='resource_id.ai_instructions', readonly=True)
+    ai_prompt_ids = fields.Many2many('ai_prompts', related='resource_id.ai_prompt_ids', readonly=True)
+    ai_use_model_answer = fields.Boolean(related='resource_id.ai_use_model_answer', readonly=True)
+    ai_use_question = fields.Boolean(related='resource_id.ai_use_question', readonly=True)
+    ai_use_notes = fields.Boolean(related='resource_id.ai_use_notes', readonly=True)
     ai_last_model_id = fields.Many2one('aps.ai.model', string='Last AI Model', readonly=True, copy=False)
     ai_last_prompt_tokens = fields.Integer(string='Last AI Prompt Tokens', readonly=True, copy=False)
     ai_last_completion_tokens = fields.Integer(string='Last AI Completion Tokens', readonly=True, copy=False)
@@ -62,7 +66,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
         if not faculty:
             raise UserError(_('Only faculty members can mark submissions with AI.'))
 
-        if self.ai_action not in ('mark_submission', 'mark_submission_use_answer'):
+        if self.ai_action in ('none'):
             raise UserError(_('AI marking is not enabled for this resource.'))
 
     def _is_auto_ai_marking_enabled(self):

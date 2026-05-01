@@ -38,10 +38,12 @@ function renderMarkdownLikeHtml(text) {
     return markup(html);
 }
 
+// ─── Resource Test Mark Dialog ────────────────────────────────────────────────
+
 class AIMarkProgressDialog extends Component {
     static template = "aps_sis.AIMarkProgressDialog";
     static components = { Dialog };
-    static props = ["submissionId", "runId", "close", "title?", "onCompleted?"];
+    static props = ["recordId", "runId", "close", "title?", "onCompleted?", "statusModel?"];
 
     setup() {
         this.orm = useService("orm");
@@ -120,10 +122,11 @@ class AIMarkProgressDialog extends Component {
     }
 
     async refreshStatus() {
+        const statusModel = this.props.statusModel || "aps.resource.submission";
         const status = await this.orm.call(
-            "aps.resource.submission",
+            statusModel,
             "action_get_ai_run_status",
-            [[this.props.submissionId], this.props.runId]
+            [[this.props.recordId], this.props.runId]
         );
 
         this.state.loading = false;
@@ -152,7 +155,9 @@ class AIMarkProgressDialog extends Component {
 patch(FormController.prototype, {
     async beforeExecuteActionButton(clickParams) {
         const isMarkWithAI = clickParams?.type === "object" && clickParams?.name === "action_start_mark_with_ai";
-        if (!isMarkWithAI) {
+        const isTestMark = clickParams?.type === "object" && clickParams?.name === "action_ai_test_mark";
+
+        if (!isMarkWithAI && !isTestMark) {
             return super.beforeExecuteActionButton(...arguments);
         }
 
@@ -161,14 +166,12 @@ patch(FormController.prototype, {
             return false;
         }
 
-        const buttonEl = getMarkWithAIButton();
+        const buttonEl = isTestMark
+            ? document.activeElement?.closest?.("button[name='action_ai_test_mark']") || null
+            : getMarkWithAIButton();
         const originalHtml = buttonEl?.innerHTML;
         const originalDisabled = buttonEl?.disabled;
-        const buttonState = {
-            buttonEl,
-            originalHtml,
-            originalDisabled,
-        };
+        const buttonState = { buttonEl, originalHtml, originalDisabled };
 
         if (buttonEl) {
             buttonEl.disabled = true;
@@ -198,7 +201,8 @@ patch(FormController.prototype, {
             }
             if (runId) {
                 this.env.services.dialog.add(AIMarkProgressDialog, {
-                    submissionId: this.model.root.resId,
+                    recordId: this.model.root.resId,
+                    statusModel: this.model.root.resModel,
                     runId,
                     title: action?.params?.title || "AI Marking Progress",
                     onCompleted: async () => {

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_ai_prompts_search" model="ir.ui.view">
+        <field name="name">ai.prompts.search</field>
+        <field name="model">ai_prompts</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="prompt_name"/>
+                <field name="prompt"/>
+                <field name="applies_to_ai_models"/>
+                <field name="applies_to_db_models"/>
+                <filter name="filter_enabled" string="Enabled" domain="[('enabled', '=', True)]"/>
+                <filter name="filter_disabled" string="Disabled" domain="[('enabled', '=', False)]"/>
+                <filter name="filter_always_include" string="Always Include" domain="[('always_include', '=', True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_ai_prompts_list" model="ir.ui.view">
+        <field name="name">ai.prompts.list</field>
+        <field name="model">ai_prompts</field>
+        <field name="arch" type="xml">
+            <list default_order="prompt_name">
+                <field name="enabled" widget="boolean_toggle"/>
+                <field name="always_include" widget="boolean_toggle" optional="show"/>
+                <field name="prompt_name"/>
+                <field name="applies_to_ai_models" widget="many2many_tags" optional="show"/>
+                <field name="applies_to_db_models" widget="many2many_tags" optional="show"/>
+                <field name="prompt" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ai_prompts_form" model="ir.ui.view">
+        <field name="name">ai.prompts.form</field>
+        <field name="model">ai_prompts</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="enabled" widget="boolean_toggle"/>
+                            <field name="always_include" widget="boolean_toggle"/>
+                            <field name="prompt_name"/>
+                            <field name="applies_to_ai_models" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="applies_to_db_models" widget="many2many_tags" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <group string="Prompt">
+                        <field name="prompt" nolabel="1" placeholder="Enter reusable AI prompt text."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ai_prompts" model="ir.actions.act_window">
+        <field name="name">Prompt Templates</field>
+        <field name="res_model">ai_prompts</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_ai_prompts_search"/>
+    </record>
+
+    <menuitem id="menu_apex_ai_prompts" name="Prompt Templates" parent="menu_apex_ai_heading" action="action_ai_prompts" sequence="25" groups="aps_sis.group_aps_manager"/>
+</odoo>

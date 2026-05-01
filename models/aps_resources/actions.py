@@ -2,7 +2,8 @@ import re
 import logging
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
-from odoo import models, api, fields
+from odoo import _, models, api, fields
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -444,6 +445,56 @@ class APSResource(models.Model):
             'views': [[False, 'form']],
             'target': 'current',
         }
+
+    def action_ai_test_mark(self):
+        """Start a background AI run for the resource test prompt."""
+        self.ensure_one()
+        if self.ai_action == 'none':
+            raise UserError(_('AI Action must not be "None" to use the test prompt.'))
+
+        active_run = self.env['aps.ai.run'].sudo().search([
+            ('resource_id', '=', self.id),
+            ('state', 'in', ('queued', 'running')),
+        ], limit=1, order='create_date desc, id desc')
+        if active_run:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('AI Marking In Progress'),
+                    'message': _('AI marking is already running in the background for this resource.'),
+                    'type': 'info',
+                    'run_id': active_run.id,
+                }
+            }
+
+        run = self.env['aps.ai.run'].sudo().create({
+            'resource_id': self.id,
+            'requested_by_id': self.env.user.id,
+            'state': 'queued',
+            'status_message': _('Queued and waiting to start...'),
+            'request_origin': 'manual',
+        })
+        run._queue_background_processing()
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('AI Marking Started'),
+                'message': _('AI marking is running in the background. You can close the progress dialog at any time.'),
+                'type': 'info',
+                'run_id': run.id,
+            }
+        }
+
+    def action_get_ai_run_status(self, run_id):
+        """Return serialised status for an AI background run belonging to this resource."""
+        self.ensure_one()
+        run = self.env['aps.ai.run'].sudo().browse(run_id)
+        if not run.exists() or run.resource_id.id != self.id:
+            raise UserError(_('The requested AI run does not belong to this resource.'))
+        return run._serialize_status()
 
     @api.model
     def run_auto_assign(self):

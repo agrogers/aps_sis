@@ -5,6 +5,12 @@ from .html_parser import ExtractHeadingContent
 class APSResource(models.Model):
     _inherit = 'aps.resources'
 
+    _INHERITED_HTML_FIELD_FLAGS = {
+        'notes': 'has_notes',
+        'question': 'has_question',
+        'answer': 'has_answer',
+    }
+
     # ── Onchange handlers ─────────────────────────────────────────────────────
 
     @api.onchange('has_notes', 'primary_parent_id')
@@ -72,6 +78,24 @@ class APSResource(models.Model):
             pass
 
         return parent_html
+
+    def _resolve_image_viewer_highlight_target(self, field_name):
+        self.ensure_one()
+
+        target_field = (field_name or '').strip()
+        parent_flag_field = self._INHERITED_HTML_FIELD_FLAGS.get(target_field)
+        if not parent_flag_field:
+            return self, target_field
+
+        target_record = self
+        visited_ids = set()
+        while target_record and target_record.id not in visited_ids:
+            visited_ids.add(target_record.id)
+            if target_record[parent_flag_field] != 'use_parent' or not target_record.primary_parent_id:
+                break
+            target_record = target_record.primary_parent_id
+
+        return target_record, target_field
 
     # ── Child update propagation ──────────────────────────────────────────────
 

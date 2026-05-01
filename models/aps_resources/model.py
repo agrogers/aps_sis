@@ -1,5 +1,5 @@
 import uuid
-from odoo import models, fields
+from odoo import api, fields, models
 
 
 class APSResource(models.Model):
@@ -76,13 +76,43 @@ class APSResource(models.Model):
 
     ai_instructions = fields.Html(
         string='AI Instructions',
+        placeholder='Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student\'s submission.',
         help='Additional instructions for AI-assisted actions related to this resource.',
     )
+    ai_use_model_answer = fields.Boolean(string='Use Model Answer')
+    ai_use_question = fields.Boolean(string='Use Question')
+    ai_prompt_ids = fields.Many2many(
+        'ai_prompts',
+        'aps_resources_ai_prompts_rel',
+        'resource_id',
+        'prompt_id',
+        string='Prompts',
+        domain=[('enabled', '=', True)],
+        help='Optional prompts to include with AI instructions.',
+    )
+    ai_use_notes = fields.Boolean(string='Use Notes')
+    ai_use_supporting_resources = fields.Boolean(string='Use Supporting Resources')
+    ai_targeted_feedback = fields.Boolean(string='Targeted Feedback', help='Return highlighted feedback tied to specific points in the student answer, if supported by the AI model.')
+    ai_test_prompt = fields.Boolean(string='Test Prompt', help='Enable a test area to trial the AI prompt against a sample answer.')
+    ai_answer = fields.Html(string='Test Answer', help='Sample answer to test the AI prompt against.')
+    ai_feedback = fields.Html(string='AI Feedback', readonly=True, help='Feedback returned by the AI for the test answer.')
+
     ai_action = fields.Selection([
         ('none', 'None'),
         ('mark_submission', 'Mark Submission'),
-        ('mark_submission_use_answer', 'Mark Submission using Model Answer'),
+        ('mark_submission_use_answer', '--Dont Use---'),
+        ('manual', 'Manual Action'),
     ], string='AI Action', default='none', required=True, tracking=True)
+
+    ai_additional_prompt_ids = fields.Many2many(
+        'ai_prompts',
+        'aps_resources_ai_included_prompts_rel',
+        'resource_id',
+        'prompt_id',
+        string='Additional Prompts',
+        compute='_compute_ai_additional_prompt_ids',
+        help='Prompts that will be included in AI calls for this resource, based on selected prompts and always-include rules.',
+    )
 
     thumbnail = fields.Binary(string='Thumbnail')
 
@@ -105,6 +135,15 @@ class APSResource(models.Model):
         help='When enabled, this resource\'s score is included in the parent resource\'s total score calculation.',
     )
     subjects = fields.Many2many('op.subject', string='Subjects')
+    subject_categories = fields.Many2many(
+        'aps.subject.category',
+        'aps_resources_subject_category_rel',
+        'resource_id',
+        'category_id',
+        string='Subject Categories',
+        compute='_compute_subject_categories',
+        store=True,
+    )
     tag_ids = fields.Many2many('aps.resource.tags', string='Tags')
     task_ids = fields.One2many('aps.resource.task', 'resource_id', string='Tasks')
     parent_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'child_id', 'parent_id',
@@ -153,7 +192,7 @@ class APSResource(models.Model):
     )
     auto_assign_date = fields.Date(
         string='Next Assign Date',
-        default=fields.Date.today,
+        default=lambda self: fields.Date.add(fields.Date.context_today(self), days=2),
         help='The cron job will run on this date and then advance it by the frequency.',
     )
     auto_assign_end_date = fields.Date(
@@ -236,3 +275,28 @@ class APSResource(models.Model):
         compute='_compute_is_recently_viewed',
         search='_search_is_recently_viewed',
     )
+
+    @api.depends(
+        'ai_prompt_ids',
+        'ai_prompt_ids.enabled',
+        'ai_prompt_ids.always_include',
+        'ai_prompt_ids.applies_to_db_models',
+    )
+    def _compute_ai_additional_prompt_ids(self):
+        always_prompts = self.env['ai_prompts'].sudo().search([
+            ('enabled', '=', True),
+            ('always_include', '=', True),
+        ])
+        for record in self:
+            # selected = record.ai_prompt_ids.filtered(lambda p: p.enabled)
+            always = always_prompts.filtered(
+                lambda p: not p.applies_to_db_models
+                or record._name in p.applies_to_db_models.mapped('model')
+            )
+            # record.ai_additional_prompt_ids = (selected | always)
+            record.ai_additional_prompt_ids = always
+
+    @api.depends('subjects', 'subjects.category_id')
+    def _compute_subject_categories(self):
+        for record in self:
+            record.subject_categories = [(6, 0, record.subjects.mapped('category_id').ids)]

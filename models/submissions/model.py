@@ -1,4 +1,5 @@
 from datetime import datetime, time, timedelta
+import re
 
 import pytz
 from odoo import models, fields, api, _
@@ -22,6 +23,23 @@ class APSResourceSubmission(models.Model):
     )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
+    type_id = fields.Many2one(
+        'aps.resource.types',
+        string='Resource Type',
+        related='resource_id.type_id',
+        readonly=True,
+        store=True,
+    )
+    subject_categories = fields.Many2many(
+        'aps.subject.category',
+        'aps_submission_subject_category_rel',
+        'submission_id',
+        'category_id',
+        string='Subject Categories',
+        compute='_compute_subject_categories',
+        readonly=True,
+        store=True,
+    )
     url = fields.Char(
         string='URL',
         tracking=True,
@@ -164,12 +182,10 @@ class APSResourceSubmission(models.Model):
     points = fields.Integer(
         string='Points', compute='_compute_points', store=True, 
         help='The points allocated to this submission.')
-    
     default_notebook_page_per_user = fields.Json(
         help="Used by the system to manage default pages.",
         default=dict,
         )
-
     auto_score = fields.Boolean(
         string='Auto Score',
         default=True,
@@ -179,6 +195,11 @@ class APSResourceSubmission(models.Model):
     )
 
 # region - Computed Fields
+
+    @api.depends('resource_id', 'resource_id.subject_categories')
+    def _compute_subject_categories(self):
+        for record in self:
+            record.subject_categories = [(6, 0, record.resource_id.subject_categories.ids)]
 
     @api.depends('date_submitted', 'date_due', 'state', 'points_scale')
     def _compute_points(self):
@@ -342,12 +363,16 @@ class APSResourceSubmission(models.Model):
             elif not record.submission_active:
                 record.active_datetime = False
 
-
-
     @api.depends('feedback')
     def _compute_has_feedback(self):
         for record in self:
-            record.has_feedback = bool(record.feedback and record.feedback.strip())
+            feedback_text = str(record.feedback or '')
+            feedback_text = feedback_text.replace('<br>', '\n').replace('<br/>', '\n').replace('<br />', '\n')
+            for tag in ('</p>', '</div>', '</li>', '</h1>', '</h2>', '</h3>', '</h4>'):
+                feedback_text = feedback_text.replace(tag, '\n')
+            feedback_text = re.sub(r'<[^>]+>', '', feedback_text)
+            feedback_text = feedback_text.replace('&nbsp;', ' ').strip()
+            record.has_feedback = bool(feedback_text)
 
     @api.depends('date_assigned')
     def _compute_date_due(self):

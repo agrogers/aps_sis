@@ -19,8 +19,11 @@
 
 /* Improve HTML field look */
 
-.o_field_html div {
+.o_field_widget.o_field_html {
     margin-bottom: 0.5em;
+    border: 1px solid #ddd; 
+    padding: 10px; 
+    border-radius: 5px;
 }
 
 .o_field_html .alert li {

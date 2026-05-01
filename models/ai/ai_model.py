@@ -1,6 +1,6 @@
 import json
 import logging
-import threading
+import re
 import time
 from html import escape
 from urllib import error as url_error
@@ -8,371 +8,14 @@ from urllib import request as url_request
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.modules.registry import Registry
+
+from .utils import (
+    _build_notification_action,
+    _exception_to_text,
+    _format_test_failure_message,
+)
 
 _logger = logging.getLogger(__name__)
-
-
-def _run_ai_background_job(db_name, run_id, user_id, context=None):
-    try:
-        db_registry = Registry(db_name)
-        with db_registry.cursor() as cr:
-            env = api.Environment(cr, user_id, context or {})
-            run = env['aps.ai.run'].sudo().browse(run_id)
-            if run.exists():
-                run._process_background()
-    except Exception:
-        _logger.exception('Background AI run %s crashed unexpectedly', run_id)
-
-
-def _exception_to_text(exc):
-    if isinstance(exc, UserError):
-        return getattr(exc, 'args', [False])[0] or str(exc)
-    return str(exc)
-
-
-def _build_notification_action(title, message, notification_type='info', sticky=False, next_action=None):
-    params = {
-        'title': title,
-        'message': message,
-        'type': notification_type,
-        'sticky': sticky,
-    }
-    if next_action:
-        params['next'] = next_action
-    return {
-        'type': 'ir.actions.client',
-        'tag': 'display_notification',
-        'params': params,
-    }
-
-
-def _format_test_failure_message(model_display_name, error_text):
-    message = _('%s: %s') % (model_display_name, error_text)
-    normalized_error = (error_text or '').lower()
-    if 'empty completion' in normalized_error or 'did not return the final answer' in normalized_error:
-        message = _(
-            '%s\n\nOpen AI > Logs and inspect the newest Connection Test entry for this model. '
-            'The raw response is stored in Response Body.'
-        ) % message
-    return message
-
-
-def _chain_notification_actions(actions):
-    next_action = False
-    for action in reversed(actions):
-        params = dict(action.get('params') or {})
-        if next_action:
-            params['next'] = next_action
-        next_action = {
-            'type': action.get('type'),
-            'tag': action.get('tag'),
-            'params': params,
-        }
-    return next_action or {'type': 'ir.actions.client', 'tag': 'reload'}
-
-
-class APSAICallLog(models.Model):
-    _name = 'aps.ai.call.log'
-    _description = 'APEX AI Call Log'
-    _order = 'create_date desc, id desc'
-
-    state = fields.Selection(
-        [('success', 'Success'), ('error', 'Error')],
-        required=True,
-        readonly=True,
-    )
-    request_type = fields.Selection(
-        [('connection_test', 'Connection Test'), ('submission_feedback', 'Submission Feedback')],
-        required=True,
-        readonly=True,
-    )
-    user_id = fields.Many2one('res.users', string='Requested By', readonly=True)
-    provider_id = fields.Many2one('aps.ai.provider', readonly=True, ondelete='set null')
-    model_id = fields.Many2one('aps.ai.model', readonly=True, ondelete='set null')
-    model_key = fields.Char(readonly=True)
-    endpoint = fields.Char(readonly=True)
-    related_model = fields.Char(readonly=True)
-    related_res_id = fields.Integer(readonly=True)
-    related_display_name = fields.Char(readonly=True)
-    prompt_tokens = fields.Integer(readonly=True)
-    completion_tokens = fields.Integer(readonly=True)
-    estimated_cost = fields.Float(readonly=True, digits=(16, 6))
-    duration_ms = fields.Integer(readonly=True)
-    request_payload = fields.Text(readonly=True)
-    response_body = fields.Text(readonly=True)
-    error_message = fields.Text(readonly=True)
-    display_name = fields.Char(compute='_compute_display_name', store=True)
-
-    @api.depends('request_type', 'model_id.display_name', 'create_date', 'state')
-    def _compute_display_name(self):
-        request_type_labels = dict(self._fields['request_type'].selection)
-        state_labels = dict(self._fields['state'].selection)
-        for record in self:
-            type_label = request_type_labels.get(record.request_type, record.request_type or _('Unknown'))
-            state_label = state_labels.get(record.state, record.state or _('Unknown'))
-            model_label = record.model_id.display_name or record.model_key or _('No Model')
-            created = fields.Datetime.to_string(record.create_date) if record.create_date else ''
-            record.display_name = '%s - %s - %s%s' % (
-                type_label,
-                model_label,
-                state_label,
-                (' - %s' % created) if created else '',
-            )
-
-
-class APSAIRun(models.Model):
-    _name = 'aps.ai.run'
-    _description = 'APEX AI Background Run'
-    _order = 'create_date desc, id desc'
-
-    submission_id = fields.Many2one('aps.resource.submission', required=True, ondelete='cascade', readonly=True)
-    requested_by_id = fields.Many2one('res.users', string='Requested By', required=True, readonly=True)
-    request_origin = fields.Selection(
-        [('manual', 'Manual'), ('automatic', 'Automatic')],
-        string='Request Origin',
-        default='manual',
-        required=True,
-        readonly=True,
-    )
-    attempt_number = fields.Integer(readonly=True)
-    state = fields.Selection(
-        [
-            ('queued', 'Queued'),
-            ('running', 'Running'),
-            ('completed', 'Completed'),
-            ('failed', 'Failed'),
-        ],
-        default='queued',
-        required=True,
-        readonly=True,
-    )
-    status_message = fields.Char(readonly=True)
-    result_message = fields.Char(readonly=True)
-    error_message = fields.Text(readonly=True)
-    thinking_text = fields.Text(readonly=True)
-    response_preview = fields.Text(readonly=True)
-    ai_model_id = fields.Many2one('aps.ai.model', string='AI Model', readonly=True, ondelete='set null')
-    prompt_tokens = fields.Integer(readonly=True)
-    completion_tokens = fields.Integer(readonly=True)
-    estimated_cost = fields.Float(readonly=True, digits=(16, 6))
-    duration_ms = fields.Integer(readonly=True)
-    started_at = fields.Datetime(readonly=True)
-    finished_at = fields.Datetime(readonly=True)
-    display_name = fields.Char(compute='_compute_display_name', store=True)
-
-    @api.depends('submission_id.display_name', 'state', 'create_date')
-    def _compute_display_name(self):
-        state_labels = dict(self._fields['state'].selection)
-        for record in self:
-            submission_label = record.submission_id.display_name or _('Submission')
-            state_label = state_labels.get(record.state, record.state or _('Unknown'))
-            created = fields.Datetime.to_string(record.create_date) if record.create_date else ''
-            record.display_name = '%s - %s%s' % (
-                submission_label,
-                state_label,
-                (' - %s' % created) if created else '',
-            )
-
-    def _queue_background_processing(self):
-        self.ensure_one()
-        db_name = self.env.cr.dbname
-        run_id = self.id
-        user_id = self.requested_by_id.id
-        context = dict(self.env.context or {})
-
-        @self.env.cr.postcommit.add
-        def _start_background_run():
-            thread = threading.Thread(
-                target=_run_ai_background_job,
-                args=(db_name, run_id, user_id, context),
-                daemon=True,
-                name='aps_ai_run_%s' % run_id,
-            )
-            thread.start()
-
-    def _write_progress(self, values):
-        self.ensure_one()
-        self.sudo().write(values)
-        self.env.cr.commit()
-
-    def _serialize_status(self):
-        self.ensure_one()
-        return {
-            'id': self.id,
-            'state': self.state,
-            'status_message': self.status_message or '',
-            'result_message': self.result_message or '',
-            'error_message': self.error_message or '',
-            'thinking_text': self.thinking_text or '',
-            'response_preview': self.response_preview or '',
-            'duration_ms': self.duration_ms or 0,
-            'prompt_tokens': self.prompt_tokens or 0,
-            'completion_tokens': self.completion_tokens or 0,
-            'estimated_cost': self.estimated_cost or 0.0,
-            'started_at': fields.Datetime.to_string(self.started_at) if self.started_at else False,
-            'finished_at': fields.Datetime.to_string(self.finished_at) if self.finished_at else False,
-            'ai_model_name': self.ai_model_id.display_name or False,
-            'is_terminal': self.state in ('completed', 'failed'),
-        }
-
-    def _process_background(self):
-        self.ensure_one()
-        if self.state not in ('queued', 'running'):
-            return
-
-        started_at = fields.Datetime.now()
-        started_perf = time.perf_counter()
-        self._write_progress({
-            'state': 'running',
-            'status_message': _('Preparing AI marking...'),
-            'started_at': started_at,
-            'finished_at': False,
-            'result_message': False,
-            'error_message': False,
-            'thinking_text': False,
-            'response_preview': False,
-            'ai_model_id': False,
-            'prompt_tokens': 0,
-            'completion_tokens': 0,
-            'estimated_cost': 0.0,
-            'duration_ms': 0,
-        })
-
-        try:
-            submission = self.submission_id.with_user(self.requested_by_id)
-            self._write_progress({'status_message': _('Waiting for the AI provider response...')})
-            result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_submission_feedback(
-                submission,
-                ai_run=self,
-            )
-            self._write_progress({'status_message': _('Writing AI feedback to the submission...')})
-            submission._apply_ai_feedback_result(result)
-            duration_ms = int((time.perf_counter() - started_perf) * 1000)
-            self._write_progress({
-                'state': 'completed',
-                'status_message': _('Completed.'),
-                'result_message': _('AI feedback was added using %s.') % (
-                    result.get('model_name') or _('the configured AI model')
-                ),
-                'finished_at': fields.Datetime.now(),
-                'duration_ms': duration_ms,
-                'ai_model_id': result.get('model_id') or False,
-                'prompt_tokens': result.get('prompt_tokens') or 0,
-                'completion_tokens': result.get('completion_tokens') or 0,
-                'estimated_cost': result.get('estimated_cost') or 0.0,
-                'response_preview': result.get('raw_content') or self.response_preview or False,
-            })
-            submission.sudo()._finalize_ai_marking_success(
-                result,
-                request_origin=self.request_origin,
-                run=self,
-            )
-        except Exception as exc:
-            duration_ms = int((time.perf_counter() - started_perf) * 1000)
-            self._write_progress({
-                'state': 'failed',
-                'status_message': _('Failed.'),
-                'error_message': _exception_to_text(exc),
-                'finished_at': fields.Datetime.now(),
-                'duration_ms': duration_ms,
-            })
-            if self.request_origin == 'automatic' and self.submission_id.exists():
-                self.submission_id.sudo()._handle_auto_ai_run_failure(self, _exception_to_text(exc))
-
-    def _build_stream_callback(self):
-        self.ensure_one()
-        last_publish = {'ts': 0.0, 'thinking': '', 'content': ''}
-
-        def _callback(thinking_text='', content_text=''):
-            now = time.perf_counter()
-            thinking_text_value = (thinking_text or '').strip()
-            content_text_value = (content_text or '').strip()
-            should_publish = (
-                now - last_publish['ts'] >= 1.0
-                or abs(len(thinking_text_value) - len(last_publish['thinking'])) >= 200
-                or abs(len(content_text_value) - len(last_publish['content'])) >= 200
-            )
-            if not should_publish:
-                return
-
-            values = {}
-            if thinking_text_value != last_publish['thinking']:
-                values['thinking_text'] = thinking_text_value or False
-            if content_text_value != last_publish['content']:
-                values['response_preview'] = content_text_value or False
-            if thinking_text_value:
-                values['status_message'] = _('Streaming AI reasoning...')
-            elif content_text_value:
-                values['status_message'] = _('Streaming AI response...')
-            if values:
-                self._write_progress(values)
-                last_publish['ts'] = now
-                last_publish['thinking'] = thinking_text_value
-                last_publish['content'] = content_text_value
-
-        return _callback
-
-
-class APSAIProvider(models.Model):
-    _name = 'aps.ai.provider'
-    _description = 'APEX AI Provider'
-    _order = 'priority desc, name, id'
-
-    name = fields.Char(required=True)
-    active = fields.Boolean(default=True)
-    enabled = fields.Boolean(default=True, help='If disabled, this provider will not be used for AI calls.')
-    priority = fields.Integer(default=10)
-    api_base_url = fields.Char(required=True, help='Base URL of the AI router/provider.')
-    chat_completions_path = fields.Char(
-        default='/chat/completions',
-        required=True,
-        help='Relative path used for OpenAI-compatible chat completion calls.',
-    )
-    api_key = fields.Char(help='API key used to authenticate against the AI router/provider.')
-    api_key_header = fields.Char(default='Authorization', required=True)
-    api_key_prefix = fields.Char(default='Bearer ')
-    timeout_seconds = fields.Integer(default=90, required=True)
-    notes = fields.Text()
-    model_ids = fields.One2many('aps.ai.model', 'provider_id', string='Models')
-    display_name = fields.Char(compute='_compute_display_name', store=True)
-
-    @api.depends('name', 'api_base_url')
-    def _compute_display_name(self):
-        for record in self:
-            record.display_name = record.name or record.api_base_url or ''
-
-    def action_test_connection(self):
-        self.ensure_one()
-        models_to_test = self.model_ids.filtered(lambda rec: rec.enabled).sorted(lambda rec: (-rec.priority, rec.id))
-        if not models_to_test:
-            raise UserError(_('Add at least one enabled AI model to this provider before testing it.'))
-
-        notifications = []
-
-        for model in models_to_test:
-            try:
-                result = model._run_connection_test()
-                notifications.append(_build_notification_action(
-                    _('AI Test Passed'),
-                    _('Model: %s. Prompt tokens: %s. Completion tokens: %s. Estimated cost: %s') % (
-                        model.display_name,
-                        result['prompt_tokens'],
-                        result['completion_tokens'],
-                        f"{result['estimated_cost']:.6f}",
-                    ),
-                    notification_type='success',
-                    sticky=False,
-                ))
-            except Exception as exc:
-                notifications.append(_build_notification_action(
-                    _('AI Test Failed'),
-                    _format_test_failure_message(model.display_name, _exception_to_text(exc)),
-                    notification_type='warning',
-                    sticky=True,
-                ))
-
-        return _chain_notification_actions(notifications)
 
 
 class APSAIModel(models.Model):
@@ -448,30 +91,6 @@ class APSAIModel(models.Model):
             sticky=False,
         )
 
-    @api.model
-    def generate_submission_feedback(self, submission, ai_run=None):
-        submission.ensure_one()
-        candidates = self.sudo().search(
-            [('enabled', '=', True), ('provider_id.enabled', '=', True)],
-        ).sorted(key=lambda rec: (-(rec.priority or 0), -(rec.provider_id.priority or 0), rec.id))
-        if not candidates:
-            raise UserError(_('No enabled AI models are configured.'))
-
-        errors = []
-        for model in candidates:
-            try:
-                return model._generate_submission_feedback(submission, ai_run=ai_run)
-            except UserError:
-                raise
-            except Exception as exc:
-                _logger.exception('AI feedback call failed for model %s: %s', model.display_name, exc)
-                errors.append(f'{model.display_name}: {exc}')
-
-        detail = '\n'.join(errors[:3])
-        if detail:
-            raise UserError(_('All enabled AI models failed.\n%s') % detail)
-        raise UserError(_('All enabled AI models failed.'))
-
     def _run_connection_test(self):
         self.ensure_one()
         result = self._execute_logged_router_call(self._build_test_payload(), request_type='connection_test')
@@ -485,83 +104,40 @@ class APSAIModel(models.Model):
             raise
         return result
 
-    def _generate_submission_feedback(self, submission, ai_run=None):
-        self.ensure_one()
-        payload = self._build_chat_payload(submission, include_reasoning=bool(ai_run))
-        progress_callback = ai_run._build_stream_callback() if ai_run else None
-        result = self._execute_logged_router_call(
-            payload,
-            request_type='submission_feedback',
-            related_record=submission,
-            stream_callback=progress_callback,
-        )
-        try:
-            response_json = result['response_json']
-            raw_content = self._extract_message_content(response_json)
-        except Exception as exc:
-            self._update_call_log_error(result.get('log_record'), exc)
-            if self._is_reasoning_only_truncation(response_json):
-                retry_payload = dict(payload)
-                retry_payload['max_completion_tokens'] = self._get_retry_max_completion_tokens(
-                    payload.get('max_completion_tokens')
-                )
-                retry_result = self._execute_logged_router_call(
-                    retry_payload,
-                    request_type='submission_feedback',
-                    related_record=submission,
-                    stream_callback=progress_callback,
-                )
-                try:
-                    result = retry_result
-                    response_json = result['response_json']
-                    raw_content = self._extract_message_content(response_json)
-                except Exception as retry_exc:
-                    self._update_call_log_error(result.get('log_record'), retry_exc)
-                    raise
-            else:
-                raise
-        parsed = self._parse_structured_response(raw_content)
-
-        feedback_html = self._normalize_feedback_html(
-            (parsed.get('feedback_html') if isinstance(parsed, dict) else None)
-            or (parsed.get('feedback') if isinstance(parsed, dict) else None)
-            or raw_content
-        )
-        score = self._extract_score(parsed, raw_content)
-
-        return {
-            'feedback_html': feedback_html,
-            'score': score,
-            'prompt_tokens': result['prompt_tokens'],
-            'completion_tokens': result['completion_tokens'],
-            'estimated_cost': result['estimated_cost'],
-            'model_id': self.id,
-            'model_name': self.display_name,
-            'raw_content': raw_content,
-        }
-
     def _get_retry_max_completion_tokens(self, requested_tokens):
         base_tokens = int(requested_tokens or self.max_completion_tokens or 0)
         if base_tokens <= 0:
             return False
         return min(max(base_tokens * 2, base_tokens + 800), 4096)
 
-    def _build_chat_payload(self, submission, include_reasoning=False):
-        out_of_marks = submission.out_of_marks if submission.out_of_marks and submission.out_of_marks > 0 else False
-        instructions = self._html_to_text(submission.ai_instructions)
-        model_answer = self._html_to_text(submission.model_answer)
-        student_answer = self._html_to_text(submission.answer)
-
-        if not student_answer.strip():
-            raise UserError(_('The submission has no student answer to mark.'))
-
+    def _assemble_chat_payload(
+        self,
+        instructions='',
+        external_prompt='',
+        out_of_marks=False,
+        use_question=False,
+        question='',
+        use_model_answer=False,
+        model_answer='',
+        use_note=False,
+        notes='',
+        student_answer='',
+        include_reasoning=False,
+    ):
+        """Build an OpenAI-compatible chat payload from resolved prompt components."""
         prompt_sections = []
         if instructions:
             prompt_sections.append('AI Instructions:\n%s' % instructions.strip())
+        if external_prompt:
+            prompt_sections.append('Prompt Template:\n%s' % external_prompt.strip())
         if out_of_marks:
             prompt_sections.append('Maximum Mark:\n%s' % out_of_marks)
-        if submission.ai_action == 'mark_submission_use_answer':
+        if use_question and question.strip():
+            prompt_sections.append('Question:\n%s' % question.strip())
+        if use_model_answer:
             prompt_sections.append('Model Answer:\n%s' % (model_answer.strip() or 'No model answer provided.'))
+        if use_note and notes.strip():
+            prompt_sections.append('Notes:\n%s' % notes.strip())
         prompt_sections.append('Student Answer:\n%s' % student_answer.strip())
         prompt_sections.append(
             'Return ONLY valid JSON with these keys:\n'
@@ -597,6 +173,26 @@ class APSAIModel(models.Model):
         if self.force_json_response:
             payload['response_format'] = {'type': 'json_object'}
         return payload
+
+    def _collect_applicable_prompt_text(self, selected_prompts, db_model_name):
+        self.ensure_one()
+        selected = (selected_prompts or self.env['ai_prompts']).filtered(lambda rec: rec.enabled and rec.prompt)
+        always = self.env['ai_prompts'].sudo().search([
+            ('enabled', '=', True),
+            ('always_include', '=', True),
+            ('prompt', '!=', False),
+        ])
+        candidates = (selected | always)
+
+        applicable = candidates.filtered(
+            lambda rec: (
+                not rec.applies_to_ai_models or self in rec.applies_to_ai_models
+            ) and (
+                not rec.applies_to_db_models or db_model_name in rec.applies_to_db_models.mapped('model')
+            )
+        )
+
+        return '\n\n'.join(self._html_to_text(prompt.prompt) for prompt in applicable if prompt.prompt)
 
     def _build_test_payload(self):
         payload = {
@@ -1047,7 +643,6 @@ class APSAIModel(models.Model):
         text = text.replace('<br>', '\n').replace('<br/>', '\n').replace('<br />', '\n')
         for tag in ('</p>', '</div>', '</li>', '</h1>', '</h2>', '</h3>', '</h4>'):
             text = text.replace(tag, '\n')
-        import re
         text = re.sub(r'<[^>]+>', '', text)
         return text.replace('&nbsp;', ' ').strip()
 

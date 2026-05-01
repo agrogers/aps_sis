@@ -587,3 +587,7 @@ a.resource-tree-link:hover {
     position: relative;
     list-style: none;
 }
+
+.feedback {
+    background-color: #cfcfcf !important;
+}

@@ -70,3 +70,6 @@ access_aps_ai_provider_manager,aps.ai.provider.manager,model_aps_ai_provider,aps
 access_aps_ai_model_manager,aps.ai.model.manager,model_aps_ai_model,aps_sis.group_aps_manager,1,1,1,1
 access_aps_ai_call_log_manager,aps.ai.call.log.manager,model_aps_ai_call_log,aps_sis.group_aps_manager,1,0,0,1
 access_aps_ai_run_manager,aps.ai.run.manager,model_aps_ai_run,aps_sis.group_aps_manager,1,1,1,1
+access_ai_prompts_teacher,ai.prompts.teacher,model_ai_prompts,aps_sis.group_aps_teacher,1,1,1,1
+access_ai_prompts_manager,ai.prompts.manager,model_ai_prompts,aps_sis.group_aps_manager,1,1,1,1
+access_ai_prompts_user,ai.prompts.user,model_ai_prompts,base.group_user,1,0,0,0

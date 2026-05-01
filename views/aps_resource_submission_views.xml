@@ -8,12 +8,16 @@
             <search string="Search Submissions">
                 <searchpanel>
                     <field name="state" string="State" icon="fa-clock" enable_counters="1" select="multi"/>
+                    <field name="subject_categories" string="Subject Categories" icon="fa-folder-open" enable_counters="1" select="multi"/>
+                    <field name="type_id" string="Resource Type" icon="fa-folder-open" enable_counters="1" select="multi"/>
                     <field name="due_status" string="Due Status" icon="fa-clock" enable_counters="1" select="multi"/>
-                    <field name="subjects" string="Subjects" icon="fa-book" enable_counters="1" select="multi"/>                    
                     <field name="student_id" string="Student" icon="fa-user" enable_counters="1" select="multi"/>
+                    <field name="subjects" string="Subjects" icon="fa-book" enable_counters="1" select="multi"/>                    
                 </searchpanel>
                 <field name="display_name" string="Submission"/>
                 <field name="resource_id" string="Resource"/>
+                <field name="subject_categories" string="Subject Categories"/>
+                <field name="type_id" string="Resource Type"/>
                 <field name="subjects"/>
                 <field name="state"/>
                 <field name="due_status"/>
@@ -328,11 +332,23 @@
                                 </group>
                             </group>
                         </page>
-                        <page string="Student Answer" class="tab-with-icon student-answer-tab" name="student_answer_page">
-                            <field name="answer" nolabel="1" placeholder="Enter your answer here."/>
+                        <page string="Student Answer+Feedback" class="tab-with-icon student-answer-tab" name="student_answer_page">
+                            <div class="row">
+                                <div class="col-12 col-lg-6" style="margin-top: 0px !important;" >
+                                    <group string="Answer" >
+                                        <field name="answer" nolabel="1" placeholder="Enter your answer here." readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)" invisible="state != 'assigned' and not answer"/>
+                                    </group>
+
+                                </div>
+                                <div class="col-12 col-lg-6" style="margin-top: 0px !important;" >
+                                    <group string="Teacher Feedback">
+                                        <field name="feedback" class="feedback" nolabel="1" placeholder="Feedback on this submission." readonly="not is_current_user_faculty"/>
+                                    </group>
+                                </div>
+                            </div>
                         </page>
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" name="feedback_page">
-                            <div class="row g-3 align-items-start">
+                            <div class="row align-items-start">
                                 <div class="col-lg-11">
                                     <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
                                 </div>
@@ -342,13 +358,13 @@
                                             type="object"
                                             class="btn-primary"
                                             groups="aps_sis.group_aps_teacher"
-                                            invisible="not is_current_user_faculty or ai_action not in ['mark_submission', 'mark_submission_use_answer']"/>
+                                            invisible="not is_current_user_faculty or ai_action in ['none']"/>
                                     <button name="action_requeue_auto_ai_marking"
                                             string="Requeue AI"
                                             type="object"
                                             class="btn-secondary"
                                             groups="aps_sis.group_aps_teacher"
-                                            invisible="not is_current_user_faculty or state != 'submitted' or ai_action not in ['mark_submission', 'mark_submission_use_answer']"/>
+                                            invisible="not is_current_user_faculty or state != 'submitted' or ai_action in ['none','manual']"/>
                                 </div>
                             </div>
                         </page>
