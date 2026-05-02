@@ -13,7 +13,7 @@ class APSAICallLog(models.Model):
     _order = 'create_date desc, id desc'
 
     state = fields.Selection(
-        [('success', 'Success'), ('error', 'Error')],
+        [('pending', 'Pending'), ('success', 'Success'), ('error', 'Error')],
         required=True,
         readonly=True,
     )
@@ -34,6 +34,7 @@ class APSAICallLog(models.Model):
     completion_tokens = fields.Integer(readonly=True)
     estimated_cost = fields.Float(readonly=True, digits=(16, 6))
     duration_ms = fields.Integer(readonly=True)
+    phase = fields.Char(readonly=True, help='Phase label for multi-phase calls (e.g. phase1, phase2, phase3)')
     prompt_names_used = fields.Text(readonly=True)
     request_payload = fields.Text(readonly=True)
     response_body = fields.Text(readonly=True)
@@ -43,7 +44,8 @@ class APSAICallLog(models.Model):
     @api.depends('request_type', 'model_id.display_name', 'create_date', 'state')
     def _compute_display_name(self):
         request_type_labels = dict(self._fields['request_type'].selection)
-        state_labels = dict(self._fields['state'].selection)
+        _extra_state_labels = {'pending': _('Pending')}
+        state_labels = {**_extra_state_labels, **dict(self._fields['state'].selection)}
         for record in self:
             type_label = request_type_labels.get(record.request_type, record.request_type or _('Unknown'))
             state_label = state_labels.get(record.state, record.state or _('Unknown'))

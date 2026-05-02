@@ -9,6 +9,7 @@
                 <field name="prompt"/>
                 <field name="applies_to_ai_models"/>
                 <field name="applies_to_db_models"/>
+                <field name="tag_ids"/>
                 <filter name="filter_enabled" string="Enabled" domain="[('enabled', '=', True)]"/>
                 <filter name="filter_disabled" string="Disabled" domain="[('enabled', '=', False)]"/>
                 <filter name="filter_always_include" string="Always Include" domain="[('always_include', '=', True)]"/>
@@ -28,6 +29,7 @@
                 <field name="prompt_name"/>
                 <field name="applies_to_ai_models" widget="many2many_tags" optional="show"/>
                 <field name="applies_to_db_models" widget="many2many_tags" optional="show"/>
+                <field name="tag_ids" widget="many2many_tags" optional="show"/>
                 <field name="prompt" optional="show"/>
             </list>
         </field>
@@ -48,6 +50,7 @@
                             <field name="placeholder" widget="boolean_toggle" />
                             <field name="applies_to_ai_models" widget="many2many_tags" options="{'no_create': True}"/>
                             <field name="applies_to_db_models" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
                         </group>
                     </group>
                     <group string="Prompt">

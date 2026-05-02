@@ -420,7 +420,12 @@ class APSResourceSubmissionAIFeedback(models.Model):
             else:
                 vals['score'] = max(0.0, min(round(float(score), 2), self.out_of_marks))
 
-        self.write(vals)
+        _logger.debug('AI feedback result write vals: %s', vals)
+        try:
+            self.write(vals)
+        except Exception as exc:
+            _logger.exception('Failed to write AI feedback result for submission %s: %s', self.id, exc)
+            raise
 
     def _build_ai_failure_notification(self, error_text):
         message = error_text or _('The AI call failed.')

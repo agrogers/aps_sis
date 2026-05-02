@@ -44,49 +44,27 @@ class APSAIModelSubmissionFeedback(models.Model):
 
     def _generate_submission_feedback(self, submission, ai_run=None):
         self.ensure_one()
-        payload, answer_chunk_data, prompt_names_used = self._build_chat_payload_for_submission(
-            submission,
-            include_reasoning=bool(ai_run),
+        applicable_prompts = self._collect_applicable_prompts(submission.ai_prompt_ids, submission._name)
+        phase_map = self._split_prompts_by_phase(applicable_prompts)
+        ctx = self._build_submission_feedback_context(submission, include_reasoning=bool(ai_run))
+        if any(phase_map.get(n) for n in (1, 2, 3)):
+            return self._generate_feedback_multiphase(ctx, phase_map, related_record=submission, ai_run=ai_run)
+
+        # Single-phase path.
+        answer_chunk_data = (
+            self._build_submission_answer_chunks(ctx['student_answer_html'])
+            if ctx['ai_targeted_feedback'] else None
         )
+        payload, prompt_names_used = self._build_chat_payload_from_ctx(ctx, applicable_prompts, answer_chunk_data)
         progress_callback = ai_run._build_stream_callback() if ai_run else None
-        result = self._execute_logged_router_call(
-            payload,
-            request_type='submission_feedback',
-            related_record=submission,
-            stream_callback=progress_callback,
-            prompt_names_used=prompt_names_used,
+        raw_content, result = self._execute_phase_call(
+            payload, 'single', submission, progress_callback, prompt_names_used
         )
-        try:
-            response_json = result['response_json']
-            raw_content = self._extract_message_content(response_json)
-        except Exception as exc:
-            self._update_call_log_error(result.get('log_record'), exc)
-            if self._is_reasoning_only_truncation(response_json):
-                retry_payload = dict(payload)
-                retry_payload['max_completion_tokens'] = self._get_retry_max_completion_tokens(
-                    payload.get('max_completion_tokens')
-                )
-                retry_result = self._execute_logged_router_call(
-                    retry_payload,
-                    request_type='submission_feedback',
-                    related_record=submission,
-                    stream_callback=progress_callback,
-                )
-                try:
-                    result = retry_result
-                    response_json = result['response_json']
-                    raw_content = self._extract_message_content(response_json)
-                except Exception as retry_exc:
-                    self._update_call_log_error(result.get('log_record'), retry_exc)
-                    raise
-            else:
-                raise
         parsed = self._parse_structured_response(raw_content)
         targeted_result = self._extract_targeted_feedback(parsed, raw_content, answer_chunk_data)
-        feedback_html = targeted_result['feedback_html']
         score = self._extract_score(parsed, raw_content)
-        return {
-            'feedback_html': feedback_html,
+        final_result = {
+            'feedback_html': targeted_result['feedback_html'],
             'score': score,
             'answer_chunks': targeted_result['answer_chunks'],
             'answer_chunked_html': targeted_result['answer_chunked_html'],
@@ -100,31 +78,26 @@ class APSAIModelSubmissionFeedback(models.Model):
             'model_name': self.display_name,
             'raw_content': raw_content,
         }
+        self._log_ai_result(final_result)
+        return final_result
 
-    def _build_chat_payload_for_submission(self, submission, include_reasoning=False):
-        """Build a chat payload from a submission's fields."""
-        student_answer = self._html_to_text(submission.answer)
-        if not student_answer.strip():
-            raise UserError(_('The submission has no student answer to mark.'))
-        answer_chunk_data = self._build_submission_answer_chunks(submission.answer) if submission.ai_targeted_feedback else None
-        out_of_marks = submission.out_of_marks if submission.out_of_marks and submission.out_of_marks > 0 else False
-        selected_prompts = self._collect_applicable_prompts(submission.ai_prompt_ids, submission._name)
-        payload, prompt_names_used = self._assemble_chat_payload(
-            instructions=self._html_to_text(submission.ai_instructions),
-            prompt_records=selected_prompts,
-            out_of_marks=out_of_marks,
-            use_question=submission.ai_use_question,
-            question=self._html_to_text(submission.question),
-            use_model_answer=submission.ai_use_model_answer or submission.ai_action == 'mark_submission_use_answer',
-            model_answer=self._html_to_text(submission.model_answer),
-            use_note=submission.ai_use_notes,
-            notes=self._html_to_text(submission.resource_notes),
-            student_answer=student_answer,
-            student_answer_chunks=answer_chunk_data['chunks'] if answer_chunk_data else None,
-            targeted_feedback=bool(submission.ai_targeted_feedback),
-            include_reasoning=include_reasoning,
-        )
-        return payload, answer_chunk_data, prompt_names_used
+    def _build_submission_feedback_context(self, submission, include_reasoning=False):
+        """Extract AI feedback fields from a submission into a plain context dict."""
+        return {
+            'instructions': self._html_to_text(submission.ai_instructions),
+            'out_of_marks': submission.out_of_marks if submission.out_of_marks and submission.out_of_marks > 0 else False,
+            'use_question': submission.ai_use_question,
+            'question': self._html_to_text(submission.question),
+            'use_model_answer': submission.ai_use_model_answer or submission.ai_action == 'mark_submission_use_answer',
+            'model_answer': self._html_to_text(submission.model_answer),
+            'use_note': submission.ai_use_notes,
+            'notes': self._html_to_text(submission.resource_notes),
+            'student_answer': self._html_to_text(submission.answer),
+            'student_answer_html': submission.answer,
+            'ai_targeted_feedback': bool(submission.ai_targeted_feedback),
+            'include_reasoning': include_reasoning,
+            'empty_answer_error': _('The submission has no student answer to mark.'),
+        }
 
     @api.model
     def _build_submission_answer_chunks(self, answer_html):
@@ -279,7 +252,7 @@ class APSAIModelSubmissionFeedback(models.Model):
                     trailing_separator = None
 
                 # Try comma/semicolon sub-chunking within the sentence.
-                sub_parts = re.split(r'(?<=[,;])\s+', sentence)
+                sub_parts = re.split(r'(?<=[,;])\s+|\s+-\s+', sentence)
                 if len(sub_parts) > 1 and all(
                     len(re.findall(r'\b\w+\b', p)) >= _MIN_SUB_CHUNK_WORDS for p in sub_parts
                 ):

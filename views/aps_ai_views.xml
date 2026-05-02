@@ -165,6 +165,7 @@
                 <field name="model_id"/>
                 <field name="user_id"/>
                 <field name="related_display_name"/>
+                <filter name="filter_pending" string="Pending" domain="[('state', '=', 'pending')]"/>
                 <filter name="filter_success" string="Success" domain="[('state', '=', 'success')]"/>
                 <filter name="filter_error" string="Error" domain="[('state', '=', 'error')]"/>
                 <filter name="filter_submission_feedback" string="Submission Feedback" domain="[('request_type', '=', 'submission_feedback')]"/>
@@ -186,8 +187,9 @@
         <field name="arch" type="xml">
             <list default_order="create_date desc, id desc" create="false" edit="false">
                 <field name="create_date" string="Date"/>
-                <field name="state" widget="badge" decoration-success="state == 'success'" decoration-danger="state == 'error'"/>
+                <field name="state" widget="badge" decoration-warning="state == 'pending'" decoration-success="state == 'success'" decoration-danger="state == 'error'"/>
                 <field name="request_type"/>
+                <field name="phase" optional="show"/>
                 <field name="user_id" optional="hide"/>
                 <field name="provider_id"/>
                 <field name="model_id"/>
@@ -240,6 +242,7 @@
                             <field name="create_date"/>
                             <field name="state"/>
                             <field name="request_type"/>
+                            <field name="phase"/>
                             <field name="user_id"/>
                             <field name="duration_ms"/>
                         </group>

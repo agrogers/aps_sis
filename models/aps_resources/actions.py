@@ -463,7 +463,7 @@ class APSResource(models.Model):
                 'params': {
                     'title': _('AI Marking In Progress'),
                     'message': _('AI marking is already running in the background for this resource.'),
-                    'type': 'info',
+                    'type': 'warning',
                     'run_id': active_run.id,
                 }
             }

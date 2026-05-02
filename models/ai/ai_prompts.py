@@ -1,6 +1,19 @@
 from odoo import api, fields, models
 
 
+class APSAIPromptTag(models.Model):
+    _name = 'ai.prompt.tag'
+    _description = 'AI Prompt Tag'
+    _order = 'name'
+
+    name = fields.Char(string='Tag', required=True, translate=True)
+    color = fields.Integer(string='Color')
+
+    _sql_constraints = [
+        ('name_uniq', 'unique (name)', 'Tag name must be unique.'),
+    ]
+
+
 class APSAIPrompt(models.Model):
     _name = 'ai_prompts'
     _description = 'AI Prompt'
@@ -50,6 +63,13 @@ Always try and include one positive feature of the answer with a feedback.type="
         'ir_model_id',
         string='Applies to Database Models',
         help='Limit prompt usage to specific Odoo models (e.g. aps.resources, aps.resource.submission). Leave empty to allow all.',
+    )
+    tag_ids = fields.Many2many(
+        'ai.prompt.tag',
+        'ai_prompt_tag_rel',
+        'prompt_id',
+        'tag_id',
+        string='Tags',
     )
 
     @api.depends('prompt_name')

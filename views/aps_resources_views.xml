@@ -370,6 +370,24 @@
                                             type="object"
                                             class="btn btn-primary"/>
                                 </div>
+
+                                <group string="Targeted Feedback" class="tab-with-icon student-answer-tab" 
+                                    name="student_answer_page" invisible="not ai_targeted_feedback">
+                                    <group>
+                                        <div class="col-12 alert alert-info" role="alert">
+                                            <i class="fa-solid fa-lightbulb me-2"></i>
+                                            Targeted feedback adds buttons that highlight specific sections of the answer with feedback. The AI produces the feedback in two or three phases. All prompts used must have "Targeted" and "Phase 1/2/3" tags set. Phase 1 produces a very detailed HTML only response. Phase 2 uses that response as the basis to identify specific sections in the answer that should be highlighted. Phase 3 (optional) summarises the detailed HTML feedback which is prepended to the detailed feedback.
+                                        </div>
+                                    </group>
+                                    <field name="ai_targeted_feedback" invisible="1"/>
+                                    <field name="ai_answer" invisible="1"/>
+                                    <field name="ai_answer_chunks" invisible="1"/>
+                                    <field name="ai_answer_chunked_html" invisible="1"/>
+                                    <field name="ai_feedback_items" invisible="1"/>
+                                    <field name="ai_feedback_links" invisible="1"/>
+                                    <field name="ai_feedback" widget="submission_feedback_viewer" options="{'answer_field': 'ai_answer'}" nolabel="1" readonly="1"/>
+                                </group>
+
                                 <div class="row">
                                     <div class="col-12 col-md-6">
                                         <div class="fw-bold mb-1">Test Answer</div>
@@ -382,18 +400,6 @@
                                             invisible="not ai_feedback"/>
                                     </div>
                                 </div>
-
-
-                                <group string="Targeted Feedback" class="tab-with-icon student-answer-tab" 
-                                    name="student_answer_page" invisible="not ai_targeted_feedback">
-                                    <field name="ai_targeted_feedback" invisible="1"/>
-                                    <field name="ai_answer" invisible="1"/>
-                                    <field name="ai_answer_chunks" invisible="1"/>
-                                    <field name="ai_answer_chunked_html" invisible="1"/>
-                                    <field name="ai_feedback_items" invisible="1"/>
-                                    <field name="ai_feedback_links" invisible="1"/>
-                                    <field name="ai_feedback" widget="submission_feedback_viewer" options="{'answer_field': 'ai_answer'}" nolabel="1" readonly="1"/>
-                                </group>
 
 
                             </div>
