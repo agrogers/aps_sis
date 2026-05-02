@@ -366,21 +366,9 @@
                                 <div class="fw-bold border-bottom pb-1 mb-2">AI Prompt Test</div>
                                 <div class="mb-2">
                                     <button name="action_ai_test_mark"
-                                            string="AI Mark"
+                                            string="AI Mark..."
                                             type="object"
                                             class="btn btn-primary"/>
-                                </div>
-                                <div class="row">
-                                    <div class="col-12 col-md-6">
-                                        <div class="fw-bold mb-1">Test Answer</div>
-                                        <field name="ai_answer" nolabel="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;" readonly="not ai_test_prompt"
-                                            placeholder="Enter a sample student answer here to test the AI prompt."/>
-                                    </div>
-                                    <div class="col-12 col-md-6" invisible="not ai_feedback or ai_targeted_feedback">
-                                        <div class="fw-bold mb-1" >AI Feedback</div>
-                                        <field name="ai_feedback" nolabel="1" readonly="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
-                                            invisible="not ai_feedback"/>
-                                    </div>
                                 </div>
 
 
@@ -394,6 +382,29 @@
                                     <field name="ai_feedback_links" invisible="1"/>
                                     <field name="ai_feedback" widget="submission_feedback_viewer" options="{'answer_field': 'ai_answer'}" nolabel="1" readonly="1"/>
                                 </group>
+
+                                <div class="row">
+                                    <div class="col-12 col-md-6">
+                                        <div class="fw-bold mb-1">Test Answer</div>
+                                        <field name="ai_answer" nolabel="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;" readonly="not ai_test_prompt"
+                                            placeholder="Enter a sample student answer here to test the AI prompt."/>
+                                    </div>
+                                    <div class="col-12 col-md-6" invisible="not ai_feedback or ai_targeted_feedback">
+                                        <div class="fw-bold mb-1" >AI Feedback</div>
+                                        <field name="ai_feedback" nolabel="1" readonly="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
+                                            invisible="not ai_feedback"/>
+                                    </div>
+                                </div>
+                                <div class="row mt-2" >
+                                    <div class="col-12 col-md-3" >
+                                        <div class="fw-bold mb-1">AI Score</div>
+                                        <field name="ai_score" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="col-12 col-md-9" >
+                                        <div class="fw-bold mb-1">Score Comment</div>
+                                        <field name="ai_score_comment" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
 
 
                             </div>

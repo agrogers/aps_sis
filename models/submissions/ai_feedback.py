@@ -48,6 +48,9 @@ class APSResourceSubmissionAIFeedback(models.Model):
     ai_auto_mark_last_error = fields.Text(string='Automatic AI Error', readonly=True, copy=False)
     ai_auto_mark_run_id = fields.Many2one('aps.ai.run', string='Automatic AI Run', readonly=True, copy=False)
 
+    def _get_ai_run_link_field(self):
+        return 'submission_id'
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
@@ -61,6 +64,35 @@ class APSResourceSubmissionAIFeedback(models.Model):
             self._queue_auto_ai_marking_after_submit()
             self.filtered(lambda rec: rec.state != 'submitted')._reset_auto_ai_marking_state()
         return result
+
+    def _build_ai_feedback_ctx(self, include_reasoning=False):
+        """Return the standardised AI feedback context dict for this submission.
+
+        This is the single method to implement when adding AI feedback support
+        to a new model.  The generic engine (``aps.ai.model.generate_feedback``)
+        reads this dict to build the prompt payload — no other record-specific
+        code is needed there.
+        """
+        self.ensure_one()
+        return {
+            'instructions': self.ai_instructions or '',
+            'out_of_marks': (
+                self.out_of_marks
+                if self.out_of_marks and self.out_of_marks > 0 and self.out_of_marks != sentinel_zero
+                else False
+            ),
+            'use_question': bool(self.ai_use_question),
+            'question': self.question or '',
+            'use_model_answer': bool(self.ai_use_model_answer or self.ai_action == 'mark_submission_use_answer'),
+            'model_answer': self.model_answer or '',
+            'use_note': bool(self.ai_use_notes),
+            'notes': self.resource_notes or '',
+            'student_answer_html': self.answer or '',
+            'ai_targeted_feedback': bool(self.ai_targeted_feedback),
+            'include_reasoning': include_reasoning,
+            'empty_answer_error': _('The submission has no student answer to mark.'),
+            'prompt_ids': self.ai_prompt_ids,
+        }
 
     def _validate_ai_marking_request(self):
         self.ensure_one()
@@ -416,29 +448,17 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
         if self.out_of_marks and self.out_of_marks > 0 and self.out_of_marks != sentinel_zero:
             if score is None:
-                vals['feedback'] = '%s<p><em>No mark was returned by the AI model.</em></p>' % feedback_html
+                score_comment = result.get('score_comment')
+                no_score_note = score_comment or 'No mark was returned by the AI model.'
+                vals['feedback'] = '%s<p><em>%s</em></p>' % (feedback_html, no_score_note)
             else:
                 vals['score'] = max(0.0, min(round(float(score), 2), self.out_of_marks))
 
         self.write(vals)
 
     def _build_ai_failure_notification(self, error_text):
-        message = error_text or _('The AI call failed.')
-        normalized_message = message.lower()
-        if 'empty completion' in normalized_message or 'did not return the final answer' in normalized_message:
-            message = _(
-                '%s\n\nIf AI > Logs only shows connection tests, clear that filter or apply the Submission Feedback filter.'
-            ) % message
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('AI Marking Failed'),
-                'message': message,
-                'type': 'warning',
-                'sticky': True,
-            }
-        }
+        # Delegated to the shared implementation in aps.ai.feedback.storage.mixin.
+        return super()._build_ai_failure_notification(error_text)
 
     def action_mark_with_ai(self):
         self.ensure_one()
@@ -470,31 +490,17 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
         active_run, created = self._start_ai_marking_background_run(request_origin='manual')
         if not created:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('AI Marking In Progress'),
-                    'message': _('AI marking is already running in the background for this submission.'),
-                    'type': 'info',
-                    'run_id': active_run.id,
-                }
-            }
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('AI Marking Started'),
-                'message': _('AI marking is running in the background. You can close the progress dialog at any time.'),
-                'type': 'info',
-                'run_id': active_run.id,
-            }
-        }
+            return self._build_ai_run_notification(
+                active_run,
+                _('AI Marking In Progress'),
+                _('AI marking is already running in the background for this submission.'),
+            )
+        return self._build_ai_run_notification(
+            active_run,
+            _('AI Marking Started'),
+            _('AI marking is running in the background. You can close the progress dialog at any time.'),
+        )
 
     def action_get_ai_run_status(self, run_id):
-        self.ensure_one()
-        run = self.env['aps.ai.run'].sudo().browse(run_id)
-        if not run.exists() or run.submission_id.id != self.id:
-            raise UserError(_('The requested AI run does not belong to this submission.'))
-        return run._serialize_status()
+        # Delegated to the shared implementation in aps.ai.feedback.storage.mixin.
+        return super().action_get_ai_run_status(run_id)

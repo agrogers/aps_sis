@@ -93,7 +93,9 @@ class APSResource(models.Model):
     ai_test_prompt = fields.Boolean(string='Test Prompt', help='Enable a test area to trial the AI prompt against a sample answer.')
     ai_answer = fields.Html(string='Test Answer', help='Sample answer to test the AI prompt against.')
     ai_feedback = fields.Html(string='AI Feedback', readonly=True, help='Feedback returned by the AI for the test answer.')
-
+    ai_score = fields.Float(string='AI Score', digits=(16, 2), readonly=True, help='Score returned by the AI for the test answer, if applicable.')
+    ai_score_comment = fields.Char(string='AI Score Comment', readonly=True, help='Comment about the score returned by the AI for the test answer, if applicable. This is used when a score is not returned to provide feedback on why.')
+    
     ai_action = fields.Selection([
         ('none', 'None'),
         ('mark_submission', 'Mark Submission'),
@@ -106,7 +108,7 @@ class APSResource(models.Model):
         'aps_resources_ai_included_prompts_rel',
         'resource_id',
         'prompt_id',
-        string='Additional Prompts',
+        string='NOT USED???',
         compute='_compute_ai_additional_prompt_ids',
         help='Prompts that will be included in AI calls for this resource, based on selected prompts and always-include rules.',
     )

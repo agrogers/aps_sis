@@ -457,16 +457,11 @@ class APSResource(models.Model):
             ('state', 'in', ('queued', 'running')),
         ], limit=1, order='create_date desc, id desc')
         if active_run:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('AI Marking In Progress'),
-                    'message': _('AI marking is already running in the background for this resource.'),
-                    'type': 'info',
-                    'run_id': active_run.id,
-                }
-            }
+            return self._build_ai_run_notification(
+                active_run,
+                _('AI Marking In Progress'),
+                _('AI marking is already running in the background for this resource.'),
+            )
 
         run = self.env['aps.ai.run'].sudo().create({
             'resource_id': self.id,
@@ -476,25 +471,16 @@ class APSResource(models.Model):
             'request_origin': 'manual',
         })
         run._queue_background_processing()
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('AI Marking Started'),
-                'message': _('AI marking is running in the background. You can close the progress dialog at any time.'),
-                'type': 'info',
-                'run_id': run.id,
-            }
-        }
+        return self._build_ai_run_notification(
+            run,
+            _('AI Marking Started'),
+            _('AI marking is running in the background. You can close the progress dialog at any time.'),
+        )
 
     def action_get_ai_run_status(self, run_id):
         """Return serialised status for an AI background run belonging to this resource."""
-        self.ensure_one()
-        run = self.env['aps.ai.run'].sudo().browse(run_id)
-        if not run.exists() or run.resource_id.id != self.id:
-            raise UserError(_('The requested AI run does not belong to this resource.'))
-        return run._serialize_status()
+        # Delegated to the shared implementation in aps.ai.feedback.storage.mixin.
+        return super().action_get_ai_run_status(run_id)
 
     @api.model
     def run_auto_assign(self):

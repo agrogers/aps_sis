@@ -1,11 +1,19 @@
 import copy
 import json
 import logging
-import re
 import time
-from html import escape
 from urllib import error as url_error
 from urllib import request as url_request
+
+# ---------------------------------------------------------------------------
+# Hardcoded prompts for connection-test calls
+# ---------------------------------------------------------------------------
+_TEST_SYSTEM_PROMPT = (
+    'You are a connectivity test endpoint. '
+    'Do not explain anything. Do not include reasoning. '
+    'Reply using the exact text TEST_OK.'
+)
+_TEST_USER_PROMPT = 'Return exactly TEST_OK and nothing else.'
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -140,197 +148,12 @@ class APSAIModel(models.Model):
             [('enabled', '=', True), ('provider_id.enabled', '=', True)],
         ).sorted(key=lambda rec: (-(rec.priority or 0), -(rec.provider_id.priority or 0), rec.id))
 
-    @api.model
-    def _build_dynamic_prompt_sections(
-        self,
-        instructions='',
-        out_of_marks=False,
-        use_question=False,
-        question='',
-        use_model_answer=False,
-        model_answer='',
-        use_note=False,
-        notes='',
-        student_answer='',
-        student_answer_chunks=None,
-        targeted_feedback=False,
-    ):
-        dynamic_sections = []
-
-        if instructions and instructions.strip():
-            dynamic_sections.append(('Specific Instructions', '## AI Instructions:\n%s' % instructions.strip()))
-        if out_of_marks:
-            dynamic_sections.append(('Maximum Mark', '## Maximum Mark:\n%s' % out_of_marks))
-        if use_question and question.strip():
-            dynamic_sections.append(('Question', '## Question:\n%s' % question.strip()))
-        if use_model_answer:
-            dynamic_sections.append(('Model Answer', '## Model Answer:\n%s' % (model_answer.strip() or 'No model answer provided.')))
-        if use_note and notes.strip():
-            dynamic_sections.append(('Notes', '## Notes:\n%s' % notes.strip()))
-        if targeted_feedback and student_answer_chunks:
-            dynamic_sections.append((
-                'Student Answer',
-                'Student Answer Chunks:\n%s' % json.dumps(student_answer_chunks, indent=2, ensure_ascii=False),
-            ))
-            dynamic_sections.append(('Targeted Feedback', self._PROMPT_TEMPLATE_SECTION_SENTINEL))
-        else:
-            dynamic_sections.append(('Student Answer', 'Student Answer:\n%s' % student_answer.strip()))
-            dynamic_sections.append((
-                'Response Format',
-                'Return ONLY valid JSON with these keys:\n'
-                '{"feedback_html": string, "score": number|null, "score_comment": string|null}.\n'
-                'feedback_html must be an HTML fragment using tags such as <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, and <br>.\n'
-                'If you cannot determine a mark, set score to null and explain why in score_comment.',
-            ))
-
-        return dynamic_sections
-
-    def _assemble_chat_payload(
-        self,
-        instructions='',
-        external_prompt='',
-        prompt_records=None,
-        out_of_marks=False,
-        use_question=False,
-        question='',
-        use_model_answer=False,
-        model_answer='',
-        use_note=False,
-        notes='',
-        student_answer='',
-        student_answer_chunks=None,
-        targeted_feedback=False,
-        include_reasoning=False,
-    ):
-        """Build an OpenAI-compatible chat payload from resolved prompt components."""
-        prompt_sections = []
-        prompt_names_used = []
-        dynamic_sections = self._build_dynamic_prompt_sections(
-            instructions=instructions,
-            out_of_marks=out_of_marks,
-            use_question=use_question,
-            question=question,
-            use_model_answer=use_model_answer,
-            model_answer=model_answer,
-            use_note=use_note,
-            notes=notes,
-            student_answer=student_answer,
-            student_answer_chunks=student_answer_chunks,
-            targeted_feedback=targeted_feedback,
-        )
-
-        dynamic_section_map = {
-            self._normalize_prompt_name(name): (name, content)
-            for name, content in dynamic_sections
-            if content
-        }
-        used_dynamic_keys = set()
-
-        for prompt in prompt_records or self.env['ai_prompts']:
-            prompt_name = (prompt.prompt_name or '').strip()
-            prompt_key = self._normalize_prompt_name(prompt_name)
-            if prompt_key in dynamic_section_map and prompt_key not in used_dynamic_keys:
-                section_name, section_content = dynamic_section_map[prompt_key]
-                if section_content == self._PROMPT_TEMPLATE_SECTION_SENTINEL:
-                    section_content = (prompt.prompt or '').strip()
-                if not section_content:
-                    used_dynamic_keys.add(prompt_key)
-                    continue
-                prompt_sections.append(section_content)
-                prompt_names_used.append(section_name)
-                used_dynamic_keys.add(prompt_key)
-                continue
-
-            if prompt.placeholder:
-                continue
-
-            prompt_text = (prompt.prompt or '').strip()
-            if prompt_text:
-                prompt_sections.append(prompt_text)
-                prompt_names_used.append(prompt_name or 'Prompt Template')
-
-        if external_prompt and prompt_records:
-            prompt_sections.append('## Prompt Template:\n%s' % external_prompt.strip())
-            prompt_names_used.append('Prompt Template')
-
-        payload = {
-            'model': self.model_key,
-            'messages': [
-                {
-                    'role': 'system',
-                    'content': (
-                        'You are an expert teacher assistant. Follow the supplied instructions exactly, '
-                        'produce constructive teacher feedback for students, and when possible determine a mark.'
-                        + (' Do not return reasoning, chain-of-thought, or thinking text. Return only the final answer.' if self.disable_reasoning else '')
-                    ),
-                },
-                {
-                    'role': 'user',
-                    'content': '\n\n'.join(section for section in prompt_sections if section),
-                },
-            ],
-            'temperature': self.temperature,
-            'max_completion_tokens': self.max_completion_tokens,
-        }
-        if self.disable_reasoning:
-            payload['reasoning'] = {
-                'enabled': False,
-                'exclude': True,
-            }
-        elif include_reasoning:
-            payload['reasoning'] = {
-                'enabled': True,
-                'exclude': False,
-                'effort': 'low',
-            }
-        if self.force_json_response:
-            payload['response_format'] = {'type': 'json_object'}
-        return payload, prompt_names_used
-
-    @api.model
-    def _normalize_prompt_name(self, prompt_name):
-        return re.sub(r'\s+', ' ', (prompt_name or '').strip()).casefold()
-
-    def _collect_applicable_prompts(self, selected_prompts, db_model_name):
-        self.ensure_one()
-        self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
-        selected = (selected_prompts or self.env['ai_prompts']).filtered(lambda rec: rec.enabled and (rec.prompt or rec.prompt_name))
-        always = self.env['ai_prompts'].sudo().search([
-            ('enabled', '=', True),
-            ('always_include', '=', True),
-        ])
-        placeholders = self.env['ai_prompts'].sudo().search([
-            ('enabled', '=', True),
-            ('placeholder', '=', True),
-        ])
-        candidates = (selected | always | placeholders)
-
-        applicable = candidates.filtered(
-            lambda rec: (
-                not rec.applies_to_ai_models or self in rec.applies_to_ai_models
-            ) and (
-                not rec.applies_to_db_models or db_model_name in rec.applies_to_db_models.mapped('model')
-            )
-        )
-
-        return applicable.sorted(key=lambda rec: ((rec.sequence or 0), rec.id))
-
     def _build_test_payload(self):
         payload = {
             'model': self.model_key,
             'messages': [
-                {
-                    'role': 'system',
-                    'content': (
-                        'You are a connectivity test endpoint. '
-                        'Do not explain anything. Do not include reasoning. '
-                        'Reply using the exact text TEST_OK.'
-                    ),
-                },
-                {
-                    'role': 'user',
-                    'content': 'Return exactly TEST_OK and nothing else.',
-                },
+                {'role': 'system', 'content': _TEST_SYSTEM_PROMPT},
+                {'role': 'user', 'content': _TEST_USER_PROMPT},
             ],
             'temperature': 0,
             # Connection tests need a slightly larger budget so reasoning-capable models
@@ -749,48 +572,76 @@ class APSAIModel(models.Model):
 
         return '\n'.join(part for part in text_parts if part) or False
 
-    def _parse_structured_response(self, raw_content):
-        text = (raw_content or '').strip()
-        if text.startswith('```'):
-            lines = [line for line in text.splitlines() if not line.strip().startswith('```')]
-            text = '\n'.join(lines).strip()
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            return {}
-
-    def _extract_score(self, parsed, raw_content):
-        if isinstance(parsed, dict):
-            score = parsed.get('score')
-            if score not in (None, ''):
-                try:
-                    return float(score)
-                except (TypeError, ValueError):
-                    pass
-        return None
-
-    def _normalize_feedback_html(self, feedback_html):
-        text = (feedback_html or '').strip()
-        if not text:
-            return '<p>No feedback was returned by the AI model.</p>'
-        if '<' in text and '>' in text:
-            return text
-        paragraphs = [segment.strip() for segment in text.split('\n\n') if segment.strip()]
-        if not paragraphs:
-            paragraphs = [text]
-        return ''.join('<p>%s</p>' % escape(paragraph).replace('\n', '<br/>') for paragraph in paragraphs)
-
-    def _html_to_text(self, html_value):
-        if not html_value:
-            return ''
-        text = str(html_value)
-        text = text.replace('<br>', '\n').replace('<br/>', '\n').replace('<br />', '\n')
-        for tag in ('</p>', '</div>', '</li>', '</h1>', '</h2>', '</h3>', '</h4>'):
-            text = text.replace(tag, '\n')
-        text = re.sub(r'<[^>]+>', '', text)
-        return text.replace('&nbsp;', ' ').strip()
-
     def _estimate_usage_cost(self, prompt_tokens, completion_tokens):
         input_cost = (prompt_tokens / 1000000.0) * (self.input_cost_per_million or 0.0)
         output_cost = (completion_tokens / 1000000.0) * (self.output_cost_per_million or 0.0)
         return input_cost + output_cost
+
+    # -------------------------------------------------------------------------
+    # Feedback routing — universal entry point
+    # -------------------------------------------------------------------------
+
+    @api.model
+    def generate_feedback(self, record, ai_run=None):
+        """Universal AI feedback entry point.
+
+        ``record`` must implement ``_build_ai_feedback_ctx(include_reasoning)``.
+        Automatically selects the best enabled AI model(s) and delegates to
+        ``_run_feedback``.  Call this instead of the model-specific helpers.
+        """
+        record.ensure_one()
+        candidates = self.browse() if not self else self
+        if not candidates:
+            candidates = self._get_generation_candidates_for_record(record)
+
+        errors = []
+        for model in candidates:
+            try:
+                return model._run_feedback(record, ai_run=ai_run)
+            except UserError:
+                raise
+            except Exception as exc:
+                _logger.exception('AI feedback failed for model %s: %s', model.display_name, exc)
+                errors.append('%s: %s' % (model.display_name, exc))
+
+        if not errors:
+            raise UserError(_('No enabled AI models are configured.'))
+        raise UserError(_('All enabled AI models failed.\n%s') % '\n'.join(errors[:3]))
+
+    @api.model
+    def _get_generation_candidates_for_record(self, record):
+        """Return the ordered list of AI model candidates for a given record.
+
+        Prefers an explicitly configured model on the record's linked resource
+        (``record.resource_id.ai_model_id``) before falling back to all enabled
+        models sorted by priority.
+        """
+        resource = (
+            record.resource_id
+            if hasattr(record, 'resource_id') and record.resource_id
+            else record
+        )
+        candidates = self._get_generation_candidates(resource=resource)
+        if not candidates:
+            raise UserError(_('No enabled AI models are configured.'))
+        return candidates
+
+    def _run_feedback(self, record, ai_run=None):
+        """Route to the appropriate feedback pipeline based on context.
+
+        If ``ai_targeted_feedback`` is True, delegates to
+        ``_run_feedback_targeted`` (defined in ai_answer_targeted.py).
+        Otherwise delegates to ``_run_feedback_generic`` (defined in
+        ai_answer_generic.py).  No code from ai_answer_targeted.py is
+        reached when targeted feedback is disabled.
+        """
+        self.ensure_one()
+        ctx = record._build_ai_feedback_ctx(include_reasoning=bool(ai_run))
+        progress_callback = ai_run._build_stream_callback() if ai_run else None
+        if ctx.get('ai_targeted_feedback'):
+            applicable_prompts = self._collect_applicable_prompts(ctx['prompt_ids'], record._name)
+            return self._run_feedback_targeted(ctx, applicable_prompts, record, progress_callback)
+        else:
+            return self._run_feedback_generic(ctx, ctx['prompt_ids'], record, progress_callback)
+
+
