@@ -5,6 +5,7 @@ from . import ai_provider
 from . import ai_model
 from . import ai_answer_generic
 from . import ai_answer_targeted
+from . import ai_prompt_tags
 from . import ai_prompts
 from . import ai_submission_feedback
 from . import ai_resource_feedback

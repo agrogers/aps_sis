@@ -8,6 +8,9 @@ class APSAIPrompt(models.Model):
 
     _DEFAULT_TARGETED_FEEDBACK_PROMPT_NAME = 'Targeted Feedback'
     _DEFAULT_TARGETED_FEEDBACK_PROMPT_SEQUENCE = 90
+
+    _DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_NAME = 'Specific Instructions'
+    _DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_SEQUENCE = 5
     _DEFAULT_TARGETED_FEEDBACK_PROMPT_TEXT = """
 # LLM RESPONSE STRUCTURE
 ## JSON Format
@@ -37,11 +40,18 @@ Always try and include one positive feature of the answer with a feedback.type="
 
     sequence = fields.Integer(string='Sequence', default=10)
     prompt_name = fields.Char(string='Prompt Name', required=True)
-    prompt = fields.Text(string='Prompt', required=True)
+    prompt = fields.Text(string='Prompt', required=False)
     enabled = fields.Boolean(string='Enabled', default=True)
-    placeholder = fields.Boolean(string='Placeholder', default=False, help='These prompts provide a way to order the text that comes from the corresponding fields in the Resources and Submissions models.')
     display_name = fields.Char(compute='_compute_display_name', store=True)
     always_include = fields.Boolean(string='Always Include', default=False, help='If enabled, this prompt will always be included in AI calls for resources that use prompts, regardless of whether it is selected on the resource or not.')
+    tag_ids = fields.Many2many(
+        'ai.prompt.tag',
+        'ai_prompt_tag_rel',
+        'prompt_id',
+        'tag_id',
+        string='Tags',
+        help='Descriptive tags for this prompt. Use the "code" tag to signal that student answers should be chunked by line rather than by sentence.',
+    )
     applies_to_ai_models = fields.Many2many('aps.ai.model', 'ai_model_prompt_rel', 'prompt_id', 'model_id', string='Applies to AI Models', help='Select the AI models this prompt applies to. If no models are selected, this prompt will be available for all models.')
     applies_to_db_models = fields.Many2many(
         'ir.model',
@@ -58,6 +68,16 @@ Always try and include one positive feature of the answer with a feedback.type="
             record.display_name = record.prompt_name or ''
 
     @api.model
+    def _has_tag(self, prompts, tag_name):
+        """Return True if any record in ``prompts`` has a tag whose name matches ``tag_name`` (case-insensitive)."""
+        key = (tag_name or '').strip().casefold()
+        return any(
+            tag.name.strip().casefold() == key
+            for prompt in (prompts or self.browse())
+            for tag in prompt.tag_ids
+        )
+
+    @api.model
     def _get_default_targeted_feedback_prompt_values(self):
         resource_models = self.env['ir.model'].sudo().search([
             ('model', 'in', ['aps.resources', 'aps.resource.submission']),
@@ -67,16 +87,56 @@ Always try and include one positive feature of the answer with a feedback.type="
             'prompt': self._DEFAULT_TARGETED_FEEDBACK_PROMPT_TEXT,
             'sequence': self._DEFAULT_TARGETED_FEEDBACK_PROMPT_SEQUENCE,
             'enabled': True,
-            'placeholder': True,
             'always_include': True,
             'applies_to_db_models': [(6, 0, resource_models.ids)],
         }
 
     @api.model
+    def _ensure_tag(self, tag_name):
+        """Find or create an ai.prompt.tag with the given name."""
+        tag = self.env['ai.prompt.tag'].sudo().search([('name', '=ilike', tag_name)], limit=1)
+        if not tag:
+            tag = self.env['ai.prompt.tag'].sudo().create({'name': tag_name})
+        return tag
+
+    @api.model
+    def _get_default_specific_instructions_prompt_values(self):
+        resource_models = self.env['ir.model'].sudo().search([
+            ('model', 'in', ['aps.resources', 'aps.resource.submission']),
+        ])
+        return {
+            'prompt_name': self._DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_NAME,
+            'prompt': '',
+            'sequence': self._DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_SEQUENCE,
+            'enabled': True,
+            'always_include': False,
+            'applies_to_db_models': [(6, 0, resource_models.ids)],
+        }
+
+    @api.model
+    def ensure_default_specific_instructions_prompt(self):
+        tag = self._ensure_tag(self._DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_NAME)
+        prompt = self.sudo().search([
+            ('prompt_name', '=', self._DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_NAME),
+        ], order='sequence, id', limit=1)
+        if prompt:
+            if tag not in prompt.tag_ids:
+                prompt.tag_ids = [(4, tag.id)]
+            return prompt
+        vals = self._get_default_specific_instructions_prompt_values()
+        vals['tag_ids'] = [(4, tag.id)]
+        return self.sudo().create(vals)
+
+    @api.model
     def ensure_default_targeted_feedback_prompt(self):
+        tag = self._ensure_tag(self._DEFAULT_TARGETED_FEEDBACK_PROMPT_NAME)
         prompt = self.sudo().search([
             ('prompt_name', '=', self._DEFAULT_TARGETED_FEEDBACK_PROMPT_NAME),
         ], order='sequence, id', limit=1)
         if prompt:
+            if tag not in prompt.tag_ids:
+                prompt.tag_ids = [(4, tag.id)]
             return prompt
-        return self.sudo().create(self._get_default_targeted_feedback_prompt_values())
+        vals = self._get_default_targeted_feedback_prompt_values()
+        vals['tag_ids'] = [(4, tag.id)]
+        return self.sudo().create(vals)

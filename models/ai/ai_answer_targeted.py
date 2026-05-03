@@ -63,8 +63,8 @@ class APSAIModelAnswerChunking(models.Model):
     _inherit = 'aps.ai.model'
 
     @api.model
-    def _build_submission_answer_chunks(self, answer_html):
-        html_chunk_data = self._build_submission_answer_chunks_from_html(answer_html)
+    def _build_submission_answer_chunks(self, answer_html, chunk_mode='auto'):
+        html_chunk_data = self._build_submission_answer_chunks_from_html(answer_html, chunk_mode=chunk_mode)
         if html_chunk_data:
             return html_chunk_data
 
@@ -82,7 +82,7 @@ class APSAIModelAnswerChunking(models.Model):
         return {'chunks': chunks, 'chunked_html': chunk_html}
 
     @api.model
-    def _build_submission_answer_chunks_from_html(self, answer_html):
+    def _build_submission_answer_chunks_from_html(self, answer_html, chunk_mode='auto'):
         if not answer_html or '<' not in answer_html:
             return False
         try:
@@ -92,7 +92,7 @@ class APSAIModelAnswerChunking(models.Model):
 
         chunk_nodes = []
         for child in wrapper:
-            chunk_nodes.extend(self._collect_answer_chunk_nodes(child))
+            chunk_nodes.extend(self._collect_answer_chunk_nodes(child, chunk_mode=chunk_mode))
         if not chunk_nodes:
             return False
 
@@ -115,7 +115,7 @@ class APSAIModelAnswerChunking(models.Model):
         return {'chunks': chunks, 'chunked_html': chunk_html}
 
     @api.model
-    def _collect_answer_chunk_nodes(self, node):
+    def _collect_answer_chunk_nodes(self, node, chunk_mode='auto'):
         tag_name = getattr(node, 'tag', None)
         if not isinstance(tag_name, str):
             return []
@@ -123,7 +123,7 @@ class APSAIModelAnswerChunking(models.Model):
         if tag_name in {'ul', 'ol'}:
             nodes = []
             for child in node:
-                nodes.extend(self._collect_answer_chunk_nodes(child))
+                nodes.extend(self._collect_answer_chunk_nodes(child, chunk_mode=chunk_mode))
             return nodes
         child_block_nodes = [
             child for child in node
@@ -131,15 +131,15 @@ class APSAIModelAnswerChunking(models.Model):
             and child.tag.lower() in {'div', 'p', 'li', 'blockquote', 'pre'}
         ]
         if tag_name in {'div', 'p', 'li', 'blockquote', 'pre'} and not child_block_nodes:
-            return self._split_leaf_block_node_into_chunks(node)
+            return self._split_leaf_block_node_into_chunks(node, chunk_mode=chunk_mode)
         nodes = []
         for child in node:
-            nodes.extend(self._collect_answer_chunk_nodes(child))
+            nodes.extend(self._collect_answer_chunk_nodes(child, chunk_mode=chunk_mode))
         return nodes
 
     @api.model
-    def _split_leaf_block_node_into_chunks(self, node):
-        segments = self._split_leaf_block_segments(self._get_chunk_node_text(node))
+    def _split_leaf_block_node_into_chunks(self, node, chunk_mode='auto'):
+        segments = self._split_leaf_block_segments(self._get_chunk_node_text(node), chunk_mode=chunk_mode)
         if not segments:
             return []
         if len(segments) == 1:
@@ -166,19 +166,37 @@ class APSAIModelAnswerChunking(models.Model):
         return ''.join(node.itertext()) if node is not None else ''
 
     @api.model
-    def _split_leaf_block_segments(self, text):
+    def _split_leaf_block_segments(self, text, chunk_mode='auto'):
         _MIN_SUB_CHUNK_WORDS = 5
         normalized_text = re.sub(r'\r\n?', '\n', text or '').strip()
         if not normalized_text:
             return []
+
+        # Code mode: treat each non-empty line as its own chunk.
+        if chunk_mode == 'code':
+            lines = [line for line in normalized_text.split('\n') if line.strip()]
+            return [
+                {'text': line, 'separator': 'br' if idx < len(lines) - 1 else None}
+                for idx, line in enumerate(lines)
+            ]
+
         segments = []
         lines = [line.strip() for line in normalized_text.split('\n') if line.strip()]
         for line_index, line in enumerate(lines):
-            sentences = [
+            raw_sentences = [
                 s.strip()
                 for s in re.split(r'(?<=[.!?])(?:\s+|(?=[A-Z"\'(]))', line)
                 if s.strip()
             ]
+            # Merge parts that are too short back into the previous part so that
+            # e.g. print("Error: Please enter 2 words. ") doesn't get split on
+            # the "." leaving a bare `")` fragment.
+            sentences = []
+            for s in raw_sentences:
+                if sentences and len(re.findall(r'\b\w+\b', s)) < _MIN_SUB_CHUNK_WORDS:
+                    sentences[-1] = sentences[-1] + ' ' + s
+                else:
+                    sentences.append(s)
             if not sentences:
                 continue
             for sentence_index, sentence in enumerate(sentences):
@@ -428,28 +446,48 @@ class APSAIModelAnswerChunking(models.Model):
         }
         used_dynamic_keys = set()
 
+        # Build a reverse map: normalised tag name → prompt record (first match wins per tag).
+        # This lets us look up a prompt by its section tag in O(1) inside the loop.
+        tag_to_prompt = {}
         for prompt in prompt_records or self.env['ai_prompts']:
-            prompt_name = (prompt.prompt_name or '').strip()
-            prompt_key = self._normalize_prompt_name(prompt_name)
-            if prompt_key in dynamic_section_map and prompt_key not in used_dynamic_keys:
-                section_name, section_content = dynamic_section_map[prompt_key]
+            for tag in prompt.tag_ids:
+                tag_key = self._normalize_prompt_name(tag.name)
+                if tag_key not in tag_to_prompt:
+                    tag_to_prompt[tag_key] = prompt
+
+        for prompt in prompt_records or self.env['ai_prompts']:
+            # Check whether any tag on this prompt matches a dynamic section.
+            matched_key = None
+            for tag in prompt.tag_ids:
+                tag_key = self._normalize_prompt_name(tag.name)
+                if tag_key in dynamic_section_map and tag_key not in used_dynamic_keys:
+                    matched_key = tag_key
+                    break
+
+            if matched_key is not None:
+                section_name, section_content = dynamic_section_map[matched_key]
                 if section_content == self._PROMPT_TEMPLATE_SECTION_SENTINEL:
+                    # Targeted Feedback: the prompt's own text IS the section content.
                     section_content = (prompt.prompt or '').strip()
+                else:
+                    # Question / Model Answer / Notes / etc.: prepend the prompt's
+                    # custom text above the dynamic field content when both exist.
+                    prefix = (prompt.prompt or '').strip()
+                    if prefix:
+                        section_content = prefix + '\n\n' + section_content
                 if not section_content:
-                    used_dynamic_keys.add(prompt_key)
+                    used_dynamic_keys.add(matched_key)
                     continue
                 prompt_sections.append(section_content)
                 prompt_names_used.append(section_name)
-                used_dynamic_keys.add(prompt_key)
+                used_dynamic_keys.add(matched_key)
                 continue
 
-            if prompt.placeholder:
-                continue
-
+            # No tag matched a dynamic section — emit the prompt text directly.
             prompt_text = (prompt.prompt or '').strip()
             if prompt_text:
                 prompt_sections.append(prompt_text)
-                prompt_names_used.append(prompt_name or _SECTION_PROMPT_TEMPLATE)
+                prompt_names_used.append((prompt.prompt_name or '').strip() or _SECTION_PROMPT_TEMPLATE)
 
         # Always include any dynamic sections not consumed by a prompt record.
         # This ensures Student Answer and Response Format are never silently
@@ -501,19 +539,74 @@ class APSAIModelAnswerChunking(models.Model):
     def _normalize_prompt_name(self, prompt_name):
         return re.sub(r'\s+', ' ', (prompt_name or '').strip()).casefold()
 
+    def _resolve_tagged_prompts(self, tag_name, candidate_prompts):
+        """Return prompts tagged *tag_name*, preferring records already in *candidate_prompts*.
+
+        Resolution order:
+        1. Any enabled prompt inside *candidate_prompts* that carries the tag.
+        2. If none found there, the first enabled prompt in the global table that
+           carries the tag (ordered by sequence, id).
+
+        Returns an ``ai_prompts`` recordset (possibly empty).
+        """
+        self.ensure_one()
+        tag_key = (tag_name or '').strip().casefold()
+
+        # Step 1: look inside the caller-supplied candidate set (e.g. resource's ai_prompt_ids)
+        if candidate_prompts:
+            local_matches = candidate_prompts.filtered(
+                lambda p: p.enabled and any(
+                    t.name.strip().casefold() == tag_key for t in p.tag_ids
+                )
+            )
+            if local_matches:
+                return local_matches
+
+        # Step 2: global fallback — find the tag record then search for prompts referencing it
+        tag = self.env['ai.prompt.tag'].sudo().search(
+            [('name', '=ilike', tag_name)], limit=1
+        )
+        if not tag:
+            return self.env['ai_prompts']
+        return self.env['ai_prompts'].sudo().search(
+            [('enabled', '=', True), ('tag_ids', 'in', tag.ids)],
+            order='sequence, id',
+            limit=1,
+        )
+
+    # Map from ctx key → tag name used to auto-resolve supplementary prompts.
+    _CTX_TAG_MAP = {
+        'ai_targeted_feedback': 'Targeted Feedback',
+        'use_question': 'Question',
+        'use_model_answer': 'Model Answer',
+        'use_note': 'Notes',
+        'instructions': 'Specific Instructions',
+    }
+
+    def _resolve_ctx_tagged_prompts(self, ctx, candidate_prompts):
+        """Return a merged recordset of all tag-resolved prompts for the active ctx flags.
+
+        Iterates over ``_CTX_TAG_MAP``: for each key that is truthy in *ctx*,
+        calls ``_resolve_tagged_prompts`` and accumulates the results.
+        The returned set is de-duplicated and sorted by (sequence, id).
+        """
+        self.ensure_one()
+        extra = self.env['ai_prompts']
+        for ctx_key, tag_name in self._CTX_TAG_MAP.items():
+            if ctx.get(ctx_key):
+                extra |= self._resolve_tagged_prompts(tag_name, candidate_prompts)
+        return extra.sorted(key=lambda r: ((r.sequence or 0), r.id))
+
     def _collect_applicable_prompts(self, selected_prompts, db_model_name):
         self.ensure_one()
         self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
+        self.env['ai_prompts'].sudo().ensure_default_specific_instructions_prompt()
         selected = (selected_prompts or self.env['ai_prompts']).filtered(lambda rec: rec.enabled and (rec.prompt or rec.prompt_name))
         always = self.env['ai_prompts'].sudo().search([
             ('enabled', '=', True),
             ('always_include', '=', True),
         ])
-        placeholders = self.env['ai_prompts'].sudo().search([
-            ('enabled', '=', True),
-            ('placeholder', '=', True),
-        ])
-        candidates = (selected | always | placeholders)
+        candidates = (selected | always)
 
         applicable = candidates.filtered(
             lambda rec: (
@@ -536,7 +629,8 @@ class APSAIModelAnswerChunking(models.Model):
         if not student_answer.strip():
             raise UserError(ctx.get('empty_answer_error') or _('No student answer provided.'))
 
-        answer_chunk_data = self._build_submission_answer_chunks(ctx['student_answer_html'])
+        chunk_mode = 'code' if self.env['ai_prompts'].sudo()._has_tag(prompts, 'code') else 'auto'
+        answer_chunk_data = self._build_submission_answer_chunks(ctx['student_answer_html'], chunk_mode=chunk_mode)
         payload, names = self._assemble_chat_payload(
             instructions=self._html_to_text(ctx.get('instructions', '')),
             prompt_records=prompts,

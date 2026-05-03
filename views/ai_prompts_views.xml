@@ -9,6 +9,7 @@
                 <field name="prompt"/>
                 <field name="applies_to_ai_models"/>
                 <field name="applies_to_db_models"/>
+                <field name="tag_ids"/>
                 <filter name="filter_enabled" string="Enabled" domain="[('enabled', '=', True)]"/>
                 <filter name="filter_disabled" string="Disabled" domain="[('enabled', '=', False)]"/>
                 <filter name="filter_always_include" string="Always Include" domain="[('always_include', '=', True)]"/>
@@ -23,8 +24,8 @@
             <list default_order="sequence, id">
                 <field name="sequence" widget="handle" optional="show"/>
                 <field name="enabled" widget="boolean_toggle" optional="show"/>
-                <field name="placeholder" widget="boolean_toggle" optional="show"/>
                 <field name="always_include" widget="boolean_toggle" optional="show"/>
+                <field name="tag_ids" widget="many2many_tags" optional="show"/>
                 <field name="prompt_name"/>
                 <field name="applies_to_ai_models" widget="many2many_tags" optional="show"/>
                 <field name="applies_to_db_models" widget="many2many_tags" optional="show"/>
@@ -45,7 +46,7 @@
                             <field name="sequence"/>
                             <field name="enabled" widget="boolean_toggle"/>
                             <field name="always_include" widget="boolean_toggle"/>
-                            <field name="placeholder" widget="boolean_toggle" />
+                            <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
                             <field name="applies_to_ai_models" widget="many2many_tags" options="{'no_create': True}"/>
                             <field name="applies_to_db_models" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
@@ -66,4 +67,39 @@
     </record>
 
     <menuitem id="menu_apex_ai_prompts" name="Prompt Templates" parent="menu_apex_ai_heading" action="action_ai_prompts" sequence="25" groups="aps_sis.group_aps_manager"/>
+
+    <!-- AI Prompt Tags -->
+    <record id="view_ai_prompt_tag_list" model="ir.ui.view">
+        <field name="name">ai.prompt.tag.list</field>
+        <field name="model">ai.prompt.tag</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="color" widget="color_picker"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ai_prompt_tag_form" model="ir.ui.view">
+        <field name="name">ai.prompt.tag.form</field>
+        <field name="model">ai.prompt.tag</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="color" widget="color_picker"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ai_prompt_tags" model="ir.actions.act_window">
+        <field name="name">Prompt Tags</field>
+        <field name="res_model">ai.prompt.tag</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_apex_ai_prompt_tags" name="Prompt Tags" parent="menu_apex_ai_heading" action="action_ai_prompt_tags" sequence="26" groups="aps_sis.group_aps_manager"/>
 </odoo>

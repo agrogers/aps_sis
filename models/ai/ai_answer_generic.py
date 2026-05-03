@@ -84,8 +84,8 @@ class APSAIModelAnswerProcessing(models.Model):
     def _assemble_generic_payload(self, ctx, prompts, student_answer):
         """Build a simple chat payload for non-targeted feedback.
 
-        Builds the user message directly from ctx — no named placeholder
-        mechanism needed.  Non-placeholder prompt records are appended verbatim.
+        Builds the user message directly from ctx — no named
+        mechanism needed.  Prompt records are appended verbatim.
         Student Answer and the JSON Response Format are always included last.
         """
         sections = []
@@ -118,10 +118,8 @@ class APSAIModelAnswerProcessing(models.Model):
                 sections.append('## Notes:\n%s' % notes.strip())
                 names.append('Notes')
 
-        # Append non-placeholder prompt records verbatim
+        # Append prompt records verbatim
         for prompt in prompts or self.env['ai_prompts']:
-            if prompt.placeholder:
-                continue
             prompt_text = (prompt.prompt or '').strip()
             if prompt_text:
                 sections.append(prompt_text)

@@ -640,8 +640,19 @@ class APSAIModel(models.Model):
         progress_callback = ai_run._build_stream_callback() if ai_run else None
         if ctx.get('ai_targeted_feedback'):
             applicable_prompts = self._collect_applicable_prompts(ctx['prompt_ids'], record._name)
+            extra = self._resolve_ctx_tagged_prompts(ctx, ctx['prompt_ids'])
+            if extra:
+                applicable_prompts = (applicable_prompts | extra).sorted(
+                    key=lambda r: ((r.sequence or 0), r.id)
+                )
             return self._run_feedback_targeted(ctx, applicable_prompts, record, progress_callback)
         else:
-            return self._run_feedback_generic(ctx, ctx['prompt_ids'], record, progress_callback)
+            prompts = ctx['prompt_ids']
+            extra = self._resolve_ctx_tagged_prompts(ctx, prompts)
+            if extra:
+                prompts = (prompts | extra).sorted(
+                    key=lambda r: ((r.sequence or 0), r.id)
+                )
+            return self._run_feedback_generic(ctx, prompts, record, progress_callback)
 
 
