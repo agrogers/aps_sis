@@ -73,3 +73,6 @@ access_aps_ai_run_manager,aps.ai.run.manager,model_aps_ai_run,aps_sis.group_aps_
 access_ai_prompts_teacher,ai.prompts.teacher,model_ai_prompts,aps_sis.group_aps_teacher,1,1,1,1
 access_ai_prompts_manager,ai.prompts.manager,model_ai_prompts,aps_sis.group_aps_manager,1,1,1,1
 access_ai_prompts_user,ai.prompts.user,model_ai_prompts,base.group_user,1,0,0,0
+access_ai_prompt_tag_teacher,ai.prompt.tag.teacher,model_ai_prompt_tag,aps_sis.group_aps_teacher,1,0,0,0
+access_ai_prompt_tag_manager,ai.prompt.tag.manager,model_ai_prompt_tag,aps_sis.group_aps_manager,1,1,1,1
+access_ai_prompt_tag_user,ai.prompt.tag.user,model_ai_prompt_tag,base.group_user,1,0,0,0

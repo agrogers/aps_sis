@@ -43,18 +43,20 @@ class APSResourceSubmissionAutoScore(models.Model):
             base_domain = [
                 ('resource_id', 'in', contributing_children.ids),
                 ('student_id', '=', record.student_id.id),
+                ('state', 'in', ('submitted', 'complete')),
             ]
             if record.submission_label:
                 base_domain.append(('submission_label', '=', record.submission_label))
 
-            # Guard: every contributing child must have at least one submitted or
-            # completed submission (same student, same label) before we update the
-            # parent.  If any child is missing one we skip this parent entirely.
-            submitted_resource_ids = set(
-                self.search(base_domain + [('state', 'in', ('submitted', 'complete'))]).mapped('resource_id.id')
-            )
-            if not all(c.id in submitted_resource_ids for c in contributing_children):
-                continue
+            # This seemed like a good idea but I like to see the parent score update in real time as child submissions come in, even if not all children have submitted yet.  It also adds complexity and can lead to a situation where the parent score never updates because one child is late to submit.
+            # # Guard: every contributing child must have at least one submitted or
+            # # completed submission (same student, same label) before we update the
+            # # parent.  If any child is missing one we skip this parent entirely.
+            # submitted_resource_ids = set(
+            #     self.search(base_domain + [('state', 'in', ('submitted', 'complete'))]).mapped('resource_id.id')
+            # )
+            # if not all(c.id in submitted_resource_ids for c in contributing_children):
+            #     continue
 
             child_submissions = self.search(base_domain).sorted(
                 lambda s: (s.submission_order or 999, s.submission_name or '')
@@ -96,6 +98,9 @@ class APSResourceSubmissionAutoScore(models.Model):
                     f"{name}) Score: {self._fmt_num(score)}/{self._fmt_num(out_of)}"
                 )
                 total_score += score
+                # # Only count out_of_marks for submitted/complete children so the
+                # # denominator reflects questions actually submitted so far.
+                # if child_sub.state in ('submitted', 'complete'):
                 total_out_of += out_of
 
             new_score = total_score if total_out_of > 0 else sentinel_zero
@@ -111,6 +116,7 @@ class APSResourceSubmissionAutoScore(models.Model):
             record.write({
                 'score': new_score,
                 'answer': summary_html,
+                'out_of_marks': total_out_of,
                 'auto_score': True,
             })
 

@@ -278,8 +278,8 @@ class APSAssignStudentsWizard(models.TransientModel):
                 parent_question = question = self.question 
             else:
                 has_question = resource.has_question
-                question = resource.question 
-                parent_question = resource.primary_parent_id.question if resource.primary_parent_id else False
+                question = resource.question
+                parent_question = question  # use_parent: use this resource's own question field
 
             if has_question == 'no':
                 use_question = False

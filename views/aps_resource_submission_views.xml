@@ -140,7 +140,7 @@
                 <field name="display_name" optional="hide" readonly="1"/>
                 <field name="submission_name" optional="show" readonly="1"/>
                 <field name="score" widget="float_sentinel" optional="show" sum="Total Score"/>
-                <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
+                <field name="out_of_marks" widget="float_sentinel" optional="hide" readonly="1" sum="Total OutOf"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show" readonly="1" avg="Average %"/>
                 <field name="points" optional="hide"/>
                 <field name="state" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="hide" />

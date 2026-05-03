@@ -22,6 +22,14 @@ class APSResourceSubmissionOverrides(models.Model):
         if ('score' in vals or 'answer' in vals) and 'auto_score' not in vals:
             vals['auto_score'] = False
 
+        # Capture records that should auto-transition to 'submitted' when a score is entered.
+        # Condition: score is being set to a non-zero value, state is not being explicitly
+        # changed in this write, and the record is currently in 'assigned' state.
+        if 'score' in vals and vals.get('score') and 'state' not in vals:
+            records_to_auto_submit = self.filtered(lambda r: r.state == 'assigned')
+        else:
+            records_to_auto_submit = self.env['aps.resource.submission']
+
         # Capture old auto_score values to detect transitions to True
         old_auto_score = {rec.id: rec.auto_score for rec in self}
 
@@ -51,7 +59,11 @@ class APSResourceSubmissionOverrides(models.Model):
         old_faculty_map = {rec.id: set(rec.review_requested_by.ids) for rec in self}
 
         result = super().write(vals)
-        
+
+        # Auto-transition 'assigned' → 'submitted' when a score is entered
+        if records_to_auto_submit:
+            records_to_auto_submit.write({'state': 'submitted'})
+
         # Update task state when submission state changes
         if 'state' in vals:
             # Get unique tasks from the submissions
@@ -67,9 +79,9 @@ class APSResourceSubmissionOverrides(models.Model):
             if to_recalculate:
                 to_recalculate._recalculate_score_from_children()
 
-        # When score changes (for any reason), or a submission reaches a
-        # submitted/complete state, check if a parent submission needs updating.
-        if 'score' in vals or vals.get('state') in ('submitted', 'complete'):
+        # When score changes (for any reason), or state changes (e.g. assigned→submitted
+        # or submitted→assigned), check if a parent submission needs updating.
+        if 'score' in vals or 'state' in vals:
             self._check_and_update_parent_score()
 
             # Update progress submissions derived from Progress-Quiz tasks

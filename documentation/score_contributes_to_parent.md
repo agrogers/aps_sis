@@ -62,7 +62,7 @@ if not contributing_children:
     continue
 ```
 
-The guard also requires that **every contributing child** has at least one `submitted` or `complete` submission before the parent score is updated — preventing partial/premature totals.
+The denominator (`out_of_marks`) only accumulates marks from children that are in `submitted` or `complete` state, so the parent shows a live running total as questions are submitted rather than waiting for all children to be complete.
 
 ---
 
@@ -112,11 +112,37 @@ Tests at `tests/test_aps_resource_submission.py` (line ~299) verify:
 
 ## What it does
 
-When `auto_score = True` on a parent submission, the submission's `score` and `answer` fields are automatically calculated by summing the scores of its children's submissions. The result is written back to the parent submission along with an HTML summary in the `answer` field.
+When `auto_score = True` on a parent submission, the submission's `score`, `out_of_marks`, and `answer` fields are automatically calculated by summing the scores of its children's submissions. The result is written back to the parent submission along with an HTML summary in the `answer` field.
+
+`out_of_marks` on the parent reflects only children that are in `submitted` or `complete` state, giving a **live running denominator** — e.g. `7/10` while 1 of 2 children is still pending, updating to `15/20` once both are submitted.
 
 ## Where to set it
 
 Submission form view → *(details tab)* → **Other Details** group → **Auto Score** toggle (`boolean_toggle` widget).
+
+---
+
+# Auto State Transition: `assigned` → `submitted` on Score Entry
+
+**File:** `models/submissions/overrides.py`
+
+## Behaviour
+
+When a non-zero `score` is written to a submission whose current `state` is `'assigned'`, the `write()` override automatically transitions that submission to `'submitted'`. This means faculty can enter a score directly without needing to manually change the state.
+
+## Conditions
+
+- `score` is present in the `vals` being written.
+- The new score value is truthy (non-zero).
+- `state` is **not** already being set in the same `write()` call (no override if state is explicit).
+- The submission's current state is `'assigned'`.
+
+```python
+if 'score' in vals and vals.get('score') and 'state' not in vals:
+    records_to_auto_submit = self.filtered(lambda r: r.state == 'assigned')
+```
+
+After `super().write()` completes, a follow-up `write({'state': 'submitted'})` is called on those records, which flows through all existing state-change logic: sets `date_submitted`, fires notifications, updates the linked task state, and triggers parent score recalculation.
 
 ## How it is triggered
 

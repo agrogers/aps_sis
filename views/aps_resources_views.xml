@@ -256,7 +256,7 @@
                                     <field name="display_name" optional="hide"/>
                                     <field name="type_id" optional="show"/>
                                     <field name="category" optional="hide"/>
-                                    <field name="marks" optional="hide"/>
+                                    <field name="marks" optional="hide" sum="total"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                                     <field name="description" optional="show"/>
                                     <field name="has_question" optional="hide"/>
@@ -358,7 +358,7 @@
                                 </group>
                                 <group>
                                     <field name="ai_model_id" options="{'no_create': True, 'no_open': True}"/>
-                                    <field name="ai_prompt_ids" domain="[('placeholder', '=', False)]" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False}"/>
+                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False}"/>
                                     <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False}"/>
                                 </group>
                             </group>

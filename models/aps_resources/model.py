@@ -321,22 +321,17 @@ class APSResource(models.Model):
         'ai_prompt_ids.always_include',
         'ai_prompt_ids.applies_to_ai_models',
         'ai_prompt_ids.applies_to_db_models',
-        'ai_prompt_ids.placeholder',
         'ai_prompt_ids.prompt_name',
+        'ai_prompt_ids.tag_ids',
         'ai_model_id',
         'ai_model_id.enabled',
         'ai_model_id.provider_id.enabled',
         'ai_action',
-        'ai_instructions',
         'ai_use_model_answer',
         'ai_use_question',
         'ai_use_notes',
         'ai_targeted_feedback',
-        'ai_answer',
-        'answer',
-        'marks',
-        'notes',
-        'question',
+        'ai_instructions',
     )
     def _compute_ai_active_prompts(self):
         ai_model_env = self.env['aps.ai.model']
@@ -348,31 +343,27 @@ class APSResource(models.Model):
                 active_model = candidate_models[:1]
                 if active_model:
                     prompts = active_model._collect_applicable_prompts(record.ai_prompt_ids, record._name)
-                    answer_chunk_data = False
-                    if record.ai_targeted_feedback and record.ai_answer:
-                        answer_chunk_data = active_model._build_submission_answer_chunks(record.ai_answer)
-                    dynamic_sections = active_model._build_dynamic_prompt_sections(
-                        instructions=active_model._html_to_text(record.ai_instructions),
-                        out_of_marks=record.marks if record.marks and record.marks > 0 else False,
-                        use_question=record.ai_use_question,
-                        question=active_model._html_to_text(record.question),
-                        use_model_answer=record.ai_use_model_answer or record.ai_action == 'mark_submission_use_answer',
-                        model_answer=active_model._html_to_text(record.answer),
-                        use_note=record.ai_use_notes,
-                        notes=active_model._html_to_text(record.notes),
-                        student_answer=active_model._html_to_text(record.ai_answer),
-                        student_answer_chunks=answer_chunk_data['chunks'] if answer_chunk_data else None,
-                        targeted_feedback=bool(record.ai_targeted_feedback),
-                    )
-                    active_dynamic_keys = {
-                        active_model._normalize_prompt_name(name)
-                        for name, content in dynamic_sections
-                        if content
+                    instructions_text = active_model._html_to_text(record.ai_instructions or '').strip()
+                    ctx_flags = {
+                        'ai_targeted_feedback': bool(record.ai_targeted_feedback),
+                        'use_question': bool(record.ai_use_question),
+                        'use_model_answer': bool(record.ai_use_model_answer or record.ai_action == 'mark_submission_use_answer'),
+                        'use_note': bool(record.ai_use_notes),
+                        'instructions': instructions_text,
                     }
-                    prompts = prompts.filtered(
-                        lambda prompt: not prompt.placeholder
-                        or active_model._normalize_prompt_name(prompt.prompt_name) in active_dynamic_keys
-                    )
+                    extra = active_model._resolve_ctx_tagged_prompts(ctx_flags, record.ai_prompt_ids)
+                    if extra:
+                        prompts = (prompts | extra).sorted(
+                            key=lambda r: ((r.sequence or 0), r.id)
+                        )
+                    # Suppress "Specific Instructions" tagged prompts when there are no instructions
+                    if not instructions_text and instructions_text != '':
+                        prompts = prompts.filtered(
+                            lambda p: not any(
+                                t.name.strip().casefold() == 'specific instructions'
+                                for t in p.tag_ids
+                            )
+                        )
             except Exception:
                 prompts = empty_prompts
             record.ai_active_prompts = prompts
@@ -381,16 +372,11 @@ class APSResource(models.Model):
         'ai_prompt_ids',
         'ai_model_id',
         'ai_action',
-        'ai_instructions',
         'ai_use_model_answer',
         'ai_use_question',
         'ai_use_notes',
         'ai_targeted_feedback',
-        'ai_answer',
-        'answer',
-        'marks',
-        'notes',
-        'question',
+        'ai_instructions',
     )
     def _onchange_ai_prompt_preview_fields(self):
         self._compute_ai_additional_prompt_ids()

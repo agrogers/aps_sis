@@ -3,7 +3,7 @@ import re
 
 from odoo import fields
 from odoo.tests.common import TransactionCase
-from odoo.addons.aps_sis.models.aps_resource_submission import sentinel_zero
+from odoo.addons.aps_sis.models.submissions.model import sentinel_zero
 
 
 class TestAPSResourceSubmissionAutoScore(TransactionCase):
