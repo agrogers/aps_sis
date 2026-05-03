@@ -1,5 +1,37 @@
 from odoo import models, fields, api
 
+
+class APSAssignStudentsWizardStudentLine(models.TransientModel):
+    _name = 'aps.assign.students.wizard.student.line'
+    _description = 'APEX Assign Students Wizard Student Line'
+    _order = 'student_name'
+
+    wizard_id = fields.Many2one('aps.assign.students.wizard', required=True, ondelete='cascade')
+    student_id = fields.Many2one('res.partner', string='Student', domain=[('is_student', '=', True)], required=True)
+    student_name = fields.Char(related='student_id.name', store=True, string='Name')
+    weighted_result = fields.Float(string='Weighted %', digits=(5, 1), readonly=True)
+    last_result = fields.Float(string='Last %', digits=(5, 1), readonly=True)
+
+    @api.onchange('student_id')
+    def _onchange_student_id(self):
+        """Auto-fill task stats when a student is picked manually in the list."""
+        if not self.student_id:
+            self.weighted_result = 0.0
+            self.last_result = 0.0
+            return
+        resource_id = self.wizard_id.resource_id.id if self.wizard_id and self.wizard_id.resource_id else False
+        if resource_id:
+            task = self.env['aps.resource.task'].search([
+                ('resource_id', '=', resource_id),
+                ('student_id', '=', self.student_id.id),
+            ], limit=1)
+            self.weighted_result = task.weighted_result if task else 0.0
+            self.last_result = task.last_result if task else 0.0
+        else:
+            self.weighted_result = 0.0
+            self.last_result = 0.0
+
+
 class APSAssignStudentsWizardLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.line'
     _description = 'APEX Assign Students Wizard Line'
@@ -36,7 +68,8 @@ class APSAssignStudentsWizard(models.TransientModel):
         string='Time Assigned',
         help='The specific time when this submission should become active as a decimal (e.g., 14.5 = 14:30). If not set, the submission becomes active at midnight on the assigned date.')
     date_due = fields.Date(string='Due Date', required=True)
-    student_ids = fields.Many2many('res.partner', string='Students', domain=[('is_student', '=', True)], required=True)
+    student_ids = fields.Many2many('res.partner', string='Students', domain=[('is_student', '=', True)], required=False)
+    student_line_ids = fields.One2many('aps.assign.students.wizard.student.line', 'wizard_id', string='Students')
     assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
     custom_submission_name = fields.Char(string='Submission Name')
     url = fields.Char(string='URL', help='Optional URL override for the main assigned resource.')
@@ -153,10 +186,10 @@ class APSAssignStudentsWizard(models.TransientModel):
         else:
             self.submission_label = base
 
-    @api.depends('student_ids', 'affected_resource_line_ids')
+    @api.depends('student_line_ids', 'affected_resource_line_ids')
     def _compute_can_assign(self):
         for rec in self:
-            has_students = bool(rec.student_ids)
+            has_students = bool(rec.student_line_ids)
             has_selected_resources = any(line.selected for line in rec.affected_resource_line_ids)
             rec.can_assign = has_students and has_selected_resources
 
@@ -168,6 +201,45 @@ class APSAssignStudentsWizard(models.TransientModel):
                 rec.warning_message = f'This applies to all {selected_resources_count} selected resources.'
             else:
                 rec.warning_message = False
+
+    def _build_student_lines(self, partners):
+        """Build student_line_ids command list from a set of res.partner records,
+        looking up weighted_result and last_result from the top-level task."""
+        lines = []
+        resource_id = self.resource_id.id if self.resource_id else False
+        for partner in partners:
+            task = False
+            if resource_id:
+                task = self.env['aps.resource.task'].search([
+                    ('resource_id', '=', resource_id),
+                    ('student_id', '=', partner.id),
+                ], limit=1)
+            lines.append((0, 0, {
+                'student_id': partner.id,
+                'weighted_result': task.weighted_result if task else 0.0,
+                'last_result': task.last_result if task else 0.0,
+            }))
+        return lines
+
+    @api.onchange('student_ids')
+    def _onchange_student_ids_to_lines(self):
+        """Sync student_line_ids whenever student_ids changes.
+        Skips rebuild if lines already match (e.g. built explicitly by _onchange_subjects)."""
+        current_ids = set(self.student_ids.ids)
+        line_ids = set(self.student_line_ids.mapped('student_id').ids)
+        if current_ids and current_ids == line_ids:
+            return
+        self.student_line_ids = [(5, 0, 0)]
+        if self.student_ids:
+            self.student_line_ids = self._build_student_lines(self.student_ids)
+
+    @api.onchange('student_line_ids')
+    def _onchange_student_lines_to_ids(self):
+        """Keep student_ids in sync when lines are added/removed directly in the list."""
+        line_ids = self.student_line_ids.mapped('student_id').ids
+        current_ids = self.student_ids.ids
+        if set(line_ids) != set(current_ids):
+            self.student_ids = line_ids or False
 
     @api.onchange('subjects')
     def _onchange_subjects(self):
@@ -204,10 +276,10 @@ class APSAssignStudentsWizard(models.TransientModel):
                 # 3. Get their partners
                 student_partners = students.mapped('partner_id')
 
+            self.student_ids = student_partners or False
+            self.student_line_ids = [(5, 0, 0)]
             if student_partners:
-                self.student_ids = student_partners
-            else:
-                self.student_ids = False
+                self.student_line_ids = self._build_student_lines(student_partners)
 
     @api.onchange('resource_id')
     def _onchange_resource_id(self):
@@ -230,6 +302,10 @@ class APSAssignStudentsWizard(models.TransientModel):
                 }))
                 sequence += 10
             self.affected_resource_line_ids = lines
+            # Refresh student line stats now that resource_id is known
+            if self.student_ids:
+                self.student_line_ids = [(5, 0, 0)]
+                self.student_line_ids = self._build_student_lines(self.student_ids)
         else:
             self.affected_resource_line_ids = False
 
@@ -289,7 +365,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                 # Copy question from resource if not explicitly provided
                 use_question = parent_question if parent_question else False
                 
-            for student in self.student_ids:
+            for student in self.student_line_ids.mapped('student_id'):
                 
                 if len(self.subjects) < 2:
                     # If there is only one subject attached to the Resource then assume that is what should be assigned to the student regardless of what subjects they are currently taking.
