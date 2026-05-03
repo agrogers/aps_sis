@@ -2,7 +2,7 @@ import json
 import ast
 
 from odoo import models, fields, api, _
-from .model import sentinel_zero
+from .model import sentinel_zero, alpha_to_float
 import logging
 from lxml import etree
 
@@ -16,6 +16,14 @@ class APSResourceSubmissionOverrides(models.Model):
 
     def write(self, vals):
         
+        # Sync alpha fields → numeric fields when only the alpha field is provided
+        # (e.g. when saved programmatically without the onchange firing).
+        # Do this before the auto_score check so that 'score in vals' is correct.
+        if 'score_alpha' in vals and 'score' not in vals:
+            vals['score'] = alpha_to_float(vals['score_alpha'])
+        if 'out_of_marks_alpha' in vals and 'out_of_marks' not in vals:
+            vals['out_of_marks'] = alpha_to_float(vals['out_of_marks_alpha'])
+
         # Mark score and answer as manually set when either is changed without explicitly
         # passing auto_score=True. Our auto-calculation code always passes auto_score=True
         # explicitly, so this only triggers for user-initiated changes.

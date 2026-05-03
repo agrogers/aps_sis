@@ -139,7 +139,9 @@
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="display_name" optional="hide" readonly="1"/>
                 <field name="submission_name" optional="show" readonly="1"/>
-                <field name="score" widget="float_sentinel" optional="show" sum="Total Score"/>
+                <field name="score_alpha" widget="alpha_numeric" optional="show" sum="Total Score" options="{'allowed_codes': ['-','A','C'], 'decimal_places': 2}"/>
+                <field name="score" widget="float_sentinel" optional="hide" sum="Total Score (numeric)"/>
+                <field name="out_of_marks_alpha" widget="alpha_numeric" optional="show" options="{'allowed_codes': ['-','A','C'], 'decimal_places': 1}"/>
                 <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show" readonly="1" avg="Average %"/>
                 <field name="points" optional="hide"/>
@@ -301,12 +303,15 @@
                                 </group>
                                 <group string="Results">
                                     <field name="state" readonly="not is_current_user_faculty"/>
-                                    <label for="score" string="Score"/>
+                                    <label for="score_alpha" string="Score"/>
                                     <div class="o_row">
-                                        <field name="score" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1"/>
+                                        <field name="score_alpha" widget="alpha_numeric" options="{'allowed_codes': ['-','A','C'], 'decimal_places': 2}" class="oe_inline" nolabel="1"/>
                                         <span class="oe_inline"> / </span>
-                                        <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline" nolabel="1"/>
+                                        <field name="out_of_marks_alpha" widget="alpha_numeric" options="{'allowed_codes': ['-','A','C'], 'decimal_places': 1}" class="oe_inline" nolabel="1"/>
                                     </div>
+                                    <!-- Hidden numeric fields keep existing server logic working -->
+                                    <field name="score" invisible="1"/>
+                                    <field name="out_of_marks" invisible="1"/>
                                     <field name="result_percent" widget="percentpie_ranged" />
                                     
                                     <field class="col" name="points"/>

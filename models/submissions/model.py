@@ -9,6 +9,21 @@ import logging
 _logger = logging.getLogger(__name__)
 sentinel_zero = -0.01
 
+
+def alpha_to_float(alpha_val, sentinel=sentinel_zero):
+    """Parse an alpha score string to its numeric equivalent.
+
+    Returns the parsed float when *alpha_val* is a valid number, or *sentinel*
+    when it is empty, ``False``, or a non-numeric special code (e.g. "A", "-").
+    """
+    if not alpha_val or not str(alpha_val).strip():
+        return sentinel
+    cleaned = str(alpha_val).replace(',', '').strip()
+    try:
+        return float(cleaned)
+    except ValueError:
+        return sentinel
+
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
     _description = 'APEX Submission'
@@ -76,7 +91,17 @@ class APSResourceSubmission(models.Model):
         tracking=True)
     date_due = fields.Date(string='Due Date', tracking=True)
     score = fields.Float(string='Score', digits=(16, 2), tracking=True, default=sentinel_zero)
+    score_alpha = fields.Char(
+        string='Score',
+        help='Score as text. Accepts a number or a special code such as A (Absent), C (Cheating), or - (Excluded). '
+             'Changing this field automatically updates the numeric Score field.',
+    )
     out_of_marks = fields.Float(string='Out of Marks', digits=(16, 1), store=True, tracking=True)
+    out_of_marks_alpha = fields.Char(
+        string='Out of Marks',
+        help='Out-of-marks as text. Accepts a number or a special code. '
+             'Changing this field automatically updates the numeric Out of Marks field.',
+    )
     result_percent = fields.Integer(string='Result %', compute='_compute_result_percent', store=True, tracking=True)
     due_status = fields.Selection([
         ('late', 'Late'),
@@ -454,6 +479,20 @@ class APSResourceSubmission(models.Model):
             record.display_name = f"{record.submission_name} ({record.date_assigned})"
 
 # endregion - Computed Fields
+
+# region - Alpha-Numeric Score Helpers
+
+    @api.onchange('score_alpha')
+    def _onchange_score_alpha(self):
+        """Keep the numeric score field in sync with score_alpha."""
+        self.score = alpha_to_float(self.score_alpha)
+
+    @api.onchange('out_of_marks_alpha')
+    def _onchange_out_of_marks_alpha(self):
+        """Keep the numeric out_of_marks field in sync with out_of_marks_alpha."""
+        self.out_of_marks = alpha_to_float(self.out_of_marks_alpha)
+
+# endregion - Alpha-Numeric Score Helpers
 
     def _get_faculty_for_current_user(self):
         """Get the faculty record for the current user"""

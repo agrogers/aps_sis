@@ -1,0 +1,29 @@
+/* Alpha-Numeric Field Widget */
+
+.o_field_alpha_numeric_wrap {
+    display: flex;
+    flex-direction: column;
+}
+
+.o_alpha_numeric_input {
+    text-align: right;
+}
+
+/* Readonly display */
+.o_alpha_numeric_value {
+    display: inline-block;
+}
+
+.o_alpha_numeric_value.o_alpha_number {
+    text-align: right;
+    min-width: 3em;
+}
+
+.o_alpha_numeric_value.o_alpha_code {
+    text-align: center;
+}
+
+/* Validation error message */
+.o_alpha_numeric_error {
+    font-size: 0.75rem;
+}
