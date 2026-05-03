@@ -20,7 +20,7 @@ def migrate(cr, version):
            SET score_alpha = CASE
                    WHEN score IS NULL OR ABS(score - %s) < 0.000001 THEN NULL
                    WHEN score = FLOOR(score) THEN TRIM(TO_CHAR(score, 'FM999999999999990'))
-                   ELSE TRIM(TO_CHAR(score, 'FM999999999999990.099'))
+                   ELSE TRIM(TO_CHAR(score, 'FM999999999999990.099999'))
                END
          WHERE score_alpha IS NULL
         """,
@@ -36,7 +36,7 @@ def migrate(cr, version):
            SET out_of_marks_alpha = CASE
                    WHEN out_of_marks IS NULL OR ABS(out_of_marks - %s) < 0.000001 THEN NULL
                    WHEN out_of_marks = FLOOR(out_of_marks) THEN TRIM(TO_CHAR(out_of_marks, 'FM999999999999990'))
-                   ELSE TRIM(TO_CHAR(out_of_marks, 'FM999999999999990.099'))
+                   ELSE TRIM(TO_CHAR(out_of_marks, 'FM999999999999990.099999'))
                END
          WHERE out_of_marks_alpha IS NULL
         """,

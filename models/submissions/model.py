@@ -93,12 +93,14 @@ class APSResourceSubmission(models.Model):
     score = fields.Float(string='Score', digits=(16, 2), tracking=True, default=sentinel_zero)
     score_alpha = fields.Char(
         string='Score',
+        tracking=True,
         help='Score as text. Accepts a number or a special code such as A (Absent), C (Cheating), or - (Excluded). '
              'Changing this field automatically updates the numeric Score field.',
     )
     out_of_marks = fields.Float(string='Out of Marks', digits=(16, 1), store=True, tracking=True)
     out_of_marks_alpha = fields.Char(
         string='Out of Marks',
+        tracking=True,
         help='Out-of-marks as text. Accepts a number or a special code. '
              'Changing this field automatically updates the numeric Out of Marks field.',
     )

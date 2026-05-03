@@ -37,6 +37,34 @@ import { xml } from "@odoo/owl";
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * AlphaNumericField — OWL field widget for Char fields that behave like numeric
+ * inputs while accepting configurable special codes (e.g. "A" = Absent).
+ *
+ * Architecture:
+ *  - Renders a plain `<input type="text">` in edit mode and a formatted `<span>`
+ *    in readonly mode, matching the look of Odoo's native numeric fields.
+ *  - Validates the raw input on blur/Enter: values must be either a parseable
+ *    number or one of the `allowed_codes` option values.
+ *  - On commit, writes the normalised alpha value to `this.props.name` (the Char
+ *    field) and, when a paired numeric field is available, also writes the
+ *    corresponding float to that field so server-side computed fields (e.g.
+ *    `result_percent`) recompute immediately without requiring a page reload.
+ *  - Falls back to displaying the paired numeric field's value for records that
+ *    pre-date the alpha field (backward compatibility).
+ *
+ * Key methods:
+ *  - `_displayValue(alphaVal, numVal)` — returns the formatted display string.
+ *  - `_validate(raw)`                  — checks input and returns `{ok, error}`.
+ *  - `_commit(rawInput)`               — normalises & persists the value.
+ *
+ * Props (populated by `extractProps`):
+ *  @prop {string[]} allowed_codes   - Codes that bypass numeric validation.
+ *  @prop {number}   decimal_places  - Decimal places for number display.
+ *  @prop {boolean}  use_separator   - Show thousands separator.
+ *  @prop {string}   [numeric_field] - Name of the paired Float/Integer field.
+ *  @prop {number}   sentinel        - Value written to numeric field for empty/code entries.
+ */
 export class AlphaNumericField extends Component {
     static template = xml`
         <t t-if="props.readonly">
