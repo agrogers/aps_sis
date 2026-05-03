@@ -131,17 +131,17 @@
                 <field name="subject_icons" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Subject"/>
                 <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
                 <field name="subjects" widget="many2many_tags" optional="show" readonly="1"/>
-                <field name="display_name" optional="hide" readonly="1"/>
-                <field name="submission_name" optional="show" readonly="1"/>
                 <field name="resource_id" optional="hide"/>
                 <field name="student_id" optional="show" readonly="1"/>
                 <field name="assigned_by" readonly="1" optional="hide"/>
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide" readonly="1"/>
                 <field name="time_assigned" widget="float_time" nolabel="1" optional="hide" />
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
-                <field name="score" widget="float_sentinel" optional="hide"/>
+                <field name="display_name" optional="hide" readonly="1"/>
+                <field name="submission_name" optional="show" readonly="1"/>
+                <field name="score" widget="float_sentinel" optional="show" sum="Total Score"/>
                 <field name="out_of_marks" widget="float_sentinel" optional="hide"/>
-                <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide" readonly="1"/>
+                <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show" readonly="1" avg="Average %"/>
                 <field name="points" optional="hide"/>
                 <field name="state" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="hide" />
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide" readonly="1" />
