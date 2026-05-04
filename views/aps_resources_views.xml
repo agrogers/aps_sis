@@ -247,7 +247,6 @@
                             <group>
                                 <div><i>Linked resources contribute to the parent total marks. To add resources such as videos or related quizzes that do not contribute to the total marks, use the 'Supporting Resources' tab.</i></div>
                             </group>
-                            <button name="action_open_child_resources_list" type="object" string="Open in List View" class="btn-link mb-2" icon="fa-external-link" invisible="not child_ids"/>
                             <field name="child_ids" widget="many2many" context="{'default_parent_ids': [(6, 0, [id])], 'default_primary_parent_id': id, 'default_subjects': subjects, 'current_parent_id': id}">
                                 <list default_order="sequence,name" >
                                     <field name="sequence" widget="handle"/>
@@ -269,8 +268,8 @@
                                     <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                                     <!-- Parent-child custom name pill: shows custom name or Create... -->
                                     <field name="parent_custom_name_data" string="Custom Name" widget="parent_child_name_pill" context="{'current_parent_id': parent.id}"/>
-                                    <!-- Quick access to full custom name list -->
-                                    <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
+                                    <!-- Opens this resource directly in form view with pager navigation across all siblings -->
+                                    <button name="action_open_linked_resource" type="object" string="Open..." title="Open Resource" class="btn-secondary btn-sm"/>
                                 </list>
                             </field>
                         </page>
