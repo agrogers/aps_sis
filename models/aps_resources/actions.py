@@ -193,6 +193,74 @@ class APSResource(models.Model):
         return {'type': 'ir.actions.act_window_close'}
 
     # ------------------------------------------------------------------
+    # Open parent/grandparent source record in a popup dialog
+    # ------------------------------------------------------------------
+
+    def _get_field_source_record(self, field_name):
+        """Walk up the primary_parent_id chain to find the record that actually
+        owns the given field's content (i.e. has something other than
+        'use_parent' for the corresponding has_* selection).
+
+        Returns the source record, or False if none can be resolved.
+        """
+        self.ensure_one()
+        has_field_map = {
+            'question': 'has_question',
+            'answer': 'has_answer',
+            'notes': 'has_notes',
+        }
+        has_field = has_field_map.get(field_name)
+        if not has_field:
+            return self.primary_parent_id or False
+
+        current = self.primary_parent_id
+        visited = {self.id}
+        while current:
+            if current.id in visited:
+                # Cycle detected – stop traversal
+                break
+            visited.add(current.id)
+            if getattr(current, has_field, None) != 'use_parent':
+                return current
+            current = current.primary_parent_id
+        return False
+
+    def _action_open_field_source_popup(self, field_name, label):
+        """Build and return a dialog action for editing the source record of
+        the given inherited field.
+        """
+        self.ensure_one()
+        source = self._get_field_source_record(field_name)
+        if not source:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Parent Found',
+                    'message': f'Could not locate the parent record that provides the {label}.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Edit Parent: {source.display_name}',
+            'res_model': 'aps.resources',
+            'res_id': source.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_open_parent_notes_popup(self):
+        return self._action_open_field_source_popup('notes', 'Notes')
+
+    def action_open_parent_question_popup(self):
+        return self._action_open_field_source_popup('question', 'Question')
+
+    def action_open_parent_answer_popup(self):
+        return self._action_open_field_source_popup('answer', 'Answer')
+
+    # ------------------------------------------------------------------
     # Create linked resources from Question headings
     # ------------------------------------------------------------------
 
