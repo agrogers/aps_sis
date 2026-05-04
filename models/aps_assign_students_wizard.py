@@ -240,6 +240,24 @@ class APSAssignStudentsWizard(models.TransientModel):
             faculty = self.env['op.faculty'].search([('emp_id', '=', employee.id)], limit=1)
             return faculty.id if faculty else False
 
+    def _get_initial_state_from_tags(self, resource):
+        """Return the initial submission state based on special tags on the resource.
+
+        Tag              → state value
+        State:Finalised  → 'complete'
+        State:Submitted  → 'submitted'
+        (none)           → 'assigned'  (default)
+
+        If both 'State:Finalised' and 'State:Submitted' are present,
+        'State:Finalised' takes precedence.
+        """
+        tags = resource.tag_ids
+        if tags.filtered(lambda t: t.name == 'State:Finalised'):
+            return 'complete'
+        if tags.filtered(lambda t: t.name == 'State:Submitted'):
+            return 'submitted'
+        return 'assigned'
+
     def action_assign_students(self):
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
@@ -288,7 +306,10 @@ class APSAssignStudentsWizard(models.TransientModel):
             elif has_question == 'use_parent':
                 # Copy question from resource if not explicitly provided
                 use_question = parent_question if parent_question else False
-                
+
+            # Determine initial submission state from resource tags
+            initial_state = self._get_initial_state_from_tags(resource)
+
             for student in self.student_ids:
                 
                 if len(self.subjects) < 2:
@@ -334,7 +355,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'time_assigned': self.time_assigned,
                     'date_due': self.date_due,
                     'allow_subject_editing': self.allow_subject_editing,
-                    'state': 'assigned',
+                    'state': initial_state,
                     'question': use_question,
                     'has_question': has_question,
                     'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
