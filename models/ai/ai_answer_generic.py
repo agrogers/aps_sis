@@ -12,6 +12,7 @@ _logger = logging.getLogger(__name__)
 # Prompt templates and system prompts used by the generic (non-targeted) path
 # ---------------------------------------------------------------------------
 _PROMPT_RESPONSE_FORMAT = (
+    '# Response Format:\n'
     'Return ONLY valid JSON with these keys:\n'
     '{"feedback_html": string, "score": number|null, "score_comment": string|null}.\n'
     'feedback_html must be an HTML fragment using tags such as <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, and <br>.\n'
@@ -28,6 +29,17 @@ _SYSTEM_PROMPT_FEEDBACK_NO_REASONING = (
 
 class APSAIModelAnswerProcessing(models.Model):
     _inherit = 'aps.ai.model'
+
+    _GENERIC_PROMPT_SECTION_ORDER = [
+        'ai_instructions',
+        'maximum_mark',
+        'question',
+        'model_answer',
+        'notes',
+        'additional_context',
+        'student_answer',
+        'response_format',
+    ]
 
     def _parse_structured_response(self, raw_content):
         text = (raw_content or '').strip()
@@ -89,58 +101,93 @@ class APSAIModelAnswerProcessing(models.Model):
         Student Answer and the JSON Response Format are always included last.
         """
         sections = []
+        prompts_by_section = {key: [] for key in self._GENERIC_PROMPT_SECTION_ORDER}
         names = []
 
-        instructions = self._html_to_text(ctx.get('instructions', ''))
-        if instructions.strip():
-            sections.append('## AI Instructions:\n%s' % instructions.strip())
-            names.append('Specific Instructions')
-
-        out_of_marks = ctx.get('out_of_marks')
-        if out_of_marks:
-            sections.append('## Maximum Mark:\n%s' % out_of_marks)
-            names.append('Maximum Mark')
-
-        if ctx.get('use_question'):
-            question = self._html_to_text(ctx.get('question', ''))
-            if question.strip():
-                sections.append('## Question:\n%s' % question.strip())
-                names.append('Question')
-
-        if ctx.get('use_model_answer'):
-            model_answer = self._html_to_text(ctx.get('model_answer', ''))
-            sections.append('## Model Answer:\n%s' % (model_answer.strip() or 'No model answer provided.'))
-            names.append('Model Answer')
-
-        if ctx.get('use_note'):
-            notes = self._html_to_text(ctx.get('notes', ''))
-            if notes.strip():
-                sections.append('## Notes:\n%s' % notes.strip())
-                names.append('Notes')
-
-        # Append prompt records verbatim
+        # Keep prompt ordering stable by iterating in record order.
         for prompt in prompts or self.env['ai_prompts']:
             prompt_text = (prompt.prompt or '').strip()
             if prompt_text:
-                sections.append(prompt_text)
+                target_section = (getattr(prompt, 'message_section', '') or 'additional_context').strip()
+                if target_section not in prompts_by_section:
+                    target_section = 'additional_context'
+                prompts_by_section[target_section].append(prompt_text)
                 names.append((prompt.prompt_name or '').strip() or 'Prompt Template')
 
-        sections.append('Student Answer:\n%s' % student_answer.strip())
+        instructions = self._html_to_text(ctx.get('instructions', ''))
+        instructions_text = instructions.strip()
+        if instructions_text or prompts_by_section['ai_instructions']:
+            lines = []
+            if instructions_text:
+                lines.append(instructions_text)
+                names.append('Specific Instructions')
+            lines.extend(prompts_by_section['ai_instructions'])
+            sections.append('# AI Instructions:\n%s' % '\n\n'.join(lines))
+
+        out_of_marks = str(ctx.get('out_of_marks') or '').strip()
+        if out_of_marks or prompts_by_section['maximum_mark']:
+            lines = []
+            if out_of_marks:
+                lines.append(out_of_marks)
+                names.append('Maximum Mark')
+            lines.extend(prompts_by_section['maximum_mark'])
+            sections.append('# Maximum Mark:\n%s' % '\n\n'.join(lines))
+
+        question_text = ''
+        if ctx.get('use_question'):
+            question_text = self._html_to_text(ctx.get('question', '')).strip()
+        if question_text or prompts_by_section['question']:
+            lines = []
+            if question_text:
+                lines.append(question_text)
+                names.append('Question')
+            lines.extend(prompts_by_section['question'])
+            sections.append('# Question:\n%s' % '\n\n'.join(lines))
+
+        model_answer_text = ''
+        if ctx.get('use_model_answer'):
+            model_answer_text = self._html_to_text(ctx.get('model_answer', '')).strip() or 'No model answer provided.'
+        if model_answer_text or prompts_by_section['model_answer']:
+            lines = []
+            if model_answer_text:
+                lines.append(model_answer_text)
+                names.append('Model Answer')
+            lines.extend(prompts_by_section['model_answer'])
+            sections.append('# Model Answer:\n%s' % '\n\n'.join(lines))
+
+        notes_text = ''
+        if ctx.get('use_note'):
+            notes_text = self._html_to_text(ctx.get('notes', '')).strip()
+        if notes_text or prompts_by_section['notes']:
+            lines = []
+            if notes_text:
+                lines.append(notes_text)
+                names.append('Notes')
+            lines.extend(prompts_by_section['notes'])
+            sections.append('# Notes:\n%s' % '\n\n'.join(lines))
+
+        sections.extend(prompts_by_section['additional_context'])
+
+        student_answer_lines = [student_answer.strip()]
+        student_answer_lines.extend(prompts_by_section['student_answer'])
+        sections.append('# Student Answer:\n%s' % '\n\n'.join(student_answer_lines))
         names.append('Student Answer')
 
-        sections.append(_PROMPT_RESPONSE_FORMAT)
+        response_format_lines = [_PROMPT_RESPONSE_FORMAT] + prompts_by_section['response_format']
+        sections.append('\n\n'.join(response_format_lines))
         names.append('Response Format')
 
         system_content = _SYSTEM_PROMPT_FEEDBACK
         if self.disable_reasoning:
             system_content += _SYSTEM_PROMPT_FEEDBACK_NO_REASONING
 
+        user_messages = [
+            {'role': 'user', 'content': s}
+            for s in sections if s
+        ]
         payload = {
             'model': self.model_key,
-            'messages': [
-                {'role': 'system', 'content': system_content},
-                {'role': 'user', 'content': '\n\n'.join(s for s in sections if s)},
-            ],
+            'messages': [{'role': 'system', 'content': system_content}] + user_messages,
             'temperature': self.temperature,
             'max_completion_tokens': self.max_completion_tokens,
         }

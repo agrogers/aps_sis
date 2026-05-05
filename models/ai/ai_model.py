@@ -647,7 +647,7 @@ class APSAIModel(models.Model):
                 )
             return self._run_feedback_targeted(ctx, applicable_prompts, record, progress_callback)
         else:
-            prompts = ctx['prompt_ids']
+            prompts = self._collect_applicable_prompts(ctx['prompt_ids'], record._name)
             extra = self._resolve_ctx_tagged_prompts(ctx, prompts)
             if extra:
                 prompts = (prompts | extra).sorted(
