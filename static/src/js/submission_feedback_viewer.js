@@ -56,22 +56,43 @@ export class SubmissionFeedbackViewer extends Component {
         return map;
     }
 
+    get consolidatedFeedbackItems() {
+        const seen = new Map();
+        for (const item of this.orderedFeedbackItems) {
+            const key = `${String(item.text || "").trim()}\0${String(item.justification || "").trim()}`;
+            const chunkIds = this.feedbackLinksById[item.id] || [];
+            if (seen.has(key)) {
+                const existing = seen.get(key);
+                for (const cid of chunkIds) {
+                    if (!existing.chunkIds.includes(cid)) {
+                        existing.chunkIds.push(cid);
+                    }
+                }
+            } else {
+                seen.set(key, { ...item, chunkIds: [...chunkIds] });
+            }
+        }
+        return [...seen.values()];
+    }
+
     get currentFeedbackId() {
         if (this.state.activeFeedbackId !== undefined) {
             return this.state.activeFeedbackId;
         }
-        const firstLinked = this.orderedFeedbackItems.find((item) => (this.feedbackLinksById[item.id] || []).length);
-        return firstLinked?.id || this.orderedFeedbackItems[0]?.id || null;
+        const firstLinked = this.consolidatedFeedbackItems.find((item) => item.chunkIds.length > 0);
+        return firstLinked?.id || this.consolidatedFeedbackItems[0]?.id || null;
     }
 
     get activeChunkIds() {
         const feedbackId = this.currentFeedbackId;
-        return feedbackId ? (this.feedbackLinksById[feedbackId] || []) : [];
+        if (!feedbackId) return [];
+        const item = this.consolidatedFeedbackItems.find((i) => i.id === feedbackId);
+        return item?.chunkIds || [];
     }
 
     get activeFeedbackItem() {
         const feedbackId = this.currentFeedbackId;
-        return this.linkedFeedbackItems.find((item) => item.id === feedbackId) || null;
+        return this.consolidatedFeedbackItems.find((item) => item.id === feedbackId) || null;
     }
 
     get orderedFeedbackItems() {
@@ -93,7 +114,7 @@ export class SubmissionFeedbackViewer extends Component {
     }
 
     get renderedFeedbackItems() {
-        return this.linkedFeedbackItems.map((item) => ({
+        return this.consolidatedFeedbackItems.map((item) => ({
             ...item,
             chunkIds: this.feedbackLinksById[item.id] || [],
             isActive: this.currentFeedbackId === item.id,
@@ -149,7 +170,7 @@ export class SubmissionFeedbackViewer extends Component {
     }
 
     get hasStructuredItems() {
-        return this.isTargeted && this.linkedFeedbackItems.length > 0;
+        return this.isTargeted && this.consolidatedFeedbackItems.length > 0;
     }
 
     get answerMarkup() {
