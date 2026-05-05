@@ -10,53 +10,9 @@ import logging
 from odoo import _, api, models
 from odoo.exceptions import UserError
 
+from .ai_answer_base import PROMPT_MODEL_ANSWER_FALLBACK
+
 _logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Prompt section labels (matched against prompt record names)
-# ---------------------------------------------------------------------------
-_SECTION_SPECIFIC_INSTRUCTIONS = 'Specific Instructions'
-_SECTION_MAXIMUM_MARK = 'Maximum Mark'
-_SECTION_QUESTION = 'Question'
-_SECTION_MODEL_ANSWER = 'Model Answer'
-_SECTION_NOTES = 'Notes'
-_SECTION_DETAILED_FEEDBACK = 'Detailed Feedback'
-_SECTION_STUDENT_ANSWER = 'Student Answer'
-_SECTION_TARGETED_FEEDBACK = 'Targeted Feedback'
-_SECTION_RESPONSE_FORMAT = 'Response Format'
-_SECTION_PROMPT_TEMPLATE = 'Prompt Template'
-
-# ---------------------------------------------------------------------------
-# Prompt section body templates
-# ---------------------------------------------------------------------------
-_PROMPT_AI_INSTRUCTIONS = '## AI Instructions:\n%s'
-_PROMPT_MAXIMUM_MARK = '## Maximum Mark:\n%s'
-_PROMPT_QUESTION = '## Question:\n%s'
-_PROMPT_MODEL_ANSWER = '## Model Answer:\n%s'
-_PROMPT_MODEL_ANSWER_FALLBACK = 'No model answer provided.'
-_PROMPT_NOTES = '## Notes:\n%s'
-_PROMPT_DETAILED_FEEDBACK = '## DETAILED FEEDBACK:\n%s'
-_PROMPT_STUDENT_ANSWER = 'Student Answer:\n%s'
-_PROMPT_STUDENT_ANSWER_CHUNKS = 'Student Answer Chunks:\n%s'
-_PROMPT_EXTERNAL_TEMPLATE = '## Prompt Template:\n%s'
-
-_PROMPT_RESPONSE_FORMAT = (
-    'Return ONLY valid JSON with these keys:\n'
-    '{"feedback_html": string, "score": number|null, "score_comment": string|null}.\n'
-    'feedback_html must be an HTML fragment using tags such as <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, and <br>.\n'
-    'If you cannot determine a mark, set score to null and explain why in score_comment.'
-)
-
-# ---------------------------------------------------------------------------
-# System prompt for answer-grading calls
-# ---------------------------------------------------------------------------
-_SYSTEM_PROMPT_FEEDBACK = (
-    'You are an expert teacher assistant. Follow the supplied instructions exactly, '
-    'produce constructive teacher feedback for students, and when possible determine a mark.'
-)
-_SYSTEM_PROMPT_FEEDBACK_NO_REASONING = (
-    ' Do not return reasoning, chain-of-thought, or thinking text. Return only the final answer.'
-)
 
 
 class APSAIModelAnswerChunking(models.Model):
@@ -377,36 +333,30 @@ class APSAIModelAnswerChunking(models.Model):
         targeted_feedback=False,
         prior_phase_context='',
     ):
-        dynamic_sections = []
-
-        if instructions and instructions.strip():
-            dynamic_sections.append((_SECTION_SPECIFIC_INSTRUCTIONS, _PROMPT_AI_INSTRUCTIONS % instructions.strip()))
-        if out_of_marks:
-            dynamic_sections.append((_SECTION_MAXIMUM_MARK, _PROMPT_MAXIMUM_MARK % out_of_marks))
-        if use_question and question.strip():
-            dynamic_sections.append((_SECTION_QUESTION, _PROMPT_QUESTION % question.strip()))
-        if use_model_answer:
-            dynamic_sections.append((_SECTION_MODEL_ANSWER, _PROMPT_MODEL_ANSWER % (model_answer.strip() or _PROMPT_MODEL_ANSWER_FALLBACK)))
-        if use_note and notes.strip():
-            dynamic_sections.append((_SECTION_NOTES, _PROMPT_NOTES % notes.strip()))
-        if prior_phase_context and prior_phase_context.strip():
-            dynamic_sections.append((_SECTION_DETAILED_FEEDBACK, _PROMPT_DETAILED_FEEDBACK % prior_phase_context.strip()))
+        # Retained for external callers; internally _assemble_chat_payload now
+        # delegates to _build_dynamic_section_data + _build_payload.
+        ctx = {
+            'instructions': instructions,
+            'out_of_marks': out_of_marks,
+            'use_question': use_question,
+            'question': question,
+            'use_model_answer': use_model_answer,
+            'model_answer': model_answer,
+            'use_note': use_note,
+            'notes': notes,
+        }
         if targeted_feedback and student_answer_chunks:
-            dynamic_sections.append((
-                _SECTION_STUDENT_ANSWER,
-                _PROMPT_STUDENT_ANSWER_CHUNKS % json.dumps(student_answer_chunks, indent=2, ensure_ascii=False),
-            ))
-            dynamic_sections.append((_SECTION_TARGETED_FEEDBACK, self._PROMPT_TEMPLATE_SECTION_SENTINEL))
+            student_text = json.dumps(student_answer_chunks, indent=2, ensure_ascii=False)
         else:
-            dynamic_sections.append((_SECTION_STUDENT_ANSWER, _PROMPT_STUDENT_ANSWER % student_answer.strip()))
-            dynamic_sections.append((_SECTION_RESPONSE_FORMAT, _PROMPT_RESPONSE_FORMAT))
-
-        return dynamic_sections
+            student_text = student_answer.strip()
+        data = self._build_dynamic_section_data(ctx, student_answer_text=student_text)
+        if prior_phase_context and prior_phase_context.strip():
+            data['detailed_feedback'] = prior_phase_context.strip()
+        return list(data.items())
 
     def _assemble_chat_payload(
         self,
         instructions='',
-        external_prompt='',
         prompt_records=None,
         out_of_marks=False,
         use_question=False,
@@ -420,182 +370,36 @@ class APSAIModelAnswerChunking(models.Model):
         targeted_feedback=False,
         include_reasoning=False,
         prior_phase_context='',
+        # legacy parameter — unused
+        external_prompt='',
     ):
-        """Build an OpenAI-compatible chat payload from resolved prompt components."""
-        prompt_sections = []
-        prompt_names_used = []
-        dynamic_sections = self._build_dynamic_prompt_sections(
-            instructions=instructions,
-            out_of_marks=out_of_marks,
-            use_question=use_question,
-            question=question,
-            use_model_answer=use_model_answer,
-            model_answer=model_answer,
-            use_note=use_note,
-            notes=notes,
-            student_answer=student_answer,
-            student_answer_chunks=student_answer_chunks,
-            targeted_feedback=targeted_feedback,
-            prior_phase_context=prior_phase_context,
-        )
-
-        dynamic_section_map = {
-            self._normalize_prompt_name(name): (name, content)
-            for name, content in dynamic_sections
-            if content
+        """Build an OpenAI-compatible chat payload via the unified base builder."""
+        ctx = {
+            'instructions': instructions,
+            'out_of_marks': out_of_marks,
+            'use_question': use_question,
+            'question': question,
+            'use_model_answer': use_model_answer,
+            'model_answer': model_answer,
+            'use_note': use_note,
+            'notes': notes,
         }
-        used_dynamic_keys = set()
 
-        # Build a reverse map: normalised tag name → prompt record (first match wins per tag).
-        # This lets us look up a prompt by its section tag in O(1) inside the loop.
-        tag_to_prompt = {}
-        for prompt in prompt_records or self.env['ai_prompts']:
-            for tag in prompt.tag_ids:
-                tag_key = self._normalize_prompt_name(tag.name)
-                if tag_key not in tag_to_prompt:
-                    tag_to_prompt[tag_key] = prompt
+        if targeted_feedback and student_answer_chunks:
+            student_text = json.dumps(student_answer_chunks, indent=2, ensure_ascii=False)
+        else:
+            student_text = student_answer.strip()
 
-        for prompt in prompt_records or self.env['ai_prompts']:
-            # Check whether any tag on this prompt matches a dynamic section.
-            matched_key = None
-            for tag in prompt.tag_ids:
-                tag_key = self._normalize_prompt_name(tag.name)
-                if tag_key in dynamic_section_map and tag_key not in used_dynamic_keys:
-                    matched_key = tag_key
-                    break
+        dynamic_data = self._build_dynamic_section_data(ctx, student_answer_text=student_text)
 
-            if matched_key is not None:
-                section_name, section_content = dynamic_section_map[matched_key]
-                if section_content == self._PROMPT_TEMPLATE_SECTION_SENTINEL:
-                    # Targeted Feedback: the prompt's own text IS the section content.
-                    section_content = (prompt.prompt or '').strip()
-                else:
-                    # Question / Model Answer / Notes / etc.: prepend the prompt's
-                    # custom text above the dynamic field content when both exist.
-                    prefix = (prompt.prompt or '').strip()
-                    if prefix:
-                        section_content = prefix + '\n\n' + section_content
-                if not section_content:
-                    used_dynamic_keys.add(matched_key)
-                    continue
-                prompt_sections.append(section_content)
-                prompt_names_used.append(section_name)
-                used_dynamic_keys.add(matched_key)
-                continue
+        if prior_phase_context and prior_phase_context.strip():
+            dynamic_data['detailed_feedback'] = prior_phase_context.strip()
 
-            # No tag matched a dynamic section — emit the prompt text directly.
-            prompt_text = (prompt.prompt or '').strip()
-            if prompt_text:
-                prompt_sections.append(prompt_text)
-                prompt_names_used.append((prompt.prompt_name or '').strip() or _SECTION_PROMPT_TEMPLATE)
-
-        # Always include any dynamic sections not consumed by a prompt record.
-        # This ensures Student Answer and Response Format are never silently
-        # dropped when no placeholder prompt record with those names exists.
-        for _dyn_name, _dyn_content in dynamic_sections:
-            _dyn_key = self._normalize_prompt_name(_dyn_name)
-            if _dyn_key not in used_dynamic_keys and _dyn_content and _dyn_content != self._PROMPT_TEMPLATE_SECTION_SENTINEL:
-                prompt_sections.append(_dyn_content)
-                prompt_names_used.append(_dyn_name)
-
-        if external_prompt and prompt_records:
-            prompt_sections.append(_PROMPT_EXTERNAL_TEMPLATE % external_prompt.strip())
-            prompt_names_used.append(_SECTION_PROMPT_TEMPLATE)
-
-        system_content = _SYSTEM_PROMPT_FEEDBACK
-        if self.disable_reasoning:
-            system_content += _SYSTEM_PROMPT_FEEDBACK_NO_REASONING
-        payload = {
-            'model': self.model_key,
-            'messages': [
-                {
-                    'role': 'system',
-                    'content': system_content,
-                },
-                {
-                    'role': 'user',
-                    'content': '\n\n'.join(section for section in prompt_sections if section),
-                },
-            ],
-            'temperature': self.temperature,
-            'max_completion_tokens': self.max_completion_tokens,
-        }
-        if self.disable_reasoning:
-            payload['reasoning'] = {
-                'enabled': False,
-                'exclude': True,
-            }
-        elif include_reasoning:
-            payload['reasoning'] = {
-                'enabled': True,
-                'exclude': False,
-                'effort': 'low',
-            }
-        if self.force_json_response:
-            payload['response_format'] = {'type': 'json_object'}
-        return payload, prompt_names_used
-
-    @api.model
-    def _normalize_prompt_name(self, prompt_name):
-        return re.sub(r'\s+', ' ', (prompt_name or '').strip()).casefold()
-
-    def _resolve_tagged_prompts(self, tag_name, candidate_prompts):
-        """Return prompts tagged *tag_name*, preferring records already in *candidate_prompts*.
-
-        Resolution order:
-        1. Any enabled prompt inside *candidate_prompts* that carries the tag.
-        2. If none found there, the first enabled prompt in the global table that
-           carries the tag (ordered by sequence, id).
-
-        Returns an ``ai_prompts`` recordset (possibly empty).
-        """
-        self.ensure_one()
-        tag_key = (tag_name or '').strip().casefold()
-
-        # Step 1: look inside the caller-supplied candidate set (e.g. resource's ai_prompt_ids)
-        if candidate_prompts:
-            local_matches = candidate_prompts.filtered(
-                lambda p: p.enabled and any(
-                    t.name.strip().casefold() == tag_key for t in p.tag_ids
-                )
-            )
-            if local_matches:
-                return local_matches
-
-        # Step 2: global fallback — find the tag record then search for prompts referencing it
-        tag = self.env['ai.prompt.tag'].sudo().search(
-            [('name', '=ilike', tag_name)], limit=1
+        return self._build_payload(
+            prompt_records or self.env['ai_prompts'],
+            dynamic_data,
+            include_reasoning=include_reasoning,
         )
-        if not tag:
-            return self.env['ai_prompts']
-        return self.env['ai_prompts'].sudo().search(
-            [('enabled', '=', True), ('tag_ids', 'in', tag.ids)],
-            order='sequence, id',
-            limit=1,
-        )
-
-    # Map from ctx key → tag name used to auto-resolve supplementary prompts.
-    _CTX_TAG_MAP = {
-        'ai_targeted_feedback': 'Targeted Feedback',
-        'use_question': 'Question',
-        'use_model_answer': 'Model Answer',
-        'use_note': 'Notes',
-        'instructions': 'Specific Instructions',
-    }
-
-    def _resolve_ctx_tagged_prompts(self, ctx, candidate_prompts):
-        """Return a merged recordset of all tag-resolved prompts for the active ctx flags.
-
-        Iterates over ``_CTX_TAG_MAP``: for each key that is truthy in *ctx*,
-        calls ``_resolve_tagged_prompts`` and accumulates the results.
-        The returned set is de-duplicated and sorted by (sequence, id).
-        """
-        self.ensure_one()
-        extra = self.env['ai_prompts']
-        for ctx_key, tag_name in self._CTX_TAG_MAP.items():
-            if ctx.get(ctx_key):
-                extra |= self._resolve_tagged_prompts(tag_name, candidate_prompts)
-        return extra.sorted(key=lambda r: ((r.sequence or 0), r.id))
 
     def _collect_applicable_prompts(self, selected_prompts, db_model_name):
         self.ensure_one()
