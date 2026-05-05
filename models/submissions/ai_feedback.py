@@ -91,7 +91,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'ai_targeted_feedback': bool(self.ai_targeted_feedback),
             'include_reasoning': include_reasoning,
             'empty_answer_error': _('The submission has no student answer to mark.'),
-            'prompt_ids': self.ai_prompt_ids,
+            'prompt_ids': self.resource_id.ai_active_prompts,
         }
 
     def _validate_ai_marking_request(self):

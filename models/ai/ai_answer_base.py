@@ -280,3 +280,46 @@ class APSAIModelAnswerBase(models.Model):
         }
         self._apply_payload_metadata(payload, include_reasoning=include_reasoning)
         return payload, names
+
+    # -------------------------------------------------------------------------
+    # Prompt collection helpers (shared by both pipelines)
+    # -------------------------------------------------------------------------
+
+    def _collect_applicable_prompts(self, selected_prompts, db_model_name):
+        """Return *selected_prompts* sorted by sequence.
+
+        Callers are expected to pass an already-filtered set (e.g.
+        ``resource.ai_active_prompts``).  The ``db_model_name`` parameter is
+        kept for signature compatibility but is no longer used here.
+        """
+        self.ensure_one()
+        return (selected_prompts or self.env['ai_prompts']).sorted(
+            key=lambda rec: ((rec.sequence or 0), rec.id)
+        )
+
+    def _collect_all_applicable_prompts(self, selected_prompts, db_model_name):
+        """Full candidate-building used by ``_compute_ai_active_prompts``.
+
+        Merges *selected_prompts* with global always-include prompts, then
+        filters to those applicable to this AI model and *db_model_name*.
+        Called at compute time; the result is stored as ``ai_active_prompts``.
+        """
+        self.ensure_one()
+        self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
+        self.env['ai_prompts'].sudo().ensure_default_specific_instructions_prompt()
+        selected = (selected_prompts or self.env['ai_prompts']).filtered(
+            lambda rec: rec.enabled and (rec.prompt or rec.prompt_name)
+        )
+        always = self.env['ai_prompts'].sudo().search([
+            ('enabled', '=', True),
+            ('always_include', '=', True),
+        ])
+        applicable = (selected | always).filtered(
+            lambda rec: (
+                not rec.applies_to_ai_models or self in rec.applies_to_ai_models
+            ) and (
+                not rec.applies_to_db_models
+                or db_model_name in rec.applies_to_db_models.mapped('model')
+            )
+        )
+        return applicable.sorted(key=lambda rec: ((rec.sequence or 0), rec.id))

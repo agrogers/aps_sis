@@ -401,26 +401,57 @@ class APSAIModelAnswerChunking(models.Model):
             include_reasoning=include_reasoning,
         )
 
-    def _collect_applicable_prompts(self, selected_prompts, db_model_name):
-        self.ensure_one()
-        self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
-        self.env['ai_prompts'].sudo().ensure_default_specific_instructions_prompt()
-        selected = (selected_prompts or self.env['ai_prompts']).filtered(lambda rec: rec.enabled and (rec.prompt or rec.prompt_name))
-        always = self.env['ai_prompts'].sudo().search([
-            ('enabled', '=', True),
-            ('always_include', '=', True),
-        ])
-        candidates = (selected | always)
+    def _resolve_tagged_prompts(self, tag_name, candidate_prompts):
+        """Return prompts tagged *tag_name*, preferring records already in *candidate_prompts*.
 
-        applicable = candidates.filtered(
-            lambda rec: (
-                not rec.applies_to_ai_models or self in rec.applies_to_ai_models
-            ) and (
-                not rec.applies_to_db_models or db_model_name in rec.applies_to_db_models.mapped('model')
+        Resolution order:
+        1. Any enabled prompt inside *candidate_prompts* that carries the tag.
+        2. If none found there, the first enabled prompt in the global table that
+           carries the tag (ordered by sequence, id).
+
+        Returns an ``ai_prompts`` recordset (possibly empty).
+        """
+        self.ensure_one()
+        tag_key = (tag_name or '').strip().casefold()
+
+        if candidate_prompts:
+            local_matches = candidate_prompts.filtered(
+                lambda p: p.enabled and any(
+                    t.name.strip().casefold() == tag_key for t in p.tag_ids
+                )
             )
+            if local_matches:
+                return local_matches
+
+        tag = self.env['ai.prompt.tag'].sudo().search(
+            [('name', '=ilike', tag_name)], limit=1
+        )
+        if not tag:
+            return self.env['ai_prompts']
+        return self.env['ai_prompts'].sudo().search(
+            [('enabled', '=', True), ('tag_ids', 'in', tag.ids)],
+            order='sequence, id',
+            limit=1,
         )
 
-        return applicable.sorted(key=lambda rec: ((rec.sequence or 0), rec.id))
+    _CTX_TAG_MAP = {
+        'ai_targeted_feedback': 'Targeted Feedback',
+        'use_question':         'Question',
+        'use_model_answer':     'Model Answer',
+        'use_note':             'Notes',
+        'instructions':         'Specific Instructions',
+        'student_answer':       'Student Answer',
+        'ai_standard_feedback': 'Standard Feedback',
+    }
+
+    def _resolve_ctx_tagged_prompts(self, ctx, candidate_prompts):
+        """Return a merged recordset of all tag-resolved prompts for the active ctx flags."""
+        self.ensure_one()
+        extra = self.env['ai_prompts']
+        for ctx_key, tag_name in self._CTX_TAG_MAP.items():
+            if ctx.get(ctx_key):
+                extra |= self._resolve_tagged_prompts(tag_name, candidate_prompts)
+        return extra.sorted(key=lambda r: ((r.sequence or 0), r.id))
 
     def _run_feedback_targeted(self, ctx, prompts, record, progress_callback):
         """Targeted AI feedback execution — always chunks the answer.

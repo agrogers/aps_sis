@@ -117,6 +117,7 @@ class APSResource(models.Model):
         string='Active Prompts',
         compute='_compute_ai_active_prompts',
         help='The prompt records that will actually be combined for this resource, in runtime order.',
+        store=True,
     )
     ai_prompt_ids = fields.Many2many(
         'ai_prompts',
@@ -342,14 +343,16 @@ class APSResource(models.Model):
                 candidate_models = ai_model_env._get_generation_candidates(resource=record)
                 active_model = candidate_models[:1]
                 if active_model:
-                    prompts = active_model._collect_applicable_prompts(record.ai_prompt_ids, record._name)
+                    prompts = active_model._collect_all_applicable_prompts(record.ai_prompt_ids, record._name)
                     instructions_text = active_model._html_to_text(record.ai_instructions or '').strip()
                     ctx_flags = {
                         'ai_targeted_feedback': bool(record.ai_targeted_feedback),
+                        'ai_standard_feedback': not bool(record.ai_targeted_feedback),
                         'use_question': bool(record.ai_use_question),
                         'use_model_answer': bool(record.ai_use_model_answer or record.ai_action == 'mark_submission_use_answer'),
                         'use_note': bool(record.ai_use_notes),
                         'instructions': instructions_text,
+                        'student_answer': True,  # Always include the student answer in the context for prompt tagging purposes, even if it's empty. This allows prompts to be tagged with "No Student Answer" or similar to handle empty answers.
                     }
                     extra = active_model._resolve_ctx_tagged_prompts(ctx_flags, record.ai_prompt_ids)
                     if extra:
