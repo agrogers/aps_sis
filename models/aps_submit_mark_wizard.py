@@ -204,7 +204,10 @@ class APSSubmitMarkWizard(models.TransientModel):
             })
 
         today = fields.Date.today()
-        confidence = int(self.confidence_rating) if self.confidence_rating else 0
+        # confidence_rating in the wizard is a Selection string ('1'-'5') or False;
+        # the submission model stores it as an Integer (0 = not set, 1-5 = rated).
+        _confidence_map = {'1': 1, '2': 2, '3': 3, '4': 4, '5': 5}
+        confidence = _confidence_map.get(self.confidence_rating, 0)
 
         Submission.create({
             'task_id': task.id,
@@ -249,7 +252,7 @@ class APSSubmitMarkWizard(models.TransientModel):
 
         confidence_label = dict(self._fields['confidence_rating'].selection).get(
             self.confidence_rating, _('Not set')
-        ) if self.confidence_rating else _('Not set')
+        )
 
         note = _(
             '<p>A student submitted a mark for a resource that does not yet exist in APEX.</p>'

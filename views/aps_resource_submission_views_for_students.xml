@@ -136,12 +136,10 @@
                                 </div>
                             </group>
                             <group>
-                                <field name="confidence_rating" widget="radio" options="{'horizontal': true}"
+                                <field name="confidence_rating"
                                        string="Confidence Rating (optional)"
-                                       invisible="state == 'complete'"
+                                       invisible="state == 'complete' and not confidence_rating"
                                        readonly="state == 'complete'"/>
-                                <field name="confidence_rating" readonly="1"
-                                       invisible="state != 'complete' or not confidence_rating"/>
                             </group>
                             <field name="subjects" widget="clickable_many2many_tags" invisible="allow_subject_editing==False" no_add="True" no_open="True" options="{'no_create': True}"/>
                             

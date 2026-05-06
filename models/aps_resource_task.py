@@ -167,7 +167,7 @@ class APSResourceTask(models.Model):
                 rated_submissions = submissions.filtered(lambda s: s.confidence_rating > 0)
                 if rated_submissions:
                     ratings = rated_submissions.mapped('confidence_rating')
-                    rec.avg_confidence_rating = round(sum(ratings) / len(ratings), 2)
+                    rec.avg_confidence_rating = round(sum(ratings) / len(rated_submissions), 2)
                 else:
                     rec.avg_confidence_rating = False
             else:
