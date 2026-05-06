@@ -42,6 +42,8 @@ class APSResourceAISavedResponses(models.Model):
                 _('The selected saved response could not be found. It may have been deleted.')
             )
 
+        # ai_feedback, ai_score, etc. are defined as readonly=True on the field,
+        # so writing them requires sudo() – this mirrors the pattern used in ai_feedback.py.
         self.sudo().write({
             'ai_answer': entry.get('ai_answer') or False,
             'ai_feedback': entry.get('ai_feedback') or False,

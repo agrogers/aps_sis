@@ -1,5 +1,3 @@
-/** @odoo-module **/
-
 import { registry } from "@web/core/registry";
 import { Component } from "@odoo/owl";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
@@ -31,7 +29,8 @@ class AiSavedResponseSelector extends Component {
             .map(([key, entry]) => ({
                 key,
                 name: entry.name || key,
-                saved_date: entry.saved_date || "",
+                // Display only YYYY-MM-DD HH:MM (drop seconds if present)
+                saved_date: (entry.saved_date || "").substring(0, 16),
                 ai_model_name: entry.ai_model_name || "",
             }))
             .sort((a, b) => b.saved_date.localeCompare(a.saved_date));

@@ -1,8 +1,11 @@
 import uuid
+import logging
 from datetime import datetime
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class APSAISaveResponseWizard(models.TransientModel):
@@ -29,7 +32,9 @@ class APSAISaveResponseWizard(models.TransientModel):
             res['resource_id'] = active_id
             resource = self.env['aps.resources'].browse(active_id)
             now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
-            res['response_name'] = _('Response – %s') % now_str
+            resource_name = resource.name or resource.display_name or ''
+            prefix = resource_name if resource_name else _('AI Test Response')
+            res['response_name'] = _('%s – %s') % (prefix, now_str)
         return res
 
     def action_save(self):
@@ -54,7 +59,11 @@ class APSAISaveResponseWizard(models.TransientModel):
                 if candidates:
                     ai_model_name = candidates[0].display_name
             except Exception:
-                pass
+                _logger.warning(
+                    'Could not determine AI model name for resource %s when saving response.',
+                    resource.id,
+                    exc_info=True,
+                )
 
         key = str(uuid.uuid4())
         entry = {
