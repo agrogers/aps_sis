@@ -33,13 +33,12 @@
                                     <group>
                                         <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
 
-                                        <field name="student_ids" widget="many2many" nolabel="1">
-                                            <list>
-                                                <field name="name"/>
-                                                <field name="category_id" widget="many2many_tags" optional="hide"/>
-                                                <field name="user_id" optional="hide"/>
-                                                <field name="email" optional="hide"/>
-                                                <field name="phone" optional="hide"/>
+                                        <field name="student_ids" invisible="1"/>
+                                        <field name="student_line_ids" nolabel="1">
+                                            <list editable="bottom">
+                                                <field name="student_id" options="{'no_create': True, 'no_quick_create': True}"/>
+                                                <field name="weighted_result" widget="percentpie_ranged" string="Weighted %" optional="show" readonly="1"/>
+                                                <field name="last_result" widget="percentpie_ranged" string="Last %" optional="show" readonly="1"/>
                                             </list>
                                         </field>
                                     </group>
