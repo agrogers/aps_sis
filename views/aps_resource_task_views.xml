@@ -54,6 +54,7 @@
                 <field name="weighted_result" widget="percentpie_ranged" optional="show" invisible="submission_count &lt;= 1"/>
                 <field name="avg_result" widget="percentpie_ranged" optional="show" invisible="submission_count &lt;= 1"/>
                 <field name="best_result" widget="percentpie_ranged" optional="show" invisible="submission_count &lt;= 1"/>
+                <field name="avg_confidence_rating" optional="hide" string="Avg Confidence"/>
                 <field name="last_result" widget="percentpie_ranged"  optional="show"/>
                 <field name="submission_count" optional="hide"/>
                 <field name="create_date" optional="hide"/>
@@ -114,6 +115,7 @@
                             <field name="avg_result" widget="percentpie_ranged" options="{'sentinel': 0.00}" invisible="submission_count &lt;= 1"/>
                             <field name="weighted_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
                             <field name="best_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
+                            <field name="avg_confidence_rating" readonly="1" invisible="not avg_confidence_rating"/>
                         </group>
                     </group>
                     <notebook>
@@ -129,6 +131,7 @@
                                     <field name="date_submitted" widget="datetime" optional="hide"/>
                                     <field name="date_completed" widget="datetime" optional="hide"/>
                                     <field name="result_percent"  widget="percentpie_ranged" optional="hide"/>
+                                    <field name="confidence_rating" optional="hide" string="Confidence"/>
                                     <field name="submission_label" optional="hide"/>
                                     <field name="has_answer" widget="boolean" string="Answer" readonly="1" optional="hide"/>
                                     <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>

@@ -10,6 +10,7 @@ from . import aps_resource_task
 from . import ai
 from . import submissions
 from . import aps_assign_students_wizard
+from . import aps_submit_mark_wizard
 from . import aps_dashboard
 from . import core
 from . import aps_submission_mass_update_wizard

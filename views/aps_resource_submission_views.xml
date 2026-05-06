@@ -87,6 +87,7 @@
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="points" optional="hide"/>
                 <field name="points_scale" optional="hide"/>
+                <field name="confidence_rating" optional="hide"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
@@ -315,6 +316,7 @@
                                     <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="due_status" readonly="not is_current_user_faculty"/>
+                                    <field name="confidence_rating" readonly="not is_current_user_faculty"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>

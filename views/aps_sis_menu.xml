@@ -54,6 +54,7 @@
     <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_students" name="Student Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_score" name="Enter Scores" parent="menu_apex_submissions" action="action_aps_resource_submissions_score" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_submit_mark_teacher" name="Submit a Mark" parent="menu_apex_submissions" action="action_aps_submit_mark_wizard_teacher" sequence="50" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_task_list" name="Tasks" parent="menu_apex_submissions" action="action_aps_resource_tasks" sequence="250" groups="aps_sis.group_aps_teacher"/>
 
     <menuitem id="menu_apex_dashboard_overview" parent="menu_apex_root" 
@@ -97,6 +98,7 @@
     <!-- Student Menus -->
     <menuitem id="menu_apex_subject_overview_student" name="Subject Overview" parent="menu_apex_root" action="action_aps_resource_hierarchy_table_student" sequence="125" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_submit_mark_student" name="Submit a Mark" parent="menu_apex_root" action="action_aps_submit_mark_wizard_student" sequence="35" groups="aps_sis.group_aps_student"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student"/>
 
     <!-- Media Menus (student) -->
