@@ -44,7 +44,9 @@ class AiSavedResponseSelector extends Component {
     /** Handle <select> change – write the chosen key back to the Char field. */
     onChange(ev) {
         const key = ev.target.value;
-        this.props.update(key || false);
+        this.props.record.update({
+            [this.props.name]: key || false,
+        });
     }
 }
 
