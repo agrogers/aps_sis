@@ -417,6 +417,17 @@
                                     </div>
                                 </div>
 
+                                <div class="row mt-2" >
+                                    <div class="col-12 col-md-3" >
+                                        <div class="fw-bold mb-1">AI Score</div>
+                                        <field name="ai_score" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="col-12 col-md-9" >
+                                        <div class="fw-bold mb-1">Score Comment</div>
+                                        <field name="ai_score_comment" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+
                                 <group string="Targeted Feedback" class="tab-with-icon student-answer-tab" 
                                     name="student_answer_page" invisible="not ai_targeted_feedback">
                                     <field name="ai_targeted_feedback" invisible="1"/>
