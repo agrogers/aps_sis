@@ -87,6 +87,7 @@
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="points" optional="hide"/>
                 <field name="points_scale" optional="hide"/>
+                <field name="confidence_rating" widget="priority" optional="hide"/>
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
                 <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="hide"/>
@@ -142,6 +143,7 @@
                 <field name="score" widget="float_sentinel" optional="show" sum="Total Score"/>
                 <field name="out_of_marks" widget="float_sentinel" optional="hide" readonly="1" sum="Total OutOf"/>
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show" readonly="1" avg="Average %"/>
+                <field name="confidence_rating" widget="priority" optional="hide"/>
                 <field name="points" optional="hide"/>
                 <field name="state" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="hide" />
                 <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide" readonly="1" />
@@ -333,6 +335,7 @@
                             </group>
                         </page>
                         <page string="Student Answer+Feedback" class="tab-with-icon student-answer-tab" name="student_answer_page">
+                            <field name="confidence_rating" widget="priority" readonly="not is_current_user_faculty" invisible="state == 'complete' and not confidence_rating"/>
                             <field name="ai_targeted_feedback" invisible="1"/>
                             <field name="ai_answer_chunks" invisible="1"/>
                             <field name="ai_answer_chunked_html" invisible="1"/>

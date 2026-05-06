@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ────────────────────────────────────────────────────────────────────
+         Submit Mark Wizard – form view
+         Used by both students and teachers.  The student_id field is
+         visible only when the user is in the teacher group.
+    ──────────────────────────────────────────────────────────────────────── -->
+    <record id="view_aps_submit_mark_wizard_form" model="ir.ui.view">
+        <field name="name">aps.submit.mark.wizard.form</field>
+        <field name="model">aps.submit.mark.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Submit a Mark">
+                <field name="is_teacher" invisible="1"/>
+                <field name="available_subject_ids" invisible="1"/>
+                <field name="out_of_marks" invisible="1"/>
+
+                <sheet>
+                    <group>
+                        <!-- Student dropdown: visible only for teachers -->
+                        <field name="student_id"
+                               invisible="not is_teacher"
+                               required="is_teacher"/>
+
+                        <!-- Subject: filtered to enrolled subjects -->
+                        <field name="subject_id"
+                               required="not resource_does_not_exist"
+                               domain="[('id', 'in', available_subject_ids)]"
+                               options="{'no_create': True}"/>
+
+                        <!-- Resource: filtered by type and subject -->
+                        <field name="resource_id"
+                               invisible="resource_does_not_exist"
+                               required="not resource_does_not_exist"
+                               domain="[('type_id.name', '=', 'Question (Past Paper)'), ('subjects', 'in', subject_id and [subject_id] or [0])]"
+                               options="{'no_create': True, 'no_quick_create': True}"/>
+
+                        <!-- Checkbox to handle missing resources -->
+                        <field name="resource_does_not_exist" widget="boolean_toggle"/>
+
+                        <!-- Resource name when it doesn't exist yet -->
+                        <field name="resource_name"
+                               invisible="not resource_does_not_exist"
+                               required="resource_does_not_exist"
+                               placeholder="Enter the name of the resource…"/>
+
+                        <!-- Score row with out-of reference -->
+                        <label for="score"/>
+                        <div class="o_field_widget">
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="score" nolabel="1" class="o_field_number" style="width: 80px;"/>
+                                <span invisible="resource_does_not_exist or not resource_id or out_of_marks == 0">
+                                    out of <field name="out_of_marks" nolabel="1" readonly="1" style="width: 60px;"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Confidence rating (optional) -->
+                        <field name="confidence_rating" widget="priority"/>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button name="action_submit"
+                            string="Submit"
+                            type="object"
+                            class="btn-primary"/>
+                    <button name="action_submit_and_another"
+                            string="Submit and Add Another"
+                            type="object"
+                            class="btn-secondary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Action: teacher version (opens same form, target=new) ── -->
+    <record id="action_aps_submit_mark_wizard_teacher" model="ir.actions.act_window">
+        <field name="name">Submit a Mark</field>
+        <field name="res_model">aps.submit.mark.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_submit_mark_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'default_is_teacher': True}</field>
+    </record>
+
+    <!-- ── Action: student version (same form; student_id pre-filled via default_get) ── -->
+    <record id="action_aps_submit_mark_wizard_student" model="ir.actions.act_window">
+        <field name="name">Submit a Mark</field>
+        <field name="res_model">aps.submit.mark.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_submit_mark_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

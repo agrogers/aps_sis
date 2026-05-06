@@ -26,6 +26,13 @@ class APSResourceTask(models.Model):
     avg_result = fields.Float(string='Average Result%', compute='_compute_submission_stats', store=True, default=None)
     weighted_result = fields.Float(string='Weighted Result%', compute='_compute_submission_stats', store=True, default=None)
     best_result = fields.Float(string='Best Result%', compute='_compute_submission_stats', store=True, default=None)
+    avg_confidence_rating = fields.Float(
+        string='Avg Confidence',
+        compute='_compute_submission_stats',
+        store=True,
+        default=None,
+        help='Average confidence rating across submissions where students provided one (1–5 scale).',
+    )
     state = fields.Selection([
         ('created', 'Created'),
         ('assigned', 'Assigned'),
@@ -128,7 +135,7 @@ class APSResourceTask(models.Model):
             if task.state != new_state:
                 task.state = new_state
 
-    @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.result_percent')
+    @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.result_percent', 'submission_ids.confidence_rating')
     def _compute_submission_stats(self):
         for rec in self:
             submissions = rec.submission_ids.filtered(lambda a: a.state in ['submitted', 'complete'] and a.score != -0.01).sorted(lambda s: s.date_assigned or s.create_date)
@@ -155,11 +162,20 @@ class APSResourceTask(models.Model):
                     rec.weighted_result = round(weighted_sum / weight_total, 2) if weight_total > 0 else False
                 else:
                     rec.weighted_result = False
+
+                # Average confidence rating (exclude '0' = not set)
+                rated_submissions = submissions.filtered(lambda s: s.confidence_rating and s.confidence_rating != '0')
+                if rated_submissions:
+                    ratings = [int(s.confidence_rating) for s in rated_submissions]
+                    rec.avg_confidence_rating = round(sum(ratings) / len(rated_submissions), 2)
+                else:
+                    rec.avg_confidence_rating = False
             else:
                 rec.last_result = False
                 rec.avg_result = False
                 rec.weighted_result = False
                 rec.best_result = False
+                rec.avg_confidence_rating = False
 
     @api.depends('submission_ids.date_due', 'submission_ids.state')
     def _compute_date_due(self):

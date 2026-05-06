@@ -193,6 +193,18 @@ class APSResourceSubmission(models.Model):
              'resource scores. Set to False when the score has been manually entered by a user.',
         tracking=True,
     )
+    confidence_rating = fields.Selection(
+        selection=[
+            ('0', 'Not set'),
+            ('1', 'Low'),
+            ('2', 'Medium'),
+            ('3', 'High'),
+        ],
+        string='Confidence Rating',
+        default='0',
+        help='Student\'s self-assessed confidence for this task on a scale of 1–3 stars. '
+             '0 means not set and is excluded from averages.',
+    )
 
 # region - Computed Fields
 

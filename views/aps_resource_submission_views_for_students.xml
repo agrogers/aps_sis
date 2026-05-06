@@ -37,6 +37,7 @@
                 <field name="score" widget="float_sentinel" optional="show" />
                 <field name="out_of_marks" widget="float_sentinel" optional="hide" />
                 <field name="result_percent"  placeholder="-" widget="percentpie_ranged" optional="show"/>
+                <field name="confidence_rating" optional="hide" string="Confidence"/>
                 <field name="points"  optional="hide" sum="Total Points"/>
                 <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="has_question" string="Question" readonly="1" optional="hide"/>
@@ -133,6 +134,13 @@
                                     <field name="points" style="max-width:40px" string="Pts"/>
                                 </group>
                                 </div>
+                            </group>
+                            <group>
+                                <field name="confidence_rating"
+                                       widget="priority"
+                                       string="Confidence Rating"
+                                       invisible="state == 'complete' and not confidence_rating"
+                                       readonly="state == 'complete'"/>
                             </group>
                             <field name="subjects" widget="clickable_many2many_tags" invisible="allow_subject_editing==False" no_add="True" no_open="True" options="{'no_create': True}"/>
                             
