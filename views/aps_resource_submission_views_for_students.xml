@@ -137,7 +137,8 @@
                             </group>
                             <group>
                                 <field name="confidence_rating"
-                                       string="Confidence Rating (optional)"
+                                       widget="priority"
+                                       string="Confidence Rating"
                                        invisible="state == 'complete' and not confidence_rating"
                                        readonly="state == 'complete'"/>
                             </group>

@@ -24,7 +24,7 @@
 
                         <!-- Subject: filtered to enrolled subjects -->
                         <field name="subject_id"
-                               required="1"
+                               required="not resource_does_not_exist"
                                domain="[('id', 'in', available_subject_ids)]"
                                options="{'no_create': True}"/>
 
@@ -56,7 +56,7 @@
                         </div>
 
                         <!-- Confidence rating (optional) -->
-                        <field name="confidence_rating" widget="radio" options="{'horizontal': true}"/>
+                        <field name="confidence_rating" widget="priority"/>
                     </group>
                 </sheet>
 
@@ -84,6 +84,7 @@
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_aps_submit_mark_wizard_form"/>
         <field name="target">new</field>
+        <field name="context">{'default_is_teacher': True}</field>
     </record>
 
     <!-- ── Action: student version (same form; student_id pre-filled via default_get) ── -->

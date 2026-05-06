@@ -163,10 +163,10 @@ class APSResourceTask(models.Model):
                 else:
                     rec.weighted_result = False
 
-                # Average confidence rating (exclude 0 = not set)
-                rated_submissions = submissions.filtered(lambda s: s.confidence_rating > 0)
+                # Average confidence rating (exclude '0' = not set)
+                rated_submissions = submissions.filtered(lambda s: s.confidence_rating and s.confidence_rating != '0')
                 if rated_submissions:
-                    ratings = rated_submissions.mapped('confidence_rating')
+                    ratings = [int(s.confidence_rating) for s in rated_submissions]
                     rec.avg_confidence_rating = round(sum(ratings) / len(rated_submissions), 2)
                 else:
                     rec.avg_confidence_rating = False

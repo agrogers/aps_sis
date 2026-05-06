@@ -131,7 +131,7 @@
                                     <field name="date_submitted" widget="datetime" optional="hide"/>
                                     <field name="date_completed" widget="datetime" optional="hide"/>
                                     <field name="result_percent"  widget="percentpie_ranged" optional="hide"/>
-                                    <field name="confidence_rating" optional="hide" string="Confidence"/>
+                                    <field name="confidence_rating" widget="priority" optional="hide" string="Confidence"/>
                                     <field name="submission_label" optional="hide"/>
                                     <field name="has_answer" widget="boolean" string="Answer" readonly="1" optional="hide"/>
                                     <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>

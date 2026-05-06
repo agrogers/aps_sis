@@ -32,13 +32,13 @@ class APSSubmitMarkWizard(models.TransientModel):
 
     # ── Identity helpers ──────────────────────────────────────────────────────
 
-    is_teacher = fields.Boolean(compute='_compute_is_teacher', store=False)
+    is_teacher = fields.Boolean(default=False)
 
-    @api.depends()
-    def _compute_is_teacher(self):
-        is_teacher = self.env.user.has_group('aps_sis.group_aps_teacher')
-        for rec in self:
-            rec.is_teacher = is_teacher
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        defaults['is_teacher'] = self.env.user.has_group('aps_sis.group_aps_teacher')
+        return defaults
 
     # ── Core wizard fields ────────────────────────────────────────────────────
 
@@ -96,15 +96,14 @@ class APSSubmitMarkWizard(models.TransientModel):
 
     confidence_rating = fields.Selection(
         selection=[
-            ('1', '1 – Very Low'),
-            ('2', '2 – Low'),
-            ('3', '3 – Moderate'),
-            ('4', '4 – High'),
-            ('5', '5 – Very High'),
+            ('0', 'Not set'),
+            ('1', 'Low'),
+            ('2', 'Medium'),
+            ('3', 'High'),
         ],
         string='Confidence Rating',
-        default=False,
-        help='How confident the student felt about this resource (optional, 1–5 scale).',
+        default='0',
+        help='How confident the student felt about this resource (optional, 1–3 stars).',
     )
 
     # ── Computed helpers ──────────────────────────────────────────────────────
@@ -169,7 +168,7 @@ class APSSubmitMarkWizard(models.TransientModel):
         """Raise a UserError if required data is missing."""
         if not self.student_id:
             raise UserError(_('Please select a student.'))
-        if not self.subject_id:
+        if not self.resource_does_not_exist and not self.subject_id:
             raise UserError(_('Please select a subject.'))
         if self.resource_does_not_exist:
             if not self.resource_name:
@@ -204,10 +203,8 @@ class APSSubmitMarkWizard(models.TransientModel):
             })
 
         today = fields.Date.today()
-        # confidence_rating in the wizard is a Selection string ('1'-'5') or False;
-        # the submission model stores it as an Integer (0 = not set, 1-5 = rated).
-        _confidence_map = {'1': 1, '2': 2, '3': 3, '4': 4, '5': 5}
-        confidence = _confidence_map.get(self.confidence_rating, 0)
+        # confidence_rating in both wizard and submission is a Selection string ('0'-'3').
+        confidence = self.confidence_rating or '0'
 
         Submission.create({
             'task_id': task.id,
