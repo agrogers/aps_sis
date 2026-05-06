@@ -42,6 +42,7 @@ class APSAIRun(models.Model):
     thinking_text = fields.Text(readonly=True)
     response_preview = fields.Text(readonly=True)
     ai_model_id = fields.Many2one('aps.ai.model', string='AI Model', readonly=True, ondelete='set null')
+    override_model_id = fields.Many2one('aps.ai.model', string='Override Model', readonly=True, ondelete='set null')
     prompt_tokens = fields.Integer(readonly=True)
     completion_tokens = fields.Integer(readonly=True)
     estimated_cost = fields.Float(readonly=True, digits=(16, 6))
@@ -153,7 +154,12 @@ class APSAIRun(models.Model):
         self.ensure_one()
         submission = self.submission_id.with_user(self.requested_by_id)
         self._write_progress({'status_message': _('Waiting for the AI provider response...')})
-        result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_submission_feedback(
+        ai_model = (
+            self.override_model_id.with_user(self.requested_by_id)
+            if self.override_model_id
+            else self.env['aps.ai.model'].with_user(self.requested_by_id)
+        )
+        result = ai_model.generate_submission_feedback(
             submission,
             ai_run=self,
         )
