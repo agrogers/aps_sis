@@ -153,7 +153,7 @@ class APSAIRun(models.Model):
         self.ensure_one()
         submission = self.submission_id.with_user(self.requested_by_id)
         self._write_progress({'status_message': _('Waiting for the AI provider response...')})
-        result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_submission_feedback(
+        result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_multi_model_feedback(
             submission,
             ai_run=self,
         )
@@ -184,7 +184,7 @@ class APSAIRun(models.Model):
         self.ensure_one()
         resource = self.resource_id.with_user(self.requested_by_id)
         self._write_progress({'status_message': _('Waiting for the AI provider response...')})
-        result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_resource_test_feedback(
+        result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_multi_model_feedback(
             resource,
             ai_run=self,
         )
