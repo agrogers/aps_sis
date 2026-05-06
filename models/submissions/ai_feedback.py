@@ -47,6 +47,13 @@ class APSResourceSubmissionAIFeedback(models.Model):
     ai_auto_mark_attempt_count = fields.Integer(string='Automatic AI Attempts', default=0, readonly=True, copy=False)
     ai_auto_mark_last_error = fields.Text(string='Automatic AI Error', readonly=True, copy=False)
     ai_auto_mark_run_id = fields.Many2one('aps.ai.run', string='Automatic AI Run', readonly=True, copy=False)
+    ai_override_model_id = fields.Many2one(
+        'aps.ai.model',
+        string='AI Model',
+        domain="[('enabled', '=', True)]",
+        help='If set, this model will be used for AI marking instead of the resource\'s configured model.',
+        copy=False,
+    )
 
     def _get_ai_run_link_field(self):
         return 'submission_id'
@@ -293,6 +300,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'status_message': _('Queued and waiting to start...'),
             'request_origin': request_origin,
             'attempt_number': attempt_number or 0,
+            'override_model_id': self.ai_override_model_id.id if self.ai_override_model_id else False,
         })
         if request_origin == 'automatic':
             self.sudo().write({'ai_auto_mark_run_id': run.id})
@@ -465,7 +473,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
         self._validate_ai_marking_request()
 
         try:
-            result = self.env['aps.ai.model'].generate_submission_feedback(self)
+            ai_model = self.ai_override_model_id or self.env['aps.ai.model']
+            result = ai_model.generate_submission_feedback(self)
         except Exception as exc:
             error_text = exc.args[0] if getattr(exc, 'args', False) else str(exc)
             return self._build_ai_failure_notification(error_text)

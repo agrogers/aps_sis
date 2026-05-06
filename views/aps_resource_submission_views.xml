@@ -353,6 +353,11 @@
                                             class="btn-primary"
                                             groups="aps_sis.group_aps_teacher"
                                             invisible="not is_current_user_faculty or ai_action in ['none']"/>
+                                    <field name="ai_override_model_id"
+                                           options="{'no_create': True, 'no_open': True}"
+                                           placeholder="Default model"
+                                           groups="aps_sis.group_aps_teacher"
+                                           invisible="not is_current_user_faculty or ai_action in ['none']"/>
                                     <button name="action_requeue_auto_ai_marking"
                                             string="Requeue AI"
                                             type="object"
