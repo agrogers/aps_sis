@@ -95,6 +95,21 @@ class APSResource(models.Model):
     ai_feedback = fields.Html(string='AI Feedback', readonly=True, help='Feedback returned by the AI for the test answer.')
     ai_score = fields.Float(string='AI Score', digits=(16, 2), readonly=True, help='Score returned by the AI for the test answer, if applicable.')
     ai_score_comment = fields.Char(string='AI Score Comment', readonly=True, help='Comment about the score returned by the AI for the test answer, if applicable. This is used when a score is not returned to provide feedback on why.')
+
+    ai_saved_responses = fields.Json(
+        string='Saved AI Responses',
+        copy=False,
+        help='JSON storage for saved AI test prompt responses (name, date, model, answer, feedback, score, etc.).',
+    )
+    ai_show_saved_responses = fields.Boolean(
+        string='Show Saved Responses',
+        default=False,
+        help='Toggle visibility of the saved AI responses section.',
+    )
+    ai_selected_response_key = fields.Char(
+        string='Selected Saved Response',
+        help='Key of the currently selected saved AI response.',
+    )
     
     ai_action = fields.Selection([
         ('none', 'None'),

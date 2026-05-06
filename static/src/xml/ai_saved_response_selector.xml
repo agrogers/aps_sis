@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.AiSavedResponseSelector">
+        <select
+            class="o_input form-select"
+            t-att-disabled="props.readonly or !responseList.length"
+            t-on-change="onChange"
+        >
+            <option value="" t-att-selected="!selectedKey">
+                <t t-if="responseList.length">— Select a saved response —</t>
+                <t t-else="">No saved responses yet</t>
+            </option>
+            <t t-foreach="responseList" t-as="item" t-key="item.key">
+                <option
+                    t-att-value="item.key"
+                    t-att-selected="item.key === selectedKey"
+                >
+                    <t t-esc="item.name"/>
+                    <t t-if="item.saved_date"> (<t t-esc="item.saved_date"/>)</t>
+                    <t t-if="item.ai_model_name"> [<t t-esc="item.ai_model_name"/>]</t>
+                </option>
+            </t>
+        </select>
+    </t>
+</templates>
