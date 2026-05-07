@@ -29,20 +29,18 @@ _logger = logging.getLogger(__name__)
 
 _MERGE_SYSTEM_PROMPT = (
     'You are an expert editor. You will be given feedback on a student answer '
-    'from multiple AI models. Keep each model response as a separate HTML block '
-    'in the same order received. Do not remove contradictions. '
-    'Do not anonymize model provenance. '
-    'At the end of EACH model block, include exactly: '
-    '<p style="font-size:10px;opacity:0.65;">Model: MODEL_NAME</p><hr/> '
-    '(replace MODEL_NAME with that block\'s model name). '
+    'from multiple AI models. Synthesise all of the feedback into a single, '
+    'unified, cohesive HTML response. Do not keep sections separate — combine '
+    'overlapping points, resolve contradictions by noting both perspectives, '
+    'and produce one clear piece of feedback the student can act on. '
+    'Do NOT include any per-model attribution inside the body. '
     'Return ONLY an HTML fragment using tags such as '
     '<h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, and <br>.'
 )
 
 _MERGE_USER_PROMPT_TEMPLATE = (
-    'Here are the feedback responses from multiple AI models. '
-    'Return one section per model (same order), with the required attribution '
-    'line and horizontal rule at the end of each section:\n\n%s'
+    'Synthesise the following feedback responses from multiple AI models into '
+    'a single unified piece of feedback:\n\n%s'
 )
 
 
@@ -145,7 +143,7 @@ class APSAIMultiModelFeedback(models.Model):
 
         is_targeted = any(r.get('targeted_feedback') for r in results)
         if is_targeted:
-            return self._merge_targeted_results(results, merge_response_chunks)
+            return self._merge_targeted_results(results, merge_response_chunks, merge_responses)
         return self._merge_generic_results(results, merge_responses)
 
     # =========================================================================
@@ -308,15 +306,29 @@ class APSAIMultiModelFeedback(models.Model):
         if merge_model.disable_reasoning:
             payload['reasoning'] = {'enabled': False, 'exclude': True}
 
+        model_names = ', '.join(
+            part.get('model_name') or _('Unknown Model')
+            for part in html_parts
+            if isinstance(part, dict)
+        )
+        attribution_footer = (
+            '<p style="font-size:10px;opacity:0.65;">Models: %s</p>'
+            % model_names
+        ) if model_names else ''
+
         try:
             result = merge_model._execute_logged_router_call(
                 payload,
                 request_type='multi_model_merge',
             )
             raw_content = merge_model._extract_message_content(result['response_json'])
-            return merge_model._normalize_feedback_html(raw_content)
-        except Exception:
-            _logger.exception('AI merge call failed; falling back to concatenation.')
+            merged = merge_model._normalize_feedback_html(raw_content)
+            return merged + attribution_footer if merged else None
+        except Exception as exc:
+            _logger.exception(
+                'AI merge call failed (model_id=%s); falling back to concatenation. Error: %s',
+                merge_model_id, exc,
+            )
             return None
 
     # =========================================================================
@@ -324,7 +336,7 @@ class APSAIMultiModelFeedback(models.Model):
     # =========================================================================
 
     @api.model
-    def _merge_targeted_results(self, results, merge_chunks):
+    def _merge_targeted_results(self, results, merge_chunks, merge_via_ai=False):
         """Combine or merge targeted feedback from multiple models.
 
         Parameters
@@ -336,6 +348,9 @@ class APSAIMultiModelFeedback(models.Model):
             a single item and their chunk links are combined.
             If False, all items are simply concatenated (with de-duplication
             of identical label+type pairs).
+        merge_via_ai : bool
+            If True, the feedback_html sections are synthesised by an AI call
+            (same as the generic path). Falls back to concatenation on failure.
         """
         if len(results) == 1:
             return results[0]
@@ -386,8 +401,18 @@ class APSAIMultiModelFeedback(models.Model):
         else:
             feedback_items, feedback_links = self._combine_feedback_items(all_items, all_links)
 
-        html_parts = [r.get('feedback_html') or '' for r in results if r.get('feedback_html')]
-        merged_html = self._concatenate_feedback_html(html_parts)
+        html_parts = [
+            {
+                'html': r.get('feedback_html') or '',
+                'model_name': r.get('model_name') or _('Unknown Model'),
+            }
+            for r in results if r.get('feedback_html')
+        ]
+        merged_html = None
+        if merge_via_ai:
+            merged_html = self._call_ai_merge(html_parts, results)
+        if not merged_html:
+            merged_html = self._concatenate_feedback_html(html_parts, include_attribution=True)
 
         score = next((r.get('score') for r in results if r.get('score') is not None), None)
         score_comment = next((r.get('score_comment') for r in results if r.get('score_comment')), None)

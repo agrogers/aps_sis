@@ -529,6 +529,6 @@ class APSAIModelAnswerChunking(models.Model):
             'completion_tokens': result['completion_tokens'],
             'estimated_cost': result['estimated_cost'],
             'model_id': self.id,
-            'model_name': self.display_name,
+            'model_name': self.name,
             'raw_content': raw_content,
         }
