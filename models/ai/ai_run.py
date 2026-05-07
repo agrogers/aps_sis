@@ -8,6 +8,18 @@ from .utils import _run_ai_background_job
 
 _logger = logging.getLogger(__name__)
 
+_AI_RUN_PROGRESS_LOCKS = {}
+_AI_RUN_PROGRESS_LOCKS_GUARD = threading.Lock()
+
+
+def _get_ai_run_progress_lock(run_id):
+    with _AI_RUN_PROGRESS_LOCKS_GUARD:
+        lock = _AI_RUN_PROGRESS_LOCKS.get(run_id)
+        if lock is None:
+            lock = threading.Lock()
+            _AI_RUN_PROGRESS_LOCKS[run_id] = lock
+        return lock
+
 
 class APSAIRun(models.Model):
     _name = 'aps.ai.run'
@@ -85,8 +97,10 @@ class APSAIRun(models.Model):
 
     def _write_progress(self, values):
         self.ensure_one()
-        self.sudo().write(values)
-        self.env.cr.commit()
+        lock = _get_ai_run_progress_lock(self.id)
+        with lock:
+            self.sudo().write(values)
+            self.env.cr.commit()
 
     def _serialize_status(self):
         self.ensure_one()

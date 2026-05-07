@@ -29,17 +29,20 @@ _logger = logging.getLogger(__name__)
 
 _MERGE_SYSTEM_PROMPT = (
     'You are an expert editor. You will be given feedback on a student answer '
-    'from multiple AI models. Merge them into a single, coherent HTML response. '
-    'Keep as much detail as possible, including any contradictory points — just '
-    'do not repeat the same idea twice. Do NOT indicate which model produced '
-    'which piece of feedback. '
+    'from multiple AI models. Keep each model response as a separate HTML block '
+    'in the same order received. Do not remove contradictions. '
+    'Do not anonymize model provenance. '
+    'At the end of EACH model block, include exactly: '
+    '<p style="font-size:10px;opacity:0.65;">Model: MODEL_NAME</p><hr/> '
+    '(replace MODEL_NAME with that block\'s model name). '
     'Return ONLY an HTML fragment using tags such as '
     '<h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, and <br>.'
 )
 
 _MERGE_USER_PROMPT_TEMPLATE = (
     'Here are the feedback responses from multiple AI models. '
-    'Please merge them into a single coherent response:\n\n%s'
+    'Return one section per model (same order), with the required attribution '
+    'line and horizontal rule at the end of each section:\n\n%s'
 )
 
 
@@ -59,7 +62,8 @@ def _run_single_model_in_thread(db_name, model_id, record_model, record_id, user
             record = env[record_model].sudo().browse(record_id)
             if not record.exists():
                 return None, 'Record %s/%s no longer exists.' % (record_model, record_id)
-            # ai_run=None: no streaming for parallel runs
+            # Do not stream from parallel worker threads: concurrent writes to the
+            # same aps.ai.run record can trigger serialization failures.
             result = ai_model._run_feedback(record, ai_run=None)
             cr.commit()
             return result, None
@@ -112,7 +116,12 @@ class APSAIMultiModelFeedback(models.Model):
         record_id = record.id
 
         results, errors = self._run_models_parallel(
-            model_ids_to_run, db_name, record_model, record_id, user_id, context,
+            model_ids_to_run,
+            db_name,
+            record_model,
+            record_id,
+            user_id,
+            context,
         )
 
         if not results:
@@ -188,17 +197,29 @@ class APSAIMultiModelFeedback(models.Model):
         if len(results) == 1:
             return results[0]
 
-        html_parts = [r.get('feedback_html') or '' for r in results if r.get('feedback_html')]
+        response_parts = [
+            {
+                'html': r.get('feedback_html') or '',
+                'model_name': r.get('model_name') or _('Unknown Model'),
+            }
+            for r in results
+            if r.get('feedback_html')
+        ]
         total_prompt_tokens = sum(r.get('prompt_tokens') or 0 for r in results)
         total_completion_tokens = sum(r.get('completion_tokens') or 0 for r in results)
         total_cost = sum(r.get('estimated_cost') or 0.0 for r in results)
 
         merged_html = None
         if merge_via_ai:
-            merged_html = self._call_ai_merge(html_parts, results)
+            merged_html = self._call_ai_merge(response_parts, results)
 
         if not merged_html:
-            merged_html = self._concatenate_feedback_html(html_parts)
+            # Always include model attribution for multi-model output so users
+            # can clearly see provenance for each response block.
+            merged_html = self._concatenate_feedback_html(
+                response_parts,
+                include_attribution=True,
+            )
 
         score = next((r.get('score') for r in results if r.get('score') is not None), None)
         score_comment = next((r.get('score_comment') for r in results if r.get('score_comment')), None)
@@ -221,17 +242,31 @@ class APSAIMultiModelFeedback(models.Model):
         }
 
     @api.model
-    def _concatenate_feedback_html(self, html_parts):
+    def _concatenate_feedback_html(self, html_parts, include_attribution=False):
         """Join multiple feedback HTML parts with horizontal rule separators."""
         if not html_parts:
             return '<p>No feedback was returned.</p>'
-        if len(html_parts) == 1:
-            return html_parts[0]
+
         parts = []
-        for i, html in enumerate(html_parts, start=1):
-            parts.append(html)
-            if i < len(html_parts):
-                parts.append('<hr/>')
+        for i, part in enumerate(html_parts, start=1):
+            if isinstance(part, dict):
+                html = part.get('html') or ''
+                model_name = part.get('model_name') or _('Unknown Model')
+                if include_attribution:
+                    parts.append(
+                        '%s<p style="font-size:10px;opacity:0.65;">Model: %s</p><hr/>'
+                        % (html, model_name)
+                    )
+                else:
+                    parts.append(html)
+                    if i < len(html_parts):
+                        parts.append('<hr/>')
+            else:
+                # Backward-compatibility: plain html string list.
+                plain_html = part or ''
+                parts.append(plain_html)
+                if i < len(html_parts):
+                    parts.append('<hr/>')
         return ''.join(parts)
 
     @api.model
@@ -253,7 +288,13 @@ class APSAIMultiModelFeedback(models.Model):
             return None
 
         numbered_parts = '\n\n---\n\n'.join(
-            'Feedback %d:\n%s' % (i, html) for i, html in enumerate(html_parts, start=1)
+            'Feedback %d (Model: %s):\n%s'
+            % (
+                i,
+                (part.get('model_name') if isinstance(part, dict) else _('Unknown Model')),
+                (part.get('html') if isinstance(part, dict) else (part or '')),
+            )
+            for i, part in enumerate(html_parts, start=1)
         )
         payload = {
             'model': merge_model.model_key,
@@ -311,9 +352,34 @@ class APSAIMultiModelFeedback(models.Model):
 
         all_items = []
         all_links = []
-        for result in results:
-            all_items.extend(result.get('feedback_items') or [])
-            all_links.extend(result.get('feedback_links') or [])
+        for idx, result in enumerate(results, start=1):
+            # IDs returned by each model often restart at f1/f2/..., so namespace
+            # them per model result to avoid cross-model collisions.
+            result_prefix = 'm%s__' % idx
+
+            for item in (result.get('feedback_items') or []):
+                if not isinstance(item, dict):
+                    continue
+                item_id = str(item.get('id') or '').strip()
+                if not item_id:
+                    continue
+                all_items.append({
+                    'id': '%s%s' % (result_prefix, item_id),
+                    'text': item.get('text') or '',
+                    'type': item.get('type') or False,
+                    'justification': item.get('justification') or '',
+                })
+
+            for link in (result.get('feedback_links') or []):
+                if not isinstance(link, dict):
+                    continue
+                feedback_id = str(link.get('feedback_id') or '').strip()
+                if not feedback_id:
+                    continue
+                all_links.append({
+                    'feedback_id': '%s%s' % (result_prefix, feedback_id),
+                    'chunk_ids': link.get('chunk_ids') or [],
+                })
 
         if merge_chunks:
             feedback_items, feedback_links = self._merge_feedback_items_by_label(all_items, all_links)

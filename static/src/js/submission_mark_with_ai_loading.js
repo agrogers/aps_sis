@@ -20,8 +20,28 @@ function restoreButtonState(state) {
     buttonEl.innerHTML = state.originalHtml;
 }
 
+function looksLikeHtml(text) {
+    const value = (text || "").trim();
+    if (!value) {
+        return false;
+    }
+    return /<\/?[a-z][\s\S]*>/i.test(value) || /&nbsp;|&lt;|&gt;|<br\s*\/?/i.test(value);
+}
+
+function extractFencedHtml(text) {
+    const value = (text || "").trim();
+    const match = value.match(/^```(?:html|xml)?\s*([\s\S]*?)\s*```$/i);
+    return match ? match[1].trim() : null;
+}
+
 function renderMarkdownLikeHtml(text) {
     const normalizedText = (text || "").replace(/(^|\n)Assistant:\s*/g, "$1");
+    const fencedHtml = extractFencedHtml(normalizedText);
+    const htmlCandidate = fencedHtml || normalizedText.trim();
+    if (looksLikeHtml(htmlCandidate)) {
+        return markup(htmlCandidate);
+    }
+
     const escaped = escape(normalizedText);
     let html = escaped
         .replace(/```([\s\S]*?)```/g, '<pre class="mb-2"><code>$1</code></pre>')

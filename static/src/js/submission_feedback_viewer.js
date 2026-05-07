@@ -51,7 +51,15 @@ export class SubmissionFeedbackViewer extends Component {
             if (!link?.feedback_id) {
                 continue;
             }
-            map[link.feedback_id] = Array.isArray(link.chunk_ids) ? link.chunk_ids : [];
+            const existing = map[link.feedback_id] || [];
+            const seen = new Set(existing);
+            for (const chunkId of Array.isArray(link.chunk_ids) ? link.chunk_ids : []) {
+                if (!seen.has(chunkId)) {
+                    existing.push(chunkId);
+                    seen.add(chunkId);
+                }
+            }
+            map[link.feedback_id] = existing;
         }
         return map;
     }
