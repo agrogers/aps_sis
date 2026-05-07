@@ -87,6 +87,43 @@ class APSResource(models.Model):
         domain=[('enabled', '=', True)],
         help='If set, this model is used for AI generation for this resource and its submissions. Leave empty to use the normal enabled-model fallback order.',
     )
+    ai_model_ids = fields.Many2many(
+        'aps.ai.model',
+        'aps_resources_ai_models_rel',
+        'resource_id',
+        'model_id',
+        string='AI Models',
+        domain=[('enabled', '=', True)],
+        help=(
+            'Select one or more AI models for this resource. '
+            'When multiple models are selected they all run simultaneously and '
+            'their results are merged. '
+            'Leave empty to use the single "AI Model" field or the global fallback order.'
+        ),
+    )
+    has_multiple_ai_models = fields.Boolean(
+        string='Has Multiple AI Models',
+        compute='_compute_has_multiple_ai_models',
+        help='True when more than one model is selected in AI Models.',
+    )
+    ai_merge_responses = fields.Boolean(
+        string='Merge Responses via AI',
+        default=False,
+        help=(
+            'When multiple AI models are selected, send all their feedback to '
+            'one model and ask it to produce a single merged response. '
+            'When disabled the feedback from each model is concatenated.'
+        ),
+    )
+    ai_merge_response_chunks = fields.Boolean(
+        string='Merge Response Chunks',
+        default=False,
+        help=(
+            'When multiple AI models return targeted (chunked) feedback, '
+            'merge feedback items that share the same label rather than '
+            'simply combining all items.'
+        ),
+    )
     ai_use_notes = fields.Boolean(string='Use Notes')
     ai_use_supporting_resources = fields.Boolean(string='Use Supporting Resources')
     ai_targeted_feedback = fields.Boolean(string='Targeted Feedback', help='Return highlighted feedback tied to specific points in the student answer, if supported by the AI model.')
@@ -306,6 +343,11 @@ class APSResource(models.Model):
         search='_search_is_recently_viewed',
     )
 
+    @api.depends('ai_model_ids')
+    def _compute_has_multiple_ai_models(self):
+        for record in self:
+            record.has_multiple_ai_models = len(record.ai_model_ids) > 1
+
     @api.depends(
         'ai_prompt_ids',
         'ai_prompt_ids.enabled',
@@ -342,6 +384,9 @@ class APSResource(models.Model):
         'ai_model_id',
         'ai_model_id.enabled',
         'ai_model_id.provider_id.enabled',
+        'ai_model_ids',
+        'ai_model_ids.enabled',
+        'ai_model_ids.provider_id.enabled',
         'ai_action',
         'ai_use_model_answer',
         'ai_use_question',
@@ -389,6 +434,7 @@ class APSResource(models.Model):
     @api.onchange(
         'ai_prompt_ids',
         'ai_model_id',
+        'ai_model_ids',
         'ai_action',
         'ai_use_model_answer',
         'ai_use_question',

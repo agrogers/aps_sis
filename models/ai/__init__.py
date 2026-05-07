@@ -6,6 +6,7 @@ from . import ai_model
 from . import ai_answer_base
 from . import ai_answer_generic
 from . import ai_answer_targeted
+from . import ai_multi_model
 from . import ai_prompt_tags
 from . import ai_prompts
 from . import ai_submission_feedback

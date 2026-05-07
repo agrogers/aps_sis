@@ -136,13 +136,22 @@ class APSAIModel(models.Model):
 
     @api.model
     def _get_generation_candidates(self, resource=None):
-        if resource and resource.ai_model_id:
-            model = resource.ai_model_id.sudo()
-            if not model.exists():
-                raise UserError(_('The selected AI model no longer exists.'))
-            if not model.enabled or not model.provider_id.enabled:
-                raise UserError(_('The selected AI model is disabled or its provider is disabled.'))
-            return model
+        if resource:
+            # Multi-model: ai_model_ids takes priority over the single ai_model_id.
+            if resource.ai_model_ids:
+                models = resource.ai_model_ids.sudo()
+                enabled = models.filtered(
+                    lambda m: m.enabled and m.provider_id.enabled
+                )
+                if enabled:
+                    return enabled
+            if resource.ai_model_id:
+                model = resource.ai_model_id.sudo()
+                if not model.exists():
+                    raise UserError(_('The selected AI model no longer exists.'))
+                if not model.enabled or not model.provider_id.enabled:
+                    raise UserError(_('The selected AI model is disabled or its provider is disabled.'))
+                return model
 
         return self.sudo().search(
             [('enabled', '=', True), ('provider_id.enabled', '=', True)],
