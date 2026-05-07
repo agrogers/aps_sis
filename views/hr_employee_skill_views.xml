@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Add assessed_skill_level_id to the employee form view's inline skills list -->
+    <record id="hr_employee_skill_form_inherit_aps" model="ir.ui.view">
+        <field name="name">hr.employee.skill.form.inherit.aps</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr_skills.hr_employee_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='employee_skill_ids']//field[@name='skill_level_id']" position="after">
+                <field name="assessed_skill_level_id"
+                       string="Assessed Level"
+                       domain="[('skill_type_id', '=', skill_type_id)]"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
