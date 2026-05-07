@@ -241,7 +241,7 @@ class APSResource(models.Model):
             else:
                 rec.display_name = rec.name or ''
 
-    @api.depends('display_name', 'primary_parent_id', 'parent_ids')
+    @api.depends('display_name', 'primary_parent_id', 'parent_ids', 'supporting_parent_ids')
     def _compute_display_name_breadcrumb(self):
         """Build a stored list of {id, label} pairs for the breadcrumb pills widget.
 
@@ -250,6 +250,10 @@ class APSResource(models.Model):
         🢒 separator) so they match what is already shown on screen.  IDs are resolved by
         walking up the primary_parent_id / first-parent chain so the pills can open the
         correct form record.
+
+        For supporting resources (those with no primary_parent_id and no parent_ids),
+        the chain is walked via supporting_parent_ids so the ancestor pills remain
+        clickable.
         """
         separator = ' 🢒 '
         for rec in self:
@@ -266,7 +270,9 @@ class APSResource(models.Model):
                     break
                 visited.add(current)
                 chain.append(current)
-                parent = current.primary_parent_id or (current.parent_ids and current.parent_ids[0])
+                parent = (current.primary_parent_id
+                          or (current.parent_ids and current.parent_ids[0])
+                          or (current.supporting_parent_ids and current.supporting_parent_ids[0]))
                 if not parent:
                     break
                 current = parent
