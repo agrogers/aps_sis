@@ -388,12 +388,6 @@
                                                     type="object"
                                                     class="btn btn-primary btn-sm"
                                                     help="Save the current AI test response with a custom name."/>
-                                            <button name="action_ai_load_response"
-                                                    string="📂 Load"
-                                                    type="object"
-                                                    class="btn btn-secondary btn-sm"
-                                                    invisible="not ai_selected_response_key"
-                                                    help="Load the selected saved response into the test fields."/>
                                             <button name="action_ai_delete_response"
                                                     string="🗑 Delete"
                                                     type="object"

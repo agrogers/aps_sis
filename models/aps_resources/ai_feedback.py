@@ -34,7 +34,7 @@ class APSResourceAIFeedback(models.Model):
             'empty_answer_error': _(
                 'Please enter a test answer in the "Test Answer" field before running the AI mark.'
             ),
-            'prompt_ids': self.ai_prompt_ids,
+            'prompt_ids': self.ai_active_prompts,
         }
 
     def _get_ai_feedback_result_write_vals(self, result):

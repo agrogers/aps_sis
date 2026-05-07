@@ -512,7 +512,43 @@ class APSAIModel(models.Model):
                     'Open AI > Logs and inspect Response Body for the raw provider response.'
                 ))
             raise UserError(_('The AI router returned an empty completion.'))
+
+        self._raise_if_content_is_error(content)
         return content.strip()
+
+    def _raise_if_content_is_error(self, content):
+        """Raise a UserError when the router wraps a downstream error inside message content.
+
+        Some router/provider combinations return HTTP 200 but embed an API error
+        object as the message content (e.g. when a provider rejects a parameter
+        it doesn't support).  Detect this and surface a meaningful error.
+        """
+        text = (content or '').strip()
+        if not (text.startswith('{') and '"error"' in text):
+            return
+        try:
+            parsed = json.loads(text)
+        except (ValueError, TypeError):
+            return
+        if not isinstance(parsed, dict):
+            return
+        error = parsed.get('error')
+        if not error:
+            return
+        if isinstance(error, dict):
+            message = error.get('message') or str(error)
+            error_type = error.get('type') or ''
+        else:
+            message = str(error)
+            error_type = ''
+
+        hint = ''
+        if 'response_format' in message.lower() or 'json_object' in message.lower() or 'content type' in message.lower():
+            hint = _(
+                '\n\nHint: This provider/model may not support the "Force JSON Response" (response_format) option. '
+                'Try disabling "Force JSON Response" on this AI model configuration.'
+            )
+        raise UserError(_('The AI provider returned an error: %s%s') % (message, hint))
 
     def _is_reasoning_only_truncation(self, response_json):
         choices = response_json.get('choices') or []
@@ -640,19 +676,9 @@ class APSAIModel(models.Model):
         progress_callback = ai_run._build_stream_callback() if ai_run else None
         if ctx.get('ai_targeted_feedback'):
             applicable_prompts = self._collect_applicable_prompts(ctx['prompt_ids'], record._name)
-            extra = self._resolve_ctx_tagged_prompts(ctx, ctx['prompt_ids'])
-            if extra:
-                applicable_prompts = (applicable_prompts | extra).sorted(
-                    key=lambda r: ((r.sequence or 0), r.id)
-                )
             return self._run_feedback_targeted(ctx, applicable_prompts, record, progress_callback)
         else:
-            prompts = ctx['prompt_ids']
-            extra = self._resolve_ctx_tagged_prompts(ctx, prompts)
-            if extra:
-                prompts = (prompts | extra).sorted(
-                    key=lambda r: ((r.sequence or 0), r.id)
-                )
+            prompts = self._collect_applicable_prompts(ctx['prompt_ids'], record._name)
             return self._run_feedback_generic(ctx, prompts, record, progress_callback)
 
 

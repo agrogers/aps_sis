@@ -6,6 +6,17 @@ class APSAIPrompt(models.Model):
     _description = 'AI Prompt'
     _order = 'sequence, id'
 
+    _PROMPT_MESSAGE_SECTIONS = [
+        ('ai_instructions', 'AI Instructions'),
+        ('maximum_mark', 'Maximum Mark'),
+        ('question', 'Question'),
+        ('model_answer', 'Model Answer'),
+        ('notes', 'Notes'),
+        ('additional_context', 'Additional Context'),
+        ('student_answer', 'Student Answer'),
+        ('response_format', 'Response Format'),
+    ]
+
     _DEFAULT_TARGETED_FEEDBACK_PROMPT_NAME = 'Targeted Feedback'
     _DEFAULT_TARGETED_FEEDBACK_PROMPT_SEQUENCE = 90
 
@@ -41,6 +52,18 @@ Always try and include one positive feature of the answer with a feedback.type="
     sequence = fields.Integer(string='Sequence', default=10)
     prompt_name = fields.Char(string='Prompt Name', required=True)
     prompt = fields.Text(string='Prompt', required=False)
+    message_section = fields.Selection(
+        selection=_PROMPT_MESSAGE_SECTIONS,
+        string='Message Section',
+        default='additional_context',
+        required=True,
+        help=(
+            'Choose which generic prompt section this template should be added to. '
+            'Use Additional Context for background guidance that helps interpretation but is not core marking criteria, '
+            'not output JSON/schema rules, and not student answer content. '
+            'Examples: accepted wording variants, spelling conventions, domain reference hints, and edge-case handling notes.'
+        ),
+    )
     enabled = fields.Boolean(string='Enabled', default=True)
     display_name = fields.Char(compute='_compute_display_name', store=True)
     always_include = fields.Boolean(string='Always Include', default=False, help='If enabled, this prompt will always be included in AI calls for resources that use prompts, regardless of whether it is selected on the resource or not.')
@@ -86,6 +109,7 @@ Always try and include one positive feature of the answer with a feedback.type="
             'prompt_name': self._DEFAULT_TARGETED_FEEDBACK_PROMPT_NAME,
             'prompt': self._DEFAULT_TARGETED_FEEDBACK_PROMPT_TEXT,
             'sequence': self._DEFAULT_TARGETED_FEEDBACK_PROMPT_SEQUENCE,
+            'message_section': 'response_format',
             'enabled': True,
             'always_include': True,
             'applies_to_db_models': [(6, 0, resource_models.ids)],
@@ -108,6 +132,7 @@ Always try and include one positive feature of the answer with a feedback.type="
             'prompt_name': self._DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_NAME,
             'prompt': '',
             'sequence': self._DEFAULT_SPECIFIC_INSTRUCTIONS_PROMPT_SEQUENCE,
+            'message_section': 'ai_instructions',
             'enabled': True,
             'always_include': False,
             'applies_to_db_models': [(6, 0, resource_models.ids)],
