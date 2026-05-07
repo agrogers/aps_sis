@@ -1,3 +1,4 @@
+from . import aps_ethnicity
 from . import aps_academic_year
 from . import aps_academic_term
 from . import aps_level
