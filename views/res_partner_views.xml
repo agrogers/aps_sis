@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Inherit partner form to show gender field under VAT -->
+    <!-- Inherit partner form to add Personal tab and move gender field -->
     <record id="view_partner_form_gender" model="ir.ui.view">
         <field name="name">res.partner.form.gender</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <!-- Add Student button in button box if is_student -->
+            <!-- Add Student / Teacher stat buttons -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_open_aps_student" type="object" class="oe_stat_button" icon="fa-user-graduate" invisible="aps_student_count == 0">
                     <field name="aps_student_count" widget="statinfo" string="APS Student"/>
@@ -15,9 +15,14 @@
                     <field name="teacher_count" widget="statinfo" string="Teacher"/>
                 </button>
             </xpath>
-            <!-- Show gender field under VAT -->
-            <xpath expr="//field[@name='vat']" position="after">
-                <field name="gender"/>
+            <!-- Add a Personal tab to the notebook, visible for individuals only -->
+            <xpath expr="//notebook" position="inside">
+                <page name="personal_info" string="Personal" invisible="is_company">
+                    <group>
+                        <field name="gender"/>
+                        <field name="ethnicity_id"/>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>
