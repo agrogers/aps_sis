@@ -225,13 +225,13 @@
                             <field name="notes"  invisible="has_notes not in ['yes','use_parent']" 
                                     nolabel="1" placeholder="Enter the notes for this resource." readonly="has_notes=='use_parent'"/>
                             <group invisible="not has_notes=='use_parent'" >
-                                <div class="alert alert-light" role="alert">Using <b>Parent Notes</b> (read only).</div>
+                                <div class="alert alert-light" role="alert">Using <button name="action_open_parent_notes_popup" type="object" class="btn-link p-0 border-0 fw-bold align-baseline" aria-label="Open parent notes record for editing">Parent Notes</button> (read only).</div>
                             </group>
                         </page>
                         <page string="Question" invisible="has_question=='no'">
                             <field name="question"  invisible="has_question not in ['yes','use_parent']" nolabel="1" placeholder="Enter the question for this resource." readonly="has_question=='use_parent'"/>
                             <group invisible="not has_question=='use_parent'" >
-                                <div class="alert alert-light" role="alert">Using <b>Parent Question</b> (read only).</div>
+                                <div class="alert alert-light" role="alert">Using <button name="action_open_parent_question_popup" type="object" class="btn-link p-0 border-0 fw-bold align-baseline" aria-label="Open parent question record for editing">Parent Question</button> (read only).</div>
                             </group>
                         </page>
                         <page string="Default Answer" invisible="has_default_answer==False">
@@ -240,7 +240,7 @@
                         <page string="Model Answer" invisible="has_answer=='no'">
                             <field name="answer" invisible="has_answer not in ['yes','use_parent']" placeholder="Enter the answer or solution for this resource." readonly="has_answer=='use_parent'"/>
                             <group invisible="not has_answer=='use_parent'" >
-                                <div class="alert alert-light" role="alert">Using <b>Parent Answer</b> (read only).</div>
+                                <div class="alert alert-light" role="alert">Using <button name="action_open_parent_answer_popup" type="object" class="btn-link p-0 border-0 fw-bold align-baseline" aria-label="Open parent answer record for editing">Parent Answer</button> (read only).</div>
                             </group>
                         </page>
                         <page string="Linked Resources" invisible="not has_child_resources=='yes'">
