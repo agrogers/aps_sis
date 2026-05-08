@@ -21,6 +21,7 @@ from . import op_course
 from . import op_subject
 from . import op_faculty
 from . import hr_employee
+from . import hr_employee_skill
 from . import conditional_views
 from . import op_student
 from . import res_partner
