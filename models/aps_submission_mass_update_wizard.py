@@ -68,6 +68,13 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     model_answer_value = fields.Html(string='Value')
     update_feedback = fields.Boolean(string='Feedback')
     feedback_value = fields.Html(string='Value')
+    update_requeue_ai_marking = fields.Boolean(string='Requeue AI Marking')
+    requeue_ai_override_model_id = fields.Many2one(
+        'aps.ai.model',
+        string='AI Model Override',
+        domain="[('enabled', '=', True)]",
+        help='If set, this model will be used instead of the submission\'s configured model when requeueing.',
+    )
 
     # Confirmation
     confirm_update = fields.Boolean(string='I confirm I want to apply these changes to the selected submissions')
@@ -165,7 +172,7 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
         if self.update_feedback:
             updates['feedback'] = self.feedback_value
 
-        if not updates and not self.update_model_answer:
+        if not updates and not self.update_model_answer and not self.update_requeue_ai_marking:
             raise UserError(_("No updates selected. Please enable at least one update option."))
 
         # Perform the updates
@@ -176,12 +183,35 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
             resources = self.submission_ids.mapped('resource_id').filtered(lambda resource: resource.id)
             resources.write({'answer': self.model_answer_value})
 
+        # Requeue automatic AI marking, optionally overriding the AI model first
+        requeue_count = 0
+        requeue_skipped = 0
+        if self.update_requeue_ai_marking:
+            if self.requeue_ai_override_model_id:
+                self.submission_ids.write({'ai_override_model_id': self.requeue_ai_override_model_id.id})
+            for submission in self.submission_ids:
+                try:
+                    submission.action_requeue_auto_ai_marking()
+                    requeue_count += 1
+                except UserError:
+                    requeue_skipped += 1
+
+        message_parts = [_('Successfully updated %d submissions.') % len(self.submission_ids)]
+        if self.update_requeue_ai_marking:
+            message_parts.append(
+                _('Requeued AI marking for %d submission(s).') % requeue_count
+            )
+            if requeue_skipped:
+                message_parts.append(
+                    _('%d submission(s) were skipped (not eligible for automatic AI marking).') % requeue_skipped
+                )
+
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': _('Success'),
-                'message': _('Successfully updated %d submissions.') % len(self.submission_ids),
+                'message': ' '.join(message_parts),
                 'type': 'success',
             }
         }

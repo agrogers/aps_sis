@@ -98,6 +98,17 @@
                                     </group>
                                     <group colspan="8"/>
 
+                                    <group colspan="4">
+                                        <field name="update_requeue_ai_marking" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_requeue_ai_marking" class="mb-0">Requeue AI Marking</label>
+                                    </group>
+                                    <group colspan="8">
+                                        <field name="requeue_ai_override_model_id"
+                                               options="{'no_create': True, 'no_open': True}"
+                                               placeholder="Default model"
+                                               invisible="not update_requeue_ai_marking"/>
+                                    </group>
+
                                 </group>
                                 <group string="Submissions to Update" colspan="4">
                                     <field name="submission_ids" widget="many2many_tags" nolabel="1" readonly="1"/>
