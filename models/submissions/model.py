@@ -455,10 +455,10 @@ class APSResourceSubmission(models.Model):
     def _compute_result_percent(self):
         """Auto-calculate result_percent based on score and out_of_marks"""
         for record in self:
-            if record.score and record.score != sentinel_zero and record.out_of_marks and record.out_of_marks != sentinel_zero:
-                record.result_percent = int(round((record.score / record.out_of_marks) * 100))
-            elif record.score == sentinel_zero or not record.out_of_marks or record.out_of_marks == sentinel_zero:
+            if record.score == sentinel_zero or not record.out_of_marks or record.out_of_marks == sentinel_zero:
                 record.result_percent = 0
+            elif record.out_of_marks:
+                record.result_percent = int(round((record.score / record.out_of_marks) * 100))
         
     @api.depends('date_assigned', 'submission_name')
     def _compute_display_name(self):

@@ -167,7 +167,7 @@
                         </page>
 
 
-                        <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" invisible="state=='assigned' or not has_feedback"  name="feedback_page" >
+                        <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" invisible="state=='assigned' or not has_feedback or not is_current_user_faculty"  name="feedback_page" >
                             <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
                         </page>
                         <page string="Model Answer" class=" tab-with-icon model-answer-tab" invisible="not model_answer or state=='assigned' or model_answer_is_notes or has_answer == 'hidden'" name="model_answer_page">

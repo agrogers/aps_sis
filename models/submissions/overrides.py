@@ -25,7 +25,7 @@ class APSResourceSubmissionOverrides(models.Model):
         # Capture records that should auto-transition to 'submitted' when a score is entered.
         # Condition: score is being set to a non-zero value, state is not being explicitly
         # changed in this write, and the record is currently in 'assigned' state.
-        if 'score' in vals and vals.get('score') and 'state' not in vals:
+        if 'score' in vals and vals.get('score') != sentinel_zero and 'state' not in vals:
             records_to_auto_submit = self.filtered(lambda r: r.state == 'assigned')
         else:
             records_to_auto_submit = self.env['aps.resource.submission']
