@@ -254,6 +254,24 @@ class APSResource(models.Model):
     def action_open_parent_notes_popup(self):
         return self._action_open_field_source_popup('notes', 'Notes')
 
+    @api.model
+    def get_notes_popup_action(self, resource_id):
+        """Return an act_window action dict to open the notes popup for a resource.
+        Uses sudo for the view lookup so students without ir.ui.view access can call this."""
+        view = self.env['ir.model.data'].sudo()._xmlid_to_res_id(
+            'aps_sis.view_aps_resource_notes_popup', raise_if_not_found=False
+        )
+        view_id = view or False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Resource Notes',
+            'res_model': 'aps.resources',
+            'res_id': resource_id,
+            'view_mode': 'form',
+            'views': [[view_id, 'form']],
+            'target': 'new',
+        }
+
     def action_open_parent_question_popup(self):
         return self._action_open_field_source_popup('question', 'Question')
 

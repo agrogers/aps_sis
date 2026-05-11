@@ -231,10 +231,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
             return
         record_url = self._get_submission_url(student_view=True) or self._get_submission_url(student_view=False) or ''
         link_html = (
-            '<a href="%s">%s</a>' % (record_url, escape(self.display_name or self.submission_name or _('submission')))
+            Markup('<a href="%s">%s</a>') % (record_url, escape(self.display_name or self.submission_name or _('submission')))
             if record_url else escape(self.display_name or self.submission_name or _('submission'))
         )
-        body = _('<p>Your %s has been marked automatically and feedback is now available.</p>') % link_html
+        body = Markup('<p>%s</p>') % (Markup(_('Your %s task has been marked automatically and feedback is now available.')) % (link_html,))
         try:
             channel = self.env['discuss.channel'].channel_get(
                 partners_to=[author_partner.id, student_partner.id],
@@ -257,12 +257,14 @@ class APSResourceSubmissionAIFeedback(models.Model):
             return
         record_url = self._get_submission_url(student_view=False) or ''
         link_html = (
-            '<a href="%s">%s</a>' % (record_url, escape(self.display_name or self.submission_name or _('submission')))
+            Markup('<a href="%s">%s</a>') % (record_url, escape(self.display_name or self.submission_name or _('submission')))
             if record_url else escape(self.display_name or self.submission_name or _('submission'))
         )
-        body = _(
-            '<p>Automatic AI marking failed for %s after %s attempts.</p><p><strong>Last error:</strong> %s</p>'
-        ) % (link_html, _AUTO_MARK_MAX_ATTEMPTS, escape(error_text or _('No error details were returned.')))
+        body = Markup('<p>%s</p><p><strong>%s</strong> %s</p>') % (
+            Markup(_('Automatic AI marking failed for %s after %s attempts.')) % (link_html, _AUTO_MARK_MAX_ATTEMPTS),
+            _('Last error:'),
+            escape(error_text or _('No error details were returned.')),
+        )
         try:
             self.with_context(**{_AUI_SKIP_CHANNEL_FORWARD_CTX: True}).message_post(
                 body=body,

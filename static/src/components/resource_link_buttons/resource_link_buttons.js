@@ -11,20 +11,12 @@ import { useService } from "@web/core/utils/hooks";
  */
 export async function openResourceLink(linkData, services, context) {
     if (linkData && linkData.link_type === "notes") {
-        const [, viewId] = await services.orm.call(
-            "ir.model.data",
-            "check_object_reference",
-            ["aps_sis", "view_aps_resource_notes_popup"]
+        const action = await services.orm.call(
+            "aps.resources",
+            "get_notes_popup_action",
+            [linkData.id]
         );
-        services.action.doAction({
-            type: "ir.actions.act_window",
-            name: linkData.name || "Resource Notes",
-            res_model: "aps.resources",
-            res_id: linkData.id,
-            view_mode: "form",
-            views: [[viewId, "form"]],
-            target: "new",
-        });
+        services.action.doAction(action);
         return;
     }
 
