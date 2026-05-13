@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="0">
+    <data noupdate="1">
         <record id="mail_template_student_certificate_a4" model="mail.template">
             <field name="name">APS Student Certificate A4</field>
             <field name="model_id" ref="aps_sis.model_aps_student_certificate"/>
