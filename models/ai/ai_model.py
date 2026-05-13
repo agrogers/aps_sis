@@ -35,7 +35,7 @@ class APSAIModel(models.Model):
 
     _PROMPT_TEMPLATE_SECTION_SENTINEL = '__PROMPT_TEMPLATE_SECTION__'
 
-    display_name = fields.Char(compute='_compute_display_name')
+    display_name = fields.Char(compute='_compute_display_name', stored=True)
     name = fields.Char(required=True)
     active = fields.Boolean(default=True)
     enabled = fields.Boolean(default=True, help='If disabled, this model will not be used for AI calls.')

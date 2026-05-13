@@ -155,6 +155,20 @@
     </record>
 
 
+    <!-- ─── HR Employee form — relabel Work Mobile field ─── -->
+
+    <record id="view_hr_employee_mobile_label" model="ir.ui.view">
+        <field name="name">hr.employee.inherit.mobile.label</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='mobile_phone']" position="attributes">
+                <attribute name="string">Mobile</attribute>
+                <attribute name="help">This mobile number is used in the Contact, User and Employee records</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <!-- ─── User profile form (HR/employee) — show avatar over profile picture ─── -->
 
     <record id="view_res_users_profile_avatar" model="ir.ui.view">

@@ -85,6 +85,7 @@
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
+                <field name="out_of_marks" widget="float_sentinel" optional="hide" readonly="1"/>
                 <field name="points" optional="hide"/>
                 <field name="points_scale" optional="hide"/>
                 <field name="confidence_rating" widget="priority" optional="hide"/>
