@@ -4,7 +4,7 @@
         <field name="name">aps.student.certificate.list</field>
         <field name="model">aps.student.certificate</field>
         <field name="arch" type="xml">
-            <list default_order="certificate_date desc">
+            <list>
                 <field name="partner_id" optional="show"/>
                 <field name="event" optional="show"/>
                 <field name="subject_id" optional="show"/>

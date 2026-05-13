@@ -1,6 +1,7 @@
 import logging
 
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -33,9 +34,10 @@ class APSStudentCertificate(models.Model):
     _name = 'aps.student.certificate'
     _description = 'APS Student Certificate'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'certificate_date desc, id desc'
 
     name = fields.Char(compute='_compute_name', store=True)
-    partner_id = fields.Many2one('res.partner', required=True, tracking=True)
+    partner_id = fields.Many2one('res.partner', required=True, tracking=True, index=True)
     subject_id = fields.Many2one('op.subject', tracking=True)
     event = fields.Char(required=True, tracking=True)
     certificate_date = fields.Date(default=fields.Date.today, required=True, tracking=True)
@@ -72,7 +74,15 @@ class APSStudentCertificate(models.Model):
         template = self.certificate_template_id.mail_template_id
         if not template:
             return ''
-        mail_values = template.generate_email(self.id, ['body_html'])
+        try:
+            mail_values = template.generate_email(self.id, ['body_html'])
+        except Exception as err:
+            _logger.exception(
+                'Failed to render certificate template %s for certificate %s',
+                template.id,
+                self.id,
+            )
+            raise UserError('Failed to render certificate template.') from err
         body_html = (mail_values or {}).get('body_html') or ''
         if not body_html:
             _logger.warning(
