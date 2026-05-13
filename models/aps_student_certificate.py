@@ -1,4 +1,8 @@
+import logging
+
 from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
 
 
 class APSCertificateTemplate(models.Model):
@@ -68,8 +72,16 @@ class APSStudentCertificate(models.Model):
         template = self.certificate_template_id.mail_template_id
         if not template:
             return ''
-        rendered_html = template._render_field('body_html', [self.id], compute_lang=True)
-        return rendered_html.get(self.id) or ''
+        try:
+            rendered_html = template._render_field('body_html', [self.id], compute_lang=True)
+            return rendered_html.get(self.id) or ''
+        except Exception:
+            _logger.exception(
+                'Failed to render certificate template %s for certificate %s',
+                template.id,
+                self.id,
+            )
+            return ''
 
     def action_print_certificate(self):
         self.ensure_one()
