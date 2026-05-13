@@ -20,6 +20,7 @@ class ResPartner(models.Model):
     is_teacher = fields.Boolean("Teacher")
 
     submission_ids = fields.One2many('aps.resource.submission', 'student_id', string='Submissions')
+    certificate_ids = fields.One2many('aps.student.certificate', 'partner_id', string='Certificates')
 
     def write(self, vals):
         res = super().write(vals)

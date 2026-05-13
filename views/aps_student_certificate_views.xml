@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_student_certificate_list" model="ir.ui.view">
+        <field name="name">aps.student.certificate.list</field>
+        <field name="model">aps.student.certificate</field>
+        <field name="arch" type="xml">
+            <list default_order="certificate_date desc">
+                <field name="partner_id" optional="show"/>
+                <field name="event" optional="show"/>
+                <field name="subject_id" optional="show"/>
+                <field name="certificate_date" optional="show"/>
+                <field name="certificate_template_id" optional="show"/>
+                <field name="date_printed" optional="show"/>
+                <field name="print_count" optional="show"/>
+                <button name="action_print_certificate" string="Print" type="object" class="btn-link"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_student_certificate_form" model="ir.ui.view">
+        <field name="name">aps.student.certificate.form</field>
+        <field name="model">aps.student.certificate</field>
+        <field name="arch" type="xml">
+            <form string="Student Certificate">
+                <header>
+                    <button name="action_print_certificate" string="Print Certificate" type="object" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group col="2">
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="event"/>
+                            <field name="subject_id"/>
+                        </group>
+                        <group>
+                            <field name="certificate_template_id"/>
+                            <field name="certificate_date"/>
+                            <field name="date_printed" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Print History">
+                            <field name="print_history_ids" readonly="1">
+                                <list>
+                                    <field name="printed_on"/>
+                                    <field name="printed_by"/>
+                                    <field name="mail_template_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_student_certificate" model="ir.actions.act_window">
+        <field name="name">Student Certificates</field>
+        <field name="res_model">aps.student.certificate</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_aps_student_certificate_list_view" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_student_certificate_list"/>
+        <field name="act_window_id" ref="action_aps_student_certificate"/>
+    </record>
+
+    <record id="action_aps_student_certificate_form_view" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_student_certificate_form"/>
+        <field name="act_window_id" ref="action_aps_student_certificate"/>
+    </record>
+
+    <record id="view_aps_certificate_template_list" model="ir.ui.view">
+        <field name="name">aps.certificate.template.list</field>
+        <field name="model">aps.certificate.template</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" optional="show"/>
+                <field name="page_format" optional="show"/>
+                <field name="mail_template_id" optional="show"/>
+                <field name="active" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_certificate_template_form" model="ir.ui.view">
+        <field name="name">aps.certificate.template.form</field>
+        <field name="model">aps.certificate.template</field>
+        <field name="arch" type="xml">
+            <form string="Certificate Template">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="page_format"/>
+                        <field name="mail_template_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_certificate_template" model="ir.actions.act_window">
+        <field name="name">Certificate Templates</field>
+        <field name="res_model">aps.certificate.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_aps_certificate_template_list_view" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_certificate_template_list"/>
+        <field name="act_window_id" ref="action_aps_certificate_template"/>
+    </record>
+
+    <record id="action_aps_certificate_template_form_view" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_certificate_template_form"/>
+        <field name="act_window_id" ref="action_aps_certificate_template"/>
+    </record>
+</odoo>

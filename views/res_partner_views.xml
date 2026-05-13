@@ -23,6 +23,17 @@
                         <field name="ethnicity_id"/>
                     </group>
                 </page>
+                <page name="aps_certificates" string="Certificates" invisible="is_company">
+                    <field name="certificate_ids" readonly="1">
+                        <list>
+                            <field name="event"/>
+                            <field name="subject_id"/>
+                            <field name="certificate_date"/>
+                            <field name="certificate_template_id"/>
+                            <field name="date_printed"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>
