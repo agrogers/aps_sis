@@ -11,8 +11,6 @@ class ResPartner(models.Model):
         ('other', 'Other')
     ], string='Gender')
 
-    ethnicity_id = fields.Many2one('aps.ethnicity', string='Ethnicity')
-
     # Redefine to change labels
     is_parent = fields.Boolean("Parent")
     is_student = fields.Boolean("Student")

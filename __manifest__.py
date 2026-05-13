@@ -33,7 +33,6 @@
 		'views/aps_resource_mass_update_wizard_views.xml',
 		'views/aps_submit_mark_wizard_views.xml',
 		'views/core/aps_subject_category_views.xml',
-		'views/core/aps_ethnicity_views.xml',
 		'views/op_program_level_views.xml',
 		'views/core/aps_level_views.xml',
 		'views/core/aps_academic_year_views.xml',
