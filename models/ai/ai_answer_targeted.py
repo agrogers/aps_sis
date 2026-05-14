@@ -373,7 +373,7 @@ class APSAIModelAnswerChunking(models.Model):
         # legacy parameter — unused
         external_prompt='',
     ):
-        """Build an OpenAI-compatible chat payload via the unified base builder."""
+        """Build an OpenAI-compatible chat payload — delegates to _assemble_feedback_payload."""
         ctx = {
             'instructions': instructions,
             'out_of_marks': out_of_marks,
@@ -383,22 +383,15 @@ class APSAIModelAnswerChunking(models.Model):
             'model_answer': model_answer,
             'use_note': use_note,
             'notes': notes,
+            'include_reasoning': include_reasoning,
         }
-
-        if targeted_feedback and student_answer_chunks:
-            student_text = json.dumps(student_answer_chunks, indent=2, ensure_ascii=False)
-        else:
-            student_text = student_answer.strip()
-
-        dynamic_data = self._build_dynamic_section_data(ctx, student_answer_text=student_text)
-
-        if prior_phase_context and prior_phase_context.strip():
-            dynamic_data['detailed_feedback'] = prior_phase_context.strip()
-
-        return self._build_payload(
+        chunks = student_answer_chunks if targeted_feedback else None
+        return self._assemble_feedback_payload(
+            ctx,
             prompt_records or self.env['ai_prompts'],
-            dynamic_data,
-            include_reasoning=include_reasoning,
+            student_answer,
+            student_answer_chunks=chunks,
+            prior_phase_context=prior_phase_context,
         )
 
     def _resolve_tagged_prompts(self, tag_name, candidate_prompts):
@@ -466,58 +459,24 @@ class APSAIModelAnswerChunking(models.Model):
 
         chunk_mode = 'code' if self.env['ai_prompts'].sudo()._has_tag(prompts, 'code') else 'auto'
         answer_chunk_data = self._build_submission_answer_chunks(ctx['student_answer_html'], chunk_mode=chunk_mode)
-        payload, names = self._assemble_chat_payload(
-            instructions=self._html_to_text(ctx.get('instructions', '')),
-            prompt_records=prompts,
-            out_of_marks=ctx.get('out_of_marks', False),
-            use_question=ctx.get('use_question', False),
-            question=self._html_to_text(ctx.get('question', '')),
-            use_model_answer=ctx.get('use_model_answer', False),
-            model_answer=self._html_to_text(ctx.get('model_answer', '')),
-            use_note=ctx.get('use_note', False),
-            notes=self._html_to_text(ctx.get('notes', '')),
-            student_answer=student_answer,
+        payload, names = self._assemble_feedback_payload(
+            ctx,
+            prompts,
+            student_answer,
             student_answer_chunks=answer_chunk_data['chunks'],
-            targeted_feedback=True,
-            include_reasoning=ctx.get('include_reasoning', False),
         )
-        result = self._execute_logged_router_call(
+        result, raw_content, parsed = self._execute_feedback_call_with_json_retries(
             payload,
-            request_type='submission_feedback',
-            related_record=record,
-            stream_callback=progress_callback,
+            record,
+            progress_callback,
             prompt_names_used=names,
         )
-        try:
-            raw_content = self._extract_message_content(result['response_json'])
-        except Exception as exc:
-            self._update_call_log_error(result.get('log_record'), exc)
-            if self._is_reasoning_only_truncation(result.get('response_json') or {}):
-                retry_payload = dict(payload)
-                retry_payload['max_completion_tokens'] = self._get_retry_max_completion_tokens(
-                    payload.get('max_completion_tokens')
-                )
-                retry_result = self._execute_logged_router_call(
-                    retry_payload,
-                    request_type='submission_feedback',
-                    related_record=record,
-                    stream_callback=progress_callback,
-                )
-                try:
-                    result = retry_result
-                    raw_content = self._extract_message_content(result['response_json'])
-                except Exception as retry_exc:
-                    self._update_call_log_error(result.get('log_record'), retry_exc)
-                    raise
-            else:
-                raise
-
-        parsed = self._parse_structured_response(raw_content)
+        feedback_html = self._combine_feedback_parts(parsed) or self._normalize_feedback_html(raw_content)
         targeted_result = self._extract_targeted_feedback(parsed, raw_content, answer_chunk_data)
         score = self._extract_score(parsed, raw_content)
         score_comment = self._extract_score_comment(parsed)
         return {
-            'feedback_html': targeted_result['feedback_html'],
+            'feedback_html': feedback_html,
             'score': score,
             'score_comment': score_comment,
             'answer_chunks': targeted_result['answer_chunks'],

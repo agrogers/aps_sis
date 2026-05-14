@@ -274,10 +274,10 @@
                         <field name="prompt_names_used" nolabel="1"/>
                     </group>
                     <group string="Request Payload">
-                        <field name="request_payload" nolabel="1"/>
+                        <field name="request_payload_html" nolabel="1" widget="html" readonly="1"/>
                     </group>
                     <group string="Response Body">
-                        <field name="response_body" nolabel="1"/>
+                        <field name="response_body_html" nolabel="1" widget="html" readonly="1"/>
                     </group>
                 </sheet>
             </form>

@@ -225,6 +225,57 @@ For PDF reports, control page margins, orientation, and headers using `report.pa
 - If uncertain about an API or pattern, say so instead of guessing
 - Do NOT generate pre-v17 or pre-v18 code
 
+---
+
+## AI Feedback Pipeline (`models/ai/`)
+
+### Single source of truth for payload assembly
+
+**Always use `_build_payload` from `ai_answer_base.py`** to assemble AI chat payloads.
+Never create a standalone prompt-assembly method that reimplements section iteration, heading
+formatting, system-message construction, or response-format injection.
+
+| Path | How to call `_build_payload` |
+|---|---|
+| Generic (non-targeted) | `self._build_payload(prompts, dynamic_data, include_reasoning=..., response_format_fallback=PROMPT_RESPONSE_FORMAT_GENERIC)` |
+| Targeted | `self._build_payload(prompts, dynamic_data, include_reasoning=...)` — uses the default `PROMPT_RESPONSE_FORMAT` |
+
+Import `PROMPT_RESPONSE_FORMAT_GENERIC` from `.ai_answer_base` when calling from `ai_answer_generic.py`.
+
+### Section keys
+
+All valid `message_section` values are defined in `PROMPT_SECTION_ORDER` in `ai_answer_base.py`.
+Do not add new hard-coded section strings outside that file.
+
+| Key | Purpose |
+|---|---|
+| `system` | Overrides the system message (optional; defaults to `_build_system_content()`) |
+| `ai_instructions` | Specific grading/feedback instructions |
+| `maximum_mark` | Mark ceiling |
+| `question` | Task question text |
+| `model_answer` | Reference answer |
+| `notes` | Additional notes for the AI |
+| `detailed_feedback` | Targeted path only — prior-phase context |
+| `additional_context` | Catch-all for any other context |
+| `opening_summary` | Generic path — brief overview prompt |
+| `detailed_analysis` | Generic path — point-by-point prompt |
+| `results_table` | Generic path — criteria/mark table prompt |
+| `student_answer` | Student's submitted answer |
+| `response_format` | JSON schema instruction (usually auto-injected from fallback) |
+
+### Shared helpers in `ai_answer_base.py`
+
+The following methods are defined **once** in the base and must **not** be duplicated
+in `ai_answer_generic.py`, `ai_answer_targeted.py`, or any other mixin:
+
+- `_build_payload` — payload assembly (see above)
+- `_build_dynamic_section_data` — maps ctx dict → section-keyed dict
+- `_build_system_content` — constructs default system message
+- `_parse_structured_response` — JSON extraction from raw AI response
+- `_extract_score` / `_extract_score_comment` — score parsing helpers
+- `_normalize_feedback_html` — plain-text → HTML fallback
+- `_html_to_text` — strips HTML tags for prompt injection
+
 To create a professional and beautiful Odoo v18 dashboard, you can use the following detailed prompt for an AI. This prompt is structured to leverage Odoo's modern **OWL (Odoo Web Library)** framework and best practices for creating responsive, data-driven custom dashboards.
 
 ---

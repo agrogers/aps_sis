@@ -684,7 +684,7 @@ class APSAIModel(models.Model):
         If ``ai_targeted_feedback`` is True, delegates to
         ``_run_feedback_targeted`` (defined in ai_answer_targeted.py).
         Otherwise delegates to ``_run_feedback_generic`` (defined in
-        ai_answer_generic.py).  No code from ai_answer_targeted.py is
+        ai_answer_base.py).  No code from ai_answer_targeted.py is
         reached when targeted feedback is disabled.
         """
         self.ensure_one()

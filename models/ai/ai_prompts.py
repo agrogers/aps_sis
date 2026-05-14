@@ -7,12 +7,16 @@ class APSAIPrompt(models.Model):
     _order = 'sequence, id'
 
     _PROMPT_MESSAGE_SECTIONS = [
+        ('system', 'System'),
         ('ai_instructions', 'AI Instructions'),
         ('maximum_mark', 'Maximum Mark'),
         ('question', 'Question'),
         ('model_answer', 'Model Answer'),
         ('notes', 'Notes'),
         ('additional_context', 'Additional Context'),
+        ('opening_summary', 'Opening Summary'),
+        ('detailed_analysis', 'Detailed Analysis'),
+        ('results_table', 'Results Table'),
         ('student_answer', 'Student Answer'),
         ('response_format', 'Response Format'),
     ]

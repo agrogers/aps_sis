@@ -1,6 +1,9 @@
+import json
 import logging
 from collections import defaultdict
 from datetime import timedelta
+
+from markupsafe import Markup, escape
 
 from odoo import _, api, fields, models
 
@@ -39,6 +42,90 @@ class APSAICallLog(models.Model):
     response_body = fields.Text(readonly=True)
     error_message = fields.Text(readonly=True)
     display_name = fields.Char(compute='_compute_display_name', store=True)
+    request_payload_html = fields.Html(
+        compute='_compute_pretty_html', string='Request Payload', sanitize=False
+    )
+    response_body_html = fields.Html(
+        compute='_compute_pretty_html', string='Response Body', sanitize=False
+    )
+
+    # Ordered display sections for structured AI feedback responses.
+    # opening_summary is always first so the summary paragraph leads the display.
+    _AI_RESPONSE_SECTION_ORDER = [
+        ('opening_summary', 'Summary'),
+        ('detailed_analysis', 'Detailed Analysis'),
+        ('results_table', 'Results Table'),
+        ('score', 'Score'),
+        ('score_comment', 'Score Comment'),
+    ]
+
+    @api.depends('request_payload', 'response_body')
+    def _compute_pretty_html(self):
+        for record in self:
+            record.request_payload_html = record._pretty_json_html(record.request_payload)
+            record.response_body_html = record._render_response_body_html(record.response_body)
+
+    def _render_response_body_html(self, raw):
+        """Render the AI response body with known sections in display order.
+
+        opening_summary is rendered first so the summary paragraph always
+        appears at the top of the log viewer.  Any remaining / unknown keys
+        are appended afterwards as a raw JSON block.
+        """
+        if not raw:
+            return Markup('<pre class="o_field_text"><em>—</em></pre>')
+        try:
+            parsed = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            return self._pretty_json_html(raw)
+        if not isinstance(parsed, dict):
+            return self._pretty_json_html(raw)
+
+        _pre_style = (
+            'white-space:pre-wrap;word-break:break-word;font-size:12px;'
+            'background:#f8f9fa;padding:12px;border-radius:4px;overflow:auto;max-height:400px;'
+        )
+        _h_style = 'font-size:13px;font-weight:600;margin:12px 0 4px;color:#495057;'
+        parts = []
+        known_keys = {k for k, _ in self._AI_RESPONSE_SECTION_ORDER}
+        for key, label in self._AI_RESPONSE_SECTION_ORDER:
+            value = parsed.get(key)
+            if value is None:
+                continue
+            if isinstance(value, str):
+                # Python string already has real newlines — display directly.
+                text = value
+            else:
+                # Re-serialise non-string scalars/objects, then unescape \n so
+                # embedded newlines render as line breaks instead of '\n' text.
+                text = json.dumps(value, indent=2, ensure_ascii=False).replace('\\n', '\n')
+            parts.append(
+                Markup('<div><p style="%s">%s</p><pre style="%s">%s</pre></div>') % (
+                    _h_style, label, _pre_style, escape(text)
+                )
+            )
+        remainder = {k: v for k, v in parsed.items() if k not in known_keys}
+        if remainder:
+            extra = json.dumps(remainder, indent=2, ensure_ascii=False).replace('\\n', '\n')
+            parts.append(
+                Markup('<div><p style="%s">Other</p><pre style="%s">%s</pre></div>') % (
+                    _h_style, _pre_style, escape(extra)
+                )
+            )
+        return Markup('').join(parts)
+
+    def _pretty_json_html(self, raw):
+        if not raw:
+            return Markup('<pre class="o_field_text"><em>—</em></pre>')
+        try:
+            parsed = json.loads(raw)
+            pretty = json.dumps(parsed, indent=2, ensure_ascii=False)
+        except (json.JSONDecodeError, ValueError):
+            pretty = raw
+        # Unescape \n sequences inside JSON string values so they render as
+        # real line breaks rather than the literal two characters '\n'.
+        pretty = pretty.replace('\\n', '\n')
+        return Markup('<pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;background:#f8f9fa;padding:12px;border-radius:4px;overflow:auto;max-height:600px;">%s</pre>') % escape(pretty)
 
     @api.depends('request_type', 'model_id.display_name', 'create_date', 'state')
     def _compute_display_name(self):

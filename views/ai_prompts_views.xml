@@ -26,9 +26,9 @@
                 <field name="sequence" widget="handle" optional="show"/>
                 <field name="enabled" widget="boolean_toggle" optional="show"/>
                 <field name="always_include" widget="boolean_toggle" optional="show"/>
+                <field name="prompt_name"/>
                 <field name="message_section" optional="show"/>
                 <field name="tag_ids" widget="many2many_tags" optional="show"/>
-                <field name="prompt_name"/>
                 <field name="applies_to_ai_models" widget="many2many_tags" optional="show"/>
                 <field name="applies_to_db_models" widget="many2many_tags" optional="show"/>
                 <field name="prompt" optional="show"/>
