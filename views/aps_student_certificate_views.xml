@@ -82,6 +82,7 @@
             <list>
                 <field name="name" optional="show"/>
                 <field name="page_format" optional="show"/>
+                <field name="page_orientation" optional="show"/>
                 <field name="mail_template_id" optional="show"/>
                 <field name="active" optional="show"/>
             </list>
@@ -97,6 +98,8 @@
                     <group>
                         <field name="name"/>
                         <field name="page_format"/>
+                        <field name="page_orientation"/>
+                        <field name="frame_image" widget="image" class="o_image_64_max"/>
                         <field name="mail_template_id"/>
                         <field name="active"/>
                     </group>

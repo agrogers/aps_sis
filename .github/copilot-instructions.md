@@ -8,6 +8,69 @@ This workspace contains an Odoo 18 ERP system with OpenEducat education modules 
 
 Key data flows: Submissions → Tasks → Resources (SIS workflow); Invoices → POS → Accounting (business flow).
 
+## wkhtmltopdf Full-Page Background Images — What Works and What Doesn't
+
+wkhtmltopdf (used by Odoo for PDF reports) has significant CSS rendering limitations compared to browsers.
+**Do not re-attempt the approaches listed as broken below.**
+
+### ❌ BROKEN — Do NOT use these
+
+| Approach | Why it fails |
+|---|---|
+| `background-image: url(data:...)` + `background-size: cover` | Image disappears entirely |
+| `background-image: url(data:...)` + `background-size: 100% 100%` | Squashes image, ignores aspect ratio |
+| `background-image: url(data:...)` + `background-size: contain` | Doesn't fill the page |
+| `<img position: absolute; width: 100%; height: 100%>` in a content-driven parent | Height resolves against content height, not paper height — image shrinks with less content |
+| `<img position: fixed; width: 100%; height: 100%>` | Percentages on `fixed` resolve unreliably; image disappears |
+| `<img position: fixed>` with explicit mm `width` + `height` directly on the img | wkhtmltopdf won't stretch `<img>` against its natural aspect ratio; fills height and leaves horizontal gaps |
+| `<img position: fixed>` inside a parent with `overflow: hidden` | `overflow: hidden` clips `position: fixed` children in wkhtmltopdf |
+
+### ✅ CORRECT approach — `position: fixed` with explicit paper dimensions in mm
+
+```python
+# In the model, provide exact paper dimensions based on format+orientation:
+_PAGE_DIMENSIONS_MM = {
+    ('a4', 'portrait'):   ('210mm', '297mm'),
+    ('a4', 'landscape'):  ('297mm', '210mm'),
+    ('a5', 'portrait'):   ('148mm', '210mm'),
+    ('a5', 'landscape'):  ('210mm', '148mm'),
+}
+
+def _get_page_dimensions_style(self):
+    self.ensure_one()
+    tmpl = self.certificate_template_id
+    w, h = self._PAGE_DIMENSIONS_MM.get(
+        (tmpl.page_format, tmpl.page_orientation or 'portrait'), ('210mm', '297mm')
+    )
+    return f'width: {w}; height: {h};'
+```
+
+```xml
+<!-- In the QWeb template — fixed-positioned div sized to exact paper mm, img fills it -->
+<div t-attf-style="position: fixed; top: 0; left: 0; #{o._get_page_dimensions_style()} z-index: 0;">
+    <img t-attf-src="#{o._get_certificate_frame_data_uri()}"
+         style="width: 100%; height: 100%;"/>
+</div>
+<!-- Content sits on top -->
+<div style="position: relative; z-index: 1; ...">...</div>
+```
+
+**Key rules:**
+- `position: fixed` must be on the **wrapper `<div>`**, NOT on the `<img>` itself — wkhtmltopdf won't stretch `<img>` against its natural aspect ratio even with explicit dimensions.
+- The `<img>` inside uses `width: 100%; height: 100%` to fill the fixed div.
+- Must use **absolute mm dimensions** (e.g. `width: 297mm; height: 210mm`) on the div, NOT `width: 100%; height: 100%`.
+- The parent of the fixed div must NOT have `overflow: hidden`.
+- Content layer needs `position: relative; z-index: 1` to render above the image.
+
+### Binary field / data URI notes
+- Odoo `fields.Binary` stores data as base64. When read from the ORM it is already base64-encoded.
+- `fields.Image` via the UI may double-encode: the field value is base64 of a base64 string.
+  - Detect by decoding once and checking if result is itself valid base64 that starts with PNG/JPEG magic bytes.
+- PNG magic: `b'\x89PNG\r\n\x1a\n'` (8 bytes)
+- JPEG magic: first 2 bytes `b'\xff\xd8'`
+- Use `data:image/png;base64,...` or `data:image/jpeg;base64,...` accordingly; do NOT hardcode `image/svg+xml`.
+
+
 ## Critical Workflows
 - **Start Server**: `cd C:\Dev\Odoo\mvis20251208; python odoo-bin -c odoo.conf -d odoo18v20251208`
 - **Upgrade Module**: `python odoo-bin -c odoo.conf -d odoo18v20251208 -u <module_name> --stop-after-init`

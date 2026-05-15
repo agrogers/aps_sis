@@ -1,4 +1,6 @@
 import logging
+import base64
+from markupsafe import Markup
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -17,6 +19,12 @@ class APSCertificateTemplate(models.Model):
         required=True,
         default='a4',
     )
+    page_orientation = fields.Selection(
+        [('portrait', 'Portrait'), ('landscape', 'Landscape')],
+        required=True,
+        default='portrait',
+    )
+    frame_image = fields.Binary(string='Certificate Background Frame', attachment=True)
     mail_template_id = fields.Many2one(
         'mail.template',
         required=True,
@@ -69,13 +77,56 @@ class APSStudentCertificate(models.Model):
         for record in self:
             record.print_count = len(record.print_history_ids)
 
+    # Paper dimensions in mm (width x height) for each format+orientation combo.
+    # Used by the PDF report template to size the background image absolutely so
+    # wkhtmltopdf renders it reliably (percentage-based sizing is unreliable).
+    _PAGE_DIMENSIONS_MM = {
+        ('a4', 'portrait'):   ('210mm', '297mm'),
+        ('a4', 'landscape'):  ('297mm', '210mm'),
+        ('a5', 'portrait'):   ('148mm', '210mm'),
+        ('a5', 'landscape'):  ('210mm', '148mm'),
+    }
+
+    def _get_page_dimensions_style(self):
+        self.ensure_one()
+        tmpl = self.certificate_template_id
+        w, h = self._PAGE_DIMENSIONS_MM.get(
+            (tmpl.page_format, tmpl.page_orientation or 'portrait'),
+            ('210mm', '297mm'),
+        )
+        return f'width: {w}; height: {h};'
+
+    def _get_certificate_frame_data_uri(self):
+        self.ensure_one()
+        frame_image = self.certificate_template_id.frame_image
+        if not frame_image:
+            return ''
+        # Odoo Binary fields return base64 (bytes or str); normalise to str
+        b64_str = frame_image.decode('ascii') if isinstance(frame_image, bytes) else frame_image
+        raw = base64.b64decode(b64_str)
+        # Handle double-encoded case: decoded result is itself base64 of image data
+        try:
+            raw2 = base64.b64decode(raw)
+            if raw2[:8] == b'\x89PNG\r\n\x1a\n' or raw2[:2] == b'\xff\xd8':
+                b64_str = raw.decode('ascii')
+                raw = raw2
+        except Exception:
+            pass
+        if raw[:8] == b'\x89PNG\r\n\x1a\n':
+            mime = 'image/png'
+        elif raw[:2] == b'\xff\xd8':
+            mime = 'image/jpeg'
+        else:
+            mime = 'image/svg+xml'
+        return f'data:{mime};base64,{b64_str}'
+
     def _render_certificate_body_html(self):
         self.ensure_one()
         template = self.certificate_template_id.mail_template_id
         if not template:
-            return ''
+            return Markup('')
         try:
-            mail_values = template.generate_email(self.id, ['body_html'])
+            mail_values = template._generate_template([self.id], ['body_html'])
         except Exception as err:
             _logger.exception(
                 'Failed to render certificate template %s for certificate %s',
@@ -83,29 +134,35 @@ class APSStudentCertificate(models.Model):
                 self.id,
             )
             raise UserError('Failed to render certificate template.') from err
-        body_html = (mail_values or {}).get('body_html') or ''
+        body_html = ((mail_values or {}).get(self.id) or {}).get('body_html') or ''
         if not body_html:
             _logger.warning(
                 'Certificate template %s rendered an empty body for certificate %s',
                 template.id,
                 self.id,
             )
-        return body_html
+        return Markup(body_html)
 
     def action_print_certificate(self):
         self.ensure_one()
+        certificate_template = self.certificate_template_id
         self.date_printed = fields.Datetime.now()
         self.env['aps.student.certificate.print.history'].create({
             'certificate_id': self.id,
             'printed_by': self.env.user.id,
             'printed_on': self.date_printed,
-            'mail_template_id': self.certificate_template_id.mail_template_id.id,
+            'mail_template_id': certificate_template.mail_template_id.id,
         })
-        report_xmlid = (
-            'aps_sis.action_report_student_certificate_a5'
-            if self.certificate_template_id.page_format == 'a5'
-            else 'aps_sis.action_report_student_certificate_a4'
-        )
+        report_xmlid_by_layout = {
+            ('a4', 'portrait'): 'aps_sis.action_report_student_certificate_a4',
+            ('a4', 'landscape'): 'aps_sis.action_report_student_certificate_a4_landscape',
+            ('a5', 'portrait'): 'aps_sis.action_report_student_certificate_a5',
+            ('a5', 'landscape'): 'aps_sis.action_report_student_certificate_a5_landscape',
+        }
+        page_orientation = certificate_template.page_orientation or 'portrait'
+        report_xmlid = report_xmlid_by_layout.get((certificate_template.page_format, page_orientation))
+        if not report_xmlid:
+            raise UserError('Certificate template page format/orientation is not configured.')
         return self.env.ref(report_xmlid).report_action(self)
 
 

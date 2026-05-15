@@ -2,31 +2,55 @@
 <odoo>
     <data>
         <record id="paperformat_student_certificate_a4" model="report.paperformat">
-            <field name="name">Student Certificate A4</field>
+            <field name="name">Student Certificate A4 Portrait</field>
             <field name="format">A4</field>
             <field name="orientation">Portrait</field>
-            <field name="margin_top">10</field>
-            <field name="margin_bottom">10</field>
-            <field name="margin_left">10</field>
-            <field name="margin_right">10</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">0</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+        </record>
+
+        <record id="paperformat_student_certificate_a4_landscape" model="report.paperformat">
+            <field name="name">Student Certificate A4 Landscape</field>
+            <field name="format">A4</field>
+            <field name="orientation">Landscape</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">0</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
             <field name="header_line" eval="False"/>
             <field name="header_spacing">0</field>
         </record>
 
         <record id="paperformat_student_certificate_a5" model="report.paperformat">
-            <field name="name">Student Certificate A5</field>
+            <field name="name">Student Certificate A5 Portrait</field>
             <field name="format">A5</field>
             <field name="orientation">Portrait</field>
-            <field name="margin_top">8</field>
-            <field name="margin_bottom">8</field>
-            <field name="margin_left">8</field>
-            <field name="margin_right">8</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">0</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+        </record>
+
+        <record id="paperformat_student_certificate_a5_landscape" model="report.paperformat">
+            <field name="name">Student Certificate A5 Landscape</field>
+            <field name="format">A5</field>
+            <field name="orientation">Landscape</field>
+            <field name="margin_top">0</field>
+            <field name="margin_bottom">0</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
             <field name="header_line" eval="False"/>
             <field name="header_spacing">0</field>
         </record>
 
         <record id="action_report_student_certificate_a4" model="ir.actions.report">
-            <field name="name">Student Certificate (A4)</field>
+            <field name="name">Student Certificate (A4 Portrait)</field>
             <field name="model">aps.student.certificate</field>
             <field name="report_type">qweb-pdf</field>
             <field name="report_name">aps_sis.report_student_certificate_template</field>
@@ -34,8 +58,17 @@
             <field name="paperformat_id" ref="aps_sis.paperformat_student_certificate_a4"/>
         </record>
 
+        <record id="action_report_student_certificate_a4_landscape" model="ir.actions.report">
+            <field name="name">Student Certificate (A4 Landscape)</field>
+            <field name="model">aps.student.certificate</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">aps_sis.report_student_certificate_template</field>
+            <field name="print_report_name">'Certificate - %s' % object.partner_id.name</field>
+            <field name="paperformat_id" ref="aps_sis.paperformat_student_certificate_a4_landscape"/>
+        </record>
+
         <record id="action_report_student_certificate_a5" model="ir.actions.report">
-            <field name="name">Student Certificate (A5)</field>
+            <field name="name">Student Certificate (A5 Portrait)</field>
             <field name="model">aps.student.certificate</field>
             <field name="report_type">qweb-pdf</field>
             <field name="report_name">aps_sis.report_student_certificate_template</field>
@@ -43,11 +76,25 @@
             <field name="paperformat_id" ref="aps_sis.paperformat_student_certificate_a5"/>
         </record>
 
+        <record id="action_report_student_certificate_a5_landscape" model="ir.actions.report">
+            <field name="name">Student Certificate (A5 Landscape)</field>
+            <field name="model">aps.student.certificate</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">aps_sis.report_student_certificate_template</field>
+            <field name="print_report_name">'Certificate - %s' % object.partner_id.name</field>
+            <field name="paperformat_id" ref="aps_sis.paperformat_student_certificate_a5_landscape"/>
+        </record>
+
         <template id="report_student_certificate_template">
             <t t-call="web.basic_layout">
                 <t t-foreach="docs" t-as="o">
-                    <div class="page">
-                        <div t-raw="o._render_certificate_body_html()"/>
+                    <div class="page o_certificate_page" style="position: relative;">
+                        <t t-if="o._get_certificate_frame_data_uri()">
+                            <div t-attf-style="position: fixed; top: 0; left: 0; #{o._get_page_dimensions_style()} z-index: 0; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-repeat: no-repeat;"/>
+                        </t>
+                        <div style="position: relative; z-index: 1; padding: 28px; display: flex; align-items: center; justify-content: center;">
+                            <div t-out="o._render_certificate_body_html()"/>
+                        </div>
                     </div>
                 </t>
             </t>
