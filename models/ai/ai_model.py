@@ -27,6 +27,31 @@ from .utils import (
 _logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Dry-run support
+# ---------------------------------------------------------------------------
+
+class DryRunPayloadError(Exception):
+    """Raised instead of sending when ``ai_dry_run`` is set in the ORM context.
+
+    Carries the fully-assembled payload and the log record that was written so
+    callers can display or inspect the prompt without consuming API tokens.
+
+    Attributes:
+        payload (dict): The OpenAI-compatible chat payload that *would* have
+            been sent to the provider.
+        log_record: The ``aps.ai.call.log`` record created for this dry run
+            (state = 'dry_run').  May be ``False`` if log creation failed.
+    """
+
+    def __init__(self, payload, log_record):
+        super().__init__('DRY RUN \u2013 request was not sent to the AI provider.')
+        self.payload = payload
+        self.log_record = log_record
+
+
+# ---------------------------------------------------------------------------
+
 class APSAIModel(models.Model):
     _name = 'aps.ai.model'
     _description = 'APEX AI Model'
@@ -192,6 +217,26 @@ class APSAIModel(models.Model):
         result = None
         caught_exc = None
 
+        # Dry-run: write a log entry so the assembled prompt is visible in the
+        # AI call log, then raise DryRunPayloadError without touching the provider.
+        if self.env.context.get('ai_dry_run'):
+            duration_ms = int((time.perf_counter() - started_at) * 1000)
+            log_record = self._create_call_log(
+                request_type=request_type,
+                endpoint=endpoint,
+                request_payload=request_payload,
+                response_text=False,
+                prompt_tokens=0,
+                completion_tokens=0,
+                estimated_cost=0.0,
+                duration_ms=duration_ms,
+                related_record=related_record,
+                error_message=False,
+                prompt_names_used=prompt_names_used,
+                state='dry_run',
+            )
+            raise DryRunPayloadError(payload, log_record)
+
         try:
             if stream_callback:
                 response_text, response_json = self._perform_streaming_router_request(payload, stream_callback)
@@ -248,10 +293,11 @@ class APSAIModel(models.Model):
         related_record=None,
         error_message=None,
         prompt_names_used=None,
+        state=None,
     ):
         self.ensure_one()
         vals = {
-            'state': 'error' if error_message else 'success',
+            'state': state or ('error' if error_message else 'success'),
             'request_type': request_type,
             'user_id': self.env.user.id,
             'provider_id': self.provider_id.id,
@@ -649,7 +695,9 @@ class APSAIModel(models.Model):
         errors = []
         for model in candidates:
             try:
-                return model._run_feedback(record, ai_run=ai_run)
+                return model.with_context(ai_dry_run=False)._run_feedback(record, ai_run=ai_run)
+            except DryRunPayloadError as dry_run_exc:
+                return dry_run_exc.payload
             except UserError:
                 raise
             except Exception as exc:

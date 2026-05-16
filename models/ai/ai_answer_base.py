@@ -20,60 +20,34 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Canonical section order  (matches message_section selection values)
-# ---------------------------------------------------------------------------
-PROMPT_SECTION_ORDER = [
-    'system',              # → system message, not a user content block
-    'ai_instructions',
-    'maximum_mark',
-    'question',
-    'model_answer',
-    'notes',
-    'detailed_feedback',   # targeted-only: prior-phase context
-    'additional_context',
-    'opening_summary',     # generic: brief performance overview
-    'detailed_analysis',   # generic: point-by-point assessment
-    'results_table',       # generic: criteria / mark table
-    'student_answer',
-    'response_format',
-]
 
-# Display name for each section key.
-# Used for tag matching in the targeted pipeline and for prompt_names_used lists.
-SECTION_DISPLAY_NAMES = {
-    'system':             'System',
-    'ai_instructions':    'Specific Instructions',
-    'maximum_mark':       'Maximum Mark',
-    'question':           'Question',
-    'model_answer':       'Model Answer',
-    'notes':              'Notes',
-    'detailed_feedback':  'Detailed Feedback',
-    'additional_context': 'Additional Context',
-    'opening_summary':    'Opening Summary',
-    'detailed_analysis':  'Detailed Analysis',
-    'results_table':      'Results Table',
-    'student_answer':     'Student Answer',
-    'response_format':    'Response Format',
-}
+# ---------------------------------------------------------------------------
+# Prompt section metadata
+# ---------------------------------------------------------------------------
+# Prompt block order is sourced at runtime from
+# ai_prompts.message_section selection.
 
 # Heading template for each section.  ``%s`` is replaced with body content.
 # 'system' is not used as a user block; its entry is a no-op placeholder.
 # response_format heading is baked into the format constant itself.
 SECTION_HEADINGS = {
-    'system':             '%s',  # not used — handled as the system message
-    'ai_instructions':    '## AI Instructions:\n%s',
-    'maximum_mark':       '## Maximum Mark:\n%s',
-    'question':           '%s',
-    'model_answer':       '%s',
-    'notes':              '%s',
-    'detailed_feedback':  '## Detailed Feedback:\n%s',
-    'additional_context': '## Additional Context:\n%s',
-    'opening_summary':    '## Opening Summary:\n%s',
-    'detailed_analysis':  '## Detailed Analysis:\n%s',
-    'results_table':      '## Results Table:\n%s',
-    'student_answer':     '%s',
-    'response_format':    '%s',  # heading already inside the format constant
+    'system':                    '%s',  # not used — handled as the system message
+    'additional_context':        '<additional_context>\n%s</additional_context>',
+    'ai_instructions':           '<ai_instructions>\n%s</ai_instructions>',
+    'maximum_mark':              '<maximum_mark>\n%s</maximum_mark>',
+    'model_answer':              '<model_answer>%s</model_answer>',
+    'notes':                     '<notes>\n%s</notes>',
+    'question':                  '<question>%s</question>',
+    'student_answer':            '<student_answer>\n%s</student_answer>',
+    'summary':                   '<summary>\n%s</summary>',
+    'summary_format':            '<summary_format>\n%s</summary_format>',
+    'detailed_analysis':         '<detailed_analysis>\n%s</detailed_analysis>',
+    'detailed_analysis_format':  '<detailed_analysis_format>\n%s</detailed_analysis_format>',
+    'results_table':             '<results_table>\n%s</results_table>',
+    'results_table_format':      '<results_table_format>\n%s</results_table_format>',
+    'targeted_feedback':         '<targeted_feedback>\n%s</targeted_feedback>',
+    'output_schema':             '<output_schema>\n%s</output_schema>',
+    'response_format':           '%s',  # deprecated — kept so old prompt records don't crash
 }
 
 # ---------------------------------------------------------------------------
@@ -81,34 +55,77 @@ SECTION_HEADINGS = {
 # ---------------------------------------------------------------------------
 PROMPT_MODEL_ANSWER_FALLBACK = 'No model answer provided.'
 
-# Response format for the targeted pipeline.
-# Extends the generic format with inline chunk-linked feedback items.
-PROMPT_RESPONSE_FORMAT = (
-    'Return ONLY valid JSON with these keys:\n'
-    '{"opening_summary": string, "detailed_analysis": string, "results_table": string,\n'
-    ' "feedback": [{"id": string, "text": string, "type": string, "justification": string}],\n'
-    ' "links": [{"feedback_id": string, "chunk_ids": [string]}],\n'
-    ' "score": number|null, "score_comment": string|null}.\n'
-    'opening_summary: brief plain-text overview of the student\'s performance (Markdown allowed).\n'
-    'detailed_analysis: Markdown with headings, bullet points, and bold text for a detailed point-by-point assessment.\n'
-    'results_table: Markdown table with columns for each criterion, mark, and justification.\n'
-    'feedback: array of inline feedback items with unique ids; type is "positive", "negative", or "neutral".\n'
-    'links: each entry maps a feedback id to the chunk ids from the student answer it refers to.\n'
-    'If you cannot determine a mark, set score to null and explain why in score_comment.'
+# Default results-table format injected when no prompt template covers that section.
+_DEFAULT_RESULTS_TABLE_FORMAT = (
+    'Produce a markdown table with this format:\n\n'
+    '| Criterion | Met? | Marks | Justification |\n'
+    '| --------- |:----:|:-----:| ------------- |'
 )
 
-# Response format for the generic (non-targeted) pipeline — structured Markdown.
-# Pass as ``response_format_fallback`` when calling ``_build_payload``.
-PROMPT_RESPONSE_FORMAT_GENERIC = (
-    'Return ONLY valid JSON with these keys:\n'
-    '{"opening_summary": string, "detailed_analysis": string, "results_table": string, '
-    '"score": number|null, "score_comment": string|null}.\n'
-    'opening_summary must be a brief plain-text overview of the student\'s performance (Markdown allowed).\n'
-    'detailed_analysis must use Markdown with headings, bullet points, and bold text for a '
-    'detailed point-by-point assessment.\n'
-    'results_table must be a Markdown table with columns for each criterion, mark, and justification.\n'
-    'If you cannot determine a mark, set score to null and explain why in score_comment.'
+_DEFAULT_SECTION_FORMAT = (
+    'Use Markdown with bold and italics to highlight key words or phrases. '
+    'Use bullets and icons.'
 )
+
+# Default rules injected into the targeted_feedback section when no prompt
+# template covers it.  Governs JSON structure, data integrity, and chip text.
+_TARGETED_FEEDBACK_RULES = (
+    'No markdown fences, no commentary, no preface, no trailing text.\n'
+    '\n'
+    '## JSON rules:\n'
+    '- Must parse with standard JSON parser (RFC 8259).\n'
+    '- All keys and all string values use double quotes.\n'
+    '- Escape internal double quotes as \\\\\"\n'
+    '- Use \\n for new lines inside strings.\n'
+    '- No trailing commas.\n'
+    '- Do not duplicate keys.\n'
+    '- Do not nest feedback inside feedback.\n'
+    '- Do not output null for required fields.\n'
+    '\n'
+    '## Data Structuring\n'
+    '- feedback.id must be unique.\n'
+    '- links.feedback_id must reference an existing feedback.id.\n'
+    '- chunk_ids must be an array of strings.\n'
+    '- If no feedback items, return "feedback": [] and "links": [].\n'
+    '- Do not add any other keys.\n'
+    '- Each feedback.text value must be short and suitable for a small clickable chip, ideally 2 to 8 words.\n'
+    '- Choose a value for feedback.type from this closed set: ["success", "error", "info"]. '
+    'If the value is not in this list, the response is invalid.\n'
+    '- Each feedback.justification must be a concise 1\u20132 sentence explanation of why this feedback item was included.\n'
+    '- Use ONLY chunk IDs from the supplied Student Answer Chunks. Do NOT invent chunk IDs.\n'
+    '- Not every feedback item needs linked chunks.\n'
+    '- Never show the chunk IDs or feedback IDs.\n'
+    '- Do not use the word \'chunk\'. Instead use \'section\'.\n'
+    '- Always try and include one positive feature of the answer with a feedback.type="success".'
+)
+
+# Per-key JSON schema fragments used by ``_build_output_schema``.
+# Keys must match the canonical AI response keys.
+_OUTPUT_SCHEMA_KEY_DESCRIPTIONS = {
+    'opening_summary': (
+        '"opening_summary": "string — brief Markdown overview of the student\'s performance"'
+    ),
+    'detailed_analysis': (
+        '"detailed_analysis": "string — Markdown with headings and bullet points '
+        'for a detailed point-by-point assessment"'
+    ),
+    'results_table': (
+        '"results_table": "string — Markdown table with columns for criterion, mark, '
+        'and justification"'
+    ),
+    'score': '"score": number|null',
+    'score_comment': (
+        '"score_comment": "string|null — brief explanation of the score, '
+        'or why it could not be determined"'
+    ),
+    'feedback': (
+        '"feedback": [{"id": "f1", "text": "string", '
+        '"type": "success|info|error|warning", "justification": "string"}]'
+    ),
+    'links': (
+        '"links": [{"feedback_id": "f1", "chunk_ids": ["c1", "c2"]}]'
+    ),
+}
 
 # Maximum number of model calls when the response content is not parseable JSON.
 JSON_PARSE_MAX_ATTEMPTS = 3
@@ -263,18 +280,75 @@ class APSAIModelAnswerBase(models.Model):
 
         return data
 
-    def _build_payload(self, prompt_records, dynamic_section_data, include_reasoning=False,
-                       response_format_fallback=None):
+    @api.model
+    def _get_prompt_section_order(self):
+        """Return prompt section order from ai_prompts.message_section selection."""
+        selection = self.env['ai_prompts']._fields['message_section'].selection or []
+        return [key for key, _label in selection]
+
+    @api.model
+    def _get_prompt_section_labels(self):
+        """Return display labels for section keys from ai_prompts.message_section."""
+        selection = self.env['ai_prompts']._fields['message_section'].selection or []
+        labels = {key: label for key, label in selection}
+        labels.setdefault('detailed_feedback', 'Detailed Feedback')
+        return labels
+
+    def _build_output_schema(self, prompt_records, out_of_marks):
+        """Return a JSON schema instruction string based on active prompts and marking context.
+
+        Included output keys:
+
+        * ``opening_summary`` — if any active prompt has section ``summary``
+        * ``detailed_analysis`` — if any active prompt has section ``detailed_analysis``
+        * ``results_table`` — if any active prompt has section ``results_table``
+        * ``score`` + ``score_comment`` — if *out_of_marks* is non-zero
+        * ``feedback`` + ``links`` — if any active prompt has section ``targeted_feedback``
+        """
+        active_sections = {
+            (p.message_section or '')
+            for p in (prompt_records or self.env['ai_prompts'].browse())
+        }
+        include_score = bool(out_of_marks)
+        keys = []
+        if 'summary' in active_sections:
+            keys.append('opening_summary')
+        if 'detailed_analysis' in active_sections:
+            keys.append('detailed_analysis')
+        if 'results_table' in active_sections:
+            keys.append('results_table')
+        if include_score:
+            keys.extend(['score', 'score_comment'])
+        if 'targeted_feedback' in active_sections:
+            keys.extend(['feedback', 'links'])
+        if not keys:
+            return ''
+        key_lines = ',\n  '.join(
+            _OUTPUT_SCHEMA_KEY_DESCRIPTIONS.get(k, f'"{k}": ...')
+            for k in keys
+        )
+        lines = [
+            'Return ONLY valid JSON with these exact keys (no others):',
+            '{',
+            f'  {key_lines}',
+            '}',
+        ]
+        if include_score:
+            lines.append(
+                'Set score to null and explain in score_comment if you cannot determine a mark.'
+            )
+        return '\n'.join(lines)
+
+    def _build_payload(self, prompt_records, dynamic_section_data, include_reasoning=False):
         """Build a complete chat payload by merging prompt records with dynamic data.
 
-        For each section in ``PROMPT_SECTION_ORDER``:
+        For each section in the prompt section order from ``ai_prompts``:
 
         1. Prompt template records whose ``message_section`` matches are emitted
            first (in sequence order), before any dynamic content.
         2. Dynamic content (field values from the submission or resource) follows.
-        3. The ``response_format`` section falls back to ``response_format_fallback``
-           (or ``PROMPT_RESPONSE_FORMAT`` when not supplied) if neither records
-           nor dynamic data provide any content for it.
+           The ``output_schema`` section is populated by ``_build_output_schema``
+           in ``_assemble_feedback_payload`` before this method is called.
 
         The ``system`` section is special: any prompt templates assigned to it
         override the default ``_build_system_content()`` system message instead
@@ -282,10 +356,12 @@ class APSAIModelAnswerBase(models.Model):
 
         Returns ``(payload_dict, prompt_names_used_list)``.
         """
-        prompts_by_section = {key: [] for key in PROMPT_SECTION_ORDER}
+        prompt_section_order = self._get_prompt_section_order()
+        section_labels = self._get_prompt_section_labels()
+        prompts_by_section = {key: [] for key in prompt_section_order}
         names = []
 
-        for prompt in (prompt_records or self.env['ai_prompts'].browse()):
+        for prompt in (prompt_records or self.env['ai_prompts'].browse()):  # browse() returns empty recordset when prompt_records is falsy)
             text = (prompt.prompt or '').strip()
             if not text:
                 continue
@@ -304,18 +380,13 @@ class APSAIModelAnswerBase(models.Model):
             system_content = self._build_system_content()
 
         sections = []
-        _rf_fallback = response_format_fallback if response_format_fallback is not None else PROMPT_RESPONSE_FORMAT
 
-        for section_key in PROMPT_SECTION_ORDER:
+        for section_key in prompt_section_order:
             if section_key == 'system':
                 continue  # already handled above as the system message
 
             prompt_items = prompts_by_section[section_key]  # list of (name, text)
             dynamic_text = (dynamic_section_data.get(section_key) or '').strip()
-
-            # Fallback response format when no records or dynamic data cover it.
-            if section_key == 'response_format' and not prompt_items and not dynamic_text:
-                dynamic_text = _rf_fallback
 
             if not prompt_items and not dynamic_text:
                 continue
@@ -323,16 +394,21 @@ class APSAIModelAnswerBase(models.Model):
             lines = []
             for pname, ptext in prompt_items:
                 lines.append(ptext)
-                names.append(pname or SECTION_DISPLAY_NAMES[section_key])
+                names.append(pname or section_labels.get(section_key, section_key.replace('_', ' ').title()))
 
             # Inject dynamic text only when no prompt template covers this section
-            # (so it acts as a fallback), OR for student_answer where the actual
-            # submission text must always follow any template framing.
-            if dynamic_text and (not prompt_items or section_key in ['student_answer','model_answer']):
+            # (so it acts as a fallback), OR for sections whose dynamic content
+            # is the actual record data (question text, model answer, teacher notes,
+            # specific instructions, student answer) which must always follow any
+            # template framing even when a prompt template is also present.
+            _ALWAYS_INCLUDE_DYNAMIC = frozenset({
+                'student_answer', 'model_answer', 'question', 'notes', 'ai_instructions',
+            })
+            if dynamic_text and (not prompt_items or section_key in _ALWAYS_INCLUDE_DYNAMIC):
                 lines.append(dynamic_text)
-                names.append(SECTION_DISPLAY_NAMES[section_key])
+                names.append(section_labels.get(section_key, section_key.replace('_', ' ').title()))
 
-            sections.append(SECTION_HEADINGS[section_key] % '\n\n'.join(lines))
+            sections.append(SECTION_HEADINGS.get(section_key, '%s') % '\n\n'.join(lines))
 
         user_messages = [{'role': 'user', 'content': s} for s in sections if s]
         payload = {
@@ -351,15 +427,20 @@ class APSAIModelAnswerBase(models.Model):
     # -------------------------------------------------------------------------
 
     def _collect_applicable_prompts(self, selected_prompts, db_model_name):
-        """Return *selected_prompts* sorted by sequence.
+        """Return *selected_prompts* sorted by section order, then sequence.
 
         Callers are expected to pass an already-filtered set (e.g.
         ``resource.ai_active_prompts``).  The ``db_model_name`` parameter is
         kept for signature compatibility but is no longer used here.
         """
         self.ensure_one()
+        section_order = {k: i for i, k in enumerate(self._get_prompt_section_order())}
         return (selected_prompts or self.env['ai_prompts'].browse()).sorted(
-            key=lambda rec: ((rec.sequence or 0), rec.id)
+            key=lambda rec: (
+                section_order.get(rec.message_section or '', 9999),
+                (rec.sequence or 0),
+                rec.id,
+            )
         )
 
     def _collect_all_applicable_prompts(self, selected_prompts, db_model_name):
@@ -370,6 +451,7 @@ class APSAIModelAnswerBase(models.Model):
         Called at compute time; the result is stored as ``ai_active_prompts``.
         """
         self.ensure_one()
+        section_order = {k: i for i, k in enumerate(self._get_prompt_section_order())}
         self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
         self.env['ai_prompts'].sudo().ensure_default_specific_instructions_prompt()
         selected = (selected_prompts or self.env['ai_prompts'].browse()).filtered(
@@ -387,7 +469,13 @@ class APSAIModelAnswerBase(models.Model):
                 or db_model_name in rec.applies_to_db_models.mapped('model')
             )
         )
-        return applicable.sorted(key=lambda rec: ((rec.sequence or 0), rec.id))
+        return applicable.sorted(
+            key=lambda rec: (
+                section_order.get(rec.message_section or '', 9999),
+                (rec.sequence or 0),
+                rec.id,
+            )
+        )
 
     # -------------------------------------------------------------------------
     # Markdown → HTML conversion (used by both feedback pipelines)
@@ -410,13 +498,16 @@ class APSAIModelAnswerBase(models.Model):
         return self._normalize_feedback_html(text)
 
     def _combine_feedback_parts(self, parsed):
-        """Assemble opening_summary, detailed_analysis, and results_table into a single HTML string.
+        """Assemble summary, detailed_analysis, and results_table into a single HTML string.
 
         Falls back to ``_normalize_feedback_html`` when none of the structured
         keys are present (e.g. when the AI returned plain text instead of JSON).
         """
         parts = []
-        for key in ('opening_summary', 'detailed_analysis', 'results_table'):
+        if isinstance(parsed, dict) and 'opening_summary' in parsed and 'summary' not in parsed:
+            parsed = dict(parsed)
+            parsed['summary'] = parsed.pop('opening_summary')
+        for key in ('summary', 'detailed_analysis', 'results_table'):
             val = (parsed.get(key) or '').strip() if isinstance(parsed, dict) else ''
             if val:
                 parts.append(self._markdown_to_html(val))
@@ -435,19 +526,60 @@ class APSAIModelAnswerBase(models.Model):
         prompts,
         student_answer,
         student_answer_chunks=None,
-        prior_phase_context='',
     ):
-        """Build a chat payload for either feedback pipeline.
+        """Assemble the complete OpenAI-compatible chat payload for one feedback call.
 
-        When *student_answer_chunks* is provided the student answer section is
-        replaced with a JSON serialisation of the chunks (targeted path).
-        When *prior_phase_context* is provided it is injected as the
-        ``detailed_feedback`` section.
+        This is the single integration point between the resource/submission context
+        and ``_build_payload``.  It is called by both the generic and targeted
+        feedback runners.
 
-        The generic path calls this without the optional arguments and gets
-        ``PROMPT_RESPONSE_FORMAT_GENERIC`` as the response format.  The
-        targeted path passes chunk data and gets the default
-        ``PROMPT_RESPONSE_FORMAT``.
+        Parameters
+        ----------
+        ctx : dict
+            Feedback context built by ``_build_ai_feedback_ctx`` on the submission
+            or resource.  Relevant keys used here:
+
+            * ``out_of_marks`` – total marks available; drives ``_build_output_schema``.
+            * ``include_reasoning`` – forwarded to ``_build_payload`` / provider.
+            * All keys consumed by ``_build_dynamic_section_data`` (``instructions``,
+              ``question``, ``model_answer``, ``notes``, ``out_of_marks``, …).
+
+        prompts : ``ai_prompts`` recordset
+            The active prompt records for this resource, typically
+            ``resource.ai_active_prompts``.  Each record carries a
+            ``message_section`` that determines which XML-tagged block it is
+            placed in (see ``SECTION_HEADINGS``).
+
+        student_answer : str
+            Plain-text student answer.  Used when *student_answer_chunks* is
+            absent (generic path).
+
+        student_answer_chunks : list or None
+            Pre-parsed answer chunks for the targeted feedback path.  When
+            provided the student answer section is replaced with the JSON
+            serialisation of the chunks.
+
+        Returns
+        -------
+        tuple
+            ``(payload_dict, prompt_names_used_list)`` as returned by
+            ``_build_payload``.
+
+        Processing steps
+        ----------------
+        1. Resolve the student answer text (plain string or JSON-serialised chunks).
+        2. Call ``_build_dynamic_section_data`` to produce the base section dict
+           from ``ctx`` (question, model answer, teacher notes, instructions, …).
+        3. Inject the JSON output schema into the ``output_schema`` section via
+           ``_build_output_schema``.
+        4. Inject fallback format hints (``results_table_format``,
+           ``summary_format``, ``detailed_analysis_format``) for any active
+           section that has no dedicated format prompt template.
+        5. Inject ``_TARGETED_FEEDBACK_RULES`` into ``targeted_feedback`` when
+           that section is active and no prompt template covers it.
+        6. Delegate final payload construction to ``_build_payload``, which
+           merges prompt templates with dynamic data, wraps each section in its
+           ``SECTION_HEADINGS`` XML tag, and builds the messages list.
         """
         if student_answer_chunks:
             student_text = json.dumps(student_answer_chunks, indent=2, ensure_ascii=False)
@@ -456,20 +588,29 @@ class APSAIModelAnswerBase(models.Model):
 
         dynamic_data = self._build_dynamic_section_data(ctx, student_answer_text=student_text)
 
-        if prior_phase_context and prior_phase_context.strip():
-            dynamic_data['detailed_feedback'] = prior_phase_context.strip()
+        # Inject the dynamically built output schema into the output_schema section.
+        out_of_marks = ctx.get('out_of_marks') or 0
+        schema_text = self._build_output_schema(prompts, out_of_marks)
+        if schema_text and 'output_schema' not in dynamic_data:
+            dynamic_data['output_schema'] = schema_text
 
-        # Use the generic (3-section Markdown) format for non-targeted calls;
-        # targeted calls get the default PROMPT_RESPONSE_FORMAT which also
-        # includes feedback items and chunk links.
-        response_format_fallback = (
-            None if student_answer_chunks else PROMPT_RESPONSE_FORMAT_GENERIC
-        )
+        # Inject default results-table format when no prompt template covers it.
+        
+        active_sections = {p.message_section for p in (prompts or self.env['ai_prompts'].browse())}
+
+        # if 'results_table' in active_sections and 'results_table_format' not in active_sections:
+        #     dynamic_data.setdefault('results_table_format', _DEFAULT_RESULTS_TABLE_FORMAT)
+        # if 'summary' in active_sections and 'summary_format' not in active_sections:
+        #     dynamic_data.setdefault('summary_format', _DEFAULT_SECTION_FORMAT)
+        # if 'detailed_analysis' in active_sections and 'detailed_analysis_format' not in active_sections:
+        #     dynamic_data.setdefault('detailed_analysis_format', _DEFAULT_SECTION_FORMAT)
+        # if 'targeted_feedback' in active_sections:
+        #     dynamic_data.setdefault('targeted_feedback', _TARGETED_FEEDBACK_RULES)
+
         return self._build_payload(
             prompts,
             dynamic_data,
             include_reasoning=ctx.get('include_reasoning', False),
-            response_format_fallback=response_format_fallback,
         )
 
     def _execute_feedback_call_with_content(self, payload, record, progress_callback, prompt_names_used=None):

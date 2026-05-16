@@ -257,7 +257,7 @@ Do not add new hard-coded section strings outside that file.
 | `notes` | Additional notes for the AI |
 | `detailed_feedback` | Targeted path only — prior-phase context |
 | `additional_context` | Catch-all for any other context |
-| `opening_summary` | Generic path — brief overview prompt |
+| `summary` | Generic path — brief overview prompt |
 | `detailed_analysis` | Generic path — point-by-point prompt |
 | `results_table` | Generic path — criteria/mark table prompt |
 | `student_answer` | Student's submitted answer |

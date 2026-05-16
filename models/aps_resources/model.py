@@ -156,21 +156,11 @@ class APSResource(models.Model):
         ('manual', 'Manual Action'),
     ], string='AI Action', default='none', required=True, tracking=True)
 
-    ai_additional_prompt_ids = fields.Many2many(
-        'ai_prompts',
-        'aps_resources_ai_included_prompts_rel',
-        'resource_id',
-        'prompt_id',
-        string='NOT USED???',
-        compute='_compute_ai_additional_prompt_ids',
-        help='Prompts that will be included in AI calls for this resource, based on selected prompts and always-include rules.',
-    )
     ai_active_prompts = fields.Many2many(
         'ai_prompts',
         string='Active Prompts',
         compute='_compute_ai_active_prompts',
         help='The prompt records that will actually be combined for this resource, in runtime order.',
-        store=True,
     )
     ai_prompt_ids = fields.Many2many(
         'ai_prompts',
@@ -355,31 +345,6 @@ class APSResource(models.Model):
         'ai_prompt_ids.always_include',
         'ai_prompt_ids.applies_to_ai_models',
         'ai_prompt_ids.applies_to_db_models',
-        'ai_model_id',
-        'ai_model_id.enabled',
-        'ai_model_id.provider_id.enabled',
-    )
-    def _compute_ai_additional_prompt_ids(self):
-        self.env['ai_prompts'].sudo().ensure_default_targeted_feedback_prompt()
-        always_prompts = self.env['ai_prompts'].sudo().search([
-            ('enabled', '=', True),
-            ('always_include', '=', True),
-        ])
-        for record in self:
-            # selected = record.ai_prompt_ids.filtered(lambda p: p.enabled)
-            always = always_prompts.filtered(
-                lambda p: not p.applies_to_db_models
-                or record._name in p.applies_to_db_models.mapped('model')
-            )
-            # record.ai_additional_prompt_ids = (selected | always)
-            record.ai_additional_prompt_ids = always
-
-    @api.depends(
-        'ai_prompt_ids',
-        'ai_prompt_ids.enabled',
-        'ai_prompt_ids.always_include',
-        'ai_prompt_ids.applies_to_ai_models',
-        'ai_prompt_ids.applies_to_db_models',
         'ai_prompt_ids.prompt_name',
         'ai_prompt_ids.tag_ids',
         'ai_model_id',
@@ -394,6 +359,7 @@ class APSResource(models.Model):
         'ai_use_notes',
         'ai_targeted_feedback',
         'ai_instructions',
+        'marks',
     )
     def _compute_ai_active_prompts(self):
         ai_model_env = self.env['aps.ai.model']
@@ -404,6 +370,13 @@ class APSResource(models.Model):
                 candidate_models = ai_model_env._get_generation_candidates(resource=record)
                 active_model = candidate_models[:1]
                 if active_model:
+                    section_order = {
+                        k: i for i, k in enumerate(active_model._get_prompt_section_order())
+                    }
+
+                    def _sort_key(r):
+                        return (section_order.get(r.message_section or '', 9999), (r.sequence or 0), r.id)
+
                     prompts = active_model._collect_all_applicable_prompts(record.ai_prompt_ids, record._name)
                     instructions_text = active_model._html_to_text(record.ai_instructions or '').strip()
                     ctx_flags = {
@@ -417,9 +390,7 @@ class APSResource(models.Model):
                     }
                     extra = active_model._resolve_ctx_tagged_prompts(ctx_flags, record.ai_prompt_ids)
                     if extra:
-                        prompts = (prompts | extra).sorted(
-                            key=lambda r: ((r.sequence or 0), r.id)
-                        )
+                        prompts = (prompts | extra).sorted(key=_sort_key)
                     # Suppress "Specific Instructions" tagged prompts when there are no instructions
                     if not instructions_text and instructions_text != '':
                         prompts = prompts.filtered(
@@ -428,6 +399,26 @@ class APSResource(models.Model):
                                 for t in p.tag_ids
                             )
                         )
+                    # Inject the first "Score" tagged prompt when out_of_marks is non-zero
+                    # and no prompt already in the active set covers the 'score' section.
+                    if record.marks and not any(p.message_section == 'score' for p in prompts):
+                        score_prompt = self.env['ai_prompts'].search(
+                            [('enabled', '=', True), ('tag_ids.name', 'ilike', 'score')],
+                            order='sequence asc, id asc',
+                            limit=1,
+                        )
+                        if score_prompt and score_prompt not in prompts:
+                            prompts = (prompts | score_prompt).sorted(key=_sort_key)
+                    # Inject the first "Targeted Feedback" tagged prompt when targeted
+                    # feedback is requested and no prompt already covers that section.
+                    if record.ai_targeted_feedback and not any(p.message_section == 'targeted_feedback' for p in prompts):
+                        targeted_prompt = self.env['ai_prompts'].search(
+                            [('enabled', '=', True), ('tag_ids.name', 'ilike', 'targeted feedback')],
+                            order='sequence asc, id asc',
+                            limit=1,
+                        )
+                        if targeted_prompt and targeted_prompt not in prompts:
+                            prompts = (prompts | targeted_prompt).sorted(key=_sort_key)
             except Exception:
                 prompts = empty_prompts
             record.ai_active_prompts = prompts
@@ -444,7 +435,6 @@ class APSResource(models.Model):
         'ai_instructions',
     )
     def _onchange_ai_prompt_preview_fields(self):
-        self._compute_ai_additional_prompt_ids()
         self._compute_ai_active_prompts()
 
     @api.depends('subjects', 'subjects.category_id')

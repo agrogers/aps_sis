@@ -16,7 +16,7 @@ class APSAICallLog(models.Model):
     _order = 'create_date desc, id desc'
 
     state = fields.Selection(
-        [('success', 'Success'), ('error', 'Error')],
+        [('success', 'Success'), ('error', 'Error'), ('dry_run', 'Dry Run')],
         required=True,
         readonly=True,
     )
@@ -50,9 +50,9 @@ class APSAICallLog(models.Model):
     )
 
     # Ordered display sections for structured AI feedback responses.
-    # opening_summary is always first so the summary paragraph leads the display.
+    # summary is always first so the summary paragraph leads the display.
     _AI_RESPONSE_SECTION_ORDER = [
-        ('opening_summary', 'Summary'),
+        ('summary', 'Summary'),
         ('detailed_analysis', 'Detailed Analysis'),
         ('results_table', 'Results Table'),
         ('score', 'Score'),
@@ -68,7 +68,7 @@ class APSAICallLog(models.Model):
     def _render_response_body_html(self, raw):
         """Render the AI response body with known sections in display order.
 
-        opening_summary is rendered first so the summary paragraph always
+        summary is rendered first so the summary paragraph always
         appears at the top of the log viewer.  Any remaining / unknown keys
         are appended afterwards as a raw JSON block.
         """
@@ -80,6 +80,9 @@ class APSAICallLog(models.Model):
             return self._pretty_json_html(raw)
         if not isinstance(parsed, dict):
             return self._pretty_json_html(raw)
+        if 'opening_summary' in parsed and 'summary' not in parsed:
+            parsed = dict(parsed)
+            parsed['summary'] = parsed.pop('opening_summary')
 
         _pre_style = (
             'white-space:pre-wrap;word-break:break-word;font-size:12px;'

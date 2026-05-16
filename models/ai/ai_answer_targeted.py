@@ -331,7 +331,6 @@ class APSAIModelAnswerChunking(models.Model):
         student_answer='',
         student_answer_chunks=None,
         targeted_feedback=False,
-        prior_phase_context='',
     ):
         # Retained for external callers; internally _assemble_chat_payload now
         # delegates to _build_dynamic_section_data + _build_payload.
@@ -350,8 +349,6 @@ class APSAIModelAnswerChunking(models.Model):
         else:
             student_text = student_answer.strip()
         data = self._build_dynamic_section_data(ctx, student_answer_text=student_text)
-        if prior_phase_context and prior_phase_context.strip():
-            data['detailed_feedback'] = prior_phase_context.strip()
         return list(data.items())
 
     def _assemble_chat_payload(
@@ -369,7 +366,6 @@ class APSAIModelAnswerChunking(models.Model):
         student_answer_chunks=None,
         targeted_feedback=False,
         include_reasoning=False,
-        prior_phase_context='',
         # legacy parameter — unused
         external_prompt='',
     ):
@@ -391,7 +387,6 @@ class APSAIModelAnswerChunking(models.Model):
             prompt_records or self.env['ai_prompts'],
             student_answer,
             student_answer_chunks=chunks,
-            prior_phase_context=prior_phase_context,
         )
 
     def _resolve_tagged_prompts(self, tag_name, candidate_prompts):
@@ -437,13 +432,36 @@ class APSAIModelAnswerChunking(models.Model):
         'ai_standard_feedback': 'Standard Feedback',
     }
 
+    # Maps each ctx_key to the message_section it corresponds to.
+    # Used to skip auto tag-resolution when the user has already added a
+    # prompt covering that section to their explicit ai_prompt_ids selection.
+    _CTX_SECTION_MAP = {
+        'ai_targeted_feedback': 'targeted_feedback',
+        'use_question':         'question',
+        'use_model_answer':     'model_answer',
+        'use_note':             'notes',
+        'instructions':         'ai_instructions',
+        'student_answer':       'student_answer',
+        # 'ai_standard_feedback' maps to no single section — skip
+    }
+
     def _resolve_ctx_tagged_prompts(self, ctx, candidate_prompts):
-        """Return a merged recordset of all tag-resolved prompts for the active ctx flags."""
+        """Return a merged recordset of all tag-resolved prompts for the active ctx flags.
+
+        Tag resolution is skipped for a ctx_key when *candidate_prompts* already
+        contains a prompt whose ``message_section`` covers that section — this
+        prevents auto-resolved default prompts from being added alongside a
+        user-supplied prompt for the same section.
+        """
         self.ensure_one()
         extra = self.env['ai_prompts']
         for ctx_key, tag_name in self._CTX_TAG_MAP.items():
-            if ctx.get(ctx_key):
-                extra |= self._resolve_tagged_prompts(tag_name, candidate_prompts)
+            if not ctx.get(ctx_key):
+                continue
+            section = self._CTX_SECTION_MAP.get(ctx_key)
+            if section and any(p.message_section == section for p in candidate_prompts):
+                continue  # user already has a prompt covering this section
+            extra |= self._resolve_tagged_prompts(tag_name, candidate_prompts)
         return extra.sorted(key=lambda r: ((r.sequence or 0), r.id))
 
     def _run_feedback_targeted(self, ctx, prompts, record, progress_callback):

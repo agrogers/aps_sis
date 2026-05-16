@@ -363,8 +363,8 @@
                                     <field name="ai_merge_responses" widget="boolean_toggle" invisible="not has_multiple_ai_models"/>
                                     <field name="ai_merge_response_chunks" widget="boolean_toggle" invisible="not has_multiple_ai_models or not ai_targeted_feedback"/>
                                     <field name="ai_model_id" string="Fallback AI Model" options="{'no_create': True, 'no_open': True}" invisible="has_multiple_ai_models"/>
-                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False}"/>
-                                    <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False}"/>
+                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False, 'color_field': 'color'}"/>
+                                    <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False, 'color_field': 'color'}"/>
                                      <field name="ai_test_prompt" widget="boolean_toggle"/>
                                     <field name="ai_show_saved_responses" widget="boolean_toggle"/>
                                 </group>

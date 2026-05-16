@@ -21,6 +21,12 @@ class APSResourceSubmission(models.Model):
     submission_name = fields.Char(
         string='Submission Name',
     )
+    submission_name_normalized = fields.Char(
+        string='Submission Name (Searchable)',
+        compute='_compute_submission_name_normalized',
+        store=True,
+        help='Arrow characters replaced with > to allow plain-text searching.'
+    )
     task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
     resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
     type_id = fields.Many2one(
@@ -460,6 +466,24 @@ class APSResourceSubmission(models.Model):
             elif record.out_of_marks:
                 record.result_percent = int(round((record.score / record.out_of_marks) * 100))
         
+    _ARROW_REPLACEMENTS = [
+        ('\u1f892', '>'),  # 🢒 heavy right-pointing angle quotation mark ornament
+        ('\u2192', '>'),  # →
+        ('\u21d2', '>'),  # ⇒
+        ('\u27f6', '>'),  # ⟶
+        ('\u2794', '>'),  # ➔
+        ('\u25ba', '>'),  # ►
+        ('\u25b6', '>'),  # ▶
+    ]
+
+    @api.depends('submission_name')
+    def _compute_submission_name_normalized(self):
+        for record in self:
+            name = record.submission_name or ''
+            for arrow, replacement in self._ARROW_REPLACEMENTS:
+                name = name.replace(arrow, replacement)
+            record.submission_name_normalized = name
+
     @api.depends('date_assigned', 'submission_name')
     def _compute_display_name(self):
         for record in self:

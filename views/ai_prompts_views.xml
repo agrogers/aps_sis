@@ -31,6 +31,7 @@
                 <field name="tag_ids" widget="many2many_tags" optional="show"/>
                 <field name="applies_to_ai_models" widget="many2many_tags" optional="show"/>
                 <field name="applies_to_db_models" widget="many2many_tags" optional="show"/>
+                <field name="create_date" optional="hide"/>
                 <field name="prompt" optional="show"/>
             </list>
         </field>
