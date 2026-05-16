@@ -489,7 +489,7 @@ class APSAIModelAnswerChunking(models.Model):
             progress_callback,
             prompt_names_used=names,
         )
-        feedback_html = self._combine_feedback_parts(parsed) or self._normalize_feedback_html(raw_content)
+        feedback_html = self._combine_feedback_parts(parsed, include_toc=self._prompts_request_toc(prompts)) or self._normalize_feedback_html(raw_content)
         targeted_result = self._extract_targeted_feedback(parsed, raw_content, answer_chunk_data)
         score = self._extract_score(parsed, raw_content)
         score_comment = self._extract_score_comment(parsed)

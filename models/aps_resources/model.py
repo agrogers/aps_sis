@@ -77,7 +77,7 @@ class APSResource(models.Model):
 
     ai_instructions = fields.Html(
         string='AI Instructions',
-        placeholder='Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student\'s submission.',
+        placeholder='Provide instructions for AI-assisted actions related to this resource only. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student\'s submission.',
         help='Additional instructions for AI-assisted actions related to this resource.',
     )
     ai_use_model_answer = fields.Boolean(string='Use Model Answer')
@@ -345,6 +345,7 @@ class APSResource(models.Model):
         'ai_prompt_ids.always_include',
         'ai_prompt_ids.applies_to_ai_models',
         'ai_prompt_ids.applies_to_db_models',
+        'ai_prompt_ids.message_section',
         'ai_prompt_ids.prompt_name',
         'ai_prompt_ids.tag_ids',
         'ai_model_id',
@@ -419,6 +420,28 @@ class APSResource(models.Model):
                         )
                         if targeted_prompt and targeted_prompt not in prompts:
                             prompts = (prompts | targeted_prompt).sorted(key=_sort_key)
+                    # For each content section that has a paired format section,
+                    # auto-inject the first enabled format prompt when the content
+                    # section is active but no format prompt is already present
+                    # (including any manually added via ai_prompt_ids).
+                    _FORMAT_PAIRS = [
+                        ('summary', 'summary_format'),
+                        ('detailed_analysis', 'detailed_analysis_format'),
+                        ('results_table', 'results_table_format'),
+                    ]
+                    for content_section, format_section in _FORMAT_PAIRS:
+                        if (
+                            any(p.message_section == content_section for p in prompts)
+                            and not any(p.message_section == format_section for p in prompts)
+                        ):
+                            fmt_prompt = self.env['ai_prompts'].search(
+                                [('enabled', '=', True), ('message_section', '=', format_section)],
+                                order='sequence asc, id asc',
+                                limit=1,
+                            )
+                            if fmt_prompt and fmt_prompt not in prompts:
+                                prompts = (prompts | fmt_prompt).sorted(key=_sort_key)
+
             except Exception:
                 prompts = empty_prompts
             record.ai_active_prompts = prompts

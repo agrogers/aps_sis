@@ -32,22 +32,23 @@ _logger = logging.getLogger(__name__)
 # response_format heading is baked into the format constant itself.
 SECTION_HEADINGS = {
     'system':                    '%s',  # not used — handled as the system message
-    'additional_context':        '<additional_context>\n%s</additional_context>',
-    'ai_instructions':           '<ai_instructions>\n%s</ai_instructions>',
     'maximum_mark':              '<maximum_mark>\n%s</maximum_mark>',
     'model_answer':              '<model_answer>%s</model_answer>',
+    'additional_context':        '<additional_context>\n%s</additional_context>',
     'notes':                     '<notes>\n%s</notes>',
     'question':                  '<question>%s</question>',
     'student_answer':            '<student_answer>\n%s</student_answer>',
-    'summary':                   '<summary>\n%s</summary>',
-    'summary_format':            '<summary_format>\n%s</summary_format>',
     'detailed_analysis':         '<detailed_analysis>\n%s</detailed_analysis>',
-    'detailed_analysis_format':  '<detailed_analysis_format>\n%s</detailed_analysis_format>',
+    'detailed_analysis_format':  None,  # nested inside detailed_analysis as <output_format>
     'results_table':             '<results_table>\n%s</results_table>',
-    'results_table_format':      '<results_table_format>\n%s</results_table_format>',
+    'results_table_format':      None,  # nested inside results_table as <output_format>
     'targeted_feedback':         '<targeted_feedback>\n%s</targeted_feedback>',
+    'score':                     '<score>\n%s</score>',
+    'summary':                   '<summary>\n%s</summary>',
+    'summary_format':            None,  # nested inside summary as <output_format>
     'output_schema':             '<output_schema>\n%s</output_schema>',
-    'response_format':           '%s',  # deprecated — kept so old prompt records don't crash
+    'other':                     '%s',
+    'ai_instructions':           '%s',  # deprecated — kept so old prompt records don't crash
 }
 
 # ---------------------------------------------------------------------------
@@ -102,16 +103,16 @@ _TARGETED_FEEDBACK_RULES = (
 # Per-key JSON schema fragments used by ``_build_output_schema``.
 # Keys must match the canonical AI response keys.
 _OUTPUT_SCHEMA_KEY_DESCRIPTIONS = {
-    'opening_summary': (
-        '"opening_summary": "string — brief Markdown overview of the student\'s performance"'
-    ),
     'detailed_analysis': (
-        '"detailed_analysis": "string — Markdown with headings and bullet points '
+        '"detailed_analysis": "string — Markdown with headings, text, and bullet points '
         'for a detailed point-by-point assessment"'
     ),
     'results_table': (
-        '"results_table": "string — Markdown table with columns for criterion, mark, '
+        '"results_table": "string — A heading with a markdown table with columns for criterion, mark, '
         'and justification"'
+    ),
+    'summary': (
+        '"summary": "string — brief Markdown overview of the student\'s performance with headings and key points highlighted in bold or italics"'
     ),
     'score': '"score": number|null',
     'score_comment': (
@@ -127,6 +128,18 @@ _OUTPUT_SCHEMA_KEY_DESCRIPTIONS = {
     ),
 }
 
+# Maps each prompt section key to the JSON output key(s) it contributes.
+# Iteration order follows SECTION_HEADINGS, so the output schema key list is
+# always derived from that declaration order rather than being hardcoded.
+# 'score' is special: it is gated on out_of_marks, not on section presence.
+_SECTION_TO_OUTPUT_KEYS = {
+    'detailed_analysis':  ['detailed_analysis'],
+    'results_table':      ['results_table'],
+    'targeted_feedback':  ['feedback', 'links'],
+    'score':              ['score', 'score_comment'],
+    'summary':            ['summary'],
+}
+
 # Maximum number of model calls when the response content is not parseable JSON.
 JSON_PARSE_MAX_ATTEMPTS = 3
 
@@ -138,7 +151,7 @@ SYSTEM_PROMPT_FEEDBACK = (
     'produce constructive teacher feedback for students, and when possible determine a mark.'
 )
 SYSTEM_PROMPT_FEEDBACK_NO_REASONING = (
-    ' Do not return reasoning, chain-of-thought, or thinking text. Return only the final answer.'
+    f'{SYSTEM_PROMPT_FEEDBACK} Do not return reasoning, chain-of-thought, or thinking text.'
 )
 
 
@@ -255,7 +268,7 @@ class APSAIModelAnswerBase(models.Model):
 
         instructions = self._html_to_text(ctx.get('instructions', '')).strip()
         if instructions:
-            data['ai_instructions'] = instructions
+            data['additional_context'] = instructions
 
         out_of_marks = str(ctx.get('out_of_marks') or '').strip()
         if out_of_marks:
@@ -299,7 +312,7 @@ class APSAIModelAnswerBase(models.Model):
 
         Included output keys:
 
-        * ``opening_summary`` — if any active prompt has section ``summary``
+        * ``summary`` — if any active prompt has section ``summary``
         * ``detailed_analysis`` — if any active prompt has section ``detailed_analysis``
         * ``results_table`` — if any active prompt has section ``results_table``
         * ``score`` + ``score_comment`` — if *out_of_marks* is non-zero
@@ -311,16 +324,17 @@ class APSAIModelAnswerBase(models.Model):
         }
         include_score = bool(out_of_marks)
         keys = []
-        if 'summary' in active_sections:
-            keys.append('opening_summary')
-        if 'detailed_analysis' in active_sections:
-            keys.append('detailed_analysis')
-        if 'results_table' in active_sections:
-            keys.append('results_table')
-        if include_score:
-            keys.extend(['score', 'score_comment'])
-        if 'targeted_feedback' in active_sections:
-            keys.extend(['feedback', 'links'])
+        # Iterate SECTION_HEADINGS in declaration order so this list never
+        # needs manual reordering — just update SECTION_HEADINGS / _SECTION_TO_OUTPUT_KEYS.
+        for section_key in SECTION_HEADINGS:
+            output_keys = _SECTION_TO_OUTPUT_KEYS.get(section_key)
+            if not output_keys:
+                continue
+            if section_key == 'score':
+                if include_score:
+                    keys.extend(output_keys)
+            elif section_key in active_sections:
+                keys.extend(output_keys)
         if not keys:
             return ''
         key_lines = ',\n  '.join(
@@ -379,11 +393,32 @@ class APSAIModelAnswerBase(models.Model):
         else:
             system_content = self._build_system_content()
 
+        # Sections whose content should be nested as <output_format> inside a
+        # parent section rather than emitted as standalone blocks.
+        _FORMAT_PARENT = {
+            'summary_format': 'summary',
+            'detailed_analysis_format': 'detailed_analysis',
+            'results_table_format': 'results_table',
+        }
+
+        # Pre-collect format-section text so parent sections can embed it.
+        _format_text_for_parent = {}  # parent_key -> formatted child text
+        for fmt_key, parent_key in _FORMAT_PARENT.items():
+            fmt_items = prompts_by_section.get(fmt_key, [])
+            fmt_dynamic = (dynamic_section_data.get(fmt_key) or '').strip()
+            parts = [t for _, t in fmt_items] + ([fmt_dynamic] if fmt_dynamic else [])
+            if parts:
+                _format_text_for_parent[parent_key] = '<output_format>\n' + '\n\n'.join(parts) + '\n</output_format>'
+                for pname, _ in fmt_items:
+                    names.append(pname or section_labels.get(fmt_key, fmt_key.replace('_', ' ').title()))
+
         sections = []
 
         for section_key in prompt_section_order:
             if section_key == 'system':
                 continue  # already handled above as the system message
+            if section_key in _FORMAT_PARENT:
+                continue  # emitted as a nested child of its parent section
 
             prompt_items = prompts_by_section[section_key]  # list of (name, text)
             dynamic_text = (dynamic_section_data.get(section_key) or '').strip()
@@ -396,17 +431,16 @@ class APSAIModelAnswerBase(models.Model):
                 lines.append(ptext)
                 names.append(pname or section_labels.get(section_key, section_key.replace('_', ' ').title()))
 
-            # Inject dynamic text only when no prompt template covers this section
-            # (so it acts as a fallback), OR for sections whose dynamic content
-            # is the actual record data (question text, model answer, teacher notes,
-            # specific instructions, student answer) which must always follow any
-            # template framing even when a prompt template is also present.
-            _ALWAYS_INCLUDE_DYNAMIC = frozenset({
-                'student_answer', 'model_answer', 'question', 'notes', 'ai_instructions',
-            })
-            if dynamic_text and (not prompt_items or section_key in _ALWAYS_INCLUDE_DYNAMIC):
+            # Dynamic text is always appended after any prompt template framing.
+            if dynamic_text:
                 lines.append(dynamic_text)
                 names.append(section_labels.get(section_key, section_key.replace('_', ' ').title()))
+
+            # Append the nested <output_format> block when this section has a
+            # paired format section.
+            fmt_block = _format_text_for_parent.get(section_key)
+            if fmt_block:
+                lines.append(fmt_block)
 
             sections.append(SECTION_HEADINGS.get(section_key, '%s') % '\n\n'.join(lines))
 
@@ -481,6 +515,12 @@ class APSAIModelAnswerBase(models.Model):
     # Markdown → HTML conversion (used by both feedback pipelines)
     # -------------------------------------------------------------------------
 
+    def _prompts_request_toc(self, prompts):
+        """Return True if *prompts* contains an 'other'-section prompt tagged 'TOC'."""
+        return self.env['ai_prompts'].sudo()._has_tag(
+            prompts.filtered(lambda p: p.message_section == 'other'), 'TOC'
+        )
+
     def _markdown_to_html(self, text):
         """Convert a Markdown string to an HTML fragment.
 
@@ -497,24 +537,55 @@ class APSAIModelAnswerBase(models.Model):
             return html
         return self._normalize_feedback_html(text)
 
-    def _combine_feedback_parts(self, parsed):
+    def _combine_feedback_parts(self, parsed, include_toc=False):
         """Assemble summary, detailed_analysis, and results_table into a single HTML string.
+
+        When the ``markdown`` package is available the sections are concatenated
+        as raw Markdown and converted in a single pass so the ``toc`` extension
+        can build one cross-section table of contents.  A styled TOC block is
+        prepended to the output when ``include_toc=True`` and at least two
+        distinct headings are present.
+
+        ``include_toc`` should be set to ``True`` only when the active prompt
+        set contains a prompt whose ``message_section`` is ``'other'`` and that
+        has a tag named ``'TOC'``.
 
         Falls back to ``_normalize_feedback_html`` when none of the structured
         keys are present (e.g. when the AI returned plain text instead of JSON).
         """
-        parts = []
-        if isinstance(parsed, dict) and 'opening_summary' in parsed and 'summary' not in parsed:
-            parsed = dict(parsed)
-            parsed['summary'] = parsed.pop('opening_summary')
+        raw_parts = []
         for key in ('summary', 'detailed_analysis', 'results_table'):
             val = (parsed.get(key) or '').strip() if isinstance(parsed, dict) else ''
             if val:
-                parts.append(self._markdown_to_html(val))
-        if not parts:
+                raw_parts.append(val)
+
+        if not raw_parts:
             legacy = (parsed.get('feedback_html') if isinstance(parsed, dict) else None) or ''
             return self._normalize_feedback_html(legacy or None)
-        return '\n'.join(parts)
+
+        if not _MARKDOWN_AVAILABLE:
+            # Fallback: convert each part individually (no TOC).
+            return '\n'.join(self._normalize_feedback_html(p) for p in raw_parts)
+
+        combined_md = '\n\n'.join(raw_parts)
+        md = _md_lib.Markdown(extensions=['tables', 'fenced_code', 'nl2br', 'toc'])
+        body = md.convert(combined_md)
+        body = body.replace('<table>', '<table class="table table-bordered table-sm">')
+
+        toc_html = getattr(md, 'toc', '') if include_toc else ''
+        # Only show the TOC when requested and at least two distinct headings exist.
+        if toc_html and toc_html.strip() not in ('', '<div class="toc"></div>'):
+            toc_block = (
+                '<div class="o_field_html ai-feedback-toc" '
+                'style="background:#f8f9fa;border:1px solid #dee2e6;'
+                'border-radius:4px;padding:10px 16px;margin-bottom:16px;">'
+                '<strong style="display:block;margin-bottom:6px;">Contents</strong>'
+                + toc_html
+                + '</div>'
+            )
+            return toc_block + '\n' + body
+
+        return body
 
     # -------------------------------------------------------------------------
     # Base (non-targeted) feedback runner
@@ -595,7 +666,7 @@ class APSAIModelAnswerBase(models.Model):
             dynamic_data['output_schema'] = schema_text
 
         # Inject default results-table format when no prompt template covers it.
-        
+
         active_sections = {p.message_section for p in (prompts or self.env['ai_prompts'].browse())}
 
         # if 'results_table' in active_sections and 'results_table_format' not in active_sections:
@@ -714,7 +785,7 @@ class APSAIModelAnswerBase(models.Model):
             progress_callback,
             prompt_names_used=names,
         )
-        feedback_html = self._combine_feedback_parts(parsed) or self._normalize_feedback_html(raw_content)
+        feedback_html = self._combine_feedback_parts(parsed, include_toc=self._prompts_request_toc(prompts)) or self._normalize_feedback_html(raw_content)
         score = self._extract_score(parsed, raw_content)
         score_comment = self._extract_score_comment(parsed)
         return {

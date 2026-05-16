@@ -10,7 +10,6 @@ class APSAIPrompt(models.Model):
     _PROMPT_MESSAGE_SECTIONS = [
         ('system', 'System'),                               # <system> prompts are for high-level instructions that set the overall context and guidelines for the AI's analysis, such as the role it should play, the perspective it should take, and the general approach it should use when analyzing the student's answer. They are included for reference and should be used as part of the basis for analysis, as they provide important context for understanding how to approach the analysis and for ensuring that important details are not overlooked.
         ('additional_context', 'Additional Context'),       # <additional_context> is for any relevant context that doesn't fit into the other categories, such as background information, reminders about edge cases, or specific conventions to follow when analyzing the student's answer. It is included for reference and should be used as part of the basis for analysis, as it provides important context for understanding how to approach the analysis and for ensuring that important details are not overlooked.
-        ('ai_instructions', '- NOT USED AI Instructions'),             
         ('notes', '- NOT USED Notes'),                                 # <notes> can be used for any additional information that doesn't fit into the other categories, such as reminders about how to handle edge cases, or specific conventions to follow when analyzing the student's answer. It is included for reference and should be used as part of the basis for analysis, as it provides important context for understanding how to approach the analysis and for ensuring that important details are not overlooked.
         ('score', 'Score'),                   # <maximum_mark> is the maximum mark available for the question, which can be used as a reference point for evaluating the student's answer and for providing feedback on how to improve it. It is included for reference and should be used as part of the basis for analysis, as it provides important context for understanding the marking criteria and for evaluating the relevance and correctness of the student's answer.
         ('maximum_mark', 'Maximum Mark'),                   # <maximum_mark> is the maximum mark available for the question, which can be used as a reference point for evaluating the student's answer and for providing feedback on how to improve it. It is included for reference and should be used as part of the basis for analysis, as it provides important context for understanding the marking criteria and for evaluating the relevance and correctness of the student's answer.
@@ -26,6 +25,7 @@ class APSAIPrompt(models.Model):
         ('targeted_feedback', 'Targeted Feedback'),         # <targeted_feedback> Describes how to determine the targeted feedback. Plus 
         ('output_schema', 'Output Schema'),                 # <output_schema> what must be produiced  - JSON keys, structure rules, data types, etc.
         ('response_format', '- NOT USED Response Format -'),     # Don't use any more ##
+        ('other', 'Other')                                  # Used for non-prompt construction directions like addind a TOC post call.
     ]
 
     _DEFAULT_TARGETED_FEEDBACK_PROMPT_NAME = 'Targeted Feedback'
@@ -71,11 +71,15 @@ Always try and include one positive feature of the answer with a feedback.type="
         'question':           7,   # medium blue
         'student_answer':     8,   # light purple
         'summary':            6,   # salmon
+        'summary_format':            6,   # salmon
         'detailed_analysis':  9,   # fuchsia
+        'detailed_analysis_format':  9,   # fuchsia
         'results_table':      11,  # violet
+        'results_table_format':      11,  # violet
         'targeted_feedback':  6,   # salmon
         'response_format':    0,   # none (deprecated)
         'output_schema':      3,   # yellow
+        'other':              3,   # yellow
     }
 
     sequence = fields.Integer(string='Sequence', default=10)
