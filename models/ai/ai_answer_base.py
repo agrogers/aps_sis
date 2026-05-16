@@ -180,7 +180,7 @@ class APSAIModelAnswerBase(models.Model):
     def _normalize_feedback_html(self, feedback_html):
         text = (feedback_html or '').strip()
         if not text:
-            return '<p>No feedback was returned by the AI model.</p>'
+            return '<p><em>No detailed feedback was returned by the AI model.</em></p>'
         if '<' in text and '>' in text:
             return text
         paragraphs = [segment.strip() for segment in text.split('\n\n') if segment.strip()]
