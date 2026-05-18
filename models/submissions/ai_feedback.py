@@ -446,7 +446,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
     def _apply_ai_feedback_result(self, result):
         self.ensure_one()
-        feedback_html = result.get('feedback_html') or '<p>No feedback was returned by the AI model.</p>'
+        feedback_html = result.get('feedback_html') or '<p><em>No detailed feedback was returned by the AI model.</em></p>'
         score = result.get('score')
         vals = {
             **self._get_ai_feedback_result_write_vals(result),

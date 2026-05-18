@@ -29,6 +29,14 @@ for /d /r "%TARGET%" %%d in (.git) do (
 )
 
 REM ---------------------------------------------------
+REM Delete .venv folders
+REM ---------------------------------------------------
+echo Deleting .venv folders...
+for /d /r "%TARGET%" %%d in (.venv) do (
+    rd /s /q "%%d"
+)
+
+REM ---------------------------------------------------
 REM Delete git-related files
 REM ---------------------------------------------------
 echo Deleting git files...

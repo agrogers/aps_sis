@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <list default_order="create_date desc">
                 <field name="sequence" widget="handle"/>
+                <field name="is_favourite" widget="boolean_favorite" nolabel="1" optional="show" string="★"/>
                 <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                 <field name="subject_icons" string="Subject Icons" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                 <field name="thumbnail" widget="image" options="{'size': [50, 50]}" optional="hide"/>
@@ -158,9 +159,10 @@
                         </button>
                     </div>
                     <div class="aps_ribbon" invisible="not type_id">
-                        <field name="type_icon" widget="image" options="{'size': [40, 40]}" class="me-2" nolabel="1"/>
+                        <field name="type_icon" widget="image" options="{'size': [40, 40]}" class="me-1" nolabel="1"/>
                         <field name="display_name_breadcrumb" widget="breadcrumb_pills" nolabel="1"
                                options="{'size': '1.4em'}" style="font-weight: 600;"/>
+                        <field name="is_favourite" widget="boolean_favorite" nolabel="1" style="margin-left: 10px !important;" class="ms-auto fs-4 me-1"/>
                     </div>
                     <notebook>
                         <page string="Basic Information">
@@ -361,8 +363,8 @@
                                     <field name="ai_merge_responses" widget="boolean_toggle" invisible="not has_multiple_ai_models"/>
                                     <field name="ai_merge_response_chunks" widget="boolean_toggle" invisible="not has_multiple_ai_models or not ai_targeted_feedback"/>
                                     <field name="ai_model_id" string="Fallback AI Model" options="{'no_create': True, 'no_open': True}" invisible="has_multiple_ai_models"/>
-                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False}"/>
-                                    <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False}"/>
+                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False, 'color_field': 'color'}"/>
+                                    <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False, 'color_field': 'color'}"/>
                                      <field name="ai_test_prompt" widget="boolean_toggle"/>
                                     <field name="ai_show_saved_responses" widget="boolean_toggle"/>
                                 </group>
@@ -507,8 +509,7 @@
                 <field name="marks"/>
                 <field name="subject_categories"/>
                 <field name="subjects"/>
-                <filter name="recently_viewed_50" string="Recent 50" domain="[('is_recently_viewed', '=', 50)]"/>
-                <filter name="recently_viewed_100" string="Recent 100" domain="[('is_recently_viewed', '=', 100)]"/>
+                <filter name="is_favourite" string="Favourites" domain="[('is_favourite','=',True)]"/>
                 <separator/>
                 <filter name="has_parent" string="Has Parent" domain="[('parent_ids','!=',False)]"/>
                 <filter name="no_parent" string="Root Resources" domain="[('parent_ids','=',False)]"/>

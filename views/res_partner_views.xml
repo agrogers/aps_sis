@@ -20,7 +20,6 @@
                 <page name="personal_info" string="Personal" invisible="is_company">
                     <group>
                         <field name="gender"/>
-                        <field name="ethnicity_id"/>
                     </group>
                 </page>
                 <page name="aps_certificates" string="Certificates" invisible="is_company">

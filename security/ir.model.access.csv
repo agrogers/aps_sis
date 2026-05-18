@@ -80,8 +80,6 @@ access_ai_prompt_tag_manager,ai.prompt.tag.manager,model_ai_prompt_tag,aps_sis.g
 access_aps_submit_mark_wizard_teacher,aps.submit.mark.wizard.teacher,model_aps_submit_mark_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_submit_mark_wizard_student,aps.submit.mark.wizard.student,model_aps_submit_mark_wizard,aps_sis.group_aps_student,1,1,1,1
 access_ai_prompt_tag_user,ai.prompt.tag.user,model_ai_prompt_tag,base.group_user,1,0,0,0
-access_aps_ethnicity_teacher,aps.ethnicity.teacher,model_aps_ethnicity,aps_sis.group_aps_teacher,1,1,1,1
-access_aps_ethnicity_user,aps.ethnicity.user,model_aps_ethnicity,base.group_user,1,0,0,0
 access_aps_certificate_template_teacher,aps.certificate.template.teacher,model_aps_certificate_template,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_certificate_template_student,aps.certificate.template.student,model_aps_certificate_template,aps_sis.group_aps_student,1,0,0,0
 access_aps_award_category_teacher,aps.award.category.teacher,model_aps_award_category,aps_sis.group_aps_teacher,1,1,1,1
@@ -94,3 +92,4 @@ access_aps_student_certificate_teacher,aps.student.certificate.teacher,model_aps
 access_aps_student_certificate_student,aps.student.certificate.student,model_aps_student_certificate,aps_sis.group_aps_student,1,0,0,0
 access_aps_student_certificate_print_history_teacher,aps.student.certificate.print.history.teacher,model_aps_student_certificate_print_history,aps_sis.group_aps_teacher,1,0,1,0
 access_aps_student_certificate_print_history_student,aps.student.certificate.print.history.student,model_aps_student_certificate_print_history,aps_sis.group_aps_student,1,0,0,0
+
