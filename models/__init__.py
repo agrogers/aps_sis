@@ -25,7 +25,7 @@ from . import hr_resume_line
 from . import conditional_views
 from . import op_student
 from . import res_partner
-from . import aps_student_certificate
+from . import awards
 
 
 

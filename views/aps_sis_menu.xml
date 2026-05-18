@@ -51,7 +51,11 @@
     <menuitem id="menu_apex_resources" name="Resources" parent="menu_apex_root" action="action_aps_resources" sequence="9" groups="aps_sis.group_aps_teacher"/>
 
     <menuitem id="menu_apex_submissions" name="Submissions" parent="menu_apex_root" action="action_aps_resource_submissions" sequence="10" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificates" name="Certificates" parent="menu_apex_root" action="action_aps_student_certificate" sequence="15" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates" name="Certificates" parent="menu_apex_root" sequence="15" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_list" name="Certificates" parent="menu_apex_certificates" action="action_aps_student_certificate" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_award_categories" name="Award Categories" parent="menu_apex_certificates" action="action_aps_award_category" sequence="20" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_award_votes" name="Award Votes" parent="menu_apex_certificates" action="action_aps_award_vote" sequence="30" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_templates" name="Templates" parent="menu_apex_certificates" action="action_aps_certificate_template" sequence="40" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_students" name="Student Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_score" name="Enter Scores" parent="menu_apex_submissions" action="action_aps_resource_submissions_score" sequence="40" groups="aps_sis.group_aps_teacher"/>
@@ -72,7 +76,6 @@
     <menuitem id="menu_apex_resource_types" name="Resource Types" parent="menu_apex_resources_heading" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_teacher"/>    
     <menuitem id="menu_apex_resource_tags" name="Resource Tags" parent="menu_apex_resources_heading" action="action_aps_resource_tags" sequence="16" groups="aps_sis.group_aps_teacher"/>    
     <menuitem id="menu_apex_resource_custom_names" name="Custom Names" parent="menu_apex_resources_heading" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificate_templates" name="Certificate Templates" parent="menu_apex_resources_heading" action="action_aps_certificate_template" sequence="210" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_avatars_heading" name="Avatars" parent="menu_apex_settings" sequence="200" groups="aps_sis.group_aps_teacher"/>    <!-- Locations under School settings -->
     <menuitem id="menu_apex_locations" name="Locations" parent="menu_apex_school_heading" action="action_aps_locations" sequence="45" groups="aps_sis.group_aps_teacher"/>    <menuitem id="menu_apex_avatars" name="Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatars" sequence="210" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_avatar_categories" name="Avatar Categories" parent="menu_apex_avatars_heading" action="action_aps_avatar_categories" sequence="220" groups="aps_sis.group_aps_teacher"/>

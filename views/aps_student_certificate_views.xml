@@ -7,6 +7,7 @@
             <list>
                 <field name="partner_id" optional="show"/>
                 <field name="event" optional="show"/>
+                <field name="award_category_id" optional="show"/>
                 <field name="subject_id" optional="show"/>
                 <field name="certificate_date" optional="show"/>
                 <field name="certificate_template_id" optional="show"/>
@@ -30,6 +31,7 @@
                         <group>
                             <field name="partner_id"/>
                             <field name="event"/>
+                            <field name="award_category_id"/>
                             <field name="subject_id"/>
                         </group>
                         <group>
@@ -107,6 +109,144 @@
             </form>
         </field>
     </record>
+
+    <!-- Award Categories -->
+
+    <record id="view_aps_award_category_list" model="ir.ui.view">
+        <field name="name">aps.award.category.list</field>
+        <field name="model">aps.award.category</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="image" widget="image" class="o_image_32_max" optional="show"/>
+                <field name="name"/>
+                <field name="certificate_template_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_award_category_form" model="ir.ui.view">
+        <field name="name">aps.award.category.form</field>
+        <field name="model">aps.award.category</field>
+        <field name="arch" type="xml">
+            <form string="Award Category">
+                <sheet>
+                    <field name="image" widget="image" class="o_image_64_max" nolabel="1"/>
+                    <group>
+                        <field name="name"/>
+                        <field name="voting_active"/>
+                        <field name="adhoc_vote"/>
+                        <field name="open_date"/>
+                        <field name="voting_restrictions"/>
+                        <field name="level_ids" widget="many2many_tags"/>
+                        <field name="term_ids" widget="many2many_tags"/>
+                        <field name="subject_category_ids" widget="many2many_tags"/>
+                        <field name="certificate_template_id"/>
+                    </group>
+                    <notebook>
+                        <page string="Sub-Categories">
+                            <field name="sub_category_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="description"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_award_category" model="ir.actions.act_window">
+        <field name="name">Award Categories</field>
+        <field name="res_model">aps.award.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_aps_award_category_list_view" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_award_category_list"/>
+        <field name="act_window_id" ref="action_aps_award_category"/>
+    </record>
+
+    <record id="action_aps_award_category_form_view" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_award_category_form"/>
+        <field name="act_window_id" ref="action_aps_award_category"/>
+    </record>
+
+    <!-- Award Votes -->
+
+    <record id="view_aps_award_vote_list" model="ir.ui.view">
+        <field name="name">aps.award.vote.list</field>
+        <field name="model">aps.award.vote</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="state" optional="show"/>
+                <field name="open_date" optional="show"/>
+                <field name="due_date" optional="show"/>
+                <field name="submitted_date" optional="show"/>
+                <field name="award_category_id" optional="show"/>
+                <field name="recipient_partner_id" optional="show"/>
+                <field name="voter_partner_id" optional="show"/>
+                <field name="comment" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_award_vote_form" model="ir.ui.view">
+        <field name="name">aps.award.vote.form</field>
+        <field name="model">aps.award.vote</field>
+        <field name="arch" type="xml">
+            <form string="Award Vote">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,open,submitted,closed"/>
+                </header>
+                <sheet>
+                    <group col="2">
+                        <group>
+                            <field name="award_category_id"/>
+                            <field name="recipient_partner_id"/>
+                            <field name="voter_partner_id"/>
+                        </group>
+                        <group>
+                            <field name="open_date"/>
+                            <field name="due_date"/>
+                            <field name="submitted_date"/>
+                        </group>
+                    </group>
+                    <group string="Comment">
+                        <field name="comment" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_award_vote" model="ir.actions.act_window">
+        <field name="name">Award Votes</field>
+        <field name="res_model">aps.award.vote</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_aps_award_vote_list_view" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_award_vote_list"/>
+        <field name="act_window_id" ref="action_aps_award_vote"/>
+    </record>
+
+    <record id="action_aps_award_vote_form_view" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_award_vote_form"/>
+        <field name="act_window_id" ref="action_aps_award_vote"/>
+    </record>
+
+    <!-- Certificate Templates -->
 
     <record id="action_aps_certificate_template" model="ir.actions.act_window">
         <field name="name">Certificate Templates</field>

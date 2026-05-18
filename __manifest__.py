@@ -55,6 +55,8 @@
 		'views/aps_teacher_dashboard_views.xml',
 		'views/aps_media_views.xml',
 		'views/aps_student_certificate_views.xml',
+		'views/hr_employee_views.xml',
+		'views/awards_voting_templates.xml',
 		'wizard/aps_student_class_bulk_wizard_views.xml',
 		'wizard/aps_partner_profile_pic_views.xml',
 		'views/aps_sis_menu.xml',

@@ -37,7 +37,6 @@ class APSCertificateTemplate(models.Model):
         string='Certificates',
     )
 
-
 class APSStudentCertificate(models.Model):
     _name = 'aps.student.certificate'
     _description = 'APS Student Certificate'
@@ -49,6 +48,12 @@ class APSStudentCertificate(models.Model):
     subject_id = fields.Many2one('op.subject', tracking=True)
     event = fields.Char(required=True, tracking=True)
     certificate_date = fields.Date(default=fields.Date.today, required=True, tracking=True)
+    award_category_id = fields.Many2one(
+        'aps.award.category',
+        string='Award Category',
+        ondelete='restrict',
+        tracking=True,
+    )
     certificate_template_id = fields.Many2one(
         'aps.certificate.template',
         required=True,

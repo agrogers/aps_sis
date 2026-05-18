@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+<template id="awards_voting_dashboard" name="Awards Voting Dashboard">
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Awards Voting</title>
+    <link rel="stylesheet" href="/aps_sis/static/src/css/awards/voting.css"/>
+</head>
+<body class="av-body">
+
+    <!-- Header -->
+    <header class="av-header">
+        <div class="av-header-inner">
+            <div class="av-header-left">
+                <span class="av-trophy">&#127942;</span>
+                <div>
+                    <div class="av-header-title">Awards Voting</div>
+                    <div class="av-header-sub"><t t-esc="employee.name"/></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <section class="av-stats">
+        <div class="av-stat-card">
+            <div class="av-stat-num"><t t-esc="my_votes_count"/></div>
+            <div class="av-stat-label">My votes<br/><span>last 12 months</span></div>
+        </div>
+        <div class="av-stat-card">
+            <div class="av-stat-num"><t t-esc="avg_votes"/></div>
+            <div class="av-stat-label">Average votes<br/><span>per teacher</span></div>
+        </div>
+        <div class="av-stat-card av-stat-open">
+            <div class="av-stat-num"><t t-esc="len(open_categories)"/></div>
+            <div class="av-stat-label">Open<br/><span>categories</span></div>
+        </div>
+        <div class="av-stat-card av-stat-expired">
+            <div class="av-stat-num"><t t-esc="expired_count"/></div>
+            <div class="av-stat-label">Missed<br/><span>without voting</span></div>
+        </div>
+    </section>
+
+    <!-- Open Categories -->
+    <t t-if="open_categories">
+        <section class="av-section">
+            <h2 class="av-section-title">Open for Voting</h2>
+            <div class="av-cards">
+                <t t-foreach="open_categories" t-as="cat">
+                    <button class="av-cat-card"
+                            t-att-data-category-id="cat.id"
+                            t-att-data-category-name="cat.name"
+                            t-att-data-token="token"
+                            onclick="AwardsVoting.openModal(this)">
+                        <div class="av-cat-img-wrap">
+                            <t t-if="cat.image">
+                                <img t-attf-src="/web/image/aps.award.category/#{cat.id}/image"
+                                     class="av-cat-img" alt=""/>
+                            </t>
+                            <t t-else="">
+                                <div class="av-cat-img-placeholder">&#127885;</div>
+                            </t>
+                        </div>
+                        <div class="av-cat-name"><t t-esc="cat.name"/></div>
+                        <div class="av-cat-badge">Vote Now &#8594;</div>
+                    </button>
+                </t>
+            </div>
+        </section>
+    </t>
+
+    <!-- Ad Hoc Categories -->
+    <t t-if="adhoc_categories">
+        <section class="av-section">
+            <h2 class="av-section-title">Ad Hoc Votes</h2>
+            <div class="av-cards">
+                <t t-foreach="adhoc_categories" t-as="cat">
+                    <button class="av-cat-card av-cat-card--adhoc"
+                            t-att-data-category-id="cat.id"
+                            t-att-data-category-name="cat.name"
+                            t-att-data-token="token"
+                            onclick="AwardsVoting.openModal(this)">
+                        <div class="av-cat-img-wrap">
+                            <t t-if="cat.image">
+                                <img t-attf-src="/web/image/aps.award.category/#{cat.id}/image"
+                                     class="av-cat-img" alt=""/>
+                            </t>
+                            <t t-else="">
+                                <div class="av-cat-img-placeholder">&#11088;</div>
+                            </t>
+                        </div>
+                        <div class="av-cat-name"><t t-esc="cat.name"/></div>
+                        <div class="av-cat-badge av-cat-badge--adhoc">Add Vote +</div>
+                    </button>
+                </t>
+            </div>
+        </section>
+    </t>
+
+    <t t-if="not open_categories and not adhoc_categories">
+        <section class="av-section av-empty">
+            <div class="av-empty-icon">&#127881;</div>
+            <div class="av-empty-text">No categories are currently open for voting.</div>
+        </section>
+    </t>
+
+    <!-- Voting Modal -->
+    <div id="av-modal" class="av-modal-overlay" style="display:none"
+         onclick="AwardsVoting.overlayClick(event)">
+        <div class="av-modal">
+            <button class="av-modal-close" onclick="AwardsVoting.closeModal()">&#10005;</button>
+
+            <div class="av-modal-header">
+                <div class="av-modal-trophy">&#127942;</div>
+                <div id="av-modal-cat-name" class="av-modal-cat-name"/>
+                <div id="av-modal-selection-summary" class="av-modal-selection-summary"
+                     style="display:none"/>
+                <button id="av-submit-btn" class="av-submit-btn" style="display:none"
+                        onclick="AwardsVoting.submitVote()">Submit Vote</button>
+            </div>
+
+            <div class="av-filters">
+                <select id="av-filter-level" class="av-filter-select"
+                        onchange="AwardsVoting.filterSearch()">
+                    <option value="">All Year Levels</option>
+                </select>
+                <select id="av-filter-subject-cat" class="av-filter-select"
+                        onchange="AwardsVoting.filterSearch()">
+                    <option value="">All Subject Categories</option>
+                </select>
+                <input id="av-search" class="av-filter-input" type="text"
+                       placeholder="Search by name..." oninput="AwardsVoting.filterSearch()"/>
+            </div>
+
+            <div class="av-table-wrap">
+                <table class="av-table" id="av-candidate-table">
+                    <thead>
+                        <tr>
+                            <th class="av-th-photo"/>
+                            <th class="av-th-name av-sortable"
+                                onclick="AwardsVoting.sortBy('name')">
+                                Name <span class="av-sort-icon">&#8597;</span>
+                            </th>
+                            <th class="av-th-level av-sortable"
+                                onclick="AwardsVoting.sortBy('level')">
+                                Level <span class="av-sort-icon">&#8597;</span>
+                            </th>
+                            <th class="av-th-times av-sortable"
+                                onclick="AwardsVoting.sortBy('times_awarded')">
+                                Times Awarded <span class="av-sort-icon">&#8597;</span>
+                            </th>
+                            <th class="av-th-last av-sortable"
+                                onclick="AwardsVoting.sortBy('last_awarded')">
+                                Last Awarded <span class="av-sort-icon">&#8597;</span>
+                            </th>
+                            <th class="av-th-select">Select</th>
+                        </tr>
+                    </thead>
+                    <tbody id="av-candidate-list">
+                        <tr><td colspan="6" class="av-loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/aps_sis/static/src/js/awards/voting.js"/>
+</body>
+</html>
+</template>
+</odoo>
