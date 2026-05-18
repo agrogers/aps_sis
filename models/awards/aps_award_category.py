@@ -7,6 +7,8 @@ class APSAwardCategory(models.Model):
     _order = 'name'
 
     name = fields.Char(required=True)
+    description = fields.Text(string='Description')
+    short_description = fields.Text(string='Short Description')
     image = fields.Image(string='Image')
     level_ids = fields.Many2many(
         'aps.level',

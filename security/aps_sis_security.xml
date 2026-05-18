@@ -76,19 +76,5 @@
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
         </record>
 
-        <record id="rule_aps_student_certificate_print_history_teacher" model="ir.rule">
-            <field name="name">Teacher (APEX): All Certificate Print History</field>
-            <field name="model_id" ref="model_aps_student_certificate_print_history"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
-            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
-        </record>
-
-        <record id="rule_aps_student_certificate_print_history_student" model="ir.rule">
-            <field name="name">Student (APEX): Own Certificate Print History</field>
-            <field name="model_id" ref="model_aps_student_certificate_print_history"/>
-            <field name="domain_force">[('certificate_id.partner_id', '=', user.partner_id.id)]</field>
-            <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
-        </record>
-
     </data>
 </odoo>

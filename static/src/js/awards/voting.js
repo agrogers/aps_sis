@@ -11,7 +11,9 @@
         _candidates: [],       // full list from server
         _filtered: [],         // after search + filter
         _selected: new Set(),  // selected partner IDs
-        _comments: new Map(), // per-student comments, keyed by partner id
+        _comments: new Map(),  // per-student comments, keyed by partner id
+        _subCategories: [],    // [{id, name}] for the current category
+        _subCategorySelections: new Map(), // per-student sub-category id
         _sortKey: 'name',
         _sortAsc: true,
 
@@ -19,17 +21,29 @@
         // Modal open / close
         // ----------------------------------------------------------------
         openModal(btn) {
-            this._token       = btn.dataset.token;
-            this._categoryId  = parseInt(btn.dataset.categoryId, 10);
+            this._token        = btn.dataset.token;
+            this._categoryId   = parseInt(btn.dataset.categoryId, 10);
             this._categoryName = btn.dataset.categoryName;
+            const imgSrc       = btn.dataset.categoryImg || '';
             this._selected.clear();
             this._comments.clear();
+            this._subCategories = [];
+            this._subCategorySelections.clear();
             this._sortKey = 'name';
             this._sortAsc = true;
 
             document.getElementById('av-modal-cat-name').textContent = this._categoryName;
+            const modalImg = document.getElementById('av-modal-cat-img');
+            if (imgSrc) {
+                modalImg.src = imgSrc;
+                modalImg.style.display = 'block';
+            } else {
+                modalImg.src = '';
+                modalImg.style.display = 'none';
+            }
             document.getElementById('av-modal-selection-summary').style.display = 'none';
             document.getElementById('av-submit-btn').style.display = 'none';
+            document.getElementById('av-submit-error').style.display = 'none';
             document.getElementById('av-search').value = '';
             document.getElementById('av-candidate-list').innerHTML =
                 '<tr><td colspan="6" class="av-loading">Loading candidates…</td></tr>';
@@ -75,6 +89,7 @@
                     return;
                 }
                 this._candidates = result.candidates || [];
+                this._subCategories = result.sub_categories || [];
                 this._populateLevelFilter();
                 this._applySearch();
                 this._renderTable();
@@ -87,15 +102,17 @@
         _populateLevelFilter() {
             const levels = [...new Set(this._candidates.map(c => c.level).filter(Boolean))].sort();
             const sel = document.getElementById('av-filter-level');
-            const current = sel.value;
+            const saved = localStorage.getItem('av_filter_level') || '';
             sel.innerHTML = '<option value="">All Year Levels</option>' +
-                levels.map(l => `<option value="${l}"${l === current ? ' selected' : ''}>${l}</option>`).join('');
+                levels.map(l => `<option value="${l}"${l === saved ? ' selected' : ''}>${l}</option>`).join('');
         },
 
         // ----------------------------------------------------------------
         // Search filter
         // ----------------------------------------------------------------
         filterSearch() {
+            localStorage.setItem('av_filter_level',
+                document.getElementById('av-filter-level').value);
             this._applySearch();
             this._renderTable();
         },
@@ -173,14 +190,32 @@
                 </tr>`);
 
                 if (sel) {
-                    const existing = this._esc(this._comments.get(c.id) || '');
+                    const existingComment = this._esc(this._comments.get(c.id) || '');
+                    const hasSubs = this._subCategories.length > 0;
+                    const selectedSub = this._subCategorySelections.get(c.id) || '';
+                    let extraCells = '';
+                    if (hasSubs) {
+                        const options = this._subCategories.map(sc =>
+                            `<option value="${sc.id}"${sc.id === selectedSub ? ' selected' : ''}>${this._esc(sc.name)}</option>`
+                        ).join('');
+                        extraCells += `<div class="av-sub-cat-wrap">
+                            <label class="av-sub-cat-label">Sub-category <span class="av-required">*</span></label>
+                            <select class="av-sub-cat-select"
+                                    onchange="AwardsVoting.saveSubCategory(${c.id}, this.value)"
+                                    onclick="event.stopPropagation()">
+                                <option value="">— select —</option>
+                                ${options}
+                            </select>
+                        </div>`;
+                    }
+                    extraCells += `<div class="av-comment-wrap">
+                        <textarea class="av-row-comment"
+                                  placeholder="Comment for ${this._esc(c.name)} (optional)"
+                                  oninput="AwardsVoting.saveComment(${c.id}, this.value)"
+                                  onclick="event.stopPropagation()">${existingComment}</textarea>
+                    </div>`;
                     rows.push(`<tr class="av-comment-row" data-comment-for="${c.id}">
-                        <td colspan="7" class="av-td-comment">
-                            <textarea class="av-row-comment"
-                                      placeholder="Comment for ${this._esc(c.name)} (optional)"
-                                      oninput="AwardsVoting.saveComment(${c.id}, this.value)"
-                                      onclick="event.stopPropagation()">${existing}</textarea>
-                        </td>
+                        <td colspan="7" class="av-td-comment">${extraCells}</td>
                     </tr>`);
                 }
             }
@@ -195,6 +230,27 @@
             }
         },
 
+        saveSubCategory(id, value) {
+            if (value) {
+                this._subCategorySelections.set(id, parseInt(value, 10));
+            } else {
+                this._subCategorySelections.delete(id);
+            }
+            // Remove error highlight from this select
+            const row = document.querySelector(`tr.av-comment-row[data-comment-for="${id}"]`);
+            if (row) {
+                const sel = row.querySelector('.av-sub-cat-select');
+                if (sel) sel.classList.remove('av-sub-cat-error');
+            }
+            // If no more missing sub-categories, clear the error message
+            const stillMissing = [...this._selected].some(
+                sid => !this._subCategorySelections.has(sid)
+            );
+            if (!stillMissing) {
+                document.getElementById('av-submit-error').style.display = 'none';
+            }
+        },
+
         // ----------------------------------------------------------------
         // Toggle student selection
         // ----------------------------------------------------------------
@@ -202,6 +258,7 @@
             if (this._selected.has(id)) {
                 this._selected.delete(id);
                 this._comments.delete(id);
+                this._subCategorySelections.delete(id);
             } else {
                 this._selected.add(id);
             }
@@ -238,6 +295,41 @@
         submitVote() {
             if (!this._selected.size) return;
 
+            // Validate sub-category if this category has any
+            if (this._subCategories.length > 0) {
+                const missing = new Set(
+                    [...this._selected].filter(id => !this._subCategorySelections.has(id))
+                );
+                if (missing.size) {
+                    // 1. Show only selected rows so the user can see what needs fixing
+                    this._filtered = this._candidates.filter(c => this._selected.has(c.id));
+                    this._sortCandidates();
+                    this._renderTable();
+
+                    // 2. Highlight the empty sub-category selects in red
+                    missing.forEach(id => {
+                        const row = document.querySelector(
+                            `tr.av-comment-row[data-comment-for="${id}"]`
+                        );
+                        if (row) {
+                            const sel = row.querySelector('.av-sub-cat-select');
+                            if (sel) sel.classList.add('av-sub-cat-error');
+                        }
+                    });
+
+                    // 3. Show an inline error message below the submit button
+                    const errEl = document.getElementById('av-submit-error');
+                    const names = [...missing].map(id => {
+                        const c = this._candidates.find(x => x.id === id);
+                        return c ? c.name : 'Unknown';
+                    }).join(', ');
+                    errEl.textContent =
+                        `⚠️ Sub-category required for: ${names}`;
+                    errEl.style.display = 'block';
+                    return;
+                }
+            }
+
             // Flush any textarea values still in the DOM (in case oninput hasn't fired)
             document.querySelectorAll('.av-row-comment').forEach(ta => {
                 const id = parseInt(ta.closest('tr').dataset.commentFor, 10);
@@ -247,6 +339,7 @@
             const recipients = [...this._selected].map(id => ({
                 id,
                 comment: this._comments.get(id) || '',
+                sub_category_id: this._subCategorySelections.get(id) || null,
             }));
 
             const btn = document.getElementById('av-submit-btn');
@@ -271,6 +364,42 @@
                 this._showToast('Submission failed. Please try again.', 'error');
                 btn.disabled = false;
                 this._updateSelectionUI();
+            });
+        },
+
+        // ----------------------------------------------------------------
+        // Delete / revert history vote
+        // ----------------------------------------------------------------
+        deleteVote(btn) {
+            const voteId = parseInt(btn.dataset.voteId, 10);
+            const token = btn.dataset.token;
+            const hasDue = btn.dataset.hasDue === '1';
+            const msg = hasDue
+                ? 'Undo this vote? It will be reverted to Open so you can re-submit.'
+                : 'Permanently delete this vote?';
+            if (!confirm(msg)) return;
+
+            btn.disabled = true;
+            btn.textContent = '…';
+
+            this._jsonRpc(`/awards/vote/${token}/vote/${voteId}/delete`, {}).then(result => {
+                if (result.error) {
+                    this._showToast('Error: ' + result.error, 'error');
+                    btn.disabled = false;
+                    btn.textContent = hasDue ? '↩ Undo' : '✕ Delete';
+                } else {
+                    const row = btn.closest('.av-history-row');
+                    row.style.transition = 'opacity .3s';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        setTimeout(() => window.location.reload(), 400);
+                    }, 300);
+                }
+            }).catch(() => {
+                this._showToast('Request failed. Please try again.', 'error');
+                btn.disabled = false;
+                btn.textContent = hasDue ? '↩ Undo' : '✕ Delete';
             });
         },
 

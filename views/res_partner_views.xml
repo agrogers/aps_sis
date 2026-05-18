@@ -29,7 +29,7 @@
                             <field name="subject_id"/>
                             <field name="certificate_date"/>
                             <field name="certificate_template_id"/>
-                            <field name="date_printed"/>
+                            <field name="last_printed"/>
                         </list>
                     </field>
                 </page>

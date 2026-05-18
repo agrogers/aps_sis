@@ -1,5 +1,6 @@
 from . import aps_academic_year
 from . import aps_academic_term
+from . import aps_academic_week
 from . import aps_level
 from . import aps_subject_category_tag
 from . import aps_subject_category

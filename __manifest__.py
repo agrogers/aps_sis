@@ -38,6 +38,7 @@
 		'views/core/aps_level_views.xml',
 		'views/core/aps_academic_year_views.xml',
 		'views/core/aps_academic_term_views.xml',
+		'views/core/aps_academic_week_views.xml',
 		'views/core/aps_class_views.xml',
 		'views/core/aps_teacher_views.xml',
 		'views/core/aps_student_views.xml',

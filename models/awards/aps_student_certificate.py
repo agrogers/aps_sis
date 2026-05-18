@@ -54,20 +54,37 @@ class APSStudentCertificate(models.Model):
         ondelete='restrict',
         tracking=True,
     )
+    award_sub_category_id = fields.Many2one(
+        'aps.award.sub.category',
+        string='Award Sub-Category',
+        ondelete='restrict',
+        tracking=True,
+        domain="[('category_id', '=', award_category_id)]",
+    )
+    academic_week_id = fields.Many2one(
+        'aps.academic.week',
+        string='Academic Week',
+        ondelete='restrict',
+        tracking=True,
+    )
+    date_awarded = fields.Date(
+        string='Date Awarded',
+        tracking=True,
+    )
+    related_partner_ids = fields.Many2many(
+        'res.partner',
+        'aps_student_certificate_related_partner_rel',
+        'certificate_id',
+        'partner_id',
+        string='Related People',
+    )
     certificate_template_id = fields.Many2one(
         'aps.certificate.template',
         required=True,
         ondelete='restrict',
         tracking=True,
     )
-    date_printed = fields.Datetime(readonly=True, copy=False, tracking=True)
-    print_history_ids = fields.One2many(
-        'aps.student.certificate.print.history',
-        'certificate_id',
-        string='Print History',
-        readonly=True,
-    )
-    print_count = fields.Integer(compute='_compute_print_count', string='Print Count')
+    last_printed = fields.Datetime(string='Last Printed', readonly=True, copy=False, tracking=True)
 
     @api.depends('partner_id', 'event')
     def _compute_name(self):
@@ -76,11 +93,6 @@ class APSStudentCertificate(models.Model):
                 record.name = f'{record.partner_id.name} - {record.event}'
             else:
                 record.name = record.partner_id.name or record.event or 'Certificate'
-
-    @api.depends('print_history_ids')
-    def _compute_print_count(self):
-        for record in self:
-            record.print_count = len(record.print_history_ids)
 
     # Paper dimensions in mm (width x height) for each format+orientation combo.
     # Used by the PDF report template to size the background image absolutely so
@@ -151,13 +163,7 @@ class APSStudentCertificate(models.Model):
     def action_print_certificate(self):
         self.ensure_one()
         certificate_template = self.certificate_template_id
-        self.date_printed = fields.Datetime.now()
-        self.env['aps.student.certificate.print.history'].create({
-            'certificate_id': self.id,
-            'printed_by': self.env.user.id,
-            'printed_on': self.date_printed,
-            'mail_template_id': certificate_template.mail_template_id.id,
-        })
+        self.last_printed = fields.Datetime.now()
         report_xmlid_by_layout = {
             ('a4', 'portrait'): 'aps_sis.action_report_student_certificate_a4',
             ('a4', 'landscape'): 'aps_sis.action_report_student_certificate_a4_landscape',
@@ -169,22 +175,3 @@ class APSStudentCertificate(models.Model):
         if not report_xmlid:
             raise UserError('Certificate template page format/orientation is not configured.')
         return self.env.ref(report_xmlid).report_action(self)
-
-
-class APSStudentCertificatePrintHistory(models.Model):
-    _name = 'aps.student.certificate.print.history'
-    _description = 'APS Student Certificate Print History'
-    _order = 'printed_on desc, id desc'
-
-    certificate_id = fields.Many2one(
-        'aps.student.certificate',
-        required=True,
-        ondelete='cascade',
-    )
-    printed_by = fields.Many2one('res.users', required=True, ondelete='restrict')
-    printed_on = fields.Datetime(required=True, default=fields.Datetime.now)
-    mail_template_id = fields.Many2one(
-        'mail.template',
-        ondelete='set null',
-        domain="[('model_id.model', '=', 'aps.student.certificate')]",
-    )

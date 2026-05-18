@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-<template id="awards_voting_dashboard" name="Awards Voting Dashboard">
+<template id="awards_voting_dashboard" name="Voting Dashboard">
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Awards Voting</title>
+    <title>Voting Dashboard</title>
     <link rel="stylesheet" href="/aps_sis/static/src/css/awards/voting.css"/>
 </head>
 <body class="av-body">
@@ -16,9 +16,12 @@
             <div class="av-header-left">
                 <span class="av-trophy">&#127942;</span>
                 <div>
-                    <div class="av-header-title">Awards Voting</div>
+                    <div class="av-header-title">Voting Dashboard</div>
                     <div class="av-header-sub"><t t-esc="employee.name"/></div>
                 </div>
+            </div>
+            <div class="av-header-right">
+                <img src="/web/image/res.company/1/logo" alt="Logo" class="av-header-logo"/>
             </div>
         </div>
     </header>
@@ -53,7 +56,9 @@
                             t-att-data-category-id="cat.id"
                             t-att-data-category-name="cat.name"
                             t-att-data-token="token"
+                            t-attf-data-category-img="#{'/web/image/aps.award.category/' + str(cat.id) + '/image' if cat.image else ''}"
                             onclick="AwardsVoting.openModal(this)">
+                        <div class="av-cat-top">
                         <div class="av-cat-img-wrap">
                             <t t-if="cat.image">
                                 <img t-attf-src="/web/image/aps.award.category/#{cat.id}/image"
@@ -64,6 +69,21 @@
                             </t>
                         </div>
                         <div class="av-cat-name"><t t-esc="cat.name"/></div>
+                        <t t-if="cat.description">
+                            <div class="av-cat-desc"><t t-esc="cat.description"/></div>
+                        </t>
+                        <t t-set="cstat" t-value="cat_stats.get(cat.id, {})"/>
+                        <t t-if="cstat.get('open_count') or cstat.get('due_date')">
+                            <div class="av-cat-meta">
+                                <t t-if="cstat.get('open_count')">
+                                    <span class="av-cat-open-count"><t t-esc="cstat['open_count']"/></span>
+                                </t>
+                                <t t-if="cstat.get('due_date')">
+                                    <span class="av-cat-due">due <t t-esc="cstat['due_date']"/></span>
+                                </t>
+                            </div>
+                        </t>
+                        </div>
                         <div class="av-cat-badge">Vote Now &#8594;</div>
                     </button>
                 </t>
@@ -71,35 +91,7 @@
         </section>
     </t>
 
-    <!-- Ad Hoc Categories -->
-    <t t-if="adhoc_categories">
-        <section class="av-section">
-            <h2 class="av-section-title">Ad Hoc Votes</h2>
-            <div class="av-cards">
-                <t t-foreach="adhoc_categories" t-as="cat">
-                    <button class="av-cat-card av-cat-card--adhoc"
-                            t-att-data-category-id="cat.id"
-                            t-att-data-category-name="cat.name"
-                            t-att-data-token="token"
-                            onclick="AwardsVoting.openModal(this)">
-                        <div class="av-cat-img-wrap">
-                            <t t-if="cat.image">
-                                <img t-attf-src="/web/image/aps.award.category/#{cat.id}/image"
-                                     class="av-cat-img" alt=""/>
-                            </t>
-                            <t t-else="">
-                                <div class="av-cat-img-placeholder">&#11088;</div>
-                            </t>
-                        </div>
-                        <div class="av-cat-name"><t t-esc="cat.name"/></div>
-                        <div class="av-cat-badge av-cat-badge--adhoc">Add Vote +</div>
-                    </button>
-                </t>
-            </div>
-        </section>
-    </t>
-
-    <t t-if="not open_categories and not adhoc_categories">
+    <t t-if="not open_categories">
         <section class="av-section av-empty">
             <div class="av-empty-icon">&#127881;</div>
             <div class="av-empty-text">No categories are currently open for voting.</div>
@@ -113,12 +105,17 @@
             <button class="av-modal-close" onclick="AwardsVoting.closeModal()">&#10005;</button>
 
             <div class="av-modal-header">
-                <div class="av-modal-trophy">&#127942;</div>
-                <div id="av-modal-cat-name" class="av-modal-cat-name"/>
-                <div id="av-modal-selection-summary" class="av-modal-selection-summary"
-                     style="display:none"/>
-                <button id="av-submit-btn" class="av-submit-btn" style="display:none"
-                        onclick="AwardsVoting.submitVote()">Submit Vote</button>
+                <div class="av-modal-header-left">
+                    <img id="av-modal-cat-img" class="av-modal-cat-img" src="" alt=""/>
+                    <div id="av-modal-cat-name" class="av-modal-cat-name"/>
+                </div>
+                <div class="av-modal-header-right">
+                    <div id="av-modal-selection-summary" class="av-modal-selection-summary"
+                         style="display:none"/>
+                    <button id="av-submit-btn" class="av-submit-btn" style="display:none"
+                            onclick="AwardsVoting.submitVote()">Submit Vote</button>
+                    <div id="av-submit-error" class="av-submit-error" style="display:none"/>
+                </div>
             </div>
 
             <div class="av-filters">
@@ -168,6 +165,69 @@
     </div>
 
     <script src="/aps_sis/static/src/js/awards/voting.js"/>
+
+    <!-- My Votes History -->
+    <t t-if="my_votes">
+        <section class="av-section av-history-section">
+            <h2 class="av-section-title">My Votes</h2>
+            <div class="av-history-list">
+                <t t-foreach="my_votes" t-as="v">
+                    <div t-attf-class="av-history-row av-history-state--#{v.state}">
+                        <div class="av-history-icon">
+                            <t t-if="v.award_category_id.image">
+                                <img t-attf-src="/web/image/aps.award.category/#{v.award_category_id.id}/image"
+                                     class="av-history-cat-img" alt=""/>
+                            </t>
+                            <t t-else="">
+                                <span class="av-history-cat-placeholder">&#127885;</span>
+                            </t>
+                        </div>
+                        <div class="av-history-info">
+                            <div class="av-history-cat-name"><t t-esc="v.award_category_id.name"/></div>
+                            <t t-if="v.recipient_partner_id">
+                                <div class="av-history-recipient"><t t-esc="v.recipient_partner_id.name"/></div>
+                            </t>
+                            <t t-if="v.award_sub_category_id">
+                                <div class="av-history-subcat"><t t-esc="v.award_sub_category_id.name"/></div>
+                            </t>
+                            <t t-if="v.comment">
+                                <div class="av-history-comment"><t t-esc="v.comment"/></div>
+                            </t>
+                        </div>
+                        <div class="av-history-right">
+                            <div class="av-history-date">
+                                <t t-if="v.submitted_date">
+                                    <t t-esc="v.submitted_date.strftime('%#d %b %Y')"/>
+                                </t>
+                                <t t-if="v.due_date">
+                                    <span class="av-history-due">Due <t t-esc="v.due_date.strftime('%#d %b')"/></span>
+                                </t>
+                            </div>
+                            <div class="av-history-badges">
+                                <div t-attf-class="av-history-state-badge av-state--#{v.state}">
+                                    <t t-esc="dict(v._fields['state'].selection).get(v.state, v.state)"/>
+                                </div>
+                                <t t-if="v.submitted_date and v.due_date and v.submitted_date > v.due_date">
+                                    <span class="av-history-late-badge">Late</span>
+                                </t>
+                            </div>
+                            <t t-if="v.state == 'submitted'">
+                                <button class="av-history-delete-btn"
+                                        t-att-data-vote-id="v.id"
+                                        t-att-data-token="token"
+                                        t-att-data-has-due="'1' if v.due_date else '0'"
+                                        onclick="AwardsVoting.deleteVote(this)">
+                                    <t t-if="v.due_date">↩ Undo</t>
+                                    <t t-else="">✕ Delete</t>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </section>
+    </t>
+
 </body>
 </html>
 </template>
