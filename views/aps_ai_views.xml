@@ -1,12 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- AI Dashboard client action (registered in aps_sis JS assets) -->
-    <record id="action_aps_ai_dashboard" model="ir.actions.client">
-        <field name="name">AI Dashboard</field>
-        <field name="tag">aps_ai_dashboard</field>
+    <!-- =====================================================================
+         Grant APEX Managers access to the AI menus defined in aps_ai
+         ===================================================================== -->
+    <record id="aps_ai.menu_aps_ai_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
+    <record id="aps_ai.menu_aps_ai_dashboard" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
+    <record id="aps_ai.menu_aps_ai_providers" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
+    <record id="aps_ai.menu_aps_ai_models" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
+    <record id="aps_ai.menu_aps_ai_call_logs" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
+    <record id="aps_ai.menu_aps_ai_prompts" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
+    <record id="aps_ai.menu_aps_ai_prompt_tags" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager'))]"/>
     </record>
 
-    <!-- AI Run views (aps.ai.run stays in aps_sis — APEX-specific) -->
+    <!-- =====================================================================
+         Views: aps.ai.run  (APEX-specific background AI run tracker)
+         ===================================================================== -->
     <record id="view_aps_ai_run_list" model="ir.ui.view">
         <field name="name">aps.ai.run.list</field>
         <field name="model">aps.ai.run</field>
@@ -83,11 +104,11 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- APEX AI menus (under APEX Settings, visible to APEX Managers) -->
-    <menuitem id="menu_apex_ai_heading" name="AI" parent="menu_apex_settings" sequence="350" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_ai_dashboard" name="Dashboard" parent="menu_apex_ai_heading" action="action_aps_ai_dashboard" sequence="5" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_ai_providers" name="Providers" parent="menu_apex_ai_heading" action="aps_ai.action_aps_ai_providers" sequence="10" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_ai_models" name="Models" parent="menu_apex_ai_heading" action="aps_ai.action_aps_ai_models" sequence="20" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_ai_call_logs" name="Logs" parent="menu_apex_ai_heading" action="aps_ai.action_aps_ai_call_logs" sequence="30" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_ai_runs" name="Runs" parent="menu_apex_ai_heading" action="action_aps_ai_runs" sequence="35" groups="aps_sis.group_aps_manager"/>
+    <!-- Add APEX-specific AI Runs sub-menu under the aps_ai root menu -->
+    <menuitem id="menu_aps_ai_runs"
+              name="Runs"
+              parent="aps_ai.menu_aps_ai_root"
+              action="action_aps_ai_runs"
+              sequence="35"
+              groups="aps_sis.group_aps_manager"/>
 </odoo>

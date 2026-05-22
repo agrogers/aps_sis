@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Prompt Templates and Prompt Tags menus under the APEX AI heading -->
-    <menuitem id="menu_apex_ai_prompts" name="Prompt Templates" parent="menu_apex_ai_heading" action="aps_ai.action_ai_prompts" sequence="25" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_ai_prompt_tags" name="Prompt Tags" parent="menu_apex_ai_heading" action="aps_ai.action_ai_prompt_tags" sequence="26" groups="aps_sis.group_aps_manager"/>
+    <!-- Grant APEX Teachers access to the Prompt Templates and Prompt Tags menus -->
+    <record id="aps_ai.menu_aps_ai_prompts" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager')), (4, ref('aps_sis.group_aps_teacher'))]"/>
+    </record>
+    <record id="aps_ai.menu_aps_ai_prompt_tags" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('aps_sis.group_aps_manager')), (4, ref('aps_sis.group_aps_teacher'))]"/>
+    </record>
 </odoo>
