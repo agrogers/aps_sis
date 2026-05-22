@@ -16,6 +16,9 @@ access_aps_academic_year_user,aps.academic.year.user,model_aps_academic_year,bas
 access_aps_academic_term_teacher,aps.academic.term.teacher,model_aps_academic_term,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_academic_term_student,aps.academic.term.student,model_aps_academic_term,aps_sis.group_aps_student,1,0,0,0
 access_aps_academic_term_user,aps.academic.term.user,model_aps_academic_term,base.group_user,1,0,0,0
+access_aps_academic_week_teacher,aps.academic.week.teacher,model_aps_academic_week,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_academic_week_student,aps.academic.week.student,model_aps_academic_week,aps_sis.group_aps_student,1,0,0,0
+access_aps_academic_week_user,aps.academic.week.user,model_aps_academic_week,base.group_user,1,0,0,0
 access_aps_class_teacher,aps.class.teacher,model_aps_class,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_class_student,aps.class.student,model_aps_class,aps_sis.group_aps_student,1,0,0,0
 access_aps_class_user,aps.class.user,model_aps_class,base.group_user,1,0,0,0
@@ -80,4 +83,14 @@ access_ai_prompt_tag_manager,ai.prompt.tag.manager,model_ai_prompt_tag,aps_sis.g
 access_aps_submit_mark_wizard_teacher,aps.submit.mark.wizard.teacher,model_aps_submit_mark_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_submit_mark_wizard_student,aps.submit.mark.wizard.student,model_aps_submit_mark_wizard,aps_sis.group_aps_student,1,1,1,1
 access_ai_prompt_tag_user,ai.prompt.tag.user,model_ai_prompt_tag,base.group_user,1,0,0,0
+access_aps_certificate_template_teacher,aps.certificate.template.teacher,model_aps_certificate_template,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_certificate_template_student,aps.certificate.template.student,model_aps_certificate_template,aps_sis.group_aps_student,1,0,0,0
+access_aps_award_category_teacher,aps.award.category.teacher,model_aps_award_category,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_award_category_student,aps.award.category.student,model_aps_award_category,aps_sis.group_aps_student,1,0,0,0
+access_aps_award_sub_category_teacher,aps.award.sub.category.teacher,model_aps_award_sub_category,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_award_sub_category_student,aps.award.sub.category.student,model_aps_award_sub_category,aps_sis.group_aps_student,1,0,0,0
+access_aps_award_vote_teacher,aps.award.vote.teacher,model_aps_award_vote,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_award_vote_student,aps.award.vote.student,model_aps_award_vote,aps_sis.group_aps_student,1,1,0,0
+access_aps_student_certificate_teacher,aps.student.certificate.teacher,model_aps_student_certificate,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_student_certificate_student,aps.student.certificate.student,model_aps_student_certificate,aps_sis.group_aps_student,1,0,0,0
 

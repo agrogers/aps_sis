@@ -48,5 +48,33 @@
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
+        <record id="rule_aps_student_certificate_student" model="ir.rule">
+            <field name="name">Student (APEX): Own Certificates Only</field>
+            <field name="model_id" ref="model_aps_student_certificate"/>
+            <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
+        </record>
+
+        <record id="rule_aps_student_certificate_teacher" model="ir.rule">
+            <field name="name">Teacher (APEX): All Certificates</field>
+            <field name="model_id" ref="model_aps_student_certificate"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+        </record>
+
+        <record id="rule_aps_certificate_template_teacher" model="ir.rule">
+            <field name="name">Teacher (APEX): All Certificate Templates</field>
+            <field name="model_id" ref="model_aps_certificate_template"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+        </record>
+
+        <record id="rule_aps_certificate_template_student" model="ir.rule">
+            <field name="name">Student (APEX): Read Certificate Templates</field>
+            <field name="model_id" ref="model_aps_certificate_template"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
+        </record>
+
     </data>
 </odoo>

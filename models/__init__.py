@@ -25,6 +25,7 @@ from . import hr_resume_line
 from . import conditional_views
 from . import op_student
 from . import res_partner
+from . import awards
 
 
 
@@ -42,4 +43,3 @@ from . import res_partner
 # op.faculty -> Faculty
 # op.student -> Student
 # op.enrollment -> Enrollment
-

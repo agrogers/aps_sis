@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Dashboard group for APEX vote dashboards -->
+    <record id="spreadsheet_dashboard_group_apex" model="spreadsheet.dashboard.group">
+        <field name="name">APEX</field>
+        <field name="sequence">900</field>
+    </record>
+
+    <!-- Vote Management Spreadsheet Dashboard -->
+    <record id="vote_management_dashboard" model="spreadsheet.dashboard">
+        <field name="name">Awards</field>
+        <field name="spreadsheet_binary_data" type="base64" file="aps_sis/data/files/votes_dashboard.json"/>
+        <field name="dashboard_group_id" ref="spreadsheet_dashboard_group_apex"/>
+        <field name="group_ids" eval="[Command.link(ref('base.group_user'))]"/>
+        <field name="sequence">100</field>
+        <field name="is_published">True</field>
+    </record>
+
+    <!-- Server action to open the specific dashboard from the menu -->
+    <record id="action_open_vote_management_dashboard" model="ir.actions.server">
+        <field name="name">APEX Awards</field>
+        <field name="model_id" ref="base.model_res_users"/>
+        <field name="state">code</field>
+        <field name="code">
+dashboard = env.ref('aps_sis.vote_management_dashboard')
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'action_spreadsheet_dashboard',
+    'params': {
+        'dashboard_id': dashboard.id,
+    },
+    'name': dashboard.name,
+}
+        </field>
+    </record>
+</odoo>

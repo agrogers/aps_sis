@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="mail_template_student_certificate_a4" model="mail.template">
+            <field name="name">APS Student Certificate A4</field>
+            <field name="model_id" ref="aps_sis.model_aps_student_certificate"/>
+            <field name="subject">Certificate: {{ object.event }} - {{ object.partner_id.name }}</field>
+            <field name="body_html" type="html">
+                <div style="min-height: 100%; padding: 70px 90px; text-align: center; font-family: 'Times New Roman', serif; background: rgba(255, 255, 255, 0.88);">
+                    <h1 style="font-size: 50px; letter-spacing: 2px; color: #1f3c88; margin-bottom: 12px;">Certificate of Achievement</h1>
+                    <p style="font-size: 20px; color: #555;">This certifies that</p>
+                    <h2 style="font-size: 42px; color: #111; margin: 20px 0;"><t t-out="object.partner_id.name"/></h2>
+                    <p style="font-size: 20px; color: #555;">has successfully participated in</p>
+                    <h3 style="font-size: 34px; color: #1f3c88; margin: 20px 0;"><t t-out="object.event"/></h3>
+                    <p style="font-size: 19px; color: #444;" t-if="object.subject_id">
+                        Subject: <strong><t t-out="object.subject_id.name"/></strong>
+                    </p>
+                    <p style="font-size: 19px; color: #444;">
+                        Date: <strong><t t-out="format_date(object.certificate_date)"/></strong>
+                    </p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="False"/>
+        </record>
+
+        <record id="mail_template_student_certificate_a5" model="mail.template">
+            <field name="name">APS Student Certificate A5</field>
+            <field name="model_id" ref="aps_sis.model_aps_student_certificate"/>
+            <field name="subject">Certificate (A5): {{ object.event }} - {{ object.partner_id.name }}</field>
+            <field name="body_html" type="html">
+                <div style="min-height: 100%; padding: 34px 44px; text-align: center; font-family: Georgia, serif; background: rgba(255, 255, 255, 0.88);">
+                    <h2 style="font-size: 32px; color: #1b4332; margin-bottom: 10px;">Certificate</h2>
+                    <p style="font-size: 16px; color: #3a3a3a;">Awarded to</p>
+                    <h3 style="font-size: 28px; color: #081c15; margin: 15px 0;"><t t-out="object.partner_id.name"/></h3>
+                    <p style="font-size: 16px; color: #3a3a3a;">for</p>
+                    <p style="font-size: 22px; color: #1b4332; margin: 12px 0;"><strong><t t-out="object.event"/></strong></p>
+                    <p style="font-size: 14px; color: #3a3a3a;" t-if="object.subject_id">
+                        Subject: <strong><t t-out="object.subject_id.name"/></strong>
+                    </p>
+                    <p style="font-size: 14px; color: #3a3a3a;">
+                        Date: <strong><t t-out="format_date(object.certificate_date)"/></strong>
+                    </p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="False"/>
+        </record>
+
+        <record id="aps_certificate_template_a4" model="aps.certificate.template">
+            <field name="name">Achievement Certificate (A4)</field>
+            <field name="page_format">a4</field>
+            <field name="page_orientation">landscape</field>
+            <field name="frame_image" type="base64" file="aps_sis/reports/certificate_frame_1.svg"/>
+            <field name="mail_template_id" ref="aps_sis.mail_template_student_certificate_a4"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="aps_certificate_template_a5" model="aps.certificate.template">
+            <field name="name">Achievement Certificate (A5)</field>
+            <field name="page_format">a5</field>
+            <field name="page_orientation">portrait</field>
+            <field name="frame_image" type="base64" file="aps_sis/reports/certificate_frame_1.svg"/>
+            <field name="mail_template_id" ref="aps_sis.mail_template_student_certificate_a5"/>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>
