@@ -7,7 +7,7 @@
 	'description': 'APEX - Academic Progress and Excellence. Helps to track student progress. It will work with  EduCat SIS',
 	'author': 'APS',
 	'license': 'LGPL-3',
-	'depends': ['base', 'openeducat_core', 'web', 'mail', 'portal', 'hr', 'partner_multi_relation'],
+	'depends': ['base', 'openeducat_core', 'web', 'mail', 'portal', 'hr', 'partner_multi_relation', 'spreadsheet_dashboard'],
 	'post_init_hook': 'post_init_hook',
 	'data': [
 		'security/groups.xml',
@@ -55,6 +55,7 @@
 		'views/aps_teacher_dashboard_views.xml',
 		'views/aps_media_views.xml',
 		'views/aps_student_certificate_views.xml',
+		'views/aps_vote_management_dashboard_views.xml',
 		'views/hr_employee_views.xml',
 		'views/awards_voting_templates.xml',
 		'wizard/aps_student_class_bulk_wizard_views.xml',

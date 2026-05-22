@@ -1,0 +1,110 @@
+{
+  "version": 21,
+  "sheets": [
+    {
+      "id": "votes_sheet",
+      "name": "Votes",
+      "colNumber": 8,
+      "rowNumber": 20,
+      "rows": {},
+      "cols": {},
+      "merges": [],
+      "cells": {},
+      "figures": [
+        {
+          "id": "votes-by-day-chart",
+          "x": 0,
+          "y": 0,
+          "width": 960,
+          "height": 500,
+          "tag": "chart",
+          "data": {
+            "title": {
+              "text": "Votes by Day",
+              "bold": true,
+              "color": "#434343"
+            },
+            "background": "#FFFFFF",
+            "legendPosition": "none",
+            "metaData": {
+              "groupBy": ["submitted_date:day"],
+              "measure": "__count",
+              "order": null,
+              "resModel": "aps.award.vote",
+              "mode": "bar"
+            },
+            "searchParams": {
+              "comparison": null,
+              "context": {
+                "group_by": []
+              },
+              "domain": [],
+              "groupBy": ["submitted_date:day"],
+              "orderBy": []
+            },
+            "type": "odoo_bar",
+            "verticalAxisPosition": "left",
+            "stacked": false,
+            "fieldMatching": {
+              "filter-period": {
+                "chain": "submitted_date",
+                "type": "date",
+                "offset": 0
+              },
+              "filter-category": {
+                "chain": "award_category_id",
+                "type": "many2one"
+              },
+              "filter-subcategory": {
+                "chain": "award_sub_category_id",
+                "type": "many2one"
+              }
+            }
+          }
+        }
+      ],
+      "filterZones": [],
+      "areGridLinesVisible": false,
+      "isVisible": true,
+      "paneFreeze": {
+        "xSplit": 0,
+        "ySplit": 0
+      },
+      "headerGroups": {
+        "COL": [],
+        "ROW": []
+      }
+    }
+  ],
+  "styles": {},
+  "borders": {},
+  "entities": {},
+  "pivots": {},
+  "globalFilters": [
+    {
+      "id": "filter-period",
+      "type": "date",
+      "label": "Period",
+      "defaultValue": "last_month",
+      "rangeType": "relative"
+    },
+    {
+      "id": "filter-category",
+      "type": "relation",
+      "label": "Category",
+      "modelName": "aps.award.category",
+      "defaultValue": [],
+      "defaultValueDisplayNames": [],
+      "rangeType": "year"
+    },
+    {
+      "id": "filter-subcategory",
+      "type": "relation",
+      "label": "Sub-category",
+      "modelName": "aps.award.sub.category",
+      "defaultValue": [],
+      "defaultValueDisplayNames": [],
+      "rangeType": "year"
+    }
+  ]
+}
