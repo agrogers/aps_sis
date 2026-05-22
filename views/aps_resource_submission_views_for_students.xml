@@ -225,8 +225,8 @@
         <field name="context">{
             'searchpanel_default_state': ['assigned'],
             'default_notebook_page': 'question_page'
-        }</field>           
-        
+        }</field>
+        <field name="path">apex-my-submissions</field>
     </record>
 
     <!-- Bind specific views to the action -->

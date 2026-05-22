@@ -34,6 +34,7 @@
         <field name="name">Avatar Categories</field>
         <field name="res_model">aps.avatar.category</field>
         <field name="view_mode">list,form</field>
+        <field name="path">apex-avatar-categories</field>
     </record>
 
 
@@ -124,6 +125,7 @@
         <field name="name">Avatars</field>
         <field name="res_model">aps.avatar</field>
         <field name="view_mode">kanban,list,form</field>
+        <field name="path">apex-avatars</field>
     </record>
 
 

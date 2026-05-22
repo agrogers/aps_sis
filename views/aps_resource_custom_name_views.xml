@@ -37,6 +37,7 @@
         <field name="res_model">aps.resource.custom.name</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_resource_custom_name_list"/>
+        <field name="path">apex-custom-names</field>
     </record>
     
 </odoo>

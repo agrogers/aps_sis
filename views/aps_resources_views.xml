@@ -555,6 +555,7 @@
         <field name="view_id" ref="view_aps_resources_list"/>
         <field name="search_view_id" ref="view_aps_resources_search"/>
         <field name="context">{'default_order': 'name'}</field>
+        <field name="path">apex-resources</field>
     </record>
 
 

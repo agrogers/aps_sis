@@ -18,9 +18,19 @@
         </field>
     </record>
 
-    <!-- Override the action to set default filter -->
+    <!-- Override the action to set default filter and APEX URL path -->
     <record model="ir.actions.act_window" id="openeducat_core.act_open_op_student_course_view">
         <field name="context">{'search_default_filter_running': True}</field>
+        <field name="path">apex-student-courses</field>
+    </record>
+
+    <!-- Set APEX URL path for OpenEducat student and subject registration actions -->
+    <record model="ir.actions.act_window" id="openeducat_core.act_open_op_student_view">
+        <field name="path">apex-op-students</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="openeducat_core.act_subject_registration_view">
+        <field name="path">apex-subject-registration</field>
     </record>
 
     <!-- Add Course Details tab to student form -->

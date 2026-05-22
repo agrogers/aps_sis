@@ -46,5 +46,6 @@
         <field name="res_model">aps.resource.types</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_aps_resource_types_list"/>
+        <field name="path">apex-resource-types</field>
     </record>
 </odoo>

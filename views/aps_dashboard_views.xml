@@ -2,6 +2,7 @@
     <record id="action_apex_dashboard" model="ir.actions.client">
         <field name="name">Performance Dashboard</field>
         <field name="tag">apex_dashboard_main</field>
+        <field name="path">apex-dashboard</field>
     </record>
 
 </odoo>

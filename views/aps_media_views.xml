@@ -88,6 +88,7 @@
         <field name="res_model">aps.media.type</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_aps_media_type_search"/>
+        <field name="path">apex-media-types</field>
     </record>
 
 
@@ -158,6 +159,7 @@
         <field name="res_model">aps.media.collection</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_aps_media_collection_search"/>
+        <field name="path">apex-media-collections</field>
     </record>
 
 
@@ -195,6 +197,7 @@
         <field name="name">Categories</field>
         <field name="res_model">aps.media.category</field>
         <field name="view_mode">list,form</field>
+        <field name="path">apex-media-categories</field>
     </record>
 
 
@@ -351,6 +354,7 @@
         <field name="res_model">aps.media</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_aps_media_search"/>
+        <field name="path">apex-media-items</field>
     </record>
 
 
@@ -424,6 +428,7 @@
         <field name="res_model">aps.user.media</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_aps_user_media_search"/>
+        <field name="path">apex-user-media</field>
     </record>
 
 
@@ -481,6 +486,7 @@
         <field name="name">User Media Settings</field>
         <field name="res_model">aps.user.media.settings</field>
         <field name="view_mode">list,form</field>
+        <field name="path">apex-user-media-settings</field>
     </record>
 
 
@@ -491,6 +497,7 @@
     <record id="action_aps_media_shop" model="ir.actions.client">
         <field name="name">Media Shop</field>
         <field name="tag">aps_media_shop</field>
+        <field name="path">apex-media-shop</field>
     </record>
 
 
@@ -501,6 +508,7 @@
     <record id="action_aps_my_collection" model="ir.actions.client">
         <field name="name">My Collection</field>
         <field name="tag">aps_my_collection</field>
+        <field name="path">apex-my-collection</field>
     </record>
 
 
@@ -511,6 +519,7 @@
     <record id="action_aps_media_bulk_upload_client" model="ir.actions.client">
         <field name="name">Bulk Upload Media</field>
         <field name="tag">aps_media_bulk_upload</field>
+        <field name="path">apex-bulk-upload-media</field>
     </record>
 
     <!-- Bound server action — adds "Bulk Upload Media" button to the top

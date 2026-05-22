@@ -45,5 +45,6 @@
         <field name="res_model">aps.resource.tags</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_aps_resource_tags_list"/>
+        <field name="path">apex-resource-tags</field>
     </record>
 </odoo>
