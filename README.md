@@ -178,11 +178,15 @@ Records a **single student attempt** at a resource. This is the primary data sou
 
 ### Groups (`security/groups.xml`)
 
-| Group | XML ID | Description |
-|-------|--------|-------------|
-| Student | `group_aps_student` | View assigned resources, submit attempts, view own dashboard |
-| Teacher | `group_aps_teacher` | Manage resources, grade submissions, view all dashboards |
-| Manager | `group_aps_manager` | Full admin access (implies Teacher) |
+All three groups belong to the **APEX** category (`module_category_aps`). Because they share the same category and form a linear implied-group chain, Odoo renders them as a **single selection dropdown** on the user permissions form instead of individual checkboxes.
+
+| Group | XML ID | Implies | Description |
+|-------|--------|---------|-------------|
+| Student | `group_aps_student` | — | View assigned resources, submit attempts, view own dashboard |
+| Teacher | `group_aps_teacher` | Student | Manage resources, grade submissions, view all dashboards |
+| Manager | `group_aps_manager` | Teacher (→ Student) | Full administrative access to all APEX features |
+
+Permissions are **inherited**: a Manager has all Teacher permissions, and a Teacher has all Student permissions.
 
 ### ACL rules (`security/ir.model.access.csv`)
 
