@@ -19,6 +19,12 @@ access_aps_academic_term_user,aps.academic.term.user,model_aps_academic_term,bas
 access_aps_academic_week_teacher,aps.academic.week.teacher,model_aps_academic_week,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_academic_week_student,aps.academic.week.student,model_aps_academic_week,aps_sis.group_aps_student,1,0,0,0
 access_aps_academic_week_user,aps.academic.week.user,model_aps_academic_week,base.group_user,1,0,0,0
+access_aps_academic_week_generate_wizard_teacher,aps.academic.week.generate.wizard.teacher,model_aps_academic_week_generate_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_school_calendar_teacher,aps.school.calendar.teacher,model_aps_school_calendar,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_school_calendar_student,aps.school.calendar.student,model_aps_school_calendar,aps_sis.group_aps_student,1,0,0,0
+access_aps_school_calendar_user,aps.school.calendar.user,model_aps_school_calendar,base.group_user,1,0,0,0
+access_aps_school_calendar_generate_wizard_teacher,aps.school.calendar.generate.wizard.teacher,model_aps_school_calendar_generate_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_academic_week_generate_wizard_user,aps.academic.week.generate.wizard.user,model_aps_academic_week_generate_wizard,base.group_user,1,1,1,1
 access_aps_class_teacher,aps.class.teacher,model_aps_class,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_class_student,aps.class.student,model_aps_class,aps_sis.group_aps_student,1,0,0,0
 access_aps_class_user,aps.class.user,model_aps_class,base.group_user,1,0,0,0

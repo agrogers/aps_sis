@@ -25,6 +25,18 @@ class APSAcademicTerm(models.Model):
             if rec.start_date and rec.end_date and rec.end_date <= rec.start_date:
                 raise ValidationError('End date must be after start date.')
 
+    def write(self, vals):
+        result = super().write(vals)
+        if 'start_date' in vals or 'end_date' in vals:
+            for term in self:
+                if term.start_date and term.end_date:
+                    weeks = self.env['aps.academic.week'].search([
+                        ('date_start', '>=', term.start_date),
+                        ('date_stop', '<=', term.end_date),
+                    ])
+                    weeks.write({'academic_term_id': term.id})
+        return result
+
     @api.depends('short_name', 'name')
     def _compute_display_name(self):
         for rec in self:

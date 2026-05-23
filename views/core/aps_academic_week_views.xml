@@ -11,6 +11,7 @@
                 <field name="week_number"/>
                 <field name="name"/>
                 <field name="short_name"/>
+                <field name="week_cycle"/>
                 <field name="academic_term_id" optional="show"/>
                 <field name="date_start" optional="show"/>
                 <field name="date_stop" optional="show"/>
@@ -40,6 +41,7 @@
                         <group>
                             <field name="academic_term_id"/>
                             <field name="week_number"/>
+                            <field name="week_cycle"/>
                             <field name="sequence"/>
                         </group>
                         <group>
@@ -60,6 +62,8 @@
         <field name="arch" type="xml">
             <search string="Academic Weeks">
                 <field name="name"/>
+                <field name="short_name"/>
+                <field name="week_cycle"/>
                 <field name="academic_term_id"/>
                 <field name="week_number"/>
                 <filter string="Current Week" name="current" domain="[('current', '=', True)]"/>

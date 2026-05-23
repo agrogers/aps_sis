@@ -86,9 +86,13 @@
 
     <!-- School Settings -->
     <menuitem id="menu_apex_school_heading" name="School" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_school_mgmt_dashboard" name="School Overview" parent="menu_apex_school_heading" action="aps_sis.action_school_mgmt_dashboard" sequence="1" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_academic_years" name="Academic Years" parent="menu_apex_school_heading" action="aps_academic_year_action" sequence="5" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_academic_terms" name="Academic Terms" parent="menu_apex_school_heading" action="aps_academic_term_action" sequence="7" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_academic_weeks" name="Academic Weeks" parent="menu_apex_school_heading" action="aps_academic_week_action" sequence="8" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_academic_weeks_generate" name="Generate Academic Weeks" parent="menu_apex_school_heading" action="aps_sis.aps_academic_week_generate_wizard_action" sequence="9" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_school_calendar" name="School Calendar" parent="menu_apex_school_heading" action="aps_school_calendar_action" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_school_calendar_generate" name="Generate School Calendar" parent="menu_apex_school_heading" action="aps_sis.aps_school_calendar_generate_wizard_action" sequence="11" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_levels" name="Academic Levels" parent="menu_apex_school_heading" action="aps_level_action" sequence="10" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_subjects" name="Subjects" parent="menu_apex_school_heading" action="aps_subject_action" sequence="20" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_subject_categories" name="Subject Categories" parent="menu_apex_school_heading" action="action_aps_subject_categories" sequence="25" groups="aps_sis.group_aps_teacher"/>

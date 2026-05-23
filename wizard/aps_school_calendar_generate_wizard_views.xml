@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Wizard Form View -->
+    <record id="aps_school_calendar_generate_wizard_form" model="ir.ui.view">
+        <field name="name">aps.school.calendar.generate.wizard.form</field>
+        <field name="model">aps.school.calendar.generate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate School Calendar">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Generate School Calendar</h1>
+                    </div>
+                    <group>
+                        <group string="Date Range">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </group>
+                        <group string="Options">
+                            <field name="skip_existing"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <p><strong>What this wizard does:</strong></p>
+                        <ul>
+                            <li>Creates <strong>Weekend</strong> entries for every Saturday and Sunday in the date range.</li>
+                            <li>Checks the <strong>previous year</strong> for calendar entries with <em>Repeats Annually</em> set, and re-creates them on the matching date.</li>
+                            <li>Regular school days (no repeating entry, not a weekend) are skipped.</li>
+                        </ul>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_generate" string="Generate" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="aps_school_calendar_generate_wizard_action" model="ir.actions.act_window">
+        <field name="name">Generate School Calendar</field>
+        <field name="res_model">aps.school.calendar.generate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

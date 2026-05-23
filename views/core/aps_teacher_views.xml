@@ -10,6 +10,8 @@
                 <field name="image_128" widget="image" class="o_image_24_max" optional="show"/>
                 <field name="name"/>
                 <field name="tutor_code" optional="show"/>
+                <field name="teaching_load" optional="show"/>
+                <field name="non_teaching_load" optional="show"/>
                 <field name="email" optional="show"/>
                 <field name="phone" optional="show"/>
                 <field name="partner_id" optional="hide"/>
@@ -84,6 +86,15 @@
                             <field name="email" readonly="1"/>
                             <field name="phone" readonly="1"/>
                         </group>
+                    </group>
+                    <group string="Workload Allocation">
+                        <group>
+                            <field name="teaching_load"/>
+                            <field name="non_teaching_load"/>
+                        </group>
+                    </group>
+                    <group string="Load Details">
+                        <field name="load_details" widget="html" nolabel="1"/>
                     </group>
                 </sheet>
             </form>

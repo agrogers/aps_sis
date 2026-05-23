@@ -213,5 +213,6 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
                 'title': _('Success'),
                 'message': ' '.join(message_parts),
                 'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'},
             }
         }

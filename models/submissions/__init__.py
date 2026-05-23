@@ -5,3 +5,5 @@ from . import overrides
 from . import notifications
 from . import dashboard_data
 from . import ai_feedback
+from . import aps_submission_mass_update_wizard
+from . import aps_submit_mark_wizard

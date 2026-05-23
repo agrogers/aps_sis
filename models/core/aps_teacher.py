@@ -16,6 +16,22 @@ class APSTeacher(models.Model):
     tutor_code = fields.Char(string='Tutor Code', size=20)
     active = fields.Boolean(default=True)
 
+    # Workload allocation (minutes)
+    teaching_load = fields.Integer(
+        string='Teaching Load (min)',
+        default=0,
+        help='Total minutes allocated to teaching duties.',
+    )
+    non_teaching_load = fields.Integer(
+        string='Non-Teaching Load (min)',
+        default=0,
+        help='Total minutes allocated to non-teaching duties (admin, pastoral, etc.).',
+    )
+    load_details = fields.Html(
+        string='Load Details',
+        help='Detailed breakdown of teaching and non-teaching load allocations.',
+    )
+
     # Convenience related fields
     name = fields.Char(related='partner_id.name', string='Name', store=True)
     email = fields.Char(related='partner_id.email', string='Email')
