@@ -238,20 +238,18 @@
         </field>
     </record>
 
-    <!-- Server action to open/create the dashboard record -->
+    <!-- Server action to open the dashboard (creates a fresh transient record each time) -->
     <record id="asctt_dashboard_open_action" model="ir.actions.server">
         <field name="name">aSc Timetable Dashboard</field>
         <field name="model_id" ref="model_asctt_dashboard"/>
         <field name="state">code</field>
         <field name="code">
-records = env['asctt.dashboard'].search([], limit=1)
-if not records:
-    records = env['asctt.dashboard'].create({})
+record = env['asctt.dashboard'].create({})
 action = {
     'type': 'ir.actions.act_window',
     'name': 'aSc Timetable',
     'res_model': 'asctt.dashboard',
-    'res_id': records.id,
+    'res_id': record.id,
     'view_mode': 'form',
     'view_id': env.ref('aps_sis.asctt_dashboard_view_form').id,
     'target': 'current',
