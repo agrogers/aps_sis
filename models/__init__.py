@@ -19,6 +19,7 @@ from . import conditional_views
 from . import op_student
 from . import res_partner
 from . import awards
+from . import asc_timetable
 
 
 
