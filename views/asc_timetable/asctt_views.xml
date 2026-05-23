@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== PERIODS ===================== -->
+    <record id="asctt_period_view_list" model="ir.ui.view">
+        <field name="name">asctt.period.list</field>
+        <field name="model">asctt.period</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="period"/>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="starttime"/>
+                <field name="endtime"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_period_view_form" model="ir.ui.view">
+        <field name="name">asctt.period.form</field>
+        <field name="model">asctt.period</field>
+        <field name="arch" type="xml">
+            <form string="Period">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="period"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                        </group>
+                        <group>
+                            <field name="starttime"/>
+                            <field name="endtime"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_period_action" model="ir.actions.act_window">
+        <field name="name">Periods</field>
+        <field name="res_model">asctt.period</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-periods</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No periods imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== BREAKS ===================== -->
+    <record id="asctt_break_view_list" model="ir.ui.view">
+        <field name="name">asctt.break.list</field>
+        <field name="model">asctt.break</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="starttime"/>
+                <field name="endtime"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_break_view_form" model="ir.ui.view">
+        <field name="name">asctt.break.form</field>
+        <field name="model">asctt.break</field>
+        <field name="arch" type="xml">
+            <form string="Break">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="short"/>
+                        </group>
+                        <group>
+                            <field name="starttime"/>
+                            <field name="endtime"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_break_action" model="ir.actions.act_window">
+        <field name="name">Breaks</field>
+        <field name="res_model">asctt.break</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-breaks</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No breaks imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== DAYS DEFINITIONS ===================== -->
+    <record id="asctt_days_def_view_list" model="ir.ui.view">
+        <field name="name">asctt.days.def.list</field>
+        <field name="model">asctt.days.def</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="days"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_days_def_view_form" model="ir.ui.view">
+        <field name="name">asctt.days.def.form</field>
+        <field name="model">asctt.days.def</field>
+        <field name="arch" type="xml">
+            <form string="Days Definition">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                        </group>
+                        <group>
+                            <field name="days"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_days_def_action" model="ir.actions.act_window">
+        <field name="name">Day Definitions</field>
+        <field name="res_model">asctt.days.def</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-days-defs</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No day definitions imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== WEEKS DEFINITIONS ===================== -->
+    <record id="asctt_weeks_def_view_list" model="ir.ui.view">
+        <field name="name">asctt.weeks.def.list</field>
+        <field name="model">asctt.weeks.def</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="weeks"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_weeks_def_view_form" model="ir.ui.view">
+        <field name="name">asctt.weeks.def.form</field>
+        <field name="model">asctt.weeks.def</field>
+        <field name="arch" type="xml">
+            <form string="Weeks Definition">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                        </group>
+                        <group>
+                            <field name="weeks"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_weeks_def_action" model="ir.actions.act_window">
+        <field name="name">Week Definitions</field>
+        <field name="res_model">asctt.weeks.def</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-weeks-defs</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No week definitions imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== TERMS DEFINITIONS ===================== -->
+    <record id="asctt_terms_def_view_list" model="ir.ui.view">
+        <field name="name">asctt.terms.def.list</field>
+        <field name="model">asctt.terms.def</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="terms"/>
+                <field name="aps_term_id"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_terms_def_view_form" model="ir.ui.view">
+        <field name="name">asctt.terms.def.form</field>
+        <field name="model">asctt.terms.def</field>
+        <field name="arch" type="xml">
+            <form string="Terms Definition">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                            <field name="terms"/>
+                        </group>
+                        <group>
+                            <field name="aps_term_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_terms_def_action" model="ir.actions.act_window">
+        <field name="name">Term Definitions</field>
+        <field name="res_model">asctt.terms.def</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-terms-defs</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No term definitions imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== SUBJECTS ===================== -->
+    <record id="asctt_subject_view_list" model="ir.ui.view">
+        <field name="name">asctt.subject.list</field>
+        <field name="model">asctt.subject</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="aps_subject_category_id"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_subject_view_form" model="ir.ui.view">
+        <field name="name">asctt.subject.form</field>
+        <field name="model">asctt.subject</field>
+        <field name="arch" type="xml">
+            <form string="Subject">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                        </group>
+                        <group>
+                            <field name="aps_subject_category_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_subject_action" model="ir.actions.act_window">
+        <field name="name">Subjects</field>
+        <field name="res_model">asctt.subject</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-subjects</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No subjects imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== TEACHERS ===================== -->
+    <record id="asctt_teacher_view_list" model="ir.ui.view">
+        <field name="name">asctt.teacher.list</field>
+        <field name="model">asctt.teacher</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="email" optional="show"/>
+                <field name="gender" optional="show"/>
+                <field name="aps_teacher_id"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_teacher_view_form" model="ir.ui.view">
+        <field name="name">asctt.teacher.form</field>
+        <field name="model">asctt.teacher</field>
+        <field name="arch" type="xml">
+            <form string="Teacher">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                            <field name="firstname"/>
+                            <field name="lastname"/>
+                        </group>
+                        <group>
+                            <field name="gender"/>
+                            <field name="color"/>
+                            <field name="email"/>
+                            <field name="mobile"/>
+                            <field name="aps_teacher_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_teacher_action" model="ir.actions.act_window">
+        <field name="name">Teachers</field>
+        <field name="res_model">asctt.teacher</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-teachers</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No teachers imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== BUILDINGS ===================== -->
+    <record id="asctt_building_view_list" model="ir.ui.view">
+        <field name="name">asctt.building.list</field>
+        <field name="model">asctt.building</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_building_view_form" model="ir.ui.view">
+        <field name="name">asctt.building.form</field>
+        <field name="model">asctt.building</field>
+        <field name="arch" type="xml">
+            <form string="Building">
+                <sheet>
+                    <group>
+                        <field name="asc_id"/>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_building_action" model="ir.actions.act_window">
+        <field name="name">Buildings</field>
+        <field name="res_model">asctt.building</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-buildings</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No buildings imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== CLASSROOMS ===================== -->
+    <record id="asctt_classroom_view_list" model="ir.ui.view">
+        <field name="name">asctt.classroom.list</field>
+        <field name="model">asctt.classroom</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="building_id"/>
+                <field name="capacity" optional="show"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_classroom_view_form" model="ir.ui.view">
+        <field name="name">asctt.classroom.form</field>
+        <field name="model">asctt.classroom</field>
+        <field name="arch" type="xml">
+            <form string="Classroom">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                        </group>
+                        <group>
+                            <field name="building_id"/>
+                            <field name="capacity"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_classroom_action" model="ir.actions.act_window">
+        <field name="name">Classrooms</field>
+        <field name="res_model">asctt.classroom</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-classrooms</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No classrooms imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== GRADES ===================== -->
+    <record id="asctt_grade_view_list" model="ir.ui.view">
+        <field name="name">asctt.grade.list</field>
+        <field name="model">asctt.grade</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="grade"/>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="aps_level_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_grade_view_form" model="ir.ui.view">
+        <field name="name">asctt.grade.form</field>
+        <field name="model">asctt.grade</field>
+        <field name="arch" type="xml">
+            <form string="Grade">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="grade"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                        </group>
+                        <group>
+                            <field name="aps_level_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_grade_action" model="ir.actions.act_window">
+        <field name="name">Grades</field>
+        <field name="res_model">asctt.grade</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-grades</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No grades imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== CLASSES ===================== -->
+    <record id="asctt_class_view_list" model="ir.ui.view">
+        <field name="name">asctt.class.list</field>
+        <field name="model">asctt.class</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="short"/>
+                <field name="teacher_id"/>
+                <field name="grade" optional="show"/>
+                <field name="aps_class_id"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_class_view_form" model="ir.ui.view">
+        <field name="name">asctt.class.form</field>
+        <field name="model">asctt.class</field>
+        <field name="arch" type="xml">
+            <form string="Class">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="short"/>
+                            <field name="grade"/>
+                        </group>
+                        <group>
+                            <field name="teacher_id"/>
+                            <field name="aps_class_id"/>
+                        </group>
+                    </group>
+                    <group string="Classrooms">
+                        <field name="classroom_ids" nolabel="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="short"/>
+                                <field name="building_id"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_class_action" model="ir.actions.act_window">
+        <field name="name">Classes</field>
+        <field name="res_model">asctt.class</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-classes</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No classes imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== GROUPS ===================== -->
+    <record id="asctt_group_view_list" model="ir.ui.view">
+        <field name="name">asctt.group.list</field>
+        <field name="model">asctt.group</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="class_id"/>
+                <field name="name"/>
+                <field name="entire_class"/>
+                <field name="division_tag" optional="show"/>
+                <field name="student_count" optional="show"/>
+                <field name="asc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_group_view_form" model="ir.ui.view">
+        <field name="name">asctt.group.form</field>
+        <field name="model">asctt.group</field>
+        <field name="arch" type="xml">
+            <form string="Group">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="name"/>
+                            <field name="class_id"/>
+                        </group>
+                        <group>
+                            <field name="entire_class"/>
+                            <field name="division_tag"/>
+                            <field name="student_count"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_group_action" model="ir.actions.act_window">
+        <field name="name">Groups</field>
+        <field name="res_model">asctt.group</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-groups</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No groups imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== LESSONS ===================== -->
+    <record id="asctt_lesson_view_list" model="ir.ui.view">
+        <field name="name">asctt.lesson.list</field>
+        <field name="model">asctt.lesson</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="asc_id"/>
+                <field name="subject_id"/>
+                <field name="periods_per_card"/>
+                <field name="periods_per_week"/>
+                <field name="days_def_id" optional="show"/>
+                <field name="weeks_def_id" optional="show"/>
+                <field name="terms_def_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_lesson_view_form" model="ir.ui.view">
+        <field name="name">asctt.lesson.form</field>
+        <field name="model">asctt.lesson</field>
+        <field name="arch" type="xml">
+            <form string="Lesson">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="subject_id"/>
+                            <field name="periods_per_card"/>
+                            <field name="periods_per_week"/>
+                            <field name="capacity"/>
+                            <field name="seminar_group"/>
+                        </group>
+                        <group>
+                            <field name="days_def_id"/>
+                            <field name="weeks_def_id"/>
+                            <field name="terms_def_id"/>
+                        </group>
+                    </group>
+                    <group string="Classes">
+                        <field name="class_ids" nolabel="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="short"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Groups">
+                        <field name="group_ids" nolabel="1">
+                            <list>
+                                <field name="class_id"/>
+                                <field name="name"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Teachers">
+                        <field name="teacher_ids" nolabel="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="short"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Classrooms">
+                        <field name="classroom_ids" nolabel="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="building_id"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_lesson_action" model="ir.actions.act_window">
+        <field name="name">Lessons</field>
+        <field name="res_model">asctt.lesson</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-lessons</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No lessons imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== CARDS ===================== -->
+    <record id="asctt_card_view_list" model="ir.ui.view">
+        <field name="name">asctt.card.list</field>
+        <field name="model">asctt.card</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="asc_id" optional="hide"/>
+                <field name="lesson_id"/>
+                <field name="period_id"/>
+                <field name="day"/>
+                <field name="weeks_def_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_card_view_form" model="ir.ui.view">
+        <field name="name">asctt.card.form</field>
+        <field name="model">asctt.card</field>
+        <field name="arch" type="xml">
+            <form string="Card">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="lesson_id"/>
+                            <field name="period_id"/>
+                            <field name="day"/>
+                            <field name="weeks_def_id"/>
+                        </group>
+                    </group>
+                    <group string="Teachers">
+                        <field name="teacher_ids" nolabel="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="short"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Classrooms">
+                        <field name="classroom_ids" nolabel="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="building_id"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_card_action" model="ir.actions.act_window">
+        <field name="name">Cards</field>
+        <field name="res_model">asctt.card</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-cards</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No cards imported yet.</p>
+        </field>
+    </record>
+
+    <!-- ===================== CLASSROOM SUPERVISIONS ===================== -->
+    <record id="asctt_classroom_supervision_view_list" model="ir.ui.view">
+        <field name="name">asctt.classroom.supervision.list</field>
+        <field name="model">asctt.classroom.supervision</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="asc_id" optional="hide"/>
+                <field name="teacher_id"/>
+                <field name="classroom_id"/>
+                <field name="period_id"/>
+                <field name="days_def_id" optional="show"/>
+                <field name="weeks_def_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_classroom_supervision_view_form" model="ir.ui.view">
+        <field name="name">asctt.classroom.supervision.form</field>
+        <field name="model">asctt.classroom.supervision</field>
+        <field name="arch" type="xml">
+            <form string="Classroom Supervision">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asc_id"/>
+                            <field name="teacher_id"/>
+                            <field name="classroom_id"/>
+                        </group>
+                        <group>
+                            <field name="period_id"/>
+                            <field name="days_def_id"/>
+                            <field name="weeks_def_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="asctt_classroom_supervision_action" model="ir.actions.act_window">
+        <field name="name">Classroom Supervisions</field>
+        <field name="res_model">asctt.classroom.supervision</field>
+        <field name="view_mode">list,form</field>
+        <field name="path">asctt-supervisions</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No classroom supervisions imported yet.</p>
+        </field>
+    </record>
+
+</odoo>
