@@ -9,7 +9,12 @@ class APSSubjectCategory(models.Model):
     name = fields.Char(string='Name', required=True, translate=True)
     code = fields.Char(string='Code', help='Short code for the category')
     description = fields.Text(string='Description')
-    color_rgb = fields.Char(string='Color')
+    color_rgb = fields.Char(string='Hex Color', help='Hex colour code, e.g. #3F80D0')
+    color = fields.Integer(
+        string='Color Index',
+        default=0,
+        help='Integer 0-10 used by the Odoo calendar view to colour timetable entries.',
+    )
     icon = fields.Image(string='Icon', max_width=128, max_height=128)
     active = fields.Boolean(default=True, string='Active')
     tag_ids = fields.Many2many(

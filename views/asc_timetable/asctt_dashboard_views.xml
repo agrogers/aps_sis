@@ -8,9 +8,16 @@
         <field name="arch" type="xml">
             <form string="aSc Timetable Import" create="false" edit="false" delete="false">
                 <sheet>
-                    <div class="o_setting_box">
-                        <h2>aSc Timetable Import</h2>
-                        <p class="text-muted">Overview of all imported aSc timetable data. Use the buttons below to view each data set.</p>
+                    <div class="o_setting_box d-flex align-items-start justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h2>aSc Timetable Import</h2>
+                            <p class="text-muted">Overview of all imported aSc timetable data. Use the buttons below to view each data set.</p>
+                        </div>
+                        <div>
+                            <button name="action_import_xml" type="object" string="Import XML" class="btn btn-primary" icon="fa-upload"/>
+                            <button name="action_open_flat_view" type="object" string="Workload Pivot" class="btn btn-secondary" icon="fa-table"/>
+                            <button name="action_open_timetable" type="object" string="School Timetable" class="btn btn-info" icon="fa-calendar"/>
+                        </div>
                     </div>
 
                     <!-- Row 1: Key stat cards -->
@@ -257,12 +264,12 @@ action = {
         </field>
     </record>
 
-    <!-- Menu item -->
+    <!-- Menu item: under Settings > School, below School Overview -->
     <menuitem id="menu_asctt_root"
               name="aSc Timetable"
-              parent="menu_apex_root"
+              parent="menu_apex_school_heading"
               action="asctt_dashboard_open_action"
-              sequence="35"
+              sequence="2"
               groups="aps_sis.group_aps_teacher"/>
 
 </odoo>

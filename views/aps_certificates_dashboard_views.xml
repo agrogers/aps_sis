@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Certificates Dashboard client action -->
+    <record id="action_certificates_dashboard" model="ir.actions.client">
+        <field name="name">Certificates &amp; Awards</field>
+        <field name="tag">certificates_dashboard</field>
+    </record>
+
+</odoo>

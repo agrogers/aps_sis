@@ -9,6 +9,7 @@
                 <field name="name"/>
                 <field name="datetime_start"/>
                 <field name="datetime_end"/>
+                <field name="recurring_days" optional="hide"/>
                 <field name="status" widget="badge" decoration-info="status == 'draft'" decoration-success="status == 'open'" decoration-warning="status == 'closed'" decoration-primary="status == 'finalised'"/>
                 <field name="votes_cast"/>
                 <field name="active_voter_count"/>
@@ -36,32 +37,47 @@
                     <button name="action_reset_draft" string="Reset to Draft" type="object"
                             invisible="status not in ('open', 'closed')"/>
                     <field name="status" widget="statusbar"
-                           statusbar_visible="draft,open,closed,finalised"/>
+                           statusbar_visible="draft,open,closed,finalised"
+                           clickable="1"/>
                 </header>
                 <sheet>
+                    <field name="image" widget="image" class="oe_avatar"/>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Round Name"/></h1>
+                        <field name="short_description" placeholder="Short description…" nolabel="1"/>
                     </div>
                     <group>
                         <group string="Schedule">
                             <field name="datetime_start"/>
                             <field name="datetime_end"/>
+                            <field name="recurring_days"/>
+                        </group>
+                        <group string="Award">
+                            <field name="award_category_id"/>
+                            <field name="award_sub_category_id"
+                                   invisible="not award_category_id"/>
+                            <field name="academic_week_id"/>
                         </group>
                         <group string="Participation">
+                            <field name="status" widget="badge"
+                                   decoration-info="status == 'draft'"
+                                   decoration-success="status == 'open'"
+                                   decoration-warning="status == 'closed'"
+                                   decoration-primary="status == 'finalised'"/>
                             <field name="votes_cast"/>
                             <field name="active_voter_count"/>
                             <field name="total_voter_count"/>
                         </group>
                     </group>
                     <group>
-                        <field name="description"/>
+                        <field name="description" placeholder="Full description…"/>
                     </group>
                     <group string="Round Managers">
                         <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
                     </group>
                     <notebook>
                         <page string="Votes" name="votes">
-                            <field name="vote_ids" readonly="1">
+                            <field name="vote_ids">
                                 <list>
                                     <field name="submitted_date"/>
                                     <field name="voter_partner_id"/>
@@ -73,10 +89,41 @@
                             </field>
                         </page>
                         <page string="Eligible Voters" name="eligible_voters">
-                            <field name="eligible_voters" widget="json" nolabel="1"/>
+                            <separator string="Staff"/>
+                            <field name="eligible_voter_partner_ids"
+                                   nolabel="1"
+                                   domain="[('employee_ids', '!=', False)]"
+                                   context="{'create': False}"/>
+                            <separator string="Levels"/>
+                            <field name="eligible_voter_level_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                            <separator string="Subject Categories"/>
+                            <field name="eligible_voter_category_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
                         </page>
                         <page string="Eligible Candidates" name="eligible_candidates">
-                            <field name="eligible_candidates" widget="json" nolabel="1"/>
+                            <div class="mb-3">
+                                <button name="action_copy_voter_config_to_candidates"
+                                        string="Copy Voter Levels &amp; Categories"
+                                        type="object"
+                                        icon="fa-copy"
+                                        class="btn-secondary"
+                                        confirm="This will replace the current candidate levels and subject categories with those from the Eligible Voters config. Continue?"/>
+                            </div>
+                            <separator string="Levels"/>
+                            <field name="eligible_candidate_level_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                            <separator string="Subject Categories"/>
+                            <field name="eligible_candidate_category_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                            <separator string="Students"/>
+                            <field name="eligible_candidate_student_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
                         </page>
                         <page string="Rules" name="rules">
                             <field name="rules" widget="json" nolabel="1"/>

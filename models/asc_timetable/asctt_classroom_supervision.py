@@ -22,6 +22,7 @@ class ASCTTClassroomSupervision(models.Model):
         string='Period',
         ondelete='set null',
     )
+    day = fields.Integer(string='Day Index', help='Raw 0-indexed day from aSc XML (0=Monday, 4=Friday)')
     days_def_id = fields.Many2one(
         'asctt.days.def',
         string='Days Definition',

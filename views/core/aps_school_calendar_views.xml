@@ -83,11 +83,28 @@
         </field>
     </record>
 
+    <!-- Calendar View -->
+    <record id="aps_school_calendar_view_calendar" model="ir.ui.view">
+        <field name="name">aps.school.calendar.calendar</field>
+        <field name="model">aps.school.calendar</field>
+        <field name="arch" type="xml">
+            <calendar string="School Calendar"
+                      date_start="date"
+                      color="color"
+                      mode="month"
+                      quick_create="false">
+                <field name="date_type"/>
+                <field name="description"/>
+                <field name="applies_to_level_id"/>
+            </calendar>
+        </field>
+    </record>
+
     <!-- Window Action -->
     <record id="aps_school_calendar_action" model="ir.actions.act_window">
         <field name="name">School Calendar</field>
         <field name="res_model">aps.school.calendar</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,calendar,form</field>
         <field name="search_view_id" ref="aps_school_calendar_view_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">

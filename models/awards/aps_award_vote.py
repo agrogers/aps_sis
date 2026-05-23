@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class APSAwardVote(models.Model):
@@ -6,10 +6,35 @@ class APSAwardVote(models.Model):
     _description = 'Award Vote'
     _order = 'submitted_date desc, id desc'
 
+    description = fields.Text(
+        string='Description',
+        compute='_compute_description_fields', store=True, readonly=False,
+    )
+    short_description = fields.Text(
+        string='Short Description',
+        compute='_compute_description_fields', store=True, readonly=False,
+    )
+    image = fields.Image(
+        string='Image',
+        compute='_compute_description_fields', store=True, readonly=False,
+    )
+
+    @api.depends(
+        'vote_round_id.description', 'vote_round_id.short_description', 'vote_round_id.image',
+        'award_category_id.description', 'award_category_id.short_description', 'award_category_id.image',
+    )
+    def _compute_description_fields(self):
+        for rec in self:
+            rnd = rec.vote_round_id
+            cat = rec.award_category_id
+            rec.description = (rnd and rnd.description) or (cat and cat.description) or False
+            rec.short_description = (rnd and rnd.short_description) or (cat and cat.short_description) or False
+            rec.image = (rnd and rnd.image) or (cat and cat.image) or False
+
     award_category_id = fields.Many2one(
         'aps.award.category',
         string='Award Category',
-        required=True,
+        required=False,  # Filled in by the voter when casting; not required at ballot creation
         ondelete='restrict',
     )
     award_sub_category_id = fields.Many2one(
@@ -43,7 +68,8 @@ class APSAwardVote(models.Model):
     vote_round_id = fields.Many2one(
         'aps.award.vote.round',
         string='Vote Round',
-        ondelete='restrict',
+        required=False,
+        ondelete='set null',
     )
     state = fields.Selection(
         selection=[

@@ -9,6 +9,7 @@ class ApsSchoolCalendar(models.Model):
 
     DATE_TYPE = [
         ('school_day', 'School Day'),
+        ('event', 'Event'),
         ('public_holiday', 'Public Holiday'),
         ('school_holiday', 'School Holiday'),
         ('student_free', 'Student Free Day'),
@@ -36,6 +37,29 @@ class ApsSchoolCalendar(models.Model):
         help='Leave blank to apply to all levels.',
     )
 
+    # Calendar colour index per date_type
+    # Odoo palette: 0=grey, 1=red, 2=orange, 3=yellow, 4=teal, 5=purple,
+    #               6=salmon, 7=blue, 8=pink, 10=green, 11=dark-blue
+    _DATE_TYPE_COLOR = {
+        'school_day':    10,   # green
+        'event':          7,   # blue
+        'public_holiday': 3,   # yellow
+        'school_holiday': 2,   # orange
+        'student_free':   6,   # salmon
+        'weekend':        0,   # grey
+    }
+
+    color = fields.Integer(
+        string='Color',
+        compute='_compute_color',
+        store=True,
+    )
+
+    @api.depends('date_type')
+    def _compute_color(self):
+        for rec in self:
+            rec.color = self._DATE_TYPE_COLOR.get(rec.date_type, 0)
+
     # Computed: which academic week does this date fall in?
     week_id = fields.Many2one(
         'aps.academic.week',
@@ -57,19 +81,21 @@ class ApsSchoolCalendar(models.Model):
             else:
                 rec.week_id = False
 
-    @api.depends('date', 'applies_to_level_id')
+    @api.depends('date', 'description', 'week_id.short_name', 'week_id.academic_term_id.short_name')
     def _compute_display_name(self):
         for rec in self:
-            parts = []
-            if rec.date:
-                parts.append(fields.Date.to_string(rec.date))
-            if rec.date_type:
-                parts.append(dict(rec._fields['date_type'].selection).get(rec.date_type, ''))
-            if rec.applies_to_level_id:
-                parts.append(rec.applies_to_level_id.display_name)
+            term_code = rec.week_id.academic_term_id.short_name if rec.week_id and rec.week_id.academic_term_id else None
+            week_code = rec.week_id.short_name if rec.week_id else None
+            if term_code and week_code:
+                rec.display_name = f'{term_code}-{week_code}'
+            elif week_code:
+                rec.display_name = week_code
+            elif rec.date:
+                rec.display_name = rec.date.strftime('%d %b')
             else:
-                parts.append('All Levels')
-            rec.display_name = ' – '.join(parts)
+                rec.display_name = '(no date)'
+            if rec.description:
+                rec.display_name = f'{rec.display_name} ({rec.description})'
 
     @api.constrains('date', 'applies_to_level_id')
     def _check_unique_date_level(self):

@@ -27,6 +27,11 @@ class APSTeacher(models.Model):
         default=0,
         help='Total minutes allocated to non-teaching duties (admin, pastoral, etc.).',
     )
+    max_load = fields.Integer(
+        string='Maximum Load (min)',
+        default=0,
+        help='Maximum total minutes a teacher can be allocated.',
+    )
     load_details = fields.Html(
         string='Load Details',
         help='Detailed breakdown of teaching and non-teaching load allocations.',
@@ -100,6 +105,44 @@ class APSTeacher(models.Model):
             'params': {
                 'title': 'Teachers Populated',
                 'message': f'{created} new record(s) created, {reactivated} reactivated.',
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    def _recompute_timetable_loads(self):
+        """Recompute teaching_load and non_teaching_load from the live timetable.
+
+        Queries ``asctt_flat_row`` and sums ``weighted_minutes`` per teacher,
+        split into teaching vs supervision rows.  ``max_load`` is left
+        unchanged — it is a manually-set cap.
+        """
+        if not self:
+            return
+        self.env.cr.execute("""
+            SELECT
+                aps_teacher_id,
+                SUM(CASE WHEN NOT is_assistant THEN weighted_minutes ELSE 0 END) AS teaching_mins,
+                SUM(CASE WHEN     is_assistant THEN weighted_minutes ELSE 0 END) AS non_teaching_mins
+            FROM asctt_flat_row
+            WHERE aps_teacher_id = ANY(%s)
+            GROUP BY aps_teacher_id
+        """, [self.ids])
+        rows = {r[0]: (r[1], r[2]) for r in self.env.cr.fetchall()}
+        for teacher in self:
+            teaching, supervision = rows.get(teacher.id, (0.0, 0.0))
+            teacher.teaching_load = round(teaching or 0)
+            teacher.non_teaching_load = round(supervision or 0)
+
+    def action_recompute_timetable_loads(self):
+        """Button/action handler: recompute loads for the current recordset."""
+        self._recompute_timetable_loads()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Loads Updated',
+                'message': f'Teaching and supervision loads refreshed for {len(self)} teacher(s).',
                 'type': 'success',
                 'sticky': False,
             },

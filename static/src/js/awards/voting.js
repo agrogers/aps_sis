@@ -8,12 +8,14 @@
         _token: null,
         _categoryId: null,
         _categoryName: null,
+        _voteId: null,
         _candidates: [],       // full list from server
         _filtered: [],         // after search + filter
         _selected: new Set(),  // selected partner IDs
         _comments: new Map(),  // per-student comments, keyed by partner id
         _subCategories: [],    // [{id, name}] for the current category
         _subCategorySelections: new Map(), // per-student sub-category id
+        _subjectCats: [],      // [{id, name}] for the current category
         _sortKey: 'name',
         _sortAsc: true,
 
@@ -22,13 +24,15 @@
         // ----------------------------------------------------------------
         openModal(btn) {
             this._token        = btn.dataset.token;
-            this._categoryId   = parseInt(btn.dataset.categoryId, 10);
+            this._categoryId   = parseInt(btn.dataset.categoryId, 10) || 0;
             this._categoryName = btn.dataset.categoryName;
+            this._voteId       = btn.dataset.voteId ? parseInt(btn.dataset.voteId, 10) : null;
             const imgSrc       = btn.dataset.categoryImg || '';
             this._selected.clear();
             this._comments.clear();
             this._subCategories = [];
             this._subCategorySelections.clear();
+            this._subjectCats = [];
             this._sortKey = 'name';
             this._sortAsc = true;
 
@@ -65,15 +69,27 @@
         },
 
         // ----------------------------------------------------------------
-        // Filters — populate from categories level_ids / subject_category_ids
+        // Filters — populate from candidate data returned by server
         // ----------------------------------------------------------------
         _populateFilters() {
-            // We populate generically; the server already filters by category.
-            // The dropdowns are filled from the returned candidate data.
             document.getElementById('av-filter-level').innerHTML =
                 '<option value="">All Year Levels</option>';
             document.getElementById('av-filter-subject-cat').innerHTML =
                 '<option value="">All Subject Categories</option>';
+        },
+
+        _populateSubjectCatFilter(subjectCats) {
+            this._subjectCats = subjectCats || [];
+            const sel = document.getElementById('av-filter-subject-cat');
+            const saved = localStorage.getItem('av_filter_subject_cat') || '';
+            if (this._subjectCats.length === 0) {
+                sel.innerHTML = '<option value="">All Subject Categories</option>';
+                return;
+            }
+            sel.innerHTML = '<option value="">All Subject Categories</option>' +
+                this._subjectCats.map(sc =>
+                    `<option value="${sc.id}"${String(sc.id) === saved ? ' selected' : ''}>${this._esc(sc.name)}</option>`
+                ).join('');
         },
 
         // ----------------------------------------------------------------
@@ -82,7 +98,7 @@
         loadCandidates() {
             this._jsonRpc(
                 `/awards/vote/${this._token}/candidates/${this._categoryId}`,
-                {}
+                { vote_id: this._voteId }
             ).then(result => {
                 if (result.error) {
                     this._showError('Could not load candidates: ' + result.error);
@@ -91,6 +107,7 @@
                 this._candidates = result.candidates || [];
                 this._subCategories = result.sub_categories || [];
                 this._populateLevelFilter();
+                this._populateSubjectCatFilter(result.subject_cats || []);
                 this._applySearch();
                 this._renderTable();
             }).catch(() => {
@@ -113,6 +130,8 @@
         filterSearch() {
             localStorage.setItem('av_filter_level',
                 document.getElementById('av-filter-level').value);
+            localStorage.setItem('av_filter_subject_cat',
+                document.getElementById('av-filter-subject-cat').value);
             this._applySearch();
             this._renderTable();
         },
@@ -120,11 +139,16 @@
         _applySearch() {
             const q = (document.getElementById('av-search').value || '').toLowerCase();
             const level = document.getElementById('av-filter-level').value;
+            const subCatId = parseInt(document.getElementById('av-filter-subject-cat').value || '0', 10);
 
             this._filtered = this._candidates.filter(c => {
                 const nameMatch = !q || c.name.toLowerCase().includes(q);
                 const levelMatch = !level || c.level === level;
-                return nameMatch && levelMatch;
+                // Whitelisted students (explicitly selected in eligible_candidates) always
+                // pass the subject-category filter — they were hand-picked regardless of class.
+                const subCatMatch = !subCatId || c.whitelisted ||
+                    (c.subject_cat_ids && c.subject_cat_ids.includes(subCatId));
+                return nameMatch && levelMatch && subCatMatch;
             });
 
             this._sortCandidates();
@@ -348,6 +372,7 @@
 
             this._jsonRpc(`/awards/vote/${this._token}/submit`, {
                 category_id: this._categoryId,
+                vote_id: this._voteId,
                 recipients,
             }).then(result => {
                 if (result.error) {

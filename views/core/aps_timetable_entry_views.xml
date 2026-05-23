@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── List View ──────────────────────────────────────────────────────── -->
+    <record id="aps_timetable_entry_view_list" model="ir.ui.view">
+        <field name="name">aps.timetable.entry.list</field>
+        <field name="model">aps.timetable.entry</field>
+        <field name="arch" type="xml">
+            <list string="Timetable Entries" default_order="start_datetime">
+                <field name="start_datetime" string="Start"/>
+                <field name="stop_datetime" string="End" optional="hide"/>
+                <field name="teacher_id"/>
+                <field name="name" string="Lesson"/>
+                <field name="subject_category_id" optional="show"/>
+                <field name="class_names" optional="show"/>
+                <field name="classroom" optional="show"/>
+                <field name="academic_term_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form View ──────────────────────────────────────────────────────── -->
+    <record id="aps_timetable_entry_view_form" model="ir.ui.view">
+        <field name="name">aps.timetable.entry.form</field>
+        <field name="model">aps.timetable.entry</field>
+        <field name="arch" type="xml">
+            <form string="Timetable Entry">
+                <sheet>
+                    <group>
+                        <group string="Lesson">
+                            <field name="name"/>
+                            <field name="teacher_id"/>
+                            <field name="subject_category_id"/>
+                            <field name="subject_name" optional="hide"/>
+                            <field name="class_names"/>
+                            <field name="classroom"/>
+                        </group>
+                        <group string="Time">
+                            <field name="start_datetime"/>
+                            <field name="stop_datetime"/>
+                            <field name="academic_term_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Search View ────────────────────────────────────────────────────── -->
+    <record id="aps_timetable_entry_view_search" model="ir.ui.view">
+        <field name="name">aps.timetable.entry.search</field>
+        <field name="model">aps.timetable.entry</field>
+        <field name="arch" type="xml">
+            <search string="School Timetable">
+                <field name="teacher_id"/>
+                <field name="subject_category_id"/>
+                <field name="name"/>
+                <field name="class_names"/>
+                <field name="academic_term_id"/>
+                <separator/>
+                <filter string="Today" name="filter_today"
+                        domain="[('start_datetime', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0))),
+                                  ('start_datetime', '&lt;',  datetime.datetime.combine(context_today(), datetime.time(23,59,59)))]"/>
+                <filter string="This Week" name="filter_this_week"
+                        domain="[('start_datetime', '&gt;=', (context_today() - relativedelta(weekday=0)).strftime('%Y-%m-%d 00:00:00')),
+                                  ('start_datetime', '&lt;=', (context_today() + relativedelta(weekday=4)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Teacher" name="group_teacher" context="{'group_by': 'teacher_id'}"/>
+                    <filter string="Subject Category" name="group_subject" context="{'group_by': 'subject_category_id'}"/>
+                    <filter string="Term" name="group_term" context="{'group_by': 'academic_term_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Calendar View ──────────────────────────────────────────────────── -->
+    <!--
+        Color is driven by subject_category_id (each category has a color
+        integer 0-10 set by the user in Settings → Subject Categories).
+
+        The partner_ids Many2many field enables the standard Odoo "people"
+        sidebar: tick/untick teachers to show/hide their lessons.
+        write_model="calendar.filters" persists the sidebar selection per user.
+    -->
+    <record id="aps_timetable_entry_view_calendar" model="ir.ui.view">
+        <field name="name">aps.timetable.entry.calendar</field>
+        <field name="model">aps.timetable.entry</field>
+        <field name="arch" type="xml">
+            <calendar
+                js_class="timetable_calendar"
+                string="School Timetable"
+                date_start="start_datetime"
+                date_stop="stop_datetime"
+                color="subject_category_id"
+                mode="week"
+                quick_create="false"
+                event_open_popup="false">
+                <field name="partner_ids"
+                       filters="1"
+                       write_model="calendar.filters"
+                       write_field="partner_id"
+                       filter_field="partner_checked"
+                       avatar_field="avatar_128"/>
+                <field name="name"/>
+                <field name="teacher_id"/>
+                <field name="subject_category_id"/>
+                <field name="classroom"/>
+                <field name="class_names"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ── Action ─────────────────────────────────────────────────────────── -->
+    <record id="aps_timetable_entry_action" model="ir.actions.act_window">
+        <field name="name">School Timetable</field>
+        <field name="res_model">aps.timetable.entry</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="context">{'search_default_filter_this_week': 1}</field>
+    </record>
+
+    <!-- Bind specific views to the action -->
+    <record id="aps_timetable_entry_action_view_calendar" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">calendar</field>
+        <field name="view_id" ref="aps_timetable_entry_view_calendar"/>
+        <field name="act_window_id" ref="aps_timetable_entry_action"/>
+    </record>
+    <record id="aps_timetable_entry_action_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="aps_timetable_entry_view_list"/>
+        <field name="act_window_id" ref="aps_timetable_entry_action"/>
+    </record>
+    <record id="aps_timetable_entry_action_view_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="aps_timetable_entry_view_form"/>
+        <field name="act_window_id" ref="aps_timetable_entry_action"/>
+    </record>
+
+</odoo>

@@ -12,6 +12,7 @@
                 <field name="tutor_code" optional="show"/>
                 <field name="teaching_load" optional="show"/>
                 <field name="non_teaching_load" optional="show"/>
+                <field name="max_load" optional="show"/>
                 <field name="email" optional="show"/>
                 <field name="phone" optional="show"/>
                 <field name="partner_id" optional="hide"/>
@@ -92,7 +93,15 @@
                             <field name="teaching_load"/>
                             <field name="non_teaching_load"/>
                         </group>
+                        <group>
+                            <field name="max_load"/>
+                        </group>
                     </group>
+                    <div class="mb-3">
+                        <button name="action_recompute_timetable_loads" type="object"
+                                string="Refresh from Timetable" icon="fa-refresh"
+                                class="btn btn-secondary"/>
+                    </div>
                     <group string="Load Details">
                         <field name="load_details" widget="html" nolabel="1"/>
                     </group>

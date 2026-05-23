@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Search view -->
+    <record id="asctt_flat_row_view_search" model="ir.ui.view">
+        <field name="name">asctt.flat.row.search</field>
+        <field name="model">asctt.flat.row</field>
+        <field name="arch" type="xml">
+            <search string="Flat Timetable">
+                <field name="teacher_id"/>
+                <field name="aps_teacher_id"/>
+                <field name="subject_name"/>
+                <field name="class_id"/>
+                <field name="aps_class_id"/>
+                <filter name="filter_supervision" string="Supervisions Only" domain="[('is_supervision','=',True)]"/>
+                <filter name="filter_lessons" string="Lessons Only" domain="[('is_supervision','=',False)]"/>
+                <filter name="filter_assistant" string="Assistants Only" domain="[('is_assistant','=',True)]"/>
+                <filter name="filter_lead" string="Lead Teachers Only" domain="[('is_assistant','=',False)]"/>
+                <separator/>
+                <filter name="filter_mon" string="Monday"    domain="[('day','=',1)]"/>
+                <filter name="filter_tue" string="Tuesday"   domain="[('day','=',2)]"/>
+                <filter name="filter_wed" string="Wednesday" domain="[('day','=',3)]"/>
+                <filter name="filter_thu" string="Thursday"  domain="[('day','=',4)]"/>
+                <filter name="filter_fri" string="Friday"    domain="[('day','=',5)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_teacher"    string="aSc Teacher"   context="{'group_by': 'teacher_id'}"/>
+                    <filter name="group_aps_teacher" string="APEX Teacher" context="{'group_by': 'aps_teacher_id'}"/>
+                    <filter name="group_class"      string="aSc Class"     context="{'group_by': 'class_id'}"/>
+                    <filter name="group_aps_class"  string="APEX Class"    context="{'group_by': 'aps_class_id'}"/>
+                    <filter name="group_day"        string="Day"           context="{'group_by': 'day_name'}"/>
+                    <filter name="group_period"     string="Period"        context="{'group_by': 'period_id'}"/>
+                    <filter name="group_subject"    string="Subject"       context="{'group_by': 'subject_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- List view -->
+    <record id="asctt_flat_row_view_list" model="ir.ui.view">
+        <field name="name">asctt.flat.row.list</field>
+        <field name="model">asctt.flat.row</field>
+        <field name="arch" type="xml">
+            <list string="Flat Timetable" create="false" edit="false" delete="false">
+                <field name="day_name" string="Day"/>
+                <field name="period_id" string="Period"/>
+                <field name="period_length_minutes" string="Length (min)" optional="show"/>
+                <field name="week_weight" string="Week Weight" optional="show"/>
+                <field name="weighted_minutes" string="Weighted Mins" optional="show"/>
+                <field name="teacher_id" string="aSc Teacher"/>
+                <field name="aps_teacher_id" string="APEX Teacher" optional="show"/>
+                <field name="class_id" string="aSc Class"/>
+                <field name="aps_class_id" string="APEX Class" optional="show"/>
+                <field name="subject_name" string="Subject"/>
+                <field name="is_assistant" string="Assistant" optional="show"/>
+                <field name="is_supervision" string="Supervision" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Pivot view -->
+    <record id="asctt_flat_row_view_pivot" model="ir.ui.view">
+        <field name="name">asctt.flat.row.pivot</field>
+        <field name="model">asctt.flat.row</field>
+        <field name="arch" type="xml">
+            <pivot string="Timetable Workload" disable_linking="true">
+                <field name="teacher_id" type="row"/>
+                <field name="day_name"   type="col"/>
+                <field name="weighted_minutes" type="measure"/>
+                <field name="period_length_minutes" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="asctt_flat_row_action" model="ir.actions.act_window">
+        <field name="name">Flat Timetable</field>
+        <field name="res_model">asctt.flat.row</field>
+        <field name="view_mode">pivot,list</field>
+    </record>
+
+    <record id="asctt_flat_row_action_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="asctt_flat_row_view_pivot"/>
+        <field name="act_window_id" ref="asctt_flat_row_action"/>
+    </record>
+
+    <record id="asctt_flat_row_action_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="asctt_flat_row_view_list"/>
+        <field name="act_window_id" ref="asctt_flat_row_action"/>
+    </record>
+
+    <!-- Workload Pivot is opened via the button on the aSc Timetable dashboard -->
+
+</odoo>

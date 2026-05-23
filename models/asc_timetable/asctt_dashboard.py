@@ -93,3 +93,20 @@ class ASCTTDashboard(models.TransientModel):
 
     def action_open_supervisions(self):
         return self._open_list_view('asctt.classroom.supervision', 'Classroom Supervisions')
+
+    def action_import_xml(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Import aSc Timetable XML',
+            'res_model': 'asctt.import.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_open_flat_view(self):
+        action = self.env.ref('aps_sis.asctt_flat_row_action')
+        return action.read()[0]
+
+    def action_open_timetable(self):
+        action = self.env.ref('aps_sis.aps_timetable_entry_action')
+        return action.read()[0]

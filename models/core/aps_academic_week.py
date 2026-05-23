@@ -29,13 +29,17 @@ class APSAcademicWeek(models.Model):
     date_start = fields.Date(string='Start Date')
     date_stop = fields.Date(string='End Date')
 
-    @api.depends('name', 'week_number', 'academic_term_id')
+    @api.depends('name', 'short_name', 'week_number', 'week_cycle', 'academic_term_id')
     def _compute_display_name(self):
         for rec in self:
-            if rec.week_number:
-                rec.display_name = f"Week {rec.week_number} – {rec.name}" if rec.name else f"Week {rec.week_number}"
+            week_code = rec.short_name or (f'W{rec.week_number}' if rec.week_number else rec.name or '')
+            if week_code and rec.week_cycle:
+                week_code = f'{week_code}({rec.week_cycle})'
+            term_code = rec.academic_term_id.short_name if rec.academic_term_id else ''
+            if week_code and term_code:
+                rec.display_name = f'{week_code}-{term_code}'
             else:
-                rec.display_name = rec.name or ''
+                rec.display_name = week_code or term_code or rec.name or ''
 
     @api.depends('date_start', 'date_stop')
     def _compute_current(self):
@@ -62,3 +66,36 @@ class APSAcademicWeek(models.Model):
         for rec in self:
             if rec.date_start and rec.date_stop and rec.date_stop < rec.date_start:
                 raise ValidationError('End date must be on or after start date.')
+
+    # --------------------------------------------------
+    # ORM overrides – keep school calendar in sync
+    # --------------------------------------------------
+
+    def _recompute_school_calendar_week_ids(self):
+        """Recompute aps.school.calendar.week_id for dates covered by these weeks.
+
+        aps.school.calendar._compute_week_id only depends on 'date', so Odoo
+        will not automatically recompute it when week date ranges change.
+        We trigger it explicitly here.
+        """
+        Calendar = self.env['aps.school.calendar']
+        for rec in self:
+            if rec.date_start and rec.date_stop:
+                cal_records = Calendar.search([
+                    ('date', '>=', rec.date_start),
+                    ('date', '<=', rec.date_stop),
+                ])
+                if cal_records:
+                    cal_records._compute_week_id()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._recompute_school_calendar_week_ids()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if any(k in vals for k in ('date_start', 'date_stop', 'academic_term_id')):
+            self._recompute_school_calendar_week_ids()
+        return result

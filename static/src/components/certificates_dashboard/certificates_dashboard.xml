@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="aps_sis.CertificatesDashboard" owl="1">
+<div class="cd-dashboard vh-100 overflow-auto p-4">
+
+    <!-- Header -->
+    <div class="smd-header d-flex align-items-center mb-4 px-2">
+        <i class="fa fa-certificate fa-2x text-warning me-3"/>
+        <div>
+            <h1 class="mb-0 fw-bold text-warning">Certificates &amp; Awards</h1>
+            <small class="text-muted">Manage student certificates, awards, and voting</small>
+        </div>
+    </div>
+
+    <!-- Section: Certificates -->
+    <div class="smd-section mb-4">
+        <h5 class="smd-section-title text-uppercase text-muted fw-semibold mb-3 px-1">
+            <i class="fa fa-certificate me-2"/>Certificates
+        </h5>
+        <div class="row g-3">
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_student_certificate')">
+                    <div class="smd-card-icon bg-warning-subtle text-warning">
+                        <i class="fa fa-certificate"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Student Certificates</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.student.certificate')"/>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_certificate_template')">
+                    <div class="smd-card-icon bg-info-subtle text-info">
+                        <i class="fa fa-file-text"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Certificate Templates</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.certificate.template')"/>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Awards -->
+    <div class="smd-section mb-4">
+        <h5 class="smd-section-title text-uppercase text-muted fw-semibold mb-3 px-1">
+            <i class="fa fa-trophy me-2"/>Awards
+        </h5>
+        <div class="row g-3">
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_award_category')">
+                    <div class="smd-card-icon bg-primary-subtle text-primary">
+                        <i class="fa fa-tags"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Award Categories</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.award.category')"/>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_award_vote_round')">
+                    <div class="smd-card-icon bg-success-subtle text-success">
+                        <i class="fa fa-refresh"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Voting Rounds</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.award.vote.round')"/>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_award_vote')">
+                    <div class="smd-card-icon bg-secondary-subtle text-secondary">
+                        <i class="fa fa-thumbs-up"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Award Votes</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.award.vote')"/>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Tools -->
+    <div class="smd-section mb-4">
+        <h5 class="smd-section-title text-uppercase text-muted fw-semibold mb-3 px-1">
+            <i class="fa fa-wrench me-2"/>Tools
+        </h5>
+        <div class="row g-3">
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool" t-on-click="() => this.open('aps_sis.action_aps_awards_dashboard')">
+                    <div class="smd-card-icon bg-warning-subtle text-warning">
+                        <i class="fa fa-check-square-o"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Voting Dashboard</div>
+                        <div class="smd-card-subtitle text-muted">Open the awards voting portal</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</t>
+</templates>

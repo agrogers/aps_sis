@@ -37,8 +37,8 @@
             <div class="av-stat-label">Average votes<br/><span>per teacher</span></div>
         </div>
         <div class="av-stat-card av-stat-open">
-            <div class="av-stat-num"><t t-esc="len(open_categories)"/></div>
-            <div class="av-stat-label">Open<br/><span>categories</span></div>
+            <div class="av-stat-num"><t t-esc="open_votes_count"/></div>
+            <div class="av-stat-label">Open<br/><span>votes</span></div>
         </div>
         <div class="av-stat-card av-stat-expired">
             <div class="av-stat-num"><t t-esc="expired_count"/></div>
@@ -46,41 +46,36 @@
         </div>
     </section>
 
-    <!-- Open Categories -->
-    <t t-if="open_categories">
+    <!-- Open Votes -->
+    <t t-if="voter_open_votes">
         <section class="av-section">
             <h2 class="av-section-title">Open for Voting</h2>
             <div class="av-cards">
-                <t t-foreach="open_categories" t-as="cat">
+                <t t-foreach="voter_open_votes" t-as="vote">
                     <button class="av-cat-card"
-                            t-att-data-category-id="cat.id"
-                            t-att-data-category-name="cat.name"
+                            t-att-data-vote-id="vote.id"
+                            t-attf-data-category-id="#{vote.award_category_id.id or 0}"
+                            t-att-data-category-name="vote.short_description or vote.award_category_id.name"
                             t-att-data-token="token"
-                            t-attf-data-category-img="#{'/web/image/aps.award.category/' + str(cat.id) + '/image' if cat.image else ''}"
+                            t-attf-data-category-img="#{'/web/image/aps.award.vote/' + str(vote.id) + '/image' if vote.image else ''}"
                             onclick="AwardsVoting.openModal(this)">
                         <div class="av-cat-top">
                         <div class="av-cat-img-wrap">
-                            <t t-if="cat.image">
-                                <img t-attf-src="/web/image/aps.award.category/#{cat.id}/image"
+                            <t t-if="vote.image">
+                                <img t-attf-src="/web/image/aps.award.vote/#{vote.id}/image"
                                      class="av-cat-img" alt=""/>
                             </t>
                             <t t-else="">
                                 <div class="av-cat-img-placeholder">&#127885;</div>
                             </t>
                         </div>
-                        <div class="av-cat-name"><t t-esc="cat.name"/></div>
-                        <t t-if="cat.description">
-                            <div class="av-cat-desc"><t t-esc="cat.description"/></div>
+                        <div class="av-cat-name"><t t-esc="vote.short_description or vote.award_category_id.name"/></div>
+                        <t t-if="vote.description">
+                            <div class="av-cat-desc"><t t-esc="vote.description"/></div>
                         </t>
-                        <t t-set="cstat" t-value="cat_stats.get(cat.id, {})"/>
-                        <t t-if="cstat.get('open_count') or cstat.get('due_date')">
+                        <t t-if="vote.due_date">
                             <div class="av-cat-meta">
-                                <t t-if="cstat.get('open_count')">
-                                    <span class="av-cat-open-count"><t t-esc="cstat['open_count']"/></span>
-                                </t>
-                                <t t-if="cstat.get('due_date')">
-                                    <span class="av-cat-due">due <t t-esc="cstat['due_date']"/></span>
-                                </t>
+                                <span class="av-cat-due">due <t t-esc="vote.due_date.strftime('%#d %b %Y')"/></span>
                             </div>
                         </t>
                         </div>
@@ -91,10 +86,10 @@
         </section>
     </t>
 
-    <t t-if="not open_categories">
+    <t t-if="not voter_open_votes">
         <section class="av-section av-empty">
             <div class="av-empty-icon">&#127881;</div>
-            <div class="av-empty-text">No categories are currently open for voting.</div>
+            <div class="av-empty-text">No votes are currently open for you.</div>
         </section>
     </t>
 
@@ -174,7 +169,11 @@
                 <t t-foreach="my_votes" t-as="v">
                     <div t-attf-class="av-history-row av-history-state--#{v.state}">
                         <div class="av-history-icon">
-                            <t t-if="v.award_category_id.image">
+                            <t t-if="v.image">
+                                <img t-attf-src="/web/image/aps.award.vote/#{v.id}/image"
+                                     class="av-history-cat-img" alt=""/>
+                            </t>
+                            <t t-elif="v.award_category_id.image">
                                 <img t-attf-src="/web/image/aps.award.category/#{v.award_category_id.id}/image"
                                      class="av-history-cat-img" alt=""/>
                             </t>
@@ -183,7 +182,10 @@
                             </t>
                         </div>
                         <div class="av-history-info">
-                            <div class="av-history-cat-name"><t t-esc="v.award_category_id.name"/></div>
+                            <div class="av-history-cat-name"><t t-esc="v.short_description or v.award_category_id.name"/></div>
+                            <t t-if="v.description">
+                                <div class="av-history-desc"><t t-esc="v.description"/></div>
+                            </t>
                             <t t-if="v.recipient_partner_id">
                                 <div class="av-history-recipient"><t t-esc="v.recipient_partner_id.name"/></div>
                             </t>
