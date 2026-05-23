@@ -40,6 +40,11 @@ class APSAwardVote(models.Model):
     submitted_date = fields.Date(string='Date')
     open_date = fields.Date(string='Open Date')
     due_date = fields.Date(string='Due Date')
+    vote_round_id = fields.Many2one(
+        'aps.award.vote.round',
+        string='Vote Round',
+        ondelete='restrict',
+    )
     state = fields.Selection(
         selection=[
             ('pending', 'Pending'), 

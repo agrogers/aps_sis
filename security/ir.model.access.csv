@@ -93,4 +93,7 @@ access_aps_award_vote_teacher,aps.award.vote.teacher,model_aps_award_vote,aps_si
 access_aps_award_vote_student,aps.award.vote.student,model_aps_award_vote,aps_sis.group_aps_student,1,1,0,0
 access_aps_student_certificate_teacher,aps.student.certificate.teacher,model_aps_student_certificate,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_student_certificate_student,aps.student.certificate.student,model_aps_student_certificate,aps_sis.group_aps_student,1,0,0,0
+access_aps_award_vote_round_manager,aps.award.vote.round.manager,model_aps_award_vote_round,aps_sis.group_aps_manager,1,1,1,1
+access_aps_award_vote_round_teacher,aps.award.vote.round.teacher,model_aps_award_vote_round,aps_sis.group_aps_teacher,1,0,0,0
+access_aps_award_vote_round_student,aps.award.vote.round.student,model_aps_award_vote_round,aps_sis.group_aps_student,1,0,0,0
 
