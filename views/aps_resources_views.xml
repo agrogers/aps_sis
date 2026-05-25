@@ -80,6 +80,7 @@
 
                             <div class="text-muted small">
                                 <t t-if="record.has_question.raw_value == 'yes'">Q</t>
+                                <t t-if="record.has_question.raw_value == 'hidden'">Q</t>
                                 <t t-if="record.has_question.raw_value == 'use_parent'">Q(parent)</t>
                                 <t t-if="record.has_answer.raw_value != 'no'"> • A</t>
                             </div>
@@ -231,7 +232,7 @@
                             </group>
                         </page>
                         <page string="Question" invisible="has_question=='no'">
-                            <field name="question"  invisible="has_question not in ['yes','use_parent']" nolabel="1" placeholder="Enter the question for this resource." readonly="has_question=='use_parent'"/>
+                            <field name="question"  invisible="has_question not in ['yes','hidden','use_parent']" nolabel="1" placeholder="Enter the question for this resource." readonly="has_question=='use_parent'"/>
                             <group invisible="not has_question=='use_parent'" >
                                 <div class="alert alert-light" role="alert">Using <button name="action_open_parent_question_popup" type="object" class="btn-link p-0 border-0 fw-bold align-baseline" aria-label="Open parent question record for editing">Parent Question</button> (read only).</div>
                             </group>
@@ -240,7 +241,7 @@
                             <field name="default_answer"  invisible="has_default_answer==False" nolabel="1" placeholder="Enter the the default answer for this resource. This is helpful when students are expected to fill in a template."/>
                         </page>
                         <page string="Model Answer" invisible="has_answer=='no'">
-                            <field name="answer" invisible="has_answer not in ['yes','use_parent']" placeholder="Enter the answer or solution for this resource." readonly="has_answer=='use_parent'"/>
+                            <field name="answer" invisible="has_answer not in ['yes','hidden','use_parent']" placeholder="Enter the answer or solution for this resource." readonly="has_answer=='use_parent'"/>
                             <group invisible="not has_answer=='use_parent'" >
                                 <div class="alert alert-light" role="alert">Using <button name="action_open_parent_answer_popup" type="object" class="btn-link p-0 border-0 fw-bold align-baseline" aria-label="Open parent answer record for editing">Parent Answer</button> (read only).</div>
                             </group>
@@ -516,9 +517,11 @@
                 <filter name="has_url" string="Has URL" domain="[('url','!=',False)]"/>
                 <filter name="has_marks" string="Has Marks" domain="[('marks','>',0)]"/>
                 <separator/>
-                <filter name="has_question_yes" string="Has Question" domain="[('has_question','=','yes')]"/>
+                <filter name="has_question_yes" string="Has Question" domain="[('has_question','in',['yes','hidden'])]"/>
+                <filter name="has_question_hidden" string="Question Hidden from Students" domain="[('has_question','=','hidden')]"/>
                 <filter name="has_question_use_parent" string="Uses Parent Question" domain="[('has_question','=','use_parent')]"/>
-                <filter name="has_answer_yes" string="Has Answer" domain="[('has_answer','=','yes')]"/>
+                <filter name="has_answer_yes" string="Has Answer" domain="[('has_answer','in',['yes','hidden'])]"/>
+                <filter name="has_answer_hidden" string="Answer Hidden from Students" domain="[('has_answer','=','hidden')]"/>
                 <filter name="has_answer_use_parent" string="Uses Parent Answer" domain="[('has_answer','=','use_parent')]"/>
                 <filter name="has_child_resources" string="Has Linked Resources" domain="[('has_child_resources','=','yes')]"/>
                 <filter name="has_supporting_resources" string="Has Supporting Resources" domain="[('has_supporting_resources','=','yes')]"/>

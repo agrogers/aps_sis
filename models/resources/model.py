@@ -1,6 +1,20 @@
 import uuid
 from odoo import api, fields, models
 
+HAS_QUESTION_SELECTION = [
+    ('no', 'No'),
+    ('yes', 'Yes'),
+    ('hidden', 'Yes (Hidden from Students)'),
+    ('use_parent', 'Use Parent'),
+]
+
+HAS_ANSWER_SELECTION = [
+    ('no', 'No'),
+    ('yes', 'Yes'),
+    ('hidden', 'Yes (Hidden from Students)'),
+    ('use_parent', 'Use Parent'),
+]
+
 
 class APSResource(models.Model):
     _name = 'aps.resources'
@@ -16,24 +30,14 @@ class APSResource(models.Model):
     parent_custom_name_data = fields.Json(string='Custom Names Data', compute='_compute_parent_custom_name_data', store=True)
     description = fields.Text(string='Description', tracking=True)
 
-    has_question = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('hidden', 'Yes (Hidden)'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Question',
+    has_question = fields.Selection(HAS_QUESTION_SELECTION, string='Has Question',
         default='no',
         help='A resource can use the parent\'s question if set to "Use Parent".',
         required=True,
         tracking=True)
     question = fields.Html(string='Question')
 
-    has_answer = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('hidden', 'Yes (Hidden)'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Answer',
+    has_answer = fields.Selection(HAS_ANSWER_SELECTION, string='Has Answer',
         default='no',
         help='Resources can include model answers to a question. A resource can use the parent\'s answer if set to "Use Parent".',
         required=True,
