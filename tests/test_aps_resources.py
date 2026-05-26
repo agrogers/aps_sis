@@ -394,3 +394,164 @@ class TestAPSResource(TransactionCase):
         self.assertIn('Q1', name_map[q1.id])
         self.assertIn('a', name_map[q1a.id])
 
+    # --- Subject/tag copy from parent tests ---
+
+    def _make_subject(self, name):
+        """Helper: create an op.subject record."""
+        return self.env['op.subject'].create({'name': name})
+
+    def _make_tag(self, name):
+        """Helper: create an aps.resource.tags record."""
+        return self.env['aps.resource.tags'].create({'name': name})
+
+    def test_create_linked_resource_copies_subjects_from_parent(self):
+        """Creating a resource with parent_ids should copy parent subjects."""
+        subject = self._make_subject('Mathematics')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'subjects': [(6, 0, [subject.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Child',
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+        })
+        self.assertIn(subject, child.subjects)
+
+    def test_create_linked_resource_copies_tags_from_parent(self):
+        """Creating a resource with parent_ids should copy parent tags."""
+        tag = self._make_tag('revision')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'tag_ids': [(6, 0, [tag.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Child',
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+        })
+        self.assertIn(tag, child.tag_ids)
+
+    def test_create_supporting_resource_copies_subjects_from_parent(self):
+        """Creating a resource with supporting_parent_ids copies parent subjects."""
+        subject = self._make_subject('Science')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'subjects': [(6, 0, [subject.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Supporting Child',
+            'supporting_parent_ids': [(6, 0, [parent.id])],
+        })
+        self.assertIn(subject, child.subjects)
+
+    def test_create_preserves_explicit_subjects(self):
+        """If subjects are explicitly provided at create time, they take priority."""
+        parent_subject = self._make_subject('English')
+        child_subject = self._make_subject('Art')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'subjects': [(6, 0, [parent_subject.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Child',
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+            'subjects': [(6, 0, [child_subject.id])],
+        })
+        # Explicitly set subjects should be respected (parent's should not override)
+        self.assertIn(child_subject, child.subjects)
+
+    def test_write_linking_existing_resource_copies_subjects(self):
+        """Linking an existing resource to a parent via write copies parent subjects."""
+        subject = self._make_subject('History')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'subjects': [(6, 0, [subject.id])],
+        })
+        child = self.env['aps.resources'].create({'name': 'Child'})
+        self.assertNotIn(subject, child.subjects)
+
+        child.write({'parent_ids': [(4, parent.id)]})
+
+        self.assertIn(subject, child.subjects)
+
+    def test_write_linking_existing_resource_copies_tags(self):
+        """Linking an existing resource to a parent via write copies parent tags."""
+        tag = self._make_tag('homework')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'tag_ids': [(6, 0, [tag.id])],
+        })
+        child = self.env['aps.resources'].create({'name': 'Child'})
+        self.assertNotIn(tag, child.tag_ids)
+
+        child.write({'parent_ids': [(4, parent.id)]})
+
+        self.assertIn(tag, child.tag_ids)
+
+    def test_write_linking_merges_existing_subjects(self):
+        """When a child already has subjects and is linked to a parent, parent
+        subjects are merged in (not replaced)."""
+        existing_subject = self._make_subject('PE')
+        parent_subject = self._make_subject('Health')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'subjects': [(6, 0, [parent_subject.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Child',
+            'subjects': [(6, 0, [existing_subject.id])],
+        })
+        child.write({'parent_ids': [(4, parent.id)]})
+
+        self.assertIn(existing_subject, child.subjects)
+        self.assertIn(parent_subject, child.subjects)
+
+    def test_write_supporting_link_copies_subjects(self):
+        """Linking via supporting_parent_ids on write also copies subjects."""
+        subject = self._make_subject('Music')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'subjects': [(6, 0, [subject.id])],
+        })
+        child = self.env['aps.resources'].create({'name': 'Supporting Child'})
+
+        child.write({'supporting_parent_ids': [(4, parent.id)]})
+
+        self.assertIn(subject, child.subjects)
+
+    def test_parent_subject_change_does_not_update_child(self):
+        """After the initial copy, changing the parent's subjects must NOT
+        automatically update the child (no ongoing synchronisation)."""
+        subject_a = self._make_subject('Geography')
+        subject_b = self._make_subject('Civics')
+        parent = self.env['aps.resources'].create({
+            'name': 'Parent',
+            'subjects': [(6, 0, [subject_a.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Child',
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+        })
+        self.assertIn(subject_a, child.subjects)
+
+        # Now change parent's subjects
+        parent.write({'subjects': [(6, 0, [subject_b.id])]})
+
+        # Child should still have original copied subject, not the new one
+        self.assertIn(subject_a, child.subjects)
+        self.assertNotIn(subject_b, child.subjects)
+
+    def test_no_copy_when_parent_has_no_subjects_or_tags(self):
+        """When parent has no subjects or tags, child remains empty after linking."""
+        parent = self.env['aps.resources'].create({'name': 'Parent'})
+        child = self.env['aps.resources'].create({
+            'name': 'Child',
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+        })
+        self.assertFalse(child.subjects)
+        self.assertFalse(child.tag_ids)
+
