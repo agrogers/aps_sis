@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_aps_ai_provider_system,aps.ai.provider.system,model_aps_ai_provider,base.group_system,1,1,1,1
+access_aps_ai_model_system,aps.ai.model.system,model_aps_ai_model,base.group_system,1,1,1,1
+access_aps_ai_call_log_system,aps.ai.call.log.system,model_aps_ai_call_log,base.group_system,1,0,0,1
+access_ai_prompts_user,ai.prompts.user,model_ai_prompts,base.group_user,1,0,0,0
+access_ai_prompts_system,ai.prompts.system,model_ai_prompts,base.group_system,1,1,1,1
+access_ai_prompt_tag_user,ai.prompt.tag.user,model_ai_prompt_tag,base.group_user,1,0,0,0
+access_ai_prompt_tag_system,ai.prompt.tag.system,model_ai_prompt_tag,base.group_system,1,1,1,1
