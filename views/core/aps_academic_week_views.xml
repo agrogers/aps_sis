@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_academic_week_view_list" model="ir.ui.view">
+        <field name="name">aps.academic.week.list</field>
+        <field name="model">aps.academic.week</field>
+        <field name="arch" type="xml">
+            <list default_order="sequence,week_number">
+                <field name="sequence" widget="handle"/>
+                <field name="week_number"/>
+                <field name="name"/>
+                <field name="short_name"/>
+                <field name="week_cycle"/>
+                <field name="academic_term_id" optional="show"/>
+                <field name="date_start" optional="show"/>
+                <field name="date_stop" optional="show"/>
+                <field name="current" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_academic_week_view_form" model="ir.ui.view">
+        <field name="name">aps.academic.week.form</field>
+        <field name="model">aps.academic.week</field>
+        <field name="arch" type="xml">
+            <form string="Academic Week">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Week 1"/>
+                        </h1>
+                        <label for="short_name"/>
+                        <h2>
+                            <field name="short_name" placeholder="e.g. W1"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="academic_term_id"/>
+                            <field name="week_number"/>
+                            <field name="week_cycle"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_stop"/>
+                            <field name="current"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_academic_week_view_search" model="ir.ui.view">
+        <field name="name">aps.academic.week.search</field>
+        <field name="model">aps.academic.week</field>
+        <field name="arch" type="xml">
+            <search string="Academic Weeks">
+                <field name="name"/>
+                <field name="short_name"/>
+                <field name="week_cycle"/>
+                <field name="academic_term_id"/>
+                <field name="week_number"/>
+                <filter string="Current Week" name="current" domain="[('current', '=', True)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Academic Term" name="group_term" context="{'group_by': 'academic_term_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_academic_week_action" model="ir.actions.act_window">
+        <field name="name">Academic Weeks</field>
+        <field name="res_model">aps.academic.week</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="aps_academic_week_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first academic week.
+            </p>
+        </field>
+    </record>
+
+</odoo>

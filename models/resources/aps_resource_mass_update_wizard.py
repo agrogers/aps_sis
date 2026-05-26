@@ -242,5 +242,6 @@ class APSResourceMassUpdateWizard(models.TransientModel):
                 'title': _('Success'),
                 'message': _('Successfully updated %d resources.') % len(self.resource_ids),
                 'type': 'success',
+                'next': {'type': 'ir.actions.act_window_close'},
             }
         }

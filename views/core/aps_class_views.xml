@@ -95,6 +95,7 @@
         <field name="res_model">aps.class</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="aps_class_view_search"/>
+        <field name="path">apex-classes</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first class.

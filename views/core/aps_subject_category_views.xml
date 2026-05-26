@@ -52,6 +52,7 @@
         <field name="res_model">aps.subject.category</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_aps_subject_category_tree"/>
+        <field name="path">apex-subject-categories</field>
     </record>
 
     <!-- Add to Menu -->

@@ -19,7 +19,7 @@
         <record id="group_aps_teacher" model="res.groups">
             <field name="name">Teacher</field>
             <field name="category_id" ref="module_category_aps"/>
-            <!-- <field name="implied_ids" eval="[(4, ref('group_aps_student'))]"/> -->
+            <field name="implied_ids" eval="[(4, ref('group_aps_student'))]"/>
             <field name="comment">Teachers can manage resources, tasks, and view student progress</field>
         </record>
 

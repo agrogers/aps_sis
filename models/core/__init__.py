@@ -1,5 +1,10 @@
+from . import aps_location
 from . import aps_academic_year
 from . import aps_academic_term
+from . import aps_academic_week
+from . import aps_academic_week_generate_wizard
+from . import aps_school_calendar
+from . import aps_school_calendar_generate_wizard
 from . import aps_level
 from . import aps_subject_category_tag
 from . import aps_subject_category
@@ -8,5 +13,6 @@ from . import aps_class
 from . import aps_student
 from . import aps_student_class
 from . import aps_teacher
+from . import aps_timetable_entry
 from . import res_partner_teacher
 from . import res_partner_student

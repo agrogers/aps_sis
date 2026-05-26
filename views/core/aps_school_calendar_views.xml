@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_school_calendar_view_list" model="ir.ui.view">
+        <field name="name">aps.school.calendar.list</field>
+        <field name="model">aps.school.calendar</field>
+        <field name="arch" type="xml">
+            <list default_order="date">
+                <field name="date"/>
+                <field name="date_type"
+                       decoration-danger="date_type == 'public_holiday'"
+                       decoration-warning="date_type == 'school_holiday'"
+                       decoration-info="date_type == 'student_free'"
+                       decoration-muted="date_type == 'weekend'"/>
+                <field name="description"/>
+                <field name="repeating" optional="show"/>
+                <field name="applies_to_level_id" optional="show"/>
+                <field name="week_id" optional="show"/>
+                <field name="notes" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_school_calendar_view_form" model="ir.ui.view">
+        <field name="name">aps.school.calendar.form</field>
+        <field name="model">aps.school.calendar</field>
+        <field name="arch" type="xml">
+            <form string="School Calendar Entry">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="date_type"/>
+                            <field name="applies_to_level_id"
+                                   placeholder="Leave blank for all levels"/>
+                        </group>
+                        <group>
+                            <field name="week_id" readonly="True"/>
+                            <field name="description"/>
+                            <field name="repeating"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_school_calendar_view_search" model="ir.ui.view">
+        <field name="name">aps.school.calendar.search</field>
+        <field name="model">aps.school.calendar</field>
+        <field name="arch" type="xml">
+            <search string="School Calendar">
+                <field name="date"/>
+                <field name="description"/>
+                <field name="applies_to_level_id"/>
+                <field name="week_id"/>
+                <filter string="Public Holidays" name="public_holiday"
+                        domain="[('date_type', '=', 'public_holiday')]"/>
+                <filter string="School Holidays" name="school_holiday"
+                        domain="[('date_type', '=', 'school_holiday')]"/>
+                <filter string="Student Free Days" name="student_free"
+                        domain="[('date_type', '=', 'student_free')]"/>
+                <filter string="Weekends" name="weekend"
+                        domain="[('date_type', '=', 'weekend')]"/>
+                <separator/>
+                <filter string="Repeats Annually" name="repeating"
+                        domain="[('repeating', '=', True)]"/>
+                <separator/>
+                <filter string="All Levels" name="all_levels"
+                        domain="[('applies_to_level_id', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Type" name="group_type" context="{'group_by': 'date_type'}"/>
+                    <filter string="Level" name="group_level" context="{'group_by': 'applies_to_level_id'}"/>
+                    <filter string="Week" name="group_week" context="{'group_by': 'week_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Calendar View -->
+    <record id="aps_school_calendar_view_calendar" model="ir.ui.view">
+        <field name="name">aps.school.calendar.calendar</field>
+        <field name="model">aps.school.calendar</field>
+        <field name="arch" type="xml">
+            <calendar string="School Calendar"
+                      date_start="date"
+                      color="color"
+                      mode="month"
+                      quick_create="false">
+                <field name="date_type"/>
+                <field name="description"/>
+                <field name="applies_to_level_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_school_calendar_action" model="ir.actions.act_window">
+        <field name="name">School Calendar</field>
+        <field name="res_model">aps.school.calendar</field>
+        <field name="view_mode">list,calendar,form</field>
+        <field name="search_view_id" ref="aps_school_calendar_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first school calendar entry.
+            </p>
+        </field>
+    </record>
+
+</odoo>

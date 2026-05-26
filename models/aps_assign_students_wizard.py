@@ -1,5 +1,5 @@
 from odoo import models, fields, api
-
+from .resources.model import HAS_QUESTION_SELECTION, HAS_ANSWER_SELECTION
 
 class APSAssignStudentsWizardStudentLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.student.line'
@@ -30,7 +30,6 @@ class APSAssignStudentsWizardStudentLine(models.TransientModel):
         else:
             self.weighted_result = 0.0
             self.last_result = 0.0
-
 
 class APSAssignStudentsWizardLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.line'
@@ -82,11 +81,7 @@ class APSAssignStudentsWizard(models.TransientModel):
         store=True
     )
 
-    has_question = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Question', 
+    has_question = fields.Selection(HAS_QUESTION_SELECTION, string='Has Question', 
         default='no', 
         help='A resource can use the parent\'s question if set to "Use Parent". This applies ONLY to the top-level resource. ' \
         'Child resources will always use their own question setting.',
@@ -95,12 +90,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     question = fields.Html(string='Question')
     parent_question = fields.Html(string='Parent Question', store=False)
 
-    has_answer = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('yes_notes', 'Yes (Notes)'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Answer', 
+    has_answer = fields.Selection(HAS_ANSWER_SELECTION, string='Has Answer', 
         default='no', 
         help='Resources can include model answers to a question. A resource can use the parent\'s answer if set to "Use Parent".',
         required=True,
@@ -168,6 +158,8 @@ class APSAssignStudentsWizard(models.TransientModel):
             if self.has_question == 'no':
                 self.question = False
             elif self.has_question == 'yes':
+                self.question = self.resource_id.question if self.resource_id.question else False
+            elif self.has_question == 'hidden':
                 self.question = self.resource_id.question if self.resource_id.question else False
             elif self.has_question == 'use_parent':
                 self.question = self.resource_id._question_from_parent()
@@ -288,12 +280,12 @@ class APSAssignStudentsWizard(models.TransientModel):
             all_descendants = self.resource_id._get_all_descendants()
             lines = [(0, 0, {
                 'resource_id': self.resource_id.id,
-                'selected': self.resource_id.has_question in ['yes', 'use_parent'], # Pre-select top-level resource if it has a question or uses parent's question, otherwise leave unselected since it likely serves as a container for the child resources
+                'selected': self.resource_id.has_question in ['yes', 'hidden', 'use_parent'], # Pre-select top-level resource if it has a question or uses parent's question, otherwise leave unselected since it likely serves as a container for the child resources
                 'sequence': 10,
             })]
             sequence = 20
             for descendant in all_descendants:
-                selected = descendant.has_question in ['yes', 'use_parent'] # Pre-select resources that have a question or use parent's question, otherwise leave unselected since they likely serve as containers for their child resources
+                selected = descendant.has_question in ['yes', 'hidden', 'use_parent'] # Pre-select resources that have a question or use parent's question, otherwise leave unselected since they likely serve as containers for their child resources
                 lines.append((0, 0, {
                     'resource_id': descendant.id,
                     'parent_resource_id': self.resource_id.id,
@@ -378,6 +370,8 @@ class APSAssignStudentsWizard(models.TransientModel):
             if has_question == 'no':
                 use_question = False
             elif has_question == 'yes':
+                use_question = question if question else False
+            elif has_question == 'hidden':
                 use_question = question if question else False
             elif has_question == 'use_parent':
                 # Copy question from resource if not explicitly provided

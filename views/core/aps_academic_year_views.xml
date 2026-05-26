@@ -72,6 +72,7 @@
         <field name="res_model">aps.academic.year</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="aps_academic_year_view_search"/>
+        <field name="path">apex-academic-years</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first academic year (e.g. Academic Year 2025-2026).

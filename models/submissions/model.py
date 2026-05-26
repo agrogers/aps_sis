@@ -3,6 +3,7 @@ import re
 
 import pytz
 from odoo import models, fields, api, _
+from ..resources.model import HAS_QUESTION_SELECTION
 from odoo.exceptions import UserError
 import logging
 
@@ -125,11 +126,7 @@ class APSResourceSubmission(models.Model):
         compute='_compute_model_answer_is_notes',
         store=False
     )
-    has_question = fields.Selection([
-        ('no', 'No'),
-        ('yes', 'Yes'),
-        ('use_parent', 'Use Parent'),
-        ], string='Has Question', 
+    has_question = fields.Selection(HAS_QUESTION_SELECTION, string='Has Question', 
         default='no', 
         help='A resource can use the parent\'s question if set to "Use Parent".',
         required=True,

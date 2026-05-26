@@ -83,6 +83,7 @@
         <field name="res_model">aps.student</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="aps_student_view_search"/>
+        <field name="path">apex-students</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Add your first student.

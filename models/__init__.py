@@ -2,19 +2,12 @@ from . import aps_avatar
 from . import aps_media
 from . import aps_time_tracking
 from . import ai_feedback_storage_mixin
-from . import aps_resource_tags
-from . import aps_location
-from . import aps_resources
-from . import aps_resource_types
-from . import aps_resource_task
+from . import resources
 from . import ai
 from . import submissions
 from . import aps_assign_students_wizard
-from . import aps_submit_mark_wizard
 from . import aps_dashboard
 from . import core
-from . import aps_submission_mass_update_wizard
-from . import aps_resource_mass_update_wizard
 from . import res_users
 from . import op_program_level
 from . import op_course
@@ -25,6 +18,8 @@ from . import hr_resume_line
 from . import conditional_views
 from . import op_student
 from . import res_partner
+from . import awards
+from . import asc_timetable
 
 
 
@@ -42,4 +37,3 @@ from . import res_partner
 # op.faculty -> Faculty
 # op.student -> Student
 # op.enrollment -> Enrollment
-

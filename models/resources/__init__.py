@@ -8,3 +8,7 @@ from . import parent_sync
 from . import overrides
 from . import actions
 from . import teacher_dashboard
+from . import aps_resource_tags
+from . import aps_resource_types
+from . import aps_resource_task
+from . import aps_resource_mass_update_wizard

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="aps_academic_week_generate_wizard_form" model="ir.ui.view">
+        <field name="name">aps.academic.week.generate.wizard.form</field>
+        <field name="model">aps.academic.week.generate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Academic Weeks">
+                <group>
+                    <group string="Term">
+                        <field name="academic_term_id"/>
+                    </group>
+                    <group string="Schedule"/>
+                    <group>
+                        <field name="date_start"/>
+                        <field name="num_weeks"/>
+                        <field name="week_number_start"/>
+                    </group>
+                    <group>
+                        <field name="cycle_codes" placeholder="e.g. A,B  or  1,2,3"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object" string="Generate Weeks" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="aps_academic_week_generate_wizard_action" model="ir.actions.act_window">
+        <field name="name">Generate Academic Weeks</field>
+        <field name="res_model">aps.academic.week.generate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_aps_academic_week"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+</odoo>

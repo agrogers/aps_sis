@@ -11,6 +11,17 @@ _logger = logging.getLogger(__name__)
 class APSResource(models.Model):
     _inherit = 'aps.resources'
 
+    def get_formview_action(self, access_uid=None):
+        """Always open aps.resources records using the APEX action so the URL
+        uses the 'apex-resources' path segment and the APEX menu stays highlighted,
+        regardless of which app context the record was opened from."""
+        action = self.env.ref('aps_sis.action_aps_resources').sudo().read()[0]
+        action.update({
+            'res_id': self.id,
+            'views': [(False, 'form')],
+        })
+        return action
+
     def action_force_update_display_names(self):
         """Force recompute display names for all resources in hierarchical order."""
         all_resources = self.search([])

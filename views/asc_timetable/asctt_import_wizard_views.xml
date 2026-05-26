@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Import Wizard Form View -->
+    <record id="asctt_import_wizard_view_form" model="ir.ui.view">
+        <field name="name">asctt.import.wizard.form</field>
+        <field name="model">asctt.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import aSc Timetable XML">
+                <sheet>
+                    <div class="o_setting_box mb-3">
+                        <h3>Import aSc Timetable XML</h3>
+                        <p class="text-muted">
+                            Select an aSc Timetables 2012 XML export file to import.
+                            Existing records will be updated (matched by aSc ID or natural key).
+                            Cards and supervisions are always fully replaced.
+                        </p>
+                    </div>
+                    <group string="XML File">
+                        <field name="xml_filename" invisible="True"/>
+                        <field name="xml_file" widget="binary" filename="xml_filename" string="XML File"/>
+                    </group>
+                    <group string="Timetable Generation">
+                        <field name="generate_timetable" widget="boolean_toggle"/>
+                        <field name="apply_from_date" invisible="not generate_timetable"/>
+                        <field name="apply_to_term_id" invisible="not generate_timetable"
+                               help="Leave blank to generate for the full current academic year."/>
+                    </group>
+                    <div class="alert alert-info" invisible="not generate_timetable" role="alert">
+                        <strong>How this works:</strong> The timetable will be generated for all
+                        <em>School Days</em> in the School Calendar that fall within the selected
+                        date range, matching aSc cards by day-of-week and week cycle.
+                        Only teachers linked to an APEX teacher with a contact will be included.
+                        Any existing entries in the same date range will be replaced.
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_import" type="object" string="Import" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

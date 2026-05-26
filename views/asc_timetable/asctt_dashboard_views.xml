@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Dashboard Form View -->
+    <record id="asctt_dashboard_view_form" model="ir.ui.view">
+        <field name="name">asctt.dashboard.form</field>
+        <field name="model">asctt.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="aSc Timetable Import" create="false" edit="false" delete="false">
+                <sheet>
+                    <div class="o_setting_box d-flex align-items-start justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h2>aSc Timetable Import</h2>
+                            <p class="text-muted">Overview of all imported aSc timetable data. Use the buttons below to view each data set.</p>
+                        </div>
+                        <div>
+                            <button name="action_import_xml" type="object" string="Import XML" class="btn btn-primary" icon="fa-upload"/>
+                            <button name="action_open_flat_view" type="object" string="Workload Pivot" class="btn btn-secondary" icon="fa-table"/>
+                            <button name="action_open_timetable" type="object" string="School Timetable" class="btn btn-info" icon="fa-calendar"/>
+                        </div>
+                    </div>
+
+                    <!-- Row 1: Key stat cards -->
+                    <div class="row mt-3">
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center border-primary h-100">
+                                <div class="card-body">
+                                    <div class="display-6 fw-bold text-primary">
+                                        <field name="count_subjects"/>
+                                    </div>
+                                    <div class="card-title">Subjects</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center border-success h-100">
+                                <div class="card-body">
+                                    <div class="display-6 fw-bold text-success">
+                                        <field name="count_teachers"/>
+                                    </div>
+                                    <div class="card-title">Teachers</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center border-info h-100">
+                                <div class="card-body">
+                                    <div class="display-6 fw-bold text-info">
+                                        <field name="count_classes"/>
+                                    </div>
+                                    <div class="card-title">Classes</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center border-warning h-100">
+                                <div class="card-body">
+                                    <div class="display-6 fw-bold text-warning">
+                                        <field name="count_lessons"/>
+                                    </div>
+                                    <div class="card-title">Lessons</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center border-secondary h-100">
+                                <div class="card-body">
+                                    <div class="display-6 fw-bold text-secondary">
+                                        <field name="count_classrooms"/>
+                                    </div>
+                                    <div class="card-title">Classrooms</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center border-danger h-100">
+                                <div class="card-body">
+                                    <div class="display-6 fw-bold text-danger">
+                                        <field name="count_groups"/>
+                                    </div>
+                                    <div class="card-title">Groups</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Schedule structure -->
+                    <h4 class="mt-3 mb-2">Schedule Structure</h4>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button name="action_open_periods" type="object"
+                                        class="btn btn-outline-primary">
+                                    <i class="fa fa-clock-o me-1"/>
+                                    Periods
+                                    <span class="badge bg-primary ms-1">
+                                        <field name="count_periods"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_breaks" type="object"
+                                        class="btn btn-outline-secondary">
+                                    <i class="fa fa-coffee me-1"/>
+                                    Breaks
+                                    <span class="badge bg-secondary ms-1">
+                                        <field name="count_breaks"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_days_defs" type="object"
+                                        class="btn btn-outline-info">
+                                    <i class="fa fa-calendar me-1"/>
+                                    Day Definitions
+                                    <span class="badge bg-info ms-1">
+                                        <field name="count_days_defs"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_weeks_defs" type="object"
+                                        class="btn btn-outline-info">
+                                    <i class="fa fa-calendar-o me-1"/>
+                                    Week Definitions
+                                    <span class="badge bg-info ms-1">
+                                        <field name="count_weeks_defs"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_terms_defs" type="object"
+                                        class="btn btn-outline-info">
+                                    <i class="fa fa-calendar-check-o me-1"/>
+                                    Term Definitions
+                                    <span class="badge bg-info ms-1">
+                                        <field name="count_terms_defs"/>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: People & Places -->
+                    <h4 class="mt-4 mb-2">People &amp; Places</h4>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button name="action_open_subjects" type="object"
+                                        class="btn btn-outline-primary">
+                                    <i class="fa fa-book me-1"/>
+                                    Subjects
+                                    <span class="badge bg-primary ms-1">
+                                        <field name="count_subjects"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_teachers" type="object"
+                                        class="btn btn-outline-success">
+                                    <i class="fa fa-user me-1"/>
+                                    Teachers
+                                    <span class="badge bg-success ms-1">
+                                        <field name="count_teachers"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_buildings" type="object"
+                                        class="btn btn-outline-secondary">
+                                    <i class="fa fa-building me-1"/>
+                                    Buildings
+                                    <span class="badge bg-secondary ms-1">
+                                        <field name="count_buildings"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_classrooms" type="object"
+                                        class="btn btn-outline-secondary">
+                                    <i class="fa fa-map-marker me-1"/>
+                                    Classrooms
+                                    <span class="badge bg-secondary ms-1">
+                                        <field name="count_classrooms"/>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Class Structure -->
+                    <h4 class="mt-4 mb-2">Class Structure</h4>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button name="action_open_grades" type="object"
+                                        class="btn btn-outline-warning">
+                                    <i class="fa fa-star me-1"/>
+                                    Grades
+                                    <span class="badge bg-warning ms-1">
+                                        <field name="count_grades"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_classes" type="object"
+                                        class="btn btn-outline-info">
+                                    <i class="fa fa-users me-1"/>
+                                    Classes
+                                    <span class="badge bg-info ms-1">
+                                        <field name="count_classes"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_groups" type="object"
+                                        class="btn btn-outline-danger">
+                                    <i class="fa fa-object-group me-1"/>
+                                    Groups
+                                    <span class="badge bg-danger ms-1">
+                                        <field name="count_groups"/>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Timetable Data -->
+                    <h4 class="mt-4 mb-2">Timetable Data</h4>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button name="action_open_lessons" type="object"
+                                        class="btn btn-outline-primary">
+                                    <i class="fa fa-list me-1"/>
+                                    Lessons
+                                    <span class="badge bg-primary ms-1">
+                                        <field name="count_lessons"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_cards" type="object"
+                                        class="btn btn-outline-secondary">
+                                    <i class="fa fa-th me-1"/>
+                                    Cards
+                                    <span class="badge bg-secondary ms-1">
+                                        <field name="count_cards"/>
+                                    </span>
+                                </button>
+                                <button name="action_open_supervisions" type="object"
+                                        class="btn btn-outline-dark">
+                                    <i class="fa fa-eye me-1"/>
+                                    Classroom Supervisions
+                                    <span class="badge bg-dark ms-1">
+                                        <field name="count_supervisions"/>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Server action to open the dashboard (creates a fresh transient record each time) -->
+    <record id="asctt_dashboard_open_action" model="ir.actions.server">
+        <field name="name">aSc Timetable Dashboard</field>
+        <field name="model_id" ref="model_asctt_dashboard"/>
+        <field name="state">code</field>
+        <field name="code">
+record = env['asctt.dashboard'].create({})
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'aSc Timetable',
+    'res_model': 'asctt.dashboard',
+    'res_id': record.id,
+    'view_mode': 'form',
+    'view_id': env.ref('aps_sis.asctt_dashboard_view_form').id,
+    'target': 'current',
+}
+        </field>
+    </record>
+
+    <!-- Menu item: under Settings > School, below School Overview -->
+    <menuitem id="menu_asctt_root"
+              name="aSc Timetable"
+              parent="menu_apex_school_heading"
+              action="asctt_dashboard_open_action"
+              sequence="2"
+              groups="aps_sis.group_aps_teacher"/>
+
+</odoo>

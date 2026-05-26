@@ -91,6 +91,20 @@ class APSResource(models.Model):
         return res
 
     def write(self, vals):
+        # Before writing, snapshot which parent IDs each record already has so we
+        # can detect newly-added parents after the write completes.
+        parent_fields_changing = 'parent_ids' in vals or 'supporting_parent_ids' in vals
+        skip_sync = self.env.context.get('_skip_parent_subjects_sync')
+
+        if parent_fields_changing and not skip_sync:
+            old_parents = {
+                rec.id: {
+                    'parent_ids': set(rec.parent_ids.ids),
+                    'supporting_parent_ids': set(rec.supporting_parent_ids.ids),
+                }
+                for rec in self
+            }
+
         result = super().write(vals)
         # Ensure primary_parent_id stays consistent after any write
         self._sync_primary_parent()
@@ -130,6 +144,30 @@ class APSResource(models.Model):
             self._update_child_questions()
         if 'answer' in vals or 'has_answer' in vals:
             self._update_child_answers()
+
+        # One-time copy of subjects/tags from newly-added parents.
+        # Only triggered at the moment the parent-child relationship is first
+        # established; no ongoing synchronisation is set up.
+        if parent_fields_changing and not skip_sync:
+            for rec in self:
+                old = old_parents.get(rec.id, {})
+                added_ids = (
+                    (set(rec.parent_ids.ids) - old.get('parent_ids', set()))
+                    | (set(rec.supporting_parent_ids.ids) - old.get('supporting_parent_ids', set()))
+                )
+                if not added_ids:
+                    continue
+                parents = self.env['aps.resources'].browse(list(added_ids))
+                new_subject_ids = set(rec.subjects.ids) | set(parents.mapped('subjects').ids)
+                new_tag_ids = set(rec.tag_ids.ids) | set(parents.mapped('tag_ids').ids)
+                sync_vals = {}
+                if new_subject_ids != set(rec.subjects.ids):
+                    sync_vals['subjects'] = [(6, 0, list(new_subject_ids))]
+                if new_tag_ids != set(rec.tag_ids.ids):
+                    sync_vals['tag_ids'] = [(6, 0, list(new_tag_ids))]
+                if sync_vals:
+                    rec.with_context(_skip_parent_subjects_sync=True).write(sync_vals)
+
         return result
 
     def copy(self, default=None):
@@ -139,8 +177,50 @@ class APSResource(models.Model):
             default['name'] = f"{name} (copy)"
         return super().copy(default)
 
+    @staticmethod
+    def _ids_from_m2m_commands(commands):
+        """Return a flat set of record IDs being *added* by a list of many2many write commands.
+
+        Only commands that add records are considered:
+        - (4, id)          – link a single existing record
+        - (6, _, [ids])    – replace the set (all listed IDs are being linked)
+
+        Commands that remove records (op 3 = unlink, op 5 = clear) are intentionally
+        excluded so that unlinking a parent does not trigger a subjects/tags copy.
+        """
+        ids = set()
+        for cmd in (commands or []):
+            if not isinstance(cmd, (list, tuple)) or not cmd:
+                continue
+            op = cmd[0]
+            if op == 4 and len(cmd) >= 2:    # (4, id[, _]) – link single
+                ids.add(cmd[1])
+            elif op == 6 and len(cmd) >= 3:  # (6, _, [ids]) – replace all
+                ids.update(cmd[2] or [])
+        return ids
+
     @api.model_create_multi
     def create(self, vals_list):
+        # Before creating, copy subjects/tags from the parent(s) into each
+        # vals dict where the resource is being linked to a parent but does not
+        # yet have explicit subjects or tag_ids values.
+        for vals in vals_list:
+            all_parent_ids = (
+                self._ids_from_m2m_commands(vals.get('parent_ids'))
+                | self._ids_from_m2m_commands(vals.get('supporting_parent_ids'))
+            )
+            if not all_parent_ids:
+                continue
+            parents = self.env['aps.resources'].browse(list(all_parent_ids))
+            if not vals.get('subjects'):
+                subject_ids = parents.mapped('subjects').ids
+                if subject_ids:
+                    vals['subjects'] = [(6, 0, subject_ids)]
+            if not vals.get('tag_ids'):
+                tag_ids = parents.mapped('tag_ids').ids
+                if tag_ids:
+                    vals['tag_ids'] = [(6, 0, tag_ids)]
+
         records = super().create(vals_list)
         # Ensure primary_parent_id is set whenever parents exist on new records
         records._sync_primary_parent()

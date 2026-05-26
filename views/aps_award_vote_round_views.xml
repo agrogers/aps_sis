@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_aps_award_vote_round_list" model="ir.ui.view">
+        <field name="name">aps.award.vote.round.list</field>
+        <field name="model">aps.award.vote.round</field>
+        <field name="arch" type="xml">
+            <list string="Vote Rounds" decoration-info="status == 'draft'" decoration-success="status == 'open'" decoration-muted="status in ('closed', 'finalised')">
+                <field name="name"/>
+                <field name="datetime_start"/>
+                <field name="datetime_end"/>
+                <field name="recurring_days" optional="hide"/>
+                <field name="status" widget="badge" decoration-info="status == 'draft'" decoration-success="status == 'open'" decoration-warning="status == 'closed'" decoration-primary="status == 'finalised'"/>
+                <field name="votes_cast"/>
+                <field name="active_voter_count"/>
+                <field name="total_voter_count"/>
+                <field name="round_manager_ids" widget="many2many_tags" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_aps_award_vote_round_form" model="ir.ui.view">
+        <field name="name">aps.award.vote.round.form</field>
+        <field name="model">aps.award.vote.round</field>
+        <field name="arch" type="xml">
+            <form string="Award Vote Round">
+                <header>
+                    <button name="action_open" string="Open" type="object"
+                            invisible="status != 'draft'"
+                            class="btn-primary"/>
+                    <button name="action_close" string="Close" type="object"
+                            invisible="status != 'open'"/>
+                    <button name="action_finalise" string="Finalise" type="object"
+                            invisible="status != 'closed'"
+                            class="btn-primary"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object"
+                            invisible="status not in ('open', 'closed')"/>
+                    <field name="status" widget="statusbar"
+                           statusbar_visible="draft,open,closed,finalised"
+                           clickable="1"/>
+                </header>
+                <sheet>
+                    <field name="image" widget="image" class="oe_avatar"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Round Name"/></h1>
+                        <field name="short_description" placeholder="Short description…" nolabel="1"/>
+                    </div>
+                    <group>
+                        <group string="Schedule">
+                            <field name="datetime_start"/>
+                            <field name="datetime_end"/>
+                            <field name="recurring_days"/>
+                        </group>
+                        <group string="Award">
+                            <field name="award_category_id"/>
+                            <field name="award_sub_category_id"
+                                   invisible="not award_category_id"/>
+                            <field name="academic_week_id"/>
+                        </group>
+                        <group string="Participation">
+                            <field name="status" widget="badge"
+                                   decoration-info="status == 'draft'"
+                                   decoration-success="status == 'open'"
+                                   decoration-warning="status == 'closed'"
+                                   decoration-primary="status == 'finalised'"/>
+                            <field name="votes_cast"/>
+                            <field name="active_voter_count"/>
+                            <field name="total_voter_count"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Full description…"/>
+                    </group>
+                    <group string="Round Managers">
+                        <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Votes" name="votes">
+                            <field name="vote_ids">
+                                <list>
+                                    <field name="submitted_date"/>
+                                    <field name="voter_partner_id"/>
+                                    <field name="recipient_partner_id"/>
+                                    <field name="award_category_id"/>
+                                    <field name="award_sub_category_id" optional="hide"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Eligible Voters" name="eligible_voters">
+                            <separator string="Staff"/>
+                            <field name="eligible_voter_partner_ids"
+                                   nolabel="1"
+                                   domain="[('employee_ids', '!=', False)]"
+                                   context="{'create': False}"/>
+                            <separator string="Levels"/>
+                            <field name="eligible_voter_level_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                            <separator string="Subject Categories"/>
+                            <field name="eligible_voter_category_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                        </page>
+                        <page string="Eligible Candidates" name="eligible_candidates">
+                            <div class="mb-3">
+                                <button name="action_copy_voter_config_to_candidates"
+                                        string="Copy Voter Levels &amp; Categories"
+                                        type="object"
+                                        icon="fa-copy"
+                                        class="btn-secondary"
+                                        confirm="This will replace the current candidate levels and subject categories with those from the Eligible Voters config. Continue?"/>
+                            </div>
+                            <separator string="Levels"/>
+                            <field name="eligible_candidate_level_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                            <separator string="Subject Categories"/>
+                            <field name="eligible_candidate_category_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                            <separator string="Students"/>
+                            <field name="eligible_candidate_student_ids"
+                                   nolabel="1"
+                                   context="{'create': False}"/>
+                        </page>
+                        <page string="Rules" name="rules">
+                            <field name="rules" widget="json" nolabel="1"/>
+                        </page>
+                        <page string="Result Summary" name="result_summary">
+                            <field name="result_summary" widget="json" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_aps_award_vote_round_search" model="ir.ui.view">
+        <field name="name">aps.award.vote.round.search</field>
+        <field name="model">aps.award.vote.round</field>
+        <field name="arch" type="xml">
+            <search string="Vote Rounds">
+                <field name="name"/>
+                <field name="round_manager_ids"/>
+                <separator/>
+                <filter name="filter_draft" string="Draft" domain="[('status', '=', 'draft')]"/>
+                <filter name="filter_open" string="Open" domain="[('status', '=', 'open')]"/>
+                <filter name="filter_closed" string="Closed" domain="[('status', '=', 'closed')]"/>
+                <filter name="filter_finalised" string="Finalised" domain="[('status', '=', 'finalised')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_status" string="Status" context="{'group_by': 'status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_aps_award_vote_round" model="ir.actions.act_window">
+        <field name="name">Vote Rounds</field>
+        <field name="res_model">aps.award.vote.round</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_aps_award_vote_round_search"/>
+    </record>
+
+    <record id="action_aps_award_vote_round_list_view" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_award_vote_round_list"/>
+        <field name="act_window_id" ref="action_aps_award_vote_round"/>
+    </record>
+
+    <record id="action_aps_award_vote_round_form_view" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_award_vote_round_form"/>
+        <field name="act_window_id" ref="action_aps_award_vote_round"/>
+    </record>
+</odoo>

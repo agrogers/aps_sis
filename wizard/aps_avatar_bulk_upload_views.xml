@@ -4,6 +4,7 @@
     <record id="action_aps_avatar_bulk_upload_client" model="ir.actions.client">
         <field name="name">Bulk Upload Avatars</field>
         <field name="tag">aps_avatar_bulk_upload</field>
+        <field name="path">apex-bulk-upload-avatars</field>
     </record>
 
 </odoo>

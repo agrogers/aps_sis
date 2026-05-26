@@ -70,6 +70,7 @@
         <field name="res_model">aps.academic.term</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="aps_academic_term_view_search"/>
+        <field name="path">apex-academic-terms</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first academic term (e.g. Term 1 2025-2026).
