@@ -140,15 +140,14 @@
     </record>
 
 
-    <!-- ─── Student form view — add avatar below profile image ─── -->
+    <!-- ─── Student form view — add avatar field ─── -->
 
-    <record id="view_op_student_form_avatar" model="ir.ui.view">
-        <field name="name">op.student.form.inherit.avatar</field>
-        <field name="model">op.student</field>
-        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+    <record id="view_aps_student_form_avatar" model="ir.ui.view">
+        <field name="name">aps.student.form.inherit.avatar</field>
+        <field name="model">aps.student</field>
+        <field name="inherit_id" ref="aps_sis.aps_student_view_form"/>
         <field name="arch" type="xml">
-            <!-- Add the avatar selector below the profile image in the header area -->
-            <xpath expr="//field[@name='image_1920']" position="after">
+            <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="avatar_id" widget="many2one"
                        options="{'no_create': True}"
                        string="Avatar"/>

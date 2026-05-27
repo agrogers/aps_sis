@@ -17,7 +17,7 @@ class APSResourceSubmissionNotifications(models.Model):
         if not new_setting_to_receive_notifications:
             return
 
-        subjects = self.env['op.subject'].browse(list(subject_ids))
+        subjects = self.env['aps.subject'].browse(list(subject_ids))
 
         for subject in subjects:
             # Most op.faculty models link to a user via a 'user_id' field
@@ -35,14 +35,14 @@ class APSResourceSubmissionNotifications(models.Model):
     def _notify_new_faculty_reviewers(self, faculty_ids):
         """Creates an activity for each newly added faculty member."""
         # Search for faculty records to get their associated User IDs
-        faculties = self.env['op.faculty'].browse(list(faculty_ids))
+        teachers = self.env['aps.teacher'].browse(list(faculty_ids))
         
-        for faculty in faculties:
-            # Most op.faculty models link to a user via a 'user_id' field
-            if faculty.emp_id.user_id:
+        for teacher in teachers:
+            user = self.env['res.users'].search([('partner_id', '=', teacher.partner_id.id)], limit=1) if teacher.partner_id else False
+            if user:
                 self.activity_schedule(
                     'mail.mail_activity_data_todo',
-                    user_id=faculty.emp_id.user_id.id,
+                    user_id=user.id,
                     summary=_(f"Review Requested by {self.env.user.display_name} for {self.submission_name} ({self.student_id.display_name})"),
                     note=_(f"You have been requested to review the resource submission: {self.submission_name}"),
                     date_deadline=fields.Date.add(fields.Date.today(), days=1),  

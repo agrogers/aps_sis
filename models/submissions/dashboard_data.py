@@ -169,7 +169,7 @@ class APSResourceSubmissionDashboardData(models.Model):
             return []
 
         # Collect all subjects referenced in these submissions, then filter out excluded ones
-        all_subjects = self.env['op.subject']
+        all_subjects = self.env['aps.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
         if exclude:
@@ -181,10 +181,12 @@ class APSResourceSubmissionDashboardData(models.Model):
         student_enrolled_subjects = {}
         all_enrolled_subject_ids = set()
         partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
-        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        student_records = self.env['aps.student'].sudo().search([('partner_id', 'in', partner_ids)])
         for student_record in student_records:
-            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            enrolled_ids = set(
+                student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
+                .mapped('home_class_id.subject_id').ids
+            )
             student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
             all_enrolled_subject_ids.update(enrolled_ids)
         if all_enrolled_subject_ids:
@@ -308,7 +310,7 @@ class APSResourceSubmissionDashboardData(models.Model):
             return {'entries': [], 'deadline': deadline.isoformat() if deadline else False}
 
         # --- Collect subjects, apply exclude filter ---
-        all_subjects = self.env['op.subject']
+        all_subjects = self.env['aps.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
         if exclude:
@@ -320,10 +322,12 @@ class APSResourceSubmissionDashboardData(models.Model):
         student_enrolled_subjects = {}
         all_enrolled_subject_ids = set()
         partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
-        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        student_records = self.env['aps.student'].sudo().search([('partner_id', 'in', partner_ids)])
         for student_record in student_records:
-            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            enrolled_ids = set(
+                student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
+                .mapped('home_class_id.subject_id').ids
+            )
             student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
             all_enrolled_subject_ids.update(enrolled_ids)
         if all_enrolled_subject_ids:
@@ -531,22 +535,24 @@ class APSResourceSubmissionDashboardData(models.Model):
             }
         
         # Get all subjects from submissions
-        all_subjects = self.env['op.subject']
+        all_subjects = self.env['aps.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
 
-        # Restrict to the student's currently enrolled subjects (running courses only)
-        student_record = self.env['op.student'].sudo().search([
+        # Restrict to the student's currently enrolled subjects
+        student_record = self.env['aps.student'].sudo().search([
             ('partner_id', '=', student_id)
         ], limit=1)
         enrolled_subject_ids = set()
         if student_record:
-            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-            enrolled_subject_ids = set(running_courses.mapped('subject_ids').ids)
+            enrolled_subject_ids = set(
+                student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
+                .mapped('home_class_id.subject_id').ids
+            )
         if enrolled_subject_ids:
             all_subjects = all_subjects.filtered(lambda s: s.id in enrolled_subject_ids)
         else:
-            all_subjects = self.env['op.subject']
+            all_subjects = self.env['aps.subject']
         
         # Filter out excluded subjects
         if exclude:
@@ -572,7 +578,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         allowed_subject_ids = set(all_subjects.ids)
         
         # Get subject colors (with automatic color generation for subjects without categories)
-        subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
+        subject_colors = self.env['aps.subject'].get_subject_colors_map(all_subjects.ids)
         
         # Group submissions by subject and build historical data
         subject_data = {}  # {subject_id: [(date, result_percent), ...]}
@@ -712,7 +718,7 @@ class APSResourceSubmissionDashboardData(models.Model):
             }
         
         # Get all subjects from submissions
-        all_subjects = self.env['op.subject']
+        all_subjects = self.env['aps.subject']
         for sub in submissions:
             all_subjects |= sub.subjects
         
@@ -724,10 +730,12 @@ class APSResourceSubmissionDashboardData(models.Model):
         student_enrolled_subjects = {}  # {partner_id: set(enrolled_subject_ids)}
         all_enrolled_subject_ids = set()
         partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
-        student_records = self.env['op.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        student_records = self.env['aps.student'].sudo().search([('partner_id', 'in', partner_ids)])
         for student_record in student_records:
-            running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-            enrolled_ids = set(running_courses.mapped('subject_ids').ids)
+            enrolled_ids = set(
+                student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
+                .mapped('home_class_id.subject_id').ids
+            )
             student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
             all_enrolled_subject_ids.update(enrolled_ids)
         if all_enrolled_subject_ids:
@@ -738,7 +746,7 @@ class APSResourceSubmissionDashboardData(models.Model):
             all_subjects = all_subjects.filtered(lambda s: s.category_id.id == category_id)
 
         # Get subject colors
-        subject_colors = self.env['op.subject'].get_subject_colors_map(all_subjects.ids)
+        subject_colors = self.env['aps.subject'].get_subject_colors_map(all_subjects.ids)
         
         # Build student progress data: {student_id: {subject_id: {'result': x, 'date': y}}}
         student_progress = {}

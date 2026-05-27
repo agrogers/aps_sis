@@ -9,14 +9,9 @@ from . import aps_assign_students_wizard
 from . import aps_dashboard
 from . import core
 from . import res_users
-from . import op_program_level
-from . import op_course
-from . import op_subject
-from . import op_faculty
 from . import hr_employee
 from . import hr_resume_line
 from . import conditional_views
-from . import op_student
 from . import res_partner
 from . import awards
 from . import asc_timetable

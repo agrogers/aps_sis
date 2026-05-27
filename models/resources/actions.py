@@ -609,11 +609,12 @@ class APSResource(models.Model):
         # Determine students to assign
         if self.auto_assign_all_students:
             if self.subjects:
-                students_recs = self.env['op.student'].search([
-                    ('course_detail_ids.state', '=', 'running'),
-                    ('course_detail_ids.subject_ids', 'in', self.subjects.ids),
+                students_recs = self.env['aps.student'].search([])
+                enrollments = self.env['aps.student.class'].search([
+                    ('state', '=', 'enrolled'),
+                    ('home_class_id.subject_id', 'in', self.subjects.ids),
                 ])
-                student_partners = students_recs.mapped('partner_id')
+                student_partners = enrollments.mapped('student_id.partner_id')
             else:
                 student_partners = self.env['res.partner']
         else:
@@ -662,10 +663,11 @@ class APSResource(models.Model):
                 if len(self.subjects) < 2:
                     assigned_subjects = self.subjects
                 else:
-                    student_record = self.env['op.student'].search([('partner_id', '=', student.id)], limit=1)
+                    student_record = self.env['aps.student'].search([('partner_id', '=', student.id)], limit=1)
                     if student_record:
-                        running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-                        student_subjects = running_courses.mapped('subject_ids')
+                        student_subjects = student_record.enrollment_ids.filtered(
+                            lambda e: e.state == 'enrolled'
+                        ).mapped('home_class_id.subject_id')
                         assigned_subjects = self.subjects & student_subjects
                     else:
                         assigned_subjects = self.subjects
@@ -735,9 +737,9 @@ class APSResource(models.Model):
         """
         # 1. Determine subjects to display
         if subject_id:
-            subjects = self.env['op.subject'].browse(subject_id).exists()
+            subjects = self.env['aps.subject'].browse(subject_id).exists()
         else:
-            subjects = self.env['op.subject'].search([], order='name')
+            subjects = self.env['aps.subject'].search([], order='name')
 
         # 2. Find all hierarchy-eligible resources, prefetch children
         all_resources = self.search([('show_in_hierarchy', '=', True)])
@@ -824,13 +826,13 @@ class APSResource(models.Model):
             category_id: filter to all subjects in this category.
         """
         if subject_id:
-            subjects = self.env['op.subject'].browse(subject_id).exists()
+            subjects = self.env['aps.subject'].browse(subject_id).exists()
         elif category_id:
-            subjects = self.env['op.subject'].search(
+            subjects = self.env['aps.subject'].search(
                 [('category_id', '=', category_id)], order='name',
             )
         else:
-            subjects = self.env['op.subject'].search([], order='name')
+            subjects = self.env['aps.subject'].search([], order='name')
 
         all_resources = self.search([('show_in_hierarchy', '=', True)])
         all_resources.mapped('child_ids')  # prefetch

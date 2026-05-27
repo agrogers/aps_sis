@@ -59,7 +59,7 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
         ], string='Value',
         )
     update_subjects = fields.Boolean(string='Subjects')
-    subjects_value = fields.Many2many('op.subject', 'submission_mass_update_wizard_subject_rel', 'wizard_id', 'subject_id', string='Value')
+    subjects_value = fields.Many2many('aps.subject', 'submission_mass_update_wizard_subject_rel', 'wizard_id', 'subject_id', string='Value')
     update_question = fields.Boolean(string='Question')
     question_value = fields.Html(string='Value')
     update_answer = fields.Boolean(string='Answer')

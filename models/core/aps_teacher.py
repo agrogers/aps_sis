@@ -36,6 +36,12 @@ class APSTeacher(models.Model):
         string='Load Details',
         help='Detailed breakdown of teaching and non-teaching load allocations.',
     )
+    emp_id = fields.Many2one(
+        'hr.employee',
+        string='Employee',
+        ondelete='set null',
+        help='Linked HR employee record.',
+    )
 
     # Convenience related fields
     name = fields.Char(related='partner_id.name', string='Name', store=True)

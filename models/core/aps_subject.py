@@ -74,3 +74,30 @@ class APSSubject(models.Model):
         default = dict(default or {})
         default.setdefault('name', f"{self.name} (copy)")
         return super().copy_data(default)
+
+    @staticmethod
+    def _generate_color_from_name(name):
+        """Generate a deterministic HSL-based hex color from a string name."""
+        import colorsys
+        hash_val = sum(ord(c) for c in str(name))
+        hue = hash_val % 360
+        saturation = 70 + (hash_val % 20)
+        lightness = 45 + ((hash_val // 360) % 15)
+        rgb = colorsys.hls_to_rgb(hue / 360.0, lightness / 100.0, saturation / 100.0)
+        r = int(rgb[0] * 255)
+        g = int(rgb[1] * 255)
+        b = int(rgb[2] * 255)
+        return f'#{r:02x}{g:02x}{b:02x}'
+
+    @api.model
+    def get_subject_colors_map(self, subject_ids=None):
+        """Return a dict mapping subject_id -> hex color string."""
+        domain = [('id', 'in', subject_ids)] if subject_ids else []
+        subjects = self.search(domain)
+        color_map = {}
+        for subject in subjects:
+            if subject.category_id and subject.category_id.color_rgb:
+                color_map[subject.id] = subject.category_id.color_rgb
+            else:
+                color_map[subject.id] = self._generate_color_from_name(subject.name)
+        return color_map

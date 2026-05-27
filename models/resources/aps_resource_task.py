@@ -64,10 +64,11 @@ class APSResourceTask(models.Model):
 
     @api.depends()
     def _compute_is_current_user_faculty(self):
-        employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
-        faculty = self.env['op.faculty'].search([('emp_id', '=', employee.id)], limit=1) if employee else False
+        teacher = self.env['aps.teacher'].search(
+            [('partner_id', '=', self.env.user.partner_id.id)], limit=1
+        )
         for record in self:
-            record.is_current_user_faculty = bool(faculty)
+            record.is_current_user_faculty = bool(teacher)
 
     @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
     def _compute_type_icon(self):
@@ -297,7 +298,9 @@ class APSResourceTask(models.Model):
 
     def action_create_submission(self):
         self.ensure_one()
-        faculty = self.env['op.faculty'].search([('user_id', '=', self.env.user.id)], limit=1)
+        teacher = self.env['aps.teacher'].search(
+            [('partner_id', '=', self.env.user.partner_id.id)], limit=1
+        )
         return {
             'type': 'ir.actions.act_window',
             'name': 'Create Submission',
@@ -307,7 +310,7 @@ class APSResourceTask(models.Model):
             'context': {
                 'default_task_id': self.id,
                 'default_resource_id': self.resource_id.id,
-                'default_assigned_by': faculty.id if faculty else False,
+                'default_assigned_by': teacher.id if teacher else False,
                 'default_date_assigned': fields.Date.today(),
                 'form_view_initial_mode': 'edit',
             },
