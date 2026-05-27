@@ -4,6 +4,7 @@ from html import escape
 from markupsafe import Markup
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import html2plaintext
 
 from .model import sentinel_zero
 
@@ -135,6 +136,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
             if not record._is_auto_ai_marking_enabled():
                 continue
             if record.ai_last_model_id or record.ai_auto_mark_state in ('pending', 'running', 'retry', 'completed'):
+                continue
+            if not html2plaintext(record.answer or '').strip():
                 continue
             record.sudo().write({
                 'ai_auto_mark_state': 'pending',
@@ -314,6 +317,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
         if not self._is_auto_ai_marking_enabled() or self.ai_last_model_id:
             return False
         if self.ai_auto_mark_attempt_count >= _AUTO_MARK_MAX_ATTEMPTS:
+            return False
+        if not html2plaintext(self.answer or '').strip():
             return False
 
         attempt_number = (self.ai_auto_mark_attempt_count or 0) + 1
