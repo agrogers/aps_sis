@@ -1,34 +1,16 @@
-import logging
-import threading
 import time
 
 from odoo import _, api, fields, models
-
-from .utils import _run_ai_background_job
-
-_logger = logging.getLogger(__name__)
-
-_AI_RUN_PROGRESS_LOCKS = {}
-_AI_RUN_PROGRESS_LOCKS_GUARD = threading.Lock()
-
-
-def _get_ai_run_progress_lock(run_id):
-    with _AI_RUN_PROGRESS_LOCKS_GUARD:
-        lock = _AI_RUN_PROGRESS_LOCKS.get(run_id)
-        if lock is None:
-            lock = threading.Lock()
-            _AI_RUN_PROGRESS_LOCKS[run_id] = lock
-        return lock
 
 
 class APSAIRun(models.Model):
     _name = 'aps.ai.run'
     _description = 'APEX AI Background Run'
+    _inherit = ['aps.ai.run.mixin']
     _order = 'create_date desc, id desc'
 
     submission_id = fields.Many2one('aps.resource.submission', ondelete='cascade', readonly=True)
     resource_id = fields.Many2one('aps.resources', ondelete='cascade', readonly=True)
-    requested_by_id = fields.Many2one('res.users', string='Requested By', required=True, readonly=True)
     request_origin = fields.Selection(
         [('manual', 'Manual'), ('automatic', 'Automatic')],
         string='Request Origin',
@@ -37,30 +19,7 @@ class APSAIRun(models.Model):
         readonly=True,
     )
     attempt_number = fields.Integer(readonly=True)
-    state = fields.Selection(
-        [
-            ('queued', 'Queued'),
-            ('running', 'Running'),
-            ('completed', 'Completed'),
-            ('failed', 'Failed'),
-        ],
-        default='queued',
-        required=True,
-        readonly=True,
-    )
-    status_message = fields.Char(readonly=True)
-    result_message = fields.Char(readonly=True)
-    error_message = fields.Text(readonly=True)
-    thinking_text = fields.Text(readonly=True)
-    response_preview = fields.Text(readonly=True)
-    ai_model_id = fields.Many2one('aps.ai.model', string='AI Model', readonly=True, ondelete='set null')
     override_model_id = fields.Many2one('aps.ai.model', string='Override Model', readonly=True, ondelete='set null')
-    prompt_tokens = fields.Integer(readonly=True)
-    completion_tokens = fields.Integer(readonly=True)
-    estimated_cost = fields.Float(readonly=True, digits=(16, 6))
-    duration_ms = fields.Integer(readonly=True)
-    started_at = fields.Datetime(readonly=True)
-    finished_at = fields.Datetime(readonly=True)
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
     @api.depends('submission_id.display_name', 'resource_id.display_name', 'state', 'create_date')
@@ -78,50 +37,6 @@ class APSAIRun(models.Model):
                 state_label,
                 (' - %s' % created) if created else '',
             )
-
-    def _queue_background_processing(self):
-        self.ensure_one()
-        db_name = self.env.cr.dbname
-        run_id = self.id
-        user_id = self.requested_by_id.id
-        context = dict(self.env.context or {})
-
-        @self.env.cr.postcommit.add
-        def _start_background_run():
-            thread = threading.Thread(
-                target=_run_ai_background_job,
-                args=(db_name, run_id, user_id, context),
-                daemon=True,
-                name='aps_ai_run_%s' % run_id,
-            )
-            thread.start()
-
-    def _write_progress(self, values):
-        self.ensure_one()
-        lock = _get_ai_run_progress_lock(self.id)
-        with lock:
-            self.sudo().write(values)
-            self.env.cr.commit()
-
-    def _serialize_status(self):
-        self.ensure_one()
-        return {
-            'id': self.id,
-            'state': self.state,
-            'status_message': self.status_message or '',
-            'result_message': self.result_message or '',
-            'error_message': self.error_message or '',
-            'thinking_text': self.thinking_text or '',
-            'response_preview': self.response_preview or '',
-            'duration_ms': self.duration_ms or 0,
-            'prompt_tokens': self.prompt_tokens or 0,
-            'completion_tokens': self.completion_tokens or 0,
-            'estimated_cost': self.estimated_cost or 0.0,
-            'started_at': fields.Datetime.to_string(self.started_at) if self.started_at else False,
-            'finished_at': fields.Datetime.to_string(self.finished_at) if self.finished_at else False,
-            'ai_model_name': self.ai_model_id.display_name or False,
-            'is_terminal': self.state in ('completed', 'failed'),
-        }
 
     def _process_background(self):
         self.ensure_one()
@@ -226,35 +141,4 @@ class APSAIRun(models.Model):
             'response_preview': result.get('raw_content') or self.response_preview or False,
         })
 
-    def _build_stream_callback(self):
-        self.ensure_one()
-        last_publish = {'ts': 0.0, 'thinking': '', 'content': ''}
 
-        def _callback(thinking_text='', content_text=''):
-            now = time.perf_counter()
-            thinking_text_value = (thinking_text or '').strip()
-            content_text_value = (content_text or '').strip()
-            should_publish = (
-                now - last_publish['ts'] >= 1.0
-                or abs(len(thinking_text_value) - len(last_publish['thinking'])) >= 200
-                or abs(len(content_text_value) - len(last_publish['content'])) >= 200
-            )
-            if not should_publish:
-                return
-
-            values = {}
-            if thinking_text_value != last_publish['thinking']:
-                values['thinking_text'] = thinking_text_value or False
-            if content_text_value != last_publish['content']:
-                values['response_preview'] = content_text_value or False
-            if thinking_text_value:
-                values['status_message'] = _('Streaming AI reasoning...')
-            elif content_text_value:
-                values['status_message'] = _('Streaming AI response...')
-            if values:
-                self._write_progress(values)
-                last_publish['ts'] = now
-                last_publish['thinking'] = thinking_text_value
-                last_publish['content'] = content_text_value
-
-        return _callback
