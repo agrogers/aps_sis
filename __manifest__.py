@@ -1,13 +1,13 @@
 {
 	'name': 'APEX - Academic Progress and Excellence',
-	'version': '18.0.1.0.53',
+	'version': '18.0.1.0.54',
 	'icon': '/aps_sis/static/description/icon.png',
 	'category': 'Tools',
 	'summary': 'Allow the assigning and tracking of academic tasks such as homework, exams etc.',
 	'description': 'APEX - Academic Progress and Excellence. Helps to track student progress. It will work with  EduCat SIS',
 	'author': 'APS',
 	'license': 'LGPL-3',
-	'depends': ['base', 'web', 'mail', 'portal', 'hr', 'partner_multi_relation', 'spreadsheet_dashboard', 'calendar', 'aps_ai'],
+	'depends': ['base', 'web', 'mail', 'portal', 'hr', 'hr_skills', 'partner_multi_relation', 'spreadsheet_dashboard', 'calendar', 'aps_ai'],
 	'post_init_hook': 'post_init_hook',
 	'data': [
 		'security/groups.xml',

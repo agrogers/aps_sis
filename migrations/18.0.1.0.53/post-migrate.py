@@ -16,7 +16,7 @@ def _get_subject_name_map(cr):
     cr.execute("""
         SELECT op.id AS op_id, s.id AS aps_id
         FROM op_subject op
-        JOIN aps_subject s ON LOWER(s.name) = LOWER(op.name)
+        JOIN aps_subject s ON LOWER(s.name->>'en_US') = LOWER(op.name::text)
     """)
     return {row[0]: row[1] for row in cr.fetchall()}
 

@@ -45,7 +45,7 @@ class APSStudentCertificate(models.Model):
 
     name = fields.Char(compute='_compute_name', store=True)
     partner_id = fields.Many2one('res.partner', required=True, tracking=True, index=True)
-    subject_id = fields.Many2one('op.subject', tracking=True)
+    subject_id = fields.Many2one('aps.subject', tracking=True)
     event = fields.Char(required=True, tracking=True)
     certificate_date = fields.Date(default=fields.Date.today, required=True, tracking=True)
     award_category_id = fields.Many2one(

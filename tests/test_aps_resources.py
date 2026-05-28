@@ -397,8 +397,8 @@ class TestAPSResource(TransactionCase):
     # --- Subject/tag copy from parent tests ---
 
     def _make_subject(self, name):
-        """Helper: create an op.subject record."""
-        return self.env['op.subject'].create({'name': name})
+        """Helper: create an aps.subject record."""
+        return self.env['aps.subject'].create({'name': name})
 
     def _make_tag(self, name):
         """Helper: create an aps.resource.tags record."""

@@ -29,5 +29,14 @@
             <field name="implied_ids" eval="[(4, ref('group_aps_teacher'))]"/>
             <field name="comment">Full administrative access to all APEX features</field>
         </record>
+
+        <!-- Menu-routing group: assigned to student users but NOT implied by Teacher/Manager.
+             Use this (instead of group_aps_student) on any menuitem that should be
+             visible to pure students but hidden from teachers and managers. -->
+        <record id="group_aps_student_menu" model="res.groups">
+            <field name="name">Students</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="comment">Controls visibility of student-facing root menus. Not implied by Teacher or Manager.</field>
+        </record>
     </data>
 </odoo>

@@ -939,7 +939,7 @@ export class ApexDashboard extends Component {
             }
         });
 
-        const subjectRecords = await this.orm.searchRead("op.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name", "category_id"]);
+        const subjectRecords = await this.orm.searchRead("aps.subject", [['id', 'in', Array.from(subjectIds)]], ["id", "name", "category_id"]);
         const subjectMap = {};
         subjectRecords.forEach(rec => {
             subjectMap[rec.id] = {
@@ -951,7 +951,7 @@ export class ApexDashboard extends Component {
 
         // Get subject colors from backend
         const subjectColorsMap = await this.orm.call(
-            "op.subject",
+            "aps.subject",
             "get_subject_colors_map",
             [Array.from(subjectIds)]
         );

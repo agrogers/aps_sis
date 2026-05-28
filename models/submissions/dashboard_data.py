@@ -871,10 +871,10 @@ class APSResourceSubmissionDashboardData(models.Model):
             SELECT DISTINCT sc.id,
                    COALESCE(sc.name->>%s, sc.name->>'en_US',
                             (SELECT value FROM jsonb_each_text(sc.name) LIMIT 1))
-              FROM aps_resource_submission_op_subject_rel rel
+              FROM aps_resource_submission_aps_subject_rel rel
               JOIN aps_resource_submission s ON s.id = rel.aps_resource_submission_id
               JOIN aps_resource_task t       ON t.id = s.task_id
-              JOIN op_subject sub            ON sub.id = rel.op_subject_id
+              JOIN aps_subject sub           ON sub.id = rel.aps_subject_id
               JOIN aps_subject_category sc   ON sc.id = sub.category_id
              WHERE s.submission_active = true
         """
