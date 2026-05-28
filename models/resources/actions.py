@@ -574,11 +574,6 @@ class APSResource(models.Model):
             _('AI marking is running in the background. You can close the progress dialog at any time.'),
         )
 
-    def action_get_ai_run_status(self, run_id):
-        """Return serialised status for an AI background run belonging to this resource."""
-        # Delegated to the shared implementation in aps.ai.feedback.storage.mixin.
-        return super().action_get_ai_run_status(run_id)
-
     @api.model
     def run_auto_assign(self):
         """Cron-called method: process all resources that have auto_assign=True and whose

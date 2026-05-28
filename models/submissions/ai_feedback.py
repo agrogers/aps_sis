@@ -516,7 +516,3 @@ class APSResourceSubmissionAIFeedback(models.Model):
             _('AI Marking Started'),
             _('AI marking is running in the background. You can close the progress dialog at any time.'),
         )
-
-    def action_get_ai_run_status(self, run_id):
-        # Delegated to the shared implementation in aps.ai.feedback.storage.mixin.
-        return super().action_get_ai_run_status(run_id)

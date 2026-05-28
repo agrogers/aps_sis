@@ -68,12 +68,3 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 'sticky': True,
             }
         }
-
-    def action_get_ai_run_status(self, run_id):
-        """Return serialised status for an AI background run belonging to this record."""
-        self.ensure_one()
-        run = self.env['aps.ai.run'].sudo().browse(run_id)
-        link_field = self._get_ai_run_link_field()
-        if not run.exists() or getattr(run, link_field).id != self.id:
-            raise UserError(_('The requested AI run does not belong to this record.'))
-        return run._serialize_status()
