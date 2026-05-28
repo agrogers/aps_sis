@@ -41,7 +41,7 @@ class ApsAvatar(models.Model):
     # Modelled as a list to accommodate potential future multi-user scenarios,
     # but currently constrained to a single student per avatar.
     student_ids = fields.One2many(
-        'op.student',
+        'aps.student',
         'avatar_id',
         string='Used By',
         readonly=True,

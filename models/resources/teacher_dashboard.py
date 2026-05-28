@@ -32,7 +32,7 @@ class APSResource(models.Model):
         # ------------------------------------------------------------------ #
         subject_domain = [('subjects', '!=', False)]
         if category_id:
-            subjects_in_cat = self.env['op.subject'].search(
+            subjects_in_cat = self.env['aps.subject'].search(
                 [('category_id', '=', category_id)]
             )
             subject_domain = (
@@ -79,7 +79,7 @@ class APSResource(models.Model):
         if start_date:
             task_domain.append(('date_assigned', '>=', str(start_date)))
         if category_id:
-            subjects_in_cat = self.env['op.subject'].search(
+            subjects_in_cat = self.env['aps.subject'].search(
                 [('category_id', '=', category_id)]
             )
             if subjects_in_cat:

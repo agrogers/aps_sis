@@ -39,6 +39,7 @@ class APSStudent(models.Model):
                 rec.home_class_id = home_class
 
     active = fields.Boolean(default=True, string='Active')
+    avatar_id = fields.Many2one('aps.avatar', string='Profile Avatar', ondelete='set null')
     enrollment_ids = fields.One2many('aps.student.class', 'student_id', string='Class Enrollments')
 
     @api.depends('partner_id', 'roll')

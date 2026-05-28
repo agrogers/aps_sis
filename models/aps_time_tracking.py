@@ -44,7 +44,7 @@ class APSTimeTracking(models.Model):
         compute='_compute_is_current_user_teacher',
     )
     subject_id = fields.Many2one(
-        'op.subject',
+        'aps.subject',
         string='Subject',
         index=True,
         required=True,
@@ -210,17 +210,15 @@ class APSTimeTracking(models.Model):
     def get_timer_dialog_defaults(self):
         """Return current user's partner and their available subjects."""
         partner = self.env.user.partner_id
-        student = self.env['op.student'].search([('user_id', '=', self.env.uid)], limit=1)
+        student = self.env['aps.student'].search([('partner_id', '=', partner.id)], limit=1)
         subjects = []
         if student:
-            course_details = self.env['op.student.course'].search([
-                ('student_id', '=', student.id),
-                ('state', '=', 'running'),
-            ])
-            subject_records = course_details.mapped('subject_ids')
+            subject_records = student.enrollment_ids.filtered(
+                lambda e: e.state == 'enrolled'
+            ).mapped('home_class_id.subject_id')
             subjects = [{'id': s.id, 'name': s.name} for s in subject_records.sorted('name')]
         if not subjects:
-            all_subjects = self.env['op.subject'].search([], order='name asc')
+            all_subjects = self.env['aps.subject'].search([], order='name asc')
             subjects = [{'id': s.id, 'name': s.name} for s in all_subjects]
         return {
             'partner_id': partner.id,
@@ -332,10 +330,10 @@ class APSTimeTracking(models.Model):
                 doughnut_subject_ids[subj] = r.subject_id.id
 
         # Get subject colors for doughnut
-        subject_color_map = self.env['op.subject'].get_subject_colors_map()
-        all_op_subjects = self.env['op.subject'].search([])
+        subject_color_map = self.env['aps.subject'].get_subject_colors_map()
+        all_aps_subjects = self.env['aps.subject'].search([])
         name_to_color = {}
-        for s in all_op_subjects:
+        for s in all_aps_subjects:
             color = subject_color_map.get(s.id)
             if color:
                 name_to_color[s.name] = color

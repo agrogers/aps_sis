@@ -196,7 +196,7 @@ class APSResource(models.Model):
         default=True,
         help='When enabled, this resource\'s score is included in the parent resource\'s total score calculation.',
     )
-    subjects = fields.Many2many('op.subject', string='Subjects')
+    subjects = fields.Many2many('aps.subject', string='Subjects')
     subject_categories = fields.Many2many(
         'aps.subject.category',
         'aps_resources_subject_category_rel',

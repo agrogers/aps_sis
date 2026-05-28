@@ -50,14 +50,14 @@ class APSSubmitMarkWizard(models.TransientModel):
     )
 
     available_subject_ids = fields.Many2many(
-        'op.subject',
+        'aps.subject',
         compute='_compute_available_subject_ids',
         string='Available Subjects',
         help='Subjects the selected student is currently enrolled in.',
     )
 
     subject_id = fields.Many2one(
-        'op.subject',
+        'aps.subject',
         string='Subject',
         help='Subject the resource belongs to.',
     )
@@ -115,14 +115,13 @@ class APSSubmitMarkWizard(models.TransientModel):
             if not rec.student_id:
                 rec.available_subject_ids = [(5, 0, 0)]
                 continue
-            student_record = self.env['op.student'].sudo().search(
+            student_record = self.env['aps.student'].sudo().search(
                 [('partner_id', '=', rec.student_id.id)], limit=1
             )
             if student_record:
-                running_courses = student_record.course_detail_ids.filtered(
-                    lambda c: c.state == 'running'
-                )
-                subject_ids = running_courses.mapped('subject_ids').ids
+                subject_ids = student_record.enrollment_ids.filtered(
+                    lambda e: e.state == 'enrolled'
+                ).mapped('home_class_id.subject_id').ids
             else:
                 subject_ids = []
             rec.available_subject_ids = [(6, 0, subject_ids)]

@@ -52,9 +52,9 @@ class APSResourceSubmission(models.Model):
         tracking=True,
         help='Optional submission-specific URL override for the main assigned resource.'
     )
-    subjects = fields.Many2many('op.subject', string='Subjects')
+    subjects = fields.Many2many('aps.subject', string='Subjects')
     student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
-    assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
+    assigned_by = fields.Many2one('aps.teacher', string='Assigned By', default=lambda self: self._default_assigned_by())
     submission_label = fields.Char(
         string='Label',
         help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework .'
@@ -97,7 +97,7 @@ class APSResourceSubmission(models.Model):
     answer = fields.Html(string='Answer')
     has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
     reviewed_by = fields.Many2many(
-        'op.faculty',
+        'aps.teacher',
         'aps_submission_reviewed_by_rel',
         'submission_id',
         'faculty_id',
@@ -105,7 +105,7 @@ class APSResourceSubmission(models.Model):
         tracking=True,
     )
     review_requested_by = fields.Many2many(
-        'op.faculty',
+        'aps.teacher',
         'aps_submission_review_request_rel',
         'submission_id',
         'faculty_id',
@@ -489,12 +489,11 @@ class APSResourceSubmission(models.Model):
 # endregion - Computed Fields
 
     def _get_faculty_for_current_user(self):
-        """Get the faculty record for the current user"""
-        employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
-        if employee:
-            faculty = self.env['op.faculty'].search([('emp_id', '=', employee.id)], limit=1)
-            return faculty
-        return False
+        """Get the teacher record for the current user"""
+        teacher = self.env['aps.teacher'].search(
+            [('partner_id', '=', self.env.user.partner_id.id)], limit=1
+        )
+        return teacher if teacher else False
 
     def _default_assigned_by(self):
         """Get the faculty record for the current user"""

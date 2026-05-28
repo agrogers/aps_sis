@@ -69,7 +69,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     date_due = fields.Date(string='Due Date', required=True)
     student_ids = fields.Many2many('res.partner', string='Students', domain=[('is_student', '=', True)], required=False)
     student_line_ids = fields.One2many('aps.assign.students.wizard.student.line', 'wizard_id', string='Students')
-    assigned_by = fields.Many2one('op.faculty', string='Assigned By', default=lambda self: self._default_assigned_by())
+    assigned_by = fields.Many2one('aps.teacher', string='Assigned By', default=lambda self: self._default_assigned_by())
     custom_submission_name = fields.Char(string='Submission Name')
     url = fields.Char(string='URL', help='Optional URL override for the main assigned resource.')
     warning_message = fields.Char(string='Warning', compute='_compute_warning_message', store=False)
@@ -105,7 +105,7 @@ class APSAssignStudentsWizard(models.TransientModel):
 )
     default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
 
-    subjects = fields.Many2many('op.subject', string='Subjects')
+    subjects = fields.Many2many('aps.subject', string='Subjects')
     points_scale = fields.Integer(string='Points Scale', default=1, help='Scales the points allocated to the submission. This is useful for resources that are used in different contexts with different grading schemes.')
     notify_student = fields.Boolean(string='Notify Student', default=True, help='If enabled, students will receive a notification when they are assigned to the resource.')
 
@@ -253,20 +253,20 @@ class APSAssignStudentsWizard(models.TransientModel):
             
 
             # 1. Get the subjects we care about (from the submission)
-            relevant_subjects = self.subjects  # Many2many 'op.subject'
+            relevant_subjects = self.subjects  # Many2many 'aps.subject'
 
             if not relevant_subjects:
                 # No subjects → no students (or handle differently)
                 student_partners = self.env['res.partner']
             else:
-                # 2. Find students who have at least one running course with overlapping subjects
-                students = self.env['op.student'].search([
-                    ('course_detail_ids.state', '=', 'running'),
-                    ('course_detail_ids.subject_ids', 'in', relevant_subjects.ids),
+                # 2. Find students enrolled in classes with overlapping subjects
+                enrollments = self.env['aps.student.class'].search([
+                    ('state', '=', 'enrolled'),
+                    ('home_class_id.subject_id', 'in', relevant_subjects.ids),
                 ])
 
                 # 3. Get their partners
-                student_partners = students.mapped('partner_id')
+                student_partners = enrollments.mapped('student_id.partner_id')
 
             self.student_ids = student_partners or False
             self.student_line_ids = [(5, 0, 0)]
@@ -302,11 +302,11 @@ class APSAssignStudentsWizard(models.TransientModel):
             self.affected_resource_line_ids = False
 
     def _default_assigned_by(self):
-        """Get the faculty record for the current user"""
-        employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
-        if employee:
-            faculty = self.env['op.faculty'].search([('emp_id', '=', employee.id)], limit=1)
-            return faculty.id if faculty else False
+        """Get the teacher record for the current user"""
+        teacher = self.env['aps.teacher'].search(
+            [('partner_id', '=', self.env.user.partner_id.id)], limit=1
+        )
+        return teacher.id if teacher else False
 
     def _get_initial_state_from_tags(self, resource):
         """Return the initial submission state based on special tags on the resource.
@@ -390,11 +390,12 @@ class APSAssignStudentsWizard(models.TransientModel):
                     assigned_subjects = self.subjects
                 else:
                     # Get student's assigned subjects from running courses
-                    student_record = self.env['op.student'].search([('partner_id', '=', student.id)], limit=1)
-                    student_subjects = self.env['op.subject']
+                    student_record = self.env['aps.student'].search([('partner_id', '=', student.id)], limit=1)
+                    student_subjects = self.env['aps.subject']
                     if student_record:
-                        running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-                        student_subjects = running_courses.mapped('subject_ids')
+                        student_subjects = student_record.enrollment_ids.filtered(
+                            lambda e: e.state == 'enrolled'
+                        ).mapped('home_class_id.subject_id')
                     # Intersect with wizard subjects
                     assigned_subjects = self.subjects & student_subjects
                 
