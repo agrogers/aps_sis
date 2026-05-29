@@ -4,6 +4,7 @@ from odoo import fields, models, api
 class APSStudent(models.Model):
     _name = 'aps.student'
     _description = 'Student'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'partner_id'
 
     partner_id = fields.Many2one(
@@ -11,17 +12,20 @@ class APSStudent(models.Model):
         string='Student',
         required=True,
         ondelete='cascade',
+        tracking=True,
     )
-    roll = fields.Char(string='Roll Number', size=20)
+    roll = fields.Char(string='Roll Number', size=20, tracking=True)
     level_id = fields.Many2one(
         'aps.level',
         string='Level',
         ondelete='set null',
+        tracking=True,
     )
     home_class_id = fields.Many2one(
         'aps.class',
         string='Home Class',
         ondelete='set null',
+        tracking=True,
         help='Automatically set from enrollments whose subject category is tagged as a Home Class.',
     )
 
@@ -40,6 +44,7 @@ class APSStudent(models.Model):
 
     active = fields.Boolean(default=True, string='Active')
     avatar_id = fields.Many2one('aps.avatar', string='Profile Avatar', ondelete='set null')
+    image_128 = fields.Image(related='partner_id.image_128', string='Photo', readonly=True)
     enrollment_ids = fields.One2many('aps.student.class', 'student_id', string='Class Enrollments')
 
     @api.depends('partner_id', 'roll')

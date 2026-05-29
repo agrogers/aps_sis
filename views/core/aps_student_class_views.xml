@@ -48,6 +48,9 @@
                             <field name="end_date"/>
                         </group>
                     </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" placeholder="Record any notes, e.g. reason for withdrawal…"/>
+                    </group>
                 </sheet>
             </form>
         </field>
