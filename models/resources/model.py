@@ -337,6 +337,17 @@ class APSResource(models.Model):
         compute='_compute_is_recently_viewed',
         search='_search_is_recently_viewed',
     )
+    is_aps_manager = fields.Boolean(
+        string='Is APEX Manager',
+        compute='_compute_is_aps_manager',
+        help='True when the current user belongs to the APEX Manager group.',
+    )
+
+    @api.depends_context('uid')
+    def _compute_is_aps_manager(self):
+        is_manager = self.env.user.has_group('aps_sis.group_aps_manager')
+        for record in self:
+            record.is_aps_manager = is_manager
 
     @api.depends('ai_model_ids')
     def _compute_has_multiple_ai_models(self):

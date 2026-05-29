@@ -351,103 +351,118 @@
                             <widget name="resource_tree_widget"/>
                         </page>
                         <page string="AI Instructions" invisible="ai_action=='none'">
-                            <group >
-                                <group >
-                                    <field name="ai_use_model_answer" widget="boolean_toggle"/>
-                                    <field name="ai_use_question" widget="boolean_toggle"/>
-                                     <field name="ai_use_notes" widget="boolean_toggle"/>
-                                     <field name="ai_targeted_feedback" widget="boolean_toggle"/>
+                            <field name="is_aps_manager" invisible="1"/>
+                            <!-- Info box explaining how the AI Instructions tab works -->
+                            <div class="alert alert-info mb-3" role="alert">
+                                <strong>How this tab works:</strong> Toggling the switches below automatically includes the relevant prompts when AI runs on this resource. You can override the defaults by adding your own prompts in the <em>Prompts</em> field. Prompts work in sections and usually have a <em>content</em> part (what information to return) and a <em>format</em> part (how that information should be presented).
+                            </div>
+                            <group>
+                                <group>
+                                    <field name="ai_use_model_answer" widget="boolean_toggle" readonly="not is_aps_manager"/>
+                                    <field name="ai_use_question" widget="boolean_toggle" readonly="not is_aps_manager"/>
+                                    <field name="ai_use_notes" widget="boolean_toggle" readonly="not is_aps_manager"/>
+                                    <field name="ai_targeted_feedback" widget="boolean_toggle" readonly="not is_aps_manager"/>
                                 </group>
                                 <group>
-                                    <field name="ai_model_ids" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="ai_model_ids" widget="many2many_tags" options="{'no_create': True, 'no_open': True}" readonly="not is_aps_manager"/>
                                     <field name="has_multiple_ai_models" invisible="1"/>
-                                    <field name="ai_merge_responses" widget="boolean_toggle" invisible="not has_multiple_ai_models"/>
-                                    <field name="ai_merge_response_chunks" widget="boolean_toggle" invisible="not has_multiple_ai_models or not ai_targeted_feedback"/>
-                                    <field name="ai_model_id" string="Fallback AI Model" options="{'no_create': True, 'no_open': True}" invisible="has_multiple_ai_models"/>
-                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False, 'color_field': 'color'}"/>
-                                    <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False, 'color_field': 'color'}"/>
-                                     <field name="ai_test_prompt" widget="boolean_toggle"/>
-                                    <field name="ai_show_saved_responses" widget="boolean_toggle"/>
+                                    <field name="ai_merge_responses" widget="boolean_toggle" invisible="not has_multiple_ai_models" readonly="not is_aps_manager"/>
+                                    <field name="ai_merge_response_chunks" widget="boolean_toggle" invisible="not has_multiple_ai_models or not ai_targeted_feedback" readonly="not is_aps_manager"/>
+                                    <field name="ai_model_id" string="Fallback AI Model" options="{'no_create': True, 'no_open': True}" invisible="has_multiple_ai_models" readonly="not is_aps_manager"/>
+                                    <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False, 'color_field': 'color'}" readonly="not is_aps_manager"/>
+                                    <field name="ai_test_prompt" widget="boolean_toggle"/>
                                 </group>
                             </group>
-                            <div invisible="not ai_test_prompt" class="mt-2 mb-3">
-                                <div class="fw-bold border-bottom pb-1 mb-2">AI Prompt Test</div>
-                                <div class="mb-2">
-                                    <button name="action_ai_test_mark"
-                                            string="AI Mark..."
-                                            type="object"
-                                            class="btn btn-primary"/>
-                                </div>
-                                <!-- Saved Responses -->
-                                <div invisible="not ai_show_saved_responses" class="mt-2 border rounded p-3 bg-light">
-                                    <div class="fw-bold border-bottom pb-1 mb-3">Saved AI Responses</div>
-                                    <field name="ai_saved_responses" invisible="1"/>
-                                    <div class="row g-2 align-items-end">
-                                        <div class="col-12 col-md-7">
-                                            <div class="form-label small text-muted">Saved Response</div>
-                                            <field name="ai_selected_response_key"
-                                                   widget="ai_saved_response_selector"
-                                                   nolabel="1"/>
-                                        </div>
-                                        <div class="col-12 col-md-5 d-flex gap-2 flex-wrap">
-                                            <button name="action_ai_save_response"
-                                                    string="💾 Save Current"
-                                                    type="object"
-                                                    class="btn btn-primary btn-sm"
-                                                    help="Save the current AI test response with a custom name."/>
-                                            <button name="action_ai_delete_response"
-                                                    string="🗑 Delete"
-                                                    type="object"
-                                                    class="btn btn-danger btn-sm"
-                                                    invisible="not ai_selected_response_key"
-                                                    confirm="Are you sure you want to delete this saved response?"
-                                                    help="Permanently delete the selected saved response."/>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                                <div class="row mt-2" >
-                                    <div class="col-12 col-md-3" >
-                                        <div class="fw-bold mb-1">AI Score</div>
-                                        <field name="ai_score" nolabel="1" readonly="1"/>
-                                    </div>
-                                    <div class="col-12 col-md-9" >
-                                        <div class="fw-bold mb-1">Score Comment</div>
-                                        <field name="ai_score_comment" nolabel="1" readonly="1"/>
-                                    </div>
-                                </div>
-
-                                <group string="Targeted Feedback" class="tab-with-icon student-answer-tab" 
-                                    name="student_answer_page" invisible="not ai_targeted_feedback">
-                                    <field name="ai_targeted_feedback" invisible="1"/>
-                                    <field name="ai_answer" invisible="1"/>
-                                    <field name="ai_answer_chunks" invisible="1"/>
-                                    <field name="ai_answer_chunked_html" invisible="1"/>
-                                    <field name="ai_feedback_items" invisible="1"/>
-                                    <field name="ai_feedback_links" invisible="1"/>
-                                    <field name="ai_feedback" widget="submission_feedback_viewer" options="{'answer_field': 'ai_answer'}" nolabel="1" readonly="1"/>
-                                </group>
-
-                                <div class="row">
-                                    <div class="col-12 col-md-6">
-                                        <div class="fw-bold mb-1">Test Answer</div>
-                                        <field name="ai_answer" nolabel="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;" readonly="not ai_test_prompt"
-                                            placeholder="Enter a sample student answer here to test the AI prompt."/>
-                                    </div>
-                                    <div class="col-12 col-md-6" invisible="not ai_feedback or ai_targeted_feedback">
-                                        <div class="fw-bold mb-1" >AI Feedback</div>
-                                        <field name="ai_feedback" nolabel="1" readonly="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
-                                            invisible="not ai_feedback"/>
-                                    </div>
-                                </div>
-
-                            </div>
-
+                            <!-- Active Prompts below Test Prompt, full width -->
+                            <group>
+                                <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False, 'color_field': 'color'}" colspan="2"/>
+                            </group>
                             <group string="Instructions Specific to this Resource">
                                 <field name="ai_instructions" nolabel="1"
-                                    placeholder="Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student's submission."/>
+                                    placeholder="Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student's submission."
+                                    readonly="not is_aps_manager"/>
                             </group>
+                        </page>
+
+                        <!-- AI Test tab: visible only when Test Prompt is enabled -->
+                        <page string="AI Test" invisible="not ai_test_prompt">
+                            <!-- Show Saved Responses toggle at the top -->
+                            <group>
+                                <field name="ai_show_saved_responses" widget="boolean_toggle"/>
+                            </group>
+                            <!-- Saved Responses section -->
+                            <div invisible="not ai_show_saved_responses" class="mt-2 border rounded p-3 bg-light">
+                                <div class="fw-bold border-bottom pb-1 mb-3">Saved AI Responses</div>
+                                <field name="ai_saved_responses" invisible="1"/>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12 col-md-7">
+                                        <div class="form-label small text-muted">Saved Response</div>
+                                        <field name="ai_selected_response_key"
+                                               widget="ai_saved_response_selector"
+                                               nolabel="1"/>
+                                    </div>
+                                    <div class="col-12 col-md-5 d-flex gap-2 flex-wrap">
+                                        <button name="action_ai_save_response"
+                                                string="💾 Save Current"
+                                                type="object"
+                                                class="btn btn-primary btn-sm"
+                                                help="Save the current AI test response with a custom name."/>
+                                        <button name="action_ai_delete_response"
+                                                string="🗑 Delete"
+                                                type="object"
+                                                class="btn btn-danger btn-sm"
+                                                invisible="not ai_selected_response_key"
+                                                confirm="Are you sure you want to delete this saved response?"
+                                                help="Permanently delete the selected saved response."/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AI Mark button -->
+                            <div class="mt-3 mb-2">
+                                <button name="action_ai_test_mark"
+                                        string="AI Mark..."
+                                        type="object"
+                                        class="btn btn-primary"/>
+                            </div>
+
+                            <!-- Score and Score Comment -->
+                            <div class="row mt-2">
+                                <div class="col-12 col-md-3">
+                                    <div class="fw-bold mb-1">AI Score</div>
+                                    <field name="ai_score" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="col-12 col-md-9">
+                                    <div class="fw-bold mb-1">Score Comment</div>
+                                    <field name="ai_score_comment" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+
+                            <!-- Targeted Feedback -->
+                            <group string="Targeted Feedback" class="tab-with-icon student-answer-tab"
+                                name="student_answer_page" invisible="not ai_targeted_feedback">
+                                <field name="ai_targeted_feedback" invisible="1"/>
+                                <field name="ai_answer" invisible="1"/>
+                                <field name="ai_answer_chunks" invisible="1"/>
+                                <field name="ai_answer_chunked_html" invisible="1"/>
+                                <field name="ai_feedback_items" invisible="1"/>
+                                <field name="ai_feedback_links" invisible="1"/>
+                                <field name="ai_feedback" widget="submission_feedback_viewer" options="{'answer_field': 'ai_answer'}" nolabel="1" readonly="1"/>
+                            </group>
+
+                            <!-- Test Answer and AI Feedback -->
+                            <div class="row mt-2">
+                                <div class="col-12 col-md-6">
+                                    <div class="fw-bold mb-1">Test Answer</div>
+                                    <field name="ai_answer" nolabel="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
+                                        placeholder="Enter a sample student answer here to test the AI prompt."/>
+                                </div>
+                                <div class="col-12 col-md-6" invisible="not ai_feedback or ai_targeted_feedback">
+                                    <div class="fw-bold mb-1">AI Feedback</div>
+                                    <field name="ai_feedback" nolabel="1" readonly="1" style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
+                                        invisible="not ai_feedback"/>
+                                </div>
+                            </div>
                         </page>
 
                     </notebook>
