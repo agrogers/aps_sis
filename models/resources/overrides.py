@@ -349,10 +349,10 @@ class APSResource(models.Model):
         # Strip ancestor prefix — keep only the selected resource's own
         # name segment and its descendants (e.g. "A 🢒 B 🢒 C" → "C").
         # When a custom top_level_name is supplied the results are already
-        # anchored to that name, so stripping would incorrectly shorten child
-        # names (e.g. "4CP0 🢒 Q3 🢒 a" → "Q3 🢒 a" when "4CP0" contains no
-        # separator but "CS 🢒 4CP0" does). Skip stripping in that case so
-        # children inherit the full custom prefix.
+        # anchored to that name, so stripping must be skipped. Otherwise
+        # a top_level_name that contains separators (e.g. "CS 🢒 4CP0") would
+        # cause the ancestor prefix of its resolved name to be stripped from
+        # all children, producing "4CP0 🢒 Q3" instead of "CS 🢒 4CP0 🢒 Q3".
         if not top_level_name:
             top_resolved = result.get(top_level_resource.id, '')
             last_sep_idx = top_resolved.rfind(separator)
