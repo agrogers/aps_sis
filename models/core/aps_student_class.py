@@ -44,6 +44,22 @@ class APSStudentClass(models.Model):
         default='enrolled',
         required=True,
     )
+    notes = fields.Text(string='Notes', help='Internal notes, e.g. reason for withdrawal.')
+    subject_icon = fields.Image(
+        related='home_class_id.subject_id.icon',
+        string='Subject Icon',
+        readonly=True,
+    )
+    image_128 = fields.Image(
+        related='student_id.image_128',
+        string='Photo',
+        readonly=True,
+    )
+    partner_id = fields.Many2one(
+        related='student_id.partner_id',
+        string='Student Name',
+        readonly=True,
+    )
 
     def action_withdraw(self):
         self.write({

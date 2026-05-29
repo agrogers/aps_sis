@@ -142,18 +142,18 @@
 
     <!-- ─── Student form view — add avatar field ─── -->
 
-    <record id="view_aps_student_form_avatar" model="ir.ui.view">
+    <!-- <record id="view_aps_student_form_avatar" model="ir.ui.view">
         <field name="name">aps.student.form.inherit.avatar</field>
         <field name="model">aps.student</field>
         <field name="inherit_id" ref="aps_sis.aps_student_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='partner_id']" position="after">
+            <xpath expr="//field[@name='home_class_id']" position="after">
                 <field name="avatar_id" widget="many2one"
                        options="{'no_create': True}"
                        string="Avatar"/>
             </xpath>
         </field>
-    </record>
+    </record> -->
 
 
     <!-- ─── HR Employee form — relabel Work Mobile field ─── -->

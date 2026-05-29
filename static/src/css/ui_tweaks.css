@@ -13,6 +13,11 @@
     --KanbanCard-width: 147px;
 }
 
+/* Student kanban — half-width cards */
+.o_aps_student_kanban {
+    --KanbanCard-width: 110px;
+}
+
 .o-paragraph {
     margin-bottom: 0.5em;
 }
