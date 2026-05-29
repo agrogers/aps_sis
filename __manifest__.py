@@ -70,6 +70,7 @@
 		'reports/student_certificate_report.xml',
 		'wizard/submission_report_wizard_views.xml',
 		'wizard/aps_ai_save_response_wizard_views.xml',
+		'wizard/aps_prompt_preview_wizard_views.xml',
 		'views/asc_timetable/asctt_views.xml',
 		'views/asc_timetable/asctt_import_wizard_views.xml',
 		'views/asc_timetable/asctt_flat_row_views.xml',

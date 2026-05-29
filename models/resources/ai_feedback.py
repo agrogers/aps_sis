@@ -1,4 +1,5 @@
 from odoo import _, models
+from odoo.exceptions import UserError
 
 
 class APSResourceAIFeedback(models.Model):
@@ -47,3 +48,50 @@ class APSResourceAIFeedback(models.Model):
     def _apply_ai_feedback_result(self, result):
         self.ensure_one()
         self.sudo().write(self._get_ai_feedback_result_write_vals(result))
+
+    def action_preview_prompt(self):
+        """Open a popup showing the fully compiled prompt that would be sent to the AI."""
+        self.ensure_one()
+        if self.ai_action == 'none':
+            raise UserError(_('AI Action must not be "None" to preview the prompt.'))
+
+        AIModel = self.env['aps.ai.model']
+        candidates = AIModel._get_generation_candidates(resource=self)
+        if not candidates:
+            raise UserError(_('No enabled AI models are configured.'))
+        model = candidates[0]
+
+        # Use ai_dry_run=True so _perform_request raises DryRunPayloadError
+        # instead of calling the provider. We duck-type the exception to avoid
+        # a cross-addon import of DryRunPayloadError.
+        payload = None
+        try:
+            model.with_context(ai_dry_run=True)._run_feedback(self)
+        except Exception as exc:
+            if hasattr(exc, 'payload'):
+                payload = exc.payload
+            else:
+                raise
+
+        if not payload:
+            raise UserError(_('Could not assemble the prompt. Check that this resource has a valid AI configuration.'))
+
+        messages = payload.get('messages', [])
+        lines = []
+        for msg in messages:
+            role = (msg.get('role') or '').upper()
+            content = msg.get('content') or ''
+            lines.append('─' * 60)
+            lines.append(f'[{role}]')
+            lines.append(content)
+        prompt_text = '\n'.join(lines)
+
+        wizard = self.env['aps.prompt.preview.wizard'].create({'prompt_text': prompt_text})
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('AI Prompt Preview'),
+            'res_model': 'aps.prompt.preview.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }

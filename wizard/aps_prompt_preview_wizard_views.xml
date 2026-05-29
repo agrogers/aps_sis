@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_aps_prompt_preview_wizard_form" model="ir.ui.view">
+        <field name="name">aps.prompt.preview.wizard.form</field>
+        <field name="model">aps.prompt.preview.wizard</field>
+        <field name="arch" type="xml">
+            <form string="AI Prompt Preview">
+                <sheet>
+                    <div class="fw-bold mb-2">Compiled prompt that will be sent to the AI</div>
+                    <field name="prompt_text" nolabel="1" readonly="1"
+                           style="font-family: monospace; font-size: 0.85em; white-space: pre-wrap; min-height: 400px;"/>
+                </sheet>
+                <footer>
+                    <button string="Close" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

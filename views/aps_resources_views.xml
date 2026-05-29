@@ -373,6 +373,14 @@
                                     <field name="ai_test_prompt" widget="boolean_toggle"/>
                                 </group>
                             </group>
+                            <!-- Preview Prompt button -->
+                            <div class="mt-1 mb-2">
+                                <button name="action_preview_prompt"
+                                        string="Preview Prompt..."
+                                        type="object"
+                                        class="btn btn-secondary"
+                                        icon="fa-eye"/>
+                            </div>
                             <!-- Active Prompts below Test Prompt, full width -->
                             <group>
                                 <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False, 'color_field': 'color'}" colspan="2"/>
