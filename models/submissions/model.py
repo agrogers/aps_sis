@@ -214,7 +214,7 @@ class APSResourceSubmission(models.Model):
     @api.depends('resource_id', 'resource_id.subject_categories')
     def _compute_subject_categories(self):
         for record in self:
-            record.subject_categories = [(6, 0, record.resource_id.subject_categories.ids)]
+            record.subject_categories = [(6, 0, record.resource_id.sudo().subject_categories.ids)]
 
     @api.depends('date_submitted', 'date_due', 'state', 'points_scale')
     def _compute_points(self):
@@ -244,7 +244,7 @@ class APSResourceSubmission(models.Model):
     @api.depends('resource_id.supporting_resources_buttons', 'url')
     def _compute_supporting_resources_buttons(self):
         for record in self:
-            links = record.resource_id.supporting_resources_buttons or []
+            links = record.resource_id.sudo().supporting_resources_buttons or []
             if record.url:
                 overridden_links = []
                 for link in links:
@@ -256,13 +256,13 @@ class APSResourceSubmission(models.Model):
             else:
                 record.supporting_resources_buttons = links
 
-    @api.depends('resource_id.type_id', 'resource_id.type_id.icon')
+    @api.depends('type_id', 'type_id.icon')
     def _compute_type_icon(self):
-        # This is needed because without it the icon is never cached properly. 
-        # That means there is a lot of annoying downloads on every page refresh.
-        # It is duplicated in other models as well.
+        # Depends on the stored type_id (not resource_id) to avoid traversing
+        # aps.resources during recompute, which would trigger resource access rules
+        # and fail for teachers who can see submissions across all subjects.
         for record in self:
-            record.type_icon = record.resource_id.type_id.icon if record.resource_id.type_id else False
+            record.type_icon = record.type_id.icon if record.type_id else False
 
     @api.depends('subjects', 'subjects.icon')
     def _compute_subject_icons(self):

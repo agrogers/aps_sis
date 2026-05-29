@@ -19,11 +19,23 @@
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
         </record>
 
-        <!-- Record Rules for Teachers - full access to all records -->
+        <!-- Record Rules for Teachers:
+             Teachers see records they created OR records linked to subjects they teach.
+             "Subjects they teach" = aps.class rows (current academic year) where the
+             teacher's partner appears in teacher_ids.
+             Managers (who imply Teacher) get separate (1=1) rules below so the OR
+             logic lets them see everything. -->
+
         <record id="rule_aps_resources_teacher" model="ir.rule">
-            <field name="name">Teacher (APEX): All Resources</field>
+            <field name="name">Teacher (APEX): Own or Subject Resources</field>
             <field name="model_id" ref="model_aps_resources"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">
+                ['&amp;',
+                  ('name', 'not ilike', 'Home Study'),
+                  '|',
+                  ('create_uid', '=', user.id),
+                  ('subjects.class_current_year_ids.teacher_ids', '=', user.partner_id.id)]
+            </field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
@@ -35,16 +47,26 @@
         </record>
 
         <record id="rule_aps_task_teacher" model="ir.rule">
-            <field name="name">Teacher (APEX): All Tasks</field>
+            <field name="name">Teacher (APEX): Own or Subject Tasks</field>
             <field name="model_id" ref="model_aps_resource_task"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">
+                ['|',
+                  ('create_uid', '=', user.id),
+                  ('resource_id.subjects.class_current_year_ids.teacher_ids', '=', user.partner_id.id)]
+            </field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
         <record id="rule_aps_submission_teacher" model="ir.rule">
-            <field name="name">Teacher (APEX): All Submissions</field>
+            <field name="name">Teacher (APEX): Own or Subject Submissions</field>
             <field name="model_id" ref="model_aps_resource_submission"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">
+                ['&amp;',
+                  ('display_name', 'not ilike', 'Home Study'),
+                  '|',
+                  ('create_uid', '=', user.id),
+                  ('subjects.class_current_year_ids.teacher_ids', '=', user.partner_id.id)]
+            </field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
@@ -56,9 +78,13 @@
         </record>
 
         <record id="rule_aps_student_certificate_teacher" model="ir.rule">
-            <field name="name">Teacher (APEX): All Certificates</field>
+            <field name="name">Teacher (APEX): Own or Subject Certificates</field>
             <field name="model_id" ref="model_aps_student_certificate"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">
+                ['|',
+                  ('create_uid', '=', user.id),
+                  ('subject_id.class_current_year_ids.teacher_ids', '=', user.partner_id.id)]
+            </field>
             <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
         </record>
 
@@ -74,6 +100,36 @@
             <field name="model_id" ref="model_aps_certificate_template"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
+        </record>
+
+        <!-- Manager overrides: managers imply teacher, so the OR of these (1=1) rules
+             with the teacher rules above means managers can see everything. -->
+        <record id="rule_aps_resources_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Resources</field>
+            <field name="model_id" ref="model_aps_resources"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_task_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Tasks</field>
+            <field name="model_id" ref="model_aps_resource_task"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_submission_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Submissions</field>
+            <field name="model_id" ref="model_aps_resource_submission"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_student_certificate_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Certificates</field>
+            <field name="model_id" ref="model_aps_student_certificate"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
         </record>
 
     </data>
