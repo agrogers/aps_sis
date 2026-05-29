@@ -57,6 +57,7 @@
                                         <field name="description" readonly="1" optional="hide"/>
                                         <field name="has_question" readonly="1" optional="hide"/>
                                         <field name="has_answer" readonly="1" optional="hide"/>
+                                        <field name="has_default_answer" readonly="1" optional="show" string="Default Answer"/>
                                         <field name="points_scale" readonly="1" optional="hide"/>
                                         <field name="supporting_resources_buttons" widget="resource_links" optional="show"/>
                                         <field name="url" invisible="1"/>

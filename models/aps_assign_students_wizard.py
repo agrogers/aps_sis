@@ -44,6 +44,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
     description = fields.Text(string='Description', related='resource_id.description', readonly=True)
     has_question = fields.Selection(related='resource_id.has_question', readonly=True)
     has_answer = fields.Selection(related='resource_id.has_answer', readonly=True)
+    has_default_answer = fields.Boolean(related='resource_id.has_default_answer', readonly=True, string='Default Answer')
     points_scale = fields.Integer(related='resource_id.points_scale', readonly=True)
     supporting_resources_buttons = fields.Json(related='resource_id.supporting_resources_buttons', string='Resource Links', readonly=True)    
     url = fields.Char(string='URL', related='wizard_id.url', readonly=True)
@@ -148,6 +149,15 @@ class APSAssignStudentsWizard(models.TransientModel):
                     except Exception:
                         # guard against unexpected read/compute errors
                         continue
+
+            # Auto-enable has_default_answer if any resource in the hierarchy has it set
+            # (the loop above already copies from the top-level resource; this extends
+            # the check to all descendants so the toggle activates even when only a child
+            # resource carries a default answer)
+            if not res.get('has_default_answer'):
+                descendants = resource._get_all_descendants()
+                if any(r.has_default_answer for r in descendants):
+                    res['has_default_answer'] = True
 
     
         return res
