@@ -386,10 +386,17 @@
 
                         <!-- AI Test tab: visible only when Test Prompt is enabled -->
                         <page string="AI Test" invisible="not ai_test_prompt">
-                            <!-- Show Saved Responses toggle at the top -->
-                            <group>
-                                <field name="ai_show_saved_responses" widget="boolean_toggle"/>
-                            </group>
+                            <!-- Header row: Mark with AI button + Show Saved Responses toggle -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <button name="action_ai_test_mark"
+                                        string="Mark with AI..."
+                                        type="object"
+                                        class="btn btn-primary"/>
+                                <div class="d-flex align-items-center gap-2">
+                                    <field name="ai_show_saved_responses" widget="boolean_toggle" nolabel="1"/>
+                                    <span class="text-muted">Show Saved Responses</span>
+                                </div>
+                            </div>
                             <!-- Saved Responses section -->
                             <div invisible="not ai_show_saved_responses" class="mt-2 border rounded p-3 bg-light">
                                 <div class="fw-bold border-bottom pb-1 mb-3">Saved AI Responses</div>
@@ -416,14 +423,6 @@
                                                 help="Permanently delete the selected saved response."/>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- AI Mark button -->
-                            <div class="mt-3 mb-2">
-                                <button name="action_ai_test_mark"
-                                        string="AI Mark..."
-                                        type="object"
-                                        class="btn btn-primary"/>
                             </div>
 
                             <!-- Score and Score Comment -->
