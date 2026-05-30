@@ -15,6 +15,15 @@ HAS_ANSWER_SELECTION = [
     ('use_parent', 'Use Parent'),
 ]
 
+# Maps toggle field name → prompt message_section for the section-based
+# prompt shortcut toggles on the AI Instructions tab.
+_AI_SECTION_TOGGLES = [
+    ('ai_toc', 'toc'),
+    ('ai_summary', 'summary'),
+    ('ai_analysis', 'detailed_analysis'),
+    ('ai_table_of_results', 'results_table'),
+]
+
 
 class APSResource(models.Model):
     _name = 'aps.resources'
@@ -458,13 +467,7 @@ class APSResource(models.Model):
                             prompts = (prompts | targeted_prompt).sorted(key=_sort_key)
                     # Inject the first enabled prompt for each section-based toggle when
                     # the toggle is enabled and no prompt already covers that section.
-                    _SECTION_TOGGLES = [
-                        ('ai_toc', 'toc'),
-                        ('ai_summary', 'summary'),
-                        ('ai_analysis', 'detailed_analysis'),
-                        ('ai_table_of_results', 'results_table'),
-                    ]
-                    for toggle_field, section in _SECTION_TOGGLES:
+                    for toggle_field, section in _AI_SECTION_TOGGLES:
                         if getattr(record, toggle_field) and not any(p.message_section == section for p in prompts):
                             section_prompt = self.env['ai_prompts'].search(
                                 [('enabled', '=', True), ('message_section', '=', section)],
