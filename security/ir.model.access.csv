@@ -10,6 +10,7 @@ access_aps_assign_students_wizard_line_teacher,aps.assign.students.wizard.line.t
 access_aps_assign_students_wizard_student_line_teacher,aps.assign.students.wizard.student.line.teacher,model_aps_assign_students_wizard_student_line,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_submission_mass_update_wizard_teacher,aps.submission.mass.update.wizard.teacher,model_aps_submission_mass_update_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_resource_mass_update_wizard_teacher,aps.resource.mass.update.wizard.teacher,model_aps_resource_mass_update_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_prompt_preview_wizard_teacher,aps.prompt.preview.wizard.teacher,model_aps_prompt_preview_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_academic_year_teacher,aps.academic.year.teacher,model_aps_academic_year,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_academic_year_student,aps.academic.year.student,model_aps_academic_year,aps_sis.group_aps_student,1,0,0,0
 access_aps_academic_year_user,aps.academic.year.user,model_aps_academic_year,base.group_user,1,0,0,0

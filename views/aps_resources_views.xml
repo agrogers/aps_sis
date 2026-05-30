@@ -353,9 +353,6 @@
                         <page string="AI Instructions" invisible="ai_action=='none'">
                             <field name="is_aps_manager" invisible="1"/>
                             <!-- Info box explaining how the AI Instructions tab works -->
-                            <div class="alert alert-info mb-3" role="alert">
-                                <strong>How this tab works:</strong> Toggling the switches below automatically includes the relevant prompts when AI runs on this resource. You can override the defaults by adding your own prompts in the <em>Prompts</em> field. Prompts work in sections and usually have a <em>content</em> part (what information to return) and a <em>format</em> part (how that information should be presented).
-                            </div>
                             <group>
                                 <group>
                                     <field name="ai_use_model_answer" widget="boolean_toggle" readonly="not is_aps_manager"/>
