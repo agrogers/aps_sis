@@ -424,6 +424,13 @@ class APSAssignStudentsWizard(models.TransientModel):
                 submission_name_value = submission_name
                 if resource == top_level_resource and self.custom_submission_name:
                     submission_name_value = self.custom_submission_name
+                # Each resource carries its own default_answer; use wizard fields
+                # only for the top-level resource (where the teacher may have edited
+                # them), and the resource's own fields for every child resource.
+                if resource == top_level_resource:
+                    use_default_answer = self.default_answer if self.has_default_answer and self.default_answer else False
+                else:
+                    use_default_answer = resource.default_answer if resource.has_default_answer and resource.default_answer else False
                 # Create submission. Multiple submissions allowed per task.
                 submission_model.create({
                     'task_id': task.id,
@@ -439,7 +446,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'state': initial_state,
                     'question': use_question,
                     'has_question': has_question,
-                    'answer': self.default_answer if self.has_default_answer and self.default_answer else False,
+                    'answer': use_default_answer,
                     'subjects': assigned_subjects.ids,
                     'points_scale': self.points_scale,
                     'notification_state': 'not_sent' if self.notify_student else 'skipped',
