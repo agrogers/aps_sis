@@ -18,8 +18,13 @@ class APSResourceAIFeedback(models.Model):
 
         Used by the generic engine (``aps.ai.model.generate_feedback``).
         ``student_answer_html`` is taken from the test-answer field ``ai_answer``.
+        When the context flag ``ai_preview_prompt`` is set and ``ai_answer`` is
+        empty, a dummy answer is substituted so the prompt can be assembled.
         """
         self.ensure_one()
+        student_answer = self.ai_answer or ''
+        if not student_answer and self.env.context.get('ai_preview_prompt'):
+            student_answer = '<p>[Sample student answer — preview only]</p>'
         return {
             'instructions': self.ai_instructions or '',
             'out_of_marks': self.marks if self.marks and self.marks > 0 else False,
@@ -29,7 +34,7 @@ class APSResourceAIFeedback(models.Model):
             'model_answer': self.answer or '',
             'use_note': False,
             'notes': '',
-            'student_answer_html': self.ai_answer or '',
+            'student_answer_html': student_answer,
             'ai_targeted_feedback': bool(self.ai_targeted_feedback),
             'include_reasoning': include_reasoning,
             'empty_answer_error': _(
@@ -64,9 +69,12 @@ class APSResourceAIFeedback(models.Model):
         # Use ai_dry_run=True so _perform_request raises DryRunPayloadError
         # instead of calling the provider. We duck-type the exception to avoid
         # a cross-addon import of DryRunPayloadError.
+        # ai_preview_prompt=True tells _build_ai_feedback_ctx to supply a dummy
+        # student answer when ai_answer is empty, so the prompt can be previewed
+        # without requiring a test answer to be entered first.
         payload = None
         try:
-            model.with_context(ai_dry_run=True)._run_feedback(self)
+            model.with_context(ai_dry_run=True, ai_preview_prompt=True)._run_feedback(self)
         except Exception as exc:
             if hasattr(exc, 'payload'):
                 payload = exc.payload

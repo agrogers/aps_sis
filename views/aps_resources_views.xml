@@ -359,6 +359,10 @@
                                     <field name="ai_use_question" widget="boolean_toggle" readonly="not is_aps_manager"/>
                                     <field name="ai_use_notes" widget="boolean_toggle" readonly="not is_aps_manager"/>
                                     <field name="ai_targeted_feedback" widget="boolean_toggle" readonly="not is_aps_manager"/>
+                                    <field name="ai_toc" widget="boolean_toggle" readonly="not is_aps_manager"/>
+                                    <field name="ai_summary" widget="boolean_toggle" readonly="not is_aps_manager"/>
+                                    <field name="ai_analysis" widget="boolean_toggle" readonly="not is_aps_manager"/>
+                                    <field name="ai_table_of_results" widget="boolean_toggle" readonly="not is_aps_manager"/>
                                 </group>
                                 <group>
                                     <field name="ai_model_ids" widget="many2many_tags" options="{'no_create': True, 'no_open': True}" readonly="not is_aps_manager"/>
@@ -368,17 +372,17 @@
                                     <field name="ai_model_id" string="Fallback AI Model" options="{'no_create': True, 'no_open': True}" invisible="has_multiple_ai_models" readonly="not is_aps_manager"/>
                                     <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False, 'color_field': 'color'}" readonly="not is_aps_manager"/>
                                     <field name="ai_test_prompt" widget="boolean_toggle"/>
+                                    <!-- Preview Prompt button: same column, underneath Test Prompt -->
+                                    <div>
+                                        <button name="action_preview_prompt"
+                                                string="Preview Prompt..."
+                                                type="object"
+                                                class="btn btn-secondary"
+                                                icon="fa-eye"/>
+                                    </div>
                                 </group>
                             </group>
-                            <!-- Preview Prompt button -->
-                            <div class="mt-1 mb-2">
-                                <button name="action_preview_prompt"
-                                        string="Preview Prompt..."
-                                        type="object"
-                                        class="btn btn-secondary"
-                                        icon="fa-eye"/>
-                            </div>
-                            <!-- Active Prompts below Test Prompt, full width -->
+                            <!-- Active Prompts below, full width -->
                             <group>
                                 <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False, 'color_field': 'color'}" colspan="2"/>
                             </group>

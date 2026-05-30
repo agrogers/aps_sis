@@ -145,6 +145,10 @@ class APSResource(models.Model):
     ai_use_notes = fields.Boolean(string='Use Notes')
     ai_use_supporting_resources = fields.Boolean(string='Use Supporting Resources')
     ai_targeted_feedback = fields.Boolean(string='Targeted Feedback', help='Return highlighted feedback tied to specific points in the student answer, if supported by the AI model.')
+    ai_toc = fields.Boolean(string='TOC', help='Inject the default Table of Contents prompt for this resource.')
+    ai_summary = fields.Boolean(string='Summary', help='Inject the default Summary prompt for this resource.')
+    ai_analysis = fields.Boolean(string='Analysis', help='Inject the default Analysis prompt for this resource.')
+    ai_table_of_results = fields.Boolean(string='Table of Results', help='Inject the default Table of Results prompt for this resource.')
     ai_test_prompt = fields.Boolean(string='Test Prompt', help='Enable a test area to trial the AI prompt against a sample answer.')
     ai_answer = fields.Html(string='Test Answer', help='Sample answer to test the AI prompt against.')
     ai_feedback = fields.Html(string='AI Feedback', readonly=True, help='Feedback returned by the AI for the test answer.')
@@ -387,6 +391,10 @@ class APSResource(models.Model):
         'ai_use_question',
         'ai_use_notes',
         'ai_targeted_feedback',
+        'ai_toc',
+        'ai_summary',
+        'ai_analysis',
+        'ai_table_of_results',
         'ai_instructions',
         'marks',
     )
@@ -448,6 +456,23 @@ class APSResource(models.Model):
                         )
                         if targeted_prompt and targeted_prompt not in prompts:
                             prompts = (prompts | targeted_prompt).sorted(key=_sort_key)
+                    # Inject the first enabled prompt for each section-based toggle when
+                    # the toggle is enabled and no prompt already covers that section.
+                    _SECTION_TOGGLES = [
+                        ('ai_toc', 'toc'),
+                        ('ai_summary', 'summary'),
+                        ('ai_analysis', 'detailed_analysis'),
+                        ('ai_table_of_results', 'results_table'),
+                    ]
+                    for toggle_field, section in _SECTION_TOGGLES:
+                        if getattr(record, toggle_field) and not any(p.message_section == section for p in prompts):
+                            section_prompt = self.env['ai_prompts'].search(
+                                [('enabled', '=', True), ('message_section', '=', section)],
+                                order='sequence asc, id asc',
+                                limit=1,
+                            )
+                            if section_prompt and section_prompt not in prompts:
+                                prompts = (prompts | section_prompt).sorted(key=_sort_key)
                     # For each content section that has a paired format section,
                     # auto-inject the first enabled format prompt when the content
                     # section is active but no format prompt is already present
@@ -483,6 +508,10 @@ class APSResource(models.Model):
         'ai_use_question',
         'ai_use_notes',
         'ai_targeted_feedback',
+        'ai_toc',
+        'ai_summary',
+        'ai_analysis',
+        'ai_table_of_results',
         'ai_instructions',
     )
     def _onchange_ai_prompt_preview_fields(self):
