@@ -22,7 +22,20 @@ class APSResource(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     sequence = fields.Integer(string='Sequence', default=10)
-    is_favourite = fields.Boolean(string='Favourite', default=False, tracking=True)
+    favourite_user_ids = fields.Many2many(
+        'res.users',
+        'aps_resource_favourite_user_rel',
+        'resource_id',
+        'user_id',
+        string='Favourite Users',
+    )
+    is_favourite = fields.Boolean(
+        string='Favourite',
+        compute='_compute_is_favourite',
+        inverse='_inverse_is_favourite',
+        search='_search_is_favourite',
+        store=False,
+    )
     display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True, recursive=True)
     name = fields.Char(string='Name', tracking=True)
     custom_name_ids = fields.One2many('aps.resource.custom.name', 'resource_id', string='Custom Names')

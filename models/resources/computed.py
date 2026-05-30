@@ -314,6 +314,29 @@ class APSResource(models.Model):
         # If most characters match, consider similar
         return common_prefix >= min(len(word1), len(word2)) - 2
 
+    @api.depends('favourite_user_ids')
+    @api.depends_context('uid')
+    def _compute_is_favourite(self):
+        user = self.env.user
+        for rec in self:
+            rec.is_favourite = user in rec.favourite_user_ids
+
+    def _inverse_is_favourite(self):
+        user = self.env.user
+        for rec in self:
+            if rec.is_favourite:
+                rec.favourite_user_ids = [(4, user.id)]
+            else:
+                rec.favourite_user_ids = [(3, user.id)]
+
+    def _search_is_favourite(self, operator, value):
+        if operator not in ('=', '!='):
+            return [('id', '=', False)]
+        user_id = self.env.uid
+        if (operator == '=' and value) or (operator == '!=' and not value):
+            return [('favourite_user_ids', 'in', [user_id])]
+        return [('favourite_user_ids', 'not in', [user_id])]
+
     def _compute_is_recently_viewed(self):
         ViewHistory = self.env.get('view.history')
         if ViewHistory is None:
