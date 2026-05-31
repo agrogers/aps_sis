@@ -15,14 +15,39 @@ HAS_ANSWER_SELECTION = [
     ('use_parent', 'Use Parent'),
 ]
 
-# Maps toggle field name → prompt message_section for the section-based
+# Maps toggle field name → prompt message_section for section-based
 # prompt shortcut toggles on the AI Instructions tab.
 _AI_SECTION_TOGGLES = [
-    ('ai_toc', 'toc'),
     ('ai_summary', 'summary'),
     ('ai_analysis', 'detailed_analysis'),
     ('ai_table_of_results', 'results_table'),
 ]
+
+# Prompts tagged with this tag are treated as supplemental — they are
+# included alongside (not instead of) any default prompts injected by
+# toggles.  They are excluded from all deduplication checks so they
+# never suppress a toggle-driven default for the same section.
+_ADDITIONAL_TAG = 'additional'
+
+
+def _is_supplemental(prompt):
+    """Return True if *prompt* is tagged as supplemental (Additional)."""
+    return any(t.name.strip().casefold() == _ADDITIONAL_TAG for t in prompt.tag_ids)
+
+
+def _section_covered(prompts, section):
+    """True only when a non-supplemental prompt already covers *section*."""
+    return any(p.message_section == section for p in prompts if not _is_supplemental(p))
+
+
+def _tag_covered(prompts, tag_name):
+    """True only when a non-supplemental prompt already carries *tag_name*."""
+    key = tag_name.strip().casefold()
+    return any(
+        any(t.name.strip().casefold() == key for t in p.tag_ids)
+        for p in prompts
+        if not _is_supplemental(p)
+    )
 
 
 class APSResource(models.Model):
@@ -434,7 +459,10 @@ class APSResource(models.Model):
                         'instructions': instructions_text,
                         'student_answer': True,  # Always include the student answer in the context for prompt tagging purposes, even if it's empty. This allows prompts to be tagged with "No Student Answer" or similar to handle empty answers.
                     }
-                    extra = active_model._resolve_ctx_tagged_prompts(ctx_flags, record.ai_prompt_ids)
+                    # Exclude supplemental prompts from the candidate list so
+                    # they do not suppress default prompts for the same section.
+                    non_supplemental_ids = record.ai_prompt_ids.filtered(lambda p: not _is_supplemental(p))
+                    extra = active_model._resolve_ctx_tagged_prompts(ctx_flags, non_supplemental_ids)
                     if extra:
                         prompts = (prompts | extra).sorted(key=_sort_key)
                     # Suppress "Specific Instructions" tagged prompts when there are no instructions
@@ -447,7 +475,7 @@ class APSResource(models.Model):
                         )
                     # Inject the first "Score" tagged prompt when out_of_marks is non-zero
                     # and no prompt already in the active set covers the 'score' section.
-                    if record.marks and not any(p.message_section == 'score' for p in prompts):
+                    if record.marks and not _section_covered(prompts, 'score'):
                         score_prompt = self.env['ai_prompts'].search(
                             [('enabled', '=', True), ('tag_ids.name', 'ilike', 'score')],
                             order='sequence asc, id asc',
@@ -457,7 +485,7 @@ class APSResource(models.Model):
                             prompts = (prompts | score_prompt).sorted(key=_sort_key)
                     # Inject the first "Targeted Feedback" tagged prompt when targeted
                     # feedback is requested and no prompt already covers that section.
-                    if record.ai_targeted_feedback and not any(p.message_section == 'targeted_feedback' for p in prompts):
+                    if record.ai_targeted_feedback and not _section_covered(prompts, 'targeted_feedback'):
                         targeted_prompt = self.env['ai_prompts'].search(
                             [('enabled', '=', True), ('tag_ids.name', 'ilike', 'targeted feedback')],
                             order='sequence asc, id asc',
@@ -465,10 +493,22 @@ class APSResource(models.Model):
                         )
                         if targeted_prompt and targeted_prompt not in prompts:
                             prompts = (prompts | targeted_prompt).sorted(key=_sort_key)
+                    # Inject the first "TOC" tagged prompt when requested.
+                    # TOC does not have a dedicated message_section; it is identified
+                    # by a tag named "TOC".
+                    if record.ai_toc:
+                        if not _tag_covered(prompts, 'toc'):
+                            toc_prompt = self.env['ai_prompts'].search(
+                                [('enabled', '=', True), ('tag_ids.name', '=ilike', 'TOC')],
+                                order='sequence asc, id asc',
+                                limit=1,
+                            )
+                            if toc_prompt and toc_prompt not in prompts:
+                                prompts = (prompts | toc_prompt).sorted(key=_sort_key)
                     # Inject the first enabled prompt for each section-based toggle when
                     # the toggle is enabled and no prompt already covers that section.
                     for toggle_field, section in _AI_SECTION_TOGGLES:
-                        if getattr(record, toggle_field) and not any(p.message_section == section for p in prompts):
+                        if getattr(record, toggle_field) and not _section_covered(prompts, section):
                             section_prompt = self.env['ai_prompts'].search(
                                 [('enabled', '=', True), ('message_section', '=', section)],
                                 order='sequence asc, id asc',
@@ -487,8 +527,8 @@ class APSResource(models.Model):
                     ]
                     for content_section, format_section in _FORMAT_PAIRS:
                         if (
-                            any(p.message_section == content_section for p in prompts)
-                            and not any(p.message_section == format_section for p in prompts)
+                            _section_covered(prompts, content_section)
+                            and not _section_covered(prompts, format_section)
                         ):
                             fmt_prompt = self.env['ai_prompts'].search(
                                 [('enabled', '=', True), ('message_section', '=', format_section)],
