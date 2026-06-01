@@ -55,7 +55,9 @@
                     <button class="av-cat-card"
                             t-att-data-vote-id="vote.id"
                             t-attf-data-category-id="#{vote.award_category_id.id or 0}"
-                            t-att-data-category-name="vote.short_description or vote.award_category_id.name"
+                            t-att-data-category-name="vote.vote_round_id.name or vote.award_category_id.name"
+                            t-att-data-short-description="vote.short_description or ''"
+                            t-att-data-description="vote.description or ''"
                             t-att-data-token="token"
                             t-attf-data-category-img="#{'/web/image/aps.award.vote/' + str(vote.id) + '/image' if vote.image else ''}"
                             onclick="AwardsVoting.openModal(this)">
@@ -69,9 +71,9 @@
                                 <div class="av-cat-img-placeholder">&#127885;</div>
                             </t>
                         </div>
-                        <div class="av-cat-name"><t t-esc="vote.short_description or vote.award_category_id.name"/></div>
-                        <t t-if="vote.description">
-                            <div class="av-cat-desc"><t t-esc="vote.description"/></div>
+                        <div class="av-cat-name"><t t-esc="vote.vote_round_id.name or vote.award_category_id.name"/></div>
+                        <t t-if="vote.short_description">
+                            <div class="av-cat-desc"><t t-esc="vote.short_description"/></div>
                         </t>
                         <t t-if="vote.due_date">
                             <div class="av-cat-meta">
@@ -100,19 +102,22 @@
             <button class="av-modal-close" onclick="AwardsVoting.closeModal()">&#10005;</button>
 
             <div class="av-modal-header">
-                <div class="av-modal-header-left">
-                    <img id="av-modal-cat-img" class="av-modal-cat-img" src="" alt=""/>
-                    <div id="av-modal-cat-name" class="av-modal-cat-name"/>
+                    <div class="av-modal-header-top">
+                        <img id="av-modal-cat-img" class="av-modal-cat-img" src="" alt=""/>
+                        <div class="av-modal-header-titles">
+                            <div id="av-modal-cat-name" class="av-modal-cat-name"/>
+                            <div id="av-modal-cat-short-desc" class="av-modal-cat-short-desc"/>
+                        </div>
+                    </div>
+                    <div id="av-modal-cat-desc" class="av-modal-cat-desc"/>
+                    <div class="av-modal-header-right">
+                        <div id="av-modal-selection-summary" class="av-modal-selection-summary"
+                             style="display:none"/>
+                        <button id="av-submit-btn" class="av-submit-btn" style="display:none"
+                                onclick="AwardsVoting.submitVote()">Submit Vote</button>
+                        <div id="av-submit-error" class="av-submit-error" style="display:none"/>
+                    </div>
                 </div>
-                <div class="av-modal-header-right">
-                    <div id="av-modal-selection-summary" class="av-modal-selection-summary"
-                         style="display:none"/>
-                    <button id="av-submit-btn" class="av-submit-btn" style="display:none"
-                            onclick="AwardsVoting.submitVote()">Submit Vote</button>
-                    <div id="av-submit-error" class="av-submit-error" style="display:none"/>
-                </div>
-            </div>
-
             <div class="av-filters">
                 <select id="av-filter-level" class="av-filter-select"
                         onchange="AwardsVoting.filterSearch()">

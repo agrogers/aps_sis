@@ -41,6 +41,17 @@
             this._isStaffRound = false;
 
             document.getElementById('av-modal-cat-name').textContent = this._categoryName;
+
+            const shortDesc = btn.dataset.shortDescription || '';
+            const descEl = document.getElementById('av-modal-cat-short-desc');
+            descEl.textContent = shortDesc;
+            descEl.style.display = shortDesc ? '' : 'none';
+
+            const desc = btn.dataset.description || '';
+            const fullDescEl = document.getElementById('av-modal-cat-desc');
+            fullDescEl.textContent = desc;
+            fullDescEl.style.display = desc ? '' : 'none';
+
             const modalImg = document.getElementById('av-modal-cat-img');
             if (imgSrc) {
                 modalImg.src = imgSrc;
