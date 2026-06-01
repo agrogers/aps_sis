@@ -260,12 +260,11 @@
 }
 .av-modal-close:hover { background: var(--av-border); color: var(--av-text); }
 
-/* Modal Header */
+/* Modal Header — always stacked: title row, then action row */
 .av-modal-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: .75rem;
   margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   padding-right: 2.5rem;  /* keep content clear of the absolute close button */
@@ -276,7 +275,13 @@
   align-items: center;
   gap: .9rem;
   min-width: 0;
-  flex-shrink: 0;
+}
+.av-modal-header-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
 }
 .av-modal-cat-img {
   width: 56px;
@@ -347,21 +352,22 @@
 .av-table tbody tr:last-child { border-bottom: none; }
 .av-table tbody tr:hover  { background: #f8fafc; }
 .av-table tbody tr.av-selected {
-  background: #eef2ff;
+  background: var(--av-primary);
   border-bottom: none; /* remove divider so it merges with the comment row */
 }
-/* Top border on every cell of the selected row */
 .av-table tbody tr.av-selected td {
-  border-top: 2px solid var(--av-primary);
+  color: #fff;
+  /* Top border via inset box-shadow — bypasses border-collapse conflict with thead */
+  box-shadow: inset 0 2px 0 var(--av-primary-h);
   border-bottom: none;
 }
 /* Left border only on the first cell */
 .av-table tbody tr.av-selected td:first-child {
-  border-left: 2px solid var(--av-primary);
+  border-left: 2px solid var(--av-primary-h);
 }
 /* Right border only on the last cell */
 .av-table tbody tr.av-selected td:last-child {
-  border-right: 2px solid var(--av-primary);
+  border-right: 2px solid var(--av-primary-h);
 }
 /* Comment row that immediately follows a selected row: close the box */
 .av-table tbody tr.av-selected + tr.av-comment-row {
@@ -379,6 +385,8 @@
   width: 40px; height: 40px; border-radius: 50%;
   object-fit: cover; border: 2px solid var(--av-border);
 }
+.av-selected .av-td-photo img,
+.av-selected .av-td-photo .av-initials { border-color: rgba(255,255,255,.4); }
 .av-initials {
   background: linear-gradient(135deg, var(--av-primary), #8b3fd9);
   color: #fff; font-weight: 700; font-size: .85rem;
@@ -388,6 +396,11 @@
 .av-td-level   { color: var(--av-muted); font-size: .9rem; }
 .av-td-times   { font-weight: 700; color: var(--av-primary); text-align: center; }
 .av-td-last    { color: var(--av-muted); font-size: .88rem; }
+/* On selected rows all cell text is already white via the td rule above,
+   but override the explicit colour rules that would otherwise fight it. */
+.av-selected .av-td-level,
+.av-selected .av-td-times,
+.av-selected .av-td-last  { color: rgba(255,255,255,.8); }
 .av-td-select  { text-align: center; }
 .av-select-check {
   width: 22px; height: 22px;
@@ -398,9 +411,9 @@
   transition: all .15s;
 }
 .av-selected .av-select-check {
-  background: var(--av-primary);
-  border-color: var(--av-primary);
-  color: #fff;
+  background: #fff;
+  border-color: rgba(255,255,255,.6);
+  color: var(--av-primary);
 }
 
 .av-loading { text-align: center; padding: 2rem; color: var(--av-muted); font-style: italic; }
@@ -419,8 +432,8 @@
 .av-comment-textarea:focus { border-color: var(--av-primary); }
 
 /* Inline comment row */
-.av-comment-row { background: #f0f4ff; }
-.av-comment-row:hover { background: #f0f4ff; }
+.av-comment-row { background: var(--av-primary); }
+.av-comment-row:hover { background: var(--av-primary); }
 .av-td-comment { padding: .4rem 1rem .75rem 3.5rem !important; }
 .av-td-comment .av-sub-cat-wrap,
 .av-td-comment .av-comment-wrap { display: block; }
@@ -508,11 +521,76 @@
 .av-th-select { width: 70px; text-align: center; }
 
 /* Responsive */
+
+/* --- Tablet (≤ 768px) --- */
+@media (max-width: 768px) {
+  .av-modal { max-width: 100%; }
+  .av-modal-cat-name { font-size: 1.4rem; white-space: normal; overflow: visible; text-overflow: unset; }
+  /* Hide lower-priority table columns on tablet */
+  .av-th-times, .av-td-times,
+  .av-th-last,  .av-td-last  { display: none; }
+}
+
+/* --- Mobile (≤ 640px) --- */
 @media (max-width: 640px) {
-  .av-modal { padding: 1.25rem 1rem 2rem; }
-  .av-modal-header { flex-direction: column; align-items: flex-start; }
-  .av-modal-header-right { align-items: flex-start; }
-  .av-modal-cat-name { font-size: 1.3rem; }
-  .av-stats { grid-template-columns: 1fr 1fr; }
-  .av-header { padding: 1rem; }
+  /* Header */
+  .av-header { padding: .75rem 1rem; }
+  .av-header-title { font-size: 1.2rem; }
+  .av-header-logo  { height: 36px; }
+  .av-trophy       { font-size: 1.5rem; }
+
+  /* Stats — 2-column grid */
+  .av-stats { grid-template-columns: 1fr 1fr; padding: 0 1rem; margin-top: 1rem; }
+  .av-stat-card { padding: 1rem; }
+  .av-stat-num  { font-size: 1.8rem; }
+
+  /* Section padding */
+  .av-section { padding: 0 1rem; margin-top: 1.25rem; }
+
+  /* Category cards — 2 per row */
+  .av-cards { grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+  /* Modal overlay — reduce side padding so modal fills screen */
+  .av-modal-overlay { padding: .5rem; }
+  .av-modal { padding: 1rem .9rem 1.5rem; border-radius: 12px; }
+
+/* Modal header overrides on mobile — already column layout, just tighten up */
+  .av-modal-header {
+    gap: .6rem;
+    padding-right: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+  }
+  .av-modal-header-left { gap: .6rem; }
+  .av-modal-cat-name {
+    font-size: 1.15rem;
+    white-space: normal;
+    overflow-wrap: break-word;
+    overflow: visible;
+    text-overflow: unset;
+  }
+  .av-modal-cat-img { width: 44px; height: 44px; }
+  .av-modal-header-right { align-items: stretch; }
+  .av-submit-btn { width: 100%; text-align: center; padding: .75rem 1rem; }
+  .av-modal-selection-summary { text-align: left; }
+
+  /* Filters — stack vertically */
+  .av-filters { flex-direction: column; gap: .5rem; }
+  .av-filter-select, .av-filter-input { min-width: 0; width: 100%; }
+
+  /* Table — reduce cell padding; hide Select column, keep photo */
+  .av-table th, .av-table td { padding: .5rem .6rem; }
+  .av-th-select, .av-td-select { display: none; }
+
+  /* Comment row indent — reduce on mobile */
+  .av-td-comment { padding-left: .6rem !important; }
+
+  /* History rows — stack at very small widths */
+  .av-history-row { flex-wrap: wrap; gap: .5rem; }
+  .av-history-right { flex-direction: row; align-items: center; flex-wrap: wrap;
+                      justify-content: flex-start; gap: .4rem; }
+  .av-history-date { white-space: normal; }
+
+  /* Toast — bottom-center on mobile */
+  .av-toast { left: 1rem; right: 1rem; bottom: 1rem; text-align: center; }
 }
