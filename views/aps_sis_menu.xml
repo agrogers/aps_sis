@@ -58,6 +58,7 @@
     <menuitem id="menu_apex_certificates_list" name="Certificates" parent="menu_apex_certificates" action="action_aps_student_certificate" sequence="10" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_award_categories" name="Award Categories" parent="menu_apex_certificates" action="action_aps_award_category" sequence="20" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_vote_rounds" name="Vote Rounds" parent="menu_apex_certificates" action="action_aps_award_vote_round" sequence="25" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_voting_sets" name="Voting Sets" parent="menu_apex_certificates" action="action_aps_award_voting_set" sequence="27" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_award_votes" name="Award Votes" parent="menu_apex_certificates" action="action_aps_award_vote" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_templates" name="Templates" parent="menu_apex_certificates" action="action_aps_certificate_template" sequence="40" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_aps_award_voting_set_list" model="ir.ui.view">
+        <field name="name">aps.award.voting.set.list</field>
+        <field name="model">aps.award.voting.set</field>
+        <field name="arch" type="xml">
+            <list string="Voting Sets">
+                <field name="name"/>
+                <field name="icon"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_aps_award_voting_set_form" model="ir.ui.view">
+        <field name="name">aps.award.voting.set.form</field>
+        <field name="model">aps.award.voting.set</field>
+        <field name="arch" type="xml">
+            <form string="Voting Set">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Voting Set Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="icon"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Rounds" name="rounds">
+                            <field name="round_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="datetime_start"/>
+                                    <field name="datetime_end"/>
+                                    <field name="status" widget="badge"
+                                           decoration-info="status == 'draft'"
+                                           decoration-success="status == 'open'"
+                                           decoration-warning="status == 'closed'"
+                                           decoration-primary="status == 'finalised'"/>
+                                    <field name="votes_cast"/>
+                                    <field name="active_voter_count"/>
+                                    <field name="total_voter_count"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Votes" name="votes">
+                            <field name="vote_ids">
+                                <list>
+                                    <field name="submitted_date"/>
+                                    <field name="voter_partner_id"/>
+                                    <field name="recipient_partner_id"/>
+                                    <field name="award_category_id"/>
+                                    <field name="award_sub_category_id" optional="hide"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_aps_award_voting_set_search" model="ir.ui.view">
+        <field name="name">aps.award.voting.set.search</field>
+        <field name="model">aps.award.voting.set</field>
+        <field name="arch" type="xml">
+            <search string="Voting Sets">
+                <field name="name"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_aps_award_voting_set" model="ir.actions.act_window">
+        <field name="name">Voting Sets</field>
+        <field name="res_model">aps.award.voting.set</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_aps_award_voting_set_search"/>
+    </record>
+
+    <record id="action_aps_award_voting_set_list_view" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_award_voting_set_list"/>
+        <field name="act_window_id" ref="action_aps_award_voting_set"/>
+    </record>
+
+    <record id="action_aps_award_voting_set_form_view" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_aps_award_voting_set_form"/>
+        <field name="act_window_id" ref="action_aps_award_voting_set"/>
+    </record>
+</odoo>

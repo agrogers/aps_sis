@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <list string="Vote Rounds" decoration-info="status == 'draft'" decoration-success="status == 'open'" decoration-muted="status in ('closed', 'finalised')">
                 <field name="name"/>
+                <field name="voting_set_id" optional="show"/>
                 <field name="datetime_start"/>
                 <field name="datetime_end"/>
                 <field name="recurring_days" optional="hide"/>
@@ -46,38 +47,37 @@
                         <h1><field name="name" placeholder="Round Name"/></h1>
                         <field name="short_description" placeholder="Short description…" nolabel="1"/>
                     </div>
+                    <group>
+                        <group string="Schedule">
+                            <field name="datetime_start"/>
+                            <field name="datetime_end"/>
+                            <field name="recurring_days"/>
+                        </group>
+                        <group string="Award">
+                            <field name="voting_set_id"/>
+                            <field name="award_category_id"/>
+                            <field name="award_sub_category_id"
+                                   invisible="not award_category_id"/>
+                            <field name="academic_week_id"/>
+                        </group>
+                        <group string="Participation">
+                            <field name="status" widget="badge"
+                                   decoration-info="status == 'draft'"
+                                   decoration-success="status == 'open'"
+                                   decoration-warning="status == 'closed'"
+                                   decoration-primary="status == 'finalised'"/>
+                            <field name="votes_cast"/>
+                            <field name="active_voter_count"/>
+                            <field name="total_voter_count"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Full description…"/>
+                    </group>
+                    <group string="Round Managers">
+                        <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
+                    </group>
                     <notebook>
-                        <page string="Details" name="details">
-                            <group>
-                                <field name="description" placeholder="Full description…"/>
-                            </group>
-                            <group string="Round Managers">
-                                <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
-                            </group>
-                            <group>
-                                <group string="Schedule">
-                                    <field name="datetime_start"/>
-                                    <field name="datetime_end"/>
-                                    <field name="recurring_days"/>
-                                </group>
-                                <group string="Award">
-                                    <field name="award_category_id"/>
-                                    <field name="award_sub_category_id"
-                                           invisible="not award_category_id"/>
-                                    <field name="academic_week_id"/>
-                                </group>
-                                <group string="Participation">
-                                    <field name="status" widget="badge"
-                                           decoration-info="status == 'draft'"
-                                           decoration-success="status == 'open'"
-                                           decoration-warning="status == 'closed'"
-                                           decoration-primary="status == 'finalised'"/>
-                                    <field name="votes_cast"/>
-                                    <field name="active_voter_count"/>
-                                    <field name="total_voter_count"/>
-                                </group>
-                            </group>
-                        </page>
                         <page string="Votes" name="votes">
                             <field name="vote_ids">
                                 <list>
@@ -224,6 +224,7 @@
         <field name="arch" type="xml">
             <search string="Vote Rounds">
                 <field name="name"/>
+                <field name="voting_set_id"/>
                 <field name="round_manager_ids"/>
                 <separator/>
                 <filter name="filter_draft" string="Draft" domain="[('status', '=', 'draft')]"/>
@@ -232,6 +233,7 @@
                 <filter name="filter_finalised" string="Finalised" domain="[('status', '=', 'finalised')]"/>
                 <group expand="0" string="Group By">
                     <filter name="group_by_status" string="Status" context="{'group_by': 'status'}"/>
+                    <filter name="group_by_voting_set" string="Voting Set" context="{'group_by': 'voting_set_id'}"/>
                 </group>
             </search>
         </field>
