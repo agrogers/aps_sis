@@ -248,6 +248,10 @@
   position: relative;
   margin: auto;
   padding: 2rem 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 3rem);
+  overflow: hidden;
 }
 .av-modal-close {
   position: absolute; top: 1rem; right: 1rem;
@@ -262,6 +266,7 @@
 
 /* Modal Header — always stacked: title row, then action row */
 .av-modal-header {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: .75rem;
@@ -305,7 +310,7 @@
 .av-modal-selection-summary {
   font-size: .95rem; color: var(--av-muted);
   font-style: italic;
-  text-align: right;
+  text-align: center;
   white-space: normal;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -316,6 +321,7 @@
 .av-filters {
   display: flex; flex-wrap: wrap; gap: .75rem;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 .av-filter-select, .av-filter-input {
   flex: 1; min-width: 160px;
@@ -332,7 +338,7 @@
 .av-filter-select:focus, .av-filter-input:focus { border-color: var(--av-primary); }
 
 /* Table */
-.av-table-wrap { overflow-x: auto; overflow-y: auto; max-height: 55vh; border-radius: 10px; border: 1px solid var(--av-border); }
+.av-table-wrap { overflow-x: auto; overflow-y: auto; flex: 1; min-height: 0; border-radius: 10px; border: 1px solid var(--av-border); }
 .av-table { width: 100%; border-collapse: collapse; font-size: .93rem; }
 .av-table thead { background: var(--av-bg); position: sticky; top: 0; z-index: 1; }
 .av-table th {
@@ -352,7 +358,6 @@
   transition: background .1s;
 }
 .av-table tbody tr:last-child { border-bottom: none; }
-.av-table tbody tr:hover  { background: #f8fafc; }
 .av-table tbody tr.av-disabled {
   opacity: .45;
   cursor: not-allowed;
@@ -499,6 +504,8 @@
   font-size: 1.05rem; font-weight: 700;
   cursor: pointer;
   transition: background .15s, transform .1s;
+  margin-left: auto;
+  margin-right: auto;
 }
 .av-submit-btn:hover  { background: #059669; transform: translateY(-1px); }
 .av-submit-btn:active { transform: translateY(0); }
@@ -579,7 +586,7 @@
   .av-modal-cat-img { width: 44px; height: 44px; }
   .av-modal-header-right { align-items: stretch; }
   .av-submit-btn { width: 100%; text-align: center; padding: .75rem 1rem; }
-  .av-modal-selection-summary { text-align: left; }
+  .av-modal-selection-summary { text-align: center; }
 
   /* Filters — stack vertically */
   .av-filters { flex-direction: column; gap: .5rem; }

@@ -134,6 +134,7 @@
         },
 
         _populateLevelFilter() {
+            const subCatSel = document.getElementById('av-filter-subject-cat');
             if (this._isStaffRound) {
                 // For staff rounds show department filter instead of level
                 const levels = [...new Set(this._candidates.map(c => c.department).filter(Boolean))].sort();
@@ -144,7 +145,10 @@
                 // Update column header
                 const levelTh = document.querySelector('.av-th-level');
                 if (levelTh) levelTh.textContent = 'Department';
+                // Hide subject category filter — not relevant for staff rounds
+                if (subCatSel) subCatSel.style.display = 'none';
             } else {
+                if (subCatSel) subCatSel.style.display = '';
                 const levels = [...new Set(this._candidates.map(c => c.level).filter(Boolean))].sort();
                 const sel = document.getElementById('av-filter-level');
                 const saved = localStorage.getItem('av_filter_level') || '';

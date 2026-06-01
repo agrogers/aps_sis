@@ -48,6 +48,9 @@
                     </div>
                     <notebook>
                         <page string="Details" name="details">
+                            <group string="Round Managers">
+                                <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
+                            </group>
                             <group>
                                 <group string="Schedule">
                                     <field name="datetime_start"/>
@@ -73,9 +76,6 @@
                             </group>
                             <group>
                                 <field name="description" placeholder="Full description…"/>
-                            </group>
-                            <group string="Round Managers">
-                                <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
                             </group>
                         </page>
                         <page string="Votes" name="votes">

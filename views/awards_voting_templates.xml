@@ -111,10 +111,10 @@
                     </div>
                     <div id="av-modal-cat-desc" class="av-modal-cat-desc"/>
                     <div class="av-modal-header-right">
-                        <div id="av-modal-selection-summary" class="av-modal-selection-summary"
-                             style="display:none"/>
                         <button id="av-submit-btn" class="av-submit-btn" style="display:none"
                                 onclick="AwardsVoting.submitVote()">Submit Vote</button>
+                        <div id="av-modal-selection-summary" class="av-modal-selection-summary"
+                             style="display:none"/>
                         <div id="av-submit-error" class="av-submit-error" style="display:none"/>
                     </div>
                 </div>
