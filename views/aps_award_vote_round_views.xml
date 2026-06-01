@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <list string="Vote Rounds" decoration-info="status == 'draft'" decoration-success="status == 'open'" decoration-muted="status in ('closed', 'finalised')">
                 <field name="name"/>
-                <field name="voting_set_id" optional="show"/>
+                <field name="voting_set_ids" widget="many2many_tags" optional="show"/>
                 <field name="datetime_start"/>
                 <field name="datetime_end"/>
                 <field name="recurring_days" optional="hide"/>
@@ -54,7 +54,7 @@
                             <field name="recurring_days"/>
                         </group>
                         <group string="Award">
-                            <field name="voting_set_id"/>
+                            <field name="voting_set_ids" widget="many2many_tags"/>
                             <field name="award_category_id"/>
                             <field name="award_sub_category_id"
                                    invisible="not award_category_id"/>
@@ -224,7 +224,7 @@
         <field name="arch" type="xml">
             <search string="Vote Rounds">
                 <field name="name"/>
-                <field name="voting_set_id"/>
+                <field name="voting_set_ids" string="Voting Set"/>
                 <field name="round_manager_ids"/>
                 <separator/>
                 <filter name="filter_draft" string="Draft" domain="[('status', '=', 'draft')]"/>
@@ -233,7 +233,7 @@
                 <filter name="filter_finalised" string="Finalised" domain="[('status', '=', 'finalised')]"/>
                 <group expand="0" string="Group By">
                     <filter name="group_by_status" string="Status" context="{'group_by': 'status'}"/>
-                    <filter name="group_by_voting_set" string="Voting Set" context="{'group_by': 'voting_set_id'}"/>
+                    <filter name="group_by_voting_set" string="Voting Set" context="{'group_by': 'voting_set_ids'}"/>
                 </group>
             </search>
         </field>

@@ -48,11 +48,12 @@ class APSAwardVoteRound(models.Model):
         string='Academic Week',
         ondelete='restrict',
     )
-    voting_set_id = fields.Many2one(
+    voting_set_ids = fields.Many2many(
         'aps.award.voting.set',
-        string='Voting Set',
-        ondelete='set null',
-        index=True,
+        'aps_vote_round_voting_set_rel',
+        'round_id',
+        'voting_set_id',
+        string='Voting Sets',
     )
 
     # JSON fields for flexible configuration

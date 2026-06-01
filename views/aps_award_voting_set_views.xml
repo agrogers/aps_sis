@@ -6,8 +6,8 @@
         <field name="model">aps.award.voting.set</field>
         <field name="arch" type="xml">
             <list string="Voting Sets">
+                <field name="icon" widget="image" class="o_image_32_max" optional="show"/>
                 <field name="name"/>
-                <field name="icon"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
             </list>
@@ -21,12 +21,12 @@
         <field name="arch" type="xml">
             <form string="Voting Set">
                 <sheet>
+                    <field name="icon" widget="image" class="oe_avatar"/>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Voting Set Name"/></h1>
                     </div>
                     <group>
                         <group>
-                            <field name="icon"/>
                             <field name="date_start"/>
                             <field name="date_end"/>
                         </group>

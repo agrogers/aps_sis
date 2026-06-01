@@ -7,13 +7,15 @@ class APSAwardVotingSet(models.Model):
     _order = 'name'
 
     name = fields.Char(string='Name', required=True)
-    icon = fields.Char(string='Icon')
+    icon = fields.Image(string='Icon', max_width=256, max_height=256)
     date_start = fields.Date(string='Start Date')
     date_end = fields.Date(string='End Date')
 
-    round_ids = fields.One2many(
+    round_ids = fields.Many2many(
         'aps.award.vote.round',
+        'aps_vote_round_voting_set_rel',
         'voting_set_id',
+        'round_id',
         string='Rounds',
     )
 
