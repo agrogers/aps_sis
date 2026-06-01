@@ -39,6 +39,15 @@
             this._sortAsc = true;
             this._voteLimit = 0;
             this._isStaffRound = false;
+            this._showTimesAwarded = true;
+            this._showLastAwarded = true;
+            this._showLevelDept = true;
+
+            // Collapse the filter panel each time the modal opens
+            const filterPanel = document.getElementById('av-filters');
+            const filterToggle = document.getElementById('av-filter-toggle');
+            if (filterPanel) filterPanel.classList.remove('av-filters--open');
+            if (filterToggle) filterToggle.classList.remove('av-filter-toggle--active');
 
             document.getElementById('av-modal-cat-name').textContent = this._categoryName;
 
@@ -122,8 +131,12 @@
                 this._candidates = result.candidates || [];
                 this._subCategories = result.sub_categories || [];
                 this._voteLimit = result.vote_limit || 0;
+                this._showTimesAwarded = result.show_times_awarded !== false;
+                this._showLastAwarded  = result.show_last_awarded  !== false;
+                this._showLevelDept    = result.show_level_dept    !== false;
                 this._isStaffRound = this._candidates.length > 0 && this._candidates.every(c => c.is_staff === true);
                 this._populateLevelFilter();
+                this._applyColumnVisibility();
                 this._populateSubjectCatFilter(result.subject_cats || []);
                 this._applySearch();
                 this._renderTable();
@@ -157,6 +170,29 @@
                 const levelTh = document.querySelector('.av-th-level');
                 if (levelTh) levelTh.textContent = 'Level';
             }
+        },
+
+        // ----------------------------------------------------------------
+        // Column visibility
+        // ----------------------------------------------------------------
+        _applyColumnVisibility() {
+            const setCol = (thClass, show) => {
+                const th = document.querySelector(thClass);
+                if (th) th.style.display = show ? '' : 'none';
+            };
+            setCol('.av-th-level', this._showLevelDept);
+            setCol('.av-th-times', this._showTimesAwarded);
+            setCol('.av-th-last',  this._showLastAwarded);
+        },
+
+        // ----------------------------------------------------------------
+        // Filter panel toggle (mobile)
+        // ----------------------------------------------------------------
+        toggleFilters() {
+            const panel  = document.getElementById('av-filters');
+            const btn    = document.getElementById('av-filter-toggle');
+            const isOpen = panel.classList.toggle('av-filters--open');
+            btn.classList.toggle('av-filter-toggle--active', isOpen);
         },
 
         // ----------------------------------------------------------------
@@ -229,8 +265,9 @@
         // ----------------------------------------------------------------
         _renderTable() {
             const tbody = document.getElementById('av-candidate-list');
+            const colCount = 3 + (this._showLevelDept ? 1 : 0) + (this._showTimesAwarded ? 1 : 0) + (this._showLastAwarded ? 1 : 0);
             if (!this._filtered.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="av-no-results">No ${this._isStaffRound ? 'staff' : 'students'} found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${colCount}" class="av-no-results">No ${this._isStaffRound ? 'staff' : 'students'} found.</td></tr>`;
                 return;
             }
 
@@ -257,9 +294,9 @@
                 rows.push(`<tr class="${rowClass}" data-id="${c.id}" ${clickHandler}>
                     <td class="av-td-photo">${photo}</td>
                     <td class="av-td-name">${this._esc(c.name)}</td>
-                    <td class="av-td-level">${levelOrDept}</td>
-                    <td class="av-td-times">${c.times_awarded}</td>
-                    <td class="av-td-last">${lastDate}</td>
+                    ${this._showLevelDept    ? `<td class="av-td-level">${levelOrDept}</td>` : ''}
+                    ${this._showTimesAwarded ? `<td class="av-td-times">${c.times_awarded}</td>` : ''}
+                    ${this._showLastAwarded  ? `<td class="av-td-last">${lastDate}</td>` : ''}
                     <td class="av-td-select"><div class="av-select-check">${sel ? '\u2713' : ''}</div></td>
                 </tr>`);
 
@@ -365,6 +402,7 @@
                 }
                 summary.textContent = summaryText;
                 summary.style.display = 'block';
+                summary.classList.toggle('av-summary-max', this._voteLimit > 0 && count >= this._voteLimit);
                 submitBtn.textContent = count === 1
                     ? `Submit Vote for ${names}`
                     : `Submit ${count} Votes`;
@@ -458,18 +496,24 @@
         // Delete / revert history vote
         // ----------------------------------------------------------------
         deleteVote(btn) {
-            const voteId = parseInt(btn.dataset.voteId, 10);
+            const voteIds = (btn.dataset.voteIds || btn.dataset.voteId || '')
+                .split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean);
             const token = btn.dataset.token;
             const hasDue = btn.dataset.hasDue === '1';
+            const count = voteIds.length;
             const msg = hasDue
-                ? 'Undo this vote? It will be reverted to Open so you can re-submit.'
-                : 'Permanently delete this vote?';
+                ? (count > 1
+                    ? `Undo all ${count} votes in this round? They will be reverted to Open so you can re-submit.`
+                    : 'Undo this vote? It will be reverted to Open so you can re-submit.')
+                : (count > 1
+                    ? `Permanently delete all ${count} votes in this round?`
+                    : 'Permanently delete this vote?');
             if (!confirm(msg)) return;
 
             btn.disabled = true;
             btn.textContent = '…';
 
-            this._jsonRpc(`/awards/vote/${token}/vote/${voteId}/delete`, {}).then(result => {
+            this._jsonRpc(`/awards/vote/${token}/votes/delete`, { vote_ids: voteIds }).then(result => {
                 if (result.error) {
                     this._showToast('Error: ' + result.error, 'error');
                     btn.disabled = false;

@@ -152,6 +152,21 @@ class APSAwardVoteRound(models.Model):
         compute='_compute_rule_limit_votes_count',
         inverse='_inverse_rule_limit_votes_count',
     )
+    rule_show_times_awarded = fields.Boolean(
+        string='Show Times Awarded column',
+        compute='_compute_rule_show_times_awarded',
+        inverse='_inverse_rule_show_times_awarded',
+    )
+    rule_show_last_awarded = fields.Boolean(
+        string='Show Last Awarded column',
+        compute='_compute_rule_show_last_awarded',
+        inverse='_inverse_rule_show_last_awarded',
+    )
+    rule_show_level_dept = fields.Boolean(
+        string='Show Level / Department column',
+        compute='_compute_rule_show_level_dept',
+        inverse='_inverse_rule_show_level_dept',
+    )
 
     # Computed vote statistics
     votes_cast = fields.Integer(
@@ -398,6 +413,39 @@ class APSAwardVoteRound(models.Model):
         for rec in self:
             data = rec._get_rules_dict()
             data['limit_votes_count'] = rec.rule_limit_votes_count
+            rec._set_rules_dict(data)
+
+    @api.depends('rules')
+    def _compute_rule_show_times_awarded(self):
+        for rec in self:
+            rec.rule_show_times_awarded = rec._get_rules_dict().get('show_times_awarded', True)
+
+    def _inverse_rule_show_times_awarded(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['show_times_awarded'] = rec.rule_show_times_awarded
+            rec._set_rules_dict(data)
+
+    @api.depends('rules')
+    def _compute_rule_show_last_awarded(self):
+        for rec in self:
+            rec.rule_show_last_awarded = rec._get_rules_dict().get('show_last_awarded', True)
+
+    def _inverse_rule_show_last_awarded(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['show_last_awarded'] = rec.rule_show_last_awarded
+            rec._set_rules_dict(data)
+
+    @api.depends('rules')
+    def _compute_rule_show_level_dept(self):
+        for rec in self:
+            rec.rule_show_level_dept = rec._get_rules_dict().get('show_level_dept', True)
+
+    def _inverse_rule_show_level_dept(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['show_level_dept'] = rec.rule_show_level_dept
             rec._set_rules_dict(data)
 
     # ── Eligible voter collection ─────────────────────────────────────────────

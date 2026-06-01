@@ -118,7 +118,15 @@
                         <div id="av-submit-error" class="av-submit-error" style="display:none"/>
                     </div>
                 </div>
-            <div class="av-filters">
+            <div class="av-filters-bar">
+                <button class="av-filter-toggle" id="av-filter-toggle"
+                        onclick="AwardsVoting.toggleFilters()" aria-label="Toggle filters">
+                    &#9776; Filters
+                </button>
+                <input id="av-search" class="av-filter-input av-search-inline" type="text"
+                       placeholder="Search by name..." oninput="AwardsVoting.filterSearch()"/>
+            </div>
+            <div class="av-filters" id="av-filters">
                 <select id="av-filter-level" class="av-filter-select"
                         onchange="AwardsVoting.filterSearch()">
                     <option value="">All Year Levels</option>
@@ -127,8 +135,6 @@
                         onchange="AwardsVoting.filterSearch()">
                     <option value="">All Subject Categories</option>
                 </select>
-                <input id="av-search" class="av-filter-input" type="text"
-                       placeholder="Search by name..." oninput="AwardsVoting.filterSearch()"/>
             </div>
 
             <div class="av-table-wrap">
@@ -167,19 +173,22 @@
     <script src="/aps_sis/static/src/js/awards/voting.js"/>
 
     <!-- My Votes History -->
-    <t t-if="my_votes">
+    <t t-if="my_vote_groups">
         <section class="av-section av-history-section">
             <h2 class="av-section-title">My Votes</h2>
             <div class="av-history-list">
-                <t t-foreach="my_votes" t-as="v">
-                    <div t-attf-class="av-history-row av-history-state--#{v.state}">
+                <t t-foreach="my_vote_groups" t-as="grp">
+                    <t t-set="v" t-value="grp['rep']"/>
+                    <t t-set="rnd" t-value="v.vote_round_id"/>
+                    <t t-set="cat" t-value="v.award_category_id"/>
+                    <div t-attf-class="av-history-row av-history-state--#{grp['state']}">
                         <div class="av-history-icon">
-                            <t t-if="v.image">
-                                <img t-attf-src="/web/image/aps.award.vote/#{v.id}/image"
+                            <t t-if="rnd and rnd.image">
+                                <img t-attf-src="/web/image/aps.award.vote.round/#{rnd.id}/image"
                                      class="av-history-cat-img" alt=""/>
                             </t>
-                            <t t-elif="v.award_category_id.image">
-                                <img t-attf-src="/web/image/aps.award.category/#{v.award_category_id.id}/image"
+                            <t t-elif="cat and cat.image">
+                                <img t-attf-src="/web/image/aps.award.category/#{cat.id}/image"
                                      class="av-history-cat-img" alt=""/>
                             </t>
                             <t t-else="">
@@ -187,18 +196,25 @@
                             </t>
                         </div>
                         <div class="av-history-info">
-                            <div class="av-history-cat-name"><t t-esc="v.short_description or v.award_category_id.name"/></div>
-                            <t t-if="v.description">
-                                <div class="av-history-desc"><t t-esc="v.description"/></div>
+                            <div class="av-history-cat-name">
+                                <t t-esc="(rnd and rnd.short_description) or (rnd and rnd.name) or (cat and cat.name) or ''"/>
+                            </div>
+                            <t t-if="rnd and rnd.description">
+                                <div class="av-history-desc"><t t-esc="rnd.description"/></div>
                             </t>
-                            <t t-if="v.recipient_partner_id">
-                                <div class="av-history-recipient"><t t-esc="v.recipient_partner_id.name"/></div>
-                            </t>
-                            <t t-if="v.award_sub_category_id">
-                                <div class="av-history-subcat"><t t-esc="v.award_sub_category_id.name"/></div>
-                            </t>
-                            <t t-if="v.comment">
-                                <div class="av-history-comment"><t t-esc="v.comment"/></div>
+                            <!-- List every recipient in the group -->
+                            <t t-foreach="grp['votes']" t-as="gv">
+                                <t t-if="gv.recipient_partner_id">
+                                    <div class="av-history-recipient">
+                                        <t t-esc="gv.recipient_partner_id.name"/>
+                                        <t t-if="gv.award_sub_category_id">
+                                            <span class="av-history-subcat"> — <t t-esc="gv.award_sub_category_id.name"/></span>
+                                        </t>
+                                        <t t-if="gv.comment">
+                                            <span class="av-history-comment"> "<t t-esc="gv.comment"/>"</span>
+                                        </t>
+                                    </div>
+                                </t>
                             </t>
                         </div>
                         <div class="av-history-right">
@@ -206,26 +222,29 @@
                                 <t t-if="v.submitted_date">
                                     <t t-esc="v.submitted_date.strftime('%#d %b %Y')"/>
                                 </t>
-                                <t t-if="v.due_date">
+                                <t t-if="v.open_date">
+                                    <span class="av-history-open">Open <t t-esc="v.open_date.strftime('%#d %b')"/></span>
+                                </t>
+                                <t t-if="grp['has_due'] and v.due_date">
                                     <span class="av-history-due">Due <t t-esc="v.due_date.strftime('%#d %b')"/></span>
                                 </t>
                             </div>
                             <div class="av-history-badges">
-                                <div t-attf-class="av-history-state-badge av-state--#{v.state}">
-                                    <t t-esc="dict(v._fields['state'].selection).get(v.state, v.state)"/>
+                                <div t-attf-class="av-history-state-badge av-state--#{grp['state']}">
+                                    <t t-esc="dict(v._fields['state'].selection).get(grp['state'], grp['state'])"/>
                                 </div>
                                 <t t-if="v.submitted_date and v.due_date and v.submitted_date > v.due_date">
                                     <span class="av-history-late-badge">Late</span>
                                 </t>
                             </div>
-                            <t t-if="v.state == 'submitted'">
+                            <t t-if="grp['state'] == 'submitted'">
                                 <button class="av-history-delete-btn"
-                                        t-att-data-vote-id="v.id"
+                                        t-att-data-vote-ids="','.join(str(gv.id) for gv in grp['votes'])"
                                         t-att-data-token="token"
-                                        t-att-data-has-due="'1' if v.due_date else '0'"
+                                        t-att-data-has-due="'1' if grp['has_due'] else '0'"
                                         onclick="AwardsVoting.deleteVote(this)">
-                                    <t t-if="v.due_date">↩ Undo</t>
-                                    <t t-else="">✕ Delete</t>
+                                    <t t-if="grp['has_due']">&#8617; Undo</t>
+                                    <t t-else="">&#10005; Delete</t>
                                 </button>
                             </t>
                         </div>

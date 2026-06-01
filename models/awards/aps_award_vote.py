@@ -34,7 +34,7 @@ class APSAwardVote(models.Model):
     award_category_id = fields.Many2one(
         'aps.award.category',
         string='Award Category',
-        required=False,  # Filled in by the voter when casting; not required at ballot creation
+        required=False,
         ondelete='restrict',
     )
     award_sub_category_id = fields.Many2one(
@@ -51,7 +51,7 @@ class APSAwardVote(models.Model):
     recipient_partner_id = fields.Many2one(
         'res.partner',
         string='Recipient',
-        required=False,         # We might to allow blank and use this as a prompt for teachers to vote without specifying a recipient, especially in the case of write-in votes.
+        required=False,
         ondelete='restrict',
     )
     voter_partner_id = fields.Many2one(
@@ -60,8 +60,8 @@ class APSAwardVote(models.Model):
         required=True,
         ondelete='restrict',
     )
-    note = fields.Text(string='Note')   # Note from the system about the vote, e.g. "Write-in vote for [Name]" or "Vote cast by [Teacher Name] without specifying a recipient"
-    comment = fields.Text(string='Comment')  # Comment from the voter
+    note = fields.Text(string='Note')
+    comment = fields.Text(string='Comment')
     submitted_date = fields.Date(string='Date')
     open_date = fields.Date(string='Open Date')
     due_date = fields.Date(string='Due Date')
@@ -73,7 +73,7 @@ class APSAwardVote(models.Model):
     )
     state = fields.Selection(
         selection=[
-            ('pending', 'Pending'), 
+            ('pending', 'Pending'),
             ('open', 'Open'),
             ('submitted', 'Submitted'),
             ('closed', 'Closed'),
@@ -84,6 +84,34 @@ class APSAwardVote(models.Model):
         tracking=True,
     )
 
+    # ------------------------------------------------------------------
+    # Related / convenience fields for list, pivot, graph views
+    # ------------------------------------------------------------------
 
-
-    
+    round_name = fields.Char(
+        related='vote_round_id.name', string='Round', store=True, readonly=True,
+    )
+    round_status = fields.Selection(
+        related='vote_round_id.status', string='Round Status', store=True, readonly=True,
+    )
+    round_image = fields.Image(
+        related='vote_round_id.image', string='Round Image', readonly=True,
+    )
+    round_datetime_start = fields.Datetime(
+        related='vote_round_id.datetime_start', string='Round Start', store=True, readonly=True,
+    )
+    round_datetime_end = fields.Datetime(
+        related='vote_round_id.datetime_end', string='Round End', store=True, readonly=True,
+    )
+    category_name = fields.Char(
+        related='award_category_id.name', string='Category', store=True, readonly=True,
+    )
+    category_image = fields.Image(
+        related='award_category_id.image', string='Category Image', readonly=True,
+    )
+    recipient_name = fields.Char(
+        related='recipient_partner_id.name', string='Recipient Name', store=True, readonly=True,
+    )
+    voter_name = fields.Char(
+        related='voter_partner_id.name', string='Voter Name', store=True, readonly=True,
+    )

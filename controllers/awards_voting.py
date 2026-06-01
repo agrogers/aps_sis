@@ -79,17 +79,48 @@ class AwardsVotingController(http.Controller):
 
         # 5. Individual open votes for this voter, plus history
         voter_open_votes = []
-        my_votes = []
+        my_vote_groups = []
         if voter_partner:
             voter_open_votes = Vote.search([
                 ('voter_partner_id', '=', voter_partner.id),
                 ('state', '=', 'open'),
             ], order='due_date asc nulls last, id asc')
 
-            my_votes = Vote.search([
+            my_votes_raw = Vote.search([
                 ('voter_partner_id', '=', voter_partner.id),
                 ('state', '!=', 'open'),
             ], order='submitted_date desc, id desc')
+
+            # Auto-close submitted votes whose due_date has passed.
+            today = date.today()
+            overdue = my_votes_raw.filtered(
+                lambda v: v.state == 'submitted' and v.due_date and v.due_date < today
+            )
+            if overdue:
+                overdue.write({'state': 'closed'})
+
+            # Group votes that belong to the same round into a single display row.
+            # Votes with no round are each their own group.
+            seen_round_ids = {}
+            for v in my_votes_raw:
+                rnd_id = v.vote_round_id.id if v.vote_round_id else None
+                # has_due = submitted with a future due date (still undoable)
+                has_due = v.state == 'submitted' and bool(v.due_date) and v.due_date >= today
+                if rnd_id and rnd_id in seen_round_ids:
+                    seen_round_ids[rnd_id]['votes'].append(v)
+                    # If any vote in the group is still undoable, keep has_due True
+                    if has_due:
+                        seen_round_ids[rnd_id]['has_due'] = True
+                else:
+                    group = {
+                        'rep': v,
+                        'votes': [v],
+                        'has_due': has_due,
+                        'state': v.state,
+                    }
+                    my_vote_groups.append(group)
+                    if rnd_id:
+                        seen_round_ids[rnd_id] = group
 
         values = {
             'employee': employee,
@@ -99,7 +130,7 @@ class AwardsVotingController(http.Controller):
             'open_votes_count': len(voter_open_votes),
             'expired_count': expired_count,
             'voter_open_votes': voter_open_votes,
-            'my_votes': my_votes,
+            'my_vote_groups': my_vote_groups,
         }
         return request.render('aps_sis.awards_voting_dashboard', values)
 
@@ -135,6 +166,9 @@ class AwardsVotingController(http.Controller):
         ineligible_exclude_voter = False
         ineligible_partner_ids = []
         vote_limit = 0
+        show_times_awarded = True
+        show_last_awarded  = True
+        show_level_dept    = True
         if vote_id:
             vote_obj = request.env['aps.award.vote'].sudo().browse(int(vote_id))
             if vote_obj.exists() and vote_obj.vote_round_id:
@@ -147,6 +181,9 @@ class AwardsVotingController(http.Controller):
                 ineligible_partner_ids   = rnd.ineligible_candidate_partner_ids.ids
                 if rnd.rule_limit_votes:
                     vote_limit = rnd.rule_limit_votes_count or 1
+                show_times_awarded = rnd.rule_show_times_awarded
+                show_last_awarded  = rnd.rule_show_last_awarded
+                show_level_dept    = rnd.rule_show_level_dept
 
         # ── Determine the voter's own partner_id for exclusion ──
         voter_partner_id = None
@@ -196,6 +233,9 @@ class AwardsVotingController(http.Controller):
                     if category.exists() else [],
                 'subject_cats': [],
                 'vote_limit': vote_limit,
+                'show_times_awarded': show_times_awarded,
+                'show_last_awarded': show_last_awarded,
+                'show_level_dept': show_level_dept,
             }
 
         # No explicit constraints on round → fall back to category level_ids
@@ -217,7 +257,9 @@ class AwardsVotingController(http.Controller):
         # If still nothing — no category, no constraints — return empty
         if not ec_student_ids and not ec_level_ids and not ec_subject_cat_ids \
                 and not voter_partner_student_ids:
-            return {'candidates': [], 'sub_categories': [], 'subject_cats': [], 'vote_limit': vote_limit}
+            return {'candidates': [], 'sub_categories': [], 'subject_cats': [], 'vote_limit': vote_limit,
+                    'show_times_awarded': show_times_awarded, 'show_last_awarded': show_last_awarded,
+                    'show_level_dept': show_level_dept}
 
         # ── Build student domain ──
         domain = [('active', '=', True)]
@@ -296,6 +338,9 @@ class AwardsVotingController(http.Controller):
             'sub_categories': sub_categories,
             'subject_cats': subject_cats,
             'vote_limit': vote_limit,
+            'show_times_awarded': show_times_awarded,
+            'show_last_awarded': show_last_awarded,
+            'show_level_dept': show_level_dept,
         }
 
     # ------------------------------------------------------------------
@@ -339,6 +384,12 @@ class AwardsVotingController(http.Controller):
             open_votes = Vote.search(domain, order='due_date asc nulls last, id asc')
             open_pool = list(open_votes)
 
+        # Determine the vote_round_id to stamp on every submitted vote.
+        # Priority: pinned ballot's round → first open-pool ballot's round → None.
+        round_id = False
+        if open_pool:
+            round_id = open_pool[0].vote_round_id.id or False
+
         submitted = []
         for rec in recipients:
             pid = rec.get('id')
@@ -356,9 +407,14 @@ class AwardsVotingController(http.Controller):
                 'submitted_date': date.today().isoformat(),
                 'award_sub_category_id': int(sub_category_id) if sub_category_id else False,
             }
+            if round_id:
+                vals['vote_round_id'] = round_id
             if open_pool:
                 # Reuse an existing open record
                 vote = open_pool.pop(0)
+                # Keep the round from this specific ballot if it has one
+                if vote.vote_round_id:
+                    vals['vote_round_id'] = vote.vote_round_id.id
                 vote.write(vals)
             else:
                 # No open record to reuse — create a new one
@@ -408,3 +464,47 @@ class AwardsVotingController(http.Controller):
             # No due date — permanently delete
             vote.unlink()
             return {'action': 'deleted'}
+
+    # ------------------------------------------------------------------
+    # Bulk delete / revert a group of votes (same round)
+    # ------------------------------------------------------------------
+
+    @http.route('/awards/vote/<string:token>/votes/delete',
+                type='json', auth='public')
+    def voting_delete_votes_bulk(self, token, vote_ids=None, **kwargs):
+        if not vote_ids or not isinstance(vote_ids, list):
+            return {'error': 'No vote_ids provided'}
+
+        employee = self._get_employee_by_token(token)
+        if not employee:
+            return {'error': 'Invalid token'}
+
+        voter_partner = employee.user_id.partner_id if employee.user_id else None
+        if not voter_partner:
+            return {'error': 'No linked partner'}
+
+        votes = request.env['aps.award.vote'].sudo().browse(
+            [int(vid) for vid in vote_ids]
+        ).exists()
+
+        # Security: all votes must belong to this voter and be submitted
+        if any(v.voter_partner_id.id != voter_partner.id for v in votes):
+            return {'error': 'Not authorised'}
+        if any(v.state != 'submitted' for v in votes):
+            return {'error': 'Only submitted votes can be removed'}
+
+        revert_vals = {
+            'state': 'open',
+            'recipient_partner_id': False,
+            'award_sub_category_id': False,
+            'comment': False,
+            'submitted_date': False,
+        }
+        to_revert = votes.filtered(lambda v: v.due_date)
+        to_delete = votes.filtered(lambda v: not v.due_date)
+        if to_revert:
+            to_revert.write(revert_vals)
+        if to_delete:
+            to_delete.unlink()
+
+        return {'action': 'done'}

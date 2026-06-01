@@ -58,6 +58,7 @@
 		'views/aps_media_views.xml',
 		'views/aps_student_certificate_views.xml',
 		'views/aps_award_vote_round_views.xml',
+		'views/aps_award_vote_views.xml',
 		'views/aps_vote_management_dashboard_views.xml',
 		'views/hr_employee_views.xml',
 		'views/awards_voting_templates.xml',
