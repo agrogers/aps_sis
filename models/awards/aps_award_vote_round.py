@@ -50,9 +50,15 @@ class APSAwardVoteRound(models.Model):
     )
 
     # JSON fields for flexible configuration
-    # eligible_voters stores a dict: {"partner_ids": [...], "level_ids": [...], "subject_category_ids": [...]}
+    # eligible_voters stores a dict: {"partner_ids": [...], "level_ids": [...], "subject_category_ids": [...], "department_ids": [...]}
     # Backward-compat: also accepts a plain list (treated as partner_ids)
     eligible_voters = fields.Json(string='Eligible Voters')
+
+    # Eligible Voters tab — visibility toggles (stored so they persist with the round config)
+    voter_show_staff = fields.Boolean(string='Staff', default=False)
+    voter_show_levels = fields.Boolean(string='Levels', default=False)
+    voter_show_categories = fields.Boolean(string='Subject Categories', default=False)
+    voter_show_departments = fields.Boolean(string='Departments', default=False)
 
     # Virtual Many2many fields backed by the eligible_voters JSON dict (no DB relation tables)
     eligible_voter_partner_ids = fields.Many2many(
@@ -73,9 +79,21 @@ class APSAwardVoteRound(models.Model):
         compute='_compute_eligible_voter_categories',
         inverse='_inverse_eligible_voter_categories',
     )
+    eligible_voter_department_ids = fields.Many2many(
+        'hr.department',
+        string='Voter Departments',
+        compute='_compute_eligible_voter_departments',
+        inverse='_inverse_eligible_voter_departments',
+    )
 
-    # eligible_candidates stores a dict: {"level_ids": [...], "subject_category_ids": [...], "student_ids": [...]}
+    # eligible_candidates stores a dict: {"level_ids": [...], "subject_category_ids": [...], "student_ids": [...], "department_ids": [...]}
     eligible_candidates = fields.Json(string='Eligible Candidates')
+
+    # Eligible Candidates tab — visibility toggles
+    candidate_show_levels = fields.Boolean(string='Levels', default=False)
+    candidate_show_categories = fields.Boolean(string='Subject Categories', default=False)
+    candidate_show_students = fields.Boolean(string='Students', default=False)
+    candidate_show_departments = fields.Boolean(string='Departments', default=False)
 
     # Virtual Many2many fields backed by the eligible_candidates JSON dict (no DB relation tables)
     eligible_candidate_level_ids = fields.Many2many(
@@ -96,9 +114,44 @@ class APSAwardVoteRound(models.Model):
         compute='_compute_eligible_candidate_students',
         inverse='_inverse_eligible_candidate_students',
     )
+    eligible_candidate_department_ids = fields.Many2many(
+        'hr.department',
+        string='Eligible Departments',
+        compute='_compute_eligible_candidate_departments',
+        inverse='_inverse_eligible_candidate_departments',
+    )
+
+    # ineligible_candidates stores a dict: {"exclude_voter": bool, "partner_ids": [...]}
+    ineligible_candidates = fields.Json(string='Ineligible Candidates')
+
+    # Virtual fields backed by the ineligible_candidates JSON dict
+    ineligible_candidate_exclude_voter = fields.Boolean(
+        string='Exclude the Voter',
+        compute='_compute_ineligible_candidate_exclude_voter',
+        inverse='_inverse_ineligible_candidate_exclude_voter',
+    )
+    ineligible_candidate_partner_ids = fields.Many2many(
+        'res.partner',
+        string='Excluded People',
+        compute='_compute_ineligible_candidate_partners',
+        inverse='_inverse_ineligible_candidate_partners',
+    )
+    ineligible_show_people = fields.Boolean(string='People', default=False)
 
     rules = fields.Json(string='Rules')
     result_summary = fields.Json(string='Result Summary')
+
+    # Virtual fields backed by the rules JSON dict
+    rule_limit_votes = fields.Boolean(
+        string='Limit Votes',
+        compute='_compute_rule_limit_votes',
+        inverse='_inverse_rule_limit_votes',
+    )
+    rule_limit_votes_count = fields.Integer(
+        string='Max Votes Per Voter',
+        compute='_compute_rule_limit_votes_count',
+        inverse='_inverse_rule_limit_votes_count',
+    )
 
     # Computed vote statistics
     votes_cast = fields.Integer(
@@ -204,6 +257,18 @@ class APSAwardVoteRound(models.Model):
             data['subject_category_ids'] = rec.eligible_voter_category_ids.ids
             rec._set_voters_dict(data)
 
+    @api.depends('eligible_voters')
+    def _compute_eligible_voter_departments(self):
+        for rec in self:
+            ids = rec._get_voters_dict().get('department_ids', [])
+            rec.eligible_voter_department_ids = self.env['hr.department'].browse(ids).exists()
+
+    def _inverse_eligible_voter_departments(self):
+        for rec in self:
+            data = rec._get_voters_dict()
+            data['department_ids'] = rec.eligible_voter_department_ids.ids
+            rec._set_voters_dict(data)
+
     # ── Eligible Candidates helpers ──────────────────────────────────────────
 
     def _get_candidates_dict(self):
@@ -252,6 +317,91 @@ class APSAwardVoteRound(models.Model):
             data['student_ids'] = rec.eligible_candidate_student_ids.ids
             rec._set_candidates_dict(data)
 
+    @api.depends('eligible_candidates')
+    def _compute_eligible_candidate_departments(self):
+        for rec in self:
+            ids = rec._get_candidates_dict().get('department_ids', [])
+            rec.eligible_candidate_department_ids = self.env['hr.department'].browse(ids).exists()
+
+    def _inverse_eligible_candidate_departments(self):
+        for rec in self:
+            data = rec._get_candidates_dict()
+            data['department_ids'] = rec.eligible_candidate_department_ids.ids
+            rec._set_candidates_dict(data)
+
+    # ── Ineligible Candidates helpers ────────────────────────────────────────
+
+    def _get_ineligible_dict(self):
+        """Return the ineligible_candidates value as a dict, never None."""
+        self.ensure_one()
+        c = self.ineligible_candidates
+        return dict(c) if isinstance(c, dict) else {}
+
+    def _set_ineligible_dict(self, data):
+        self.ensure_one()
+        self.ineligible_candidates = data
+
+    @api.depends('ineligible_candidates')
+    def _compute_ineligible_candidate_exclude_voter(self):
+        for rec in self:
+            rec.ineligible_candidate_exclude_voter = bool(
+                rec._get_ineligible_dict().get('exclude_voter', False)
+            )
+
+    def _inverse_ineligible_candidate_exclude_voter(self):
+        for rec in self:
+            data = rec._get_ineligible_dict()
+            data['exclude_voter'] = rec.ineligible_candidate_exclude_voter
+            rec._set_ineligible_dict(data)
+
+    @api.depends('ineligible_candidates')
+    def _compute_ineligible_candidate_partners(self):
+        for rec in self:
+            ids = rec._get_ineligible_dict().get('partner_ids', [])
+            rec.ineligible_candidate_partner_ids = self.env['res.partner'].browse(ids).exists()
+
+    def _inverse_ineligible_candidate_partners(self):
+        for rec in self:
+            data = rec._get_ineligible_dict()
+            data['partner_ids'] = rec.ineligible_candidate_partner_ids.ids
+            rec._set_ineligible_dict(data)
+
+    # ── Rules helpers ─────────────────────────────────────────────────────────
+
+    def _get_rules_dict(self):
+        """Return the rules value as a dict, never None."""
+        self.ensure_one()
+        r = self.rules
+        return dict(r) if isinstance(r, dict) else {}
+
+    def _set_rules_dict(self, data):
+        self.ensure_one()
+        self.rules = data
+
+    @api.depends('rules')
+    def _compute_rule_limit_votes(self):
+        for rec in self:
+            rec.rule_limit_votes = bool(rec._get_rules_dict().get('limit_votes', False))
+
+    def _inverse_rule_limit_votes(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['limit_votes'] = rec.rule_limit_votes
+            rec._set_rules_dict(data)
+
+    @api.depends('rules')
+    def _compute_rule_limit_votes_count(self):
+        for rec in self:
+            rec.rule_limit_votes_count = int(rec._get_rules_dict().get('limit_votes_count', 1))
+
+    def _inverse_rule_limit_votes_count(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['limit_votes_count'] = rec.rule_limit_votes_count
+            rec._set_rules_dict(data)
+
+    # ── Eligible voter collection ─────────────────────────────────────────────
+
     def _collect_eligible_voter_partners(self):
         """Return a set of res.partner IDs for all voters eligible in this round.
 
@@ -261,6 +411,7 @@ class APSAwardVoteRound(models.Model):
              ALL specified levels AND subject categories (if both sets are non-empty).
              If only levels or only categories are specified, classes must match
              the non-empty constraint only.
+          3. Active employees in the specified departments.
         """
         self.ensure_one()
         voters_dict = self._get_voters_dict()
@@ -279,6 +430,16 @@ class APSAwardVoteRound(models.Model):
             for cls in classes:
                 partner_ids.update(cls.teacher_ids.ids)
                 partner_ids.update(cls.assistant_teacher_ids.ids)
+
+        department_ids = self.eligible_voter_department_ids.ids
+        if department_ids:
+            employees = self.env['hr.employee'].search([
+                ('department_id', 'in', department_ids),
+                ('active', '=', True),
+            ])
+            for emp in employees:
+                if emp.user_id and emp.user_id.partner_id:
+                    partner_ids.add(emp.user_id.partner_id.id)
 
         return partner_ids
 
@@ -331,7 +492,8 @@ class APSAwardVoteRound(models.Model):
         self.status = 'draft'
 
     def action_copy_voter_config_to_candidates(self):
-        """Copy eligible voter levels and subject categories to the eligible candidates lists."""
+        """Copy eligible voter levels, subject categories and departments to the eligible candidates lists."""
         self.ensure_one()
         self.eligible_candidate_level_ids = self.eligible_voter_level_ids
         self.eligible_candidate_category_ids = self.eligible_voter_category_ids
+        self.eligible_candidate_department_ids = self.eligible_voter_department_ids

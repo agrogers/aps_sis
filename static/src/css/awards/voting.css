@@ -346,6 +346,11 @@
 }
 .av-table tbody tr:last-child { border-bottom: none; }
 .av-table tbody tr:hover  { background: #f8fafc; }
+.av-table tbody tr.av-disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.av-table tbody tr.av-disabled:hover { background: transparent; }
 .av-table tbody tr.av-selected {
   background: #eef2ff;
   border-bottom: none; /* remove divider so it merges with the comment row */

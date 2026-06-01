@@ -89,44 +89,108 @@
                             </field>
                         </page>
                         <page string="Eligible Voters" name="eligible_voters">
-                            <separator string="Staff"/>
-                            <field name="eligible_voter_partner_ids"
-                                   nolabel="1"
-                                   domain="[('employee_ids', '!=', False)]"
-                                   context="{'create': False}"/>
-                            <separator string="Levels"/>
-                            <field name="eligible_voter_level_ids"
-                                   nolabel="1"
-                                   context="{'create': False}"/>
-                            <separator string="Subject Categories"/>
-                            <field name="eligible_voter_category_ids"
-                                   nolabel="1"
-                                   context="{'create': False}"/>
+                            <group>
+                                <group>
+                                    <field name="voter_show_staff"/>
+                                    <field name="voter_show_levels"/>
+                                </group>
+                                <group>
+                                    <field name="voter_show_categories"/>
+                                    <field name="voter_show_departments"/>
+                                </group>
+                            </group>
+                            <div invisible="not voter_show_staff">
+                                <separator string="Staff"/>
+                                <field name="eligible_voter_partner_ids"
+                                       nolabel="1"
+                                       domain="[('employee_ids', '!=', False)]"
+                                       context="{'create': False}"/>
+                            </div>
+                            <div invisible="not voter_show_levels">
+                                <separator string="Levels"/>
+                                <field name="eligible_voter_level_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
+                            <div invisible="not voter_show_categories">
+                                <separator string="Subject Categories"/>
+                                <field name="eligible_voter_category_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
+                            <div invisible="not voter_show_departments">
+                                <separator string="Departments"/>
+                                <field name="eligible_voter_department_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
                         </page>
                         <page string="Eligible Candidates" name="eligible_candidates">
                             <div class="mb-3">
                                 <button name="action_copy_voter_config_to_candidates"
-                                        string="Copy Voter Levels &amp; Categories"
+                                        string="Copy Voter Levels, Categories &amp; Departments"
                                         type="object"
                                         icon="fa-copy"
                                         class="btn-secondary"
-                                        confirm="This will replace the current candidate levels and subject categories with those from the Eligible Voters config. Continue?"/>
+                                        confirm="This will replace the current candidate levels, subject categories and departments with those from the Eligible Voters config. Continue?"/>
                             </div>
-                            <separator string="Levels"/>
-                            <field name="eligible_candidate_level_ids"
-                                   nolabel="1"
-                                   context="{'create': False}"/>
-                            <separator string="Subject Categories"/>
-                            <field name="eligible_candidate_category_ids"
-                                   nolabel="1"
-                                   context="{'create': False}"/>
-                            <separator string="Students"/>
-                            <field name="eligible_candidate_student_ids"
-                                   nolabel="1"
-                                   context="{'create': False}"/>
+                            <group>
+                                <group>
+                                    <field name="candidate_show_levels"/>
+                                    <field name="candidate_show_categories"/>
+                                </group>
+                                <group>
+                                    <field name="candidate_show_students"/>
+                                    <field name="candidate_show_departments"/>
+                                </group>
+                            </group>
+                            <div invisible="not candidate_show_levels">
+                                <separator string="Levels"/>
+                                <field name="eligible_candidate_level_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
+                            <div invisible="not candidate_show_categories">
+                                <separator string="Subject Categories"/>
+                                <field name="eligible_candidate_category_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
+                            <div invisible="not candidate_show_students">
+                                <separator string="Students"/>
+                                <field name="eligible_candidate_student_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
+                            <div invisible="not candidate_show_departments">
+                                <separator string="Departments"/>
+                                <field name="eligible_candidate_department_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
+                        </page>
+                        <page string="Ineligible Candidates" name="ineligible_candidates">
+                            <group>
+                                <group>
+                                    <field name="ineligible_candidate_exclude_voter"
+                                           string="Voter (exclude the voter from the candidate list)"/>
+                                    <field name="ineligible_show_people"/>
+                                </group>
+                            </group>
+                            <div invisible="not ineligible_show_people">
+                                <separator string="People"/>
+                                <field name="ineligible_candidate_partner_ids"
+                                       nolabel="1"
+                                       context="{'create': False}"/>
+                            </div>
                         </page>
                         <page string="Rules" name="rules">
-                            <field name="rules" widget="json" nolabel="1"/>
+                            <group>
+                                <field name="rule_limit_votes"/>
+                                <field name="rule_limit_votes_count"
+                                       string="Max Votes Per Voter"
+                                       invisible="not rule_limit_votes"/>
+                            </group>
                         </page>
                         <page string="Result Summary" name="result_summary">
                             <field name="result_summary" widget="json" nolabel="1"/>
