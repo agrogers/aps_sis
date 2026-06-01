@@ -16,6 +16,14 @@ class AwardsVotingController(http.Controller):
             [('access_token', '=', token)], limit=1
         )
 
+    @staticmethod
+    def _image_b64(partner):
+        """Return base64-encoded image_128 for *partner* as a string, or ''."""
+        if not partner.image_128:
+            return ''
+        img = partner.image_128
+        return img.decode() if isinstance(img, bytes) else img
+
     # ------------------------------------------------------------------
     # Dashboard
     # ------------------------------------------------------------------
@@ -138,7 +146,7 @@ class AwardsVotingController(http.Controller):
                 ineligible_exclude_voter = rnd.ineligible_candidate_exclude_voter
                 ineligible_partner_ids   = rnd.ineligible_candidate_partner_ids.ids
                 if rnd.rule_limit_votes:
-                    vote_limit = max(1, rnd.rule_limit_votes_count or 1)
+                    vote_limit = rnd.rule_limit_votes_count or 1
 
         # ── Determine the voter's own partner_id for exclusion ──
         voter_partner_id = None
@@ -166,10 +174,7 @@ class AwardsVotingController(http.Controller):
                 if partner.id in excluded_partner_ids:
                     continue
 
-                image_b64 = ''
-                if partner.image_128:
-                    image_b64 = partner.image_128.decode() if isinstance(
-                        partner.image_128, bytes) else partner.image_128
+                image_b64 = self._image_b64(partner)
 
                 result.append({
                     'id': partner.id,
@@ -255,10 +260,7 @@ class AwardsVotingController(http.Controller):
                 times_awarded = 0
                 last_awarded = None
 
-            image_b64 = ''
-            if partner.image_128:
-                image_b64 = partner.image_128.decode() if isinstance(
-                    partner.image_128, bytes) else partner.image_128
+            image_b64 = self._image_b64(partner)
 
             enrolled_cats = student.enrollment_ids.mapped('home_class_id.subject_id.category_id')
             if ec_subject_cat_ids and not is_whitelisted:

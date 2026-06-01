@@ -111,7 +111,7 @@
                 this._candidates = result.candidates || [];
                 this._subCategories = result.sub_categories || [];
                 this._voteLimit = result.vote_limit || 0;
-                this._isStaffRound = this._candidates.length > 0 && this._candidates[0].is_staff === true;
+                this._isStaffRound = this._candidates.length > 0 && this._candidates.every(c => c.is_staff === true);
                 this._populateLevelFilter();
                 this._populateSubjectCatFilter(result.subject_cats || []);
                 this._applySearch();

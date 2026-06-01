@@ -392,7 +392,7 @@ class APSAwardVoteRound(models.Model):
     @api.depends('rules')
     def _compute_rule_limit_votes_count(self):
         for rec in self:
-            rec.rule_limit_votes_count = int(rec._get_rules_dict().get('limit_votes_count', 1))
+            rec.rule_limit_votes_count = int(rec._get_rules_dict().get('limit_votes_count') or 1)
 
     def _inverse_rule_limit_votes_count(self):
         for rec in self:
