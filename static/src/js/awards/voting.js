@@ -18,6 +18,8 @@
         _subjectCats: [],      // [{id, name}] for the current category
         _sortKey: 'name',
         _sortAsc: true,
+        _voteLimit: 0,         // 0 = no limit; >0 = max allowed selections
+        _isStaffRound: false,  // true when all candidates are staff (department-based)
 
         // ----------------------------------------------------------------
         // Modal open / close
@@ -35,8 +37,21 @@
             this._subjectCats = [];
             this._sortKey = 'name';
             this._sortAsc = true;
+            this._voteLimit = 0;
+            this._isStaffRound = false;
 
             document.getElementById('av-modal-cat-name').textContent = this._categoryName;
+
+            const shortDesc = btn.dataset.shortDescription || '';
+            const descEl = document.getElementById('av-modal-cat-short-desc');
+            descEl.textContent = shortDesc;
+            descEl.style.display = shortDesc ? '' : 'none';
+
+            const desc = btn.dataset.description || '';
+            const fullDescEl = document.getElementById('av-modal-cat-desc');
+            fullDescEl.textContent = desc;
+            fullDescEl.style.display = desc ? '' : 'none';
+
             const modalImg = document.getElementById('av-modal-cat-img');
             if (imgSrc) {
                 modalImg.src = imgSrc;
@@ -106,6 +121,8 @@
                 }
                 this._candidates = result.candidates || [];
                 this._subCategories = result.sub_categories || [];
+                this._voteLimit = result.vote_limit || 0;
+                this._isStaffRound = this._candidates.length > 0 && this._candidates.every(c => c.is_staff === true);
                 this._populateLevelFilter();
                 this._populateSubjectCatFilter(result.subject_cats || []);
                 this._applySearch();
@@ -117,11 +134,25 @@
         },
 
         _populateLevelFilter() {
-            const levels = [...new Set(this._candidates.map(c => c.level).filter(Boolean))].sort();
-            const sel = document.getElementById('av-filter-level');
-            const saved = localStorage.getItem('av_filter_level') || '';
-            sel.innerHTML = '<option value="">All Year Levels</option>' +
-                levels.map(l => `<option value="${l}"${l === saved ? ' selected' : ''}>${l}</option>`).join('');
+            if (this._isStaffRound) {
+                // For staff rounds show department filter instead of level
+                const levels = [...new Set(this._candidates.map(c => c.department).filter(Boolean))].sort();
+                const sel = document.getElementById('av-filter-level');
+                const saved = localStorage.getItem('av_filter_level') || '';
+                sel.innerHTML = '<option value="">All Departments</option>' +
+                    levels.map(l => `<option value="${l}"${l === saved ? ' selected' : ''}>${l}</option>`).join('');
+                // Update column header
+                const levelTh = document.querySelector('.av-th-level');
+                if (levelTh) levelTh.textContent = 'Department';
+            } else {
+                const levels = [...new Set(this._candidates.map(c => c.level).filter(Boolean))].sort();
+                const sel = document.getElementById('av-filter-level');
+                const saved = localStorage.getItem('av_filter_level') || '';
+                sel.innerHTML = '<option value="">All Year Levels</option>' +
+                    levels.map(l => `<option value="${l}"${l === saved ? ' selected' : ''}>${l}</option>`).join('');
+                const levelTh = document.querySelector('.av-th-level');
+                if (levelTh) levelTh.textContent = 'Level';
+            }
         },
 
         // ----------------------------------------------------------------
@@ -138,12 +169,17 @@
 
         _applySearch() {
             const q = (document.getElementById('av-search').value || '').toLowerCase();
-            const level = document.getElementById('av-filter-level').value;
+            const levelOrDept = document.getElementById('av-filter-level').value;
             const subCatId = parseInt(document.getElementById('av-filter-subject-cat').value || '0', 10);
 
             this._filtered = this._candidates.filter(c => {
                 const nameMatch = !q || c.name.toLowerCase().includes(q);
-                const levelMatch = !level || c.level === level;
+                let levelMatch;
+                if (this._isStaffRound) {
+                    levelMatch = !levelOrDept || c.department === levelOrDept;
+                } else {
+                    levelMatch = !levelOrDept || c.level === levelOrDept;
+                }
                 // Whitelisted students (explicitly selected in eligible_candidates) always
                 // pass the subject-category filter — they were hand-picked regardless of class.
                 const subCatMatch = !subCatId || c.whitelisted ||
@@ -190,9 +226,11 @@
         _renderTable() {
             const tbody = document.getElementById('av-candidate-list');
             if (!this._filtered.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="av-no-results">No students found.</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="7" class="av-no-results">No ${this._isStaffRound ? 'staff' : 'students'} found.</td></tr>`;
                 return;
             }
+
+            const atLimit = this._voteLimit > 0 && this._selected.size >= this._voteLimit;
 
             const rows = [];
             for (const c of this._filtered) {
@@ -203,11 +241,19 @@
                 const lastDate = c.last_awarded
                     ? new Date(c.last_awarded).toLocaleDateString()
                     : '—';
+                const levelOrDept = this._isStaffRound
+                    ? this._esc(c.department || '')
+                    : this._esc(c.level || '');
 
-                rows.push(`<tr class="${sel ? 'av-selected' : ''}" data-id="${c.id}" onclick="AwardsVoting.toggleSelect(${c.id})">
+                // Disable unselected rows when at the vote limit
+                const rowDisabled = !sel && atLimit;
+                const rowClass = sel ? 'av-selected' : (rowDisabled ? 'av-disabled' : '');
+                const clickHandler = rowDisabled ? '' : `onclick="AwardsVoting.toggleSelect(${c.id})"`;
+
+                rows.push(`<tr class="${rowClass}" data-id="${c.id}" ${clickHandler}>
                     <td class="av-td-photo">${photo}</td>
                     <td class="av-td-name">${this._esc(c.name)}</td>
-                    <td class="av-td-level">${this._esc(c.level)}</td>
+                    <td class="av-td-level">${levelOrDept}</td>
                     <td class="av-td-times">${c.times_awarded}</td>
                     <td class="av-td-last">${lastDate}</td>
                     <td class="av-td-select"><div class="av-select-check">${sel ? '\u2713' : ''}</div></td>
@@ -284,6 +330,14 @@
                 this._comments.delete(id);
                 this._subCategorySelections.delete(id);
             } else {
+                // Enforce vote limit
+                if (this._voteLimit > 0 && this._selected.size >= this._voteLimit) {
+                    this._showToast(
+                        `You can only vote for ${this._voteLimit} ${this._voteLimit === 1 ? 'person' : 'people'} in this round.`,
+                        'error'
+                    );
+                    return;
+                }
                 this._selected.add(id);
             }
             this._updateSelectionUI();
@@ -301,7 +355,11 @@
                     return c ? c.name : 'Unknown';
                 }).join(', ');
 
-                summary.textContent = `Selected: ${names}`;
+                let summaryText = `Selected: ${names}`;
+                if (this._voteLimit > 0) {
+                    summaryText += ` (${count}/${this._voteLimit})`;
+                }
+                summary.textContent = summaryText;
                 summary.style.display = 'block';
                 submitBtn.textContent = count === 1
                     ? `Submit Vote for ${names}`

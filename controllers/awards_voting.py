@@ -16,6 +16,14 @@ class AwardsVotingController(http.Controller):
             [('access_token', '=', token)], limit=1
         )
 
+    @staticmethod
+    def _image_b64(partner):
+        """Return base64-encoded image_128 for *partner* as a string, or ''."""
+        if not partner.image_128:
+            return ''
+        img = partner.image_128
+        return img.decode() if isinstance(img, bytes) else img
+
     # ------------------------------------------------------------------
     # Dashboard
     # ------------------------------------------------------------------
@@ -123,6 +131,10 @@ class AwardsVotingController(http.Controller):
         ec_student_ids = []
         ec_level_ids = []
         ec_subject_cat_ids = []
+        ec_department_ids = []
+        ineligible_exclude_voter = False
+        ineligible_partner_ids = []
+        vote_limit = 0
         if vote_id:
             vote_obj = request.env['aps.award.vote'].sudo().browse(int(vote_id))
             if vote_obj.exists() and vote_obj.vote_round_id:
@@ -130,6 +142,61 @@ class AwardsVotingController(http.Controller):
                 ec_student_ids     = rnd.eligible_candidate_student_ids.ids
                 ec_level_ids       = rnd.eligible_candidate_level_ids.ids
                 ec_subject_cat_ids = rnd.eligible_candidate_category_ids.ids
+                ec_department_ids  = rnd.eligible_candidate_department_ids.ids
+                ineligible_exclude_voter = rnd.ineligible_candidate_exclude_voter
+                ineligible_partner_ids   = rnd.ineligible_candidate_partner_ids.ids
+                if rnd.rule_limit_votes:
+                    vote_limit = rnd.rule_limit_votes_count or 1
+
+        # ── Determine the voter's own partner_id for exclusion ──
+        voter_partner_id = None
+        if ineligible_exclude_voter and vote_obj and vote_obj.voter_partner_id:
+            voter_partner_id = vote_obj.voter_partner_id.id
+
+        # Build full set of partner IDs to exclude from results
+        excluded_partner_ids = set(ineligible_partner_ids)
+        if voter_partner_id:
+            excluded_partner_ids.add(voter_partner_id)
+
+        # ── Department-based staff candidates ──────────────────────────────────
+        if ec_department_ids:
+            Employee = request.env['hr.employee'].sudo()
+            dept_employees = Employee.search([
+                ('department_id', 'in', ec_department_ids),
+                ('active', '=', True),
+            ])
+
+            result = []
+            for emp in dept_employees:
+                if not emp.user_id or not emp.user_id.partner_id:
+                    continue
+                partner = emp.user_id.partner_id
+                if partner.id in excluded_partner_ids:
+                    continue
+
+                image_b64 = self._image_b64(partner)
+
+                result.append({
+                    'id': partner.id,
+                    'name': partner.name or '',
+                    'image': image_b64,
+                    'times_awarded': 0,
+                    'last_awarded': None,
+                    'level': '',
+                    'department': emp.department_id.name or '',
+                    'is_staff': True,
+                    'subject_cat_ids': [],
+                    'whitelisted': True,
+                })
+
+            result.sort(key=lambda x: x['name'])
+            return {
+                'candidates': result,
+                'sub_categories': [{'id': sc.id, 'name': sc.name} for sc in category.sub_category_ids]
+                    if category.exists() else [],
+                'subject_cats': [],
+                'vote_limit': vote_limit,
+            }
 
         # No explicit constraints on round → fall back to category level_ids
         if not ec_student_ids and not ec_level_ids and not ec_subject_cat_ids:
@@ -150,7 +217,7 @@ class AwardsVotingController(http.Controller):
         # If still nothing — no category, no constraints — return empty
         if not ec_student_ids and not ec_level_ids and not ec_subject_cat_ids \
                 and not voter_partner_student_ids:
-            return {'candidates': [], 'sub_categories': [], 'subject_cats': []}
+            return {'candidates': [], 'sub_categories': [], 'subject_cats': [], 'vote_limit': vote_limit}
 
         # ── Build student domain ──
         domain = [('active', '=', True)]
@@ -179,6 +246,8 @@ class AwardsVotingController(http.Controller):
         all_subject_cat_ids = set()
         for student in students:
             partner = student.partner_id
+            if partner.id in excluded_partner_ids:
+                continue
 
             if category.exists():
                 past_certs = Certificate.search([
@@ -191,10 +260,7 @@ class AwardsVotingController(http.Controller):
                 times_awarded = 0
                 last_awarded = None
 
-            image_b64 = ''
-            if partner.image_128:
-                image_b64 = partner.image_128.decode() if isinstance(
-                    partner.image_128, bytes) else partner.image_128
+            image_b64 = self._image_b64(partner)
 
             enrolled_cats = student.enrollment_ids.mapped('home_class_id.subject_id.category_id')
             if ec_subject_cat_ids and not is_whitelisted:
@@ -210,6 +276,8 @@ class AwardsVotingController(http.Controller):
                 'times_awarded': times_awarded,
                 'last_awarded': last_awarded,
                 'level': student.level_id.display_name or '',
+                'department': '',
+                'is_staff': False,
                 'subject_cat_ids': student_subcat_ids,
                 'whitelisted': is_whitelisted,
             })
@@ -227,6 +295,7 @@ class AwardsVotingController(http.Controller):
             'candidates': result,
             'sub_categories': sub_categories,
             'subject_cats': subject_cats,
+            'vote_limit': vote_limit,
         }
 
     # ------------------------------------------------------------------
