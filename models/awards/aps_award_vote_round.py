@@ -37,6 +37,12 @@ class APSAwardVoteRound(models.Model):
         string='Award Category',
         ondelete='restrict',
     )
+
+    @api.onchange('award_category_id')
+    def _onchange_award_category_id(self):
+        for rec in self:
+            if rec.award_category_id and rec.award_category_id.image:
+                rec.image = rec.award_category_id.image
     award_sub_category_id = fields.Many2one(
         'aps.award.sub.category',
         string='Award Sub-Category',

@@ -6,6 +6,7 @@
         <field name="model">aps.award.vote.round</field>
         <field name="arch" type="xml">
             <list string="Vote Rounds" decoration-info="status == 'draft'" decoration-success="status == 'open'" decoration-muted="status in ('closed', 'finalised')">
+                <field name="image" widget="image" options="{'size': [24, 24]}" optional="show"/>
                 <field name="name"/>
                 <field name="voting_set_ids" widget="many2many_tags" optional="show"/>
                 <field name="datetime_start"/>

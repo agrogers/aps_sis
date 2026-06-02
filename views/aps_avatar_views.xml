@@ -46,7 +46,7 @@
         <field name="model">aps.avatar</field>
         <field name="arch" type="xml">
             <list string="Avatars">
-                <field name="image" widget="image" options="{'size': [48, 48]}"/>
+                <field name="image" widget="image" options="{'size': [24, 24]}"/>
                 <field name="name"/>
                 <field name="category_id"/>
                 <field name="student_count" string="Used By"/>

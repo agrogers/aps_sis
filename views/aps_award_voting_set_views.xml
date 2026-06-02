@@ -6,7 +6,7 @@
         <field name="model">aps.award.voting.set</field>
         <field name="arch" type="xml">
             <list string="Voting Sets">
-                <field name="icon" widget="image" class="o_image_32_max" optional="show"/>
+                <field name="icon" widget="image" class="o_image_24_max" options="{'size': [24, 24]}" optional="show"/>
                 <field name="name"/>
                 <field name="date_start"/>
                 <field name="date_end"/>

@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <list default_order="sequence, name">
                 <field name="sequence" widget="handle"/>
-                <field name="icon" widget="image" options="{'size': [32, 32]}"/>
+                <field name="icon" widget="image" options="{'size': [24, 24]}"/>
                 <field name="name"/>
                 <field name="color" widget="color"/>
                 <field name="description"/>

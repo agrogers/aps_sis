@@ -10,7 +10,7 @@
         <field name="model">aps.media.type</field>
         <field name="arch" type="xml">
             <list string="Media Types">
-                <field name="icon" widget="image" options="{'size': [32, 32]}" string=" "/>
+                <field name="icon" widget="image" options="{'size': [24, 24]}" string=" "/>
                 <field name="name"/>
                 <field name="cost" string="Default Cost (pts)"/>
                 <field name="stock_min" string="Min Stock"/>
@@ -57,7 +57,7 @@
                         <page string="Media Items" name="media_items">
                             <field name="media_ids" readonly="1">
                                 <list>
-                                    <field name="image" widget="image" options="{'size': [32, 32]}" string=" "/>
+                                    <field name="image" widget="image" options="{'size': [24, 24]}" string=" "/>
                                     <field name="name"/>
                                     <field name="collection_id"/>
                                     <field name="cost" string="Cost (pts)"/>
@@ -130,7 +130,7 @@
                         <page string="Media Items" name="media_items">
                             <field name="media_ids" readonly="1">
                                 <list>
-                                    <field name="image" widget="image" options="{'size': [32, 32]}" string=" "/>
+                                    <field name="image" widget="image" options="{'size': [24, 24]}" string=" "/>
                                     <field name="name"/>
                                     <field name="type_id"/>
                                     <field name="cost" string="Cost (pts)"/>
@@ -210,7 +210,7 @@
         <field name="model">aps.media</field>
         <field name="arch" type="xml">
             <list string="Media Items">
-                <field name="image" widget="image" options="{'size': [48, 48]}" string=" "/>
+                <field name="image" widget="image" options="{'size': [24, 24]}" string=" "/>
                 <field name="name"/>
                 <field name="type_id"/>
                 <field name="collection_id"/>

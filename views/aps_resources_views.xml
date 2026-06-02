@@ -10,7 +10,7 @@
                 <field name="is_favourite" widget="boolean_favorite" nolabel="1" optional="show" string="★"/>
                 <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                 <field name="subject_icons" string="Subject Icons" widget="image" options="{'size': [24, 24]}" optional="hide"/>
-                <field name="thumbnail" widget="image" options="{'size': [50, 50]}" optional="hide"/>
+                <field name="thumbnail" widget="image" options="{'size': [24, 24]}" optional="hide"/>
                 <field name="name" optional="hide"/>
                 <field name="display_name" string="Display Name" optional="show"/>
                 <field name="type_id" optional="hide"/>

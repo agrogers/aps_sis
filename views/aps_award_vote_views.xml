@@ -12,7 +12,7 @@
                   decoration-success="state == 'submitted'"
                   decoration-muted="state in ('closed', 'pending')"
                   decoration-warning="state == 'open'">
-                <field name="image" widget="image" class="o_image_32_max" optional="show"/>
+                <field name="image" widget="image" class="o_image_24_max" options="{'size': [24, 24]}" optional="show"/>
                 <field name="vote_round_id" optional="show"/>
                 <field name="award_category_id" optional="show"/>
                 <field name="award_sub_category_id" optional="hide"/>

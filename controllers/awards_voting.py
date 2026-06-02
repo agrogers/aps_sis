@@ -406,6 +406,7 @@ class AwardsVotingController(http.Controller):
                 'state': 'submitted',
                 'submitted_date': date.today().isoformat(),
                 'award_sub_category_id': int(sub_category_id) if sub_category_id else False,
+                'award_category_id': category.id if category.exists() else False,
             }
             if round_id:
                 vals['vote_round_id'] = round_id
@@ -418,10 +419,7 @@ class AwardsVotingController(http.Controller):
                 vote.write(vals)
             else:
                 # No open record to reuse — create a new one
-                vals.update({
-                    'award_category_id': category.id if category.exists() else False,
-                    'voter_partner_id': voter_partner.id,
-                })
+                vals['voter_partner_id'] = voter_partner.id
                 vote = Vote.create(vals)
             submitted.append(vote.id)
 

@@ -116,7 +116,7 @@
         <field name="model">aps.award.category</field>
         <field name="arch" type="xml">
             <list>
-                 <field name="image" widget="image" class="o_image_24_max" optional="show"/>
+                 <field name="image" widget="image" options="{'size': [24, 24]}" optional="show"/>
                  <field name="name"/>
                  <field name="voting_active" optional="show"/>
                  <field name="adhoc_vote" optional="show"/>
