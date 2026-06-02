@@ -189,7 +189,8 @@
 .av-history-cat-placeholder { font-size: 1.8rem; line-height: 2.5rem; }
 
 .av-history-info { flex: 1 1 0; min-width: 0; }
-.av-history-cat-name  { font-weight: 700; font-size: .9rem; color: var(--av-text); }
+.av-history-cat-name  { font-weight: 700; font-size: 1rem; color: var(--av-text); }
+.av-history-desc      { font-size: .75rem; color: var(--av-muted); margin-top: .15rem; }
 .av-history-recipient { font-size: .85rem; color: var(--av-text); margin-top: .1rem; }
 .av-history-subcat    { font-size: .78rem; color: var(--av-muted); margin-top: .1rem; }
 .av-history-comment   { font-size: .78rem; color: var(--av-muted); font-style: italic; margin-top: .25rem;

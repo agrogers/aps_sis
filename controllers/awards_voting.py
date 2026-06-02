@@ -203,6 +203,15 @@ class AwardsVotingController(http.Controller):
                 ('active', '=', True),
             ])
 
+            # Prefetch all relational fields in batch to avoid per-record queries
+            dept_employees.mapped('user_id.partner_id')
+            partner_records = dept_employees.mapped('user_id.partner_id').filtered('id')
+            # Batch-read image_128 (binary fields are not included in default prefetch)
+            partner_image_map = {
+                r['id']: r['image_128']
+                for r in partner_records.read(['image_128'])
+            }
+
             result = []
             for emp in dept_employees:
                 if not emp.user_id or not emp.user_id.partner_id:
@@ -211,7 +220,8 @@ class AwardsVotingController(http.Controller):
                 if partner.id in excluded_partner_ids:
                     continue
 
-                image_b64 = self._image_b64(partner)
+                img = partner_image_map.get(partner.id)
+                image_b64 = (img.decode() if isinstance(img, bytes) else img) if img else ''
 
                 result.append({
                     'id': partner.id,
@@ -284,6 +294,25 @@ class AwardsVotingController(http.Controller):
 
         is_whitelisted = bool(ec_student_ids or voter_partner_student_ids)
 
+        # Prefetch partner relations and batch-read images before the loop
+        students.mapped('partner_id')
+        student_partners = students.mapped('partner_id').filtered('id')
+        student_image_map = {
+            r['id']: r['image_128']
+            for r in student_partners.read(['image_128'])
+        }
+
+        # Batch-load all certificates for this category in one query (avoid N+1)
+        certs_by_partner = {}
+        if category.exists() and student_partners:
+            all_certs = Certificate.search([
+                ('award_category_id', '=', category.id),
+                ('partner_id', 'in', student_partners.ids),
+            ], order='certificate_date desc')
+            for c in all_certs:
+                pid = c.partner_id.id
+                certs_by_partner.setdefault(pid, []).append(c)
+
         result = []
         all_subject_cat_ids = set()
         for student in students:
@@ -292,17 +321,15 @@ class AwardsVotingController(http.Controller):
                 continue
 
             if category.exists():
-                past_certs = Certificate.search([
-                    ('award_category_id', '=', category.id),
-                    ('partner_id', '=', partner.id),
-                ], order='certificate_date desc')
-                times_awarded = len(past_certs)
-                last_awarded = past_certs[0].certificate_date.isoformat() if past_certs else None
+                partner_certs = certs_by_partner.get(partner.id, [])
+                times_awarded = len(partner_certs)
+                last_awarded = partner_certs[0].certificate_date.isoformat() if partner_certs else None
             else:
                 times_awarded = 0
                 last_awarded = None
 
-            image_b64 = self._image_b64(partner)
+            img = student_image_map.get(partner.id)
+            image_b64 = (img.decode() if isinstance(img, bytes) else img) if img else ''
 
             enrolled_cats = student.enrollment_ids.mapped('home_class_id.subject_id.category_id')
             if ec_subject_cat_ids and not is_whitelisted:
