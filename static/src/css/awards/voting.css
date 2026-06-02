@@ -44,7 +44,7 @@
 .av-header-left  { display: flex; align-items: center; gap: 1rem; }
 .av-header-right { display: flex; align-items: center; }
 .av-header-logo  { height: 48px; width: auto; object-fit: contain; }
-.av-trophy       { font-size: 2rem; line-height: 1; }
+.av-trophy       { font-size: 2rem; line-height: 1; height: 4rem }
 .av-header-title { font-size: 1.5rem; font-weight: 700; letter-spacing: .02em; }
 .av-header-sub   { font-size: .9rem; opacity: .8; margin-top: .1rem; }
 
@@ -122,6 +122,7 @@
   text-align: center;
   font-family: var(--av-font);
   justify-content: space-between;
+  position: relative;
 }
 .av-cat-card:hover {
   transform: translateY(-3px);
@@ -169,6 +170,13 @@
   padding: .25rem .8rem;
 }
 .av-cat-badge--adhoc { background: var(--av-accent); }
+.av-cat-set-icon {
+  position: absolute; top: .5rem; right: .5rem;
+  width: 2rem; height: 2rem; object-fit: cover;
+  border-radius: 6px; opacity: .9;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+  pointer-events: none;
+}
 
 /* ---------- Vote History ---------- */
 .av-history-section { padding-bottom: 3rem; }
@@ -184,7 +192,7 @@
 .av-history-state--closed    { border-left-color: var(--av-muted); }
 .av-history-state--pending   { border-left-color: #f59e0b; }
 
-.av-history-icon { flex-shrink: 0; width: 2.5rem; height: 2.5rem; }
+.av-history-icon { flex-shrink: 0; width: 2.5rem; display: flex; flex-direction: column; align-items: center; gap: .25rem; }
 .av-history-cat-img { width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: 6px; }
 .av-history-cat-placeholder { font-size: 1.8rem; line-height: 2.5rem; }
 
@@ -197,6 +205,7 @@
                         overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 .av-history-right { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; }
+.av-history-set-icon { width: 1.5rem; height: 1.5rem; object-fit: cover; border-radius: 4px; opacity: .85; margin-top: .25rem; }
 .av-history-date  { font-size: .78rem; color: var(--av-muted); white-space: nowrap; }
 .av-history-open  { display: block; font-size: .7rem; color: #6b7280; font-weight: 500; margin-top: .1rem; }
 .av-history-due   { display: block; font-size: .7rem; color: #d97706; font-weight: 600; margin-top: .1rem; }
@@ -266,6 +275,58 @@
   transition: background .15s, color .15s;
 }
 .av-modal-close:hover { background: var(--av-border); color: var(--av-text); }
+
+/* ---------- Confirm Dialog ---------- */
+.av-confirm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.45);
+  backdrop-filter: blur(3px);
+  z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.av-confirm-box {
+  background: var(--av-card-bg);
+  border-radius: 14px;
+  box-shadow: var(--av-shadow-lg);
+  width: 100%; max-width: 380px;
+  padding: 1.75rem 1.75rem 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.av-confirm-icon {
+  width: 2.5rem; height: 2.5rem; border-radius: 50%;
+  background: #fee2e2; color: #dc2626;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.av-confirm-icon--undo {
+  background: #ede9fe; color: var(--av-primary);
+}
+.av-confirm-title {
+  font-size: 1rem; font-weight: 700; color: var(--av-text);
+}
+.av-confirm-msg {
+  font-size: .875rem; color: var(--av-muted); line-height: 1.5; margin-top: .25rem;
+}
+.av-confirm-actions {
+  display: flex; justify-content: flex-end; gap: .6rem; margin-top: .25rem;
+}
+.av-confirm-btn {
+  font-size: .85rem; font-weight: 600; border: none; cursor: pointer;
+  border-radius: 8px; padding: .5rem 1.1rem;
+  transition: opacity .15s;
+}
+.av-confirm-btn:hover { opacity: .85; }
+.av-confirm-btn--cancel {
+  background: var(--av-bg); color: var(--av-muted);
+  border: 1.5px solid var(--av-border);
+}
+.av-confirm-btn--ok {
+  background: var(--av-primary); color: #fff;
+}
+.av-confirm-btn--ok.danger {
+  background: #dc2626;
+}
 
 /* Modal Header — always stacked: title row, then action row */
 .av-modal-header {
@@ -583,7 +644,7 @@
   .av-header { padding: .75rem 1rem; }
   .av-header-title { font-size: 1.2rem; }
   .av-header-logo  { height: 36px; }
-  .av-trophy       { font-size: 1.5rem; }
+  .av-trophy       { font-size: 1.5rem; height: 3rem; }
 
   /* Stats — 2-column grid */
   .av-stats { grid-template-columns: 1fr 1fr; padding: 0 1rem; margin-top: 1rem; }

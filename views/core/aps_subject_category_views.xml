@@ -6,11 +6,12 @@
         <field name="model">aps.subject.category</field>
         <field name="arch" type="xml">
             <list string="Subject Categories">
+                <field name="icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
                 <field name="name"/>
                 <field name="code"/>
                 <field name="tag_ids" widget="many2many_tags" optional="show"/>
-                <field name="description"/>
-                <field name="active"/>
+                <field name="description" optional="hide"/>
+                <field name="active" optional="hide"/>
             </list>
         </field>
     </record>
@@ -22,6 +23,7 @@
         <field name="arch" type="xml">
             <form string="Subject Category">
                 <sheet>
+                    <field name="icon" widget="image" class="oe_avatar" options="{'preview_image': 'icon'}"/>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
                         <h1><field name="name"/></h1>

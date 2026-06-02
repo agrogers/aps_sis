@@ -11,6 +11,7 @@ class APSAwardVoteRound(models.Model):
     description = fields.Text(string='Description')
     short_description = fields.Text(string='Short Description')
     image = fields.Image(string='Image')
+    color = fields.Char(string='Color', default='#5c1ea8')
 
     datetime_start = fields.Datetime(string='Start', required=True)
     datetime_end = fields.Datetime(string='End', required=True)
@@ -43,6 +44,14 @@ class APSAwardVoteRound(models.Model):
         for rec in self:
             if rec.award_category_id and rec.award_category_id.image:
                 rec.image = rec.award_category_id.image
+
+    @api.onchange('voting_set_ids')
+    def _onchange_voting_set_ids(self):
+        for rec in self:
+            if rec.voting_set_ids:
+                first_set = rec.voting_set_ids[0]
+                if first_set.color:
+                    rec.color = first_set.color
     award_sub_category_id = fields.Many2one(
         'aps.award.sub.category',
         string='Award Sub-Category',

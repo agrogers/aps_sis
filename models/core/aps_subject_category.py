@@ -33,6 +33,10 @@ class APSSubjectCategory(models.Model):
         result = super().write(vals)
         if 'tag_ids' in vals:
             self._recompute_students_home_class()
+        if 'icon' in vals:
+            subjects = self.env['aps.subject'].search([('category_id', 'in', self.ids)])
+            if subjects:
+                subjects.write({'icon': vals['icon']})
         return result
 
     def _recompute_students_home_class(self):

@@ -29,6 +29,7 @@
                         <group>
                             <field name="date_start"/>
                             <field name="date_end"/>
+                            <field name="color" widget="color"/>
                         </group>
                     </group>
                     <notebook>

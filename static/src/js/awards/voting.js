@@ -493,6 +493,41 @@
         },
 
         // ----------------------------------------------------------------
+        // Custom confirm dialog (replaces browser confirm())
+        // ----------------------------------------------------------------
+        _confirm(title, message, { isUndo = false } = {}) {
+            return new Promise(resolve => {
+                const overlay = document.createElement('div');
+                overlay.className = 'av-confirm-overlay';
+                const iconClass = isUndo ? 'av-confirm-icon av-confirm-icon--undo' : 'av-confirm-icon';
+                const iconGlyph = isUndo ? '↩' : '🗑';
+                const okClass = isUndo ? 'av-confirm-btn av-confirm-btn--ok' : 'av-confirm-btn av-confirm-btn--ok danger';
+                const okLabel = isUndo ? 'Undo' : 'Delete';
+                overlay.innerHTML = `
+                    <div class="av-confirm-box">
+                        <div style="display:flex;align-items:flex-start;gap:.85rem">
+                            <div class="${iconClass}">${iconGlyph}</div>
+                            <div>
+                                <div class="av-confirm-title">${title}</div>
+                                <div class="av-confirm-msg">${message}</div>
+                            </div>
+                        </div>
+                        <div class="av-confirm-actions">
+                            <button class="av-confirm-btn av-confirm-btn--cancel">Cancel</button>
+                            <button class="${okClass}">${okLabel}</button>
+                        </div>
+                    </div>`;
+                const [cancelBtn, okBtn] = overlay.querySelectorAll('.av-confirm-btn');
+                const cleanup = (result) => { overlay.remove(); resolve(result); };
+                cancelBtn.addEventListener('click', () => cleanup(false));
+                okBtn.addEventListener('click', () => cleanup(true));
+                overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(false); });
+                document.body.appendChild(overlay);
+                okBtn.focus();
+            });
+        },
+
+        // ----------------------------------------------------------------
         // Delete / revert history vote
         // ----------------------------------------------------------------
         deleteVote(btn) {
@@ -501,18 +536,22 @@
             const token = btn.dataset.token;
             const hasDue = btn.dataset.hasDue === '1';
             const count = voteIds.length;
-            const msg = hasDue
+            const isUndo = hasDue;
+            const title = isUndo
+                ? (count > 1 ? `Undo ${count} votes` : 'Undo vote')
+                : (count > 1 ? `Delete ${count} votes` : 'Delete vote');
+            const msg = isUndo
                 ? (count > 1
                     ? `Undo all ${count} votes in this round? They will be reverted to Open so you can re-submit.`
                     : 'Undo this vote? It will be reverted to Open so you can re-submit.')
                 : (count > 1
                     ? `Permanently delete all ${count} votes in this round?`
                     : 'Permanently delete this vote?');
-            if (!confirm(msg)) return;
+            this._confirm(title, msg, { isUndo }).then(confirmed => {
+                if (!confirmed) return;
 
             btn.disabled = true;
             btn.textContent = '…';
-
             this._jsonRpc(`/awards/vote/${token}/votes/delete`, { vote_ids: voteIds }).then(result => {
                 if (result.error) {
                     this._showToast('Error: ' + result.error, 'error');
@@ -532,6 +571,7 @@
                 btn.disabled = false;
                 btn.textContent = hasDue ? '↩ Undo' : '✕ Delete';
             });
+            }); // end _confirm
         },
 
         // ----------------------------------------------------------------

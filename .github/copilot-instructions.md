@@ -132,6 +132,17 @@ If a feature differs between versions, use **v18 syntax and architecture only**.
 - Invalid XPath expressions must not be produced
 - Do not rely on `context` for UI visibility logic
 
+### RGB Color Picker
+- Use `widget="color"` on a `fields.Char` to get a full RGB color picker (hex value stored as a string, e.g. `#5c1ea8`).
+- Do **NOT** use `widget="color_picker"` — that is Odoo's integer dot-color selector, not an RGB picker.
+- Example (correct):
+  ```python
+  color = fields.Char(string='Color', default='#5c1ea8')
+  ```
+  ```xml
+  <field name="color" widget="color"/>
+  ```
+
 ### List View Field Attributes
 - **NEVER use `style=` on a `<field>` element inside a `<list>` view** — Odoo's RNG validator rejects it and will raise a `ValidationError` at load time.
 - To control image size in list views, use Odoo's built-in CSS helper classes on the `class=` attribute:

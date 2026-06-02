@@ -14,7 +14,7 @@
     <header class="av-header">
         <div class="av-header-inner">
             <div class="av-header-left">
-                <span class="av-trophy">&#127942;</span>
+                <img src="/aps_sis/static/img/award.svg" alt="Award" class="av-trophy"/>
                 <div>
                     <div class="av-header-title">Voting Dashboard</div>
                     <div class="av-header-sub"><t t-esc="employee.name"/></div>
@@ -60,7 +60,13 @@
                             t-att-data-description="vote.description or ''"
                             t-att-data-token="token"
                             t-attf-data-category-img="#{'/web/image/aps.award.vote/' + str(vote.id) + '/image' if vote.image else ''}"
+                            t-attf-style="#{('--av-primary: ' + vote.vote_round_id.color + '; --av-accent: ' + vote.vote_round_id.color + '; border-color: ' + vote.vote_round_id.color + ';') if vote.vote_round_id and vote.vote_round_id.color else ''}"
                             onclick="AwardsVoting.openModal(this)">
+                        <t t-set="vset_card" t-value="vote.vote_round_id.voting_set_ids[0] if (vote.vote_round_id and vote.vote_round_id.voting_set_ids) else False"/>
+                        <t t-if="vset_card and vset_card.icon">
+                            <img t-attf-src="/web/image/aps.award.voting.set/#{vset_card.id}/icon"
+                                 class="av-cat-set-icon" alt=""/>
+                        </t>
                         <div class="av-cat-top">
                         <div class="av-cat-img-wrap">
                             <t t-if="vote.image">
@@ -181,7 +187,9 @@
                     <t t-set="v" t-value="grp['rep']"/>
                     <t t-set="rnd" t-value="v.vote_round_id"/>
                     <t t-set="cat" t-value="v.award_category_id"/>
-                    <div t-attf-class="av-history-row av-history-state--#{grp['state']}">
+                    <t t-set="vset" t-value="rnd.voting_set_ids[0] if (rnd and rnd.voting_set_ids) else False"/>
+                    <div t-attf-class="av-history-row av-history-state--#{grp['state']}"
+                         t-attf-style="#{('--av-primary: ' + rnd.color + '; border-left-color: ' + rnd.color + ';') if (rnd and rnd.color) else ''}">
                         <div class="av-history-icon">
                             <t t-if="rnd and rnd.image">
                                 <img t-attf-src="/web/image/aps.award.vote.round/#{rnd.id}/image"
@@ -193,6 +201,10 @@
                             </t>
                             <t t-else="">
                                 <span class="av-history-cat-placeholder">&#127885;</span>
+                            </t>
+                            <t t-if="vset and vset.icon">
+                                <img t-attf-src="/web/image/aps.award.voting.set/#{vset.id}/icon"
+                                     class="av-history-set-icon" alt=""/>
                             </t>
                         </div>
                         <div class="av-history-info">
@@ -222,9 +234,9 @@
                                 <t t-if="v.submitted_date">
                                     <t t-esc="v.submitted_date.strftime('%#d %b %Y')"/>
                                 </t>
-                                <t t-if="v.open_date">
+                                <!-- <t t-if="v.open_date">
                                     <span class="av-history-open">Open <t t-esc="v.open_date.strftime('%#d %b')"/></span>
-                                </t>
+                                </t> -->
                                 <t t-if="grp['has_due'] and v.due_date">
                                     <span class="av-history-due">Due <t t-esc="v.due_date.strftime('%#d %b')"/></span>
                                 </t>

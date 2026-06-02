@@ -8,6 +8,7 @@ class APSAwardVotingSet(models.Model):
 
     name = fields.Char(string='Name', required=True)
     icon = fields.Image(string='Icon', max_width=256, max_height=256)
+    color = fields.Char(string='Color', default='#5c1ea8')
     date_start = fields.Date(string='Start Date')
     date_end = fields.Date(string='End Date')
 
