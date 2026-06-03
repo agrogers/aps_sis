@@ -256,8 +256,7 @@ class AwardsVotingController(http.Controller):
                         ('teacher_ids', 'in', [voter_partner.id]),
                         ('assistant_teacher_ids', 'in', [voter_partner.id]),
                     ])
-                    taught_level_ids = taught_classes.mapped('subject_id.level_id').ids
-                    voter_level_ids = list(set(taught_level_ids))
+                    voter_level_ids = taught_classes.mapped('subject_id.level_id').ids
 
         # ── Determine the voter's own partner_id for exclusion ──
         voter_partner_id = None
@@ -342,7 +341,7 @@ class AwardsVotingController(http.Controller):
                     ('active', '=', True),
                 ])
                 year_level_partner_ids.update(
-                    year_level_students.mapped('partner_id').filtered('id').ids
+                    year_level_students.mapped('partner_id').ids
                 )
                 result = [r for r in result if r['id'] in year_level_partner_ids]
 
