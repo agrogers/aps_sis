@@ -231,6 +231,11 @@
                                         </t>
                                     </div>
                                 </t>
+                                <t t-elif="gv.comment">
+                                    <div class="av-history-recipient">
+                                        <span class="av-history-comment">"<t t-esc="gv.comment"/>"</span>
+                                    </div>
+                                </t>
                             </t>
                         </div>
                         <div class="av-history-right">

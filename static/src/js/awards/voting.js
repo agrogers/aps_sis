@@ -23,6 +23,7 @@
         _limitToOwnStudents: 'no',    // 'no' | 'yes' | 'optional'
         _ownStudentPartnerIds: null,  // Set of partner IDs for the voter's own students
         _ownStudentsOnly: false,      // active state of the optional toggle
+        _allowNoVote: false,          // voter may submit with no recipient selected
 
         // ----------------------------------------------------------------
         // Modal open / close
@@ -48,6 +49,7 @@
             this._limitToOwnStudents = 'no';
             this._ownStudentPartnerIds = null;
             this._ownStudentsOnly = false;
+            this._allowNoVote = false;
             this._removeOwnStudentsToggle();
 
             // Collapse the filter panel each time the modal opens
@@ -211,12 +213,14 @@
                 this._isStaffRound = this._candidates.length > 0 && this._candidates.every(c => c.is_staff === true);
                 this._limitToOwnStudents = result.limit_candidates_to_own_students || 'no';
                 this._ownStudentPartnerIds = new Set(result.own_student_partner_ids || []);
+                this._allowNoVote = result.allow_no_vote === true;
                 // Default the optional toggle to ON (show only own students)
                 this._ownStudentsOnly = this._limitToOwnStudents === 'optional';
                 this._populateLevelFilter(this._getVisibleCandidatePool());
                 this._applyColumnVisibility();
                 this._populateSubjectCatFilter(result.subject_cats || []);
                 this._setupOwnStudentsToggle();
+                this._updateSelectionUI();
                 this._applySearch();
                 this._renderTable();
             }).catch(() => {
@@ -505,10 +509,20 @@
                 submitBtn.textContent = count === 1
                     ? `Submit Vote for ${names}`
                     : `Submit ${count} Votes`;
+                submitBtn.style.color = '';
+                submitBtn.style.background = '';
+                submitBtn.style.display = 'inline-block';
+            } else if (this._allowNoVote) {
+                summary.style.display = 'none';
+                submitBtn.textContent = "Don't Submit A Vote";
+                submitBtn.style.background = '#e67e22';
+                submitBtn.style.color = '#fff';
                 submitBtn.style.display = 'inline-block';
             } else {
                 summary.style.display = 'none';
                 submitBtn.style.display = 'none';
+                submitBtn.style.color = '';
+                submitBtn.style.background = '';
             }
         },
 
@@ -516,7 +530,7 @@
         // Submit
         // ----------------------------------------------------------------
         submitVote() {
-            if (!this._selected.size) return;
+            if (!this._selected.size && !this._allowNoVote) return;
 
             // Validate sub-category if this category has any
             if (this._subCategories.length > 0) {
@@ -567,8 +581,8 @@
 
             const btn = document.getElementById('av-submit-btn');
             btn.disabled = true;
-            btn.textContent = 'Submitting…';
-
+            btn.textContent = 'Submitting…';            btn.style.background = '';
+            btn.style.color = '';
             this._jsonRpc(`/awards/vote/${this._token}/submit`, {
                 category_id: this._categoryId,
                 vote_id: this._voteId,

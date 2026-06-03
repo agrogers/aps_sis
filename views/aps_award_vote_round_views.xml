@@ -46,40 +46,42 @@
                     <field name="image" widget="image" class="oe_avatar"/>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Round Name"/></h1>
-                        <field name="short_description" placeholder="Short description…" nolabel="1"/>
                     </div>
-                    <group>
-                        <group string="Schedule">
-                            <field name="datetime_start"/>
-                            <field name="datetime_end"/>
-                            <field name="recurring_days"/>
-                        </group>
-                        <group string="Award">
-                            <field name="voting_set_ids" widget="many2many_tags"/>
-                            <field name="color" widget="color"/>
-                            <field name="award_category_id"/>
-                            <field name="award_sub_category_id"
-                                   invisible="not award_category_id"/>
-                            <field name="academic_week_id"/>
-                        </group>
-                        <group string="Participation">
-                            <field name="status" widget="badge"
-                                   decoration-info="status == 'draft'"
-                                   decoration-success="status == 'open'"
-                                   decoration-warning="status == 'closed'"
-                                   decoration-primary="status == 'finalised'"/>
-                            <field name="votes_cast"/>
-                            <field name="active_voter_count"/>
-                            <field name="total_voter_count"/>
-                        </group>
-                    </group>
-                    <group>
-                        <field name="description" placeholder="Full description…"/>
-                    </group>
-                    <group string="Round Managers">
-                        <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
-                    </group>
                     <notebook>
+                        <page string="Details" name="details">
+                            <field name="short_description" placeholder="Short description…" nolabel="1"/>
+                            <group>
+                                <group string="Schedule">
+                                    <field name="datetime_start"/>
+                                    <field name="datetime_end"/>
+                                    <field name="recurring_days"/>
+                                </group>
+                                <group string="Award">
+                                    <field name="voting_set_ids" widget="many2many_tags"/>
+                                    <field name="color" widget="color"/>
+                                    <field name="award_category_id"/>
+                                    <field name="award_sub_category_id"
+                                           invisible="not award_category_id"/>
+                                    <field name="academic_week_id"/>
+                                </group>
+                                <group string="Participation">
+                                    <field name="status" widget="badge"
+                                           decoration-info="status == 'draft'"
+                                           decoration-success="status == 'open'"
+                                           decoration-warning="status == 'closed'"
+                                           decoration-primary="status == 'finalised'"/>
+                                    <field name="votes_cast"/>
+                                    <field name="active_voter_count"/>
+                                    <field name="total_voter_count"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="description" placeholder="Full description…"/>
+                            </group>
+                            <group string="Round Managers">
+                                <field name="round_manager_ids" widget="many2many_tags" nolabel="1"/>
+                            </group>
+                        </page>
                         <page string="Votes" name="votes">
                             <field name="vote_ids">
                                 <list>
@@ -208,6 +210,9 @@
                                 <field name="rule_limit_candidates_to_own_students"
                                        widget="radio"
                                        readonly="status != 'draft'"/>
+                            </group>
+                            <group string="Submission Options">
+                                <field name="rule_allow_no_vote" widget="boolean_toggle" readonly="status != 'draft'"/>
                             </group>
                             <group string="Visible Columns in Voting Dialog">
                                 <field name="rule_show_level_dept" widget="boolean_toggle" readonly="status != 'draft'"/>

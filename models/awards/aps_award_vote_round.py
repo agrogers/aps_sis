@@ -199,6 +199,12 @@ class APSAwardVoteRound(models.Model):
         compute='_compute_rule_limit_candidates_to_own_students',
         inverse='_inverse_rule_limit_candidates_to_own_students',
     )
+    rule_allow_no_vote = fields.Boolean(
+        string='Allow "No Vote" Submission',
+        compute='_compute_rule_allow_no_vote',
+        inverse='_inverse_rule_allow_no_vote',
+        help='When enabled, voters can submit without selecting any recipient (abstain).',
+    )
 
     # Computed vote statistics
     votes_cast = fields.Integer(
@@ -491,6 +497,17 @@ class APSAwardVoteRound(models.Model):
         for rec in self:
             data = rec._get_rules_dict()
             data['limit_candidates_to_own_students'] = rec.rule_limit_candidates_to_own_students or 'no'
+            rec._set_rules_dict(data)
+
+    @api.depends('rules')
+    def _compute_rule_allow_no_vote(self):
+        for rec in self:
+            rec.rule_allow_no_vote = bool(rec._get_rules_dict().get('allow_no_vote'))
+
+    def _inverse_rule_allow_no_vote(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['allow_no_vote'] = rec.rule_allow_no_vote
             rec._set_rules_dict(data)
 
     # ── Eligible voter collection ─────────────────────────────────────────────

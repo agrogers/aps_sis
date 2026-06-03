@@ -194,6 +194,7 @@ class AwardsVotingController(http.Controller):
         show_last_awarded  = True
         show_level_dept    = True
         limit_to_own_students = 'no'
+        allow_no_vote = False
         if vote_id:
             vote_obj = request.env['aps.award.vote'].sudo().browse(int(vote_id))
             if vote_obj.exists() and vote_obj.vote_round_id:
@@ -210,6 +211,7 @@ class AwardsVotingController(http.Controller):
                 show_last_awarded  = rnd.rule_show_last_awarded
                 show_level_dept    = rnd.rule_show_level_dept
                 limit_to_own_students = rnd.rule_limit_candidates_to_own_students or 'no'
+                allow_no_vote = bool(rnd.rule_allow_no_vote)
 
         # ── Compute the voter's "own students" when the rule requires it ──────
         own_student_partner_ids = []
@@ -311,6 +313,7 @@ class AwardsVotingController(http.Controller):
                 'show_level_dept': show_level_dept,
                 'limit_candidates_to_own_students': limit_to_own_students,
                 'own_student_partner_ids': [],
+                'allow_no_vote': allow_no_vote,
             }
 
         # No explicit constraints on round → fall back to category level_ids
@@ -336,7 +339,8 @@ class AwardsVotingController(http.Controller):
                     'show_times_awarded': show_times_awarded, 'show_last_awarded': show_last_awarded,
                     'show_level_dept': show_level_dept,
                     'limit_candidates_to_own_students': limit_to_own_students,
-                    'own_student_partner_ids': own_student_partner_ids}
+                    'own_student_partner_ids': own_student_partner_ids,
+                    'allow_no_vote': allow_no_vote}
 
         # ── Build student domain ──
         domain = [('active', '=', True)]
@@ -446,6 +450,7 @@ class AwardsVotingController(http.Controller):
             'show_level_dept': show_level_dept,
             'limit_candidates_to_own_students': limit_to_own_students,
             'own_student_partner_ids': own_student_partner_ids if limit_to_own_students == 'optional' else [],
+            'allow_no_vote': allow_no_vote,
         }
 
     @http.route('/awards/vote/<string:token>/candidate_image/<int:partner_id>',
@@ -599,6 +604,35 @@ class AwardsVotingController(http.Controller):
             round_id = open_pool[0].vote_round_id.id or False
 
         submitted = []
+
+        # ── No-vote (abstain) path: empty recipients list ──────────────────
+        if not recipients:
+            # Check that the round actually allows no-vote submissions
+            allow_no_vote = False
+            if open_pool and open_pool[0].vote_round_id:
+                allow_no_vote = bool(open_pool[0].vote_round_id.rule_allow_no_vote)
+            if not allow_no_vote:
+                return {'error': 'No recipients provided'}
+            vals = {
+                'recipient_partner_id': False,
+                'comment': 'No vote submitted.',
+                'state': 'submitted',
+                'submitted_date': date.today().isoformat(),
+                'award_category_id': category.id if category.exists() else False,
+            }
+            if round_id:
+                vals['vote_round_id'] = round_id
+            if open_pool:
+                vote = open_pool.pop(0)
+                if vote.vote_round_id:
+                    vals['vote_round_id'] = vote.vote_round_id.id
+                vote.write(vals)
+            else:
+                vals['voter_partner_id'] = voter_partner.id
+                vote = Vote.create(vals)
+            submitted.append(vote.id)
+            return {'success': True, 'submitted': submitted}
+
         for rec in recipients:
             pid = rec.get('id')
             comment = rec.get('comment', '')
