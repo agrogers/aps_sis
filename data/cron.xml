@@ -65,4 +65,16 @@
         <field name="nextcall" eval="(datetime.now() + relativedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 
+    <record id="cron_voting_reminder" model="ir.cron">
+        <field name="name">APEX Voting Reminder</field>
+        <field name="model_id" ref="aps_sis.model_aps_award_vote_round"/>
+        <field name="state">code</field>
+        <field name="code">model.action_send_voting_reminders()</field>
+        <field name="active">False</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(days=7)).replace(hour=7, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="numbercall">-1</field>
+    </record>
+
 </odoo>

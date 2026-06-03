@@ -213,6 +213,7 @@
                             </group>
                             <group string="Submission Options">
                                 <field name="rule_allow_no_vote" widget="boolean_toggle" readonly="status != 'draft'"/>
+                                <field name="rule_send_reminder_email" widget="boolean_toggle"/>
                             </group>
                             <group string="Visible Columns in Voting Dialog">
                                 <field name="rule_show_level_dept" widget="boolean_toggle" readonly="status != 'draft'"/>

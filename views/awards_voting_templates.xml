@@ -211,10 +211,10 @@
                         </div>
                         <div class="av-history-info">
                             <div class="av-history-cat-name">
-                                <t t-esc="(rnd and rnd.short_description) or (rnd and rnd.name) or (cat and cat.name) or ''"/>
+                                <t t-esc="(rnd and rnd.name) or (cat and cat.name) or (rnd and rnd.short_description) or  ''"/>
                             </div>
-                            <t t-if="rnd and rnd.description">
-                                <div class="av-history-desc"><t t-esc="rnd.description"/></div>
+                            <t t-if="rnd and rnd.short_description">
+                                <div class="av-history-desc"><t t-esc="rnd.short_description"/></div>
                             </t>
                             <!-- List every recipient in the group -->
                             <t t-foreach="grp['votes']" t-as="gv">

@@ -205,6 +205,12 @@ class APSAwardVoteRound(models.Model):
         inverse='_inverse_rule_allow_no_vote',
         help='When enabled, voters can submit without selecting any recipient (abstain).',
     )
+    rule_send_reminder_email = fields.Boolean(
+        string='Send Voting Reminder Emails',
+        compute='_compute_rule_send_reminder_email',
+        inverse='_inverse_rule_send_reminder_email',
+        help='When enabled, the "APEX Voting Reminder" scheduled action will send reminder emails to staff with open votes in this round.',
+    )
 
     # Computed vote statistics
     votes_cast = fields.Integer(
@@ -510,7 +516,92 @@ class APSAwardVoteRound(models.Model):
             data['allow_no_vote'] = rec.rule_allow_no_vote
             rec._set_rules_dict(data)
 
-    # ── Eligible voter collection ─────────────────────────────────────────────
+    @api.depends('rules')
+    def _compute_rule_send_reminder_email(self):
+        for rec in self:
+            rec.rule_send_reminder_email = bool(rec._get_rules_dict().get('send_reminder_email'))
+
+    def _inverse_rule_send_reminder_email(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['send_reminder_email'] = rec.rule_send_reminder_email
+            rec._set_rules_dict(data)
+
+    @api.model
+    def action_send_voting_reminders(self):
+        """Cron method: send reminder emails to staff with open votes in reminder-enabled rounds."""
+        open_rounds = self.search([('status', '=', 'open')]).filtered('rule_send_reminder_email')
+        if not open_rounds:
+            return True
+
+        Vote = self.env['aps.award.vote']
+        open_votes = Vote.search([
+            ('vote_round_id', 'in', open_rounds.ids),
+            ('state', '=', 'open'),
+        ])
+        if not open_votes:
+            return True
+
+        # Group open votes by voter partner
+        voters = {}
+        for vote in open_votes:
+            pid = vote.voter_partner_id.id
+            if pid not in voters:
+                voters[pid] = {'partner': vote.voter_partner_id, 'votes': []}
+            voters[pid]['votes'].append(vote)
+
+        template = self.env.ref('aps_sis.email_template_voting_reminder', raise_if_not_found=False)
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', 'http://localhost:8069')
+
+        for pid, voter_data in voters.items():
+            partner = voter_data['partner']
+            votes = voter_data['votes']
+
+            if not partner.email:
+                continue
+
+            # Find the employee linked to this partner for their access token
+            employee = self.env['hr.employee'].sudo().search(
+                [('user_id.partner_id', '=', pid)], limit=1
+            )
+            if not employee:
+                continue
+
+            token = employee._get_or_create_access_token()
+            voting_url = f"{base_url}/awards/vote/{token}"
+
+            # Build per-round summary rows
+            vote_rows = []
+            for v in votes:
+                rnd = v.vote_round_id
+                total = rnd.total_voter_count or 0
+                cast = rnd.votes_cast or 0
+                pct = int(cast * 100 / total) if total else 0
+                vote_rows.append({
+                    'round_name': rnd.name,
+                    'due_date': v.due_date.strftime('%d %b %Y') if v.due_date else 'No due date',
+                    'pct_submitted': pct,
+                    'votes_cast': cast,
+                    'total_voters': total,
+                })
+
+            if template:
+                template.with_context(
+                    voter_name=partner.name,
+                    voting_url=voting_url,
+                    vote_rows=vote_rows,
+                ).send_mail(
+                    votes[0].vote_round_id.id,
+                    email_values={
+                        'recipient_ids': [(4, partner.id)],
+                        'email_to': partner.email,
+                    },
+                    force_send=True,
+                )
+
+        return True
+
+
 
     def _collect_eligible_voter_partners(self):
         """Return a set of res.partner IDs for all voters eligible in this round.

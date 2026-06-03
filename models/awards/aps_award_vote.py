@@ -115,3 +115,18 @@ class APSAwardVote(models.Model):
     voter_name = fields.Char(
         related='voter_partner_id.name', string='Voter Name', store=True, readonly=True,
     )
+    voter_access_token = fields.Char(
+        string='Voter Access Token',
+        compute='_compute_voter_access_token',
+    )
+
+    @api.depends('voter_partner_id')
+    def _compute_voter_access_token(self):
+        for rec in self:
+            if not rec.voter_partner_id:
+                rec.voter_access_token = ''
+                continue
+            employee = self.env['hr.employee'].sudo().search(
+                [('user_id.partner_id', '=', rec.voter_partner_id.id)], limit=1
+            )
+            rec.voter_access_token = employee._get_or_create_access_token() if employee else ''

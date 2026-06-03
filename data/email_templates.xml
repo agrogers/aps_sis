@@ -43,5 +43,75 @@
             </field>    
 
         </record>
+
+        <record id="email_template_voting_reminder" model="mail.template">
+            <field name="name">APEX Voting Reminder</field>
+            <field name="model_id" ref="aps_sis.model_aps_award_vote_round"/>
+            <field name="auto_delete" eval="True"/>
+            <field name="subject">Reminder: You have outstanding votes to cast – APEX Awards</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                    <div style="background-color: #5c1ea8; padding: 20px 30px; border-radius: 6px 6px 0 0;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 20px;">APEX Awards – Voting Reminder</h2>
+                    </div>
+                    <div style="background-color: #ffffff; padding: 24px 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px;">
+                        <p style="margin-top: 0;">
+                            Hi <t t-out="ctx.get('voter_name', 'there')"/>,
+                        </p>
+                        <p>
+                            This is a friendly reminder that you have outstanding votes to cast in the <strong>APEX Awards</strong>.
+                            You can submit your votes at any time using your personal voting link below.
+                        </p>
+
+                        <!-- Pending votes table -->
+                        <h3 style="color: #5c1ea8; border-bottom: 2px solid #5c1ea8; padding-bottom: 6px;">Your Pending Votes</h3>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <thead>
+                                <tr style="background-color: #f4f0fb;">
+                                    <th style="text-align: left; padding: 8px 12px; font-size: 13px; color: #5c1ea8;">Vote Round</th>
+                                    <th style="text-align: left; padding: 8px 12px; font-size: 13px; color: #5c1ea8;">Due Date</th>
+                                    <th style="text-align: left; padding: 8px 12px; font-size: 13px; color: #5c1ea8;">% Submitted</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="ctx.get('vote_rows', [])" t-as="row">
+                                    <tr style="border-bottom: 1px solid #e8e8e8;">
+                                        <td style="padding: 8px 12px; font-size: 14px;"><t t-out="row.get('round_name', '')"/></td>
+                                        <td style="padding: 8px 12px; font-size: 14px;"><t t-out="row.get('due_date', '')"/></td>
+                                        <td style="padding: 8px 12px; font-size: 14px;">
+                                            <span style="display: inline-block; background-color: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                                                <t t-out="row.get('pct_submitted', 0)"/>% (<t t-out="row.get('votes_cast', 0)"/>/<t t-out="row.get('total_voters', 0)"/> voted)
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <!-- Call to action -->
+                        <div style="text-align: center; margin: 28px 0;">
+                            <a t-att-href="ctx.get('voting_url', '#')"
+                               style="display: inline-block; background-color: #5c1ea8; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 15px; font-weight: bold; letter-spacing: 0.5px;">
+                                Cast My Votes Now
+                            </a>
+                        </div>
+
+                        <!-- Security warning -->
+                        <div style="background-color: #fff8e1; border-left: 4px solid #f9a825; padding: 12px 16px; border-radius: 0 4px 4px 0; margin-bottom: 20px;">
+                            <p style="margin: 0; font-size: 13px; color: #5d4037;">
+                                <strong>&#9888; Important – Do not share this link.</strong>
+                                Your voting link is unique to you and is linked to your identity. Sharing it with others
+                                would allow them to vote on your behalf. Please keep it private and do not forward this email.
+                            </p>
+                        </div>
+
+                        <p style="font-size: 13px; color: #777;">
+                            If you believe you received this email in error, or you have already submitted your vote and
+                            continue to receive reminders, please contact your APEX administrator.
+                        </p>
+                    </div>
+                </div>
+            </field>
+        </record>
     </data>
 </odoo>
