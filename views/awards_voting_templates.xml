@@ -59,18 +59,18 @@
                             t-att-data-short-description="vote.short_description or ''"
                             t-att-data-description="vote.description or ''"
                             t-att-data-token="token"
-                            t-attf-data-category-img="#{'/web/image/aps.award.vote/' + str(vote.id) + '/image' if vote.image else ''}"
+                            t-attf-data-category-img="#{'/awards/vote/' + token + '/model_image/vote/' + str(vote.id) if vote.image else ''}"
                             t-attf-style="#{('--av-primary: ' + vote.vote_round_id.color + '; --av-accent: ' + vote.vote_round_id.color + '; border-color: ' + vote.vote_round_id.color + ';') if vote.vote_round_id and vote.vote_round_id.color else ''}"
                             onclick="AwardsVoting.openModal(this)">
                         <t t-set="vset_card" t-value="vote.vote_round_id.voting_set_ids[0] if (vote.vote_round_id and vote.vote_round_id.voting_set_ids) else False"/>
                         <t t-if="vset_card and vset_card.icon">
-                            <img t-attf-src="/web/image/aps.award.voting.set/#{vset_card.id}/icon"
+                            <img t-attf-src="/awards/vote/#{token}/model_image/voteset/#{vset_card.id}"
                                  class="av-cat-set-icon" alt=""/>
                         </t>
                         <div class="av-cat-top">
                         <div class="av-cat-img-wrap">
                             <t t-if="vote.image">
-                                <img t-attf-src="/web/image/aps.award.vote/#{vote.id}/image"
+                                <img t-attf-src="/awards/vote/#{token}/model_image/vote/#{vote.id}"
                                      class="av-cat-img" alt=""/>
                             </t>
                             <t t-else="">
@@ -124,7 +124,7 @@
                         <div id="av-submit-error" class="av-submit-error" style="display:none"/>
                     </div>
                 </div>
-            <div class="av-filters-bar">
+            <div class="av-filters-bar" id="av-filters-bar">
                 <button class="av-filter-toggle" id="av-filter-toggle"
                         onclick="AwardsVoting.toggleFilters()" aria-label="Toggle filters">
                     &#9776; Filters
@@ -133,6 +133,8 @@
                        placeholder="Search by name..." oninput="AwardsVoting.filterSearch()"/>
             </div>
             <div class="av-filters" id="av-filters">
+                <input id="av-search-desktop" class="av-filter-input" type="text"
+                       placeholder="Search by name..." oninput="AwardsVoting.filterSearch()"/>
                 <select id="av-filter-level" class="av-filter-select"
                         onchange="AwardsVoting.filterSearch()">
                     <option value="">All Year Levels</option>
@@ -192,18 +194,18 @@
                          t-attf-style="#{('--av-primary: ' + rnd.color + '; border-left-color: ' + rnd.color + ';') if (rnd and rnd.color) else ''}">
                         <div class="av-history-icon">
                             <t t-if="rnd and rnd.image">
-                                <img t-attf-src="/web/image/aps.award.vote.round/#{rnd.id}/image"
+                                <img t-attf-src="/awards/vote/#{token}/model_image/round/#{rnd.id}"
                                      class="av-history-cat-img" alt=""/>
                             </t>
                             <t t-elif="cat and cat.image">
-                                <img t-attf-src="/web/image/aps.award.category/#{cat.id}/image"
+                                <img t-attf-src="/awards/vote/#{token}/model_image/category/#{cat.id}"
                                      class="av-history-cat-img" alt=""/>
                             </t>
                             <t t-else="">
                                 <span class="av-history-cat-placeholder">&#127885;</span>
                             </t>
                             <t t-if="vset and vset.icon">
-                                <img t-attf-src="/web/image/aps.award.voting.set/#{vset.id}/icon"
+                                <img t-attf-src="/awards/vote/#{token}/model_image/voteset/#{vset.id}"
                                      class="av-history-set-icon" alt=""/>
                             </t>
                         </div>
@@ -218,12 +220,14 @@
                             <t t-foreach="grp['votes']" t-as="gv">
                                 <t t-if="gv.recipient_partner_id">
                                     <div class="av-history-recipient">
-                                        <t t-esc="gv.recipient_partner_id.name"/>
+                                        <img t-attf-src="/web/image/res.partner/#{gv.recipient_partner_id.id}/avatar_128"
+                                             class="av-history-recipient-avatar" alt=""/>
+                                        <span class="av-history-recipient-name"><t t-esc="gv.recipient_partner_id.name"/></span>
                                         <t t-if="gv.award_sub_category_id">
                                             <span class="av-history-subcat"> — <t t-esc="gv.award_sub_category_id.name"/></span>
                                         </t>
                                         <t t-if="gv.comment">
-                                            <span class="av-history-comment"> "<t t-esc="gv.comment"/>"</span>
+                                            <span class="av-history-comment">"<t t-esc="gv.comment"/>"</span>
                                         </t>
                                     </div>
                                 </t>

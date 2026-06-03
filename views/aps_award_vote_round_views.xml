@@ -204,6 +204,11 @@
                                        invisible="not rule_limit_votes"
                                        readonly="status != 'draft'"/>
                             </group>
+                            <group string="Candidate Restrictions">
+                                <field name="rule_limit_candidates_to_own_students"
+                                       widget="radio"
+                                       readonly="status != 'draft'"/>
+                            </group>
                             <group string="Visible Columns in Voting Dialog">
                                 <field name="rule_show_level_dept" widget="boolean_toggle" readonly="status != 'draft'"/>
                                 <field name="rule_show_times_awarded" widget="boolean_toggle" readonly="status != 'draft'"/>

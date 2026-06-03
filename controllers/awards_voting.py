@@ -1,9 +1,15 @@
 import base64
+import hashlib
+import hmac
 import json
 from datetime import date, timedelta
+from urllib.parse import urlencode
 
 from odoo import http
 from odoo.http import request
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AwardsVotingController(http.Controller):
@@ -23,6 +29,21 @@ class AwardsVotingController(http.Controller):
             return ''
         img = partner.image_128
         return img.decode() if isinstance(img, bytes) else img
+
+    @staticmethod
+    def _sign_image_request(token, partner_id, version):
+        secret = (request.env['ir.config_parameter'].sudo().get_param('database.secret') or '').encode()
+        payload = f"{token}:{partner_id}:{version}".encode()
+        return hmac.new(secret, payload, hashlib.sha256).hexdigest()
+
+    def _image_url(self, token, partner_id, write_date=None):
+        version = write_date.isoformat() if write_date else '0'
+        sig = self._sign_image_request(token, partner_id, version)
+        qs = {
+            'v': version,
+            's': sig,
+        }
+        return f"/awards/vote/{token}/candidate_image/{partner_id}?{urlencode(qs)}"
 
     # ------------------------------------------------------------------
     # Dashboard
@@ -140,7 +161,10 @@ class AwardsVotingController(http.Controller):
 
     @http.route('/awards/vote/<string:token>/candidates/<int:category_id>',
                 type='json', auth='public')
-    def voting_candidates(self, token, category_id, vote_id=None, **kwargs):
+    def voting_candidates(self, token, category_id, vote_id=None, include_images=True, **kwargs):
+        import time
+        t0 = time.time()
+        _logger.info("[voting_candidates] called: token=%s, category_id=%s, vote_id=%s", token, category_id, vote_id)
         employee = self._get_employee_by_token(token)
         if not employee:
             return {'error': 'Invalid token'}
@@ -169,6 +193,7 @@ class AwardsVotingController(http.Controller):
         show_times_awarded = True
         show_last_awarded  = True
         show_level_dept    = True
+        limit_to_own_students = 'no'
         if vote_id:
             vote_obj = request.env['aps.award.vote'].sudo().browse(int(vote_id))
             if vote_obj.exists() and vote_obj.vote_round_id:
@@ -184,6 +209,28 @@ class AwardsVotingController(http.Controller):
                 show_times_awarded = rnd.rule_show_times_awarded
                 show_last_awarded  = rnd.rule_show_last_awarded
                 show_level_dept    = rnd.rule_show_level_dept
+                limit_to_own_students = rnd.rule_limit_candidates_to_own_students or 'no'
+
+        # ── Compute the voter's "own students" when the rule requires it ──────
+        own_student_partner_ids = []
+        if limit_to_own_students in ('yes', 'optional') and vote_obj and vote_obj.exists():
+            voter_partner = vote_obj.voter_partner_id
+            if voter_partner:
+                Class = request.env['aps.class'].sudo()
+                own_classes = Class.search([
+                    '|',
+                    ('teacher_ids', 'in', [voter_partner.id]),
+                    ('assistant_teacher_ids', 'in', [voter_partner.id]),
+                ])
+                if own_classes:
+                    Enrollment = request.env['aps.student.class'].sudo()
+                    enrollments = Enrollment.search([
+                        ('home_class_id', 'in', own_classes.ids),
+                        ('active', '=', True),
+                    ])
+                    own_student_partner_ids = (
+                        enrollments.mapped('student_id.partner_id').filtered('id').ids
+                    )
 
         # ── Determine the voter's own partner_id for exclusion ──
         voter_partner_id = None
@@ -197,20 +244,27 @@ class AwardsVotingController(http.Controller):
 
         # ── Department-based staff candidates ──────────────────────────────────
         if ec_department_ids:
+            t1 = time.time()
+            _logger.info("[voting_candidates] DEPT: Searching employees in departments %s", ec_department_ids)
             Employee = request.env['hr.employee'].sudo()
             dept_employees = Employee.search([
                 ('department_id', 'in', ec_department_ids),
                 ('active', '=', True),
             ])
+            t2 = time.time()
+            _logger.info("[voting_candidates] DEPT: Found %d employees in %.3fs", len(dept_employees), t2-t1)
 
             # Prefetch all relational fields in batch to avoid per-record queries
             dept_employees.mapped('user_id.partner_id')
             partner_records = dept_employees.mapped('user_id.partner_id').filtered('id')
-            # Batch-read image_128 (binary fields are not included in default prefetch)
-            partner_image_map = {
-                r['id']: r['image_128']
-                for r in partner_records.read(['image_128'])
+            t3 = time.time()
+            _logger.info("[voting_candidates] DEPT: Found %d partners in %.3fs", len(partner_records), t3-t2)
+            partner_meta_map = {
+                r['id']: r['write_date']
+                for r in partner_records.read(['write_date'])
             }
+            t4 = time.time()
+            _logger.info("[voting_candidates] DEPT: Read partner write_date for %d partners in %.3fs", len(partner_meta_map), t4-t3)
 
             result = []
             for emp in dept_employees:
@@ -220,13 +274,17 @@ class AwardsVotingController(http.Controller):
                 if partner.id in excluded_partner_ids:
                     continue
 
-                img = partner_image_map.get(partner.id)
-                image_b64 = (img.decode() if isinstance(img, bytes) else img) if img else ''
+                image_url = self._image_url(
+                    token,
+                    partner.id,
+                    write_date=partner_meta_map.get(partner.id),
+                ) if include_images else ''
 
                 result.append({
                     'id': partner.id,
                     'name': partner.name or '',
-                    'image': image_b64,
+                    'image': '',
+                    'image_url': image_url,
                     'times_awarded': 0,
                     'last_awarded': None,
                     'level': '',
@@ -237,6 +295,11 @@ class AwardsVotingController(http.Controller):
                 })
 
             result.sort(key=lambda x: x['name'])
+            t5 = time.time()
+            _logger.info("[voting_candidates] DEPT: Built result list with %d candidates in %.3fs", len(result), t5-t4)
+            if result:
+                _logger.info("[voting_candidates] DEPT: Sample image_url=%s", result[0].get('image_url'))
+            _logger.info("[voting_candidates] DEPT: TOTAL time: %.3fs", t5-t0)
             return {
                 'candidates': result,
                 'sub_categories': [{'id': sc.id, 'name': sc.name} for sc in category.sub_category_ids]
@@ -246,6 +309,8 @@ class AwardsVotingController(http.Controller):
                 'show_times_awarded': show_times_awarded,
                 'show_last_awarded': show_last_awarded,
                 'show_level_dept': show_level_dept,
+                'limit_candidates_to_own_students': limit_to_own_students,
+                'own_student_partner_ids': [],
             }
 
         # No explicit constraints on round → fall back to category level_ids
@@ -269,7 +334,9 @@ class AwardsVotingController(http.Controller):
                 and not voter_partner_student_ids:
             return {'candidates': [], 'sub_categories': [], 'subject_cats': [], 'vote_limit': vote_limit,
                     'show_times_awarded': show_times_awarded, 'show_last_awarded': show_last_awarded,
-                    'show_level_dept': show_level_dept}
+                    'show_level_dept': show_level_dept,
+                    'limit_candidates_to_own_students': limit_to_own_students,
+                    'own_student_partner_ids': own_student_partner_ids}
 
         # ── Build student domain ──
         domain = [('active', '=', True)]
@@ -294,12 +361,12 @@ class AwardsVotingController(http.Controller):
 
         is_whitelisted = bool(ec_student_ids or voter_partner_student_ids)
 
-        # Prefetch partner relations and batch-read images before the loop
+        # Prefetch partner relations and batch-read write_date before the loop
         students.mapped('partner_id')
         student_partners = students.mapped('partner_id').filtered('id')
-        student_image_map = {
-            r['id']: r['image_128']
-            for r in student_partners.read(['image_128'])
+        student_meta_map = {
+            r['id']: r['write_date']
+            for r in student_partners.read(['write_date'])
         }
 
         # Batch-load all certificates for this category in one query (avoid N+1)
@@ -328,8 +395,11 @@ class AwardsVotingController(http.Controller):
                 times_awarded = 0
                 last_awarded = None
 
-            img = student_image_map.get(partner.id)
-            image_b64 = (img.decode() if isinstance(img, bytes) else img) if img else ''
+            image_url = self._image_url(
+                token,
+                partner.id,
+                write_date=student_meta_map.get(partner.id),
+            ) if include_images else ''
 
             enrolled_cats = student.enrollment_ids.mapped('home_class_id.subject_id.category_id')
             if ec_subject_cat_ids and not is_whitelisted:
@@ -341,7 +411,8 @@ class AwardsVotingController(http.Controller):
             result.append({
                 'id': partner.id,
                 'name': partner.name or '',
-                'image': image_b64,
+                'image': '',
+                'image_url': image_url,
                 'times_awarded': times_awarded,
                 'last_awarded': last_awarded,
                 'level': student.level_id.display_name or '',
@@ -352,6 +423,11 @@ class AwardsVotingController(http.Controller):
             })
 
         result.sort(key=lambda x: x['name'])
+
+        # ── Apply own-students filter for 'yes' mode (server-side) ──────────
+        if limit_to_own_students == 'yes' and own_student_partner_ids:
+            own_set = set(own_student_partner_ids)
+            result = [r for r in result if r['id'] in own_set]
 
         SubjectCat = request.env['aps.subject.category'].sudo()
         sc_records = SubjectCat.search([('id', 'in', list(all_subject_cat_ids))], order='name')
@@ -368,7 +444,112 @@ class AwardsVotingController(http.Controller):
             'show_times_awarded': show_times_awarded,
             'show_last_awarded': show_last_awarded,
             'show_level_dept': show_level_dept,
+            'limit_candidates_to_own_students': limit_to_own_students,
+            'own_student_partner_ids': own_student_partner_ids if limit_to_own_students == 'optional' else [],
         }
+
+    @http.route('/awards/vote/<string:token>/candidate_image/<int:partner_id>',
+                type='http', auth='public', website=False)
+    def voting_candidate_image(self, token, partner_id, v='0', s=None, **kwargs):
+        employee = self._get_employee_by_token(token)
+        if not employee:
+            _logger.info("[voting_candidate_image] not_found: invalid token partner_id=%s", partner_id)
+            return request.not_found()
+
+        if not s:
+            _logger.info("[voting_candidate_image] not_found: missing signature partner_id=%s", partner_id)
+            return request.not_found()
+
+        expected_sig = self._sign_image_request(token, partner_id, v or '0')
+        if not hmac.compare_digest(expected_sig, s):
+            _logger.info("[voting_candidate_image] not_found: bad signature partner_id=%s", partner_id)
+            return request.not_found()
+
+        partner = request.env['res.partner'].sudo().browse(partner_id)
+        if not partner.exists() or not partner.image_128:
+            _logger.info("[voting_candidate_image] not_found: missing partner/image partner_id=%s", partner_id)
+            return request.not_found()
+
+        raw = partner.image_128
+        if isinstance(raw, str):
+            raw = raw.encode()
+        try:
+            image_bytes = base64.b64decode(raw)
+        except Exception:
+            return request.not_found()
+
+        content_type = 'image/png'
+        if image_bytes.startswith(b'\xff\xd8'):
+            content_type = 'image/jpeg'
+
+        etag = f'"partner-{partner.id}-{partner.write_date or "0"}"'
+        if request.httprequest.headers.get('If-None-Match') == etag:
+            _logger.info("[voting_candidate_image] 304 partner_id=%s", partner_id)
+            return request.make_response('', headers=[('ETag', etag)], status=304)
+
+        headers = [
+            ('Content-Type', content_type),
+            ('Cache-Control', 'public, max-age=86400'),
+            ('ETag', etag),
+        ]
+        _logger.info("[voting_candidate_image] 200 partner_id=%s bytes=%s", partner_id, len(image_bytes))
+        return request.make_response(image_bytes, headers=headers)
+
+    # ------------------------------------------------------------------
+    # Generic token-authenticated image route for round/set/category/vote
+    # images (public users cannot hit /web/image/ for these models)
+    # ------------------------------------------------------------------
+
+    # Maps URL model slug → (odoo model name, field name)
+    _PUBLIC_IMAGE_MODELS = {
+        'round':    ('aps.award.vote.round',   'image'),
+        'vote':     ('aps.award.vote',          'image'),
+        'category': ('aps.award.category',      'image'),
+        'voteset':  ('aps.award.voting.set',    'icon'),
+    }
+
+    @http.route('/awards/vote/<string:token>/model_image/<string:model_slug>/<int:record_id>',
+                type='http', auth='public', website=False)
+    def voting_model_image(self, token, model_slug, record_id, **kwargs):
+        if not self._get_employee_by_token(token):
+            return request.not_found()
+
+        mapping = self._PUBLIC_IMAGE_MODELS.get(model_slug)
+        if not mapping:
+            return request.not_found()
+
+        model_name, field_name = mapping
+        record = request.env[model_name].sudo().browse(record_id)
+        if not record.exists():
+            return request.not_found()
+
+        raw = getattr(record, field_name, None)
+        if not raw:
+            return request.not_found()
+
+        if isinstance(raw, str):
+            raw = raw.encode()
+        try:
+            image_bytes = base64.b64decode(raw)
+        except Exception:
+            return request.not_found()
+
+        content_type = 'image/png'
+        if image_bytes.startswith(b'\xff\xd8'):
+            content_type = 'image/jpeg'
+        elif image_bytes.lstrip()[:4] in (b'<svg', b'<?xm'):
+            content_type = 'image/svg+xml'
+
+        etag = f'"{model_slug}-{record_id}-{record.write_date or "0"}"'
+        if request.httprequest.headers.get('If-None-Match') == etag:
+            return request.make_response('', headers=[('ETag', etag)], status=304)
+
+        headers = [
+            ('Content-Type', content_type),
+            ('Cache-Control', 'public, max-age=86400'),
+            ('ETag', etag),
+        ]
+        return request.make_response(image_bytes, headers=headers)
 
     # ------------------------------------------------------------------
     # Submit vote

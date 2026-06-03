@@ -20,6 +20,9 @@
         _sortAsc: true,
         _voteLimit: 0,         // 0 = no limit; >0 = max allowed selections
         _isStaffRound: false,  // true when all candidates are staff (department-based)
+        _limitToOwnStudents: 'no',    // 'no' | 'yes' | 'optional'
+        _ownStudentPartnerIds: null,  // Set of partner IDs for the voter's own students
+        _ownStudentsOnly: false,      // active state of the optional toggle
 
         // ----------------------------------------------------------------
         // Modal open / close
@@ -42,6 +45,10 @@
             this._showTimesAwarded = true;
             this._showLastAwarded = true;
             this._showLevelDept = true;
+            this._limitToOwnStudents = 'no';
+            this._ownStudentPartnerIds = null;
+            this._ownStudentsOnly = false;
+            this._removeOwnStudentsToggle();
 
             // Collapse the filter panel each time the modal opens
             const filterPanel = document.getElementById('av-filters');
@@ -73,6 +80,8 @@
             document.getElementById('av-submit-btn').style.display = 'none';
             document.getElementById('av-submit-error').style.display = 'none';
             document.getElementById('av-search').value = '';
+            const desktopSearch = document.getElementById('av-search-desktop');
+            if (desktopSearch) desktopSearch.value = '';
             document.getElementById('av-candidate-list').innerHTML =
                 '<tr><td colspan="6" class="av-loading">Loading candidates…</td></tr>';
 
@@ -100,6 +109,71 @@
                 '<option value="">All Year Levels</option>';
             document.getElementById('av-filter-subject-cat').innerHTML =
                 '<option value="">All Subject Categories</option>';
+        },
+
+        // ----------------------------------------------------------------
+        // Own-students toggle (shown only when rule == 'optional')
+        // ----------------------------------------------------------------
+        _setupOwnStudentsToggle() {
+            this._removeOwnStudentsToggle();
+            if (this._limitToOwnStudents !== 'optional') return;
+
+            const makeBtn = (id) => {
+                const btn = document.createElement('button');
+                btn.id = id;
+                btn.className = 'av-filter-toggle' + (this._ownStudentsOnly ? ' av-filter-toggle--active' : '');
+                btn.title = 'Toggle between your students and all eligible candidates';
+                btn.textContent = this._ownStudentsOnly ? '\uD83D\uDC64 My Students' : '\uD83D\uDC65 All Students';
+                return btn;
+            };
+
+            const syncBtns = () => {
+                ['av-own-students-toggle', 'av-own-students-toggle-desktop'].forEach(id => {
+                    const b = document.getElementById(id);
+                    if (!b) return;
+                    b.className = 'av-filter-toggle' + (this._ownStudentsOnly ? ' av-filter-toggle--active' : '');
+                    b.textContent = this._ownStudentsOnly ? '\uD83D\uDC64 My Students' : '\uD83D\uDC65 All Students';
+                });
+            };
+
+            const onClick = () => {
+                this._ownStudentsOnly = !this._ownStudentsOnly;
+                syncBtns();
+                this._populateLevelFilter(this._getVisibleCandidatePool());
+                this._applySearch();
+                this._renderTable();
+            };
+
+            // Mobile bar
+            const bar = document.getElementById('av-filters-bar');
+            if (bar) {
+                const btn = makeBtn('av-own-students-toggle');
+                btn.addEventListener('click', onClick);
+                bar.insertBefore(btn, bar.firstChild);
+            }
+
+            // Desktop filters panel
+            const panel = document.getElementById('av-filters');
+            if (panel) {
+                const btnD = makeBtn('av-own-students-toggle-desktop');
+                btnD.addEventListener('click', onClick);
+                panel.insertBefore(btnD, panel.firstChild);
+            }
+        },
+
+        _removeOwnStudentsToggle() {
+            ['av-own-students-toggle', 'av-own-students-toggle-desktop'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+            });
+        },
+
+        _getSearchValue() {
+            const mobile = document.getElementById('av-search');
+            const desktop = document.getElementById('av-search-desktop');
+            const m = mobile ? (mobile.value || '') : '';
+            const d = desktop ? (desktop.value || '') : '';
+            return (d || m).toLowerCase();
         },
 
         _populateSubjectCatFilter(subjectCats) {
@@ -135,9 +209,14 @@
                 this._showLastAwarded  = result.show_last_awarded  !== false;
                 this._showLevelDept    = result.show_level_dept    !== false;
                 this._isStaffRound = this._candidates.length > 0 && this._candidates.every(c => c.is_staff === true);
-                this._populateLevelFilter();
+                this._limitToOwnStudents = result.limit_candidates_to_own_students || 'no';
+                this._ownStudentPartnerIds = new Set(result.own_student_partner_ids || []);
+                // Default the optional toggle to ON (show only own students)
+                this._ownStudentsOnly = this._limitToOwnStudents === 'optional';
+                this._populateLevelFilter(this._getVisibleCandidatePool());
                 this._applyColumnVisibility();
                 this._populateSubjectCatFilter(result.subject_cats || []);
+                this._setupOwnStudentsToggle();
                 this._applySearch();
                 this._renderTable();
             }).catch(() => {
@@ -146,11 +225,12 @@
             });
         },
 
-        _populateLevelFilter() {
+        _populateLevelFilter(candidates) {
+            const pool = candidates || this._candidates;
             const subCatSel = document.getElementById('av-filter-subject-cat');
             if (this._isStaffRound) {
                 // For staff rounds show department filter instead of level
-                const levels = [...new Set(this._candidates.map(c => c.department).filter(Boolean))].sort();
+                const levels = [...new Set(pool.map(c => c.department).filter(Boolean))].sort();
                 const sel = document.getElementById('av-filter-level');
                 const saved = localStorage.getItem('av_filter_level') || '';
                 sel.innerHTML = '<option value="">All Departments</option>' +
@@ -162,7 +242,7 @@
                 if (subCatSel) subCatSel.style.display = 'none';
             } else {
                 if (subCatSel) subCatSel.style.display = '';
-                const levels = [...new Set(this._candidates.map(c => c.level).filter(Boolean))].sort();
+                const levels = [...new Set(pool.map(c => c.level).filter(Boolean))].sort();
                 const sel = document.getElementById('av-filter-level');
                 const saved = localStorage.getItem('av_filter_level') || '';
                 sel.innerHTML = '<option value="">All Year Levels</option>' +
@@ -170,6 +250,13 @@
                 const levelTh = document.querySelector('.av-th-level');
                 if (levelTh) levelTh.textContent = 'Level';
             }
+        },
+
+        _getVisibleCandidatePool() {
+            if (this._ownStudentsOnly && this._ownStudentPartnerIds && this._ownStudentPartnerIds.size > 0) {
+                return this._candidates.filter(c => this._ownStudentPartnerIds.has(c.id));
+            }
+            return this._candidates;
         },
 
         // ----------------------------------------------------------------
@@ -203,14 +290,23 @@
                 document.getElementById('av-filter-level').value);
             localStorage.setItem('av_filter_subject_cat',
                 document.getElementById('av-filter-subject-cat').value);
+            const mobile = document.getElementById('av-search');
+            const desktop = document.getElementById('av-search-desktop');
+            if (mobile && desktop) {
+                if (document.activeElement === desktop) mobile.value = desktop.value;
+                else if (document.activeElement === mobile) desktop.value = mobile.value;
+            }
             this._applySearch();
             this._renderTable();
         },
 
         _applySearch() {
-            const q = (document.getElementById('av-search').value || '').toLowerCase();
+            const q = this._getSearchValue();
             const levelOrDept = document.getElementById('av-filter-level').value;
             const subCatId = parseInt(document.getElementById('av-filter-subject-cat').value || '0', 10);
+
+            const ownStudentsActive = this._ownStudentsOnly &&
+                this._ownStudentPartnerIds && this._ownStudentPartnerIds.size > 0;
 
             this._filtered = this._candidates.filter(c => {
                 const nameMatch = !q || c.name.toLowerCase().includes(q);
@@ -224,7 +320,8 @@
                 // pass the subject-category filter — they were hand-picked regardless of class.
                 const subCatMatch = !subCatId || c.whitelisted ||
                     (c.subject_cat_ids && c.subject_cat_ids.includes(subCatId));
-                return nameMatch && levelMatch && subCatMatch;
+                const ownStudentMatch = !ownStudentsActive || this._ownStudentPartnerIds.has(c.id);
+                return nameMatch && levelMatch && subCatMatch && ownStudentMatch;
             });
 
             this._sortCandidates();
@@ -276,8 +373,10 @@
             const rows = [];
             for (const c of this._filtered) {
                 const sel = this._selected.has(c.id);
-                const photo = c.image
-                    ? `<img src="data:image/png;base64,${c.image}" alt="${this._esc(c.name)}">`
+                const photo = c.image_url
+                    ? `<img src="${this._esc(c.image_url)}" alt="${this._esc(c.name)}" loading="lazy" decoding="async">`
+                    : c.image
+                    ? `<img src="data:image/png;base64,${c.image}" alt="${this._esc(c.name)}" loading="lazy" decoding="async">`
                     : `<div class="av-initials">${this._initials(c.name)}</div>`;
                 const lastDate = c.last_awarded
                     ? new Date(c.last_awarded).toLocaleDateString()

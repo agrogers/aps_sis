@@ -189,6 +189,16 @@ class APSAwardVoteRound(models.Model):
         compute='_compute_rule_show_level_dept',
         inverse='_inverse_rule_show_level_dept',
     )
+    rule_limit_candidates_to_own_students = fields.Selection(
+        selection=[
+            ('no', 'No – show all eligible candidates'),
+            ('yes', 'Yes – show only the voter\'s own students'),
+            ('optional', 'Optional – voter can toggle between their students and all candidates'),
+        ],
+        string='Limit Candidates to Own Students',
+        compute='_compute_rule_limit_candidates_to_own_students',
+        inverse='_inverse_rule_limit_candidates_to_own_students',
+    )
 
     # Computed vote statistics
     votes_cast = fields.Integer(
@@ -468,6 +478,19 @@ class APSAwardVoteRound(models.Model):
         for rec in self:
             data = rec._get_rules_dict()
             data['show_level_dept'] = rec.rule_show_level_dept
+            rec._set_rules_dict(data)
+
+    @api.depends('rules')
+    def _compute_rule_limit_candidates_to_own_students(self):
+        for rec in self:
+            rec.rule_limit_candidates_to_own_students = (
+                rec._get_rules_dict().get('limit_candidates_to_own_students') or 'no'
+            )
+
+    def _inverse_rule_limit_candidates_to_own_students(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['limit_candidates_to_own_students'] = rec.rule_limit_candidates_to_own_students or 'no'
             rec._set_rules_dict(data)
 
     # ── Eligible voter collection ─────────────────────────────────────────────
