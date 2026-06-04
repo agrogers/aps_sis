@@ -299,16 +299,8 @@
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="allow_subject_editing"  widget="boolean_toggle" />
                                     <field name="assigned_by"/>
-                                    <div class="o_row" colspan="2">  <!-- colspan=2 makes it span both columns of the parent group -->
-                                        <label for="date_assigned" string="Assigned On" class="fw-bold"/>
-                                        <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
-                                        <field name="time_assigned" widget="float_time" nolabel="1"/>
-                                    </div>
-                                    <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                     <field name="submission_label"/>
                                     <field name="url" widget="url"/>
-                                    <field name="supporting_resources_buttons" widget="resource_links"/>
-                                    <field name="submission_active" widget="boolean_toggle" />
                                 </group>
                                 <group string="Results">
                                     <field name="state" readonly="not is_current_user_faculty"/>
@@ -323,40 +315,55 @@
                                     <field class="col" name="points"/>
                                     <field class="col" name="points_scale" readonly="0"/>
                                     
-                                    <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
-                                    <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
-                                    <field name="due_status" readonly="not is_current_user_faculty"/>
                                     <field name="reviewed_by" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>
                             </group>
                             <group>
+                                <group string="Dates">
+                                        <div class="o_row" colspan="2">  <!-- colspan=2 makes it span both columns of the parent group -->
+                                            <label for="date_assigned" string="Assigned On" class="fw-bold"/>
+                                            <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                            <field name="time_assigned" widget="float_time" nolabel="1"/>
+                                        </div>
+                                        <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                        <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                        <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                        <field name="due_status" readonly="not is_current_user_faculty"/>
+
+                                </group>
                                 <group string="Other Details">
-                                    <field name="auto_score" widget="boolean_toggle"/>
-                                    <field name="active_datetime" readonly="1"/>
-                                    <field name="notification_state"  />
-                                    <field name="ai_auto_mark_state" readonly="1"/>
-                                    <field name="days_till_due" readonly="1"/>
+                                        <field name="supporting_resources_buttons" widget="resource_links"/>
+                                        <field name="submission_active" widget="boolean_toggle" />
+                                        <field name="auto_score" widget="boolean_toggle"/>
+                                        <field name="active_datetime" readonly="1"/>
+                                        <field name="notification_state"  />
+                                        <field name="ai_auto_mark_state" readonly="1"/>
+                                        <field name="days_till_due" readonly="1"/>
+                                        
+                                        <field name="create_date" readonly="1"/>
+                                        <field name="write_date" readonly="1"/>
                                     
-                                    <field name="create_date" readonly="1"/>
-                                    <field name="write_date" readonly="1"/>
                                 </group>
                             </group>
                         </page>
                         <page string="Student Answer+Feedback" class="tab-with-icon student-answer-tab" name="student_answer_page">
-                            <field name="confidence_rating" widget="priority" readonly="not is_current_user_faculty" invisible="state == 'complete' and not confidence_rating"/>
-                            <field name="ai_targeted_feedback" invisible="1"/>
-                            <field name="ai_answer_chunks" invisible="1"/>
-                            <field name="ai_answer_chunked_html" invisible="1"/>
-                            <field name="ai_feedback_items" invisible="1"/>
-                            <field name="ai_feedback_links" invisible="1"/>
-                            <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1"/>
-                            <field name="answer"/>
+                            <group>
+                                <field name="confidence_rating" widget="priority" readonly="not is_current_user_faculty" invisible="state == 'complete' and not confidence_rating"/>
+                                <field name="ai_targeted_feedback" invisible="1"/>
+                                <field name="ai_answer_chunks" invisible="1"/>
+                                <field name="ai_answer_chunked_html" invisible="1"/>
+                                <field name="ai_feedback_items" invisible="1"/>
+                                <field name="ai_feedback_links" invisible="1"/>
+                                <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1" invisible="not answer"/>
+                                <field name="answer" nolabel="1"/>
+    
+                            </group>
                         </page>
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" name="feedback_page">
                             <div class="row align-items-start">
                                 <div class="col-lg-11">
-                                    <field name="feedback" nolabel="1" placeholder="Feedback on this submission."/>
+                                    <field name="feedback" nolabel="1" placeholder="Feedback on this submission." invisible="not answer"/>
                                 </div>
                                 <div class="col-lg-1 d-flex flex-column gap-2">
                                     <button name="action_start_mark_with_ai"

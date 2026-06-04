@@ -132,5 +132,13 @@
             <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
         </record>
 
+        <!-- Time Tracking record rules -->
+        <record id="rule_aps_time_tracking_student" model="ir.rule">
+            <field name="name">Student (APEX): Own Time Records Only</field>
+            <field name="model_id" ref="model_aps_time_tracking"/>
+            <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
+        </record>
+
     </data>
 </odoo>
