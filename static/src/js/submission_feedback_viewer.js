@@ -181,6 +181,14 @@ export class SubmissionFeedbackViewer extends Component {
         return this.isTargeted && this.consolidatedFeedbackItems.length > 0;
     }
 
+    get hasFeedback() {
+        if (this.hasStructuredItems) return true;
+        const raw = this.props.record.data[this.props.name] || "";
+        // HTML fields can contain empty tags like <div></div> — strip tags and check for text
+        const text = raw.replace(/<[^>]*>/g, "").trim();
+        return text.length > 0;
+    }
+
     get answerMarkup() {
         if (this.isTargeted && this.answerChunkedHtml) {
             const activeChunkIds = new Set(this.activeChunkIds);

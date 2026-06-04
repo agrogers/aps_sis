@@ -348,17 +348,16 @@
                             </group>
                         </page>
                         <page string="Student Answer+Feedback" class="tab-with-icon student-answer-tab" name="student_answer_page">
-                            <group>
-                                <field name="confidence_rating" widget="priority" readonly="not is_current_user_faculty" invisible="state == 'complete' and not confidence_rating"/>
+                                <div class="mb-2">
+                                    <field name="confidence_rating" widget="priority" readonly="not is_current_user_faculty" invisible="state == 'complete' and not confidence_rating"/>
+                                </div>
                                 <field name="ai_targeted_feedback" invisible="1"/>
                                 <field name="ai_answer_chunks" invisible="1"/>
                                 <field name="ai_answer_chunked_html" invisible="1"/>
                                 <field name="ai_feedback_items" invisible="1"/>
                                 <field name="ai_feedback_links" invisible="1"/>
-                                <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1" invisible="not answer"/>
+                                <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1" invisible="not has_feedback"/>
                                 <field name="answer" nolabel="1"/>
-    
-                            </group>
                         </page>
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" name="feedback_page">
                             <div class="row align-items-start">

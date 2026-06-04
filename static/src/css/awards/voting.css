@@ -101,6 +101,56 @@
   border-bottom: 2px solid var(--av-border);
 }
 
+.av-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+
+.av-section-header .av-section-title {
+  margin-bottom: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.av-vset-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-width: 170px;
+  height: 2.15rem;
+  padding: .35rem 2rem .35rem .75rem;
+  border: 1px solid var(--av-border);
+  border-radius: 8px;
+  background-color: #fff;
+  color: var(--av-text);
+  font-size: .86rem;
+  font-family: var(--av-font);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--av-muted) 50%),
+    linear-gradient(135deg, var(--av-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.av-vset-select:hover {
+  border-color: #cbd5e1;
+}
+
+.av-vset-select:focus {
+  outline: none;
+  border-color: var(--av-primary);
+  box-shadow: 0 0 0 3px rgba(92, 30, 168, .16);
+}
+
 /* ---------- Category Cards ---------- */
 .av-cards {
   display: grid;
@@ -654,6 +704,17 @@
 
   /* Section padding */
   .av-section { padding: 0 1rem; margin-top: 1.25rem; }
+
+  .av-section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .5rem;
+  }
+
+  .av-vset-select {
+    width: 100%;
+    min-width: 0;
+  }
 
   /* Category cards — 2 per row */
   .av-cards { grid-template-columns: 1fr 1fr; gap: .75rem; }

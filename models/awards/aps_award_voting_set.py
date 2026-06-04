@@ -4,8 +4,9 @@ from odoo import fields, models
 class APSAwardVotingSet(models.Model):
     _name = 'aps.award.voting.set'
     _description = 'Award Voting Set'
-    _order = 'name'
+    _order = 'sequence, name'
 
+    sequence = fields.Integer(string='Sequence', default=10)
     name = fields.Char(string='Name', required=True)
     icon = fields.Image(string='Icon', max_width=256, max_height=256)
     color = fields.Char(string='Color', default='#5c1ea8')

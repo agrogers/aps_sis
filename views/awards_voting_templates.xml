@@ -49,7 +49,17 @@
     <!-- Open Votes -->
     <t t-if="voter_open_votes">
         <section class="av-section">
-            <h2 class="av-section-title">Open for Voting</h2>
+            <div class="av-section-header">
+                <h2 class="av-section-title">Open for Voting</h2>
+                <t t-if="len(open_vsets) >= 1">
+                    <select id="av-vset-filter" class="av-vset-select" onchange="AwardsVoting.filterByVotingSet(this.value)">
+                        <option value="">All</option>
+                        <t t-foreach="open_vsets.items()" t-as="vset_entry">
+                            <option t-att-value="vset_entry[0]"><t t-esc="vset_entry[1]"/></option>
+                        </t>
+                    </select>
+                </t>
+            </div>
             <div class="av-cards">
                 <t t-foreach="voter_open_votes" t-as="vote">
                     <button class="av-cat-card"
@@ -60,6 +70,7 @@
                             t-att-data-description="vote.description or ''"
                             t-att-data-token="token"
                             t-attf-data-category-img="#{'/awards/vote/' + token + '/model_image/vote/' + str(vote.id) if vote.image else ''}"
+                            t-attf-data-vset-ids="#{' '.join(str(s.id) for s in vote.vote_round_id.voting_set_ids) if vote.vote_round_id else ''}"
                             t-attf-style="#{('--av-primary: ' + vote.vote_round_id.color + '; --av-accent: ' + vote.vote_round_id.color + '; border-color: ' + vote.vote_round_id.color + ';') if vote.vote_round_id and vote.vote_round_id.color else ''}"
                             onclick="AwardsVoting.openModal(this)">
                         <t t-set="vset_card" t-value="vote.vote_round_id.voting_set_ids[0] if (vote.vote_round_id and vote.vote_round_id.voting_set_ids) else False"/>
@@ -191,7 +202,8 @@
                     <t t-set="cat" t-value="v.award_category_id"/>
                     <t t-set="vset" t-value="rnd.voting_set_ids[0] if (rnd and rnd.voting_set_ids) else False"/>
                     <div t-attf-class="av-history-row av-history-state--#{grp['state']}"
-                         t-attf-style="#{('--av-primary: ' + rnd.color + '; border-left-color: ' + rnd.color + ';') if (rnd and rnd.color) else ''}">
+                         t-attf-style="#{('--av-primary: ' + rnd.color + '; border-left-color: ' + rnd.color + ';') if (rnd and rnd.color) else ''}"
+                         t-attf-data-vset-ids="#{' '.join(str(s.id) for s in rnd.voting_set_ids) if rnd else ''}">
                         <div class="av-history-icon">
                             <t t-if="rnd and rnd.image">
                                 <img t-attf-src="/awards/vote/#{token}/model_image/round/#{rnd.id}"

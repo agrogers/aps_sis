@@ -82,6 +82,12 @@ class APSAwardVoteRound(models.Model):
     voter_show_categories = fields.Boolean(string='Subject Categories', default=False)
     voter_show_departments = fields.Boolean(string='Departments', default=False)
 
+    # Sub-toggles: which person types are included when levels/categories are set
+    voter_levels_include_teachers = fields.Boolean(string='Teachers', default=True)
+    voter_levels_include_students = fields.Boolean(string='Students', default=True)
+    voter_categories_include_teachers = fields.Boolean(string='Teachers', default=True)
+    voter_categories_include_students = fields.Boolean(string='Students', default=False)
+
     # Virtual Many2many fields backed by the eligible_voters JSON dict (no DB relation tables)
     eligible_voter_partner_ids = fields.Many2many(
         'res.partner',
@@ -116,6 +122,12 @@ class APSAwardVoteRound(models.Model):
     candidate_show_categories = fields.Boolean(string='Subject Categories', default=False)
     candidate_show_students = fields.Boolean(string='Students', default=False)
     candidate_show_departments = fields.Boolean(string='Departments', default=False)
+
+    # Sub-toggles: which person types are included when levels/categories are set
+    candidate_levels_include_teachers = fields.Boolean(string='Teachers', default=False)
+    candidate_levels_include_students = fields.Boolean(string='Students', default=True)
+    candidate_categories_include_teachers = fields.Boolean(string='Teachers', default=False)
+    candidate_categories_include_students = fields.Boolean(string='Students', default=True)
 
     # Virtual Many2many fields backed by the eligible_candidates JSON dict (no DB relation tables)
     eligible_candidate_level_ids = fields.Many2many(
@@ -291,7 +303,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_voter_ids(self):
         for rec in self:
             ids = rec._get_voters_dict().get('partner_ids', [])
-            rec.eligible_voter_partner_ids = self.env['res.partner'].browse(ids).exists()
+            rec.eligible_voter_partner_ids = self.env['res.partner'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_voter_ids(self):
         for rec in self:
@@ -303,7 +315,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_voter_levels(self):
         for rec in self:
             ids = rec._get_voters_dict().get('level_ids', [])
-            rec.eligible_voter_level_ids = self.env['aps.level'].browse(ids).exists()
+            rec.eligible_voter_level_ids = self.env['aps.level'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_voter_levels(self):
         for rec in self:
@@ -315,7 +327,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_voter_categories(self):
         for rec in self:
             ids = rec._get_voters_dict().get('subject_category_ids', [])
-            rec.eligible_voter_category_ids = self.env['aps.subject.category'].browse(ids).exists()
+            rec.eligible_voter_category_ids = self.env['aps.subject.category'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_voter_categories(self):
         for rec in self:
@@ -327,7 +339,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_voter_departments(self):
         for rec in self:
             ids = rec._get_voters_dict().get('department_ids', [])
-            rec.eligible_voter_department_ids = self.env['hr.department'].browse(ids).exists()
+            rec.eligible_voter_department_ids = self.env['hr.department'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_voter_departments(self):
         for rec in self:
@@ -351,7 +363,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_candidate_levels(self):
         for rec in self:
             ids = rec._get_candidates_dict().get('level_ids', [])
-            rec.eligible_candidate_level_ids = self.env['aps.level'].browse(ids).exists()
+            rec.eligible_candidate_level_ids = self.env['aps.level'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_candidate_levels(self):
         for rec in self:
@@ -363,7 +375,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_candidate_categories(self):
         for rec in self:
             ids = rec._get_candidates_dict().get('subject_category_ids', [])
-            rec.eligible_candidate_category_ids = self.env['aps.subject.category'].browse(ids).exists()
+            rec.eligible_candidate_category_ids = self.env['aps.subject.category'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_candidate_categories(self):
         for rec in self:
@@ -375,7 +387,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_candidate_students(self):
         for rec in self:
             ids = rec._get_candidates_dict().get('student_ids', [])
-            rec.eligible_candidate_student_ids = self.env['aps.student'].browse(ids).exists()
+            rec.eligible_candidate_student_ids = self.env['aps.student'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_candidate_students(self):
         for rec in self:
@@ -387,7 +399,7 @@ class APSAwardVoteRound(models.Model):
     def _compute_eligible_candidate_departments(self):
         for rec in self:
             ids = rec._get_candidates_dict().get('department_ids', [])
-            rec.eligible_candidate_department_ids = self.env['hr.department'].browse(ids).exists()
+            rec.eligible_candidate_department_ids = self.env['hr.department'].browse(ids).exists().sorted('name')
 
     def _inverse_eligible_candidate_departments(self):
         for rec in self:
@@ -639,22 +651,25 @@ class APSAwardVoteRound(models.Model):
         voters_dict = self._get_voters_dict()
         partner_ids = set(voters_dict.get('partner_ids', []))
 
-        level_ids = self.eligible_voter_level_ids.ids
-        category_ids = self.eligible_voter_category_ids.ids
+        level_ids = self.eligible_voter_level_ids.ids if self.voter_show_levels else []
+        category_ids = self.eligible_voter_category_ids.ids if self.voter_show_categories else []
 
-        if level_ids or category_ids:
+        # Teachers from classes matching levels and/or categories (controlled by sub-toggles)
+        if (level_ids and self.voter_levels_include_teachers) or \
+                (category_ids and self.voter_categories_include_teachers):
             domain = []
-            if level_ids:
+            if level_ids and self.voter_levels_include_teachers:
                 domain.append(('subject_id.level_id', 'in', level_ids))
-            if category_ids:
+            if category_ids and self.voter_categories_include_teachers:
                 domain.append(('subject_id.category_id', 'in', category_ids))
-            classes = self.env['aps.class'].search(domain)
-            for cls in classes:
-                partner_ids.update(cls.teacher_ids.ids)
-                partner_ids.update(cls.assistant_teacher_ids.ids)
+            if domain:
+                classes = self.env['aps.class'].search(domain)
+                for cls in classes:
+                    partner_ids.update(cls.teacher_ids.ids)
+                    partner_ids.update(cls.assistant_teacher_ids.ids)
 
-        # Also include students whose level matches the voter levels
-        if level_ids:
+        # Students whose level matches the voter levels
+        if level_ids and self.voter_levels_include_students:
             students = self.env['aps.student'].search([
                 ('level_id', 'in', level_ids),
                 ('active', '=', True),
@@ -663,15 +678,29 @@ class APSAwardVoteRound(models.Model):
                 if s.partner_id:
                     partner_ids.add(s.partner_id.id)
 
-        department_ids = self.eligible_voter_department_ids.ids
-        if department_ids:
-            employees = self.env['hr.employee'].search([
-                ('department_id', 'in', department_ids),
+        # Students enrolled in classes with matching subject categories
+        if category_ids and self.voter_categories_include_students:
+            cat_classes = self.env['aps.class'].search([
+                ('subject_id.category_id', 'in', category_ids),
+            ])
+            enrollments = self.env['aps.student.class'].search([
+                ('home_class_id', 'in', cat_classes.ids),
                 ('active', '=', True),
             ])
-            for emp in employees:
-                if emp.user_id and emp.user_id.partner_id:
-                    partner_ids.add(emp.user_id.partner_id.id)
+            for enr in enrollments:
+                if enr.student_id and enr.student_id.partner_id:
+                    partner_ids.add(enr.student_id.partner_id.id)
+
+        if self.voter_show_departments:
+            department_ids = self.eligible_voter_department_ids.ids
+            if department_ids:
+                employees = self.env['hr.employee'].search([
+                    ('department_id', 'in', department_ids),
+                    ('active', '=', True),
+                ])
+                for emp in employees:
+                    if emp.user_id and emp.user_id.partner_id:
+                        partner_ids.add(emp.user_id.partner_id.id)
 
         return partner_ids
 

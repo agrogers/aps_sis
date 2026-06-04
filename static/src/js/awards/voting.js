@@ -728,6 +728,24 @@
             document.getElementById('av-candidate-list').innerHTML =
                 `<tr><td colspan="6" class="av-no-results">${this._esc(msg)}</td></tr>`;
         },
+
+        // ----------------------------------------------------------------
+        // Voting-set card filter
+        // ----------------------------------------------------------------
+        filterByVotingSet(vsetId) {
+            const val = String(vsetId || '');
+            const matches = el => {
+                if (!val) return true;
+                const ids = (el.dataset.vsetIds || '').split(' ').filter(Boolean);
+                return ids.includes(val);
+            };
+            document.querySelectorAll('.av-cards .av-cat-card').forEach(card => {
+                card.style.display = matches(card) ? '' : 'none';
+            });
+            document.querySelectorAll('.av-history-row').forEach(row => {
+                row.style.display = matches(row) ? '' : 'none';
+            });
+        },
     };
 
     window.AwardsVoting = AwardsVoting;

@@ -105,7 +105,14 @@ class AwardsVotingController(http.Controller):
             voter_open_votes = Vote.search([
                 ('voter_partner_id', '=', voter_partner.id),
                 ('state', '=', 'open'),
-            ], order='due_date asc nulls last, id asc')
+            ], order='id asc')
+            voter_open_votes = voter_open_votes.sorted(
+                key=lambda v: (
+                    ((v.vote_round_id.name or v.award_category_id.name or '').strip().lower()),
+                    (v.due_date or date.max),
+                    v.id,
+                )
+            )
 
             my_votes_raw = Vote.search([
                 ('voter_partner_id', '=', voter_partner.id),
@@ -143,6 +150,28 @@ class AwardsVotingController(http.Controller):
                     if rnd_id:
                         seen_round_ids[rnd_id] = group
 
+        # Build unique voting sets from all visible votes (open cards + history).
+        # Include a set if: it has no dates, OR today falls within its date range
+        # (missing start = no lower bound, missing end = no upper bound).
+        today = date.today()
+
+        def _vset_active(vset):
+            after_start = (not vset.date_start) or (today >= vset.date_start)
+            before_end = (not vset.date_end) or (today <= vset.date_end)
+            return after_start and before_end
+
+        open_vsets = {}
+        all_votes = list(voter_open_votes) + [grp['rep'] for grp in my_vote_groups]
+        for vote in all_votes:
+            if vote.vote_round_id:
+                for vset in vote.vote_round_id.voting_set_ids:
+                    if vset.id not in open_vsets and _vset_active(vset):
+                        open_vsets[vset.id] = vset.name
+        # Sort by name
+        open_vsets = dict(sorted(open_vsets.items(), key=lambda x: x[1]))
+        _logger.info("[awards_voting] open_vsets=%s (open_votes=%d, history_groups=%d)",
+                     open_vsets, len(voter_open_votes), len(my_vote_groups))
+
         values = {
             'employee': employee,
             'token': token,
@@ -152,6 +181,7 @@ class AwardsVotingController(http.Controller):
             'expired_count': expired_count,
             'voter_open_votes': voter_open_votes,
             'my_vote_groups': my_vote_groups,
+            'open_vsets': open_vsets,
         }
         return request.render('aps_sis.awards_voting_dashboard', values)
 
@@ -187,6 +217,10 @@ class AwardsVotingController(http.Controller):
         ec_level_ids = []
         ec_subject_cat_ids = []
         ec_department_ids = []
+        ec_levels_include_teachers = False
+        ec_levels_include_students = True
+        ec_categories_include_teachers = False
+        ec_categories_include_students = True
         ineligible_exclude_voter = False
         ineligible_partner_ids = []
         vote_limit = 0
@@ -200,10 +234,14 @@ class AwardsVotingController(http.Controller):
             vote_obj = request.env['aps.award.vote'].sudo().browse(int(vote_id))
             if vote_obj.exists() and vote_obj.vote_round_id:
                 rnd = vote_obj.vote_round_id
-                ec_student_ids     = rnd.eligible_candidate_student_ids.ids
-                ec_level_ids       = rnd.eligible_candidate_level_ids.ids
-                ec_subject_cat_ids = rnd.eligible_candidate_category_ids.ids
-                ec_department_ids  = rnd.eligible_candidate_department_ids.ids
+                ec_student_ids     = rnd.eligible_candidate_student_ids.ids if rnd.candidate_show_students else []
+                ec_level_ids       = rnd.eligible_candidate_level_ids.ids if rnd.candidate_show_levels else []
+                ec_subject_cat_ids = rnd.eligible_candidate_category_ids.ids if rnd.candidate_show_categories else []
+                ec_department_ids  = rnd.eligible_candidate_department_ids.ids if rnd.candidate_show_departments else []
+                ec_levels_include_teachers    = rnd.candidate_levels_include_teachers
+                ec_levels_include_students    = rnd.candidate_levels_include_students
+                ec_categories_include_teachers = rnd.candidate_categories_include_teachers
+                ec_categories_include_students = rnd.candidate_categories_include_students
                 ineligible_exclude_voter = rnd.ineligible_candidate_exclude_voter
                 ineligible_partner_ids   = rnd.ineligible_candidate_partner_ids.ids
                 if rnd.rule_limit_votes:
@@ -394,23 +432,27 @@ class AwardsVotingController(http.Controller):
                     'allow_no_vote': allow_no_vote}
 
         # ── Build student domain ──
+        # Effective level/category lists for the student path only
+        student_level_ids = ec_level_ids if ec_levels_include_students else []
+        student_cat_ids   = ec_subject_cat_ids if ec_categories_include_students else []
+
         domain = [('active', '=', True)]
         if ec_student_ids:
             domain.append(('id', 'in', ec_student_ids))
         elif voter_partner_student_ids:
             domain.append(('id', 'in', voter_partner_student_ids))
         else:
-            if ec_level_ids:
-                domain.append(('level_id', 'in', ec_level_ids))
+            if student_level_ids:
+                domain.append(('level_id', 'in', student_level_ids))
 
         students = Student.search(domain, order='partner_id')
 
         # Subject-category filter (skipped when students are explicitly whitelisted)
-        if ec_subject_cat_ids and not ec_student_ids and not voter_partner_student_ids:
+        if student_cat_ids and not ec_student_ids and not voter_partner_student_ids:
             filtered = Student.browse()
             for s in students:
                 enrolled_cats = s.enrollment_ids.mapped('home_class_id.subject_id.category_id')
-                if any(sid in enrolled_cats.ids for sid in ec_subject_cat_ids):
+                if any(sid in enrolled_cats.ids for sid in student_cat_ids):
                     filtered |= s
             students = filtered
 
@@ -457,8 +499,8 @@ class AwardsVotingController(http.Controller):
             ) if include_images else ''
 
             enrolled_cats = student.enrollment_ids.mapped('home_class_id.subject_id.category_id')
-            if ec_subject_cat_ids and not is_whitelisted:
-                student_subcat_ids = [i for i in enrolled_cats.ids if i in ec_subject_cat_ids]
+            if student_cat_ids and not is_whitelisted:
+                student_subcat_ids = [i for i in enrolled_cats.ids if i in student_cat_ids]
             else:
                 student_subcat_ids = enrolled_cats.ids
             all_subject_cat_ids.update(student_subcat_ids)
@@ -478,6 +520,47 @@ class AwardsVotingController(http.Controller):
             })
 
         result.sort(key=lambda x: x['name'])
+
+        # ── Teacher candidates from levels/categories ───────────────────────
+        teacher_level_ids = ec_level_ids if ec_levels_include_teachers else []
+        teacher_cat_ids   = ec_subject_cat_ids if ec_categories_include_teachers else []
+        if teacher_level_ids or teacher_cat_ids:
+            teacher_domain = []
+            if teacher_level_ids:
+                teacher_domain.append(('subject_id.level_id', 'in', teacher_level_ids))
+            if teacher_cat_ids:
+                teacher_domain.append(('subject_id.category_id', 'in', teacher_cat_ids))
+            teacher_classes = request.env['aps.class'].sudo().search(teacher_domain)
+            teacher_partners = (
+                teacher_classes.mapped('teacher_ids') |
+                teacher_classes.mapped('assistant_teacher_ids')
+            ).filtered('id')
+            existing_ids = {r['id'] for r in result}
+            teacher_partner_meta = {
+                r['id']: r['write_date']
+                for r in teacher_partners.read(['write_date'])
+            }
+            for partner in teacher_partners.sorted('name'):
+                if partner.id in excluded_partner_ids or partner.id in existing_ids:
+                    continue
+                image_url = self._image_url(
+                    token, partner.id,
+                    write_date=teacher_partner_meta.get(partner.id),
+                ) if include_images else ''
+                result.append({
+                    'id': partner.id,
+                    'name': partner.name or '',
+                    'image': '',
+                    'image_url': image_url,
+                    'times_awarded': 0,
+                    'last_awarded': None,
+                    'level': '',
+                    'department': '',
+                    'is_staff': True,
+                    'subject_cat_ids': [],
+                    'whitelisted': False,
+                })
+            result.sort(key=lambda x: x['name'])
 
         # ── Apply own-students filter for 'yes' mode (server-side) ──────────
         if limit_to_own_students == 'yes' and own_student_partner_ids:

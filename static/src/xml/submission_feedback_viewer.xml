@@ -2,13 +2,13 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.SubmissionFeedbackViewer">
         <div class="aps-ai-feedback-viewer row g-3">
-            <div class="col-12 col-lg-6">
+            <div t-att-class="hasFeedback ? 'col-12 col-lg-6' : 'col-12'">
                 <div class="aps-ai-feedback-panel">
                     <div class="aps-ai-feedback-panel-title">Student Answer</div>
                     <div class="aps-ai-feedback-answer" t-out="answerMarkup"/>
                 </div>
             </div>
-            <div class="col-12 col-lg-6">
+            <div class="col-12 col-lg-6" t-if="hasFeedback">
                 <div class="aps-ai-feedback-panel">
                     <div class="aps-ai-feedback-panel-title">Feedback</div>
                     <div class="aps-ai-feedback-body">
