@@ -172,13 +172,21 @@
 
     <!-- ─── User profile form (HR/employee) — show avatar over profile picture ─── -->
 
+    <!-- ─── User profile form (HR/employee full-page) — show avatar over the header photo ─── -->
+    <!-- The HR profile form adds its OWN image_1920 in the header (after avatar_128),
+         separate from the one in the base preferences wrapper. We target that specific
+         header instance so the badge overlays the correct visible photo. -->
     <record id="view_res_users_profile_avatar" model="ir.ui.view">
         <field name="name">res.users.profile.inherit.avatar</field>
         <field name="model">res.users</field>
         <field name="inherit_id" ref="hr.res_users_view_form_profile"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='image_1920']" position="replace">
-                <div style="position:relative;float:right;margin-bottom:10px;">
+            <!-- Hide the base-preferences avatar selector on HR profile forms to avoid a duplicate top-right badge. -->
+            <xpath expr="//div[@name='base_avatar_wrapper']//field[@name='avatar_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='avatar_128']/following-sibling::field[@name='image_1920'][1]" position="replace">
+                <div style="position:relative;display:inline-block;float:right;margin-bottom:10px;">
                     <field name="image_1920" widget="image" class="oe_avatar"
                            options='{"zoom": true, "preview_image":"avatar_128"}'/>
                     <field name="avatar_id" widget="avatar_selector"/>

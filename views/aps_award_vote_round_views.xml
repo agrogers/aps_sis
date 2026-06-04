@@ -104,10 +104,9 @@
                                 </group>
                             </group>
                             <div invisible="not voter_show_staff or voter_show_departments">
-                                <separator string="Staff"/>
+                                <separator string="People"/>
                                 <field name="eligible_voter_partner_ids"
                                        nolabel="1"
-                                       domain="[('employee_ids', '!=', False)]"
                                        context="{'create': False}"
                                        readonly="status != 'draft'"/>
                             </div>
@@ -197,6 +196,14 @@
                                        context="{'create': False}"
                                        readonly="status != 'draft'"/>
                             </div>
+                            <group string="Candidate Restrictions">
+                                <field name="rule_limit_candidates_to_own_students"
+                                       widget="radio"
+                                       readonly="status != 'draft'"/>
+                                <field name="rule_limit_to_voter_year_level"
+                                       widget="boolean_toggle"
+                                       readonly="status != 'draft'"/>
+                            </group>
                         </page>
                         <page string="Rules" name="rules">
                             <group string="Vote Limits">
@@ -204,11 +211,6 @@
                                 <field name="rule_limit_votes_count"
                                        string="Max Votes Per Voter"
                                        invisible="not rule_limit_votes"
-                                       readonly="status != 'draft'"/>
-                            </group>
-                            <group string="Candidate Restrictions">
-                                <field name="rule_limit_candidates_to_own_students"
-                                       widget="radio"
                                        readonly="status != 'draft'"/>
                             </group>
                             <group string="Submission Options">

@@ -61,6 +61,11 @@
                                     <field name="student_id"/>
                                     <field name="start_date"/>
                                     <field name="end_date"/>
+                                    <field name="state" widget="badge"
+                                        decoration-success="state == 'enrolled'"
+                                        decoration-warning="state == 'withdrawn'"
+                                        decoration-muted="state == 'finished'"/>
+                                    <field name="notes" optional="show"/>
                                 </list>
                             </field>
                         </page>

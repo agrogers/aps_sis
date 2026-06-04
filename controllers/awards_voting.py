@@ -195,6 +195,7 @@ class AwardsVotingController(http.Controller):
         show_level_dept    = True
         limit_to_own_students = 'no'
         allow_no_vote = False
+        limit_to_voter_year_level = False
         if vote_id:
             vote_obj = request.env['aps.award.vote'].sudo().browse(int(vote_id))
             if vote_obj.exists() and vote_obj.vote_round_id:
@@ -212,6 +213,7 @@ class AwardsVotingController(http.Controller):
                 show_level_dept    = rnd.rule_show_level_dept
                 limit_to_own_students = rnd.rule_limit_candidates_to_own_students or 'no'
                 allow_no_vote = bool(rnd.rule_allow_no_vote)
+                limit_to_voter_year_level = bool(rnd.rule_limit_to_voter_year_level)
 
         # ── Compute the voter's "own students" when the rule requires it ──────
         own_student_partner_ids = []
@@ -233,6 +235,28 @@ class AwardsVotingController(http.Controller):
                     own_student_partner_ids = (
                         enrollments.mapped('student_id.partner_id').filtered('id').ids
                     )
+
+        # ── Resolve voter's year level(s) when limit_to_voter_year_level is set ──
+        voter_level_ids = []
+        if limit_to_voter_year_level and vote_obj and vote_obj.exists():
+            voter_partner = vote_obj.voter_partner_id
+            if voter_partner:
+                # Check if voter is a student
+                Student = request.env['aps.student'].sudo()
+                voter_student = Student.search(
+                    [('partner_id', '=', voter_partner.id), ('active', '=', True)], limit=1
+                )
+                if voter_student and voter_student.level_id:
+                    voter_level_ids = [voter_student.level_id.id]
+                else:
+                    # Voter is a teacher — collect the levels they teach
+                    Class = request.env['aps.class'].sudo()
+                    taught_classes = Class.search([
+                        '|',
+                        ('teacher_ids', 'in', [voter_partner.id]),
+                        ('assistant_teacher_ids', 'in', [voter_partner.id]),
+                    ])
+                    voter_level_ids = taught_classes.mapped('subject_id.level_id').ids
 
         # ── Determine the voter's own partner_id for exclusion ──
         voter_partner_id = None
@@ -301,6 +325,26 @@ class AwardsVotingController(http.Controller):
             _logger.info("[voting_candidates] DEPT: Built result list with %d candidates in %.3fs", len(result), t5-t4)
             if result:
                 _logger.info("[voting_candidates] DEPT: Sample image_url=%s", result[0].get('image_url'))
+
+            # ── Apply voter year-level restriction to department-based candidates ──
+            if limit_to_voter_year_level and voter_level_ids:
+                year_level_classes = request.env['aps.class'].sudo().search([
+                    ('subject_id.level_id', 'in', voter_level_ids),
+                ])
+                year_level_partner_ids = set()
+                for cls in year_level_classes:
+                    year_level_partner_ids.update(cls.teacher_ids.ids)
+                    year_level_partner_ids.update(cls.assistant_teacher_ids.ids)
+                # Also include students at those levels (in case students appear as dept candidates)
+                year_level_students = request.env['aps.student'].sudo().search([
+                    ('level_id', 'in', voter_level_ids),
+                    ('active', '=', True),
+                ])
+                year_level_partner_ids.update(
+                    year_level_students.mapped('partner_id').ids
+                )
+                result = [r for r in result if r['id'] in year_level_partner_ids]
+
             _logger.info("[voting_candidates] DEPT: TOTAL time: %.3fs", t5-t0)
             return {
                 'candidates': result,
@@ -320,6 +364,13 @@ class AwardsVotingController(http.Controller):
         if not ec_student_ids and not ec_level_ids and not ec_subject_cat_ids:
             if category.exists() and category.level_ids:
                 ec_level_ids = category.level_ids.ids
+
+        # ── Apply voter year-level restriction to student candidate levels ──────
+        if limit_to_voter_year_level and voter_level_ids and not ec_student_ids:
+            if ec_level_ids:
+                ec_level_ids = [lid for lid in ec_level_ids if lid in voter_level_ids]
+            else:
+                ec_level_ids = voter_level_ids
 
         # Peer-voting fallback: voter partners are the candidate pool
         voter_partner_student_ids = []

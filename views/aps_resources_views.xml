@@ -191,7 +191,7 @@
                                     <field name="weight"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
                                     <field name="tag_ids" widget="many2many_tags" options="{'no_create': False}"/>
-                                    <field name="url" widget="url_icon"/>
+                                    <field name="url" widget="url"/>
                                      <field name="description"/>
                                     
                                 </group>

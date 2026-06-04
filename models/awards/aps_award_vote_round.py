@@ -77,7 +77,7 @@ class APSAwardVoteRound(models.Model):
     eligible_voters = fields.Json(string='Eligible Voters')
 
     # Eligible Voters tab — visibility toggles (stored so they persist with the round config)
-    voter_show_staff = fields.Boolean(string='Staff', default=False)
+    voter_show_staff = fields.Boolean(string='People', default=False)
     voter_show_levels = fields.Boolean(string='Levels', default=False)
     voter_show_categories = fields.Boolean(string='Subject Categories', default=False)
     voter_show_departments = fields.Boolean(string='Departments', default=False)
@@ -85,7 +85,7 @@ class APSAwardVoteRound(models.Model):
     # Virtual Many2many fields backed by the eligible_voters JSON dict (no DB relation tables)
     eligible_voter_partner_ids = fields.Many2many(
         'res.partner',
-        string='Staff Voters',
+        string='People',
         compute='_compute_eligible_voter_ids',
         inverse='_inverse_eligible_voter_ids',
     )
@@ -210,6 +210,13 @@ class APSAwardVoteRound(models.Model):
         compute='_compute_rule_send_reminder_email',
         inverse='_inverse_rule_send_reminder_email',
         help='When enabled, the "APEX Voting Reminder" scheduled action will send reminder emails to staff with open votes in this round.',
+    )
+    rule_limit_to_voter_year_level = fields.Boolean(
+        string='Limit Candidates to Voter\'s Year Level',
+        compute='_compute_rule_limit_to_voter_year_level',
+        inverse='_inverse_rule_limit_to_voter_year_level',
+        help='When enabled, candidates are restricted to the same year level(s) as the voter. '
+             'For student voters this is their level; for teacher voters these are the levels they teach.',
     )
 
     # Computed vote statistics
@@ -527,6 +534,19 @@ class APSAwardVoteRound(models.Model):
             data['send_reminder_email'] = rec.rule_send_reminder_email
             rec._set_rules_dict(data)
 
+    @api.depends('rules')
+    def _compute_rule_limit_to_voter_year_level(self):
+        for rec in self:
+            rec.rule_limit_to_voter_year_level = bool(
+                rec._get_rules_dict().get('limit_to_voter_year_level', False)
+            )
+
+    def _inverse_rule_limit_to_voter_year_level(self):
+        for rec in self:
+            data = rec._get_rules_dict()
+            data['limit_to_voter_year_level'] = rec.rule_limit_to_voter_year_level
+            rec._set_rules_dict(data)
+
     @api.model
     def action_send_voting_reminders(self):
         """Cron method: send reminder emails to staff with open votes in reminder-enabled rounds."""
@@ -607,12 +627,13 @@ class APSAwardVoteRound(models.Model):
         """Return a set of res.partner IDs for all voters eligible in this round.
 
         Sources:
-          1. Explicit staff partners listed in eligible_voters["partner_ids"].
+          1. Explicit partners listed in eligible_voters["partner_ids"] (staff or students).
           2. Teachers and assistant teachers of classes whose subject matches
              ALL specified levels AND subject categories (if both sets are non-empty).
              If only levels or only categories are specified, classes must match
              the non-empty constraint only.
-          3. Active employees in the specified departments.
+          3. Students whose level_id matches the specified levels (when level_ids are set).
+          4. Active employees in the specified departments.
         """
         self.ensure_one()
         voters_dict = self._get_voters_dict()
@@ -631,6 +652,16 @@ class APSAwardVoteRound(models.Model):
             for cls in classes:
                 partner_ids.update(cls.teacher_ids.ids)
                 partner_ids.update(cls.assistant_teacher_ids.ids)
+
+        # Also include students whose level matches the voter levels
+        if level_ids:
+            students = self.env['aps.student'].search([
+                ('level_id', 'in', level_ids),
+                ('active', '=', True),
+            ])
+            for s in students:
+                if s.partner_id:
+                    partner_ids.add(s.partner_id.id)
 
         department_ids = self.eligible_voter_department_ids.ids
         if department_ids:
