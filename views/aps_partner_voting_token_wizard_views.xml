@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_partner_voting_token_wizard_form" model="ir.ui.view">
+        <field name="name">aps.partner.voting.token.wizard.form</field>
+        <field name="model">aps.partner.voting.token.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Voting Access Token" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <field name="partner_id" readonly="1"/>
+                        <field name="token_masked" readonly="1"/>
+                        <field name="token_value" readonly="1" widget="CopyClipboardChar"/>
+                        <field name="dashboard_url" readonly="1" widget="CopyClipboardChar"/>
+                    </group>
+                    <footer>
+                        <button name="action_reset_token"
+                                type="object"
+                                string="Reset Token"
+                                class="btn-primary"
+                                confirm="This will invalidate the current link. Continue?"/>
+                        <button string="Close" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,8 +1,18 @@
+import uuid
+
 from odoo import api, fields, models
 
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
+
+    access_token = fields.Char(
+        string='Voting Access Token',
+        copy=False,
+        readonly=True,
+        index=True,
+        groups='hr.group_hr_user',
+    )
 
     # Ensure gender field exists (it's standard in Odoo)
     gender = fields.Selection([
@@ -19,6 +29,45 @@ class ResPartner(models.Model):
 
     submission_ids = fields.One2many('aps.resource.submission', 'student_id', string='Submissions')
     certificate_ids = fields.One2many('aps.student.certificate', 'partner_id', string='Certificates')
+    access_token_masked = fields.Char(
+        string='Voting Token (Masked)',
+        compute='_compute_access_token_masked',
+    )
+
+    def _get_or_create_access_token(self):
+        self.ensure_one()
+        if not self.access_token:
+            self.sudo().access_token = uuid.uuid4().hex
+        return self.access_token
+
+    def action_reset_access_token(self):
+        for rec in self:
+            rec.sudo().access_token = uuid.uuid4().hex
+
+    @api.depends('access_token')
+    def _compute_access_token_masked(self):
+        for rec in self:
+            token = rec.sudo().access_token or ''
+            if not token:
+                rec.access_token_masked = ''
+            elif len(token) <= 8:
+                rec.access_token_masked = '*' * len(token)
+            else:
+                rec.access_token_masked = f"{token[:4]}{'*' * (len(token) - 8)}{token[-4:]}"
+
+    def action_open_voting_token_wizard(self):
+        self.ensure_one()
+        wizard = self.env['aps.partner.voting.token.wizard'].create({
+            'partner_id': self.id,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Voting Access Token',
+            'res_model': 'aps.partner.voting.token.wizard',
+            'view_mode': 'form',
+            'res_id': wizard.id,
+            'target': 'new',
+        }
 
     def write(self, vals):
         res = super().write(vals)

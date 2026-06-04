@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='hr_settings']" position="inside">
                 <group string="Portal Access Token" groups="hr.group_hr_user">
-                    <field name="access_token" readonly="1"/>
+                    <field name="access_token" readonly="1" password="True"/>
                     <button name="action_reset_access_token"
                             string="Reset Token"
                             type="object"

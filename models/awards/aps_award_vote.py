@@ -126,7 +126,4 @@ class APSAwardVote(models.Model):
             if not rec.voter_partner_id:
                 rec.voter_access_token = ''
                 continue
-            employee = self.env['hr.employee'].sudo().search(
-                [('user_id.partner_id', '=', rec.voter_partner_id.id)], limit=1
-            )
-            rec.voter_access_token = employee._get_or_create_access_token() if employee else ''
+            rec.voter_access_token = rec.voter_partner_id.sudo()._get_or_create_access_token()

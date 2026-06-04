@@ -13,6 +13,7 @@ from . import hr_employee
 from . import hr_resume_line
 from . import conditional_views
 from . import res_partner
+from . import aps_partner_voting_token_wizard
 from . import awards
 from . import asc_timetable
 

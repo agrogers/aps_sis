@@ -1,5 +1,4 @@
-import uuid
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class HrEmployee(models.Model):
@@ -7,27 +6,22 @@ class HrEmployee(models.Model):
 
     access_token = fields.Char(
         string='Access Token',
-        copy=False,
+        related='user_id.partner_id.access_token',
         readonly=True,
+        store=False,
         groups='hr.group_hr_user',
     )
 
     def _get_or_create_access_token(self):
         self.ensure_one()
-        if not self.access_token:
-            self.sudo().access_token = uuid.uuid4().hex
-        return self.access_token
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('access_token'):
-                vals['access_token'] = uuid.uuid4().hex
-        return super().create(vals_list)
+        partner = self.sudo().user_id.partner_id
+        return partner._get_or_create_access_token() if partner else ''
 
     def action_reset_access_token(self):
         for rec in self:
-            rec.access_token = uuid.uuid4().hex
+            partner = rec.sudo().user_id.partner_id
+            if partner:
+                partner.action_reset_access_token()
 
     def write(self, vals):
         res = super().write(vals)

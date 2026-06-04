@@ -48,6 +48,7 @@
 		'views/core/aps_subject_views.xml',
 		'views/core/aps_timetable_entry_views.xml',
 		'views/res_partner_views.xml',
+		'views/aps_partner_voting_token_wizard_views.xml',
 		'views/aps_avatar_views.xml',
 		'wizard/aps_avatar_bulk_upload_views.xml',
 		'views/aps_time_tracking_views.xml',

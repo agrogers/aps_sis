@@ -51,16 +51,16 @@
     <menuitem id="menu_apex_resources" name="Resources" parent="menu_apex_root" action="action_aps_resources" sequence="9" groups="aps_sis.group_aps_teacher"/>
 
     <menuitem id="menu_apex_submissions" name="Submissions" parent="menu_apex_root" action="action_aps_resource_submissions" sequence="10" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificates" name="Certificates" parent="menu_apex_root" sequence="15" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates" name="Awards" parent="menu_apex_root" sequence="15" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_dashboard" name="Overview" parent="menu_apex_certificates" action="aps_sis.action_certificates_dashboard" sequence="1" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificates_awards_dashboard" name="Voting Dashboard" parent="menu_apex_certificates" action="action_aps_awards_dashboard" sequence="5" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_vote_management_dashboard" name="Vote Management Dashboard" parent="menu_apex_certificates" action="action_open_vote_management_dashboard" sequence="6" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_awards_dashboard" name="Voting Dashboard" parent="menu_apex_certificates" action="action_aps_awards_dashboard" sequence="5" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_vote_management_dashboard" name="Vote Management Dashboard" parent="menu_apex_certificates" action="action_open_vote_management_dashboard" sequence="6" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_certificates_list" name="Certificates" parent="menu_apex_certificates" action="action_aps_student_certificate" sequence="10" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_award_categories" name="Award Categories" parent="menu_apex_certificates" action="action_aps_award_category" sequence="20" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificates_vote_rounds" name="Vote Rounds" parent="menu_apex_certificates" action="action_aps_award_vote_round" sequence="25" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificates_voting_sets" name="Voting Sets" parent="menu_apex_certificates" action="action_aps_award_voting_set" sequence="27" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificates_award_votes" name="Award Votes" parent="menu_apex_certificates" action="action_aps_award_vote" sequence="30" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_certificates_templates" name="Templates" parent="menu_apex_certificates" action="action_aps_certificate_template" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_vote_rounds" name="Vote Rounds" parent="menu_apex_certificates" action="action_aps_award_vote_round" sequence="25" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_certificates_voting_sets" name="Voting Sets" parent="menu_apex_certificates" action="action_aps_award_voting_set" sequence="27" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_certificates_award_votes" name="Award Votes" parent="menu_apex_certificates" action="action_aps_award_vote" sequence="30" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_certificates_templates" name="Templates" parent="menu_apex_certificates" action="action_aps_certificate_template" sequence="40" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_students" name="Student Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_score" name="Enter Scores" parent="menu_apex_submissions" action="action_aps_resource_submissions_score" sequence="40" groups="aps_sis.group_aps_teacher"/>
@@ -76,21 +76,21 @@
               sequence="25" groups="aps_sis.group_aps_teacher"/>
     
 
-    <menuitem id="menu_apex_settings" name="Settings" parent="menu_apex_root" action="" sequence="40" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_resources_heading" name="Resources" parent="menu_apex_settings" sequence="100" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_resource_hierarchy_table" name="Subject Overview" parent="menu_apex_resources_heading" action="action_aps_resource_hierarchy_table" sequence="7" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_resource_types" name="Resource Types" parent="menu_apex_resources_heading" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_teacher"/>    
-    <menuitem id="menu_apex_resource_tags" name="Resource Tags" parent="menu_apex_resources_heading" action="action_aps_resource_tags" sequence="16" groups="aps_sis.group_aps_teacher"/>    
-    <menuitem id="menu_apex_resource_custom_names" name="Custom Names" parent="menu_apex_resources_heading" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_avatars_heading" name="Avatars" parent="menu_apex_settings" sequence="200" groups="aps_sis.group_aps_teacher"/>    <menuitem id="menu_apex_avatars" name="Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatars" sequence="210" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_avatar_categories" name="Avatar Categories" parent="menu_apex_avatars_heading" action="action_aps_avatar_categories" sequence="220" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_avatar_bulk_upload" name="Bulk Upload Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatar_bulk_upload_client" sequence="230" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_settings" name="Settings" parent="menu_apex_root" action="" sequence="40" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_resources_heading" name="Resources" parent="menu_apex_settings" sequence="100" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_resource_hierarchy_table" name="Subject Overview" parent="menu_apex_resources_heading" action="action_aps_resource_hierarchy_table" sequence="7" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_resource_types" name="Resource Types" parent="menu_apex_resources_heading" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_manager"/>    
+    <menuitem id="menu_apex_resource_tags" name="Resource Tags" parent="menu_apex_resources_heading" action="action_aps_resource_tags" sequence="16" groups="aps_sis.group_aps_manager"/>    
+    <menuitem id="menu_apex_resource_custom_names" name="Custom Names" parent="menu_apex_resources_heading" action="action_aps_resource_custom_names" sequence="200" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_avatars_heading" name="Avatars" parent="menu_apex_settings" sequence="200" groups="aps_sis.group_aps_manager"/>    <menuitem id="menu_apex_avatars" name="Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatars" sequence="210" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_avatar_categories" name="Avatar Categories" parent="menu_apex_avatars_heading" action="action_aps_avatar_categories" sequence="220" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_avatar_bulk_upload" name="Bulk Upload Avatars" parent="menu_apex_avatars_heading" action="action_aps_avatar_bulk_upload_client" sequence="230" groups="aps_sis.group_aps_manager"/>
 
     <!-- School Settings -->
-    <menuitem id="menu_apex_school_heading" name="School" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_school_mgmt_dashboard" name="School Overview" parent="menu_apex_school_heading" action="aps_sis.action_school_mgmt_dashboard" sequence="1" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_student_class_bulk" name="Bulk Class Enrollment" parent="menu_apex_school_heading" action="action_aps_student_class_bulk_wizard" sequence="55" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_partner_profile_pic" name="Update Profile Pictures" parent="menu_apex_school_heading" action="action_aps_partner_profile_pic_client" sequence="60" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_school_heading" name="School" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_school_mgmt_dashboard" name="School Overview" parent="menu_apex_school_heading" action="aps_sis.action_school_mgmt_dashboard" sequence="1" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_student_class_bulk" name="Bulk Class Enrollment" parent="menu_apex_school_heading" action="action_aps_student_class_bulk_wizard" sequence="55" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_partner_profile_pic" name="Update Profile Pictures" parent="menu_apex_school_heading" action="action_aps_partner_profile_pic_client" sequence="60" groups="aps_sis.group_aps_manager"/>
     
     <!-- Time Tracking Menus teachers -->
     <menuitem id="menu_apex_time_tracking_heading" name="Time Tracking" parent="menu_apex_settings" sequence="60" groups="aps_sis.group_aps_teacher"/>
@@ -104,9 +104,9 @@
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student_menu"/>
 
     <!-- Media Menus (student) -->
-    <menuitem id="menu_apex_media_root_student" name="Media" parent="menu_apex_root" sequence="50" groups="aps_sis.group_aps_student_menu,aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_media_shop_student" name="Shop" parent="menu_apex_media_root_student" action="action_aps_media_shop" sequence="10" groups="aps_sis.group_aps_student_menu,aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_my_collection_student" name="My Collection" parent="menu_apex_media_root_student" action="action_aps_my_collection" sequence="20" groups="aps_sis.group_aps_student_menu,aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_root_student" name="Media" parent="menu_apex_root" sequence="50" groups="aps_sis.group_aps_student_menu,aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_media_shop_student" name="Shop" parent="menu_apex_media_root_student" action="action_aps_media_shop" sequence="10" groups="aps_sis.group_aps_student_menu,aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_my_collection_student" name="My Collection" parent="menu_apex_media_root_student" action="action_aps_my_collection" sequence="20" groups="aps_sis.group_aps_student_menu,aps_sis.group_aps_manager"/>
 
     <!-- Time Tracking Menus Students -->
     <menuitem id="menu_apex_time_tracking_student" name="Time Tracking" parent="menu_apex_root" sequence="60" groups="aps_sis.group_aps_student_menu"/>
@@ -114,12 +114,12 @@
     <menuitem id="menu_apex_time_tracking_dashboard_student" name="Dashboard" parent="menu_apex_time_tracking_student" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_student_menu"/>
 
     <!-- Media admin menus (teacher/manager) -->
-    <menuitem id="menu_apex_media_heading" name="Media" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_media_items" name="Media Items" parent="menu_apex_media_heading" action="action_aps_media" sequence="10" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_media_bulk_upload" name="Bulk Upload Media" parent="menu_apex_media_heading" action="action_aps_media_bulk_upload_client" sequence="15" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_media_types" name="Media Types" parent="menu_apex_media_heading" action="action_aps_media_types" sequence="20" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_media_collections" name="Collections" parent="menu_apex_media_heading" action="action_aps_media_collections" sequence="30" groups="aps_sis.group_aps_teacher"/>
-    <menuitem id="menu_apex_media_categories" name="Categories" parent="menu_apex_media_heading" action="action_aps_media_categories" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_media_heading" name="Media" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_media_items" name="Media Items" parent="menu_apex_media_heading" action="action_aps_media" sequence="10" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_media_bulk_upload" name="Bulk Upload Media" parent="menu_apex_media_heading" action="action_aps_media_bulk_upload_client" sequence="15" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_media_types" name="Media Types" parent="menu_apex_media_heading" action="action_aps_media_types" sequence="20" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_media_collections" name="Collections" parent="menu_apex_media_heading" action="action_aps_media_collections" sequence="30" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_media_categories" name="Categories" parent="menu_apex_media_heading" action="action_aps_media_categories" sequence="40" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_user_media" name="User Media" parent="menu_apex_media_heading" action="action_aps_user_media" sequence="50" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_user_media_settings" name="User Media Settings" parent="menu_apex_media_heading" action="action_aps_user_media_settings" sequence="60" groups="aps_sis.group_aps_teacher"/>
 

@@ -592,14 +592,7 @@ class APSAwardVoteRound(models.Model):
             if not partner.email:
                 continue
 
-            # Find the employee linked to this partner for their access token
-            employee = self.env['hr.employee'].sudo().search(
-                [('user_id.partner_id', '=', pid)], limit=1
-            )
-            if not employee:
-                continue
-
-            token = employee._get_or_create_access_token()
+            token = partner.sudo()._get_or_create_access_token()
             voting_url = f"{base_url}/awards/vote/{token}"
 
             # Build per-round summary rows

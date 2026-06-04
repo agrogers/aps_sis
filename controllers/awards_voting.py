@@ -14,11 +14,11 @@ _logger = logging.getLogger(__name__)
 
 class AwardsVotingController(http.Controller):
 
-    def _get_employee_by_token(self, token):
-        """Return the employee matching the token, or None."""
+    def _get_partner_by_token(self, token):
+        """Return the partner matching the token, or None."""
         if not token or len(token) < 16:
             return None
-        return request.env['hr.employee'].sudo().search(
+        return request.env['res.partner'].sudo().search(
             [('access_token', '=', token)], limit=1
         )
 
@@ -51,11 +51,9 @@ class AwardsVotingController(http.Controller):
 
     @http.route('/awards/vote/<string:token>', type='http', auth='public', website=False)
     def voting_dashboard(self, token, **kwargs):
-        employee = self._get_employee_by_token(token)
-        if not employee:
+        voter_partner = self._get_partner_by_token(token)
+        if not voter_partner:
             return request.not_found()
-
-        voter_partner = employee.user_id.partner_id if employee.user_id else None
         Vote = request.env['aps.award.vote'].sudo()
         Category = request.env['aps.award.category'].sudo()
 
@@ -173,7 +171,7 @@ class AwardsVotingController(http.Controller):
                      open_vsets, len(voter_open_votes), len(my_vote_groups))
 
         values = {
-            'employee': employee,
+            'employee': voter_partner,
             'token': token,
             'my_votes_count': my_votes_count,
             'avg_votes': avg_votes,
@@ -195,8 +193,8 @@ class AwardsVotingController(http.Controller):
         import time
         t0 = time.time()
         _logger.info("[voting_candidates] called: token=%s, category_id=%s, vote_id=%s", token, category_id, vote_id)
-        employee = self._get_employee_by_token(token)
-        if not employee:
+        voter_partner = self._get_partner_by_token(token)
+        if not voter_partner:
             return {'error': 'Invalid token'}
 
         # category_id == 0 means the vote has no category — try to derive it
@@ -590,8 +588,8 @@ class AwardsVotingController(http.Controller):
     @http.route('/awards/vote/<string:token>/candidate_image/<int:partner_id>',
                 type='http', auth='public', website=False)
     def voting_candidate_image(self, token, partner_id, v='0', s=None, **kwargs):
-        employee = self._get_employee_by_token(token)
-        if not employee:
+        voter_partner = self._get_partner_by_token(token)
+        if not voter_partner:
             _logger.info("[voting_candidate_image] not_found: invalid token partner_id=%s", partner_id)
             return request.not_found()
 
@@ -650,7 +648,7 @@ class AwardsVotingController(http.Controller):
     @http.route('/awards/vote/<string:token>/model_image/<string:model_slug>/<int:record_id>',
                 type='http', auth='public', website=False)
     def voting_model_image(self, token, model_slug, record_id, **kwargs):
-        if not self._get_employee_by_token(token):
+        if not self._get_partner_by_token(token):
             return request.not_found()
 
         mapping = self._PUBLIC_IMAGE_MODELS.get(model_slug)
@@ -699,13 +697,9 @@ class AwardsVotingController(http.Controller):
         """recipients: list of {id: int, comment: str}
         If vote_id is provided, that specific open ballot is used for the first recipient.
         """
-        employee = self._get_employee_by_token(token)
-        if not employee:
-            return {'error': 'Invalid token'}
-
-        voter_partner = employee.user_id.partner_id if employee.user_id else None
+        voter_partner = self._get_partner_by_token(token)
         if not voter_partner:
-            return {'error': 'Employee has no linked user/partner'}
+            return {'error': 'Invalid token'}
 
         Vote = request.env['aps.award.vote'].sudo()
 
@@ -808,13 +802,9 @@ class AwardsVotingController(http.Controller):
     @http.route('/awards/vote/<string:token>/vote/<int:vote_id>/delete',
                 type='json', auth='public')
     def voting_delete_vote(self, token, vote_id, **kwargs):
-        employee = self._get_employee_by_token(token)
-        if not employee:
-            return {'error': 'Invalid token'}
-
-        voter_partner = employee.user_id.partner_id if employee.user_id else None
+        voter_partner = self._get_partner_by_token(token)
         if not voter_partner:
-            return {'error': 'No linked partner'}
+            return {'error': 'Invalid token'}
 
         vote = request.env['aps.award.vote'].sudo().browse(vote_id)
         if not vote.exists():
@@ -849,13 +839,9 @@ class AwardsVotingController(http.Controller):
         if not vote_ids or not isinstance(vote_ids, list):
             return {'error': 'No vote_ids provided'}
 
-        employee = self._get_employee_by_token(token)
-        if not employee:
-            return {'error': 'Invalid token'}
-
-        voter_partner = employee.user_id.partner_id if employee.user_id else None
+        voter_partner = self._get_partner_by_token(token)
         if not voter_partner:
-            return {'error': 'No linked partner'}
+            return {'error': 'Invalid token'}
 
         votes = request.env['aps.award.vote'].sudo().browse(
             [int(vid) for vid in vote_ids]
