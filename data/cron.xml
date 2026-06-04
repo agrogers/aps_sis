@@ -74,7 +74,6 @@
         <field name="interval_number">1</field>
         <field name="interval_type">weeks</field>
         <field name="nextcall" eval="(datetime.now() + relativedelta(days=7)).replace(hour=7, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
-        <field name="numbercall">-1</field>
     </record>
 
 </odoo>
