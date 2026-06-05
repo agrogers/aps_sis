@@ -307,7 +307,7 @@
         <field name="state">code</field>
         <field name="code">
 partner = env.user.partner_id.sudo()
-token = partner.access_token if partner else False
+token = partner._get_or_create_access_token() if partner else False
 if token:
     action = {'type': 'ir.actions.act_url', 'url': '/awards/vote/' + token, 'target': 'self'}
 else:
