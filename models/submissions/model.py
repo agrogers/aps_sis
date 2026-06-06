@@ -96,6 +96,8 @@ class APSResourceSubmission(models.Model):
     has_answer = fields.Selection(string='Has Answer', related='resource_id.has_answer', readonly=True, store=True)
     answer = fields.Html(string='Answer')
     has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
+    has_ai_feedback = fields.Boolean(string='Has AI Feedback', compute='_compute_has_ai_feedback', store=True,
+        help='True when submission has feedback and the resource uses AI (ai_action != "none")')
     reviewed_by = fields.Many2many(
         'aps.teacher',
         'aps_submission_reviewed_by_rel',
@@ -388,6 +390,20 @@ class APSResourceSubmission(models.Model):
             feedback_text = re.sub(r'<[^>]+>', '', feedback_text)
             feedback_text = feedback_text.replace('&nbsp;', ' ').strip()
             record.has_feedback = bool(feedback_text)
+
+    @api.depends('feedback', 'resource_id.ai_action')
+    def _compute_has_ai_feedback(self):
+        for record in self:
+            # Check if submission has feedback and the resource's ai_action is not 'none'
+            feedback_text = str(record.feedback or '')
+            feedback_text = feedback_text.replace('<br>', '\n').replace('<br/>', '\n').replace('<br />', '\n')
+            for tag in ('</p>', '</div>', '</li>', '</h1>', '</h2>', '</h3>', '</h4>'):
+                feedback_text = feedback_text.replace(tag, '\n')
+            feedback_text = re.sub(r'<[^>]+>', '', feedback_text)
+            feedback_text = feedback_text.replace('&nbsp;', ' ').strip()
+            has_feedback = bool(feedback_text)
+            ai_enabled = record.resource_id.ai_action and record.resource_id.ai_action != 'none'
+            record.has_ai_feedback = has_feedback and ai_enabled
 
     @api.depends('date_assigned')
     def _compute_date_due(self):

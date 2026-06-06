@@ -1,8 +1,39 @@
+<!--
+    APEX Performance Dashboard — Client Action
+    ==========================================
+
+    This helps implements a fully custom OWL component, not a server-rendered Odoo view.
+    
+    Action:    ir.actions.client → tag "apex_dashboard_main", path "apex-dashboard"
+    JS class:  static/src/components/dashboard.js → ApexDashboard
+    Template:  static/src/components/dashboard.xml → apex_dashboard.Dashboard
+
+    Sub-components (static/src/components/)
+        kpi_card/       → KpiCard         (apex_dashboard.KpiCard)
+        kpi_gauge/      → KpiGauge        (apex_dashboard.KpiGauge)
+        chart_renderer/ → ChartRenderer   (Chart.js)
+        leaderboard/    → Leaderboard      (apex_dashboard.Leaderboard)
+        progress_charts → ProgressCharts  (line/bar)
+
+    Filters: Period (7–3065 days), Student (faculty only), Subject Category
+
+    KPIs: Rank, Points, Overdue Items, All Overdue
+
+    Sections: submissions chart, doughnut charts, progress line/bar,
+              student comparison, leaderboard, progress leaderboard,
+              completion leaderboard
+
+    ORM models: aps.sis.submissions, aps.sis.tasks, aps.sis.students,
+                aps.sis.subject.categories
+
+    Related dashboards: teacher_dashboard, certificates_dashboard,
+                        school_mgmt_dashboard, time_tracking_dashboard,
+                        ai_dashboard
+-->
 <odoo>
     <record id="action_apex_dashboard" model="ir.actions.client">
         <field name="name">Performance Dashboard</field>
         <field name="tag">apex_dashboard_main</field>
         <field name="path">apex-dashboard</field>
     </record>
-
 </odoo>
