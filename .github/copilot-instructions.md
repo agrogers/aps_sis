@@ -159,6 +159,24 @@ If a feature differs between versions, use **v18 syntax and architecture only**.
   <field name="image_128" widget="image" style="width:24px;height:24px;" optional="show"/>
   ```
 
+### Image Field Formatting
+
+For `fields.Image` fields, always use these standard patterns:
+
+**List views** — small thumbnail with fixed size:
+```xml
+<field name="image" widget="image" options="{'size': [24, 24]}" optional="show"/>
+```
+
+**Form views** — larger circular avatar:
+```xml
+<field name="image" widget="image" class="oe_avatar"/>
+```
+
+- Do NOT use `fields.Char` for image data — use `fields.Image` for binary image fields
+- Do NOT use `style=` on `<field>` elements inside `<list>` views (RNG validation error)
+- For image sizing in list views, use Odoo CSS helper classes: `o_image_24_max`, `o_image_32_max`, `o_image_48_max`, `o_image_64_max`
+
 ### Binding Specific Views to Actions
 
 To force an action to use specific list and form views (e.g., when clicking a list row should open a particular form view), use `ir.actions.act_window.view` records:
