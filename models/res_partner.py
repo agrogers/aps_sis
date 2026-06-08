@@ -26,6 +26,7 @@ class ResPartner(models.Model):
     is_student = fields.Boolean("Student")
     # Add new field
     is_teacher = fields.Boolean("Teacher")
+    alias = fields.Char(string='Friendly Name', help="The nick name the person prefers to be called")
 
     submission_ids = fields.One2many('aps.resource.submission', 'student_id', string='Submissions')
     certificate_ids = fields.One2many('aps.student.certificate', 'partner_id', string='Certificates')

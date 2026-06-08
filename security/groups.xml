@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- APEX module category, nested under Education from OpenEducat -->
+        <!-- School Management module category, nested under Education from OpenEducat -->
         <record id="module_category_aps" model="ir.module.category">
-            <field name="name">APEX</field>
+            <field name="name">School Management</field>
             <field name="description">Academic Progress and Excellence – resource assignment, submissions, and grading.</field>
             <field name="parent_id" ref="openeducat_core.module_category_all_openeducat"/>
             <field name="sequence">20</field>

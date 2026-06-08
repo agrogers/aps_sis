@@ -95,7 +95,7 @@ def _get_page_dimensions_style(self):
 ## Examples
 - **Model Relations**: `aps_resource_submission.py` shows task-resource-student linking with computed display names
 - **Workflow Actions**: `action_mark_complete()` validates faculty permissions before state changes
-- **View Updates**: Add fields to XML views with `attrs` for conditional visibility (e.g., `{'invisible': [('state', 'not in', ('submitted', 'complete'))]}`)
+- **View Updates**: Add fields to XML views with `invisible="condition"` for conditional visibility (e.g., `invisible="state not in ('submitted', 'complete')"`)
 - **Asset Organization**: Group related CSS in dedicated files (e.g., `openeducat.css` for theme-specific styles)
 
 ## Common Pitfalls

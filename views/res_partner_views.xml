@@ -1,11 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <!-- Inherit student portal view to add is_teacher -->
+    <record id="view_partner_form_teacher" model="ir.ui.view">
+        <field name="name">res.partner.form.teacher</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="openeducat_core.student_portal_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_student']" position="before">
+                    <field name="is_teacher"/>
+                    <label for="is_teacher"/>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Inherit partner form to add Personal tab and move gender field -->
     <record id="view_partner_form_gender" model="ir.ui.view">
         <field name="name">res.partner.form.gender</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+            <!-- Make is_student available in form context for invisible expressions -->
+            <xpath expr="//sheet" position="inside">
+                <field name="is_student" invisible="True"/>
+            </xpath>
+
             <!-- Add Student / Teacher stat buttons -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_open_aps_student" type="object" class="oe_stat_button" icon="fa-user-graduate" invisible="aps_student_count == 0">
@@ -40,21 +58,22 @@
                     </field>
                 </page>
             </xpath>
-        </field>
-    </record>
-
-    <!-- Inherit student portal view to add is_teacher -->
-    <record id="view_partner_form_teacher" model="ir.ui.view">
-        <field name="name">res.partner.form.teacher</field>
-        <field name="model">res.partner</field>
-        <field name="inherit_id" ref="openeducat_core.student_portal_view"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='is_student']" position="before">
-                    <field name="is_teacher"/>
-                    <label for="is_teacher"/>
+            <!-- Hide company_name for students -->
+            <xpath expr="//field[@name='parent_id']" position="attributes">
+                <attribute name="invisible">((is_company and not parent_id) or company_name) and company_name != '' or is_student</attribute>
+            </xpath>
+            <xpath expr="//field[@name='vat']" position="attributes">
+                <attribute name="invisible">is_student</attribute>
+            </xpath>
+            <xpath expr="//field[@name='company_name']" position="after">
+                <group>
+                    <field name="alias" invisible="is_company"/>
+                </group>
             </xpath>
         </field>
     </record>
+
+
 
     <!-- Make user_id (Follow-up Responsible) optional in partner tree view -->
     <record id="view_partner_tree_user_id_optional" model="ir.ui.view">
