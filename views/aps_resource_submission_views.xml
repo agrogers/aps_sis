@@ -363,6 +363,9 @@
                                 <field name="ai_feedback_links" invisible="1"/>
                                 <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1" invisible="not has_feedback"/>
                                 <field name="answer" nolabel="1"/>
+                                <div class="text-muted mt-1" invisible="not answer_word_count">
+                                    <t t-esc="answer_word_count"/> words
+                                </div>
                         </page>
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" name="feedback_page">
                             <div class="row align-items-start">

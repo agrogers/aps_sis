@@ -169,6 +169,10 @@
                                     invisible="(state != 'assigned' and not answer) or has_feedback"/>
                                 
                             </div>
+                            <div class="text-muted mt-1" invisible="not answer_word_count">
+                                <t t-esc="answer_word_count"/> words
+                            </div>
+
                         </page>
 
 

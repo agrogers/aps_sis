@@ -95,6 +95,12 @@ class APSResourceSubmission(models.Model):
     feedback = fields.Html(string='Feedback')
     has_answer = fields.Selection(string='Has Answer', related='resource_id.has_answer', readonly=True, store=True)
     answer = fields.Html(string='Answer')
+    answer_word_count = fields.Integer(
+        string='Word Count',
+        compute='_compute_answer_word_count',
+        store=True,
+        help='Number of words in the student answer (HTML tags stripped).',
+    )
     has_feedback = fields.Boolean(string='Has Feedback', compute='_compute_has_feedback', store=True)
     has_ai_feedback = fields.Boolean(string='Has AI Feedback', compute='_compute_has_ai_feedback', store=True,
         help='True when submission has feedback and the resource uses AI (ai_action != "none")')
@@ -457,6 +463,15 @@ class APSResourceSubmission(models.Model):
         faculty = self._get_current_faculty()
         for record in self:
             record.is_current_user_reviewed = bool(faculty) and (faculty in record.reviewed_by)
+
+    @api.depends('answer')
+    def _compute_answer_word_count(self):
+        for record in self:
+            if record.answer:
+                text = re.sub(r'<[^>]+>', '', record.answer)
+                record.answer_word_count = len(text.split()) if text.strip() else 0
+            else:
+                record.answer_word_count = 0
 
     @api.depends('resource_id.has_answer', 'resource_id.primary_parent_id.has_answer')
     def _compute_model_answer_is_notes(self):
