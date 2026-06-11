@@ -593,6 +593,7 @@
         <field name="search_view_id" ref="view_aps_resources_search"/>
         <field name="domain">[('parent_ids','=',False)]</field>
         <field name="context">{'default_order': 'name'}</field>
+        <field name="path">apex-resources-hierarchy</field>
     </record>
 
     <!-- Server action: create linked resources from Question headings -->
