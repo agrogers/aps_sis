@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Client Action for Gradebook Grid -->
+    <record id="action_aps_gradebook_grid" model="ir.actions.client">
+        <field name="name">Gradebook Grid</field>
+        <field name="tag">aps_gradebook_grid</field>
+        <field name="path">apex-gradebook</field>
+    </record>
+
+</odoo>

@@ -26,6 +26,8 @@
 10. [Controllers](#controllers)
 11. [Gamification](#gamification)
 12. [Developer Notes](#developer-notes)
+    - [SlickGrid Gradebook Grid](#slickgrid-gradebook-grid)
+    - [Adding a new Progress resource](#adding-a-new-progress-resource)
 
 ---
 
@@ -467,6 +469,67 @@ Portal URLs use tokenized parameters to grant read-only access to specific resou
 ---
 
 ## Developer Notes
+
+### SlickGrid Gradebook Grid
+
+The **Gradebook Grid** (`apex_gradebook.GradebookGrid`) is an OWL 2 client action that renders a spreadsheet-like data-entry matrix using **SlickGrid v5.18.6** (6pac/SlickGrid).
+
+**Library files** are in `static/src/lib/slickgrid/` and loaded via `__manifest__.py` assets.
+
+#### SlickGrid ↔ Odoo Integration Notes
+
+SlickGrid's npm/TypeScript builds wrap each source file in an IIFE (`(() => { ... })()`), where `var Slick = ...` is function-scoped. Odoo's asset bundler loads each `.js` file as a separate module context, so the `Slick` global never leaks to `window` automatically.
+
+To make SlickGrid work inside Odoo, the following adaptations were made:
+
+1. **`slick.core.js`** — Patched to expose `window.Slick`:
+   ```js
+   // Added before the return statement (line ~946)
+   if (window && !window.Slick) { window.Slick = slick_core_exports; }
+   ```
+   `slick_core_exports` is the object populated by `__export()` earlier in the file and contains all core classes (`Event`, `EventData`, `Range`, `Utils`, `keyCode`, etc.). This single line is the minimum change needed — all downstream SlickGrid files already check `window.Slick &&` before extending it.
+
+2. **`jquery.event.drag` → `slick.interactions.js`** — SlickGrid v5 dropped jQuery as a dependency. The old `jquery.event.drag-2.3.0.js` plugin was replaced with the official `slick.interactions.js` (available from the CDN `dist/browser/` bundle), which provides `Slick.Draggable`, `Slick.MouseWheel`, and `Slick.Resizable`.
+
+3. **Load order in `__manifest__.py`** — Strict ordering ensures each file's dependencies are available:
+   ```
+   core → interactions → dataview → grid → editors → formatters → decorator → selector → cellselection
+   ```
+   Notably, `cellrangedecorator.js` must load **before** `cellrangeselector.js` because the selector destructures `Slick.CellRangeDecorator` at module level.
+
+4. **No jQuery required** — SlickGrid v5 is a pure JS library. The Owl component uses native DOM APIs (`document.createElement`, `addEventListener`) for its custom editor.
+
+5. **CSS** — SlickGrid's default inline-block cells were overridden with flexbox for vertical alignment:
+   ```scss
+   .slick-cell {
+       display: flex !important;
+       align-items: center;
+   }
+   ```
+
+#### SlickGrid Asset Bundle
+
+The following files are loaded via `web.assets_backend` in `__manifest__.py`:
+
+| File | Provides |
+|------|----------|
+| `slick.core.js` | `window.Slick` (patched), core classes (Event, Range, Utils, etc.) |
+| `slick.interactions.js` | `Slick.Draggable`, `Slick.MouseWheel`, `Slick.Resizable` (downloaded from CDN, unmodified) |
+| `slick.dataview.js` | `Slick.Data.DataView` (unmodified, reads from `window.Slick`) |
+| `slick.grid.js` | `Slick.Grid` (unmodified) |
+| `slick.editors.js` | `Slick.Editors` (unmodified) |
+| `slick.formatters.js` | `Slick.Formatters` (unmodified) |
+| `slick.cellrangedecorator.js` | `Slick.CellRangeDecorator` (unmodified) |
+| `slick.cellrangeselector.js` | `Slick.CellRangeSelector` (unmodified) |
+| `slick.cellselectionmodel.js` | `Slick.CellSelectionModel` (unmodified) |
+| `slick.grid.css` + `slick-default-theme.css` | Grid styling |
+
+#### If Upgrading SlickGrid
+
+1. Download the **browser IIFE builds** from the CDN `dist/browser/` folder — do NOT use the npm/ESM or TypeScript source files.
+2. Re-apply the `window.Slick = slick_core_exports` patch to the new `slick.core.js`.
+3. Verify all `window.Slick &&` checks are present in the other files (the CDN browser builds include them).
+4. Update the load order in `__manifest__.py` if new files were added/removed.
 
 ### Adding a new Progress resource
 

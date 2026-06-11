@@ -1,0 +1,197 @@
+// ------------------------------------------------------------------ //
+// Gradebook Grid — SlickGrid-powered spreadsheet for score entry
+// ------------------------------------------------------------------ //
+
+// --- Filter bar ---
+.aps-gradebook-filter-bar {
+    min-height: 52px;
+    border-bottom: 1px solid #dee2e6;
+    z-index: 10;
+
+    .form-select-sm {
+        font-size: 0.875rem;
+        border-radius: 6px;
+        border-color: #ced4da;
+        &:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        }
+    }
+}
+
+// --- Grid body wrapper ---
+.aps-gradebook-grid-body {
+    background: #f8f9fa;
+}
+
+// --- Grid container ---
+.aps-gradebook-grid-container {
+    // SlickGrid overrides
+    .slick-header-column {
+        background: #f0f4f8;
+        font-weight: 700;
+        font-size: 13px;
+        color: #2c3e50;
+        border-right: 1px solid #dee2e6;
+        height: 36px;
+        line-height: 36px;
+        padding: 0 8px;
+    }
+
+    .slick-header-columns {
+        border-bottom: 2px solid #c8ced6;
+        background: #f0f4f8;
+    }
+
+    .slick-headerrow {
+        background: #f8f9fa;
+    }
+
+    .slick-headerrow-column {
+        background: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+        padding: 0;
+        line-height: 32px;
+    }
+
+    .slick-headerrow-column input {
+        margin: 0;
+        padding: 0 4px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+    }
+    .slick-headerrow-column input:focus {
+        background: #fff;
+        box-shadow: inset 0 0 0 1px #86b7fe;
+    }
+
+    .slick-cell {
+        font-size: 13px;
+        padding: 2px 8px;
+        border-right: 1px solid #e9ecef;
+        border-bottom: 1px solid #e9ecef;
+        line-height: 30px;
+        color: #212529;
+        display: flex !important;
+        align-items: center;
+    }
+
+    .slick-cell.locked {
+        background: #f0f0f0;
+    }
+
+    .slick-cell-editable {
+        background-color: #fffdf5;
+    }
+
+    .slick-cell-percent {
+        background-color: #f8f9fa;
+    }
+
+    .slick-row {
+        &.odd {
+            .slick-cell {
+                background-color: #f8f9fa;
+            }
+            .slick-cell-editable {
+                background-color: #fefcf0;
+            }
+        }
+        &.even {
+            .slick-cell {
+                background-color: #ffffff;
+            }
+            .slick-cell-editable {
+                background-color: #fffdf5;
+            }
+        }
+    }
+
+    .slick-row.active {
+        .slick-cell {
+            background-color: #e8f4fd;
+        }
+    }
+
+    .slick-cell.selected {
+        background-color: #cce5ff !important;
+        border-color: #99cfff;
+    }
+
+    .slick-cell.highlighted {
+        background-color: #fff3cd !important;
+    }
+
+    // Locked cells styling
+    .slick-cell.locked {
+        background-color: #f0f0f0 !important;
+        color: #6c757d;
+        cursor: default;
+    }
+
+    // Sort indicator
+    .slick-sort-indicator-asc,
+    .slick-sort-indicator-desc {
+        display: inline-block;
+        margin-left: 4px;
+    }
+
+    // Grid canvas
+    .grid-canvas {
+        overflow: auto !important;
+    }
+
+    // Resize handle
+    .slick-resizable-handle {
+        width: 6px;
+        right: -3px;
+        cursor: col-resize;
+    }
+
+    // Editor input
+    .slick-cell input {
+        border: 1px solid #86b7fe;
+        border-radius: 3px;
+        background: #fff;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+}
+
+// --- Summary bar ---
+.aps-gradebook-summary-bar {
+    min-height: 40px;
+    border-top: 1px solid #dee2e6;
+    z-index: 10;
+
+    .fw-bold {
+        color: #2c3e50;
+    }
+}
+
+// --- Loading state ---
+.aps-gradebook-grid {
+    .spinner-border {
+        width: 1.2rem;
+        height: 1.2rem;
+    }
+}
+
+// --- Responsive adjustments ---
+@media (max-width: 768px) {
+    .aps-gradebook-filter-bar {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+
+        .d-flex {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .form-select {
+            min-width: unset !important;
+        }
+    }
+}

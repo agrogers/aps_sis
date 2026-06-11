@@ -64,6 +64,7 @@
     <menuitem id="menu_apex_submissions2" name="Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_students" name="Student Submissions" parent="menu_apex_submissions" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submissions_score" name="Enter Scores" parent="menu_apex_submissions" action="action_aps_resource_submissions_score" sequence="40" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_gradebook_grid" name="Gradebook Grid" parent="menu_apex_submissions" action="action_aps_gradebook_grid" sequence="45" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_submit_mark_teacher" name="Submit a Mark" parent="menu_apex_submissions" action="action_aps_submit_mark_wizard_teacher" sequence="50" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_task_list" name="Tasks" parent="menu_apex_submissions" action="action_aps_resource_tasks" sequence="250" groups="aps_sis.group_aps_teacher"/>
 

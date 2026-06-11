@@ -1,0 +1,100 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.GradebookGrid" owl="1">
+        <div class="aps-gradebook-grid d-flex flex-column vh-100 overflow-hidden bg-light">
+            
+            <!-- ==================== FILTER BAR ==================== -->
+            <div class="aps-gradebook-filter-bar bg-white shadow-sm px-3 py-2 d-flex align-items-center gap-3 flex-wrap">
+                <h5 class="fw-bold text-primary mb-0 me-2">
+                    <i class="fa fa-table me-1"/> Gradebook
+                </h5>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label fw-semibold mb-0 text-nowrap small">Category</label>
+                    <select class="form-select form-select-sm" style="min-width:180px;"
+                            t-on-change="onChangeCategory"
+                            t-att-value="state.selectedCategoryId">
+                        <option value="">-- Select Category --</option>
+                        <t t-foreach="state.categories" t-as="cat" t-key="cat.id">
+                            <option t-att-value="cat.id" t-att-selected="state.selectedCategoryId === cat.id">
+                                <t t-esc="cat.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label fw-semibold mb-0 text-nowrap small">Resource</label>
+                    <select class="form-select form-select-sm" style="min-width:250px;"
+                            t-on-change="onChangeResource"
+                            t-att-value="state.selectedResourceId"
+                            t-att-disabled="state.resources.length === 0">
+                        <option value="">-- Select Resource --</option>
+                        <t t-foreach="state.resources" t-as="res" t-key="res.id">
+                            <option t-att-value="res.id" t-att-selected="state.selectedResourceId === res.id">
+                                <t t-esc="res.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label fw-semibold mb-0 text-nowrap small">Student</label>
+                    <select class="form-select form-select-sm" style="min-width:180px;"
+                            t-on-change="onChangeStudent"
+                            t-att-value="state.selectedStudentId"
+                            t-att-disabled="state.students.length === 0">
+                        <option value="">-- All Students --</option>
+                        <t t-foreach="state.students" t-as="stu" t-key="stu.id">
+                            <option t-att-value="stu.id" t-att-selected="state.selectedStudentId === stu.id">
+                                <t t-esc="stu.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <t t-if="state.gridLoading">
+                    <div class="spinner-border spinner-border-sm text-primary ms-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </t>
+            </div>
+
+            <!-- ==================== ERROR MESSAGE ==================== -->
+            <t t-if="state.error">
+                <div class="alert alert-danger m-3" role="alert">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <t t-esc="state.error"/>
+                </div>
+            </t>
+
+            <!-- ==================== GRID CONTAINER ==================== -->
+            <div class="aps-gradebook-grid-body flex-grow-1 position-relative">
+                <t t-if="!state.selectedResourceId &amp;&amp; !state.gridLoading">
+                    <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                        <div class="text-center">
+                            <i class="fa fa-hand-pointer-o fa-3x mb-3 d-block"/>
+                            <p class="fs-5">Select a category and resource to load the gradebook.</p>
+                        </div>
+                    </div>
+                </t>
+
+                <div t-ref="gridContainer"
+                     class="aps-gradebook-grid-container h-100 w-100"
+                     t-att-class="{'d-none': !state.selectedResourceId &amp;&amp; !state.gridLoading}">
+                </div>
+            </div>
+
+            <!-- ==================== SUMMARY BAR ==================== -->
+            <t t-if="state.summary &amp;&amp; state.gridInitialized">
+                <div class="aps-gradebook-summary-bar bg-white border-top px-3 py-2 d-flex align-items-center gap-4 flex-wrap">
+                    <t t-foreach="summaryItems" t-as="item" t-key="item.label">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="text-muted small"><t t-esc="item.label"/>:</span>
+                            <span class="fw-bold small"><t t-esc="item.value"/></span>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

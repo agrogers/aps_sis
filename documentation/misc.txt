@@ -1,0 +1,212 @@
+Language Models
+---------------------------------------------------
+[
+	{
+		"name": "Copilot",
+		"vendor": "copilot",
+		"settings": {
+			"claude-opus-4.6": {
+				"reasoningEffort": "medium"
+			},
+			"claude-sonnet-4.6": {
+				"reasoningEffort": "medium"
+			}
+		}
+	},
+	{
+		"name": "OpenRouter 2",
+		"vendor": "openrouter",
+		"apiKey": "${input:chat.lm.secret.-2ce9a7d4}"
+	},
+	{
+		"name": "OpenRouter-Claude",
+		"vendor": "openrouter",
+		"apiKey": "${input:chat.lm.secret.4911568d}"
+	},
+	{
+		"name": "0penRouter Freeish",
+		"vendor": "customendpoint",
+		"apiKey": "${input:chat.lm.secret.6fcb7602}",
+		"apiType": "chat-completions",
+		"models": [
+			{
+				"id": "openrouter/owl-alpha",
+				"name": "10 Owl Alpha",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "deepseek/deepseek-v4-pro",
+				"name": "20 DeepSeek V4 Pro 94% $0.28/1.32",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "xiaomi/mimo-v2.5",
+				"name": "22 Xiaomi Mimo 2.5 86% ($0.14/$0.28)",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+				"name": "24 Nemotron 3 Ultra 550B Free 79%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "deepseek/deepseek-v4-flash",
+				"name": "26 DeepSeek V4 Flash 84% (($0.10/$0.20)",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+				"name": "30 Nemotron 3 Ultra 550B Free 79%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "deepseek/deepseek-v3.2",
+				"name": "40 DeepSeek V3.2 77% $0.19/0.435",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "tencent/hy3-preview",
+				"name": "50 Tencent HY3 Preview 76% ($0.063/$0.21)",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "nvidia/nemotron-3-super-120b-a12b:free",
+				"name": "60 Nemotron 3 Super 120B Free 64%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "openai/gpt-oss-120b:free",
+				"name": "70 OpenAI GPT-OSS 120B Free 59%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 32000
+			},
+			{
+				"id": "poolside/laguna-xs.2:free",
+				"name": "Laguna XS.2 Free ?%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "poolside/laguna-m.1:free",
+				"name": "Laguna M.1 Free ?%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "openai/gpt-oss-20b:free",
+				"name": "OpenAI GPT-OSS 20B Free 39%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "z-ai/glm-4.5-air:free",
+				"name": "GLM 4.5 Air Free 50%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "nousresearch/hermes-3-llama-3.1-405b:free",
+				"name": "Hermes 3 LLaMA 3.1 405B Free 37%",
+				"url": "https://openrouter.ai/api/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			}
+		]
+	},
+	{
+		"name": "Nvidia",
+		"vendor": "customendpoint",
+		"apiKey": "${input:chat.lm.secret.-5fe62499}",
+		"apiType": "chat-completions",
+		"models": [
+			{
+				"id": "nvidia/nemotron-3-ultra-550b-a55b",
+				"name": "Nemotron 3 Ultra 550B",
+				"url": "https://integrate.api.nvidia.com/v1/chat/completions",
+				"toolCalling": true,
+				"vision": false,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 4096
+			}
+		]
+	},
+	{
+		"name": "Deep Seek",
+		"vendor": "customendpoint",
+		"apiKey": "${input:chat.lm.secret.48885a27}",
+		"apiType": "chat-completions",
+		"models": [
+			{
+				"id": "deepseek-v4-flash",
+				"name": "DeepSeek V4 Flash 84% $0.14/0.28",
+				"url": "https://api.deepseek.com/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			},
+			{
+				"id": "deepseek-v4-pro",
+				"name": "DeepSeek V4 Pro 94% $0.435/0.87",
+				"url": "https://api.deepseek.com/v1/chat/completions",
+				"toolCalling": true,
+				"vision": true,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16000
+			}
+		]
+	}
+]
