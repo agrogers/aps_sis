@@ -301,13 +301,18 @@ class APSResource(models.Model):
             visited.add(resource.id)
 
             if resource.id == top_level_resource.id:
+                # The top-level resource always uses the wizard-provided name
+                # (base_name).  Resource-level custom names (aps.resource.custom.name)
+                # are never applied to the top-level resource — only to children.
                 effective_display = base_name
                 subs_for_children = inherited_subs
             else:
-                # Check for a custom name on any ancestor→resource link that is in
-                # the assignment set.
-                custom_name_found = None
+                # For child resources, resolve the suffix in priority order:
+                #   1. Resource-level custom name (aps.resource.custom.name) for
+                #      the parent→child link, if one exists.
+                #   2. The resource's own name as fallback.
                 effective_name = resource.name or ''
+                custom_name_found = None
                 for parent in resource.parent_ids:
                     if parent.id in resource_ids_set:
                         cn = custom_map.get((parent.id, resource.id))
@@ -316,13 +321,14 @@ class APSResource(models.Model):
                             break
 
                 if custom_name_found:
-                    # This resource has its own custom name — use it directly
-                    # and add a substitution rule for descendants.
+                    # Use the resource-level custom name and add a substitution
+                    # rule so the change cascades to all descendants.
                     subs_for_children = inherited_subs + [(effective_name, custom_name_found)]
                     effective_name = custom_name_found
                 else:
-                    # Apply inherited substitutions: replace longest matching
-                    # prefix first to avoid partial matches.
+                    # No custom name for this child — apply any inherited
+                    # substitutions from ancestor custom names (longest match
+                    # first to avoid partial replacements).
                     subs_for_children = inherited_subs
                     for original, replacement in sorted(
                         inherited_subs, key=lambda s: len(s[0]), reverse=True
@@ -331,7 +337,8 @@ class APSResource(models.Model):
                             effective_name = replacement + effective_name[len(original):]
                             break
 
-                # Apply overlap-removal algorithm (same logic as _compute_display_name)
+                # Combine parent display with the resolved child suffix using
+                # the overlap-removal algorithm.
                 effective_display = self._build_display_segment(parent_display, effective_name, separator)
 
             result[resource.id] = effective_display

@@ -5,10 +5,10 @@ Custom Name Mechanisms
 
 1. Wizard-level: ``custom_submission_name`` (user override at assignment time)
    ---------------------------------------------------------------------------
-   Set by the teacher in the wizard's "Submission Name" field.  This overrides the
-   **top-level resource's** name for this specific assignment only.  It does NOT
-   cascade to child resources — they keep their own resolved names (which may
-   include resource-level custom names; see below).
+   Set by the teacher in the wizard's "Submission Name" field.  This **always**
+   determines the top-level resource's submission name, regardless of any
+   resource-level custom names.  It is the authoritative prefix for the entire
+   assignment tree.
 
    Flow:
      - ``default_get`` pre-fills it with the resource's ``display_name``.
@@ -18,8 +18,8 @@ Custom Name Mechanisms
        entire tree.
      - A warning message is shown when the value differs from the resource's
        original ``display_name``, indicating it applies to all selected resources.
-     - For the top-level resource specifically, an explicit overwrite ensures the
-       wizard value takes precedence over the resolved name map:
+     - For the top-level resource, an explicit overwrite in the creation loop
+       ensures the wizard value is always used:
        ``if resource == top_level_resource and self.custom_submission_name``.
 
    Use case: "Call this 'Midterm Exam' just for this assignment."
@@ -31,12 +31,21 @@ Custom Name Mechanisms
    parent**.  Configured once by an admin/manager; applies automatically to every
    future assignment.
 
+   **Important:** Resource-level custom names only apply to **child resources**.
+   They are never applied to the top-level resource — the wizard's
+   ``custom_submission_name`` always takes precedence for the top-level.
+
    Flow:
      - Records are pre-loaded into a ``custom_map`` keyed by
        ``(parent_id, child_id)`` inside ``_resolve_submission_names()``.
-     - During the BFS tree walk, if a child has a matching custom name entry its
-       name is replaced and a **substitution rule** ``(original_name, custom_name)``
-       is created and cascaded to all descendants via longest-prefix matching.
+     - During the BFS tree walk, the top-level resource always uses the wizard
+       name (``base_name``) and skips custom-name lookup entirely.
+     - For each child resource, the suffix is resolved in priority order:
+       1. Resource-level custom name for the parent→child link (if any).
+       2. The resource's own ``name`` as fallback.
+     - When a custom name is found, a **substitution rule**
+       ``(original_name, custom_name)`` is created and cascaded to all
+       descendants via longest-prefix matching.
      - The overlap-removal algorithm in ``_build_display_segment`` prevents
        redundant segments (e.g. "Math 🢒 (Math) Lab" → "Math 🢒 Lab").
 
@@ -44,12 +53,16 @@ Custom Name Mechanisms
 
 Interaction
 ===========
-When both mechanisms are present, the wizard-level name wins for the **top-level**
-resource (the explicit check in ``action_assign_students`` overwrites the resolved
-name).  For child resources, resource-level custom names apply independently —
-the wizard's custom name only changes the top-level anchor, while
-``aps.resource.custom.name`` records remap specific parent→child links within the
-tree.
+The two mechanisms are cleanly separated:
+
+- **Top-level resource:** Always uses the wizard's ``custom_submission_name``.
+  Resource-level custom names never apply.
+- **Child resources:** The suffix is determined by resource-level custom name
+  (if configured) or the resource's own name.  The prefix is the resolved
+  parent display, which ultimately traces back to the wizard's custom name.
+
+This means the wizard custom name always sets the prefix for the entire tree,
+while resource-level custom names only remap specific child names beneath it.
 """
 
 from odoo import models, fields, api
@@ -475,9 +488,15 @@ class APSAssignStudentsWizard(models.TransientModel):
                         'state': 'assigned',
                         'date_due': self.date_due,
                     })
-                submission_name_value = submission_name
+                # The wizard's custom_submission_name always determines the
+                # top-level resource's submission name (it is pre-filled from
+                # default_get and can be edited by the teacher).  Resource-level
+                # custom names (aps.resource.custom.name) only apply to child
+                # resources, never the top-level.
                 if resource == top_level_resource and self.custom_submission_name:
                     submission_name_value = self.custom_submission_name
+                else:
+                    submission_name_value = submission_name
                 # Each resource carries its own default_answer; use wizard fields
                 # only for the top-level resource (where the teacher may have edited
                 # them), and the resource's own fields for every child resource.
