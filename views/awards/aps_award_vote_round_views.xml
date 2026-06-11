@@ -289,6 +289,7 @@
     <!-- Action -->
     <record id="action_aps_award_vote_round" model="ir.actions.act_window">
         <field name="name">Vote Rounds</field>
+        <field name="path">awards-vote-rounds</field>
         <field name="res_model">aps.award.vote.round</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_aps_award_vote_round_search"/>
