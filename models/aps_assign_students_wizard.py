@@ -1,3 +1,57 @@
+"""Wizard for assigning resources to students, with support for two distinct custom-naming mechanisms.
+
+Custom Name Mechanisms
+======================
+
+1. Wizard-level: ``custom_submission_name`` (user override at assignment time)
+   ---------------------------------------------------------------------------
+   Set by the teacher in the wizard's "Submission Name" field.  This overrides the
+   **top-level resource's** name for this specific assignment only.  It does NOT
+   cascade to child resources — they keep their own resolved names (which may
+   include resource-level custom names; see below).
+
+   Flow:
+     - ``default_get`` pre-fills it with the resource's ``display_name``.
+     - The user can edit it freely; an onchange keeps ``submission_label`` in sync.
+     - In ``action_assign_students`` it is passed as ``top_level_name`` to
+       ``_resolve_submission_names()``, which uses it as the base name for the
+       entire tree.
+     - A warning message is shown when the value differs from the resource's
+       original ``display_name``, indicating it applies to all selected resources.
+     - For the top-level resource specifically, an explicit overwrite ensures the
+       wizard value takes precedence over the resolved name map:
+       ``if resource == top_level_resource and self.custom_submission_name``.
+
+   Use case: "Call this 'Midterm Exam' just for this assignment."
+
+2. Resource-level: ``aps.resource.custom.name`` (persistent parent→child mapping)
+   --------------------------------------------------------------------------------
+   Stored in the ``aps.resource.custom.name`` model (``custom_name.py``).  Each
+   record defines a custom name for a resource **when it appears under a specific
+   parent**.  Configured once by an admin/manager; applies automatically to every
+   future assignment.
+
+   Flow:
+     - Records are pre-loaded into a ``custom_map`` keyed by
+       ``(parent_id, child_id)`` inside ``_resolve_submission_names()``.
+     - During the BFS tree walk, if a child has a matching custom name entry its
+       name is replaced and a **substitution rule** ``(original_name, custom_name)``
+       is created and cascaded to all descendants via longest-prefix matching.
+     - The overlap-removal algorithm in ``_build_display_segment`` prevents
+       redundant segments (e.g. "Math 🢒 (Math) Lab" → "Math 🢒 Lab").
+
+   Use case: "Always call 'Q3' → 'Quiz 3' when it appears under 'Math'."
+
+Interaction
+===========
+When both mechanisms are present, the wizard-level name wins for the **top-level**
+resource (the explicit check in ``action_assign_students`` overwrites the resolved
+name).  For child resources, resource-level custom names apply independently —
+the wizard's custom name only changes the top-level anchor, while
+``aps.resource.custom.name`` records remap specific parent→child links within the
+tree.
+"""
+
 from odoo import models, fields, api
 from .resources.model import HAS_QUESTION_SELECTION, HAS_ANSWER_SELECTION
 
