@@ -48,6 +48,7 @@ export class GradebookGrid extends Component {
 
         onWillStart(async () => {
             await this._loadCategories();
+            this._restoreFilterState();
         });
 
         onMounted(() => {
@@ -82,6 +83,65 @@ export class GradebookGrid extends Component {
     // Data loading
     // ------------------------------------------------------------------ //
 
+    // ------------------------------------------------------------------ //
+    // Filter state persistence (localStorage)
+    // ------------------------------------------------------------------ //
+
+    _FILTER_STORAGE_KEY() { return "aps_gradebook_filter_state"; }
+
+    _saveFilterState() {
+        const state = {
+            categoryId: this.state.selectedCategoryId,
+            resourceId: this.state.selectedResourceId,
+            studentId: this.state.selectedStudentId,
+        };
+        try {
+            localStorage.setItem(this._FILTER_STORAGE_KEY(), JSON.stringify(state));
+        } catch (e) {
+            // localStorage may be unavailable
+        }
+    }
+
+    _restoreFilterState() {
+        try {
+            const raw = localStorage.getItem(this._FILTER_STORAGE_KEY());
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (saved.categoryId) {
+                this.state.selectedCategoryId = saved.categoryId;
+                // Categories are already loaded — now load resources
+                this._loadResourcesForCategory(saved.categoryId);
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    async _loadResourcesForCategory(catId) {
+        try {
+            const resources = await this.orm.call(
+                "aps.resource.submission",
+                "get_gradebook_resources",
+                [catId]
+            );
+            this.state.resources = resources || [];
+            // If we also have a saved resource, select it and load grid data
+            const raw = localStorage.getItem(this._FILTER_STORAGE_KEY());
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved.resourceId && resources.find((r) => r.id === saved.resourceId)) {
+                    this.state.selectedResourceId = saved.resourceId;
+                    if (saved.studentId) {
+                        this.state.selectedStudentId = saved.studentId;
+                    }
+                    await this._loadGridData();
+                }
+            }
+        } catch (err) {
+            this.state.error = "Failed to load resources.";
+        }
+    }
+
     async _loadCategories() {
         try {
             const categories = await this.orm.call(
@@ -103,6 +163,7 @@ export class GradebookGrid extends Component {
         this.state.students = [];
         this.state.selectedStudentId = false;
         this._destroyGrid();
+        this._saveFilterState();
 
         if (!catId) {
             return;
@@ -124,6 +185,7 @@ export class GradebookGrid extends Component {
         const resId = ev.target.value ? parseInt(ev.target.value) : false;
         this.state.selectedResourceId = resId;
         this._destroyGrid();
+        this._saveFilterState();
         if (!resId) {
             return;
         }
@@ -133,6 +195,7 @@ export class GradebookGrid extends Component {
     async onChangeStudent(ev) {
         const stuId = ev.target.value ? parseInt(ev.target.value) : false;
         this.state.selectedStudentId = stuId;
+        this._saveFilterState();
         if (!this.state.selectedResourceId) {
             return;
         }
@@ -500,11 +563,48 @@ export class GradebookGrid extends Component {
                 const result = await this.orm.call(
                     "aps.resource.submission",
                     "write_gradebook_score",
-                    [submissionId, newValue]
+                    [submissionId, newValue],
+                    { resource_id: this.state.selectedResourceId || false },
                 );
 
-                // Update the row in DataView
-                if (result.updated_row) {
+                // Apply all returned rows — update items in-place then refresh
+                // only the readonly (parent) cells so the active editor is not killed.
+                if (result.rows) {
+                    const cols = grid.getColumns();
+                    const scoreColIdx = cols.findIndex((c) => c.id === "score");
+                    const percentColIdx = cols.findIndex((c) => c.id === "result_percent");
+                    const outOfColIdx = cols.findIndex((c) => c.id === "out_of_marks");
+
+                    for (const updated of result.rows) {
+                        const rowItem = dataView.getItemById(updated.submission_id || updated.id);
+                        if (!rowItem) continue;
+
+                        rowItem.score = updated.score;
+                        rowItem.result_percent = updated.result_percent;
+                        rowItem.out_of_marks = updated.out_of_marks;
+                        rowItem.state = updated.state;
+                        rowItem.is_locked = updated.is_locked;
+                        rowItem.has_child_resources = updated.has_child_resources;
+
+                        // Only updateCell for readonly parent rows (has children)
+                        // so the active editor on leaf rows is never disturbed
+                        if (!rowItem.has_child_resources) continue;
+
+                        const rowIdx = dataView.getRowById(updated.submission_id || updated.id);
+                        if (rowIdx === undefined) continue;
+
+                        if (scoreColIdx !== -1) {
+                            grid.updateCell(rowIdx, scoreColIdx);
+                        }
+                        if (percentColIdx !== -1) {
+                            grid.updateCell(rowIdx, percentColIdx);
+                        }
+                        if (outOfColIdx !== -1) {
+                            grid.updateCell(rowIdx, outOfColIdx);
+                        }
+                    }
+                } else if (result.updated_row) {
+                    // Fallback — single row only
                     const updated = result.updated_row;
                     const rowItem = dataView.getItemById(submissionId);
                     if (rowItem) {
@@ -512,7 +612,7 @@ export class GradebookGrid extends Component {
                         rowItem.result_percent = updated.result_percent;
                         rowItem.state = updated.state;
                         rowItem.is_locked = updated.is_locked;
-                        rowItem.score_contributes_to_parent = updated.score_contributes_to_parent;
+                        rowItem.has_child_resources = updated.has_child_resources;
                         dataView.updateItem(submissionId, rowItem);
                     }
                 }
@@ -521,6 +621,7 @@ export class GradebookGrid extends Component {
                 if (result.summary) {
                     this.state.summary = result.summary;
                 }
+
             } catch (err) {
                 console.error("Failed to save score:", err);
                 // Revert the cell

@@ -61,6 +61,7 @@
 		'views/awards/aps_award_vote_round_views.xml',
 		'views/awards/aps_award_vote_views.xml',
 		'views/awards/aps_award_voting_set_views.xml',
+		'views/awards/aps_award_tag_views.xml',
 		'views/awards/aps_vote_management_dashboard_views.xml',
 		'views/hr_employee_views.xml',
 		'views/awards/awards_voting_templates.xml',

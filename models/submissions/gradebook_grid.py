@@ -204,12 +204,21 @@ class APSResourceSubmissionGradebook(models.Model):
     # Score write endpoint
     # ------------------------------------------------------------------ //
     @api.model
-    def write_gradebook_score(self, submission_id, new_score):
+    def write_gradebook_score(self, submission_id, new_score, resource_id=None):
         """
-        Write a score for a single submission and return updated row + summary.
+        Write a score for a single submission and return updated rows + summary.
+        Score changes may cascade up to parent submissions via auto_score,
+        so we return ALL rows for the resource context.
+
+        :param submission_id: The submission being edited.
+        :param new_score: The new score value.
+        :param resource_id: The resource that was selected in the grid (parent).
+                            If omitted, falls back to the submission's own resource.
+
         Returns::
             {
-                'updated_row': {...},
+                'updated_row': {...},   — the single row that was directly edited
+                'rows': [{...}, ...],    — all rows for this resource (after cascades)
                 'summary': {...},
             }
         """
@@ -220,7 +229,9 @@ class APSResourceSubmissionGradebook(models.Model):
         if submission.state == 'complete':
             raise UserError(_("Cannot edit a finalised submission."))
 
-        # Write the score — result_percent recomputes automatically via @api.depends
+        # Write the score — result_percent recomputes automatically via @api.depends.
+        # This also triggers _check_and_update_parent_score() via the write override,
+        # which may cascade score changes up to parent submissions.
         submission.write({'score': new_score, 'auto_score': False})
 
         # Re-fetch to get recomputed values
@@ -242,16 +253,17 @@ class APSResourceSubmissionGradebook(models.Model):
             'submission_id': submission.id,
         }
 
-        # Recompute summary — we need the full context, so re-fetch grid data
-        # But for efficiency, just recompute from the single updated row context
-        # by fetching all rows for the same resource
+        # Re-fetch the full grid data using the selected resource (parent)
+        # so cascaded parent score changes are captured.
+        grid_resource_id = resource_id or submission.resource_id.id
         grid_data = self.get_gradebook_grid_data(
             subject_category_id=submission.subject_categories[:1].id if submission.subject_categories else None,
-            resource_id=submission.resource_id.id,
+            resource_id=grid_resource_id,
         )
 
         return {
             'updated_row': updated_row,
+            'rows': grid_data['rows'],
             'summary': grid_data['summary'],
         }
 
