@@ -19,6 +19,7 @@ export class GradebookGrid extends Component {
         this.action = useService("action");
         this.gridContainerRef = useRef("gridContainer");
         this.filterBarRef = useRef("filterBar");
+        this.columnPickerRef = useRef("columnPicker");
 
         this.state = useState({
             loading: true,
@@ -31,10 +32,13 @@ export class GradebookGrid extends Component {
             selectedStudentId: false,
             rows: [],
             columns: [],
+            allColumns: [],              // full column defs before visibility filter
             summary: null,
             gridInitialized: false,
             error: null,
             columnFilters: {},
+            showColumnPicker: false,     // toggle column visibility dropdown
+            columnPrefs: {},             // { [colId]: visible }
         });
 
         this._grid = null;
@@ -43,7 +47,9 @@ export class GradebookGrid extends Component {
         this._rowsCache = [];
 
         onWillStart(async () => {
+            this._loadFilterState();
             await this._loadCategories();
+            this._restoreFilterState();
         });
 
         onMounted(() => {
@@ -52,7 +58,26 @@ export class GradebookGrid extends Component {
 
         onWillUnmount(() => {
             this._destroyGrid();
+            this._removeClickAwayListener();
         });
+    }
+
+    _addClickAwayListener() {
+        this._removeClickAwayListener();
+        this._clickAwayHandler = (ev) => {
+            const picker = this.columnPickerRef?.el;
+            if (picker && !picker.contains(ev.target) && this.state.showColumnPicker) {
+                this.state.showColumnPicker = false;
+            }
+        };
+        document.addEventListener("mousedown", this._clickAwayHandler);
+    }
+
+    _removeClickAwayListener() {
+        if (this._clickAwayHandler) {
+            document.removeEventListener("mousedown", this._clickAwayHandler);
+            this._clickAwayHandler = null;
+        }
     }
 
     // ------------------------------------------------------------------ //
@@ -80,6 +105,7 @@ export class GradebookGrid extends Component {
         this.state.students = [];
         this.state.selectedStudentId = false;
         this._destroyGrid();
+        this._saveFilterState();
 
         if (!catId) {
             return;
@@ -101,6 +127,7 @@ export class GradebookGrid extends Component {
         const resId = ev.target.value ? parseInt(ev.target.value) : false;
         this.state.selectedResourceId = resId;
         this._destroyGrid();
+        this._saveFilterState();
         if (!resId) {
             return;
         }
@@ -110,6 +137,7 @@ export class GradebookGrid extends Component {
     async onChangeStudent(ev) {
         const stuId = ev.target.value ? parseInt(ev.target.value) : false;
         this.state.selectedStudentId = stuId;
+        this._saveFilterState();
         if (!this.state.selectedResourceId) {
             return;
         }
@@ -121,23 +149,52 @@ export class GradebookGrid extends Component {
         this.state.error = null;
 
         try {
-            const data = await this.orm.call(
-                "aps.resource.submission",
-                "get_gradebook_grid_data",
-                [
-                    this.state.selectedCategoryId,
-                    this.state.selectedResourceId,
-                    this.state.selectedStudentId || false,
-                ]
-            );
+            const [data, savedPrefs] = await Promise.all([
+                this.orm.call(
+                    "aps.resource.submission",
+                    "get_gradebook_grid_data",
+                    [
+                        this.state.selectedCategoryId,
+                        this.state.selectedResourceId,
+                        this.state.selectedStudentId || false,
+                    ]
+                ),
+                this.orm.call(
+                    "aps.resource.submission",
+                    "load_gradebook_column_prefs",
+                    [],
+                ),
+            ]);
 
             this._rowsCache = data.rows || [];
             this._columnDefs = data.columns || [];
             this.state.summary = data.summary || null;
             this.state.students = data.students || [];
 
-            // Map column defs to SlickGrid format
-            const slickColumns = this._buildColumns(this._columnDefs);
+            // Keep the full column list (server reordered per saved prefs)
+            this.state.allColumns = [...this._columnDefs];
+
+            // Build columnPrefs map: merge server prefs (for hidden cols) with visible default
+            const prefs = {};
+            // Default: all visible
+            for (const col of this._columnDefs) {
+                prefs[col.id] = true;
+            }
+            // Override with saved visibility
+            if (savedPrefs && savedPrefs.length) {
+                for (const p of savedPrefs) {
+                    if (p.id in prefs) {
+                        prefs[p.id] = p.visible !== false;
+                    }
+                }
+            }
+            this.state.columnPrefs = prefs;
+
+            // Build initial SlickGrid columns with visibility applied
+            const visibleDefs = this._columnDefs.filter(
+                (c) => prefs[c.id] !== false
+            );
+            const slickColumns = this._buildColumns(visibleDefs);
             this.state.columns = slickColumns;
 
             // Wait for DOM then initialize grid
@@ -146,6 +203,70 @@ export class GradebookGrid extends Component {
             this.state.error = "Failed to load grid data: " + (err.message || err);
         } finally {
             this.state.gridLoading = false;
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    // Filter state persistence (localStorage)
+    // ------------------------------------------------------------------ //
+
+    _filterStateKey() {
+        return `aps_gradebook_filters_${this.env?.services?.user?.userId || 'anonymous'}`;
+    }
+
+    _saveFilterState() {
+        try {
+            const data = {
+                categoryId: this.state.selectedCategoryId || false,
+                resourceId: this.state.selectedResourceId || false,
+                studentId: this.state.selectedStudentId || false,
+            };
+            localStorage.setItem(this._filterStateKey(), JSON.stringify(data));
+        } catch (e) {
+            // localStorage unavailable — silently ignore
+        }
+    }
+
+    _loadFilterState() {
+        try {
+            const raw = localStorage.getItem(this._filterStateKey());
+            this._savedFilterState = raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            this._savedFilterState = null;
+        }
+    }
+
+    _restoreFilterState() {
+        const s = this._savedFilterState;
+        if (!s) return;
+        if (s.categoryId) this.state.selectedCategoryId = s.categoryId;
+        if (s.resourceId) this.state.selectedResourceId = s.resourceId;
+        if (s.studentId) this.state.selectedStudentId = s.studentId;
+        // Kick off the async chain: load resources for saved category, then grid
+        if (s.categoryId) {
+            this._activateFilterState();
+        }
+    }
+
+    async _activateFilterState() {
+        const s = this._savedFilterState;
+        if (!s || !s.categoryId) return;
+
+        // Load resources for the saved category
+        try {
+            const resources = await this.orm.call(
+                "aps.resource.submission",
+                "get_gradebook_resources",
+                [s.categoryId]
+            );
+            this.state.resources = resources || [];
+        } catch (err) {
+            return; // silently fail — user can re-select
+        }
+
+        // If a resource was also saved, load the grid
+        if (s.resourceId) {
+            await this._loadGridData();
         }
     }
 
@@ -162,6 +283,7 @@ export class GradebookGrid extends Component {
                 width: col.width || 150,
                 sortable: col.sortable || false,
                 editable: col.editable || false,
+                locked: col.locked || false,
                 cssClass: col.cssClass || "",
             };
 
@@ -295,6 +417,15 @@ export class GradebookGrid extends Component {
         dataView.setItems(data, "id");
         dataView.endUpdate();
 
+        // Row-level metadata for non-contributing row styling
+        dataView.getItemMetadata = (row) => {
+            const item = dataView.getItem(row);
+            if (item && item.score_contributes_to_parent === false) {
+                return { cssClasses: 'aps-gradebook-row-noncontributing' };
+            }
+            return null;
+        };
+
         // Wire DataView changes to grid re-render (needed for filtering)
         dataView.onRowCountChanged.subscribe(() => {
             grid.updateRowCount();
@@ -310,7 +441,7 @@ export class GradebookGrid extends Component {
         const grid = new Slick.Grid(container, dataView, columns, {
             enableCellNavigation: true,
             editable: true,
-            enableColumnReorder: false,
+            enableColumnReorder: true,
             autoEdit: true,
             enableTextSelectionOnCells: true,
             fullWidthRows: true,
@@ -394,6 +525,17 @@ export class GradebookGrid extends Component {
         // Now initialize the grid so it renders with all plugins/subscribers active
         grid.init();
 
+        // --- Column reorder: persist new order ---
+        grid.onColumnsReordered.subscribe(() => {
+            const newCols = grid.getColumns();
+            this._syncColumnPrefsFromGrid(newCols);
+            this._saveColumnPrefs();
+            // Re-apply auto resize after reorder
+            setTimeout(() => {
+                this._autoResizeColumns(grid, grid.getColumns(), container);
+            }, 50);
+        });
+
         // --- Before Edit: lock non-editable cells ---
         grid.onBeforeEditCell.subscribe((e, args) => {
             const column = args.column;
@@ -406,6 +548,11 @@ export class GradebookGrid extends Component {
 
             // Lock completed submissions
             if (item.is_locked || item.state === "complete") {
+                return false;
+            }
+
+            // Lock cells for resources that don't contribute to parent score
+            if (item.score_contributes_to_parent === false) {
                 return false;
             }
 
@@ -439,6 +586,7 @@ export class GradebookGrid extends Component {
                         rowItem.result_percent = updated.result_percent;
                         rowItem.state = updated.state;
                         rowItem.is_locked = updated.is_locked;
+                        rowItem.score_contributes_to_parent = updated.score_contributes_to_parent;
                         dataView.updateItem(submissionId, rowItem);
                     }
                 }
@@ -546,6 +694,107 @@ export class GradebookGrid extends Component {
     _formatFloat(val) {
         if (val === null || val === undefined) return "0";
         return parseFloat(val).toFixed(2);
+    }
+
+    // ------------------------------------------------------------------ //
+    // Column visibility picker
+    // ------------------------------------------------------------------ //
+
+    get columnPickerItems() {
+        // Return all known columns with their visibility state
+        return this.state.allColumns.map((col) => ({
+            id: col.id,
+            name: col.name,
+            visible: this.state.columnPrefs[col.id] !== false,
+            locked: col.locked || false,
+        }));
+    }
+
+    toggleColumnPicker() {
+        this.state.showColumnPicker = !this.state.showColumnPicker;
+        if (this.state.showColumnPicker) {
+            this._addClickAwayListener();
+        } else {
+            this._removeClickAwayListener();
+        }
+    }
+
+    closeColumnPicker() {
+        this.state.showColumnPicker = false;
+        this._removeClickAwayListener();
+    }
+
+    onToggleColumn(ev) {
+        const colId = ev.target.dataset.colid;
+        if (!colId) return;
+
+        const newVisible = ev.target.checked;
+        this.state.columnPrefs[colId] = newVisible;
+        this._applyColumnVisibility();
+        this._saveColumnPrefs();
+    }
+
+    _applyColumnVisibility() {
+        if (!this._grid) return;
+
+        const allGridCols = this._grid.getColumns();
+        const visibleCols = allGridCols.filter(
+            (c) => this.state.columnPrefs[c.id] !== false
+        );
+        this._grid.setColumns(visibleCols);
+        this._grid.invalidate();
+        this._grid.render();
+
+        // Update state.columns for template
+        this.state.columns = visibleCols;
+
+        // Re-auto-resize
+        setTimeout(() => {
+            this._autoResizeColumns(this._grid, visibleCols, this.gridContainerRef.el);
+        }, 50);
+    }
+
+    _syncColumnPrefsFromGrid(gridCols) {
+        // Preserve existing visibility for all known columns,
+        // updating only the order-implied ones from grid columns
+        const prefs = { ...this.state.columnPrefs };
+        const seen = new Set();
+        for (const col of gridCols) {
+            prefs[col.id] = this.state.columnPrefs[col.id] !== false;
+            seen.add(col.id);
+        }
+        // Keep hidden column prefs intact
+        for (const col of this.state.allColumns) {
+            if (!seen.has(col.id) && this.state.columnPrefs[col.id] === false) {
+                prefs[col.id] = false;
+            }
+        }
+        this.state.columnPrefs = prefs;
+    }
+
+    async _saveColumnPrefs() {
+        // Build the pref list in current grid order
+        const cols = this._grid ? this._grid.getColumns() : this.state.columns;
+        const prefList = cols.map((c) => ({
+            id: c.id,
+            visible: this.state.columnPrefs[c.id] !== false,
+        }));
+        // Include any hidden columns at the end
+        for (const col of this.state.allColumns) {
+            if (!prefList.find((p) => p.id === col.id)) {
+                prefList.push({ id: col.id, visible: false });
+            }
+        }
+        try {
+            await this.orm.call(
+                "aps.resource.submission",
+                "save_gradebook_column_prefs",
+                [],
+                { column_prefs: prefList },
+            );
+        } catch (err) {
+            console.error("GradebookGrid: failed to save column prefs", err);
+        }
     }
 }
 

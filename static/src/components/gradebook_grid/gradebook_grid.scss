@@ -123,6 +123,24 @@
         background-color: #fff3cd !important;
     }
 
+    // Non-contributing rows (score_contributes_to_parent = false)
+    .slick-row.aps-gradebook-row-noncontributing {
+        .slick-cell {
+            background-color: #e9ecef !important;
+            color: #868e96;
+            font-style: italic;
+        }
+        .slick-cell-editable {
+            background-color: #dee2e6 !important;
+        }
+        &.odd .slick-cell {
+            background-color: #e9ecef !important;
+        }
+        &.even .slick-cell {
+            background-color: #e9ecef !important;
+        }
+    }
+
     // Locked cells styling
     .slick-cell.locked {
         background-color: #f0f0f0 !important;
@@ -174,6 +192,57 @@
     .spinner-border {
         width: 1.2rem;
         height: 1.2rem;
+    }
+}
+
+// --- Column picker dropdown ---
+.aps-column-picker-dropdown {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 300px;
+    overflow-y: auto;
+
+    .aps-column-picker-item {
+        cursor: pointer;
+        user-select: none;
+
+        &:hover {
+            background: #f0f4f8;
+        }
+
+        .form-check-input {
+            cursor: pointer;
+        }
+    }
+
+    // Scrollbar styling
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: #c8ced6;
+        border-radius: 3px;
+    }
+}
+
+// Drag handle indicator on reorderable columns
+.aps-gradebook-grid-container {
+    .slick-header-column.ui-draggable {
+        cursor: grab;
+    }
+
+    .slick-header-column.ui-draggable-dragging {
+        cursor: grabbing;
+        opacity: 0.85;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .slick-columnpicker {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 }
 

@@ -57,6 +57,48 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </t>
+
+                <!-- Column picker button -->
+                <t t-if="state.gridInitialized">
+                    <div class="ms-auto d-flex align-items-center position-relative">
+                        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                                t-on-click="toggleColumnPicker"
+                                title="Customise columns">
+                            <i class="fa fa-columns"/>
+                            <span class="small">Columns</span>
+                        </button>
+
+                        <!-- Column picker dropdown -->
+                        <div t-if="state.showColumnPicker"
+                             t-ref="columnPicker"
+                             class="aps-column-picker-dropdown shadow-sm border rounded bg-white p-2"
+                             style="position:absolute;top:100%;right:0;z-index:1000;min-width:200px;max-height:300px;overflow-y:auto;">
+                            <div class="d-flex justify-content-between align-items-center mb-1 pb-1 border-bottom">
+                                <span class="fw-bold small">Columns</span>
+                                <button class="btn btn-sm p-0 border-0 bg-transparent text-muted"
+                                        t-on-click="closeColumnPicker">
+                                    <i class="fa fa-times"/>
+                                </button>
+                            </div>
+                            <t t-foreach="columnPickerItems" t-as="colItem" t-key="colItem.id">
+                                <label class="d-flex align-items-center gap-2 px-1 py-1 rounded
+                                              aps-column-picker-item"
+                                       t-att-class="colItem.locked ? 'text-muted' : ''">
+                                    <input type="checkbox"
+                                           t-att-data-colid="colItem.id"
+                                           t-att-checked="colItem.visible"
+                                           t-att-disabled="colItem.locked"
+                                           t-on-change="onToggleColumn"
+                                           class="form-check-input m-0"/>
+                                    <span class="small" t-esc="colItem.name"/>
+                                    <t t-if="colItem.locked">
+                                        <span class="text-muted small"><i class="fa fa-lock"/></span>
+                                    </t>
+                                </label>
+                            </t>
+                        </div>
+                    </div>
+                </t>
             </div>
 
             <!-- ==================== ERROR MESSAGE ==================== -->

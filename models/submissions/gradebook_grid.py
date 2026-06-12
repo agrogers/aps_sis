@@ -1,6 +1,8 @@
+import json
+import logging
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-import logging
 
 _logger = logging.getLogger(__name__)
 
@@ -20,7 +22,7 @@ class APSResourceSubmissionGradebook(models.Model):
         Return JSON-serializable grid data for the gradebook.
         Filters by subject_category_id and/or resource_id and/or student_id.
         If resource_id points to a resource that has children, expands to all
-        child resource submissions sharing the same date_assigned.
+        descendant resource submissions sharing the same date_assigned.
 
         Returns::
             {
@@ -37,9 +39,9 @@ class APSResourceSubmissionGradebook(models.Model):
             Resource = self.env['aps.resources']
             parent_resource = Resource.browse(resource_id)
             if parent_resource.exists() and parent_resource.child_ids:
-                # ── Expand: get child resource submissions with same date_assigned ──
+                # ── Expand: get ALL descendant resource submissions ──
                 expanded = True
-                child_ids = parent_resource.child_ids.ids
+                descendant_ids = parent_resource._get_all_descendants().ids
 
                 # Find unique date_assigned values from the parent resource's submissions
                 parent_dates = self.search([
@@ -49,11 +51,11 @@ class APSResourceSubmissionGradebook(models.Model):
                 parent_dates = list(set(parent_dates))
 
                 if parent_dates:
-                    domain.append(('resource_id', 'in', child_ids))
+                    domain.append(('resource_id', 'in', descendant_ids))
                     domain.append(('date_assigned', 'in', parent_dates))
                 else:
-                    # No dates on parent — just get all child submissions
-                    domain.append(('resource_id', 'in', child_ids))
+                    # No dates on parent — just get all descendant submissions
+                    domain.append(('resource_id', 'in', descendant_ids))
             else:
                 domain.append(('resource_id', '=', resource_id))
 
@@ -66,6 +68,7 @@ class APSResourceSubmissionGradebook(models.Model):
         submissions = self.search(domain, order='student_id,date_assigned,submission_label,submission_order')
 
         columns = self._get_gradebook_columns(expanded=expanded)
+        columns = self._apply_column_prefs(columns)
         rows = []
 
         for sub in submissions:
@@ -85,6 +88,7 @@ class APSResourceSubmissionGradebook(models.Model):
                 'result_percent': result_pct,
                 'state': sub.state,
                 'is_locked': is_locked,
+                'score_contributes_to_parent': sub.resource_id.score_contributes_to_parent,
                 'submission_id': sub.id,
             }
             if expanded:
@@ -142,6 +146,29 @@ class APSResourceSubmissionGradebook(models.Model):
              'cssClass': 'slick-cell-percent'},
         ])
         return cols
+
+    @api.model
+    def _apply_column_prefs(self, columns):
+        """Reorder columns based on saved user preferences. Does NOT filter."""
+        prefs = self.load_gradebook_column_prefs()
+        if not prefs:
+            return columns
+
+        # Build order from pref list
+        pref_order = [p["id"] for p in prefs]
+
+        # Reorder columns to match pref order
+        col_map = {c["id"]: c for c in columns}
+        ordered = []
+        for cid in pref_order:
+            if cid in col_map:
+                ordered.append(col_map[cid])
+        # Append any new columns not yet in prefs
+        seen = set(pref_order)
+        for c in columns:
+            if c["id"] not in seen:
+                ordered.append(c)
+        return ordered
 
     def _compute_gradebook_summary(self, rows):
         """Compute summary row from grid rows."""
@@ -204,6 +231,7 @@ class APSResourceSubmissionGradebook(models.Model):
             'result_percent': submission.result_percent or 0,
             'state': submission.state,
             'is_locked': submission.state == 'complete',
+            'score_contributes_to_parent': submission.resource_id.score_contributes_to_parent,
             'submission_id': submission.id,
         }
 
@@ -262,3 +290,33 @@ class APSResourceSubmissionGradebook(models.Model):
                 })
         result.sort(key=lambda r: r['name'])
         return result
+
+    # ------------------------------------------------------------------ //
+    # Column preference persistence (reorder / hide per user)
+    # ------------------------------------------------------------------ //
+    COLUMN_PREF_KEY = "gradebook_column_prefs"
+
+    @api.model
+    def save_gradebook_column_prefs(self, column_prefs):
+        """
+        Save column order & visibility preferences for the current user.
+        column_prefs: list of {id, visible} dicts in desired order.
+        """
+        prefs = json.dumps(column_prefs)
+        return self.env["ir.config_parameter"].sudo().set_param(
+            f"{self.COLUMN_PREF_KEY}.{self.env.user.id}", prefs
+        )
+
+    @api.model
+    def load_gradebook_column_prefs(self):
+        """
+        Load column order & visibility preferences for the current user.
+        Returns list of {id, visible} dicts, or empty list if none saved.
+        """
+        raw = self.env["ir.config_parameter"].sudo().get_param(
+            f"{self.COLUMN_PREF_KEY}.{self.env.user.id}", "[]"
+        )
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            return []
