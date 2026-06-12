@@ -38,6 +38,13 @@ class APSAwardVoteRound(models.Model):
         string='Award Category',
         ondelete='restrict',
     )
+    tag_ids = fields.Many2many(
+        'aps.award.tag',
+        relation='aps_award_vote_round_tag_rel',
+        column1='round_id',
+        column2='tag_id',
+        string='Tags',
+    )
 
     @api.onchange('award_category_id')
     def _onchange_award_category_id(self):

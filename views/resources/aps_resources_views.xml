@@ -18,6 +18,7 @@
                 <field name="marks" optional="hide"/>
                 <field name="weight" optional="hide"/>
                 <field name="points_scale" optional="hide"/>
+                <field name="score_contributes_to_parent" widget="boolean_toggle" optional="hide"/>
                 <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                 <field name="parent_ids" optional="hide"/>
                 <field name="child_count" string="Children" optional="hide"/>
@@ -106,6 +107,7 @@
                     <field name="category" optional="hide"/>
                     <field name="marks" optional="hide"/>
                     <field name="points_scale" optional="hide"/>
+                    <field name="score_contributes_to_parent" widget="boolean_toggle" optional="hide"/>
                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                     <field name="child_count" string="Children" optional="hide"/>
                     <field name="description" optional="hide"/>

@@ -128,6 +128,7 @@
                  <field name="subject_category_ids" widget="many2many_tags" optional="hide"/>
                  <field name="certificate_template_id" optional="show"/>
                  <field name="sub_category_ids" optional="hide"/>
+                 <field name="tag_ids" widget="many2many_tags" optional="hide"/>
             </list>
         </field>
     </record>
@@ -158,6 +159,7 @@
                             <field name="term_ids" widget="many2many_tags"/>
                             <field name="subject_category_ids" widget="many2many_tags"/>
                             <field name="certificate_template_id"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
                         </group>
                     </group>
                     <notebook>

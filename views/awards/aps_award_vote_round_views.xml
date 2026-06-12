@@ -17,6 +17,7 @@
                 <field name="active_voter_count"/>
                 <field name="total_voter_count"/>
                 <field name="round_manager_ids" widget="many2many_tags" optional="hide"/>
+                <field name="tag_ids" widget="many2many_tags" optional="hide"/>
             </list>
         </field>
     </record>
@@ -63,6 +64,7 @@
                                     <field name="award_sub_category_id"
                                            invisible="not award_category_id"/>
                                     <field name="academic_week_id"/>
+                                    <field name="tag_ids" widget="many2many_tags"/>
                                 </group>
                                 <group string="Participation">
                                     <field name="status" widget="badge"

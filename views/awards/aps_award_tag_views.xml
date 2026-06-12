@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_aps_award_tag_list" model="ir.ui.view">
+        <field name="name">aps.award.tag.list</field>
+        <field name="model">aps.award.tag</field>
+        <field name="arch" type="xml">
+            <list string="Award Tags" editable="bottom">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_aps_award_tag" model="ir.actions.act_window">
+        <field name="name">Award Tags</field>
+        <field name="res_model">aps.award.tag</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_apex_certificates_award_tags"
+              name="Award Tags"
+              parent="menu_apex_certificates"
+              action="action_aps_award_tag"
+              sequence="28"
+              groups="aps_sis.group_aps_manager"/>
+</odoo>

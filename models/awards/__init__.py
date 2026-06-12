@@ -1,3 +1,4 @@
+from . import aps_award_tag
 from . import aps_award_sub_category
 from . import aps_award_category
 from . import aps_award_voting_set

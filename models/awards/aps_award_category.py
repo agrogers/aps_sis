@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class APSAwardCategory(models.Model):
@@ -45,4 +45,25 @@ class APSAwardCategory(models.Model):
         'category_id',
         string='Sub-Categories',
     )
+    tag_ids = fields.Many2many(
+        'aps.award.tag',
+        relation='aps_award_category_tag_rel',
+        column1='category_id',
+        column2='tag_id',
+        string='Tags',
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create(vals_list)
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'tag_ids' in vals:
+            rounds = self.env['aps.award.vote.round'].search(
+                [('award_category_id', 'in', self.ids)]
+            )
+            if rounds:
+                rounds.write({'tag_ids': vals['tag_ids']})
+        return result
 

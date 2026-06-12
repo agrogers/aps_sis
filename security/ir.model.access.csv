@@ -83,6 +83,8 @@ access_aps_certificate_template_teacher,aps.certificate.template.teacher,model_a
 access_aps_certificate_template_student,aps.certificate.template.student,model_aps_certificate_template,aps_sis.group_aps_student,1,0,0,0
 access_aps_award_category_teacher,aps.award.category.teacher,model_aps_award_category,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_award_category_student,aps.award.category.student,model_aps_award_category,aps_sis.group_aps_student,1,0,0,0
+access_aps_award_tag_teacher,aps.award.tag.teacher,model_aps_award_tag,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_award_tag_student,aps.award.tag.student,model_aps_award_tag,aps_sis.group_aps_student,1,0,0,0
 access_aps_award_sub_category_teacher,aps.award.sub.category.teacher,model_aps_award_sub_category,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_award_sub_category_student,aps.award.sub.category.student,model_aps_award_sub_category,aps_sis.group_aps_student,1,0,0,0
 access_aps_award_vote_teacher,aps.award.vote.teacher,model_aps_award_vote,aps_sis.group_aps_teacher,1,1,1,1
