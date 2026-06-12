@@ -123,12 +123,11 @@
         background-color: #fff3cd !important;
     }
 
-    // Non-contributing rows (score_contributes_to_parent = false)
+    // Parent rows (resources with children) — gray background, dark text
     .slick-row.aps-gradebook-row-noncontributing {
         .slick-cell {
             background-color: #e9ecef !important;
-            color: #868e96;
-            font-style: italic;
+            color: #212529;
         }
         .slick-cell-editable {
             background-color: #dee2e6 !important;

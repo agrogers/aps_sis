@@ -39,23 +39,30 @@ class APSResourceSubmissionGradebook(models.Model):
             Resource = self.env['aps.resources']
             parent_resource = Resource.browse(resource_id)
             if parent_resource.exists() and parent_resource.child_ids:
-                # ── Expand: get ALL descendant resource submissions ──
+                # ── Expand: get descendant + parent resource submissions ──
                 expanded = True
-                descendant_ids = parent_resource._get_all_descendants().ids
+                resource_ids = [resource_id] + parent_resource._get_all_descendants().ids
 
-                # Find unique date_assigned values from the parent resource's submissions
-                parent_dates = self.search([
+                # Find unique date_assigned + submission_label values
+                # from the parent resource's submissions to scope children
+                parent_subs = self.search([
                     ('resource_id', '=', resource_id),
                     ('date_assigned', '!=', False),
-                ]).mapped('date_assigned')
-                parent_dates = list(set(parent_dates))
+                ]).mapped(lambda s: (s.date_assigned, s.submission_label))
+                parent_subs = list(set(parent_subs))
+                parent_dates = [d for d, _ in parent_subs]
+                parent_labels = [l for _, l in parent_subs if l]
 
                 if parent_dates:
-                    domain.append(('resource_id', 'in', descendant_ids))
+                    domain.append(('resource_id', 'in', resource_ids))
                     domain.append(('date_assigned', 'in', parent_dates))
+                    if parent_labels:
+                        domain.append('|')
+                        domain.append(('submission_label', 'in', parent_labels))
+                        domain.append(('submission_label', '=', False))
                 else:
-                    # No dates on parent — just get all descendant submissions
-                    domain.append(('resource_id', 'in', descendant_ids))
+                    # No dates on parent — just get all resource submissions
+                    domain.append(('resource_id', 'in', resource_ids))
             else:
                 domain.append(('resource_id', '=', resource_id))
 
@@ -88,7 +95,7 @@ class APSResourceSubmissionGradebook(models.Model):
                 'result_percent': result_pct,
                 'state': sub.state,
                 'is_locked': is_locked,
-                'score_contributes_to_parent': sub.resource_id.score_contributes_to_parent,
+                'has_child_resources': bool(sub.resource_id.child_ids),
                 'submission_id': sub.id,
             }
             if expanded:
@@ -231,7 +238,7 @@ class APSResourceSubmissionGradebook(models.Model):
             'result_percent': submission.result_percent or 0,
             'state': submission.state,
             'is_locked': submission.state == 'complete',
-            'score_contributes_to_parent': submission.resource_id.score_contributes_to_parent,
+            'has_child_resources': bool(submission.resource_id.child_ids),
             'submission_id': submission.id,
         }
 
