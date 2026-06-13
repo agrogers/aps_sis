@@ -41,6 +41,7 @@ export class ApexDashboard extends Component {
             student_points: {value: 0, percentage: 0, period: "", max: 0  },
             student_rank: { value: 0, total_students: 0, period: "", points_from_next: 0, max: 0 },
             submitted_today: { value: 0, percentage: 0, period: "", submitted_yesterday: 0 },
+            due_status_kpi: { late: 0, on_time: 0, early: 0 },
             points_from_next: 0,
             rank_description: "",
             total_submitted: { value: 0, percentage: 0, period: "" },
@@ -290,6 +291,15 @@ export class ApexDashboard extends Component {
         domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
         domain.push(['submission_name', 'not ilike', ' Progress']);
         this.addSubjectFilter(domain);
+        return domain;
+    }
+
+    getDueStatusKpiDomain() {
+        let domain = this.addStudentFilter([]);
+        domain.push(['submission_active', '=', true]);
+        domain.push(['date_assigned', '>=', this.getPeriodStartDateStr()]);
+        // Exclude auto-generated " Progress" tracking submissions (not real tasks)
+        domain.push(['submission_name', 'not ilike', ' Progress']);
         return domain;
     }
     getStudentPointsDomain() {
@@ -713,6 +723,22 @@ export class ApexDashboard extends Component {
             this.orm.searchCount("aps.resource.submission", this.getSubmittedYesterdayDomain())
                 .then(count => {
                     this.state.submitted_today.submitted_yesterday = count;
+                }),
+
+            // Due Status (Late / On Time / Early) counts
+            this.orm.readGroup(
+                "aps.resource.submission",
+                this.getDueStatusKpiDomain(),
+                [],
+                ["due_status"]
+            ).then(groups => {
+                    const counts = { late: 0, on_time: 0, early: 0 };
+                    groups.forEach(group => {
+                        if (group.due_status === 'late') counts.late = group.__count;
+                        else if (group.due_status === 'on-time') counts.on_time = group.__count;
+                        else if (group.due_status === 'early') counts.early = group.__count;
+                    });
+                    this.state.due_status_kpi = counts;
                 }),
         ];
 
@@ -1224,6 +1250,19 @@ export class ApexDashboard extends Component {
         this.action.doAction({
             type: "ir.actions.act_window",
             name: "Today's Submissions",
+            res_model: "aps.resource.submission",
+            views: this.getResponsiveViews(),
+            domain: domain,
+        });
+    }
+
+    viewDueStatusSubmissions(status) {
+        const domain = this.getDueStatusKpiDomain();
+        domain.push(['due_status', '=', status]);
+        const labelMap = { 'late': 'Late', 'on-time': 'On Time', 'early': 'Early' };
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: labelMap[status] + ' Submissions — ' + this.state.period_name,
             res_model: "aps.resource.submission",
             views: this.getResponsiveViews(),
             domain: domain,
