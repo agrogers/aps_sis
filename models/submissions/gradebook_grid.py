@@ -267,6 +267,43 @@ class APSResourceSubmissionGradebook(models.Model):
             'summary': grid_data['summary'],
         }
 
+    @api.model
+    def write_gradebook_scores(self, score_lines, resource_id=None):
+        """
+        Write scores for multiple submissions in one call and return updated
+        rows + summary.  This is the batched counterpart of write_gradebook_score.
+
+        :param score_lines: List of dicts, each with 'submission_id' and 'score'.
+        :param resource_id: The resource that was selected in the grid (parent).
+
+        Returns::
+            {
+                'rows': [{...}, ...],    — all rows for this resource (after cascades)
+                'summary': {...},
+            }
+        """
+        submissions = self.env['aps.resource.submission']
+        for line in score_lines:
+            sub = submissions.browse(line['submission_id'])
+            if sub.exists() and sub.state != 'complete':
+                sub.write({'score': line['score'], 'auto_score': False})
+
+        # Re-fetch the full grid data once after all writes
+        grid_resource_id = resource_id
+        if not grid_resource_id and score_lines:
+            first = submissions.browse(score_lines[0]['submission_id'])
+            if first.exists():
+                grid_resource_id = first.resource_id.id
+
+        grid_data = self.get_gradebook_grid_data(
+            subject_category_id=None,
+            resource_id=grid_resource_id,
+        )
+        return {
+            'rows': grid_data['rows'],
+            'summary': grid_data['summary'],
+        }
+
     # ------------------------------------------------------------------ //
     # Category / Resource lookup helpers
     # ------------------------------------------------------------------ //

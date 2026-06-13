@@ -257,43 +257,82 @@ export class GradebookGrid extends Component {
             setTimeout(() => this._autoResizeColumns(grid, newCols, container), 50);
         });
 
-        grid.onBeforeEditCell.subscribe((e, args) => {
-            if (!args.column.editable || args.item.state === "complete" || args.item.has_child_resources) return false;
-            return true;
-        });
+        // ------------------------------------------------------------------ //
+        // Debounced batch save: collect edits for 500 ms then send them all
+        // to the server in a single call.  While a save is in-flight we also
+        // track "dirty" rows so the response never overwrites a value the
+        // user just typed.
+        // ------------------------------------------------------------------ //
+        const comp = this;   // capture component reference for use inside
+        const dirtySubmissionIds = new Set();
+        let pendingEdits = [];   // [{ submissionId, score }]
+        let saveTimer = null;
+        let saveInFlight = false;
 
-        grid.onCellChange.subscribe(async (e, args) => {
-            const item = args.item;
-            const field = args.column.field;
-            const newValue = item[field];
-            if (field !== "score") return;
-            const submissionId = item.submission_id || item.id;
-            if (!submissionId) return;
+        function scheduleSave() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(flushEdits, 500);
+        }
+
+        async function flushEdits() {
+            if (saveInFlight || pendingEdits.length === 0) return;
+            saveInFlight = true;
+            const edits = pendingEdits.splice(0);   // take all pending
+            for (const e of edits) dirtySubmissionIds.add(e.submissionId);
             try {
-                const result = await this.orm.call("aps.resource.submission", "write_gradebook_score", [submissionId, newValue], { resource_id: this.state.selectedResourceId || false });
+                const result = await comp.orm.call(
+                    "aps.resource.submission",
+                    "write_gradebook_scores",
+                    [edits],
+                    { resource_id: comp.state.selectedResourceId || false },
+                );
                 if (result.rows) {
                     const cols = grid.getColumns();
                     const si = cols.findIndex((c) => c.id === "score");
                     const pi = cols.findIndex((c) => c.id === "result_percent");
                     const oi = cols.findIndex((c) => c.id === "out_of_marks");
                     for (const upd of result.rows) {
-                        const ri = dataView.getItemById(upd.submission_id || upd.id);
+                        const updId = upd.submission_id || upd.id;
+                        if (dirtySubmissionIds.has(updId)) continue;
+                        const ri = dataView.getItemById(updId);
                         if (!ri) continue;
                         Object.assign(ri, { score: upd.score, result_percent: upd.result_percent, out_of_marks: upd.out_of_marks, state: upd.state, is_locked: upd.is_locked, has_child_resources: upd.has_child_resources });
                         if (si !== -1) grid.updateCell(ri._idx, si);
                         if (pi !== -1) grid.updateCell(ri._idx, pi);
                         if (oi !== -1) grid.updateCell(ri._idx, oi);
                     }
-                } else if (result.updated_row) {
-                    const upd = result.updated_row;
-                    const ri = dataView.getItemById(submissionId);
-                    if (ri) { Object.assign(ri, upd); dataView.updateItem(submissionId, ri); }
                 }
-                if (result.summary) this.state.summary = result.summary;
+                if (result.summary) comp.state.summary = result.summary;
             } catch (err) {
-                console.error("Failed to save score:", err);
-                dataView.updateItem(submissionId, item);
+                console.error("Failed to save scores:", err);
+            } finally {
+                for (const e of edits) dirtySubmissionIds.delete(e.submissionId);
+                saveInFlight = false;
+                // If more edits arrived while we were saving, flush again
+                if (pendingEdits.length > 0) scheduleSave();
             }
+        }
+
+        grid.onBeforeEditCell.subscribe((e, args) => {
+            if (!args.column.editable || args.item.state === "complete" || args.item.has_child_resources) return false;
+            // Mark this row as dirty immediately so that any in-flight or
+            // pending backend response will not overwrite the cell the user
+            // is about to edit.
+            const sid = args.item.submission_id || args.item.id;
+            if (sid) dirtySubmissionIds.add(sid);
+            return true;
+        });
+
+        grid.onCellChange.subscribe((e, args) => {
+            const item = args.item;
+            const field = args.column.field;
+            const newValue = item[field];
+            if (field !== "score") return;
+            const submissionId = item.submission_id || item.id;
+            if (!submissionId) return;
+            // Queue this edit — don't save immediately
+            pendingEdits.push({ submission_id: submissionId, score: newValue });
+            scheduleSave();
         });
 
         this._resizeObserver = new ResizeObserver(() => { if (grid) grid.resizeCanvas(); });
