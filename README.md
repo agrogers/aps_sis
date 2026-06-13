@@ -472,64 +472,70 @@ Portal URLs use tokenized parameters to grant read-only access to specific resou
 
 ### SlickGrid Gradebook Grid
 
-The **Gradebook Grid** (`apex_gradebook.GradebookGrid`) is an OWL 2 client action that renders a spreadsheet-like data-entry matrix using **SlickGrid v5.18.6** (6pac/SlickGrid).
+The **Gradebook Grid** (`aps_sis.GradebookGrid`) is an OWL 2 client action that renders a spreadsheet-like data-entry matrix using **[Slickgrid-Universal v10.7.1](https://github.com/ghiscoding/slickgrid-universal)** (`@slickgrid-universal/vanilla-bundle`).
 
-**Library files** are in `static/src/lib/slickgrid/` and loaded via `__manifest__.py` assets.
+**Library file** is a self-contained IIFE bundle at `static/src/lib/slickgrid/universal/slickgrid-universal-bundle.js`, built with esbuild and loaded via `__manifest__.py` assets.
+
+#### Migration from 6pac/SlickGrid
+
+This component was migrated from **6pac/SlickGrid v5.18.6** to **Slickgrid-Universal v10.7.1**. The key changes:
+
+| Feature | Old (6pac) | New (Slickgrid-Universal) |
+|---------|-----------|--------------------------|
+| Global | `window.Slick` | `window.Slicker` |
+| Grid creation | `new Slick.Grid(container, dataView, columns, options)` | `new Slicker.GridBundle(container, columns, options, data)` |
+| DataView | `new Slick.Data.DataView()` (separate) | Managed internally by `GridBundle` |
+| Filtering | Manual header row inputs + `dataView.setFilter()` | Built-in via `enableFiltering: true` |
+| Sorting | Manual `dataView.sort()` + `grid.onSort` subscriber | Built-in via `sortable: true` on column defs |
+| Cell selection | `new Slick.CellSelectionModel()` | Built-in via `enableCellNavigation: true` |
+| Dependency loading | 9 separate JS files with strict load order | Single IIFE bundle with all deps inlined |
+| Bundle size | ~440 KB (9 files) | ~1.6 MB (all deps inlined including Bootstrap theme) |
+| Dispose | `grid.destroy()` + `dataView = null` | `gridBundle.dispose()` |
 
 #### SlickGrid ↔ Odoo Integration Notes
 
-SlickGrid's npm/TypeScript builds wrap each source file in an IIFE (`(() => { ... })()`), where `var Slick = ...` is function-scoped. Odoo's asset bundler loads each `.js` file as a separate module context, so the `Slick` global never leaks to `window` automatically.
+- **IIFE Bundle**: The entire Slickgrid-Universal library is bundled as a single IIFE with `--global-name=Slicker`, exposing `window.Slicker`. This avoids Odoo's module-scoping problem — only one file needs to load.
+- **No jQuery required** — Slickgrid-Universal is a pure JS library.
+- **CSS Theme**: The Bootstrap theme (`slickgrid-theme-bootstrap.css`) uses a `.slickgrid-container` CSS class prefix on all rules. Custom overrides in `gradebook_grid.scss` cascade correctly through this wrapper.
+- **Asset declaration**: Only 1 JS + 1 CSS file declared in `__manifest__.py`:
+  ```python
+  'aps_sis/static/src/lib/slickgrid/universal/slickgrid-universal-bundle.js',
+  'aps_sis/static/src/lib/slickgrid/universal/slickgrid-theme-bootstrap.css',
+  ```
 
-To make SlickGrid work inside Odoo, the following adaptations were made:
+#### SlickVanillaGridBundle API
 
-1. **`slick.core.js`** — Patched to expose `window.Slick`:
-   ```js
-   // Added before the return statement (line ~946)
-   if (window && !window.Slick) { window.Slick = slick_core_exports; }
-   ```
-   `slick_core_exports` is the object populated by `__export()` earlier in the file and contains all core classes (`Event`, `EventData`, `Range`, `Utils`, `keyCode`, etc.). This single line is the minimum change needed — all downstream SlickGrid files already check `window.Slick &&` before extending it.
+The `Slicker.GridBundle` constructor accepts:
 
-2. **`jquery.event.drag` → `slick.interactions.js`** — SlickGrid v5 dropped jQuery as a dependency. The old `jquery.event.drag-2.3.0.js` plugin was replaced with the official `slick.interactions.js` (available from the CDN `dist/browser/` bundle), which provides `Slick.Draggable`, `Slick.MouseWheel`, and `Slick.Resizable`.
+```js
+const gridBundle = new Slicker.GridBundle(container, columns, options, data);
+```
 
-3. **Load order in `__manifest__.py`** — Strict ordering ensures each file's dependencies are available:
-   ```
-   core → interactions → dataview → grid → editors → formatters → decorator → selector → cellselection
-   ```
-   Notably, `cellrangedecorator.js` must load **before** `cellrangeselector.js` because the selector destructures `Slick.CellRangeDecorator` at module level.
+Key properties on the returned bundle:
 
-4. **No jQuery required** — SlickGrid v5 is a pure JS library. The Owl component uses native DOM APIs (`document.createElement`, `addEventListener`) for its custom editor.
+| Property | Type | Description |
+|----------|------|-------------|
+| `slickGrid` | `Slick.Grid` | The underlying grid instance |
+| `dataView` | `Slick.Data.DataView` | The underlying data view |
+| `columnDefinitions` | `Column[]` | Array of column definitions |
+| `dataset` | `any[]` | The row data array |
+| `dispose()` | `void` | Cleanup method (called in `onWillUnmount`) |
 
-5. **CSS** — SlickGrid's default inline-block cells were overridden with flexbox for vertical alignment:
-   ```scss
-   .slick-cell {
-       display: flex !important;
-       align-items: center;
-   }
-   ```
+#### Rebuilding the Bundle
 
-#### SlickGrid Asset Bundle
+If you need to rebuild or update the Slickgrid-Universal bundle:
 
-The following files are loaded via `web.assets_backend` in `__manifest__.py`:
+```powershell
+# In the temp build directory (C:\temp\slickgrid-build)
+npm install @slickgrid-universal/vanilla-bundle@10.7.1
+npx esbuild build.js --bundle --format=iife --global-name=Slicker --platform=browser --outfile=slickgrid-universal-bundle.js
+```
 
-| File | Provides |
-|------|----------|
-| `slick.core.js` | `window.Slick` (patched), core classes (Event, Range, Utils, etc.) |
-| `slick.interactions.js` | `Slick.Draggable`, `Slick.MouseWheel`, `Slick.Resizable` (downloaded from CDN, unmodified) |
-| `slick.dataview.js` | `Slick.Data.DataView` (unmodified, reads from `window.Slick`) |
-| `slick.grid.js` | `Slick.Grid` (unmodified) |
-| `slick.editors.js` | `Slick.Editors` (unmodified) |
-| `slick.formatters.js` | `Slick.Formatters` (unmodified) |
-| `slick.cellrangedecorator.js` | `Slick.CellRangeDecorator` (unmodified) |
-| `slick.cellrangeselector.js` | `Slick.CellRangeSelector` (unmodified) |
-| `slick.cellselectionmodel.js` | `Slick.CellSelectionModel` (unmodified) |
-| `slick.grid.css` + `slick-default-theme.css` | Grid styling |
-
-#### If Upgrading SlickGrid
-
-1. Download the **browser IIFE builds** from the CDN `dist/browser/` folder — do NOT use the npm/ESM or TypeScript source files.
-2. Re-apply the `window.Slick = slick_core_exports` patch to the new `slick.core.js`.
-3. Verify all `window.Slick &&` checks are present in the other files (the CDN browser builds include them).
-4. Update the load order in `__manifest__.py` if new files were added/removed.
+Where `build.js` contains:
+```js
+import { SlickVanillaGridBundle } from '@slickgrid-universal/vanilla-bundle';
+window.Slicker = { GridBundle: SlickVanillaGridBundle };
+```
 
 ### Adding a new Progress resource
 
