@@ -258,7 +258,7 @@ export class GradebookGrid extends Component {
         });
 
         grid.onBeforeEditCell.subscribe((e, args) => {
-            if (!args.column.editable || args.item.state === "complete") return false;
+            if (!args.column.editable || args.item.state === "complete" || args.item.has_child_resources) return false;
             return true;
         });
 
