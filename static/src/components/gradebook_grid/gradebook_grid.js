@@ -42,6 +42,7 @@ export class GradebookGrid extends Component {
         });
 
         this._gridBundle = null;
+        this._gridGeneration = 0;   // incremented on each _destroyGrid; _initGrid bails if stale
         this._columnDefs = [];
         this._rowsCache = [];
 
@@ -146,6 +147,7 @@ export class GradebookGrid extends Component {
     async onChangeStudent(ev) {
         const stuId = ev.target.value ? parseInt(ev.target.value) : false;
         this.state.selectedStudentId = stuId;
+        this._destroyGrid();
         this._saveFilterState();
         if (!this.state.selectedResourceId) return;
         await this._loadGridData();
@@ -221,7 +223,10 @@ export class GradebookGrid extends Component {
     }
 
     async _initGrid(columns, rows) {
+        const gen = this._gridGeneration;
         await new Promise((r) => setTimeout(r, 50));
+        // If _destroyGrid was called while we were waiting, bail out
+        if (gen !== this._gridGeneration) return;
         const container = this.gridContainerRef.el;
         if (!container) return;
         const data = rows.map((r, idx) => ({ ...r, _idx: idx }));
@@ -354,8 +359,21 @@ export class GradebookGrid extends Component {
     }
 
     _destroyGrid() {
+        this._gridGeneration++;   // invalidate any in-flight _initGrid
         if (this._resizeObserver) { this._resizeObserver.disconnect(); this._resizeObserver = null; }
-        if (this._gridBundle) { this._gridBundle.dispose(); this._gridBundle = null; }
+        if (this._gridBundle) {
+            try { this._gridBundle.dispose(); } catch (e) { /* bundle may be partially init */ }
+            this._gridBundle = null;
+        }
+        // Remove leftover .slickgrid-container so the next GridBundle constructor
+        // doesn't bail out early (it checks for existing .slickgrid-container).
+        // We call dispose() (no arg) above — it cleans up SlickGrid internals
+        // without detaching the parent container from the DOM.
+        const container = this.gridContainerRef?.el;
+        if (container) {
+            container.querySelectorAll(".slickgrid-container").forEach((el) => el.remove());
+            container.classList.remove("grid-pane");
+        }
         this.state.gridInitialized = false;
     }
 
