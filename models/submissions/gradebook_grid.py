@@ -151,6 +151,9 @@ class APSResourceSubmissionGradebook(models.Model):
             {'id': 'result_percent', 'name': _('Result %'), 'field': 'result_percent',
              'width': 100, 'sortable': True, 'editable': False, 'locked': True,
              'cssClass': 'slick-cell-percent'},
+            {'id': 'result_percent_pie', 'name': _(''), 'field': 'result_percent',
+             'width': 80, 'sortable': False, 'editable': False, 'locked': False,
+             'cssClass': 'slick-cell-pie'},
         ])
         return cols
 

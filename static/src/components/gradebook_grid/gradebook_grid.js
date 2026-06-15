@@ -196,7 +196,7 @@ export class GradebookGrid extends Component {
                 editable: col.editable || false,
                 locked: col.locked || false,
                 cssClass: col.cssClass || "",
-                filterable: col.id !== "score" && col.id !== "result_percent",
+                filterable: col.id !== "score" && col.id !== "result_percent" && col.id !== "result_percent_pie",
             };
             if (col.id === "score") {
                 slickCol.editor = {
@@ -218,6 +218,14 @@ export class GradebookGrid extends Component {
                     const color = getColorForPercent(value);
                     const textColor = value < 50 ? "#fff" : "#1a1a1a";
                     return `<div style="display:flex;align-items:center;gap:6px;background:${color};padding:2px 8px;border-radius:4px;height:100%;"><span style="font-weight:700;font-size:13px;color:${textColor};min-width:38px;text-align:right;">${value}%</span></div>`;
+                };
+            }
+            if (col.id === "result_percent_pie") {
+                slickCol.formatter = (row, cell, value) => {
+                    if (value === null || value === undefined) value = 0;
+                    const color = getColorForPercent(value);
+                    const v = Math.max(0, Math.min(100, value));
+                    return `<div class="aps-gradebook-pie" style="background: conic-gradient(${color} 0% ${v}%, rgba(0,0,0,0.10) ${v}% 100%);"></div>`;
                 };
             }
             return slickCol;
@@ -297,6 +305,7 @@ export class GradebookGrid extends Component {
                     const cols = grid.getColumns();
                     const si = cols.findIndex((c) => c.id === "score");
                     const pi = cols.findIndex((c) => c.id === "result_percent");
+                    const ppi = cols.findIndex((c) => c.id === "result_percent_pie");
                     const oi = cols.findIndex((c) => c.id === "out_of_marks");
                     for (const upd of result.rows) {
                         const updId = upd.submission_id || upd.id;
@@ -306,6 +315,7 @@ export class GradebookGrid extends Component {
                         Object.assign(ri, { score: upd.score, result_percent: upd.result_percent, out_of_marks: upd.out_of_marks, state: upd.state, is_locked: upd.is_locked, has_child_resources: upd.has_child_resources });
                         if (si !== -1) grid.updateCell(ri._idx, si);
                         if (pi !== -1) grid.updateCell(ri._idx, pi);
+                        if (ppi !== -1) grid.updateCell(ri._idx, ppi);
                         if (oi !== -1) grid.updateCell(ri._idx, oi);
                     }
                 }
@@ -352,7 +362,7 @@ export class GradebookGrid extends Component {
         if (!container || !grid) return;
         const tw = container.clientWidth;
         if (tw <= 0) return;
-        const fixed = columns.filter((c) => c.id !== "result_percent");
+        const fixed = columns.filter((c) => c.id !== "result_percent" && c.id !== "result_percent_pie");
         const pc = columns.find((c) => c.id === "result_percent");
         let used = 0;
         fixed.forEach((c) => used += c.width || 150);
