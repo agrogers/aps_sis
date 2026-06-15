@@ -411,18 +411,20 @@ export class GradebookGrid extends Component {
     }
 
     _syncColumnPrefsFromGrid(gridCols) {
+        // gridCols is from grid.getColumns() which now returns ALL columns (visible + hidden).
+        // Use col.hidden to determine actual visibility.
         const prefs = { ...this.state.columnPrefs };
-        const seen = new Set();
-        for (const col of gridCols) { prefs[col.id] = this.state.columnPrefs[col.id] !== false; seen.add(col.id); }
-        for (const col of this.state.allColumns) { if (!seen.has(col.id) && this.state.columnPrefs[col.id] === false) prefs[col.id] = false; }
+        for (const col of gridCols) {
+            prefs[col.id] = !col.hidden;
+        }
         this.state.columnPrefs = prefs;
     }
 
     async _saveColumnPrefs() {
         const grid = this._gridBundle?.slickGrid;
         const cols = grid ? grid.getColumns() : this.state.columns;
-        const prefList = cols.map((c) => ({ id: c.id, visible: this.state.columnPrefs[c.id] !== false }));
-        for (const col of this.state.allColumns) { if (!prefList.find((p) => p.id === col.id)) prefList.push({ id: col.id, visible: false }); }
+        // Use col.hidden directly — grid.getColumns() returns all columns with hidden: true/false.
+        const prefList = cols.map((c) => ({ id: c.id, visible: !c.hidden }));
         try {
             await this.orm.call("aps.resource.submission", "save_gradebook_column_prefs", [], { column_prefs: prefList });
         } catch (err) { console.error("GradebookGrid: failed to save column prefs", err); }
