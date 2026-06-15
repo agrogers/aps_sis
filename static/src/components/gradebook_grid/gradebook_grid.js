@@ -20,7 +20,6 @@ export class GradebookGrid extends Component {
         this.action = useService("action");
         this.gridContainerRef = useRef("gridContainer");
         this.filterBarRef = useRef("filterBar");
-        this.columnPickerRef = useRef("columnPicker");
 
         this.state = useState({
             loading: true,
@@ -38,7 +37,6 @@ export class GradebookGrid extends Component {
             gridInitialized: false,
             error: null,
             columnFilters: {},
-            showColumnPicker: false,
             columnPrefs: {},
         });
 
@@ -56,26 +54,7 @@ export class GradebookGrid extends Component {
 
         onWillUnmount(() => {
             this._destroyGrid();
-            this._removeClickAwayListener();
         });
-    }
-
-    _addClickAwayListener() {
-        this._removeClickAwayListener();
-        this._clickAwayHandler = (ev) => {
-            const picker = this.columnPickerRef?.el;
-            if (picker && !picker.contains(ev.target) && this.state.showColumnPicker) {
-                this.state.showColumnPicker = false;
-            }
-        };
-        document.addEventListener("mousedown", this._clickAwayHandler);
-    }
-
-    _removeClickAwayListener() {
-        if (this._clickAwayHandler) {
-            document.removeEventListener("mousedown", this._clickAwayHandler);
-            this._clickAwayHandler = null;
-        }
     }
 
     _FILTER_STORAGE_KEY() { return "aps_gradebook_filter_state"; }
@@ -173,8 +152,14 @@ export class GradebookGrid extends Component {
                 for (const p of savedPrefs) { if (p.id in prefs) prefs[p.id] = p.visible !== false; }
             }
             this.state.columnPrefs = prefs;
-            const visibleDefs = this._columnDefs.filter((c) => prefs[c.id] !== false);
-            const slickColumns = this._buildColumns(visibleDefs);
+            // Build presets: only include columns that should be VISIBLE.
+            // Columns omitted from presets are automatically hidden by SlickGrid-Universal.
+            const presetsColumns = this._columnDefs
+                .filter((c) => prefs[c.id] !== false)
+                .map((col) => ({ columnId: col.id, width: col.width || 150 }));
+            this._presetsColumns = presetsColumns;
+            // Pass ALL columns to the grid — presets control which are visible.
+            const slickColumns = this._buildColumns(this._columnDefs);
             this.state.columns = slickColumns;
             await this._initGrid(slickColumns, this._rowsCache);
         } catch (err) { this.state.error = "Failed to load grid data: " + (err.message || err); }
@@ -253,6 +238,17 @@ export class GradebookGrid extends Component {
             showHeaderRow: true,
             enableFiltering: true,
             headerRowHeight: 32,
+            columnPicker: {
+                onColumnsChanged: (e, args) => {
+                    // Fires only on user-initiated column picker visibility toggles
+                    const allCols = grid.getColumns();
+                    this._syncColumnPrefsFromGrid(allCols);
+                    this._saveColumnPrefs();
+                },
+            },
+            presets: {
+                columns: this._presetsColumns || [],
+            },
         }, data);
 
         this._gridBundle = gridBundle;
@@ -401,31 +397,6 @@ export class GradebookGrid extends Component {
     }
 
     _formatFloat(val) { return (val == null) ? "0" : parseFloat(val).toFixed(2); }
-
-    get columnPickerItems() {
-        return this.state.allColumns.map((col) => ({
-            id: col.id, name: col.name, visible: this.state.columnPrefs[col.id] !== false, locked: col.locked || false,
-        }));
-    }
-
-    toggleColumnPicker() {
-        this.state.showColumnPicker = !this.state.showColumnPicker;
-        if (this.state.showColumnPicker) this._addClickAwayListener();
-        else this._removeClickAwayListener();
-    }
-
-    closeColumnPicker() {
-        this.state.showColumnPicker = false;
-        this._removeClickAwayListener();
-    }
-
-    onToggleColumn(ev) {
-        const colId = ev.target.dataset.colid;
-        if (!colId) return;
-        this.state.columnPrefs[colId] = ev.target.checked;
-        this._applyColumnVisibility();
-        this._saveColumnPrefs();
-    }
 
     _applyColumnVisibility() {
         if (!this._gridBundle?.slickGrid) return;

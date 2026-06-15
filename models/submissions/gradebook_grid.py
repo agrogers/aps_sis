@@ -89,6 +89,7 @@ class APSResourceSubmissionGradebook(models.Model):
                 'student_name': sub.student_id.display_name or sub.student_id.name or '',
                 'student_id': sub.student_id.id,
                 'resource_name': sub.resource_id.display_name or sub.resource_id.name or '',
+                'resource_parent_name': sub.resource_id.primary_parent_id.display_name or '',
                 'submission_name': sub.submission_name or '',
                 'score': score_val,
                 'out_of_marks': out_of_val,
@@ -141,6 +142,8 @@ class APSResourceSubmissionGradebook(models.Model):
         cols.extend([
             {'id': 'resource_name', 'name': _('Resource'), 'field': 'resource_name',
              'width': 250, 'sortable': True, 'editable': False, 'locked': True},
+            {'id': 'resource_parent_name', 'name': _('Parent Resource'), 'field': 'resource_parent_name',
+             'width': 200, 'sortable': True, 'editable': False, 'locked': True},
             {'id': 'submission_name', 'name': _('Submission'), 'field': 'submission_name',
              'width': 180, 'sortable': True, 'editable': False, 'locked': True},
             {'id': 'score', 'name': _('Score'), 'field': 'score',

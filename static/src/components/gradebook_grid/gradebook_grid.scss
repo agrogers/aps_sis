@@ -207,38 +207,6 @@
     }
 }
 
-// --- Column picker dropdown ---
-.aps-column-picker-dropdown {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    max-height: 300px;
-    overflow-y: auto;
-
-    .aps-column-picker-item {
-        cursor: pointer;
-        user-select: none;
-
-        &:hover {
-            background: #f0f4f8;
-        }
-
-        .form-check-input {
-            cursor: pointer;
-        }
-    }
-
-    // Scrollbar styling
-    &::-webkit-scrollbar {
-        width: 6px;
-    }
-    &::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    &::-webkit-scrollbar-thumb {
-        background: #c8ced6;
-        border-radius: 3px;
-    }
-}
-
 // Drag handle indicator on reorderable columns
 .aps-gradebook-grid-container {
     .slick-header-column.ui-draggable {
