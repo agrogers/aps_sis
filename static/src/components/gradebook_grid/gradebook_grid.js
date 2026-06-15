@@ -1,6 +1,7 @@
 import { Component, useState, onWillStart, onMounted, onWillUnmount, useRef } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { getColorForPercent } from "../../js/utils/color_utils";
 
 const SENTINEL_ZERO = -0.01;
 
@@ -214,8 +215,9 @@ export class GradebookGrid extends Component {
             if (col.id === "result_percent") {
                 slickCol.formatter = (row, cell, value) => {
                     if (value === null || value === undefined) return "";
-                    const color = value >= 50 ? "#28a745" : value >= 30 ? "#ffc107" : "#dc3545";
-                    return `<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;height:16px;background:#e9ecef;border-radius:8px;overflow:hidden;"><div style="height:100%;width:${Math.min(value, 100)}%;background:${color};border-radius:8px;transition:width 0.3s;"></div></div><span style="font-weight:600;font-size:13px;color:#495057;min-width:38px;text-align:right;">${value}%</span></div>`;
+                    const color = getColorForPercent(value);
+                    const textColor = value < 50 ? "#fff" : "#1a1a1a";
+                    return `<div style="display:flex;align-items:center;gap:6px;background:${color};padding:2px 8px;border-radius:4px;height:100%;"><span style="font-weight:700;font-size:13px;color:${textColor};min-width:38px;text-align:right;">${value}%</span></div>`;
                 };
             }
             return slickCol;

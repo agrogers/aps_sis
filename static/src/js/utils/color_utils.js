@@ -1,5 +1,3 @@
-/** @odoo-module **/
-
 /**
  * Returns a color based on percent value.
  * Used by percentpie_ranged_widget and image_result_widget.
