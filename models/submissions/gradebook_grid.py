@@ -77,31 +77,140 @@ class APSResourceSubmissionGradebook(models.Model):
         columns = self._get_gradebook_columns(expanded=expanded)
         columns = self._apply_column_prefs(columns)
         rows = []
+        is_tree = False
 
-        for sub in submissions:
-            is_locked = sub.state == 'complete'
-            score_val = sub.score if sub.score != SENTINEL_ZERO else 0.0
-            out_of_val = sub.out_of_marks or 0.0
-            result_pct = sub.result_percent or 0
+        if expanded and parent_resource.exists() and parent_resource.child_ids:
+            is_tree = True
+            # ── Tree mode: each student is a root node, submissions are nested
+            # under their student by resource hierarchy ──
+            # Build a lookup: (student_id, resource_id) -> submission
+            sub_by_stu_res = {}
+            for sub in submissions:
+                key = (sub.student_id.id, sub.resource_id.id)
+                if key not in sub_by_stu_res:
+                    sub_by_stu_res[key] = sub
 
-            row = {
-                'id': sub.id,
-                'student_name': sub.student_id.display_name or sub.student_id.name or '',
-                'student_id': sub.student_id.id,
-                'resource_name': sub.resource_id.display_name or sub.resource_id.name or '',
-                'submission_name': sub.submission_name or '',
-                'score': score_val,
-                'out_of_marks': out_of_val,
-                'result_percent': result_pct,
-                'state': sub.state,
-                'is_locked': is_locked,
-                'has_child_resources': bool(sub.resource_id.child_ids),
-                'submission_id': sub.id,
-            }
-            if expanded:
-                row['date_assigned'] = sub.date_assigned.isoformat() if sub.date_assigned else ''
+            # Sort submissions so parents appear before children in the dataset.
+            # Compute depth for each resource to use as sort key.
+            def _res_depth(res):
+                d = 0
+                cur = res
+                seen = set()
+                while cur.primary_parent_id:
+                    if cur.id in seen:
+                        break
+                    seen.add(cur.id)
+                    cur = cur.primary_parent_id
+                    d += 1
+                return d
 
-            rows.append(row)
+            sorted_subs = sorted(submissions, key=lambda s: (
+                s.student_id.id,
+                _res_depth(s.resource_id),
+                s.submission_order or 0,
+                s.id,
+            ))
+
+            # Track which student root nodes we've already inserted
+            student_root_added = set()
+            resource_id_int = resource_id  # the selected resource from the dropdown
+
+            for sub in sorted_subs:
+                stu_id = sub.student_id.id
+                student = sub.student_id
+
+                # ── Insert a student root node the first time we see this student ──
+                if stu_id not in student_root_added:
+                    student_root_added.add(stu_id)
+                    stu_row_id = 'stu_%d' % stu_id
+                    rows.append({
+                        'id': stu_row_id,
+                        'parentId': None,  # top-level root
+                        'tree_label': student.display_name or student.name or '',
+                        'student_name': student.display_name or student.name or '',
+                        'student_id': stu_id,
+                        'resource_name': '',
+                        'submission_name': '',
+                        'score': 0.0,
+                        'out_of_marks': 0.0,
+                        'result_percent': 0,
+                        'state': '',
+                        'is_locked': False,
+                        'is_resource': True,  # acts as a grouping header
+                        'has_child_resources': True,
+                        'submission_id': False,
+                    })
+
+                is_locked = sub.state == 'complete'
+                score_val = sub.score if sub.score != SENTINEL_ZERO else 0.0
+                out_of_val = sub.out_of_marks or 0.0
+                result_pct = sub.result_percent or 0
+
+                # Determine the submission's parent in the tree
+                res = sub.resource_id
+                stu_row_id = 'stu_%d' % stu_id
+
+                if res.id == resource_id_int:
+                    # ── This submission IS the selected resource → parent = student root ──
+                    parent_id = stu_row_id
+                else:
+                    # ── Child/grandchild: find the parent resource submission for this student ──
+                    parent_res = res.primary_parent_id or (res.parent_ids and res.parent_ids[0])
+                    parent_sub = None
+                    if parent_res:
+                        parent_key = (stu_id, parent_res.id)
+                        parent_sub = sub_by_stu_res.get(parent_key)
+                    if parent_sub:
+                        parent_id = 'sub_%d' % parent_sub.id
+                    else:
+                        # Fallback: attach to the student root
+                        parent_id = stu_row_id
+
+                row = {
+                    'id': 'sub_%s' % sub.id,
+                    'parentId': parent_id,
+                    'tree_label': res.display_name or res.name or '',
+                    'student_name': sub.student_id.display_name or sub.student_id.name or '',
+                    'student_id': sub.student_id.id,
+                    'resource_name': res.display_name or res.name or '',
+                    'submission_name': sub.submission_name or '',
+                    'score': score_val,
+                    'out_of_marks': out_of_val,
+                    'result_percent': result_pct,
+                    'state': sub.state,
+                    'is_locked': is_locked,
+                    'is_resource': False,
+                    'has_child_resources': bool(res.child_ids),
+                    'submission_id': sub.id,
+                }
+                if expanded:
+                    row['date_assigned'] = sub.date_assigned.isoformat() if sub.date_assigned else ''
+                rows.append(row)
+        else:
+            # ── Flat mode ──
+            for sub in submissions:
+                is_locked = sub.state == 'complete'
+                score_val = sub.score if sub.score != SENTINEL_ZERO else 0.0
+                out_of_val = sub.out_of_marks or 0.0
+                result_pct = sub.result_percent or 0
+
+                row = {
+                    'id': sub.id,
+                    'student_name': sub.student_id.display_name or sub.student_id.name or '',
+                    'student_id': sub.student_id.id,
+                    'resource_name': sub.resource_id.display_name or sub.resource_id.name or '',
+                    'submission_name': sub.submission_name or '',
+                    'score': score_val,
+                    'out_of_marks': out_of_val,
+                    'result_percent': result_pct,
+                    'state': sub.state,
+                    'is_locked': is_locked,
+                    'has_child_resources': bool(sub.resource_id.child_ids),
+                    'submission_id': sub.id,
+                }
+                if expanded:
+                    row['date_assigned'] = sub.date_assigned.isoformat() if sub.date_assigned else ''
+                rows.append(row)
 
         summary = self._compute_gradebook_summary(rows)
 
@@ -113,6 +222,7 @@ class APSResourceSubmissionGradebook(models.Model):
             'rows': rows,
             'summary': summary,
             'students': students,
+            'isTreeData': is_tree,
         }
 
     @api.model
@@ -181,12 +291,16 @@ class APSResourceSubmissionGradebook(models.Model):
         """Compute summary row from grid rows."""
         total_score = 0.0
         total_out_of = 0.0
-        count = 0
+        data_rows = []
+        editable_count = 0
         for row in rows:
+            if row.get('is_resource'):
+                continue
+            data_rows.append(row)
             if not row.get('is_locked', False):
-                total_score += row.get('score', 0.0)
-                total_out_of += row.get('out_of_marks', 0.0)
-                count += 1
+                total_score += (row.get('score') or 0.0)
+                total_out_of += (row.get('out_of_marks') or 0.0)
+                editable_count += 1
 
         avg_pct = 0
         if total_out_of:
@@ -196,8 +310,8 @@ class APSResourceSubmissionGradebook(models.Model):
             'total_score': round(total_score, 2),
             'total_out_of': round(total_out_of, 1),
             'average_percent': avg_pct,
-            'row_count': len(rows),
-            'editable_count': count,
+            'row_count': len(data_rows),
+            'editable_count': editable_count,
         }
 
     # ------------------------------------------------------------------ //
@@ -263,6 +377,51 @@ class APSResourceSubmissionGradebook(models.Model):
 
         return {
             'updated_row': updated_row,
+            'rows': grid_data['rows'],
+            'summary': grid_data['summary'],
+        }
+
+@api.model
+    def write_gradebook_scores(self, score_lines, resource_id=None):
+        """
+        Write scores for multiple submissions in one call and return updated
+        rows + summary.  This is the batched counterpart of write_gradebook_score.
+
+        :param score_lines: List of dicts, each with 'submission_id' and 'score'.
+        :param resource_id: The resource that was selected in the grid (parent).
+
+        Returns::
+            {
+                'rows': [{...}, ...],    — all rows for this resource (after cascades)
+                'summary': {...},
+            }
+        """
+        submissions = self.env['aps.resource.submission']
+        for line in score_lines:
+            sub_id = line['submission_id']
+            # In tree mode, the frontend sends numeric IDs (extracted from 'sub_X')
+            # but just in case, handle string IDs
+            if isinstance(sub_id, str) and sub_id.startswith('sub_'):
+                sub_id = int(sub_id.replace('sub_', ''))
+            sub = submissions.browse(sub_id)
+            if sub.exists() and sub.state != 'complete':
+                sub.write({'score': line['score'], 'auto_score': False})
+
+        # Re-fetch the full grid data once after all writes
+        grid_resource_id = resource_id
+        if not grid_resource_id and score_lines:
+            first_id = score_lines[0]['submission_id']
+            if isinstance(first_id, str) and first_id.startswith('sub_'):
+                first_id = int(first_id.replace('sub_', ''))
+            first = submissions.browse(first_id)
+            if first.exists():
+                grid_resource_id = first.resource_id.id
+
+        grid_data = self.get_gradebook_grid_data(
+            subject_category_id=None,
+            resource_id=grid_resource_id,
+        )
+        return {
             'rows': grid_data['rows'],
             'summary': grid_data['summary'],
         }

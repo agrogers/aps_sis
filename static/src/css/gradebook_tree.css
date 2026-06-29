@@ -1,0 +1,53 @@
+/* Gradebook Tree Data Grid Styles */
+
+/* Resource header rows (non-editable parent rows) */
+.aps-gradebook-row-resource-header {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.aps-gradebook-row-resource-header:hover {
+    background-color: #e9ecef;
+}
+
+/* Tree indentation spacing */
+.slick-cell-tree {
+    padding-left: 0 !important;
+}
+
+/* Ensure tree toggle icons are visible */
+.slick-group-toggle {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    cursor: pointer;
+}
+
+.slick-group-toggle.collapsed::before {
+    content: "▶";
+    font-size: 10px;
+}
+
+.slick-group-toggle.expanded::before {
+    content: "▼";
+    font-size: 10px;
+}
+
+/* Indentation for tree levels */
+.slick-tree-level-0 .slick-cell-tree {
+    padding-left: 0 !important;
+}
+
+.slick-tree-level-1 .slick-cell-tree {
+    padding-left: 20px !important;
+}
+
+.slick-tree-level-2 .slick-cell-tree {
+    padding-left: 40px !important;
+}
+
+.slick-tree-level-3 .slick-cell-tree {
+    padding-left: 60px !important;
+}

@@ -154,6 +154,7 @@
             'aps_sis/static/src/js/partner_profile_pic.js',
             'aps_sis/static/src/xml/partner_profile_pic.xml',
             'aps_sis/static/src/css/partner_profile_pic.css',
+            'aps_sis/static/src/css/gradebook_tree.css',
             'aps_sis/static/src/js/media_wallpaper_service.js',
             'aps_sis/static/src/css/media_wallpaper.css',
 		],
