@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_sis_search_wizard_form" model="ir.ui.view">
+        <field name="name">aps.sis.search.wizard.form</field>
+        <field name="model">aps.sis.search.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resource / Submission Search">
+                <group>
+                    <group>
+                        <field name="search_target" widget="radio"/>
+                        <field name="is_favourite"
+                               invisible="search_target != 'resource'"/>
+                        <field name="subject_category_ids" widget="many2many_tags"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="type_ids" widget="many2many_tags"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="name_text" placeholder="Search by name..."/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_search" string="Search" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_sis_search_wizard" model="ir.actions.act_window">
+        <field name="name">Search Resources / Submissions</field>
+        <field name="res_model">aps.sis.search.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

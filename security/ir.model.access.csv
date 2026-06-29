@@ -117,3 +117,4 @@ access_asctt_dashboard_teacher,asctt.dashboard.teacher,model_asctt_dashboard,aps
 access_asctt_import_wizard_teacher,asctt.import.wizard.teacher,model_asctt_import_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_asctt_flat_row_teacher,asctt.flat.row.teacher,model_asctt_flat_row,aps_sis.group_aps_teacher,1,0,0,0
 access_aps_timetable_entry_teacher,aps.timetable.entry.teacher,model_aps_timetable_entry,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_sis_search_wizard_teacher,aps.sis.search.wizard.teacher,model_aps_sis_search_wizard,aps_sis.group_aps_teacher,1,1,1,1
