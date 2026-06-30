@@ -19,7 +19,7 @@
                     </group>
 
                     <div class="o_horizontal_separator mt-4 mb-2">Selections</div>
-
+                    <div class="mt-1 mb-2">Depending on the operation, the selected students will be added or removed from  the selected classes</div>
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="o_field_widget mb-1">

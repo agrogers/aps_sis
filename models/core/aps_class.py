@@ -56,6 +56,13 @@ class APSClass(models.Model):
     )
     active = fields.Boolean(default=True, string='Active')
     enrollment_ids = fields.One2many('aps.student.class', 'home_class_id', string='Enrolled Students')
+    tag_ids = fields.Many2many(
+        'aps.class.tag',
+        relation='aps_class_tag_rel',
+        column1='class_id',
+        column2='tag_id',
+        string='Tags',
+    )
 
     @api.depends('subject_id', 'subject_id.code', 'subject_id.name', 'identifier')
     def _compute_code_name(self):

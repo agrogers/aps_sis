@@ -587,7 +587,8 @@ class APSResource(models.Model):
             try:
                 resource._do_auto_assign(today)
             except Exception as exc:
-                _logger.exception('Auto-assign failed for resource %s (%s): %s', resource.id, resource.display_name, exc)
+                safe_name = resource.display_name.encode('ascii', errors='replace').decode('ascii')
+                _logger.exception('Auto-assign failed for resource %s (%s): %s', resource.id, safe_name, exc)
 
     def _do_auto_assign(self, today):
         """Perform one auto-assignment run for this resource."""
@@ -595,7 +596,8 @@ class APSResource(models.Model):
 
         # Respect end date
         if self.auto_assign_end_date and today > self.auto_assign_end_date:
-            _logger.info('Auto-assign skipped for resource %s: past end date', self.display_name)
+            safe_name = self.display_name.encode('ascii', errors='replace').decode('ascii')
+            _logger.info('Auto-assign skipped for resource %s (id=%s): past end date', safe_name, self.id)
             return
 
         task_model = self.env['aps.resource.task']

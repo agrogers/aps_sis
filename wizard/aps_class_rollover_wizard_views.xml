@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_aps_class_rollover_wizard_form" model="ir.ui.view">
+        <field name="name">aps.class.rollover.wizard.form</field>
+        <field name="model">aps.class.rollover.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Roll Classes to New Year">
+                <sheet>
+                    <div class="oe_title mb16">
+                        <h4>Roll Over Classes to New Academic Year</h4>
+                    </div>
+
+                    <group>
+                        <group string="Academic Years">
+                            <field name="from_year_id" placeholder="Current year"/>
+                            <field name="to_year_id" placeholder="New year"/>
+                        </group>
+                    </group>
+
+                    <div class="o_horizontal_separator mt-4 mb-2">Select Classes</div>
+                    <div class="mt-1 mb-2">Choose classes from the current year to roll over. Classes with the same name already in the target year will be skipped.</div>
+
+                    <field name="class_ids"
+                           widget="many2many_tags"
+                           domain="from_year_id and [('academic_year_id', '=', from_year_id)] or []"
+                           context="{'default_academic_year_id': from_year_id}"
+                           options="{'no_create': True, 'no_create_edit': True}"
+                           placeholder="Search and select classes..."/>
+
+                    <div class="alert alert-success mt-3" role="alert" invisible="not has_result">
+                        <field name="result_message" widget="html"/>
+                    </div>
+
+                    <field name="has_result" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Roll Over Classes" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_class_rollover_wizard" model="ir.actions.act_window">
+        <field name="name">Roll Classes to New Year</field>
+        <field name="res_model">aps.class.rollover.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

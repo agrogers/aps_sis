@@ -6,6 +6,7 @@ from . import aps_academic_week_generate_wizard
 from . import aps_school_calendar
 from . import aps_school_calendar_generate_wizard
 from . import aps_level
+from . import aps_class_tag
 from . import aps_subject_category_tag
 from . import aps_subject_category
 from . import aps_subject

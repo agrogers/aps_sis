@@ -29,6 +29,8 @@ access_aps_academic_week_generate_wizard_user,aps.academic.week.generate.wizard.
 access_aps_class_teacher,aps.class.teacher,model_aps_class,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_class_student,aps.class.student,model_aps_class,aps_sis.group_aps_student,1,0,0,0
 access_aps_class_user,aps.class.user,model_aps_class,base.group_user,1,0,0,0
+access_aps_class_tag_teacher,aps.class.tag.teacher,model_aps_class_tag,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_class_tag_user,aps.class.tag.user,model_aps_class_tag,base.group_user,1,0,0,0
 access_aps_student_teacher,aps.student.teacher,model_aps_student,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_student_student,aps.student.student,model_aps_student,aps_sis.group_aps_student,1,0,0,0
 access_aps_student_user,aps.student.user,model_aps_student,base.group_user,1,0,0,0
@@ -77,6 +79,7 @@ access_aps_user_media_settings_student,aps.user.media.settings.student,model_aps
 access_aps_location_teacher,aps.location.teacher,model_aps_location,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_location_student,aps.location.student,model_aps_location,aps_sis.group_aps_student,1,0,0,0
 access_aps_student_class_bulk_wizard_teacher,aps.student.class.bulk.wizard.teacher,model_aps_student_class_bulk_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_class_tag_enrol_wizard_teacher,aps.class.tag.enrol.wizard.teacher,model_aps_class_tag_enrol_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_submit_mark_wizard_teacher,aps.submit.mark.wizard.teacher,model_aps_submit_mark_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_submit_mark_wizard_student,aps.submit.mark.wizard.student,model_aps_submit_mark_wizard,aps_sis.group_aps_student,1,1,1,1
 access_aps_certificate_template_teacher,aps.certificate.template.teacher,model_aps_certificate_template,aps_sis.group_aps_teacher,1,1,1,1
@@ -118,3 +121,4 @@ access_asctt_import_wizard_teacher,asctt.import.wizard.teacher,model_asctt_impor
 access_asctt_flat_row_teacher,asctt.flat.row.teacher,model_asctt_flat_row,aps_sis.group_aps_teacher,1,0,0,0
 access_aps_timetable_entry_teacher,aps.timetable.entry.teacher,model_aps_timetable_entry,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_sis_search_wizard_teacher,aps.sis.search.wizard.teacher,model_aps_sis_search_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_class_rollover_wizard_teacher,aps.class.rollover.wizard.teacher,model_aps_class_rollover_wizard,aps_sis.group_aps_teacher,1,1,1,1

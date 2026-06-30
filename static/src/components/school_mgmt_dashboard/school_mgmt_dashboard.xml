@@ -133,18 +133,6 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_subject_action')">
-                    <div class="smd-card-icon bg-info-subtle text-info">
-                        <i class="fa fa-book"/>
-                    </div>
-                    <div class="smd-card-body">
-                        <div class="smd-card-title">Subjects</div>
-                        <div class="smd-card-count" t-esc="this.count('aps.subject')"/>
-                    </div>
-                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-4 col-sm-6">
                 <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_subject_categories')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-tags"/>
@@ -152,6 +140,18 @@
                     <div class="smd-card-body">
                         <div class="smd-card-title">Subject Categories</div>
                         <div class="smd-card-count" t-esc="this.count('aps.subject.category')"/>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_subject_action')">
+                    <div class="smd-card-icon bg-info-subtle text-info">
+                        <i class="fa fa-book"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Subjects</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.subject')"/>
                     </div>
                     <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
                 </div>
@@ -233,6 +233,30 @@
                     <div class="smd-card-body">
                         <div class="smd-card-title">Bulk Class Enrolment</div>
                         <div class="smd-card-subtitle text-muted">Enrol students in bulk</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool" t-on-click="() => this.open('aps_sis.action_aps_class_rollover_wizard')">
+                    <div class="smd-card-icon bg-info-subtle text-info">
+                        <i class="fa fa-arrow-right"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Roll Classes to New Year</div>
+                        <div class="smd-card-subtitle text-muted">Carry classes forward</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool" t-on-click="() => this.open('aps_sis.action_aps_class_tag_enrol_wizard')">
+                    <div class="smd-card-icon bg-success-subtle text-success">
+                        <i class="fa fa-magic"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Auto-Enrol by Tag</div>
+                        <div class="smd-card-subtitle text-muted">Enrol students matching class tags</div>
                     </div>
                     <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
                 </div>
