@@ -107,6 +107,10 @@ class ASCTTDashboard(models.TransientModel):
         action = self.env.ref('aps_sis.asctt_flat_row_action')
         return action.read()[0]
 
+    def action_open_class_subject_view(self):
+        action = self.env.ref('aps_sis.asctt_class_subject_minutes_action')
+        return action.read()[0]
+
     def action_open_timetable(self):
         action = self.env.ref('aps_sis.aps_timetable_entry_action')
         return action.read()[0]

@@ -79,6 +79,7 @@
 		'views/asc_timetable/asctt_views.xml',
 		'views/asc_timetable/asctt_import_wizard_views.xml',
 		'views/asc_timetable/asctt_flat_row_views.xml',
+		'views/asc_timetable/asctt_class_subject_minutes_views.xml',
 		'views/asc_timetable/asctt_dashboard_views.xml',
 	],
 	'assets': {

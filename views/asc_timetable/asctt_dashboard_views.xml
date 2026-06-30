@@ -16,6 +16,7 @@
                         <div>
                             <button name="action_import_xml" type="object" string="Import XML" class="btn btn-primary" icon="fa-upload"/>
                             <button name="action_open_flat_view" type="object" string="Workload Pivot" class="btn btn-secondary" icon="fa-table"/>
+                            <button name="action_open_class_subject_view" type="object" string="Minutes/Subject" class="btn btn-secondary" icon="fa-pie-chart"/>
                             <button name="action_open_timetable" type="object" string="School Timetable" class="btn btn-info" icon="fa-calendar"/>
                         </div>
                     </div>
