@@ -1,8 +1,18 @@
 /* Make active tab links bold in notebooks */
 .nav-link.active {
     font-weight: 600;
-    background: linear-gradient(to bottom, #acacac20, white);
+    background: linear-gradient(to bottom, #acacac20, var(--o-view-background-color, white));
     /* background: linear-gradient(to bottom, var(--link-color) 0%, var(--link-color) 7%, #acacac44 7%, transparent 100%) */
+}
+@media (prefers-color-scheme: dark) {
+    .nav-link.active {
+        background: linear-gradient(to bottom, rgba(128, 128, 128, 0.125), var(--o-view-background-color, #1f1f1f));
+    }
+    /* Remove white background behind transparent SVG icons */
+    .aps_ribbon .o_field_image,
+    .aps_ribbon .d-inline-block {
+        background: transparent;
+    }
 }
 .o_search_panel_counter {
     font-weight: 700;
@@ -54,4 +64,9 @@
 }
 .o_embedded_toc_link_depth_2, .o_embedded_toc_link_depth_3, .o_embedded_toc_link_depth_4, .o_embedded_toc_link_depth_5   {
     font-size: 0.9em;
+}
+
+
+.o_field_image {
+    --ImageField-background-color: #ffffff00 !important;
 }

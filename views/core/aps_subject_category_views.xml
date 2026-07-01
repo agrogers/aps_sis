@@ -57,10 +57,4 @@
         <field name="path">apex-subject-categories</field>
     </record>
 
-    <!-- Add to Menu -->
-    <menuitem id="menu_aps_subject_categories" 
-              name="Subject Categories" 
-              parent="openeducat_core.menu_op_school_config"
-              action="action_aps_subject_categories"
-              sequence="20"/>
 </odoo>

@@ -132,6 +132,47 @@
             <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
         </record>
 
+        <!-- Record Rules for Classes and Subjects:
+             Teachers see only classes where they are assigned as teacher or assistant teacher.
+             Teachers see only subjects that have a class (in the current year) where they teach.
+             Managers get (1=1) overrides so they see everything. -->
+
+        <record id="rule_aps_class_teacher" model="ir.rule">
+            <field name="name">Teacher (APEX): Assigned Classes Only</field>
+            <field name="model_id" ref="model_aps_class"/>
+            <field name="domain_force">
+                ['|',
+                  ('teacher_ids', '=', user.partner_id.id),
+                  ('assistant_teacher_ids', '=', user.partner_id.id)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+        </record>
+
+        <record id="rule_aps_subject_teacher" model="ir.rule">
+            <field name="name">Teacher (APEX): Subjects They Teach</field>
+            <field name="model_id" ref="model_aps_subject"/>
+            <field name="domain_force">
+                ['|',
+                  ('class_current_year_ids.teacher_ids', '=', user.partner_id.id),
+                  ('class_current_year_ids.assistant_teacher_ids', '=', user.partner_id.id)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+        </record>
+
+        <record id="rule_aps_class_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Classes</field>
+            <field name="model_id" ref="model_aps_class"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_subject_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Subjects</field>
+            <field name="model_id" ref="model_aps_subject"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
         <!-- Time Tracking record rules -->
         <record id="rule_aps_time_tracking_student" model="ir.rule">
             <field name="name">Student (APEX): Own Time Records Only</field>

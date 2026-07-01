@@ -47,7 +47,7 @@ class APSSubject(models.Model):
         relation='aps_subject_teacher_rel',
         column1='subject_id',
         column2='partner_id',
-        string='Teachers',
+        string='Coordinators',
     )
 
     def action_create_current_year_classes(self):
