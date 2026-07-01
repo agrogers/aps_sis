@@ -42,6 +42,14 @@ class APSSubject(models.Model):
     show_add_classes = fields.Boolean(string='Add Classes', default=False)
     classes_to_create = fields.Integer(string='Number of Classes', default=1)
 
+    subject_coordinator_ids = fields.Many2many(
+        'res.partner',
+        relation='aps_subject_teacher_rel',
+        column1='subject_id',
+        column2='partner_id',
+        string='Teachers',
+    )
+
     def action_create_current_year_classes(self):
         current_year = self.env['aps.academic.year'].search([('is_current', '=', True)], limit=1)
         if not current_year:

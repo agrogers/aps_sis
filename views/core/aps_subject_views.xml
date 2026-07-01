@@ -12,6 +12,7 @@
                 <field name="code" optional="show"/>
                 <field name="category_id" optional="show"/>
                 <field name="level_id" optional="show"/>
+                <field name="subject_coordinator_ids" widget="many2many_tags" optional="show"/>
             </list>
         </field>
     </record>
@@ -40,6 +41,11 @@
                             <field name="category_id"/>
                             <field name="level_id"/>
                             <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Coordinators">
+                            <field name="subject_coordinator_ids" widget="many2many_tags"
+                                   domain="[('is_teacher', '=', True)]"
+                                   options="{'no_create': True}" nolabel="1"/>
                         </group>
                     </group>
                     <notebook>
