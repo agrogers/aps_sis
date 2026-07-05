@@ -805,7 +805,9 @@ class APSResource(models.Model):
                 'id': s.id,
                 'name': s.name,
                 'color': (s.category_id.color_rgb or '') if s.category_id else '',
-                'icon': (s.icon or s.category_id.icon or False) if s.category_id else (s.icon or False),
+                'icon_url': ('/web/image/aps.subject/%d/icon' % s.id) if s.icon
+                    else ('/web/image/aps.subject.category/%d/icon' % s.category_id.id) if s.category_id and s.category_id.icon
+                    else '',
             }
             for s in subjects.sorted('name')
         ]
@@ -894,14 +896,20 @@ class APSResource(models.Model):
             if subject.category_id and subject.category_id.color_rgb:
                 cat_color = subject.category_id.color_rgb
 
-            # Prefer subject icon, fall back to category icon
-            icon = subject.icon or (subject.category_id.icon if subject.category_id else False) or False
+            # Prefer subject icon, fall back to category icon.
+            # Return the /web/image URL so the browser loads it directly.
+            if subject.icon:
+                icon_url = '/web/image/aps.subject/%d/icon' % subject.id
+            elif subject.category_id and subject.category_id.icon:
+                icon_url = '/web/image/aps.subject.category/%d/icon' % subject.category_id.id
+            else:
+                icon_url = False
 
             result.append({
                 'subject_id': subject.id,
                 'subject_name': subject.name or '',
                 'color': cat_color,
-                'icon': icon,
+                'icon_url': icon_url,
                 'roots': root_nodes,
                 'total_cols': sum(n['colspan'] for n in root_nodes),
                 'max_depth': _tree_depth(root_nodes),

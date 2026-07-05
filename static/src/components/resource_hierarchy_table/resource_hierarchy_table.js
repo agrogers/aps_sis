@@ -668,7 +668,7 @@ export class ResourceHierarchyTable extends Component {
     }
 
     getSubjectIcon(group) {
-        return group.icon ? `data:image/png;base64,${group.icon}` : "";
+        return group.icon_url || "";
     }
 
     getTableStyle(group) {

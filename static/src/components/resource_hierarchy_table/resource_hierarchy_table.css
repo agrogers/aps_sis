@@ -166,6 +166,13 @@
     color: #212529;
 }
 
+/* ── Notes icon inside cell name ────────────────────────────── */
+.rht_cell_notes_icon {
+    font-size: 0.5em;
+    opacity: 0.55;
+    vertical-align: middle;
+}
+
 /* ── Per-cell expand / collapse buttons ─────────────────────── */
 .rht_cell_btn {
     position: absolute;

@@ -19,7 +19,7 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_student_certificate')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_student_certificate')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-certificate"/>
                     </div>
@@ -31,7 +31,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_certificate_template')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_certificate_template')">
                     <div class="smd-card-icon bg-info-subtle text-info">
                         <i class="fa fa-file-text"/>
                     </div>
@@ -52,7 +52,7 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_award_category')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_award_category')">
                     <div class="smd-card-icon bg-primary-subtle text-primary">
                         <i class="fa fa-tags"/>
                     </div>
@@ -64,7 +64,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_award_vote_round')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_award_vote_round')">
                     <div class="smd-card-icon bg-success-subtle text-success">
                         <i class="fa fa-refresh"/>
                     </div>
@@ -76,7 +76,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_award_vote')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_award_vote')">
                     <div class="smd-card-icon bg-secondary-subtle text-secondary">
                         <i class="fa fa-thumbs-up"/>
                     </div>
@@ -97,7 +97,7 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card smd-card-tool" t-on-click="() => this.open('aps_sis.action_aps_awards_dashboard')">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_awards_dashboard')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-check-square-o"/>
                     </div>
