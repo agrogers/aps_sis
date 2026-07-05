@@ -2,6 +2,7 @@ import re
 import logging
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
+from markupsafe import Markup
 from odoo import _, models, api, fields
 from odoo.exceptions import UserError
 
@@ -933,3 +934,176 @@ class APSResource(models.Model):
             }
             for t in tags
         ]
+
+    # ------------------------------------------------------------------
+    # Course Explorer client-action data
+    # ------------------------------------------------------------------
+
+    @api.model
+    def get_course_explorer_subject_categories(self):
+        """Return subject categories that have at least one hierarchy-visible
+        resource with notes (has_notes != 'no')."""
+        resources = self.search([
+            ('show_in_hierarchy', '=', True),
+            ('has_notes', '!=', 'no'),
+        ])
+        categories = resources.mapped('subject_categories')
+        return [
+            {
+                'id': c.id,
+                'name': c.name or '',
+                'resource_count': len(resources.filtered(
+                    lambda r, cat=c: cat in r.subject_categories
+                )),
+            }
+            for c in categories.sorted('name')
+        ]
+
+    def _resolve_notes(self, visited=None):
+        """Walk the primary_parent_id chain to resolve actual notes HTML.
+
+        Returns (resolved_notes_html, source_resource_id) or (False, False)
+        if no owning record is found.  *visited* guards against cycles.
+        """
+        self.ensure_one()
+        if visited is None:
+            visited = set()
+        if self.id in visited:
+            return False, False
+        visited.add(self.id)
+        if self.has_notes == 'yes':
+            html = self.notes or ''
+            return Markup(html) if html else False, self.id
+        if self.has_notes == 'use_parent' and self.primary_parent_id:
+            return self.primary_parent_id._resolve_notes(visited)
+        return False, False
+
+    @api.model
+    def get_course_explorer_data(self, subject_category_id=False):
+        """Return tree and content data for the course explorer view.
+
+        Builds a recursive tree of resources with ``show_in_hierarchy=True``.
+        Resources with notes (``has_notes != 'no'``) are included as content
+        nodes.  Parent resources that have no notes of their own are still
+        included in the tree when they are ancestors of resources that do
+        have notes, so the hierarchy is always complete.
+
+        Each content section resolves ``has_notes='use_parent'`` up the
+        parent chain and deduplicates so identical inherited content is not
+        rendered twice.
+
+        Args:
+            subject_category_id: optional ``aps.subject.category`` id.
+
+        Returns:
+            dict with keys ``tree`` (list of root node dicts) and
+            ``contentSections`` (list of section dicts).
+        """
+        # Base domain: hierarchy-visible resources
+        base_domain = [('show_in_hierarchy', '=', True)]
+        if subject_category_id:
+            base_domain.append(('subject_categories', 'in', subject_category_id))
+
+        all_hier = self.search(base_domain)
+        all_hier.mapped('child_ids')
+        all_hier.mapped('parent_ids')
+        all_hier.mapped('primary_parent_id')
+        all_hier.mapped('subject_categories')
+
+        # Resources that have notes (or use_parent)
+        has_notes_res = all_hier.filtered(lambda r: r.has_notes != 'no')
+
+        # Include ancestor resources that are parents of has_notes resources
+        # but don't have notes themselves — they serve as structural nodes.
+        extra_parents = self.env['aps.resources']
+        for res in has_notes_res:
+            for parent in res.parent_ids:
+                if parent in all_hier and parent.has_notes == 'no':
+                    extra_parents |= parent
+
+        # All resources that appear in the tree
+        all_resources = has_notes_res | extra_parents
+        filtered_ids = set(all_resources.ids)
+
+        # Resolve notes for every resource and track which source IDs
+        # have already been "rendered" to avoid duplication.
+        rendered_source_ids = set()
+        sections_map = {}  # resource_id -> section dict
+
+        for res in all_resources:
+            notes_html, source_id = res._resolve_notes()
+            if not notes_html:
+                continue
+            already_rendered = source_id in rendered_source_ids
+            sections_map[res.id] = {
+                'id': res.id,
+                'name': res.name or '',
+                'html': notes_html if not already_rendered else '',
+                'visible': not already_rendered,
+                'resolvedFrom': source_id if source_id != res.id else False,
+            }
+            if not already_rendered:
+                rendered_source_ids.add(source_id)
+
+        # Determine root nodes: resources whose parents are NOT in
+        # the filtered set (or have no parents at all).
+        def _is_root(resource):
+            if not resource.parent_ids:
+                return True
+            return not bool(resource.parent_ids & all_resources)
+
+        root_resources = all_resources.filtered(_is_root).sorted(
+            key=lambda r: (r.sequence or 0, r.name or '')
+        )
+
+        # Build recursive tree
+        visited = set()
+
+        def _build_node(resource, depth=0):
+            if resource.id in visited:
+                return None
+            visited.add(resource.id)
+            children = (resource.child_ids & all_resources).filtered(
+                lambda c: c.id not in visited
+            ).sorted(key=lambda r: (r.sequence or 0, r.name or ''))
+            child_nodes = []
+            for child in children:
+                node = _build_node(child, depth + 1)
+                if node:
+                    child_nodes.append(node)
+            return {
+                'id': resource.id,
+                'name': resource.name or '',
+                'has_notes': resource.has_notes or 'no',
+                'depth': depth,
+                'has_children': bool(child_nodes),
+                'children': child_nodes,
+            }
+
+        tree = []
+        for root in root_resources:
+            if root.id not in visited:
+                node = _build_node(root)
+                if node:
+                    tree.append(node)
+
+        # Collect content sections in tree traversal order (depth-first).
+        # Parents appear before their children, each level sorted by
+        # (sequence, name) — matching the visual tree order exactly.
+        ordered_sections = []
+        seen_section_ids = set()
+
+        def _collect_sections(nodes):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                if sec and sec['visible'] and sec['id'] not in seen_section_ids:
+                    ordered_sections.append(sec)
+                    seen_section_ids.add(sec['id'])
+                _collect_sections(node.get('children', []))
+
+        _collect_sections(tree)
+
+        return {
+            'tree': tree,
+            'contentSections': ordered_sections,
+        }
