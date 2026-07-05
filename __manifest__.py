@@ -60,6 +60,7 @@
 		'views/aps_media_views.xml',
 		'views/awards/aps_student_certificate_views.xml',
 		'views/awards/aps_award_vote_round_views.xml',
+		'views/awards/aps_award_vote_round_mass_update_wizard_views.xml',
 		'views/awards/aps_award_vote_views.xml',
 		'views/awards/aps_award_voting_set_views.xml',
 		'views/awards/aps_award_tag_views.xml',

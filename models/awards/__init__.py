@@ -5,3 +5,4 @@ from . import aps_award_voting_set
 from . import aps_award_vote_round
 from . import aps_award_vote
 from . import aps_student_certificate
+from . import aps_award_vote_round_mass_update_wizard

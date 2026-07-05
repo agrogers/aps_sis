@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Mass Update Vote Rounds Wizard Form View -->
+    <record id="view_aps_award_vote_round_mass_update_wizard_form" model="ir.ui.view">
+        <field name="name">aps.award.vote.round.mass.update.wizard.form</field>
+        <field name="model">aps.award.vote.round.mass.update.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Mass Update Vote Rounds">
+                <sheet>
+                    <notebook>
+                        <page string="Options">
+                            <group col="12">
+                                <group string="Update which fields" col="12" colspan="8">
+
+                                    <group colspan="4">
+                                        <field name="update_name" nolabel="1" widget="boolean_toggle" class="text-end"/>
+                                        <label for="update_name" class="mb-0">Name</label>
+                                    </group>
+                                    <group colspan="8"><field name="name_value" invisible="not update_name"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_status" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_status" class="mb-0">Status</label>
+                                    </group>
+                                    <group colspan="8"><field name="status_value" invisible="not update_status"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_datetime_start" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_datetime_start" class="mb-0">Start Date</label>
+                                    </group>
+                                    <group colspan="8"><field name="datetime_start_value" invisible="not update_datetime_start"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_datetime_end" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_datetime_end" class="mb-0">End Date</label>
+                                    </group>
+                                    <group colspan="8"><field name="datetime_end_value" invisible="not update_datetime_end"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_description" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_description" class="mb-0">Description</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_short_description" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_short_description" class="mb-0">Short Description</label>
+                                    </group>
+                                    <group colspan="8"/>
+
+                                    <group colspan="4">
+                                        <field name="update_color" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_color" class="mb-0">Color</label>
+                                    </group>
+                                    <group colspan="8"><field name="color_value" widget="color" invisible="not update_color"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_recurring_days" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_recurring_days" class="mb-0">Recur Every (days)</label>
+                                    </group>
+                                    <group colspan="8"><field name="recurring_days_value" invisible="not update_recurring_days"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_award_category_id" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_award_category_id" class="mb-0">Award Category</label>
+                                    </group>
+                                    <group colspan="8"><field name="award_category_id_value" invisible="not update_award_category_id"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_award_sub_category_id" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_award_sub_category_id" class="mb-0">Award Sub-Category</label>
+                                    </group>
+                                    <group colspan="8"><field name="award_sub_category_id_value" invisible="not update_award_sub_category_id"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_academic_week_id" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_academic_week_id" class="mb-0">Academic Week</label>
+                                    </group>
+                                    <group colspan="8"><field name="academic_week_id_value" invisible="not update_academic_week_id"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_tag_ids" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_tag_ids" class="mb-0">Tags</label>
+                                    </group>
+                                    <group colspan="8"><field name="tag_ids_value" widget="many2many_tags" invisible="not update_tag_ids"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_voting_set_ids" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_voting_set_ids" class="mb-0">Voting Sets</label>
+                                    </group>
+                                    <group colspan="8"><field name="voting_set_ids_value" widget="many2many_tags" invisible="not update_voting_set_ids"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_round_manager_ids" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_round_manager_ids" class="mb-0">Round Managers</label>
+                                    </group>
+                                    <group colspan="8"><field name="round_manager_ids_value" widget="many2many_tags" invisible="not update_round_manager_ids"/></group>
+
+                                </group>
+                                <group string="Vote Rounds to Update" colspan="4">
+                                    <field name="vote_round_ids" widget="many2many_tags" nolabel="1" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Description" invisible="not update_description">
+                            <field name="description_value" nolabel="1" placeholder="Enter description here"/>
+                        </page>
+                        <page string="Short Description" invisible="not update_short_description">
+                            <field name="short_description_value" nolabel="1" placeholder="Enter short description here"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button string="Update" name="action_update" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_award_vote_round_mass_update" model="ir.actions.server">
+        <field name="name">Mass Update Vote Rounds</field>
+        <field name="model_id" ref="aps_sis.model_aps_award_vote_round"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_award_vote_round"/>
+        <field name="binding_type">action</field>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+                'type': 'ir.actions.act_window',
+                'name': 'Mass Update Vote Rounds',
+                'res_model': 'aps.award.vote.round.mass.update.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_vote_round_ids': [(6, 0, env.context.get('active_ids', []))],
+                }
+            }
+        </field>
+    </record>
+</odoo>
