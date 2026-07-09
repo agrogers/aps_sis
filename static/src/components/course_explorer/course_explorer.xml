@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         CourseExplorerTreeNode — recursive tree node
+         ═══════════════════════════════════════════════════════════════ -->
+    <t t-name="aps_sis.CourseExplorerTreeNode">
+        <div class="ce_tree_node"
+             t-att-class="isActive ? 'ce_tree_node_active' : ''"
+             t-att-data-node-id="props.node.id"
+             t-att-data-section-id="props.node.sectionId"
+             t-att-style="indentStyle">
+
+            <!-- Expand / collapse chevron -->
+            <span t-if="hasChildren"
+                  class="ce_chevron"
+                  t-att-class="isExpanded ? 'ce_chevron_expanded' : ''"
+                  t-on-click="onToggleClick">
+                <i class="fa fa-caret-down"/>
+            </span>
+            <span t-else="" class="ce_chevron ce_chevron_placeholder"/>
+
+            <!-- Node label — links to sectionId -->
+            <a href="#"
+               class="ce_node_label"
+               t-att-class="isActive ? 'ce_node_label_active' : ''"
+               t-on-click="onNodeClick">
+                <t t-esc="props.node.name"/>
+            </a>
+        </div>
+
+        <!-- Children (if expanded) -->
+        <t t-if="isExpanded and props.node.children and props.node.children.length">
+            <t t-foreach="props.node.children" t-as="child" t-key="child.id">
+                <CourseExplorerTreeNode
+                    node="child"
+                    activeSectionId="props.activeSectionId"
+                    depth="props.depth + 1"
+                    expandedIds="props.expandedIds"
+                    onToggle="props.onToggle"
+                    onNavigate="props.onNavigate"/>
+            </t>
+        </t>
+    </t>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         CourseExplorer — main split-pane layout
+         ═══════════════════════════════════════════════════════════════ -->
+    <t t-name="aps_sis.CourseExplorer">
+        <div class="ce_root"
+             t-att-class="state.sidebarCollapsed ? 'ce_sidebar_collapsed' : ''">
+
+            <!-- ── Left Pane ──────────────────────────────────────── -->
+            <div class="ce_left_pane">
+
+                <!-- Toolbar -->
+                <div class="ce_toolbar">
+                    <select class="ce_category_select form-select form-select-sm"
+                            t-on-change="onCategoryChange">
+                        <option value="">Select a subject</option>
+                        <t t-foreach="state.subjectCategories" t-as="cat" t-key="cat.id">
+                            <option t-att-value="cat.id"
+                                    t-att-selected="cat.id === state.selectedCategoryId">
+                                <t t-esc="cat.name"/> (<t t-esc="cat.resource_count"/>)
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Expand / Collapse controls -->
+                <div class="ce_tree_controls">
+                    <button class="btn btn-link btn-sm p-0" t-on-click="expandAll">
+                        <i class="fa fa-plus-square-o me-1"/>Expand All
+                    </button>
+                    <button class="btn btn-link btn-sm p-0" t-on-click="collapseAll">
+                        <i class="fa fa-minus-square-o me-1"/>Collapse All
+                    </button>
+                </div>
+
+                <!-- Scrollable tree -->
+                <div class="ce_tree_container">
+                    <t t-if="state.tree and state.tree.length">
+                        <t t-foreach="state.tree" t-as="root" t-key="root.id">
+                            <CourseExplorerTreeNode
+                                node="root"
+                                activeSectionId="state.activeSectionId"
+                                depth="0"
+                                expandedIds="_expandedIds"
+                                onToggle="(id) => this.toggleNode(id)"
+                                onNavigate="(sectionId) => this.scrollToSection(sectionId)"/>
+                        </t>
+                    </t>
+                    <div t-elif="!state.loading" class="ce_empty text-muted fst-italic p-3">
+                        No resources found.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Sidebar toggle (outside left pane so it's always visible) -->
+            <div class="ce_sidebar_toggle" t-on-click="toggleSidebar">
+                <i t-att-class="state.sidebarCollapsed ? 'fa fa-angle-right' : 'fa fa-angle-left'"/>
+            </div>
+
+            <!-- ── Right Pane (content viewer) ────────────────────── -->
+            <div class="ce_right_pane" t-ref="contentPane">
+
+                <!-- Loading spinner -->
+                <div t-if="state.loading" class="ce_loading text-center py-5">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"/>
+                    Loading course content&#8230;
+                </div>
+
+                <!-- Content sections -->
+                <t t-elif="state.contentSections and state.contentSections.length">
+                    <t t-foreach="state.contentSections" t-as="section" t-key="section.id">
+                        <section t-if="section.visible"
+                                 class="ce_content_section"
+                                 t-att-id="'ce-section-' + section.id"
+                                 t-att-data-resource-id="section.id">
+                            <h3 class="ce_section_heading">
+                                <t t-esc="section.name"/>
+                            </h3>
+                            <div class="ce_section_body oe_calculateKioskHeight"
+                                 t-out="section.html"/>
+                        </section>
+                    </t>
+                </t>
+
+                <div t-elif="!state.loading" class="ce_empty text-muted fst-italic p-5 text-center">
+                    Select a subject category from the dropdown to view content.
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -99,6 +99,7 @@ access_aps_award_vote_round_teacher,aps.award.vote.round.teacher,model_aps_award
 access_aps_award_vote_round_student,aps.award.vote.round.student,model_aps_award_vote_round,aps_sis.group_aps_student,1,0,0,0
 access_aps_award_voting_set_manager,aps.award.voting.set.manager,model_aps_award_voting_set,aps_sis.group_aps_manager,1,1,1,1
 access_aps_award_voting_set_teacher,aps.award.voting.set.teacher,model_aps_award_voting_set,aps_sis.group_aps_teacher,1,0,0,0
+access_aps_award_vote_round_mass_update_wizard_manager,aps.award.vote.round.mass.update.wizard.manager,model_aps_award_vote_round_mass_update_wizard,aps_sis.group_aps_manager,1,1,1,1
 access_aps_partner_voting_token_wizard,aps.partner.voting.token.wizard,model_aps_partner_voting_token_wizard,aps_sis.group_aps_voting_token_access,1,1,1,1
 
 access_asctt_period_teacher,asctt.period.teacher,model_asctt_period,aps_sis.group_aps_teacher,1,1,1,1
