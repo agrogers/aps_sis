@@ -1,6 +1,7 @@
 import { Component, useState, onWillStart, onMounted, onPatched, onWillUnmount, useRef, markup } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { ImageViewerDialog } from "@aui_enhancements/js/image_viewer_dialog";
 
 const STORAGE_KEY = "aps_course_explorer";
 
@@ -23,6 +24,16 @@ export class CourseExplorerTreeNode extends Component {
     }
 
     get isActive() {
+        // Highlight this node if the active section belongs to it
+        // (i.e., the active section is in this node's subtree)
+        const highlightIds = this.props.node.highlightIds;
+        if (highlightIds && this.props.activeSectionId) {
+            // highlightIds may be a Set or an array (JSON-serialized)
+            const check = highlightIds.has
+                ? highlightIds.has(this.props.activeSectionId)
+                : highlightIds.includes(this.props.activeSectionId);
+            if (check) return true;
+        }
         const sectionId = this.props.node.sectionId || this.props.node.id;
         return sectionId === this.props.activeSectionId;
     }
@@ -62,6 +73,7 @@ export class CourseExplorer extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.dialog = useService("dialog");
         this.contentRef = useRef("contentPane");
 
         const saved = this._loadStorage();
@@ -92,6 +104,7 @@ export class CourseExplorer extends Component {
             this._restoreScroll();
             this._setupScrollObserver();
             this._setupScrollListener();
+            this._setupImageClickHandler();
         });
 
         onWillUnmount(() => {
@@ -309,6 +322,66 @@ export class CourseExplorer extends Component {
         if (nodeEl) {
             nodeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
+    }
+
+    // ── Image viewer ────────────────────────────────────────────────
+
+    _setupImageClickHandler() {
+        const el = this.contentRef.el;
+        if (!el) return;
+        el.addEventListener("click", this._onContentClick.bind(this));
+    }
+
+    _onContentClick(ev) {
+        const img = ev.target.closest(".ce_section_body img");
+        if (!img) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const src = img.getAttribute("src") || img.src;
+        if (!src) return;
+
+        // Resolve the clicked image URL to absolute
+        let absoluteSrc = src;
+        try {
+            absoluteSrc = new URL(src, window.location.href).href;
+        } catch {
+            // Keep original if URL parsing fails.
+        }
+
+        // Collect ALL images from the content pane in document order,
+        // excluding images inside page-ref links (same logic as the
+        // standard image_viewer_button service).
+        const embeddedImages = [];
+        let clickedIndex = 0;
+        const el = this.contentRef.el;
+        if (el) {
+            const allImgs = Array.from(el.querySelectorAll(".ce_section_body img")).filter(
+                (i) => (i.getAttribute("src") || i.src)
+            );
+            allImgs.forEach((i, idx) => {
+                const imgSrc = i.getAttribute("src") || i.src || "";
+                let absUrl = imgSrc;
+                try {
+                    absUrl = new URL(imgSrc, window.location.href).href;
+                } catch {
+                    // Keep original.
+                }
+                embeddedImages.push(absUrl);
+                if (i === img) {
+                    clickedIndex = idx;
+                }
+            });
+        }
+
+        const hasMultiple = embeddedImages.length > 1;
+        this.dialog.add(ImageViewerDialog, {
+            imageConfig: {
+                directUrl: absoluteSrc,
+                imageUrl: absoluteSrc,
+                embeddedImages: hasMultiple ? embeddedImages : [],
+                pageNumber: hasMultiple ? clickedIndex + 1 : 1,
+            },
+        });
     }
 
     // ── Rendering helpers ────────────────────────────────────────────

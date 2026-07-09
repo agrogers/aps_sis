@@ -236,6 +236,12 @@
     max-width: 100%;
     height: auto;
     border-radius: 4px;
+    cursor: zoom-in;
+    transition: opacity 0.15s;
+}
+
+.ce_section_body img:hover {
+    opacity: 0.85;
 }
 
 .ce_section_body ul,

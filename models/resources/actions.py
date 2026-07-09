@@ -959,6 +959,18 @@ class APSResource(models.Model):
             for c in categories.sorted('name')
         ]
 
+    @staticmethod
+    def _add_lazy_loading(html):
+        """Add loading="lazy" to all <img> tags that don't already have it."""
+        if not html:
+            return html
+        # Match <img tags that don't already have loading= attribute
+        return re.sub(
+            r'(<img\b)(?![^>]*\bloading=)',
+            r'\1 loading="lazy"',
+            html,
+        )
+
     def _resolve_notes(self):
         """Return the resource's own notes HTML, if it has any.
 
@@ -967,6 +979,8 @@ class APSResource(models.Model):
         """
         self.ensure_one()
         html = self.notes or ''
+        if html:
+            html = self._add_lazy_loading(html)
         return Markup(html) if html else False, self.id
 
     @api.model
@@ -1106,18 +1120,21 @@ class APSResource(models.Model):
         # 1. Nodes with a visible section → own id
         # 2. Structural parents → nearest descendant's section id
         # 3. If no descendant has a section → nearest ancestor's section id
+        #
+        # Also compute highlightIds: set of all section IDs that would
+        # "belong" to this node (self + all descendants). Used so that
+        # when a child is active but hidden (parent collapsed), the
+        # parent gets highlighted instead.
         def _assign_section_ids(nodes, ancestor_section_id=False):
             for node in nodes:
                 sec = sections_map.get(node['id'])
                 if sec and sec['visible']:
                     node['sectionId'] = node['id']
-                    # This node becomes the ancestor section for its children
                     _assign_section_ids(
                         node.get('children', []),
                         ancestor_section_id=node['id'],
                     )
                 else:
-                    # Try descendants first
                     desc_id = _find_first_visible_section(
                         node.get('children', [])
                     )
@@ -1126,6 +1143,12 @@ class APSResource(models.Model):
                         node.get('children', []),
                         ancestor_section_id=node['sectionId'] or ancestor_section_id,
                     )
+                # Collect all section IDs that belong to this subtree
+                node['highlightIds'] = set()
+                if node.get('sectionId'):
+                    node['highlightIds'].add(node['sectionId'])
+                for child in node.get('children', []):
+                    node['highlightIds'].update(child.get('highlightIds', set()))
 
         def _find_first_visible_section(nodes):
             for node in nodes:
