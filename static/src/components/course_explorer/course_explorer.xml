@@ -8,6 +8,7 @@
         <div class="ce_tree_node"
              t-att-class="isActive ? 'ce_tree_node_active' : ''"
              t-att-data-node-id="props.node.id"
+             t-att-data-section-id="props.node.sectionId"
              t-att-style="indentStyle">
 
             <!-- Expand / collapse chevron -->
@@ -19,7 +20,7 @@
             </span>
             <span t-else="" class="ce_chevron ce_chevron_placeholder"/>
 
-            <!-- Node label -->
+            <!-- Node label — links to sectionId -->
             <a href="#"
                class="ce_node_label"
                t-att-class="isActive ? 'ce_node_label_active' : ''"
@@ -86,7 +87,7 @@
                                 depth="0"
                                 expandedIds="_expandedIds"
                                 onToggle="(id) => this.toggleNode(id)"
-                                onNavigate="(id) => this.scrollToSection(id)"/>
+                                onNavigate="(sectionId) => this.scrollToSection(sectionId)"/>
                         </t>
                     </t>
                     <div t-elif="!state.loading" class="ce_empty text-muted fst-italic p-3">

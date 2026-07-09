@@ -959,24 +959,15 @@ class APSResource(models.Model):
             for c in categories.sorted('name')
         ]
 
-    def _resolve_notes(self, visited=None):
-        """Walk the primary_parent_id chain to resolve actual notes HTML.
+    def _resolve_notes(self):
+        """Return the resource's own notes HTML, if it has any.
 
         Returns (resolved_notes_html, source_resource_id) or (False, False)
-        if no owning record is found.  *visited* guards against cycles.
+        if the resource has no notes (has_notes != 'yes').
         """
         self.ensure_one()
-        if visited is None:
-            visited = set()
-        if self.id in visited:
-            return False, False
-        visited.add(self.id)
-        if self.has_notes == 'yes':
-            html = self.notes or ''
-            return Markup(html) if html else False, self.id
-        if self.has_notes == 'use_parent' and self.primary_parent_id:
-            return self.primary_parent_id._resolve_notes(visited)
-        return False, False
+        html = self.notes or ''
+        return Markup(html) if html else False, self.id
 
     @api.model
     def get_course_explorer_data(self, subject_category_id=False):
@@ -1025,25 +1016,49 @@ class APSResource(models.Model):
         all_resources = has_notes_res | extra_parents
         filtered_ids = set(all_resources.ids)
 
-        # Resolve notes for every resource and track which source IDs
-        # have already been "rendered" to avoid duplication.
-        rendered_source_ids = set()
-        sections_map = {}  # resource_id -> section dict
+        # Identify parents whose notes are "suppressed" because they have
+        # children that use_parent.  These parents get a heading-only
+        # section (no HTML content).
+        suppressed_parents = set()
+        for res in all_resources:
+            if res.has_notes == 'yes':
+                children_use_parent = any(
+                    c.has_notes == 'use_parent'
+                    for c in (res.child_ids & all_resources)
+                )
+                if children_use_parent:
+                    suppressed_parents.add(res.id)
+
+        # Build sections_map:
+        # - Parents with has_notes='yes' that are suppressed → heading-only
+        # - Children with has_notes='use_parent' → resolved notes + heading
+        # - Other has_notes='yes' resources → own notes + heading
+        # - No deduplication: each child gets unique resolved content
+        sections_map = {}
 
         for res in all_resources:
-            notes_html, source_id = res._resolve_notes()
-            if not notes_html:
-                continue
-            already_rendered = source_id in rendered_source_ids
-            sections_map[res.id] = {
-                'id': res.id,
-                'name': res.name or '',
-                'html': notes_html if not already_rendered else '',
-                'visible': not already_rendered,
-                'resolvedFrom': source_id if source_id != res.id else False,
-            }
-            if not already_rendered:
-                rendered_source_ids.add(source_id)
+            if res.id in suppressed_parents:
+                # Parent whose notes are suppressed: heading only, no HTML
+                sections_map[res.id] = {
+                    'id': res.id,
+                    'name': res.name or '',
+                    'html': '',
+                    'visible': True,
+                    'headingOnly': True,
+                    'resolvedFrom': False,
+                }
+            else:
+                notes_html, source_id = res._resolve_notes()
+                if not notes_html:
+                    continue
+                sections_map[res.id] = {
+                    'id': res.id,
+                    'name': res.name or '',
+                    'html': notes_html,
+                    'visible': True,
+                    'headingOnly': False,
+                    'resolvedFrom': source_id if source_id != res.id else False,
+                }
 
         # Determine root nodes: resources whose parents are NOT in
         # the filtered set (or have no parents at all).
@@ -1086,6 +1101,43 @@ class APSResource(models.Model):
                 node = _build_node(root)
                 if node:
                     tree.append(node)
+
+        # Compute sectionId for every tree node:
+        # 1. Nodes with a visible section → own id
+        # 2. Structural parents → nearest descendant's section id
+        # 3. If no descendant has a section → nearest ancestor's section id
+        def _assign_section_ids(nodes, ancestor_section_id=False):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                if sec and sec['visible']:
+                    node['sectionId'] = node['id']
+                    # This node becomes the ancestor section for its children
+                    _assign_section_ids(
+                        node.get('children', []),
+                        ancestor_section_id=node['id'],
+                    )
+                else:
+                    # Try descendants first
+                    desc_id = _find_first_visible_section(
+                        node.get('children', [])
+                    )
+                    node['sectionId'] = desc_id or ancestor_section_id or False
+                    _assign_section_ids(
+                        node.get('children', []),
+                        ancestor_section_id=node['sectionId'] or ancestor_section_id,
+                    )
+
+        def _find_first_visible_section(nodes):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                if sec and sec['visible']:
+                    return node['id']
+                result = _find_first_visible_section(node.get('children', []))
+                if result:
+                    return result
+            return False
+
+        _assign_section_ids(tree)
 
         # Collect content sections in tree traversal order (depth-first).
         # Parents appear before their children, each level sorted by

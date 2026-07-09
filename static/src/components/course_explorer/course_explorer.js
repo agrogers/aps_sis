@@ -23,7 +23,8 @@ export class CourseExplorerTreeNode extends Component {
     }
 
     get isActive() {
-        return this.props.node.id === this.props.activeSectionId;
+        const sectionId = this.props.node.sectionId || this.props.node.id;
+        return sectionId === this.props.activeSectionId;
     }
 
     get hasChildren() {
@@ -41,7 +42,8 @@ export class CourseExplorerTreeNode extends Component {
 
     onNodeClick(ev) {
         ev.preventDefault();
-        this.props.onNavigate(this.props.node.id);
+        const sectionId = this.props.node.sectionId || this.props.node.id;
+        this.props.onNavigate(sectionId);
     }
 }
 CourseExplorerTreeNode.components = { CourseExplorerTreeNode };
@@ -55,6 +57,7 @@ export class CourseExplorer extends Component {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
         className: { type: String, optional: true },
+        updateActionState: { type: Function, optional: true },
     };
 
     setup() {
@@ -69,7 +72,7 @@ export class CourseExplorer extends Component {
             selectedCategoryId: saved.selectedCategoryId || false,
             tree: [],
             contentSections: [],
-            activeSectionId: saved.activeSectionId || false,
+            activeSectionId: saved.activeSectionId || 0,
             sidebarCollapsed: saved.sidebarCollapsed || false,
         });
 
@@ -87,20 +90,11 @@ export class CourseExplorer extends Component {
 
         onMounted(() => {
             this._restoreScroll();
-            this._setupIntersectionObserver();
+            this._setupScrollObserver();
             this._setupScrollListener();
         });
 
-        onPatched(() => {
-            // Re-observe sections after data changes (e.g. category filter)
-            this._observeSections();
-        });
-
         onWillUnmount(() => {
-            if (this._observer) {
-                this._observer.disconnect();
-                this._observer = null;
-            }
             if (this._scrollTimer) {
                 clearTimeout(this._scrollTimer);
             }
@@ -162,7 +156,7 @@ export class CourseExplorer extends Component {
         if (!this.state.selectedCategoryId) {
             this.state.tree = [];
             this.state.contentSections = [];
-            this.state.activeSectionId = false;
+            this.state.activeSectionId = 0;
             return;
         }
         this.state.loading = true;
@@ -178,7 +172,7 @@ export class CourseExplorer extends Component {
                 ...sec,
                 html: sec.html ? markup(sec.html) : "",
             }));
-            this.state.activeSectionId = false;
+            this.state.activeSectionId = 0;
         } catch (err) {
             console.error("CourseExplorer: failed to load data", err);
             this.state.tree = [];
@@ -241,13 +235,14 @@ export class CourseExplorer extends Component {
         this.state._treeVersion = (this.state._treeVersion || 0) + 1;
     }
 
-    scrollToSection(resourceId) {
+    scrollToSection(sectionId) {
+        if (!sectionId) return;
         const el = this.contentRef.el;
         if (!el) return;
-        const target = el.querySelector(`#ce-section-${resourceId}`);
+        const target = el.querySelector(`#ce-section-${sectionId}`);
         if (target) {
             target.scrollIntoView({ behavior: "smooth", block: "start" });
-            this.state.activeSectionId = resourceId;
+            this.state.activeSectionId = sectionId;
             this._saveStorage();
         }
     }
@@ -268,52 +263,41 @@ export class CourseExplorer extends Component {
         }, 200);
     }
 
-    _setupIntersectionObserver() {
+    _setupScrollObserver() {
         const el = this.contentRef.el;
         if (!el) return;
 
-        this._observer = new IntersectionObserver(
-            (entries) => {
-                // Find the most visible section at the top
-                let bestEntry = null;
-                for (const entry of entries) {
-                    if (entry.isIntersecting) {
-                        if (
-                            !bestEntry ||
-                            entry.boundingClientRect.top <
-                                bestEntry.boundingClientRect.top
-                        ) {
-                            bestEntry = entry;
-                        }
-                    }
-                }
-                if (bestEntry) {
-                    const id = parseInt(bestEntry.target.dataset.resourceId, 10);
-                    if (id && id !== this.state.activeSectionId) {
-                        this.state.activeSectionId = id;
-                        this._highlightTreeNode(id);
-                        this._saveStorage();
-                    }
-                }
-            },
-            {
-                root: el,
-                rootMargin: "-10% 0px -70% 0px",
-                threshold: 0,
-            },
-        );
-
-        // Observe all section elements
-        this._observeSections();
+        // Use a scroll listener to find which section is closest to the
+        // top of the viewport. More reliable than IntersectionObserver
+        // for large sections.
+        el.addEventListener("scroll", this._onScrollDetect.bind(this), {
+            passive: true,
+        });
     }
 
-    _observeSections() {
-        if (!this._observer) return;
-        this._observer.disconnect();
+    _onScrollDetect() {
         const el = this.contentRef.el;
         if (!el) return;
         const sections = el.querySelectorAll(".ce_content_section");
-        sections.forEach((s) => this._observer.observe(s));
+        if (!sections.length) return;
+
+        // Find the last section whose top is at or above the current
+        // scroll position — that's the section whose sticky heading
+        // is visible at the top of the viewport.
+        const scrollTop = el.scrollTop;
+        let bestId = null;
+
+        for (const s of sections) {
+            if (s.offsetTop <= scrollTop + 2) {
+                bestId = parseInt(s.dataset.resourceId, 10);
+            }
+        }
+
+        if (bestId && bestId !== this.state.activeSectionId) {
+            this.state.activeSectionId = bestId;
+            this._highlightTreeNode(bestId);
+            this._saveStorage();
+        }
     }
 
     /** Ensure the active tree node is visible (expand ancestors if needed). */
