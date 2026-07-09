@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!-- Wizard: Create Linked Resources from Field Headings          -->
+    <!-- ============================================================ -->
+
+    <record id="view_create_linked_resources_wizard_form" model="ir.ui.view">
+        <field name="name">aps.create.linked.resources.form</field>
+        <field name="model">aps.create.linked.resources</field>
+        <field name="arch" type="xml">
+            <form string="Create Linked Resources">
+                <group>
+                    <group>
+                        <field name="resource_id" string="Resource" readonly="1"/>
+                        <field name="source_field" widget="radio"/>
+                    </group>
+                </group>
+                <group invisible="heading_count == 0">
+                    <div class="mb-2">
+                        <strong>Headings found:</strong> <field name="heading_count" readonly="1" class="d-inline"/>
+                    </div>
+                    <field name="heading_preview" readonly="1" nolabel="1" max_height="200"/>
+                </group>
+                <group invisible="heading_count > 0">
+                    <div class="text-muted text-center p-3">
+                        No headings found in the selected field.
+                    </div>
+                </group>
+                <footer>
+                    <button name="action_create" string="Create Linked Resources"
+                            type="object" class="btn-primary"
+                            invisible="heading_count == 0"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

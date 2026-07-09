@@ -68,6 +68,7 @@ access_aps_user_media_teacher,aps.user.media.teacher,model_aps_user_media,aps_si
 access_aps_user_media_student,aps.user.media.student,model_aps_user_media,aps_sis.group_aps_student,1,1,1,1
 access_aps_user_media_settings_teacher,aps.user.media.settings.teacher,model_aps_user_media_settings,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_level_teacher,aps.level.teacher,model_aps_level,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_create_linked_resources_wizard_teacher,aps.create.linked.resources.wizard.teacher,model_aps_create_linked_resources,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_level_student,aps.level.student,model_aps_level,aps_sis.group_aps_student,1,0,0,0
 access_aps_level_user,aps.level.user,model_aps_level,base.group_user,1,0,0,0
 access_aps_teacher_teacher,aps.teacher.teacher,model_aps_teacher,aps_sis.group_aps_teacher,1,1,1,1
