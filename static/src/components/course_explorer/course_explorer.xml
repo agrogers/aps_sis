@@ -27,6 +27,30 @@
                t-on-click="onNodeClick">
                 <t t-esc="props.node.name"/>
             </a>
+
+            <!-- Progress indicator -->
+            <t t-if="props.node.progress !== undefined">
+                <div class="ce_progress_cell">
+                    <svg class="ce_progress_ring" viewBox="0 0 36 36">
+                        <path class="ce_progress_ring_bg"
+                              d="M18 2.0845
+                                 a 15.9155 15.9155 0 0 1 0 31.831
+                                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke-width="3"/>
+                        <path class="ce_progress_ring_fill"
+                              t-att-stroke-dasharray="props.node.progress + ', 100'"
+                              d="M18 2.0845
+                                 a 15.9155 15.9155 0 0 1 0 31.831
+                                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke-width="3"/>
+                    </svg>
+                    <span class="ce_progress_text">
+                        <t t-esc="props.node.progress"/>
+                    </span>
+                </div>
+            </t>
         </div>
 
         <!-- Children (if expanded) -->

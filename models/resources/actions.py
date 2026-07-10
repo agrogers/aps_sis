@@ -1009,6 +1009,10 @@ class APSResource(models.Model):
                 node = _build_node(child, depth + 1)
                 if node:
                     child_nodes.append(node)
+            # Random progress value for testing (0-100)
+            import random
+            progress = random.randint(0, 100)
+
             return {
                 'id': resource.id,
                 'name': resource.name or '',
@@ -1016,6 +1020,7 @@ class APSResource(models.Model):
                 'depth': depth,
                 'has_children': bool(child_nodes),
                 'children': child_nodes,
+                'progress': progress,
             }
 
         tree = []
