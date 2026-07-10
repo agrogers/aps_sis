@@ -229,7 +229,7 @@
 .ce_right_pane {
     flex: 1;
     overflow-y: auto;
-    padding: 0px 20px 20px 20px;
+    padding: 0px 10px 20px 10px;
     scroll-behavior: smooth;
 }
 
@@ -258,6 +258,18 @@
     background: var(--o-webclient-background, #fff);
     z-index: 1;
     padding-top: 8px;
+
+    /* Flex layout to put heading and checkbox on the same row */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.ce_section_heading h3 {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .ce_section_body {
@@ -313,6 +325,37 @@
 .ce_section_body table th {
     background-color: var(--o-hover, #f8f9fa);
     font-weight: 600;
+}
+
+/* ── Completion checkbox ─────────────────────────────────────────── */
+
+.ce_completion_row {
+    flex: 0 0 auto;
+}
+
+.ce_completion_label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.95rem;
+}
+
+.ce_completion_checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--o-success, #28a745);
+}
+
+.ce_completion_text {
+    font-weight: 500;
+}
+
+.ce_completion_label:has(.ce_completion_checkbox:checked) .ce_completion_text {
+    color: var(--o-success, #28a745);
+    text-decoration: line-through;
 }
 
 /* ── Loading / empty states ──────────────────────────────────────── */

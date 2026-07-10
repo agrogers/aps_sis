@@ -1,6 +1,6 @@
 import re
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from markupsafe import Markup
 from odoo import _, models, api, fields
@@ -87,7 +87,7 @@ class APSResource(models.Model):
         """
         self.ensure_one()
 
-        result = {
+        result: dict[str, date | bool] = {
             'start_date': False,
             'end_date': False,
             'redline_start_date': False,
@@ -1009,10 +1009,6 @@ class APSResource(models.Model):
                 node = _build_node(child, depth + 1)
                 if node:
                     child_nodes.append(node)
-            # Random progress value for testing (0-100)
-            import random
-            progress = random.randint(0, 100)
-
             return {
                 'id': resource.id,
                 'name': resource.name or '',
@@ -1020,7 +1016,6 @@ class APSResource(models.Model):
                 'depth': depth,
                 'has_children': bool(child_nodes),
                 'children': child_nodes,
-                'progress': progress,
             }
 
         tree = []
@@ -1095,4 +1090,190 @@ class APSResource(models.Model):
         return {
             'tree': tree,
             'contentSections': ordered_sections,
+        }
+
+    # ------------------------------------------------------------------
+    # Course Explorer student progress tracking
+    # ------------------------------------------------------------------
+
+    def _compute_resource_progress(self, student_id):
+        """Compute progress for a single resource for a given student.
+
+        Returns a dict with:
+          - progress: float 0-100
+          - hasCheckbox: bool (True if this resource provided notes to the section)
+          - submissionState: str or None
+        """
+        self.ensure_one()
+        result = {
+            'progress': 0.0,
+            'hasCheckbox': False,
+            'submissionState': None,
+        }
+
+        # Find the task for this resource and student, then get the submission.
+        # We search via task because submission.student_id and
+        # submission.resource_id are non-stored related fields, making direct
+        # searches on them unreliable.
+        task = self.env['aps.resource.task'].search([
+            ('resource_id', '=', self.id),
+            ('student_id', '=', student_id),
+        ], limit=1)
+
+        if task:
+            submission = self.env['aps.resource.submission'].search([
+                ('task_id', '=', task.id),
+            ], order='date_assigned desc, id desc', limit=1)
+            if submission:
+                result['progress'] = submission.progress or 0.0
+                result['submissionState'] = submission.state
+
+        return result
+
+    def _compute_children_average_progress(self, children_nodes, student_id):
+        """Compute average progress from child tree nodes."""
+        if not children_nodes:
+            return 0.0
+        total = sum(child.get('progress', 0.0) for child in children_nodes)
+        return total / len(children_nodes) if children_nodes else 0.0
+
+    @api.model
+    def get_course_explorer_progress(self, student_id):
+        """Return progress data for all resources in the tree for a given student.
+
+        Includes both content resources (has_notes != 'no') and structural
+        parent resources (has_notes == 'no') that serve as hierarchy nodes,
+        so the tree always has complete progress data.
+
+        Args:
+            student_id: partner ID of the current student
+
+        Returns:
+            dict mapping resource_id -> progress data
+        """
+        if not student_id:
+            return {}
+
+        # Content resources
+        has_notes_res = self.search([
+            ('show_in_hierarchy', '=', True),
+        ])
+
+        # Structural parents: resources that are ancestors
+        # of content resources — they need progress data for the tree display.
+        extra_parents = self.env['aps.resources']
+        for res in has_notes_res:
+            for parent in res.parent_ids:
+                if parent.show_in_hierarchy:
+                    extra_parents |= parent
+
+        all_resources = has_notes_res | extra_parents
+
+        result = {}
+        for res in all_resources:
+            data = res._compute_resource_progress(student_id)
+            result[res.id] = data
+
+        return result
+
+    @api.model
+    def toggle_resource_completion(self, resource_id):
+        """Toggle the completion state of a resource for the current student.
+
+        - If no submission exists, create one (task + submission) with state='submitted' and progress=100
+        - If submission exists with state='submitted', change to state='assigned' and progress=0
+        - If submission exists with state='assigned', change to state='submitted' and progress=100
+
+        Returns:
+            dict with new state, progress, and parent progress updates
+        """
+        student = self.env.user.partner_id
+        if not student:
+            return {'error': 'No student partner found'}
+
+        resource = self.browse(resource_id)
+        if not resource.exists():
+            return {'error': 'Resource not found'}
+
+        # Find or create task
+        task = self.env['aps.resource.task'].search([
+            ('resource_id', '=', resource.id),
+            ('student_id', '=', student.id),
+        ], limit=1)
+
+        if not task:
+            task = self.env['aps.resource.task'].create({
+                'resource_id': resource.id,
+                'student_id': student.id,
+                'state': 'assigned',
+            })
+
+        # Find existing submission
+        submission = self.env['aps.resource.submission'].search([
+            ('task_id', '=', task.id),
+        ], order='date_assigned desc, id desc', limit=1)
+
+        if submission:
+            # Toggle state
+            if submission.state == 'submitted':
+                submission.write({
+                    'state': 'assigned',
+                    'progress': 0.0,
+                })
+                new_state = 'assigned'
+                new_progress = 0.0
+            else:
+                submission.write({
+                    'state': 'submitted',
+                    'date_submitted': fields.Date.today(),
+                    'progress': 100.0,
+                })
+                new_state = 'submitted'
+                new_progress = 100.0
+        else:
+            # Create new submission with submitted state
+            submission = self.env['aps.resource.submission'].create({
+                'task_id': task.id,
+                'submission_name': resource.display_name or resource.name or '',
+                'date_assigned': fields.Date.today(),
+                'state': 'submitted',
+                'date_submitted': fields.Date.today(),
+                'progress': 100.0,
+            })
+            new_state = 'submitted'
+            new_progress = 100.0
+
+        # Collect parent updates from the auto-propagated data.
+        # Walk the full ancestor chain (not just immediate parents) so
+        # the UI can update progress rings on every level.
+        parent_updates = {}
+        visited = set()
+        to_process = list(resource.parent_ids)
+        while to_process:
+            parent = to_process.pop(0)
+            if parent.id in visited:
+                continue
+            visited.add(parent.id)
+            parent_task = self.env['aps.resource.task'].search([
+                ('resource_id', '=', parent.id),
+                ('student_id', '=', student.id),
+            ], limit=1)
+            if parent_task:
+                parent_sub = self.env['aps.resource.submission'].search([
+                    ('task_id', '=', parent_task.id),
+                ], order='date_assigned desc, id desc', limit=1)
+                if parent_sub:
+                    parent_updates[parent.id] = {
+                        'progress': parent_sub.progress,
+                        'name': parent.name or '',
+                    }
+            for grandparent in parent.parent_ids:
+                if grandparent.id not in visited:
+                    to_process.append(grandparent)
+
+        return {
+            'resourceId': resource.id,
+            'newState': new_state,
+            'newProgress': new_progress,
+            'parentUpdates': parent_updates,
         }

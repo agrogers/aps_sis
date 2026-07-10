@@ -47,7 +47,7 @@
                               stroke-width="3"/>
                     </svg>
                     <span class="ce_progress_text">
-                        <t t-esc="props.node.progress"/>
+                        <t t-esc="Math.round(props.node.progress)"/>
                     </span>
                 </div>
             </t>
@@ -109,7 +109,7 @@
                                 node="root"
                                 activeSectionId="state.activeSectionId"
                                 depth="0"
-                                expandedIds="_expandedIds"
+                                expandedIds="state.expandedNodeIds"
                                 onToggle="(id) => this.toggleNode(id)"
                                 onNavigate="(sectionId) => this.scrollToSection(sectionId)"/>
                         </t>
@@ -142,9 +142,27 @@
                                  class="ce_content_section"
                                  t-att-id="'ce-section-' + section.id"
                                  t-att-data-resource-id="section.id">
-                            <h3 class="ce_section_heading">
-                                <t t-esc="section.name"/>
-                            </h3>
+                            <div class="ce_section_heading">
+                                <h3 >
+                                    <t t-esc="section.name"/>
+                                </h3>
+                                <!-- Completion checkbox for resources that provided notes -->
+                                <t t-if="section.hasCheckbox">
+                                    <div class="ce_completion_row">
+                                        <label class="ce_completion_label">
+                                            <input type="checkbox"
+                                                class="ce_completion_checkbox"
+                                                t-att-checked="section.checked"
+                                                t-on-change="() => this.onToggleCompletion(section.id)"/>
+                                            <span class="ce_completion_text">
+                                                <t t-if="section.checked">Completed</t>
+                                                <t t-else="">Completed</t>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </t>
+
+                            </div>
                             <div class="ce_section_body oe_calculateKioskHeight"
                                  t-out="section.html"/>
                         </section>
