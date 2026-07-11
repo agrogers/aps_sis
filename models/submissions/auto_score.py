@@ -1,4 +1,4 @@
-from odoo import models, api
+from odoo import models, api, fields
 from .model import sentinel_zero
 import logging
 
@@ -150,5 +150,88 @@ class APSResourceSubmissionAutoScore(models.Model):
 
                 if parent_submission.auto_score:
                     parent_submission._recalculate_score_from_children()
+
+    def _propagate_progress_to_parents(self):
+        """After a progress/state change on this submission, recompute progress
+        on the immediate parent's submission. The parent's write() call will
+        cascade the update upward through the hierarchy automatically.
+
+        Progress for a parent is the average of its hierarchy-visible
+        children's progress (where show_in_hierarchy=True):
+            avg = sum(child.progress for child in visible_children)
+                  / len(visible_children)
+
+        The parent's own submission is included in the average when it has
+        notes (has_notes != 'no') AND none of its children use 'use_parent'.
+        If any child borrows the parent's notes via 'use_parent', the parent
+        is excluded to avoid double-counting.
+
+        Children with *no* submission at all are treated as progress=0.
+        """
+        for record in self:
+            if not record.resource_id or not record.resource_id.parent_ids:
+                continue
+
+            for parent_res in record.resource_id.parent_ids:
+                # Ensure a task exists for this student + parent resource
+                parent_task = self.env['aps.resource.task'].search([
+                    ('resource_id', '=', parent_res.id),
+                    ('student_id', '=', record.student_id.id),
+                ], limit=1)
+                if not parent_task:
+                    parent_task = self.env['aps.resource.task'].create({
+                        'resource_id': parent_res.id,
+                        'student_id': record.student_id.id,
+                        'state': 'assigned',
+                    })
+
+                # Find or create the parent submission (same label if present)
+                parent_domain = [('task_id', '=', parent_task.id)]
+                if record.submission_label:
+                    parent_domain.append(('submission_label', '=', record.submission_label))
+
+                parent_submission = self.search(parent_domain, order='create_date desc', limit=1)
+                if not parent_submission:
+                    parent_submission = self.create({
+                        'task_id': parent_task.id,
+                        'submission_name': parent_res.display_name or parent_res.name or '',
+                        'submission_label': record.submission_label or False,
+                        'date_assigned': fields.Date.today(),
+                        'state': 'assigned',
+                        'progress': 0.0,
+                    })
+
+                # Compute average progress from children that have content.
+                # Children with has_notes='no' are structural/organisational
+                # nodes with nothing for the student to complete, so they
+                # are excluded from the average (same reason they are
+                # hidden from the course explorer tree).
+                children_progress = []
+                hierarchy_children = parent_res.child_ids.filtered(
+                    lambda c: c.show_in_hierarchy and c.has_notes != 'no'
+                )
+                for child in hierarchy_children:
+                    child_sub = self.search([
+                        ('resource_id', '=', child.id),
+                        ('student_id', '=', record.student_id.id),
+                    ], order='date_assigned desc, id desc', limit=1)
+                    children_progress.append(child_sub.progress if child_sub else 0.0)
+
+                # Include the parent's own progress in the average when it
+                # has notes and none of its children borrow them via
+                # "use_parent".  If any child sets has_notes='use_parent'
+                # the parent's notes are already accounted for by that
+                # child's submission, so we skip the parent to avoid
+                # double-counting.
+                has_own_notes = parent_res.has_notes not in ('no', False)
+                any_child_uses_parent_notes = any(
+                    c.has_notes == 'use_parent' for c in parent_res.child_ids
+                )
+                if has_own_notes and not any_child_uses_parent_notes:
+                    children_progress.append(record.progress or 0.0)
+
+                if children_progress:
+                    avg = round(sum(children_progress) / len(children_progress), 1)
+                    parent_submission.write({'progress': avg})
 
 # endregion - Auto Score / Auto Answer

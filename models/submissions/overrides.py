@@ -93,6 +93,10 @@ class APSResourceSubmissionOverrides(models.Model):
             if quiz_tasks:
                 quiz_tasks._update_progress_from_quizzes()
 
+        # When state or progress changes, propagate progress up the hierarchy
+        if 'state' in vals or 'progress' in vals:
+            self._propagate_progress_to_parents()
+
         if 'review_requested_by' in vals:
             for record in self:
                 old_ids = old_faculty_map.get(record.id, set())
@@ -182,6 +186,9 @@ class APSResourceSubmissionOverrides(models.Model):
             # Subscribe all relevant partners
             if partner_ids:
                 submission.message_subscribe(partner_ids=list(set(partner_ids)))
+        
+        # Propagate progress up the hierarchy for newly created submissions
+        submissions._propagate_progress_to_parents()
         
         return submissions
 

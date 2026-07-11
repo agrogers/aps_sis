@@ -1,6 +1,9 @@
 import { Component, useState, onWillStart, onMounted, onPatched, onWillUnmount, useRef, markup } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { user } from "@web/core/user";
+import { ImageViewerDialog } from "@aui_enhancements/js/image_viewer_dialog";
+import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
 
 const STORAGE_KEY = "aps_course_explorer";
 
@@ -19,10 +22,24 @@ export class CourseExplorerTreeNode extends Component {
     static components = {}; // self-referential; set after class def
 
     get isExpanded() {
-        return this.props.expandedIds.has(this.props.node.id);
+        // expandedIds may be an array (reactive) or a Set
+        const ids = this.props.expandedIds;
+        return ids.has
+            ? ids.has(this.props.node.id)
+            : ids.includes(this.props.node.id);
     }
 
     get isActive() {
+        // Highlight this node if the active section belongs to it
+        // (i.e., the active section is in this node's subtree)
+        const highlightIds = this.props.node.highlightIds;
+        if (highlightIds && this.props.activeSectionId) {
+            // highlightIds may be a Set or an array (JSON-serialized)
+            const check = highlightIds.has
+                ? highlightIds.has(this.props.activeSectionId)
+                : highlightIds.includes(this.props.activeSectionId);
+            if (check) return true;
+        }
         const sectionId = this.props.node.sectionId || this.props.node.id;
         return sectionId === this.props.activeSectionId;
     }
@@ -33,6 +50,10 @@ export class CourseExplorerTreeNode extends Component {
 
     get indentStyle() {
         return `padding-left: ${this.props.depth * 20}px`;
+    }
+
+    get avgColor() {
+        return getColorForPercent(this.props.node.avgWeightedResult || 0);
     }
 
     onToggleClick(ev) {
@@ -58,10 +79,13 @@ export class CourseExplorer extends Component {
         actionId: { type: Number, optional: true },
         className: { type: String, optional: true },
         updateActionState: { type: Function, optional: true },
+        globalState: { type: Object, optional: true },
     };
 
     setup() {
         this.orm = useService("orm");
+        this.dialog = useService("dialog");
+        this.action = useService("action");
         this.contentRef = useRef("contentPane");
 
         const saved = this._loadStorage();
@@ -76,7 +100,8 @@ export class CourseExplorer extends Component {
             sidebarCollapsed: saved.sidebarCollapsed || false,
         });
 
-        // Expanded node IDs tracked as a plain Set (not reactive)
+        // Expanded node IDs tracked reactively as an array (for OWL reactivity)
+        this.state.expandedNodeIds = saved.expandedNodeIds || [];
         this._expandedIds = new Set(saved.expandedNodeIds || []);
         // Debounce timer for scroll persistence
         this._scrollTimer = null;
@@ -92,6 +117,7 @@ export class CourseExplorer extends Component {
             this._restoreScroll();
             this._setupScrollObserver();
             this._setupScrollListener();
+            this._setupImageClickHandler();
         });
 
         onWillUnmount(() => {
@@ -173,6 +199,8 @@ export class CourseExplorer extends Component {
                 html: sec.html ? markup(sec.html) : "",
             }));
             this.state.activeSectionId = 0;
+            // Fetch student progress data
+            await this._loadProgressData();
         } catch (err) {
             console.error("CourseExplorer: failed to load data", err);
             this.state.tree = [];
@@ -182,12 +210,107 @@ export class CourseExplorer extends Component {
         }
     }
 
+    async _loadProgressData() {
+        try {
+            // Current user's partner ID is available directly from the user service
+            const partnerId = user.partnerId;
+            if (!partnerId) return;
+            const progressData = await this.orm.call(
+                "aps.resources",
+                "get_course_explorer_progress",
+                [partnerId],
+            );
+            // Apply progress to tree nodes
+            this._applyProgressToTree(this.state.tree, progressData);
+            // Apply progress to content sections (hasCheckbox for visible sections)
+            this.state.contentSections = this.state.contentSections.map((sec) => {
+                const pd = progressData[sec.id];
+                return {
+                    ...sec,
+                    hasCheckbox: !sec.headingOnly && sec.visible && !!pd,
+                    checked: pd ? pd.submissionState === "submitted" : false,
+                    progress: pd ? pd.progress : 0,
+                };
+            });
+            this._forceTreeUpdate();
+        } catch (err) {
+            console.error("CourseExplorer: failed to load progress", err);
+        }
+    }
+
+    _applyProgressToTree(nodes, progressData) {
+        for (const node of nodes) {
+            const pd = progressData[node.id];
+            if (pd) {
+                node.progress = pd.progress || 0;
+                node.submissionState = pd.submissionState || null;
+            } else {
+                node.progress = 0;
+                node.submissionState = null;
+            }
+            if (node.children) {
+                this._applyProgressToTree(node.children, progressData);
+            }
+        }
+    }
+
+    async onToggleCompletion(resourceId) {
+        try {
+            const result = await this.orm.call(
+                "aps.resources",
+                "toggle_resource_completion",
+                [resourceId],
+            );
+            if (result.error) {
+                console.error("CourseExplorer: toggle failed", result.error);
+                return;
+            }
+            // Update the content section
+            this.state.contentSections = this.state.contentSections.map((sec) => {
+                if (sec.id === resourceId) {
+                    return {
+                        ...sec,
+                        checked: result.newState === "submitted",
+                        progress: result.newProgress,
+                    };
+                }
+                return sec;
+            });
+            // Update tree node progress
+            this._updateTreeNodeProgress(this.state.tree, resourceId, result.newProgress, result.newState);
+            // Update parent progress
+            if (result.parentUpdates) {
+                for (const [parentId, update] of Object.entries(result.parentUpdates)) {
+                    this._updateTreeNodeProgress(this.state.tree, parseInt(parentId), update.progress, null);
+                }
+            }
+            this._forceTreeUpdate();
+        } catch (err) {
+            console.error("CourseExplorer: toggle completion failed", err);
+        }
+    }
+
+    _updateTreeNodeProgress(nodes, resourceId, progress, state) {
+        for (const node of nodes) {
+            if (node.id === resourceId) {
+                node.progress = progress;
+                if (state !== null) node.submissionState = state;
+                return true;
+            }
+            if (node.children && this._updateTreeNodeProgress(node.children, resourceId, progress, state)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ── User actions ─────────────────────────────────────────────────
 
     async onCategoryChange(ev) {
         const val = ev.target.value;
         this.state.selectedCategoryId = val ? parseInt(val, 10) : false;
         this._expandedIds.clear();
+        this.state.expandedNodeIds = [];
         this._saveStorage();
         await this._loadData();
         this._restoreScroll();
@@ -204,20 +327,20 @@ export class CourseExplorer extends Component {
         } else {
             this._expandedIds.add(nodeId);
         }
-        // Trigger re-render by reassigning a reference (Set is not reactive)
-        this._forceTreeUpdate();
+        // Sync reactive state with the Set
+        this.state.expandedNodeIds = [...this._expandedIds];
         this._saveStorage();
     }
 
     expandAll() {
         this._collectAllIds(this.state.tree);
-        this._forceTreeUpdate();
+        this.state.expandedNodeIds = [...this._expandedIds];
         this._saveStorage();
     }
 
     collapseAll() {
         this._expandedIds.clear();
-        this._forceTreeUpdate();
+        this.state.expandedNodeIds = [];
         this._saveStorage();
     }
 
@@ -308,6 +431,85 @@ export class CourseExplorer extends Component {
         const nodeEl = treeEl.querySelector(`[data-node-id="${resourceId}"]`);
         if (nodeEl) {
             nodeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    }
+
+    // ── Image viewer ────────────────────────────────────────────────
+
+    _setupImageClickHandler() {
+        const el = this.contentRef.el;
+        if (!el) return;
+        el.addEventListener("click", this._onContentClick.bind(this));
+    }
+
+    _onContentClick(ev) {
+        const img = ev.target.closest(".ce_section_body img");
+        if (!img) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const src = img.getAttribute("src") || img.src;
+        if (!src) return;
+
+        // Resolve the clicked image URL to absolute
+        let absoluteSrc = src;
+        try {
+            absoluteSrc = new URL(src, window.location.href).href;
+        } catch {
+            // Keep original if URL parsing fails.
+        }
+
+        // Collect ALL images from the content pane in document order,
+        // excluding images inside page-ref links (same logic as the
+        // standard image_viewer_button service).
+        const embeddedImages = [];
+        let clickedIndex = 0;
+        const el = this.contentRef.el;
+        if (el) {
+            const allImgs = Array.from(el.querySelectorAll(".ce_section_body img")).filter(
+                (i) => (i.getAttribute("src") || i.src)
+            );
+            allImgs.forEach((i, idx) => {
+                const imgSrc = i.getAttribute("src") || i.src || "";
+                let absUrl = imgSrc;
+                try {
+                    absUrl = new URL(imgSrc, window.location.href).href;
+                } catch {
+                    // Keep original.
+                }
+                embeddedImages.push(absUrl);
+                if (i === img) {
+                    clickedIndex = idx;
+                }
+            });
+        }
+
+        const hasMultiple = embeddedImages.length > 1;
+        this.dialog.add(ImageViewerDialog, {
+            imageConfig: {
+                directUrl: absoluteSrc,
+                imageUrl: absoluteSrc,
+                embeddedImages: hasMultiple ? embeddedImages : [],
+                pageNumber: hasMultiple ? clickedIndex + 1 : 1,
+            },
+        });
+    }
+
+    // ── Quiz submission ─────────────────────────────────────────────
+
+    async openQuizSubmission(ev, quizId) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        try {
+            const result = await this.orm.call(
+                "aps.resources",
+                "action_get_or_create_submission",
+                [quizId],
+            );
+            if (result) {
+                this.action.doAction(result);
+            }
+        } catch (err) {
+            console.error("CourseExplorer: failed to open quiz submission", err);
         }
     }
 

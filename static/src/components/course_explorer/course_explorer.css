@@ -146,6 +146,53 @@
     font-weight: 600;
 }
 
+/* ── Progress indicator ──────────────────────────────────────────── */
+
+.ce_progress_cell {
+    width: 24px;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ce_progress_ring {
+    width: 21px;
+    height: 21px;
+    transform: rotate(-90deg);
+}
+
+.ce_progress_ring_bg {
+    stroke: var(--o-border-color, #e0e0e0);
+    opacity: 0.3;
+}
+
+.ce_progress_ring_fill {
+    stroke: var(--o-primary, #007bff);
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.3s ease;
+}
+
+.ce_progress_text {
+    position: absolute;
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--o-text, #333);
+    pointer-events: none;
+}
+
+.ce_progress_cell {
+    position: relative;
+}
+
+.ce_progress_cell .ce_progress_text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
 /* ── Sidebar toggle button ───────────────────────────────────────── */
 
 .ce_sidebar_toggle {
@@ -182,7 +229,7 @@
 .ce_right_pane {
     flex: 1;
     overflow-y: auto;
-    padding: 0px 20px 20px 20px;
+    padding: 0px 10px 20px 10px;
     scroll-behavior: smooth;
 }
 
@@ -211,6 +258,18 @@
     background: var(--o-webclient-background, #fff);
     z-index: 1;
     padding-top: 8px;
+
+    /* Flex layout to put heading and checkbox on the same row */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.ce_section_heading h3 {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .ce_section_body {
@@ -236,6 +295,12 @@
     max-width: 100%;
     height: auto;
     border-radius: 4px;
+    cursor: zoom-in;
+    transition: opacity 0.15s;
+}
+
+.ce_section_body img:hover {
+    opacity: 0.85;
 }
 
 .ce_section_body ul,
@@ -260,6 +325,202 @@
 .ce_section_body table th {
     background-color: var(--o-hover, #f8f9fa);
     font-weight: 600;
+}
+
+/* ── Completion checkbox ─────────────────────────────────────────── */
+
+.ce_completion_row {
+    flex: 0 0 auto;
+}
+
+.ce_completion_label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.95rem;
+}
+
+.ce_completion_checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--o-success, #28a745);
+}
+
+.ce_completion_text {
+    font-weight: 500;
+}
+
+.ce_completion_label:has(.ce_completion_checkbox:checked) .ce_completion_text {
+    color: var(--o-success, #28a745);
+    text-decoration: line-through;
+}
+
+/* ── Quiz average badge in section heading ─────────────────────────── */
+
+.ce_quiz_avg_badge {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--o-primary-bg, #e7f1ff);
+    color: var(--o-primary, #007bff);
+    white-space: nowrap;
+}
+
+/* ── Quiz box ──────────────────────────────────────────────────────── */
+
+.ce_quiz_box {
+    margin-top: 16px;
+    border: 1px solid var(--o-border-color, #dee2e6);
+    border-radius: 6px;
+    background: var(--o-hover, #f8f9fa);
+    overflow: hidden;
+}
+
+.ce_quiz_box_header {
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: var(--o-primary-bg, #e7f1ff);
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    color: var(--o-primary, #007bff);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Quiz table ─────────────────────────────────────────────────────── */
+
+.ce_quiz_table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.ce_quiz_table thead th {
+    padding: 6px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--o-text-muted, #6c757d);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    background: var(--o-webclient-background, #fff);
+}
+
+.ce_quiz_th_num {
+    text-align: center !important;
+    width: 100px;
+}
+
+.ce_quiz_th_state {
+    text-align: center !important;
+    width: 110px;
+}
+
+.ce_quiz_row {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.ce_quiz_row:hover {
+    background: var(--o-primary-bg, #e7f1ff);
+}
+
+.ce_quiz_row td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--o-border-color, #eee);
+    vertical-align: middle;
+}
+
+.ce_quiz_name {
+    font-weight: 500;
+    color: var(--o-text, #333);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.ce_quiz_num {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--o-text, #333);
+}
+
+/* ── Quiz state badges ─────────────────────────────────────────────── */
+
+.ce_quiz_state {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    text-transform: capitalize;
+}
+
+.ce_quiz_state_unassigned {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.ce_quiz_state_created {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.ce_quiz_state_assigned {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.ce_quiz_state_reassigned {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.ce_quiz_state_due {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.ce_quiz_state_early {
+    background: #d4edda;
+    color: #155724;
+}
+
+.ce_quiz_state_on-time {
+    background: #d4edda;
+    color: #155724;
+}
+
+.ce_quiz_state_submitted {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.ce_quiz_state_overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.ce_quiz_state_complete {
+    background: #d4edda;
+    color: #155724;
+}
+
+.ce_quiz_state_late {
+    background: #f8d7da;
+    color: #721c24;
 }
 
 /* ── Loading / empty states ──────────────────────────────────────── */

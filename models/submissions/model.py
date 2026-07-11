@@ -67,6 +67,12 @@ class APSResourceSubmission(models.Model):
         ], string='State', default='assigned', 
         tracking=True,
         required=True)
+    progress = fields.Float(
+        string='Progress %',
+        default=0.0,
+        digits=(5, 1),
+        help='0 for assigned, 100 for submitted/finalised. Used by Course Explorer for student progress tracking.',
+    )
     date_assigned = fields.Date(
         string='Date Assigned',
         default=fields.Date.today)

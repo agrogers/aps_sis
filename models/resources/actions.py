@@ -1,6 +1,6 @@
 import re
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from markupsafe import Markup
 from odoo import _, models, api, fields
@@ -87,7 +87,7 @@ class APSResource(models.Model):
         """
         self.ensure_one()
 
-        result = {
+        result: dict[str, date | bool] = {
             'start_date': False,
             'end_date': False,
             'redline_start_date': False,
@@ -868,6 +868,18 @@ class APSResource(models.Model):
             for c in categories.sorted('name')
         ]
 
+    @staticmethod
+    def _add_lazy_loading(html):
+        """Add loading="lazy" to all <img> tags that don't already have it."""
+        if not html:
+            return html
+        # Match <img tags that don't already have loading= attribute
+        return re.sub(
+            r'(<img\b)(?![^>]*\bloading=)',
+            r'\1 loading="lazy"',
+            html,
+        )
+
     def _resolve_notes(self):
         """Return the resource's own notes HTML, if it has any.
 
@@ -876,6 +888,8 @@ class APSResource(models.Model):
         """
         self.ensure_one()
         html = self.notes or ''
+        if html:
+            html = self._add_lazy_loading(html)
         return Markup(html) if html else False, self.id
 
     @api.model
@@ -1015,18 +1029,21 @@ class APSResource(models.Model):
         # 1. Nodes with a visible section → own id
         # 2. Structural parents → nearest descendant's section id
         # 3. If no descendant has a section → nearest ancestor's section id
+        #
+        # Also compute highlightIds: set of all section IDs that would
+        # "belong" to this node (self + all descendants). Used so that
+        # when a child is active but hidden (parent collapsed), the
+        # parent gets highlighted instead.
         def _assign_section_ids(nodes, ancestor_section_id=False):
             for node in nodes:
                 sec = sections_map.get(node['id'])
                 if sec and sec['visible']:
                     node['sectionId'] = node['id']
-                    # This node becomes the ancestor section for its children
                     _assign_section_ids(
                         node.get('children', []),
                         ancestor_section_id=node['id'],
                     )
                 else:
-                    # Try descendants first
                     desc_id = _find_first_visible_section(
                         node.get('children', [])
                     )
@@ -1035,6 +1052,12 @@ class APSResource(models.Model):
                         node.get('children', []),
                         ancestor_section_id=node['sectionId'] or ancestor_section_id,
                     )
+                # Collect all section IDs that belong to this subtree
+                node['highlightIds'] = set()
+                if node.get('sectionId'):
+                    node['highlightIds'].add(node['sectionId'])
+                for child in node.get('children', []):
+                    node['highlightIds'].update(child.get('highlightIds', set()))
 
         def _find_first_visible_section(nodes):
             for node in nodes:
@@ -1047,6 +1070,75 @@ class APSResource(models.Model):
             return False
 
         _assign_section_ids(tree)
+
+        # Enrich each section with quiz-type child/supporting resources.
+        # A quiz is any resource whose type has assessment=True.
+        # Pre-fetch task data for the current student in a single query.
+        student = self.env.user.partner_id
+        quiz_resource_ids = set()
+        for res in all_resources:
+            for child in res.child_ids:
+                if child.type_id and child.type_id.assessment:
+                    quiz_resource_ids.add(child.id)
+            for sup in res.supporting_resource_ids:
+                if sup.type_id and sup.type_id.assessment:
+                    quiz_resource_ids.add(sup.id)
+
+        task_map = {}  # resource_id -> task record
+        if quiz_resource_ids and student:
+            tasks = self.env['aps.resource.task'].search([
+                ('resource_id', 'in', list(quiz_resource_ids)),
+                ('student_id', '=', student.id),
+            ])
+            for task in tasks:
+                task_map[task.resource_id.id] = task
+
+        for res in all_resources:
+            sec = sections_map.get(res.id)
+            if not sec:
+                continue
+            quizzes = []
+            seen_quiz_ids = set()
+            # Child resources that are quizzes
+            for child in res.child_ids:
+                if child.type_id and child.type_id.assessment and child.id not in seen_quiz_ids:
+                    seen_quiz_ids.add(child.id)
+                    task = task_map.get(child.id)
+                    quizzes.append({
+                        'id': child.id,
+                        'name': child.name or '',
+                        'typeName': child.type_id.name or '',
+                        'weightedResult': task.weighted_result if task else 0,
+                        'attempts': task.submission_count if task else 0,
+                        'lastResult': task.last_result if task else 0,
+                        'state': task.state if task else 'unassigned',
+                    })
+            # Supporting resources that are quizzes
+            for sup in res.supporting_resource_ids:
+                if sup.type_id and sup.type_id.assessment and sup.id not in seen_quiz_ids:
+                    seen_quiz_ids.add(sup.id)
+                    task = task_map.get(sup.id)
+                    quizzes.append({
+                        'id': sup.id,
+                        'name': sup.name or '',
+                        'typeName': sup.type_id.name or '',
+                        'weightedResult': task.weighted_result if task else 0,
+                        'attempts': task.submission_count if task else 0,
+                        'lastResult': task.last_result if task else 0,
+                        'state': task.state if task else 'unassigned',
+                    })
+            sec['quizzes'] = quizzes
+            # Average weighted result across quizzes for this section
+            wrs = [q['weightedResult'] for q in quizzes if q.get('weightedResult')]
+            sec['avgWeightedResult'] = round(sum(wrs) / len(wrs), 1) if wrs else 0
+
+        # Propagate avgWeightedResult to tree nodes
+        def _apply_avg_to_tree(nodes):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                node['avgWeightedResult'] = sec.get('avgWeightedResult', 0) if sec else 0
+                _apply_avg_to_tree(node.get('children', []))
+        _apply_avg_to_tree(tree)
 
         # Collect content sections in tree traversal order (depth-first).
         # Parents appear before their children, each level sorted by
@@ -1067,4 +1159,190 @@ class APSResource(models.Model):
         return {
             'tree': tree,
             'contentSections': ordered_sections,
+        }
+
+    # ------------------------------------------------------------------
+    # Course Explorer student progress tracking
+    # ------------------------------------------------------------------
+
+    def _compute_resource_progress(self, student_id):
+        """Compute progress for a single resource for a given student.
+
+        Returns a dict with:
+          - progress: float 0-100
+          - hasCheckbox: bool (True if this resource provided notes to the section)
+          - submissionState: str or None
+        """
+        self.ensure_one()
+        result = {
+            'progress': 0.0,
+            'hasCheckbox': False,
+            'submissionState': None,
+        }
+
+        # Find the task for this resource and student, then get the submission.
+        # We search via task because submission.student_id and
+        # submission.resource_id are non-stored related fields, making direct
+        # searches on them unreliable.
+        task = self.env['aps.resource.task'].search([
+            ('resource_id', '=', self.id),
+            ('student_id', '=', student_id),
+        ], limit=1)
+
+        if task:
+            submission = self.env['aps.resource.submission'].search([
+                ('task_id', '=', task.id),
+            ], order='date_assigned desc, id desc', limit=1)
+            if submission:
+                result['progress'] = submission.progress or 0.0
+                result['submissionState'] = submission.state
+
+        return result
+
+    def _compute_children_average_progress(self, children_nodes, student_id):
+        """Compute average progress from child tree nodes."""
+        if not children_nodes:
+            return 0.0
+        total = sum(child.get('progress', 0.0) for child in children_nodes)
+        return total / len(children_nodes) if children_nodes else 0.0
+
+    @api.model
+    def get_course_explorer_progress(self, student_id):
+        """Return progress data for all resources in the tree for a given student.
+
+        Includes both content resources (has_notes != 'no') and structural
+        parent resources (has_notes == 'no') that serve as hierarchy nodes,
+        so the tree always has complete progress data.
+
+        Args:
+            student_id: partner ID of the current student
+
+        Returns:
+            dict mapping resource_id -> progress data
+        """
+        if not student_id:
+            return {}
+
+        # Content resources
+        has_notes_res = self.search([
+            ('show_in_hierarchy', '=', True),
+        ])
+
+        # Structural parents: resources that are ancestors
+        # of content resources — they need progress data for the tree display.
+        extra_parents = self.env['aps.resources']
+        for res in has_notes_res:
+            for parent in res.parent_ids:
+                if parent.show_in_hierarchy:
+                    extra_parents |= parent
+
+        all_resources = has_notes_res | extra_parents
+
+        result = {}
+        for res in all_resources:
+            data = res._compute_resource_progress(student_id)
+            result[res.id] = data
+
+        return result
+
+    @api.model
+    def toggle_resource_completion(self, resource_id):
+        """Toggle the completion state of a resource for the current student.
+
+        - If no submission exists, create one (task + submission) with state='submitted' and progress=100
+        - If submission exists with state='submitted', change to state='assigned' and progress=0
+        - If submission exists with state='assigned', change to state='submitted' and progress=100
+
+        Returns:
+            dict with new state, progress, and parent progress updates
+        """
+        student = self.env.user.partner_id
+        if not student:
+            return {'error': 'No student partner found'}
+
+        resource = self.browse(resource_id)
+        if not resource.exists():
+            return {'error': 'Resource not found'}
+
+        # Find or create task
+        task = self.env['aps.resource.task'].search([
+            ('resource_id', '=', resource.id),
+            ('student_id', '=', student.id),
+        ], limit=1)
+
+        if not task:
+            task = self.env['aps.resource.task'].create({
+                'resource_id': resource.id,
+                'student_id': student.id,
+                'state': 'assigned',
+            })
+
+        # Find existing submission
+        submission = self.env['aps.resource.submission'].search([
+            ('task_id', '=', task.id),
+        ], order='date_assigned desc, id desc', limit=1)
+
+        if submission:
+            # Toggle state
+            if submission.state == 'submitted':
+                submission.write({
+                    'state': 'assigned',
+                    'progress': 0.0,
+                })
+                new_state = 'assigned'
+                new_progress = 0.0
+            else:
+                submission.write({
+                    'state': 'submitted',
+                    'date_submitted': fields.Date.today(),
+                    'progress': 100.0,
+                })
+                new_state = 'submitted'
+                new_progress = 100.0
+        else:
+            # Create new submission with submitted state
+            submission = self.env['aps.resource.submission'].create({
+                'task_id': task.id,
+                'submission_name': resource.display_name or resource.name or '',
+                'date_assigned': fields.Date.today(),
+                'state': 'submitted',
+                'date_submitted': fields.Date.today(),
+                'progress': 100.0,
+            })
+            new_state = 'submitted'
+            new_progress = 100.0
+
+        # Collect parent updates from the auto-propagated data.
+        # Walk the full ancestor chain (not just immediate parents) so
+        # the UI can update progress rings on every level.
+        parent_updates = {}
+        visited = set()
+        to_process = list(resource.parent_ids)
+        while to_process:
+            parent = to_process.pop(0)
+            if parent.id in visited:
+                continue
+            visited.add(parent.id)
+            parent_task = self.env['aps.resource.task'].search([
+                ('resource_id', '=', parent.id),
+                ('student_id', '=', student.id),
+            ], limit=1)
+            if parent_task:
+                parent_sub = self.env['aps.resource.submission'].search([
+                    ('task_id', '=', parent_task.id),
+                ], order='date_assigned desc, id desc', limit=1)
+                if parent_sub:
+                    parent_updates[parent.id] = {
+                        'progress': parent_sub.progress,
+                        'name': parent.name or '',
+                    }
+            for grandparent in parent.parent_ids:
+                if grandparent.id not in visited:
+                    to_process.append(grandparent)
+
+        return {
+            'resourceId': resource.id,
+            'newState': new_state,
+            'newProgress': new_progress,
+            'parentUpdates': parent_updates,
         }
