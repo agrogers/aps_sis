@@ -147,25 +147,6 @@
                                             title="Open in full view"/>
                                 </list>
                             </field>
-                            <field name="submission_ids" mode="list" context="{'form_view_ref': 'aps_sis.view_aps_resource_submission_form_for_students'}" groups="aps_sis.group_aps_student">
-                                <list default_order="create_date desc,date_submitted desc">
-                                    <field name="state" widget="badge" decoration-success="state == 'complete'" decoration-info="state == 'submitted'" decoration-muted="state == 'incomplete'" optional="show"/>
-                                    <field name="submission_name" optional="show"/>
-                                    <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="show"/>
-                                    <field name="score" optional="hide"/>
-                                    <field name="date_submitted" widget="datetime" optional="hide"/>
-                                    <field name="date_completed" widget="datetime" optional="hide"/>
-                                    <field name="create_date" optional="hide"/>
-                                    <field name="result_percent"  widget="percentpie_ranged" optional="hide"/>
-                                    <field name="due_status" widget="badge" decoration-danger="due_status == 'late'" decoration-info="due_status == 'complete'" decoration-success="due_status == 'early'" optional="hide"/>
-                                    <!-- This button opens the full form view in the main area -->
-                                    <button string="Open" 
-                                            type="object" 
-                                            name="get_formview_action" 
-                                            icon="fa-external-link" 
-                                            title="Open in full view"/>
-                                </list>
-                            </field>
                         </page>
                     </notebook>
                 </sheet>
