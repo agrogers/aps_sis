@@ -165,6 +165,24 @@
                             </div>
                             <div class="ce_section_body oe_calculateKioskHeight"
                                  t-out="section.html"/>
+                            <!-- Quiz links box -->
+                            <t t-if="section.quizzes and section.quizzes.length">
+                                <div class="ce_quiz_box">
+                                    <div class="ce_quiz_box_header">
+                                        <i class="fa fa-question-circle me-1"/>
+                                        <span>Quizzes</span>
+                                    </div>
+                                    <div class="ce_quiz_list">
+                                        <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
+                                            <a href="#" class="ce_quiz_item"
+                                               t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
+                                                <i class="fa fa-file-text-o me-1"/>
+                                                <t t-esc="quiz.name"/>
+                                            </a>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
                         </section>
                     </t>
                 </t>

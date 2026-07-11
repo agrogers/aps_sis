@@ -358,6 +358,50 @@
     text-decoration: line-through;
 }
 
+/* ── Quiz box ──────────────────────────────────────────────────────── */
+
+.ce_quiz_box {
+    margin-top: 16px;
+    border: 1px solid var(--o-border-color, #dee2e6);
+    border-radius: 6px;
+    background: var(--o-hover, #f8f9fa);
+    overflow: hidden;
+}
+
+.ce_quiz_box_header {
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: var(--o-primary-bg, #e7f1ff);
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    color: var(--o-primary, #007bff);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ce_quiz_list {
+    padding: 4px 8px;
+}
+
+.ce_quiz_item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    color: var(--o-text, #333);
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.ce_quiz_item:hover {
+    background: var(--o-primary-bg, #e7f1ff);
+    color: var(--o-primary, #007bff);
+    text-decoration: none;
+}
+
 /* ── Loading / empty states ──────────────────────────────────────── */
 
 .ce_loading {

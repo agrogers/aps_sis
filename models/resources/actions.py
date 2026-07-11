@@ -1071,6 +1071,34 @@ class APSResource(models.Model):
 
         _assign_section_ids(tree)
 
+        # Enrich each section with quiz-type child/supporting resources.
+        # A quiz is any resource whose type has assessment=True.
+        for res in all_resources:
+            sec = sections_map.get(res.id)
+            if not sec:
+                continue
+            quizzes = []
+            seen_quiz_ids = set()
+            # Child resources that are quizzes
+            for child in res.child_ids:
+                if child.type_id and child.type_id.assessment and child.id not in seen_quiz_ids:
+                    seen_quiz_ids.add(child.id)
+                    quizzes.append({
+                        'id': child.id,
+                        'name': child.name or '',
+                        'typeName': child.type_id.name or '',
+                    })
+            # Supporting resources that are quizzes
+            for sup in res.supporting_resource_ids:
+                if sup.type_id and sup.type_id.assessment and sup.id not in seen_quiz_ids:
+                    seen_quiz_ids.add(sup.id)
+                    quizzes.append({
+                        'id': sup.id,
+                        'name': sup.name or '',
+                        'typeName': sup.type_id.name or '',
+                    })
+            sec['quizzes'] = quizzes
+
         # Collect content sections in tree traversal order (depth-first).
         # Parents appear before their children, each level sorted by
         # (sequence, name) — matching the visual tree order exactly.

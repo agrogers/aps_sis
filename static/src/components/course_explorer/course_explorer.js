@@ -79,6 +79,7 @@ export class CourseExplorer extends Component {
     setup() {
         this.orm = useService("orm");
         this.dialog = useService("dialog");
+        this.action = useService("action");
         this.contentRef = useRef("contentPane");
 
         const saved = this._loadStorage();
@@ -485,6 +486,25 @@ export class CourseExplorer extends Component {
                 pageNumber: hasMultiple ? clickedIndex + 1 : 1,
             },
         });
+    }
+
+    // ── Quiz submission ─────────────────────────────────────────────
+
+    async openQuizSubmission(ev, quizId) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        try {
+            const result = await this.orm.call(
+                "aps.resources",
+                "action_get_or_create_submission",
+                [quizId],
+            );
+            if (result) {
+                this.action.doAction(result);
+            }
+        } catch (err) {
+            console.error("CourseExplorer: failed to open quiz submission", err);
+        }
     }
 
     // ── Rendering helpers ────────────────────────────────────────────
