@@ -3,6 +3,7 @@ import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
 import { ImageViewerDialog } from "@aui_enhancements/js/image_viewer_dialog";
+import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
 
 const STORAGE_KEY = "aps_course_explorer";
 
@@ -51,6 +52,10 @@ export class CourseExplorerTreeNode extends Component {
         return `padding-left: ${this.props.depth * 20}px`;
     }
 
+    get avgColor() {
+        return getColorForPercent(this.props.node.avgWeightedResult || 0);
+    }
+
     onToggleClick(ev) {
         ev.stopPropagation();
         this.props.onToggle(this.props.node.id);
@@ -74,6 +79,7 @@ export class CourseExplorer extends Component {
         actionId: { type: Number, optional: true },
         className: { type: String, optional: true },
         updateActionState: { type: Function, optional: true },
+        globalState: { type: Object, optional: true },
     };
 
     setup() {

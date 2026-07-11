@@ -1073,6 +1073,26 @@ class APSResource(models.Model):
 
         # Enrich each section with quiz-type child/supporting resources.
         # A quiz is any resource whose type has assessment=True.
+        # Pre-fetch task data for the current student in a single query.
+        student = self.env.user.partner_id
+        quiz_resource_ids = set()
+        for res in all_resources:
+            for child in res.child_ids:
+                if child.type_id and child.type_id.assessment:
+                    quiz_resource_ids.add(child.id)
+            for sup in res.supporting_resource_ids:
+                if sup.type_id and sup.type_id.assessment:
+                    quiz_resource_ids.add(sup.id)
+
+        task_map = {}  # resource_id -> task record
+        if quiz_resource_ids and student:
+            tasks = self.env['aps.resource.task'].search([
+                ('resource_id', 'in', list(quiz_resource_ids)),
+                ('student_id', '=', student.id),
+            ])
+            for task in tasks:
+                task_map[task.resource_id.id] = task
+
         for res in all_resources:
             sec = sections_map.get(res.id)
             if not sec:
@@ -1083,21 +1103,42 @@ class APSResource(models.Model):
             for child in res.child_ids:
                 if child.type_id and child.type_id.assessment and child.id not in seen_quiz_ids:
                     seen_quiz_ids.add(child.id)
+                    task = task_map.get(child.id)
                     quizzes.append({
                         'id': child.id,
                         'name': child.name or '',
                         'typeName': child.type_id.name or '',
+                        'weightedResult': task.weighted_result if task else 0,
+                        'attempts': task.submission_count if task else 0,
+                        'lastResult': task.last_result if task else 0,
+                        'state': task.state if task else 'unassigned',
                     })
             # Supporting resources that are quizzes
             for sup in res.supporting_resource_ids:
                 if sup.type_id and sup.type_id.assessment and sup.id not in seen_quiz_ids:
                     seen_quiz_ids.add(sup.id)
+                    task = task_map.get(sup.id)
                     quizzes.append({
                         'id': sup.id,
                         'name': sup.name or '',
                         'typeName': sup.type_id.name or '',
+                        'weightedResult': task.weighted_result if task else 0,
+                        'attempts': task.submission_count if task else 0,
+                        'lastResult': task.last_result if task else 0,
+                        'state': task.state if task else 'unassigned',
                     })
             sec['quizzes'] = quizzes
+            # Average weighted result across quizzes for this section
+            wrs = [q['weightedResult'] for q in quizzes if q.get('weightedResult')]
+            sec['avgWeightedResult'] = round(sum(wrs) / len(wrs), 1) if wrs else 0
+
+        # Propagate avgWeightedResult to tree nodes
+        def _apply_avg_to_tree(nodes):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                node['avgWeightedResult'] = sec.get('avgWeightedResult', 0) if sec else 0
+                _apply_avg_to_tree(node.get('children', []))
+        _apply_avg_to_tree(tree)
 
         # Collect content sections in tree traversal order (depth-first).
         # Parents appear before their children, each level sorted by

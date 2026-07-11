@@ -45,9 +45,12 @@
                                  a 15.9155 15.9155 0 0 1 0 -31.831"
                               fill="none"
                               stroke-width="3"/>
+                        <circle cx="18" cy="18" r="11"
+                                t-att-fill="avgColor"
+                                stroke="none"/>
                     </svg>
                     <span class="ce_progress_text">
-                        <t t-esc="Math.round(props.node.progress)"/>
+                        <t t-esc="Math.round(props.node.avgWeightedResult || 0)"/>
                     </span>
                 </div>
             </t>
@@ -146,6 +149,13 @@
                                 <h3 >
                                     <t t-esc="section.name"/>
                                 </h3>
+                                <!-- Average weighted result badge -->
+                                <t t-if="section.avgWeightedResult">
+                                    <div class="ce_quiz_avg_badge">
+                                        <i class="fa fa-pie-chart me-1"/>
+                                        <t t-esc="section.avgWeightedResult"/>%
+                                    </div>
+                                </t>
                                 <!-- Completion checkbox for resources that provided notes -->
                                 <t t-if="section.hasCheckbox">
                                     <div class="ce_completion_row">
@@ -165,22 +175,51 @@
                             </div>
                             <div class="ce_section_body oe_calculateKioskHeight"
                                  t-out="section.html"/>
-                            <!-- Quiz links box -->
+                            <!-- Quiz table -->
                             <t t-if="section.quizzes and section.quizzes.length">
                                 <div class="ce_quiz_box">
                                     <div class="ce_quiz_box_header">
                                         <i class="fa fa-question-circle me-1"/>
                                         <span>Quizzes</span>
                                     </div>
-                                    <div class="ce_quiz_list">
-                                        <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
-                                            <a href="#" class="ce_quiz_item"
-                                               t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
-                                                <i class="fa fa-file-text-o me-1"/>
-                                                <t t-esc="quiz.name"/>
-                                            </a>
-                                        </t>
-                                    </div>
+                                    <table class="ce_quiz_table">
+                                        <thead>
+                                            <tr>
+                                                <th class="ce_quiz_th_name">Name</th>
+                                                <th class="ce_quiz_th_num">Weighted Result</th>
+                                                <th class="ce_quiz_th_num">Attempts</th>
+                                                <th class="ce_quiz_th_num">Last Result</th>
+                                                <th class="ce_quiz_th_state">State</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
+                                                <tr class="ce_quiz_row"
+                                                    t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
+                                                    <td class="ce_quiz_name">
+                                                        <i class="fa fa-file-text-o me-1"/>
+                                                        <t t-esc="quiz.name"/>
+                                                    </td>
+                                                    <td class="ce_quiz_num">
+                                                        <t t-if="quiz.weightedResult"><t t-esc="quiz.weightedResult"/>%</t>
+                                                        <t t-else="">—</t>
+                                                    </td>
+                                                    <td class="ce_quiz_num">
+                                                        <t t-esc="quiz.attempts"/>
+                                                    </td>
+                                                    <td class="ce_quiz_num">
+                                                        <t t-if="quiz.lastResult"><t t-esc="quiz.lastResult"/>%</t>
+                                                        <t t-else="">—</t>
+                                                    </td>
+                                                    <td>
+                                                        <span t-att-class="'ce_quiz_state ce_quiz_state_' + quiz.state">
+                                                            <t t-esc="quiz.state"/>
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </t>
                         </section>
