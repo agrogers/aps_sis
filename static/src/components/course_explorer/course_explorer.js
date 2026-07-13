@@ -7,6 +7,8 @@ import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
 import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
 
 const STORAGE_KEY = "aps_course_explorer";
+const DEBUG_STORAGE_KEY = "aps_course_explorer_debug";
+const DEBUG_URL_PARAM = "ce_debug";
 
 // ─── Recursive tree node sub-component ────────────────────────────────
 
@@ -98,21 +100,27 @@ export class CourseExplorer extends Component {
         this.dialog = useService("dialog");
         this.action = useService("action");
         this.contentRef = useRef("contentPane");
+        this._instanceId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        this._debugEnabled = this._isDebugEnabled();
+        this._patchCount = 0;
 
-        // Suppress non-critical OWL reconciliation errors (insertBefore)
-        window.addEventListener("error", (ev) => {
-            if (ev.message && ev.message.includes("insertBefore")) {
-                ev.preventDefault();
-            }
-        });
-        window.addEventListener("unhandledrejection", (ev) => {
-            const msg = ev.reason?.message || String(ev.reason || '');
-            if (msg.includes("insertBefore")) {
-                ev.preventDefault();
-            }
-        });
+        this._boundOnScroll = this._onScroll.bind(this);
+        this._boundOnScrollDetect = this._onScrollDetect.bind(this);
+        this._boundOnContentClick = this._onContentClick.bind(this);
+        this._boundWindowError = this._onWindowError.bind(this);
+        this._boundWindowRejection = this._onUnhandledRejection.bind(this);
+        this._mathRenderVersion = 0;
+        this._lastRenderedMathVersion = -1;
+        this._renderMathRaf = 0;
+        this._loadDataRequestId = 0;
+        this._lastTooltipVersion = -1;
+
+        this._installInsertBeforeProbe();
+        window.addEventListener("error", this._boundWindowError);
+        window.addEventListener("unhandledrejection", this._boundWindowRejection);
 
         const saved = this._loadStorage();
+        this._debug("setup", { saved });
 
         this.state = useState({
             loading: false,
@@ -120,6 +128,7 @@ export class CourseExplorer extends Component {
             selectedCategoryId: saved.selectedCategoryId || false,
             tree: [],
             contentSections: [],
+            contentVersion: 0,
             activeSectionId: saved.activeSectionId || 0,
             sidebarCollapsed: saved.sidebarCollapsed || false,
             isManager: false,
@@ -134,30 +143,178 @@ export class CourseExplorer extends Component {
         this._observer = null;
 
         onWillStart(async () => {
+            this._debug("onWillStart:start", this._stateSnapshot());
             this.state.isManager = await user.hasGroup("aps_sis.group_aps_manager");
             await this._loadSubjectCategories();
             await this._loadData();
+            this._debug("onWillStart:done", this._stateSnapshot());
         });
 
         onMounted(() => {
+            this._debug("onMounted", this._stateSnapshot());
             this._restoreScroll();
             this._setupScrollObserver();
             this._setupScrollListener();
             this._setupImageClickHandler();
-            this._renderMath();
+            this._renderMathIfNeeded();
             this._setupTooltips();
         });
 
         onPatched(() => {
-            this._renderMath();
-            this._setupTooltips();
+            this._patchCount += 1;
+            if (this._shouldLogPatch()) {
+                this._debug("onPatched", {
+                    patchCount: this._patchCount,
+                    ...this._stateSnapshot(),
+                });
+            }
+            this._renderMathIfNeeded();
+            this._setupTooltipsIfNeeded();
         });
 
         onWillUnmount(() => {
+            this._debug("onWillUnmount", this._stateSnapshot());
             if (this._scrollTimer) {
                 clearTimeout(this._scrollTimer);
             }
+            if (this._renderMathRaf) {
+                cancelAnimationFrame(this._renderMathRaf);
+                this._renderMathRaf = 0;
+            }
+            const el = this.contentRef.el;
+            if (el) {
+                el.removeEventListener("scroll", this._boundOnScroll);
+                el.removeEventListener("scroll", this._boundOnScrollDetect);
+                el.removeEventListener("click", this._boundOnContentClick);
+            }
+            window.removeEventListener("error", this._boundWindowError);
+            window.removeEventListener("unhandledrejection", this._boundWindowRejection);
         });
+    }
+
+    _isDebugEnabled() {
+        try {
+            const stored = String(localStorage.getItem(DEBUG_STORAGE_KEY) || "").toLowerCase();
+            if (["1", "true", "on", "yes"].includes(stored)) {
+                return true;
+            }
+        } catch {
+            // Ignore localStorage access errors.
+        }
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const value = String(params.get(DEBUG_URL_PARAM) || "").toLowerCase();
+            return ["1", "true", "on", "yes"].includes(value);
+        } catch {
+            return false;
+        }
+    }
+
+    _debug(event, data = {}) {
+        if (!this._debugEnabled) return;
+        console.log(`[CourseExplorer ${this._instanceId}] ${event}`, data);
+    }
+
+    _shouldLogPatch() {
+        return this._patchCount <= 10 || this._patchCount % 25 === 0;
+    }
+
+    _stateSnapshot() {
+        return {
+            selectedCategoryId: this.state.selectedCategoryId,
+            loading: this.state.loading,
+            treeCount: this.state.tree.length,
+            sectionCount: this.state.contentSections.length,
+            activeSectionId: this.state.activeSectionId,
+            contentVersion: this.state.contentVersion,
+            mathRenderVersion: this._mathRenderVersion,
+            lastRenderedMathVersion: this._lastRenderedMathVersion,
+        };
+    }
+
+    _onWindowError(ev) {
+        const message = ev?.message || "";
+        if (message.includes("insertBefore") || message.includes("OwlError")) {
+            this._debug("window.error", {
+                message,
+                filename: ev?.filename,
+                lineno: ev?.lineno,
+                colno: ev?.colno,
+                stack: ev?.error?.stack,
+                ...this._stateSnapshot(),
+            });
+        }
+    }
+
+    _onUnhandledRejection(ev) {
+        const reason = ev?.reason;
+        const message = reason?.message || String(reason || "");
+        const causeMessage = reason?.cause?.message || String(reason?.cause || "");
+        if (
+            message.includes("insertBefore") ||
+            message.includes("OwlError") ||
+            causeMessage.includes("insertBefore") ||
+            causeMessage.includes("OwlError")
+        ) {
+            this._debug("window.unhandledrejection", {
+                message,
+                causeMessage,
+                stack: reason?.stack,
+                causeStack: reason?.cause?.stack,
+                reason,
+                ...this._stateSnapshot(),
+            });
+        }
+    }
+
+    _installInsertBeforeProbe() {
+        if (!this._debugEnabled) {
+            return;
+        }
+        if (window.__ceInsertBeforeProbeInstalled) {
+            return;
+        }
+        const original = Node.prototype.insertBefore;
+        const describeNode = (node) => {
+            if (!node) return null;
+            return {
+                nodeType: node.nodeType,
+                nodeName: node.nodeName,
+                id: node.id || null,
+                className: node.className || null,
+                childNodes: node.childNodes ? node.childNodes.length : null,
+            };
+        };
+
+        Node.prototype.insertBefore = function (newNode, referenceNode) {
+            try {
+                return original.call(this, newNode, referenceNode);
+            } catch (err) {
+                const message = err?.message || String(err || "");
+                if (
+                    message.includes("insertBefore") ||
+                    message.includes("not a child") ||
+                    message.includes("child of this node")
+                ) {
+                    console.error("[CourseExplorer insertBefore probe]", {
+                        message,
+                        errorStack: err?.stack,
+                        parent: describeNode(this),
+                        reference: describeNode(referenceNode),
+                        newNode: describeNode(newNode),
+                        referenceIsChild: referenceNode
+                            ? Array.from(this.childNodes || []).includes(referenceNode)
+                            : null,
+                        patchStack: new Error("insertBefore probe stack").stack,
+                    });
+                }
+                throw err;
+            }
+        };
+
+        window.__ceInsertBeforeProbeInstalled = true;
+        window.__ceInsertBeforeProbeOriginal = original;
+        this._debug("insertBeforeProbe:installed", {});
     }
 
     // ── LocalStorage helpers ─────────────────────────────────────────
@@ -203,16 +360,52 @@ export class CourseExplorer extends Component {
     _renderMath() {
         const el = this.contentRef.el;
         if (!el || !window.renderMathInElement) return;
-        window.renderMathInElement(el, {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "$", right: "$", display: false },
-                { left: "\\(", right: "\\)", display: false },
-                { left: "\\[", right: "\\]", display: true },
-            ],
-            throwOnError: false,
-            ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
-            ignoredClasses: ["katex", "katex-html"],
+        try {
+            const bodies = Array.from(el.querySelectorAll(".ce_section_body"));
+            const options = {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false },
+                    { left: "\\(", right: "\\)", display: false },
+                    { left: "\\[", right: "\\]", display: true },
+                ],
+                throwOnError: false,
+                ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
+                ignoredClasses: ["katex", "katex-html"],
+            };
+            bodies.forEach((body) => {
+                window.renderMathInElement(body, options);
+            });
+            this._debug("renderMath:done", {
+                ...this._stateSnapshot(),
+                bodyCount: bodies.length,
+            });
+        } catch (err) {
+            this._debug("renderMath:error", {
+                message: err?.message,
+                stack: err?.stack,
+                ...this._stateSnapshot(),
+            });
+        }
+    }
+
+    _renderMathIfNeeded() {
+        if (this._lastRenderedMathVersion === this._mathRenderVersion) {
+            return;
+        }
+        if (this._renderMathRaf) {
+            cancelAnimationFrame(this._renderMathRaf);
+            this._renderMathRaf = 0;
+        }
+        const targetVersion = this._mathRenderVersion;
+        this._renderMathRaf = requestAnimationFrame(() => {
+            this._renderMathRaf = 0;
+            if (this._lastRenderedMathVersion === targetVersion) {
+                return;
+            }
+            this._lastRenderedMathVersion = targetVersion;
+            this._debug("renderMath:schedule", { targetVersion });
+            this._renderMath();
         });
     }
 
@@ -224,14 +417,21 @@ export class CourseExplorer extends Component {
             "get_course_explorer_subject_categories",
             [],
         );
+        this._debug("loadSubjectCategories", {
+            count: this.state.subjectCategories.length,
+        });
     }
 
     async _loadData() {
+        const requestId = ++this._loadDataRequestId;
+        this._debug("loadData:start", this._stateSnapshot());
         // Don't load data if no subject category is selected
         if (!this.state.selectedCategoryId) {
             this.state.tree = [];
             this.state.contentSections = [];
             this.state.activeSectionId = 0;
+            this.state.contentVersion++;
+            this._debug("loadData:skip-no-category", this._stateSnapshot());
             return;
         }
         this.state.loading = true;
@@ -241,25 +441,58 @@ export class CourseExplorer extends Component {
                 "get_course_explorer_data",
                 [this.state.selectedCategoryId],
             );
+            if (requestId !== this._loadDataRequestId) {
+                this._debug("loadData:stale-result-ignored", { requestId });
+                return;
+            }
             this.state.tree = result.tree || [];
             // Wrap HTML content in Markup so t-out renders it as HTML
             this.state.contentSections = (result.contentSections || []).map((sec) => ({
                 ...sec,
                 html: sec.html ? markup(sec.html) : "",
             }));
+            if (this._debugEnabled) {
+                const ids = this.state.contentSections.map((s) => s.id);
+                const duplicateIds = ids.filter((id, idx) => ids.indexOf(id) !== idx);
+                if (duplicateIds.length) {
+                    this._debug("loadData:duplicate-section-ids", {
+                        duplicateIds,
+                        total: ids.length,
+                    });
+                }
+            }
+            this.state.contentVersion++;
+            this._mathRenderVersion++;
             this.state.activeSectionId = 0;
+            this._debug("loadData:received", {
+                requestId,
+                treeCount: this.state.tree.length,
+                sectionCount: this.state.contentSections.length,
+                contentVersion: this.state.contentVersion,
+                mathRenderVersion: this._mathRenderVersion,
+            });
             // Fetch student progress data
-            await this._loadProgressData();
+            await this._loadProgressData(requestId);
         } catch (err) {
             console.error("CourseExplorer: failed to load data", err);
+            this._debug("loadData:error", {
+                requestId,
+                message: err?.message,
+                stack: err?.stack,
+            });
             this.state.tree = [];
             this.state.contentSections = [];
         } finally {
-            this.state.loading = false;
+            if (requestId === this._loadDataRequestId) {
+                this.state.loading = false;
+                this._debug("loadData:done", this._stateSnapshot());
+            } else {
+                this._debug("loadData:done-stale-skip", { requestId });
+            }
         }
     }
 
-    async _loadProgressData() {
+    async _loadProgressData(requestId = this._loadDataRequestId) {
         try {
             // Current user's partner ID is available directly from the user service
             const partnerId = user.partnerId;
@@ -269,6 +502,10 @@ export class CourseExplorer extends Component {
                 "get_course_explorer_progress",
                 [partnerId],
             );
+            if (requestId !== this._loadDataRequestId) {
+                this._debug("loadProgressData:stale-result-ignored", { requestId });
+                return;
+            }
             // Apply progress to tree nodes
             this._applyProgressToTree(this.state.tree, progressData);
             // Apply progress to content sections (hasCheckbox for visible sections)
@@ -282,8 +519,15 @@ export class CourseExplorer extends Component {
                 };
             });
             this._forceTreeUpdate();
+            this._debug("loadProgressData:done", {
+                sectionCount: this.state.contentSections.length,
+            });
         } catch (err) {
             console.error("CourseExplorer: failed to load progress", err);
+            this._debug("loadProgressData:error", {
+                message: err?.message,
+                stack: err?.stack,
+            });
         }
     }
 
@@ -358,6 +602,9 @@ export class CourseExplorer extends Component {
     async onCategoryChange(ev) {
         const val = ev.target.value;
         this.state.selectedCategoryId = val ? parseInt(val, 10) : false;
+        this._debug("onCategoryChange", {
+            selectedCategoryId: this.state.selectedCategoryId,
+        });
         this._expandedIds.clear();
         this.state.expandedNodeIds = [];
         this._saveStorage();
@@ -496,7 +743,8 @@ export class CourseExplorer extends Component {
     _setupScrollListener() {
         const el = this.contentRef.el;
         if (!el) return;
-        el.addEventListener("scroll", this._onScroll.bind(this), { passive: true });
+        el.removeEventListener("scroll", this._boundOnScroll);
+        el.addEventListener("scroll", this._boundOnScroll, { passive: true });
     }
 
     _onScroll() {
@@ -514,7 +762,8 @@ export class CourseExplorer extends Component {
         // Use a scroll listener to find which section is closest to the
         // top of the viewport. More reliable than IntersectionObserver
         // for large sections.
-        el.addEventListener("scroll", this._onScrollDetect.bind(this), {
+        el.removeEventListener("scroll", this._boundOnScrollDetect);
+        el.addEventListener("scroll", this._boundOnScrollDetect, {
             passive: true,
         });
     }
@@ -563,7 +812,8 @@ export class CourseExplorer extends Component {
     _setupImageClickHandler() {
         const el = this.contentRef.el;
         if (!el) return;
-        el.addEventListener("click", this._onContentClick.bind(this));
+        el.removeEventListener("click", this._boundOnContentClick);
+        el.addEventListener("click", this._boundOnContentClick);
     }
 
     _onContentClick(ev) {
@@ -670,7 +920,19 @@ export class CourseExplorer extends Component {
         return getColorForPercent(this.overallAvgScore);
     }
 
+    get visibleContentSections() {
+        return this.state.contentSections.filter((section) => section.visible);
+    }
+
     // ── Heading level classes ────────────────────────────────────────
+
+    _setupTooltipsIfNeeded() {
+        if (this._lastTooltipVersion === this.state.contentVersion) {
+            return;
+        }
+        this._lastTooltipVersion = this.state.contentVersion;
+        this._setupTooltips();
+    }
 
     _setupTooltips() {
         const el = this.contentRef.el;

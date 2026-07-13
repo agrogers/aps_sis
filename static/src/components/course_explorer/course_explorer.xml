@@ -157,18 +157,16 @@
 
                 <!-- Scrollable tree -->
                 <div class="ce_tree_container">
-                    <t t-if="state.tree and state.tree.length">
-                        <t t-foreach="state.tree" t-as="root" t-key="root.id">
-                            <CourseExplorerTreeNode
-                                node="root"
-                                activeSectionId="state.activeSectionId"
-                                depth="0"
-                                expandedIds="state.expandedNodeIds"
-                                onToggle="(id) => this.toggleNode(id)"
-                                onNavigate="(sectionId) => this.scrollToSection(sectionId)"/>
-                        </t>
+                    <t t-foreach="state.tree" t-as="root" t-key="root.id">
+                        <CourseExplorerTreeNode
+                            node="root"
+                            activeSectionId="state.activeSectionId"
+                            depth="0"
+                            expandedIds="state.expandedNodeIds"
+                            onToggle="(id) => this.toggleNode(id)"
+                            onNavigate="(sectionId) => this.scrollToSection(sectionId)"/>
                     </t>
-                    <div t-elif="!state.loading" class="ce_empty text-muted fst-italic p-3">
+                    <div t-if="!state.loading and !state.tree.length" class="ce_empty text-muted fst-italic p-3">
                         No resources found.
                     </div>
                 </div>
@@ -181,7 +179,7 @@
             </div>
 
             <!-- ── Right Pane (content viewer) ────────────────────── -->
-            <div class="ce_right_pane" t-ref="contentPane">
+            <div class="ce_right_pane" t-ref="contentPane" t-key="state.contentVersion">
 
                 <!-- Loading spinner -->
                 <div t-if="state.loading" class="ce_loading text-center py-5">
@@ -190,101 +188,100 @@
                 </div>
 
                 <!-- Content sections -->
-                <t t-elif="state.contentSections and state.contentSections.length">
-                    <t t-foreach="state.contentSections" t-as="section" t-key="section.id">
-                        <section t-if="section.visible"
-                                 class="ce_content_section"
-                                 t-att-id="'ce-section-' + section.id"
-                                 t-att-data-resource-id="section.id">
-                            <div class="ce_section_heading" t-att-class="'ce_level_' + (section.depth || 0)">
-                                <h3>
-                                    <t t-esc="section.name"/>
-                                    <t t-if="state.isManager">
-                                        <a href="#" class="ce_open_resource_link"
-                                           title="Open resource"
-                                           t-on-click="(ev) => this.openResource(ev, section.id)">
-                                            <i class="fa fa-external-link"/>
-                                        </a>
-                                    </t>
-                                </h3>
-                                <!-- Average weighted result pie (links to quizzes table) -->
-                                <t t-if="section.quizzes and section.quizzes.length">
-                                    <a href="#" class="ce_quiz_scroll_link"
-                                       t-on-click="(ev) => { ev.preventDefault(); this.scrollToQuiz(ev, section.id); }">
-                                        <PercentPie value="section.avgWeightedResult || 0"/>
+                <t t-foreach="visibleContentSections" t-as="section" t-key="state.contentVersion + '-' + section.id + '-' + section_index">
+                    <section class="ce_content_section"
+                             t-att-id="'ce-section-' + section.id"
+                             t-att-data-resource-id="section.id">
+                        <div class="ce_section_heading" t-att-class="'ce_level_' + (section.depth || 0)">
+                            <h3>
+                                <t t-esc="section.name"/>
+                                <t t-if="state.isManager">
+                                    <a href="#" class="ce_open_resource_link"
+                                       title="Open resource"
+                                       t-on-click="(ev) => this.openResource(ev, section.id)">
+                                        <i class="fa fa-external-link"/>
                                     </a>
                                 </t>
-                                <!-- Completion checkbox for resources that provided notes -->
-                                <t t-if="section.hasCheckbox">
-                                    <div class="ce_completion_row">
-                                        <label class="ce_completion_label">
-                                            <input type="checkbox"
-                                                class="ce_completion_checkbox"
-                                                t-att-checked="section.checked"
-                                                t-on-change="() => this.onToggleCompletion(section.id)"/>
-                                            <span class="ce_completion_text">
-                                                <t t-if="section.checked">Completed</t>
-                                                <t t-else="">Completed</t>
-                                            </span>
-                                        </label>
-                                    </div>
-                                </t>
-
-                            </div>
-                            <div class="ce_section_body oe_calculateKioskHeight"
-                                 t-out="section.html"/>
-                            <!-- Quiz table -->
+                            </h3>
+                            <!-- Average weighted result pie (links to quizzes table) -->
                             <t t-if="section.quizzes and section.quizzes.length">
-                                <div class="ce_quiz_box" t-att-id="'ce-quiz-' + section.id">
-                                    <div class="ce_quiz_box_header">
-                                        <i class="fa fa-question-circle me-1"/>
-                                        <span>Quizzes</span>
-                                    </div>
-                                    <table class="ce_quiz_table">
-                                        <thead>
-                                            <tr>
-                                                <th class="ce_quiz_th_name">Name</th>
-                                                <th class="ce_quiz_th_num">Weighted Result</th>
-                                                <th class="ce_quiz_th_num">Attempts</th>
-                                                <th class="ce_quiz_th_num">Last Result</th>
-                                                <th class="ce_quiz_th_state">State</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
-                                                <tr class="ce_quiz_row"
-                                                    t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
-                                                    <td class="ce_quiz_name">
-                                                        <i class="fa fa-file-text-o me-1"/>
-                                                        <t t-esc="quiz.name"/>
-                                                    </td>
-                                                    <td class="ce_quiz_num">
-                                                        <t t-if="quiz.weightedResult"><t t-esc="quiz.weightedResult"/>%</t>
-                                                        <t t-else="">—</t>
-                                                    </td>
-                                                    <td class="ce_quiz_num">
-                                                        <t t-esc="quiz.attempts"/>
-                                                    </td>
-                                                    <td class="ce_quiz_num">
-                                                        <t t-if="quiz.lastResult"><t t-esc="quiz.lastResult"/>%</t>
-                                                        <t t-else="">—</t>
-                                                    </td>
-                                                    <td>
-                                                        <span t-att-class="'ce_quiz_state ce_quiz_state_' + quiz.state">
-                                                            <t t-esc="quiz.state"/>
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                        </tbody>
-                                    </table>
+                                <a href="#" class="ce_quiz_scroll_link"
+                                   t-on-click="(ev) => { ev.preventDefault(); this.scrollToQuiz(ev, section.id); }">
+                                    <PercentPie value="section.avgWeightedResult || 0"/>
+                                </a>
+                            </t>
+                            <!-- Completion checkbox for resources that provided notes -->
+                            <t t-if="section.hasCheckbox">
+                                <div class="ce_completion_row">
+                                    <label class="ce_completion_label">
+                                        <input type="checkbox"
+                                            class="ce_completion_checkbox"
+                                            t-att-checked="section.checked"
+                                            t-on-change="() => this.onToggleCompletion(section.id)"/>
+                                        <span class="ce_completion_text">
+                                            <t t-if="section.checked">Completed</t>
+                                            <t t-else="">Completed</t>
+                                        </span>
+                                    </label>
                                 </div>
                             </t>
-                        </section>
-                    </t>
+
+                        </div>
+                        <div class="ce_section_body oe_calculateKioskHeight"
+                             t-att-data-image-viewer-model="'aps.subject.category'"
+                             t-att-data-image-viewer-id="state.selectedCategoryId"
+                             t-out="section.html"/>
+                        <!-- Quiz table -->
+                        <t t-if="section.quizzes and section.quizzes.length">
+                            <div class="ce_quiz_box" t-att-id="'ce-quiz-' + section.id">
+                                <div class="ce_quiz_box_header">
+                                    <i class="fa fa-question-circle me-1"/>
+                                    <span>Quizzes</span>
+                                </div>
+                                <table class="ce_quiz_table">
+                                    <thead>
+                                        <tr>
+                                            <th class="ce_quiz_th_name">Name</th>
+                                            <th class="ce_quiz_th_num">Weighted Result</th>
+                                            <th class="ce_quiz_th_num">Attempts</th>
+                                            <th class="ce_quiz_th_num">Last Result</th>
+                                            <th class="ce_quiz_th_state">State</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
+                                            <tr class="ce_quiz_row"
+                                                t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
+                                                <td class="ce_quiz_name">
+                                                    <i class="fa fa-file-text-o me-1"/>
+                                                    <t t-esc="quiz.name"/>
+                                                </td>
+                                                <td class="ce_quiz_num">
+                                                    <t t-if="quiz.weightedResult"><t t-esc="quiz.weightedResult"/>%</t>
+                                                    <t t-else="">—</t>
+                                                </td>
+                                                <td class="ce_quiz_num">
+                                                    <t t-esc="quiz.attempts"/>
+                                                </td>
+                                                <td class="ce_quiz_num">
+                                                    <t t-if="quiz.lastResult"><t t-esc="quiz.lastResult"/>%</t>
+                                                    <t t-else="">—</t>
+                                                </td>
+                                                <td>
+                                                    <span t-att-class="'ce_quiz_state ce_quiz_state_' + quiz.state">
+                                                        <t t-esc="quiz.state"/>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+                    </section>
                 </t>
 
-                <div t-elif="!state.loading" class="ce_empty text-muted fst-italic p-5 text-center">
+                <div t-if="!state.loading and !visibleContentSections.length" class="ce_empty text-muted fst-italic p-5 text-center">
                     Select a subject category from the dropdown to view content.
                 </div>
             </div>
