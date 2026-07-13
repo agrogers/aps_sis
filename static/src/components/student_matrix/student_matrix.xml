@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aps_sis.StudentMatrix">
+        <div class="o_student_matrix_container">
+
+            <!-- Loading spinner -->
+            <div t-if="state.loading" class="text-center p-5">
+                <i class="fa fa-spinner fa-spin fa-3x"/>
+            </div>
+
+            <!-- Main content -->
+            <div t-if="!state.loading" class="o_student_matrix_content">
+
+                <!-- Toolbar -->
+                <div class="o_student_matrix_toolbar d-flex align-items-center gap-2 mb-3 flex-wrap">
+                    <span class="fw-bold">Classes:</span>
+
+                    <button class="btn btn-sm btn-primary"
+                            t-on-click="onSelectAll">
+                        Select All
+                    </button>
+                    <button class="btn btn-sm btn-secondary"
+                            t-on-click="onClearAll">
+                        Clear
+                    </button>
+
+                    <div class="o_class_chips d-flex gap-1 flex-wrap ms-2">
+                        <t t-foreach="state.classes" t-as="cls" t-key="cls.id">
+                            <button class="btn btn-sm"
+                                    t-att-class="isClassSelected(cls.id) ? 'btn-success' : 'btn-outline-secondary'"
+                                    t-on-click="() => this.onClassToggle(cls.id)">
+                                <t t-out="cls.name"/>
+                            </button>
+                        </t>
+                    </div>
+
+                    <div class="ms-auto">
+                        <button class="btn btn-sm btn-outline-primary"
+                                t-on-click="onPrint"
+                                t-if="state.students.length > 0">
+                            <i class="fa fa-print me-1"/>Print
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Matrix table -->
+                <div t-if="state.students.length > 0" class="o_student_matrix_table_wrapper">
+                    <table class="o_student_matrix_table">
+                        <thead>
+                            <!-- Subject names row -->
+                            <tr class="o_subject_header_row">
+                                <th class="o_corner_cell"/>
+                                <th class="o_count_header">
+                                    <div class="o_subjects_label_rotated">Subjects</div>
+                                </th>
+                                <t t-foreach="state.subjects" t-as="subject" t-key="subject.id">
+                                    <th class="o_subject_header"
+                                        t-att-style="'background-color:' + subject.color + '20;'">
+                                        <div class="o_subject_name_rotated" t-out="subject.name"/>
+                                    </th>
+                                </t>
+                            </tr>
+                            <!-- Subject totals row -->
+                            <tr class="o_totals_header_row">
+                                <th class="o_student_label_cell"><strong>Student</strong></th>
+                                <td class="o_count_cell_header"><strong>GCSE</strong></td>
+                                <t t-foreach="state.subjects" t-as="subject" t-key="'total_' + subject.id">
+                                    <td class="o_subject_total_header"
+                                        t-att-style="'background-color:' + subject.color + '30;'">
+                                        <strong t-out="getSubjectTotal(subject.id)"/>
+                                    </td>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.students" t-as="student" t-key="student.id">
+                                <tr class="o_student_row">
+                                    <td class="o_student_name" t-out="student.name"/>
+                                    <td class="o_student_total" t-out="getStudentTotal(student.id)"/>
+                                    <t t-foreach="state.subjects" t-as="subject" t-key="student.id + '_' + subject.id">
+                                        <td class="o_matrix_cell"
+                                            t-att-style="hasCell(student.id, subject.id) ? 'background-color:' + subject.color + '40;' : ''">
+                                            <span t-if="hasCell(student.id, subject.id)"
+                                                  t-attf-class="o_tick_mark #{getTickClass(student.id, subject.id)}"
+                                                  t-out="getTickSymbol(student.id, subject.id)"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state -->
+                <div t-if="state.students.length === 0 &amp;&amp; state.selectedClassIds.length > 0"
+                     class="text-center p-5 text-muted">
+                    <i class="fa fa-info-circle fa-2x mb-3"/>
+                    <p>No students found in the selected classes.</p>
+                </div>
+
+                <!-- No selection state -->
+                <div t-if="state.selectedClassIds.length === 0"
+                     class="text-center p-5 text-muted">
+                    <i class="fa fa-hand-pointer-o fa-2x mb-3"/>
+                    <p>Select one or more classes above to view the student subject matrix.</p>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

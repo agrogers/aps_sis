@@ -1,0 +1,238 @@
+.o_student_matrix_container {
+    padding: 16px;
+    background: white;
+    height: 100%;
+    overflow: auto;
+}
+
+.o_student_matrix_toolbar {
+    .o_class_chips {
+        .btn {
+            border-radius: 16px;
+            font-size: 0.8rem;
+            padding: 2px 12px;
+        }
+    }
+}
+
+.o_student_matrix_table_wrapper {
+    overflow-x: auto;
+}
+
+.o_student_matrix_table {
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    width: auto;
+
+    th, td {
+        border: 1px solid #dee2e6;
+        padding: 4px 6px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .o_corner_cell {
+        width: 140px;
+        min-width: 140px;
+        background-color: #f8f9fa;
+        position: relative;
+        padding: 0;
+
+        .o_corner_inner {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            padding: 6px 8px;
+            min-height: 70px;
+
+            .o_corner_student_label {
+                text-align: left;
+                font-weight: 700;
+                font-size: 0.85rem;
+            }
+
+            .o_corner_subject_label {
+                text-align: right;
+                font-weight: 700;
+                font-size: 0.85rem;
+                color: #666;
+            }
+        }
+    }
+
+    .o_count_header {
+        background-color: #f8f9fa;
+        font-weight: 700;
+        width: 40px;
+        min-width: 40px;
+        padding: 0;
+        height: 100px;
+        vertical-align: bottom;
+
+        .o_subjects_label_rotated {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            display: inline-block;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 4px 2px;
+        }
+    }
+
+    .o_subject_header {
+        padding: 0;
+        height: 100px;
+        vertical-align: bottom;
+        position: relative;
+        background-color: #f8f9fa;
+
+        .o_subject_name_rotated {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            display: inline-block;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 4px 2px;
+            white-space: nowrap;
+        }
+    }
+
+    .o_totals_header_row {
+        th, td {
+            border-top: 2px solid #495057;
+            border-bottom: 2px solid #495057;
+        }
+
+        .o_subject_total_header {
+            font-weight: 700;
+            background-color: #f8f9fa;
+        }
+
+        .o_count_cell_header {
+            background-color: #f8f9fa;
+        }
+
+        .o_student_label_cell {
+            text-align: left;
+            padding-left: 10px;
+            background-color: #f8f9fa;
+        }
+    }
+
+    .o_student_label_row {
+        background-color: #f8f9fa;
+        td {
+            border-top: 2px solid #495057;
+            border-bottom: 2px solid #495057;
+        }
+        .o_student_label_cell {
+            text-align: left;
+            padding-left: 10px;
+            font-weight: 700;
+        }
+    }
+
+    .o_student_name {
+        text-align: left;
+        font-weight: 500;
+        padding-left: 10px;
+        min-width: 160px;
+        background-color: #fff;
+    }
+
+    .o_student_total {
+        font-weight: 700;
+        background-color: #f8f9fa;
+        width: 40px;
+        min-width: 40px;
+    }
+
+        .o_matrix_cell {
+            width: 36px;
+            min-width: 36px;
+            max-width: 36px;
+
+            .o_tick_mark {
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: #212529;
+
+                &.tick-zero {
+                    color: #999;
+                }
+            }
+        }
+
+    .o_student_row:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    .o_student_row:hover {
+        background-color: #e9ecef;
+    }
+}
+
+/* ---- Print Styles ---- */
+@media print {
+    .o_student_matrix_toolbar {
+        display: none !important;
+    }
+
+    .o_student_matrix_container {
+        padding: 0;
+        overflow: visible;
+    }
+
+    .o_student_matrix_table_wrapper {
+        overflow: visible;
+    }
+
+    .o_student_matrix_table {
+        font-size: 0.7rem;
+        width: 100%;
+
+        th, td {
+            padding: 2px 3px;
+        }
+
+        .o_subject_header {
+            height: 80px;
+        }
+
+        .o_student_name {
+            min-width: 120px;
+        }
+
+        .o_matrix_cell {
+            width: 28px;
+            min-width: 28px;
+            max-width: 28px;
+        }
+
+        .o_tick-mark {
+            color: #000 !important;
+        }
+    }
+
+    .o_student_matrix_table .o_student_row:nth-child(even) {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .o_student_matrix_table td[style*="background-color"] {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .o_student_matrix_table th[style*="background-color"] {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+}

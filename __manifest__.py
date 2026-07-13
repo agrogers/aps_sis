@@ -73,6 +73,7 @@
 		'wizard/aps_partner_profile_pic_views.xml',
 		'wizard/search_wizard_views.xml',
 		'views/aps_gradebook_grid_views.xml',
+		'views/aps_student_matrix_views.xml',
 		'views/aps_sis_menu.xml',
 		'views/resources/aps_course_explorer_views.xml',
 		'views/aps_ai_views.xml',

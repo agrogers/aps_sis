@@ -40,6 +40,7 @@
                             <field name="code"/>
                             <field name="category_id"/>
                             <field name="level_id"/>
+                            <field name="gcse_certificate"/>
                             <field name="active" invisible="1"/>
                         </group>
                         <group string="Coordinators">

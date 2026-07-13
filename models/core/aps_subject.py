@@ -49,6 +49,7 @@ class APSSubject(models.Model):
         column2='partner_id',
         string='Coordinators',
     )
+    gcse_certificate = fields.Float(string='GCSE Certificate', default=0.0, help='The number of GCSE certificates awarded for this subject')
 
     def action_create_current_year_classes(self):
         current_year = self.env['aps.academic.year'].search([('is_current', '=', True)], limit=1)

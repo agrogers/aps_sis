@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Client Action for Student Subject Matrix -->
+    <record id="action_aps_student_matrix" model="ir.actions.client">
+        <field name="name">Student Subject Matrix</field>
+        <field name="tag">aps_student_matrix</field>
+        <field name="path">student-matrix</field>
+    </record>
+
+</odoo>
