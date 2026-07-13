@@ -6,7 +6,7 @@
          ═══════════════════════════════════════════════════════════════ -->
     <t t-name="aps_sis.CourseExplorerTreeNode">
         <div class="ce_tree_node"
-             t-att-class="(isActive ? 'ce_tree_node_active' : '') + ' ce_level_' + props.depth"
+             t-att-class="isActive ? 'ce_tree_node_active' : ''"
              t-att-data-node-id="props.node.id"
              t-att-data-section-id="props.node.sectionId"
              t-att-style="indentStyle">
@@ -32,6 +32,14 @@
             <t t-if="props.node.progress !== undefined">
                 <div class="ce_progress_cell">
                     <svg class="ce_progress_ring" viewBox="0 0 36 36">
+                        <defs t-if="props.node.hasQuizzes and !allQuizzesSubmitted">
+                            <linearGradient t-att-id="gradientId" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#d3d3d3"/>
+                                <stop offset="50%" stop-color="#d3d3d3"/>
+                                <stop offset="50%" t-att-stop-color="avgColor"/>
+                                <stop offset="100%" t-att-stop-color="avgColor"/>
+                            </linearGradient>
+                        </defs>
                         <path class="ce_progress_ring_bg"
                               d="M18 2.0845
                                  a 15.9155 15.9155 0 0 1 0 31.831
@@ -40,33 +48,19 @@
                               stroke-width="3"/>
                         <path class="ce_progress_ring_fill"
                               t-att-stroke-dasharray="props.node.progress + ', 100'"
+                              t-att-style="props.node.progress >= 100 ? 'stroke: #007bff' : 'stroke: #6c757d'"
                               d="M18 2.0845
                                  a 15.9155 15.9155 0 0 1 0 31.831
                                  a 15.9155 15.9155 0 0 1 0 -31.831"
                               fill="none"
                               stroke-width="3"/>
-                        <t t-if="props.node.hasQuizzes">
-                            <circle cx="18" cy="18" r="11"
-                                    t-att-fill="avgColor"
-                                    stroke="none"/>
-                        </t>
+                        <circle cx="18" cy="18" r="11"
+                                t-att-fill="props.node.hasQuizzes ? (allQuizzesSubmitted ? avgColor : 'url(#' + gradientId + ')') : 'transparent'"
+                                stroke="none"/>
                     </svg>
-                    <t t-if="props.node.hasQuizzes">
-                        <span class="ce_progress_text">
-                            <t t-esc="Math.round(props.node.avgWeightedResult || 0)"/>
-                        </span>
-                    </t>
-                    <!-- Hover tooltip -->
-                    <div class="ce_progress_tooltip">
-                        <div class="ce_tooltip_row">
-                            <span class="ce_tooltip_label">Progress</span>
-                            <span class="ce_tooltip_value"><t t-esc="Math.round(props.node.progress || 0)"/>%</span>
-                        </div>
-                        <div class="ce_tooltip_row">
-                            <span class="ce_tooltip_label">Average Score</span>
-                            <span class="ce_tooltip_value"><t t-esc="Math.round(props.node.avgWeightedResult || 0)"/>%</span>
-                        </div>
-                    </div>
+                    <span class="ce_progress_text"
+                          t-att-style="props.node.hasQuizzes ? '' : 'display:none'">
+                    </span>
                 </div>
             </t>
         </div>
@@ -129,6 +123,7 @@
                                       stroke-width="3"/>
                                 <path class="ce_progress_ring_fill"
                                       t-att-stroke-dasharray="overallProgress + ', 100'"
+                                      t-att-style="overallProgress >= 100 ? 'stroke: #007bff' : 'stroke: #6c757d'"
                                       d="M18 2.0845
                                          a 15.9155 15.9155 0 0 1 0 31.831
                                          a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -201,16 +196,9 @@
                                  class="ce_content_section"
                                  t-att-id="'ce-section-' + section.id"
                                  t-att-data-resource-id="section.id">
-                            <div class="ce_section_heading">
+                            <div class="ce_section_heading" t-att-class="'ce_level_' + (section.depth || 0)">
                                 <h3>
                                     <t t-esc="section.name"/>
-                                    <t t-if="isApsManager">
-                                        <a href="#" class="ce_open_resource_link"
-                                           title="Open resource"
-                                           t-on-click="(ev) => this.openResource(ev, section.id)">
-                                            <i class="fa fa-external-link"/>
-                                        </a>
-                                    </t>
                                 </h3>
                                 <!-- Average weighted result pie (links to quizzes table) -->
                                 <t t-if="section.quizzes and section.quizzes.length">
@@ -236,7 +224,7 @@
                                 </t>
 
                             </div>
-                            <div class="ce_section_body oe_calculateKioskHeight aui-image-viewer-scope"
+                            <div class="ce_section_body oe_calculateKioskHeight"
                                  t-out="section.html"/>
                             <!-- Quiz table -->
                             <t t-if="section.quizzes and section.quizzes.length">

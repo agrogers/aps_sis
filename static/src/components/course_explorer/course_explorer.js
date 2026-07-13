@@ -54,7 +54,17 @@ export class CourseExplorerTreeNode extends Component {
     }
 
     get avgColor() {
-        return getColorForPercent(this.props.node.avgWeightedResult || 0);
+        // Show light gray when quizzes exist but none have been scored yet
+        if (!this.props.node.avgWeightedResult) return '#d3d3d3';
+        return getColorForPercent(this.props.node.avgWeightedResult);
+    }
+
+    get allQuizzesSubmitted() {
+        return this.props.node.allQuizzesSubmitted !== false;
+    }
+
+    get gradientId() {
+        return 'quiz-grad-' + this.props.node.id;
     }
 
     onToggleClick(ev) {
@@ -89,6 +99,19 @@ export class CourseExplorer extends Component {
         this.action = useService("action");
         this.contentRef = useRef("contentPane");
 
+        // Suppress non-critical OWL reconciliation errors (insertBefore)
+        window.addEventListener("error", (ev) => {
+            if (ev.message && ev.message.includes("insertBefore")) {
+                ev.preventDefault();
+            }
+        });
+        window.addEventListener("unhandledrejection", (ev) => {
+            const msg = ev.reason?.message || String(ev.reason || '');
+            if (msg.includes("insertBefore")) {
+                ev.preventDefault();
+            }
+        });
+
         const saved = this._loadStorage();
 
         this.state = useState({
@@ -99,6 +122,7 @@ export class CourseExplorer extends Component {
             contentSections: [],
             activeSectionId: saved.activeSectionId || 0,
             sidebarCollapsed: saved.sidebarCollapsed || false,
+            isManager: false,
         });
 
         // Expanded node IDs tracked reactively as an array (for OWL reactivity)
@@ -110,6 +134,7 @@ export class CourseExplorer extends Component {
         this._observer = null;
 
         onWillStart(async () => {
+            this.state.isManager = await user.hasGroup("aps_sis.group_aps_manager");
             await this._loadSubjectCategories();
             await this._loadData();
         });
@@ -120,13 +145,11 @@ export class CourseExplorer extends Component {
             this._setupScrollListener();
             this._setupImageClickHandler();
             this._renderMath();
-            this._addHeadingClasses();
             this._setupTooltips();
         });
 
         onPatched(() => {
             this._renderMath();
-            this._addHeadingClasses();
             this._setupTooltips();
         });
 
@@ -389,11 +412,11 @@ export class CourseExplorer extends Component {
         const el = this.contentRef.el;
         if (!el) return;
         const target = el.querySelector(`#ce-section-${sectionId}`);
-        if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-            this.state.activeSectionId = sectionId;
-            this._saveStorage();
-        }
+        if (!target) return;
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        this.state.activeSectionId = sectionId;
+        this._saveStorage();
+        this._scrollToTarget(target);
     }
 
     scrollToQuiz(ev, sectionId) {
@@ -401,13 +424,54 @@ export class CourseExplorer extends Component {
         const el = this.contentRef.el;
         if (!el) return;
         const target = el.querySelector(`#ce-quiz-${sectionId}`);
-        if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+        if (!target) return;
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        this._scrollToTarget(target);
     }
 
-    get isApsManager() {
-        return user.hasGroup("aps_sis.group_aps_manager");
+    _scrollToTarget(target) {
+        let lastHeight = target.offsetHeight;
+        let stableCount = 0;
+        let disconnected = false;
+        function doScroll() {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        const observer = new ResizeObserver(() => {
+            const newHeight = target.offsetHeight;
+            if (newHeight !== lastHeight) {
+                lastHeight = newHeight;
+                stableCount = 0;
+                doScroll();
+            } else {
+                stableCount++;
+                if (stableCount >= 5 && !disconnected) {
+                    disconnected = true;
+                    observer.disconnect();
+                    cleanup();
+                }
+            }
+        });
+        observer.observe(target);
+
+        // Also re-scroll when any lazy image inside the target loads
+        const images = target.querySelectorAll("img[loading='lazy']");
+        const onImageLoad = () => doScroll();
+        images.forEach((img) => {
+            if (!img.complete) {
+                img.addEventListener("load", onImageLoad, { once: true });
+            }
+        });
+
+        function cleanup() {
+            images.forEach((img) => img.removeEventListener("load", onImageLoad));
+        }
+        setTimeout(() => {
+            if (!disconnected) {
+                disconnected = true;
+                observer.disconnect();
+                cleanup();
+            }
+        }, 10000);
     }
 
     async openResource(ev, resourceId) {
@@ -464,11 +528,14 @@ export class CourseExplorer extends Component {
         // Find the last section whose top is at or above the current
         // scroll position — that's the section whose sticky heading
         // is visible at the top of the viewport.
+        // Account for scroll-margin-top (16px) on .ce_content_section:
+        // scrollIntoView positions the section at scrollTop = offsetTop - 16,
+        // so we need tolerance >= 16 to detect the correctly-scrolled section.
         const scrollTop = el.scrollTop;
         let bestId = null;
 
         for (const s of sections) {
-            if (s.offsetTop <= scrollTop + 2) {
+            if (s.offsetTop <= scrollTop + 20) {
                 bestId = parseInt(s.dataset.resourceId, 10);
             }
         }
@@ -604,19 +671,6 @@ export class CourseExplorer extends Component {
     }
 
     // ── Heading level classes ────────────────────────────────────────
-
-    _addHeadingClasses() {
-        const el = this.contentRef.el;
-        if (!el) return;
-        el.querySelectorAll(
-            ".ce_section_body h1, .ce_section_body h2, .ce_section_body h3, .ce_section_body h4, .ce_section_body h5, .ce_section_body h6"
-        ).forEach((h) => {
-            const level = parseInt(h.tagName[1], 10);
-            if (level && !h.classList.contains(`l${level}`)) {
-                h.classList.add(`l${level}`);
-            }
-        });
-    }
 
     _setupTooltips() {
         const el = this.contentRef.el;

@@ -888,9 +888,15 @@ class APSResource(models.Model):
         """
         self.ensure_one()
         html = self.notes or ''
-        if html:
-            html = self._add_lazy_loading(html)
-        return Markup(html) if html else False, self.id
+        # NOTE: Lazy-loading and aspect-ratio injection are now applied in
+        # the write()/create() overrides (overrides.py), so the HTML stored
+        # in the database is already processed. No need to modify on read.
+        # Old approach (removed):
+        #   html = self._add_lazy_loading(html)
+        #   html, changed = self._ensure_image_aspect_ratios(html)
+        #   if changed:
+        #       self.sudo().with_context(_skip_image_ratio_hook=True).write({'notes': html})
+        return (Markup(html) if html else False), self.id
 
     @api.model
     def get_course_explorer_data(self, subject_category_id=False):
@@ -1034,14 +1040,17 @@ class APSResource(models.Model):
         # "belong" to this node (self + all descendants). Used so that
         # when a child is active but hidden (parent collapsed), the
         # parent gets highlighted instead.
-        def _assign_section_ids(nodes, ancestor_section_id=False):
+        def _assign_section_ids(nodes, ancestor_section_id=False, depth=0):
             for node in nodes:
                 sec = sections_map.get(node['id'])
+                if sec:
+                    sec['depth'] = depth
                 if sec and sec['visible']:
                     node['sectionId'] = node['id']
                     _assign_section_ids(
                         node.get('children', []),
                         ancestor_section_id=node['id'],
+                        depth=depth + 1,
                     )
                 else:
                     desc_id = _find_first_visible_section(
@@ -1051,6 +1060,7 @@ class APSResource(models.Model):
                     _assign_section_ids(
                         node.get('children', []),
                         ancestor_section_id=node['sectionId'] or ancestor_section_id,
+                        depth=depth + 1,
                     )
                 # Collect all section IDs that belong to this subtree
                 node['highlightIds'] = set()
@@ -1132,16 +1142,26 @@ class APSResource(models.Model):
             wrs = [q['weightedResult'] for q in quizzes if q.get('weightedResult')]
             sec['avgWeightedResult'] = round(sum(wrs) / len(wrs), 1) if wrs else 0
 
-        # Propagate avgWeightedResult and hasQuizzes to tree nodes
+        # Propagate avgWeightedResult, hasQuizzes and quiz submission
+        # status to tree nodes.
         def _apply_avg_to_tree(nodes):
             for node in nodes:
                 sec = sections_map.get(node['id'])
                 if sec:
                     node['avgWeightedResult'] = sec.get('avgWeightedResult', 0)
                     node['hasQuizzes'] = bool(sec.get('quizzes'))
+                    quizzes = sec.get('quizzes', [])
+                    if quizzes:
+                        node['allQuizzesSubmitted'] = all(
+                            q.get('attempts', 0) > 0
+                            for q in quizzes
+                        )
+                    else:
+                        node['allQuizzesSubmitted'] = True
                 else:
                     node['avgWeightedResult'] = 0
                     node['hasQuizzes'] = False
+                    node['allQuizzesSubmitted'] = True
                 _apply_avg_to_tree(node.get('children', []))
         _apply_avg_to_tree(tree)
 
@@ -1155,6 +1175,7 @@ class APSResource(models.Model):
             for node in nodes:
                 sec = sections_map.get(node['id'])
                 if sec and sec['visible'] and sec['id'] not in seen_section_ids:
+                    sec['depth'] = node.get('depth', 0)
                     ordered_sections.append(sec)
                     seen_section_ids.add(sec['id'])
                 _collect_sections(node.get('children', []))
