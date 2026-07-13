@@ -123,8 +123,13 @@ export class CourseExplorer extends Component {
         });
 
         // Expanded node IDs tracked reactively as an array (for OWL reactivity)
-        this.state.expandedNodeIds = saved.expandedNodeIds || [];
-        this._expandedIds = new Set(saved.expandedNodeIds || []);
+        // Per-category expanded state: { [categoryId]: [nodeId, ...] }
+        this._expandedByCategory = saved.expandedByCategory || {};
+        const categoryExpanded = this.state.selectedCategoryId
+            ? this._expandedByCategory[this.state.selectedCategoryId] || []
+            : [];
+        this.state.expandedNodeIds = categoryExpanded;
+        this._expandedIds = new Set(categoryExpanded);
         // Debounce timer for scroll persistence
         this._scrollTimer = null;
         // IntersectionObserver reference
@@ -180,7 +185,11 @@ export class CourseExplorer extends Component {
 
     _saveStorage() {
         try {
+            if (this.state.selectedCategoryId) {
+                this._expandedByCategory[this.state.selectedCategoryId] = [...this._expandedIds];
+            }
             const data = {
+                expandedByCategory: this._expandedByCategory,
                 expandedNodeIds: [...this._expandedIds],
                 selectedCategoryId: this.state.selectedCategoryId,
                 activeSectionId: this.state.activeSectionId,
@@ -402,10 +411,19 @@ export class CourseExplorer extends Component {
     // ── User actions ─────────────────────────────────────────────────
 
     async onCategoryChange(ev) {
+        // Save current category's expanded state before switching
+        if (this.state.selectedCategoryId) {
+            this._expandedByCategory[this.state.selectedCategoryId] = [...this._expandedIds];
+        }
         const val = ev.target.value;
-        this.state.selectedCategoryId = val ? parseInt(val, 10) : false;
-        this._expandedIds.clear();
-        this.state.expandedNodeIds = [];
+        const newCategoryId = val ? parseInt(val, 10) : false;
+        this.state.selectedCategoryId = newCategoryId;
+        // Restore expanded state for the newly selected category
+        const restored = newCategoryId
+            ? (this._expandedByCategory[newCategoryId] || [])
+            : [];
+        this._expandedIds = new Set(restored);
+        this.state.expandedNodeIds = [...this._expandedIds];
         this._saveStorage();
         await this._loadData();
         this._restoreScroll();
