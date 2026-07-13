@@ -199,6 +199,13 @@
                             <div class="ce_section_heading" t-att-class="'ce_level_' + (section.depth || 0)">
                                 <h3>
                                     <t t-esc="section.name"/>
+                                    <t t-if="state.isManager">
+                                        <a href="#" class="ce_open_resource_link"
+                                           title="Open resource"
+                                           t-on-click="(ev) => this.openResource(ev, section.id)">
+                                            <i class="fa fa-external-link"/>
+                                        </a>
+                                    </t>
                                 </h3>
                                 <!-- Average weighted result pie (links to quizzes table) -->
                                 <t t-if="section.quizzes and section.quizzes.length">

@@ -569,9 +569,10 @@ class APSResource(models.Model):
         """Resolve an image src URL to raw bytes using Odoo's ir.binary.
 
         Handles:
-          - /web/image/<id>  (attachment by ID)
-          - /web/image/model/id/field
+          - /web/image/<id>  (attachment by ID, with optional name qualifier)
+          - /web/image/model/id/field[/size]
           - data:image/...;base64,...
+          - http(s)://...  (external URLs — fetched via requests)
         Returns bytes or None.
         """
         import base64 as b64mod
@@ -588,8 +589,8 @@ class APSResource(models.Model):
             except Exception:
                 return None
 
-        # /web/image/<id> — attachment by ID
-        att_match = _re.match(r'/web/image/(\d+)(?:/.*)?$', src)
+        # /web/image/<id> — attachment by ID (may have name qualifier like 123-foo)
+        att_match = _re.match(r'/web/image/(\d+)(?:[-/].*)?$', src)
         if att_match:
             try:
                 att = self.env['ir.attachment'].browse(int(att_match.group(1))).sudo()
@@ -599,8 +600,8 @@ class APSResource(models.Model):
             except Exception:
                 return None
 
-        # /web/image/model/id/field — read binary field via ir.binary
-        model_match = _re.match(r'/web/image/(\w+)/(\d+)/(\w+)', src)
+        # /web/image/model/id/field[/size] — read binary field via ir.binary
+        model_match = _re.match(r'/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src)
         if model_match:
             try:
                 model_name, res_id, field_name = model_match.groups()
@@ -609,6 +610,16 @@ class APSResource(models.Model):
                     val = record[field_name]
                     if val:
                         return val if isinstance(val, bytes) else val.encode('latin-1') if isinstance(val, str) else None
+            except Exception:
+                return None
+
+        # External URL — fetch via requests
+        if src.startswith(('http://', 'https://')):
+            try:
+                import requests
+                resp = requests.get(src, timeout=10)
+                resp.raise_for_status()
+                return resp.content
             except Exception:
                 return None
 
