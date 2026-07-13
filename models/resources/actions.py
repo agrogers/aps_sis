@@ -1132,11 +1132,16 @@ class APSResource(models.Model):
             wrs = [q['weightedResult'] for q in quizzes if q.get('weightedResult')]
             sec['avgWeightedResult'] = round(sum(wrs) / len(wrs), 1) if wrs else 0
 
-        # Propagate avgWeightedResult to tree nodes
+        # Propagate avgWeightedResult and hasQuizzes to tree nodes
         def _apply_avg_to_tree(nodes):
             for node in nodes:
                 sec = sections_map.get(node['id'])
-                node['avgWeightedResult'] = sec.get('avgWeightedResult', 0) if sec else 0
+                if sec:
+                    node['avgWeightedResult'] = sec.get('avgWeightedResult', 0)
+                    node['hasQuizzes'] = bool(sec.get('quizzes'))
+                else:
+                    node['avgWeightedResult'] = 0
+                    node['hasQuizzes'] = False
                 _apply_avg_to_tree(node.get('children', []))
         _apply_avg_to_tree(tree)
 

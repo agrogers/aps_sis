@@ -68,11 +68,8 @@ class APSResource(models.Model):
             parser.feed(parent_html)
             extracted_content = parser.get_content()
 
-            if extracted_content:
-                # Add the note at the bottom
-                # note = '<p style="font-size: 12px; color: #888; margin-top: 10px;"><em>(Displaying a part of the parent content only.)</em></p>'
-                note = ''
-                return f'{extracted_content}{note}'
+            return extracted_content
+        
         except Exception:
             # If parsing fails, return original
             pass

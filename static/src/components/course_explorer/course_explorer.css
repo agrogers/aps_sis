@@ -309,6 +309,22 @@
     margin-bottom: 8px;
 }
 
+/* KaTeX math rendering inside course explorer content */
+.ce_section_body .katex {
+    font-size: 1em;
+    vertical-align: middle;
+}
+
+.ce_section_body .katex-display {
+    margin: 0.5em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.ce_section_body .katex-html {
+    position: relative;
+}
+
 .ce_section_body table {
     width: 100%;
     border-collapse: collapse;
@@ -358,19 +374,100 @@
     text-decoration: line-through;
 }
 
-/* ── Quiz average badge in section heading ─────────────────────────── */
+/* ── Overall course progress (in tree controls) ───────────────────── */
 
-.ce_quiz_avg_badge {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    background: var(--o-primary-bg, #e7f1ff);
-    color: var(--o-primary, #007bff);
+.ce_overall_progress {
+    margin-left: auto;
+}
+
+/* ── Progress circle hover tooltip ────────────────────────────────── */
+
+.ce_progress_cell {
+    position: relative;
+}
+
+.ce_progress_tooltip {
+    display: none;
+    position: fixed;
+    z-index: 1100;
+    min-width: 160px;
+    padding: 10px 14px;
+    background: var(--o-webclient-background, #fff);
+    border: 1px solid var(--o-border-color, #dee2e6);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    font-size: 0.82rem;
     white-space: nowrap;
+    pointer-events: none;
+}
+
+.ce_progress_cell:hover .ce_progress_tooltip {
+    display: block;
+}
+
+.ce_tooltip_row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 3px 0;
+}
+
+.ce_tooltip_label {
+    color: var(--o-text-muted, #6c757d);
+    font-weight: 400;
+}
+
+.ce_tooltip_value {
+    color: var(--o-text, #333);
+    font-weight: 600;
+}
+
+.ce_progress_tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 8px;
+    border: 5px solid transparent;
+    border-top-color: var(--o-border-color, #dee2e6);
+}
+
+.ce_progress_tooltip::before {
+    content: "";
+    position: absolute;
+    top: calc(100% - 1px);
+    right: 9px;
+    border: 4px solid transparent;
+    border-top-color: var(--o-webclient-background, #fff);
+}
+
+/* ── Open resource link (manager only, in heading) ────────────────── */
+
+.ce_open_resource_link {
+    color: var(--o-text-muted, #6c757d);
+    font-size: 0.8rem;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.15s, color 0.15s;
+    flex-shrink: 0;
+    padding-left:8px;
+}
+
+.ce_open_resource_link:hover {
+    opacity: 1;
+    color: var(--o-primary, #007bff);
+}
+
+/* ── Quiz scroll link (pie in heading) ────────────────────────────── */
+
+.ce_quiz_scroll_link {
+    text-decoration: none;
+    display: inline-flex;
+    cursor: pointer;
+}
+
+.ce_quiz_scroll_link:hover {
+    opacity: 0.8;
 }
 
 /* ── Quiz box ──────────────────────────────────────────────────────── */

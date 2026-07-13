@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
 import { ImageViewerDialog } from "@aui_enhancements/js/image_viewer_dialog";
 import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
+import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
 
 const STORAGE_KEY = "aps_course_explorer";
 
@@ -73,7 +74,7 @@ CourseExplorerTreeNode.components = { CourseExplorerTreeNode };
 
 export class CourseExplorer extends Component {
     static template = "aps_sis.CourseExplorer";
-    static components = { CourseExplorerTreeNode };
+    static components = { CourseExplorerTreeNode, PercentPie };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
@@ -118,6 +119,15 @@ export class CourseExplorer extends Component {
             this._setupScrollObserver();
             this._setupScrollListener();
             this._setupImageClickHandler();
+            this._renderMath();
+            this._addHeadingClasses();
+            this._setupTooltips();
+        });
+
+        onPatched(() => {
+            this._renderMath();
+            this._addHeadingClasses();
+            this._setupTooltips();
         });
 
         onWillUnmount(() => {
@@ -165,6 +175,22 @@ export class CourseExplorer extends Component {
                 el.scrollTop = saved.scrollPosition;
             });
         }
+    }
+
+    _renderMath() {
+        const el = this.contentRef.el;
+        if (!el || !window.renderMathInElement) return;
+        window.renderMathInElement(el, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true },
+            ],
+            throwOnError: false,
+            ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
+            ignoredClasses: ["katex", "katex-html"],
+        });
     }
 
     // ── Data loading ─────────────────────────────────────────────────
@@ -370,6 +396,37 @@ export class CourseExplorer extends Component {
         }
     }
 
+    scrollToQuiz(ev, sectionId) {
+        ev.preventDefault();
+        const el = this.contentRef.el;
+        if (!el) return;
+        const target = el.querySelector(`#ce-quiz-${sectionId}`);
+        if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }
+
+    get isApsManager() {
+        return user.hasGroup("aps_sis.group_aps_manager");
+    }
+
+    async openResource(ev, resourceId) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        try {
+            const result = await this.orm.call(
+                "aps.resources",
+                "get_formview_action",
+                [resourceId],
+            );
+            if (result) {
+                this.action.doAction(result);
+            }
+        } catch (err) {
+            console.error("CourseExplorer: failed to open resource", err);
+        }
+    }
+
     // ── Scroll sync ──────────────────────────────────────────────────
 
     _setupScrollListener() {
@@ -511,6 +568,76 @@ export class CourseExplorer extends Component {
         } catch (err) {
             console.error("CourseExplorer: failed to open quiz submission", err);
         }
+    }
+
+    // ── Overall course progress ──────────────────────────────────────
+
+    _collectTreeValues(nodes, field) {
+        const values = [];
+        for (const node of nodes) {
+            const val = node[field];
+            if (typeof val === "number") {
+                values.push(val);
+            }
+            if (node.children && node.children.length) {
+                values.push(...this._collectTreeValues(node.children, field));
+            }
+        }
+        return values;
+    }
+
+    get overallProgress() {
+        const values = this._collectTreeValues(this.state.tree, "progress");
+        if (!values.length) return 0;
+        return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+    }
+
+    get overallAvgScore() {
+        const values = this._collectTreeValues(this.state.tree, "avgWeightedResult")
+            .filter((v) => v > 0);
+        if (!values.length) return 0;
+        return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+    }
+
+    get overallColor() {
+        return getColorForPercent(this.overallAvgScore);
+    }
+
+    // ── Heading level classes ────────────────────────────────────────
+
+    _addHeadingClasses() {
+        const el = this.contentRef.el;
+        if (!el) return;
+        el.querySelectorAll(
+            ".ce_section_body h1, .ce_section_body h2, .ce_section_body h3, .ce_section_body h4, .ce_section_body h5, .ce_section_body h6"
+        ).forEach((h) => {
+            const level = parseInt(h.tagName[1], 10);
+            if (level && !h.classList.contains(`l${level}`)) {
+                h.classList.add(`l${level}`);
+            }
+        });
+    }
+
+    _setupTooltips() {
+        const el = this.contentRef.el;
+        if (!el) return;
+        const treeControls = document.querySelector(".ce_tree_controls");
+        const cells = [];
+        if (treeControls) {
+            cells.push(...treeControls.querySelectorAll(".ce_progress_cell"));
+        }
+        if (el) {
+            cells.push(...el.querySelectorAll(".ce_progress_cell"));
+        }
+        cells.forEach((cell) => {
+            const tooltip = cell.querySelector(".ce_progress_tooltip");
+            if (!tooltip) return;
+            cell.addEventListener("mouseenter", () => {
+                const rect = cell.getBoundingClientRect();
+                tooltip.style.left = `${rect.right - 160}px`;
+                tooltip.style.top = `${rect.top - 8}px`;
+            });
+        });
     }
 
     // ── Rendering helpers ────────────────────────────────────────────

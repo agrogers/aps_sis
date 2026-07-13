@@ -1,0 +1,22 @@
+/* ═══════════════════════════════════════════════════════════════════
+   PercentPie — reusable conic-gradient pie component
+   ═══════════════════════════════════════════════════════════════════ */
+
+.o_pie_info {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.o_pie {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.o_pie_info .o_pie_value {
+    color: var(--PercentPieField-color-active, inherit);
+}
