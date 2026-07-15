@@ -314,6 +314,7 @@
                                            t-on-change="() => this.toggleAllVotes()"/>
                                 </th>
                                 <th>Voter</th>
+                                <th>Round</th>
                                 <th>Category</th>
                                 <th>Sub-Category</th>
                                 <th class="text-center">Date</th>
@@ -330,6 +331,7 @@
                                                t-on-change="() => this.toggleVoteSelection(dv.id)"/>
                                     </td>
                                     <td><strong t-esc="dv.voter_name"/></td>
+                                    <td t-esc="dv.round_name"/>
                                     <td t-esc="dv.category_name"/>
                                     <td t-esc="dv.sub_category_name"/>
                                     <td class="text-center small" t-esc="dv.submitted_date"/>
@@ -337,7 +339,7 @@
                                 </tr>
                             </t>
                             <tr t-if="state.detailVotes.length === 0">
-                                <td colspan="6" class="text-center text-muted py-3">
+                                <td colspan="7" class="text-center text-muted py-3">
                                     No votes found for this selection.
                                 </td>
                             </tr>
