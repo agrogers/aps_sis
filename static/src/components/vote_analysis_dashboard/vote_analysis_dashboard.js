@@ -428,7 +428,7 @@ export class VoteAnalysisDashboard extends Component {
         const comp = this;
         const columns = [
             {
-                id: "selected", name: "", field: "selected",
+                id: "selected", name: '<div class="va-grid-header-check"><input type="checkbox" class="form-check-input" title="Select all"/></div>', field: "selected",
                 width: 40, minWidth: 40, maxWidth: 40,
                 sortable: false, editable: false, focusable: false,
                 cssClass: "va-grid-cell-check",
@@ -452,6 +452,7 @@ export class VoteAnalysisDashboard extends Component {
             editable: true,
             autoEdit: true,
             enableColumnReorder: false,
+            enableHtmlRendering: true,
             fullWidthRows: true,
             forceFitColumns: true,
             syncColumnCellResize: true,
@@ -462,6 +463,22 @@ export class VoteAnalysisDashboard extends Component {
 
         this._voteDetailsGrid = gridBundle.slickGrid;
         this._voteDetailsDataView = gridBundle.dataView;
+
+        // Attach select-all header checkbox handler
+        // Use setTimeout to let the grid finish rendering, then find the header checkbox
+        setTimeout(() => {
+            const headerEl = container.querySelector('.slick-header-column[data-id="selected"]');
+            if (headerEl) {
+                const cb = headerEl.querySelector(".va-grid-header-check input[type='checkbox']");
+                if (cb) {
+                    cb.checked = comp.allVotesSelected;
+                    cb.indeterminate = comp.state.selectedVoteIds.length > 0 && !comp.allVotesSelected;
+                    cb.addEventListener("change", () => {
+                        comp.toggleAllVotes();
+                    });
+                }
+            }
+        }, 0);
 
         // Comment edit handler — persist on blur
         this._voteDetailsGrid.onCellChange.subscribe((e, args) => {
@@ -476,11 +493,11 @@ export class VoteAnalysisDashboard extends Component {
         });
 
         // Persist unsaved comment edits when editor is destroyed (tab switch, click away, etc.)
-        this._voteDetailsGrid.onBeforeCellDestroy.subscribe((e, args) => {
-            const cell = args.cell;
-            if (cell && cell.column && cell.column.field === "comment" && cell.item) {
-                const item = cell.item;
-                const newValue = cell.editor.serializeValue ? cell.editor.serializeValue() : item.comment;
+        this._voteDetailsGrid.onBeforeCellEditorDestroy.subscribe((e, args) => {
+            const editor = args.editor;
+            if (editor && editor.args && editor.args.column && editor.args.column.field === "comment" && editor.args.item) {
+                const item = editor.args.item;
+                const newValue = editor.serializeValue ? editor.serializeValue() : item.comment;
                 if (newValue !== undefined && item.id) {
                     comp.orm.call(
                         "aps.award.vote",

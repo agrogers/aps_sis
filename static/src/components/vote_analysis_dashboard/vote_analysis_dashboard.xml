@@ -303,7 +303,7 @@
                     <i class="fa fa-spinner fa-spin text-muted"/>
                     <span class="text-muted ms-2">Loading details...</span>
                 </div>
-                <div class="va-grid-container" t-ref="voteDetailsGrid"/>
+                <div t-else="" class="va-grid-container" t-ref="voteDetailsGrid"/>
                 <!-- Selected certificates panel -->
                 <div t-if="state.selectedVoteIds.length > 0 &amp;&amp; (state.selectedCerts.length > 0 || state.selectedCertsLoading)">
                     <div class="card-header">
