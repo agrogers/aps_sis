@@ -250,6 +250,18 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_year_level_rollover_wizard')">
+                    <div class="smd-card-icon bg-secondary-subtle text-secondary">
+                        <i class="fa fa-level-up"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Roll Students to Next Level</div>
+                        <div class="smd-card-subtitle text-muted">Promote selected students</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
                 <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_class_tag_enrol_wizard')">
                     <div class="smd-card-icon bg-success-subtle text-success">
                         <i class="fa fa-magic"/>

@@ -124,4 +124,5 @@ access_asctt_flat_row_teacher,asctt.flat.row.teacher,model_asctt_flat_row,aps_si
 access_aps_timetable_entry_teacher,aps.timetable.entry.teacher,model_aps_timetable_entry,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_sis_search_wizard_teacher,aps.sis.search.wizard.teacher,model_aps_sis_search_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_class_rollover_wizard_teacher,aps.class.rollover.wizard.teacher,model_aps_class_rollover_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_year_level_rollover_wizard_teacher,aps.year.level.rollover.wizard.teacher,model_aps_year_level_rollover_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_student_matrix_manager,aps.student.matrix.manager,model_aps_student_matrix,aps_sis.group_aps_manager,1,1,1,1

@@ -6,17 +6,36 @@ class APSStudentMatrix(models.TransientModel):
     _description = 'Student Subject Matrix'
 
     @api.model
-    def get_home_classes(self):
-        """Return all home/pastoral care classes for the current academic year."""
-        home_class_tag_names = {'Home Class', 'Pastoral Care Subject'}
-        current_year = self.env['aps.academic.year'].search(
-            [('is_current', '=', True)], limit=1
+    def get_academic_years(self):
+        """Return all active academic years for the dropdown."""
+        years = self.env['aps.academic.year'].search(
+            [('active', '=', True)],
+            order='start_date desc',
         )
+        return [
+            {
+                'id': y.id,
+                'name': y.short_name or y.name,
+                'is_current': y.is_current,
+            }
+            for y in years
+        ]
+
+    @api.model
+    def get_home_classes(self, academic_year_id=None):
+        """Return all home/pastoral care classes, optionally filtered by academic year."""
+        home_class_tag_names = {'Home Class', 'Pastoral Care Subject'}
+        if academic_year_id:
+            year = self.env['aps.academic.year'].browse(academic_year_id)
+        else:
+            year = self.env['aps.academic.year'].search(
+                [('is_current', '=', True)], limit=1
+            )
         domain = [
             ('state', '=', 'enrolled'),
         ]
-        if current_year:
-            domain.append(('start_date', '>=', current_year.start_date))
+        if year:
+            domain.append(('start_date', '>=', year.start_date))
 
         enrollments = self.env['aps.student.class'].search(domain)
         home_class_ids = enrollments.mapped('home_class_id')
@@ -34,9 +53,9 @@ class APSStudentMatrix(models.TransientModel):
         return sorted(result, key=lambda c: c['name'])
 
     @api.model
-    def get_matrix_data(self, class_ids):
+    def get_matrix_data(self, class_ids, academic_year_id=None):
         """
-        Given a list of class_ids, return the matrix data:
+        Given a list of class_ids and optional academic_year_id, return the matrix data:
         - students: sorted alphabetically
         - subjects: sorted alphabetically (from classes enrolled by those students)
         - cells: dict mapping "studentId_subjectId" -> True
@@ -55,10 +74,11 @@ class APSStudentMatrix(models.TransientModel):
             }
 
         # Find students enrolled in the selected classes
-        enrollments = self.env['aps.student.class'].search([
+        enroll_domain = [
             ('home_class_id', 'in', class_ids),
             ('state', '=', 'enrolled'),
-        ])
+        ]
+        enrollments = self.env['aps.student.class'].search(enroll_domain)
         student_ids = enrollments.mapped('student_id')
 
         if not student_ids:
@@ -72,10 +92,11 @@ class APSStudentMatrix(models.TransientModel):
             }
 
         # Find ALL enrollments for these students
-        all_enrollments = self.env['aps.student.class'].search([
+        all_enroll_domain = [
             ('student_id', 'in', student_ids.ids),
             ('state', '=', 'enrolled'),
-        ])
+        ]
+        all_enrollments = self.env['aps.student.class'].search(all_enroll_domain)
 
         # Get all unique subjects from those enrollments
         all_classes = all_enrollments.mapped('home_class_id')
