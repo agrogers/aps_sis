@@ -63,6 +63,9 @@ export class VoteAnalysisDashboard extends Component {
             certDetailHeader: "",
             certDetailList: [],
             certDetailLoading: false,
+            selectedVoteIds: [],
+            selectedCerts: [],
+            selectedCertsLoading: false,
         });
 
         onWillStart(async () => {
@@ -326,6 +329,23 @@ export class VoteAnalysisDashboard extends Component {
         this._loadDetailVotes(recipient, seriesId);
     }
 
+    onTotalClick(recipient) {
+        const allVoteIds = [];
+        for (const seriesId in recipient.vote_ids || {}) {
+            allVoteIds.push(...recipient.vote_ids[seriesId]);
+        }
+        this.state.detailLoading = true;
+        this.state.detailRecipient = recipient;
+        this.state.detailRoundId = null;
+        this.state.detailHeader = recipient.name + " — All Votes";
+        this.orm.call("aps.award.vote", "get_vote_details", [], { vote_ids: allVoteIds })
+            .then((result) => {
+                this.state.detailVotes = result || [];
+                this.state.detailLoading = false;
+                this.state.activeTab = "details";
+            });
+    }
+
     get sortedRecipients() {
         const recipients = [...this.state.recipients];
         const column = this.state.sortColumn;
@@ -419,6 +439,72 @@ export class VoteAnalysisDashboard extends Component {
         this.state.detailRoundId = null;
         this.state.detailHeader = "";
         this.state.detailVotes = [];
+        this.state.selectedVoteIds = [];
+        this.state.selectedCerts = [];
+        this.state.selectedCertsLoading = false;
+    }
+
+    toggleAllVotes() {
+        if (this.state.selectedVoteIds.length === this.state.detailVotes.length) {
+            this.state.selectedVoteIds = [];
+        } else {
+            this.state.selectedVoteIds = this.state.detailVotes.map((v) => v.id);
+        }
+    }
+
+    get allVotesSelected() {
+        return this.state.detailVotes.length > 0 && this.state.selectedVoteIds.length === this.state.detailVotes.length;
+    }
+
+    toggleVoteSelection(voteId) {
+        const ids = [...this.state.selectedVoteIds];
+        const idx = ids.indexOf(voteId);
+        if (idx >= 0) {
+            ids.splice(idx, 1);
+        } else {
+            ids.push(voteId);
+        }
+        this.state.selectedVoteIds = ids;
+    }
+
+    isSelectedVote(voteId) {
+        return this.state.selectedVoteIds.includes(voteId);
+    }
+
+    async loadSelectedCerts() {
+        const ids = this.state.selectedVoteIds;
+        if (!ids.length) {
+            this.state.selectedCerts = [];
+            return;
+        }
+        this.state.selectedCertsLoading = true;
+        // Get unique partner IDs from selected votes
+        const partnerIds = [...new Set(
+            this.state.detailVotes
+                .filter((v) => ids.includes(v.id))
+                .map((v) => v.recipient_partner_id)
+                .filter(Boolean)
+        )];
+        // Fetch certificates for each recipient
+        const allCerts = [];
+        const seen = new Set();
+        for (const pid of partnerIds) {
+            const filters = {
+                recipient_id: pid,
+                date_from: this.state.dateFrom || false,
+                date_to: this.state.dateTo || false,
+                category_ids: this.state.selectedCategoryIds,
+            };
+            const certs = await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters });
+            for (const c of certs || []) {
+                if (!seen.has(c.id)) {
+                    seen.add(c.id);
+                    allCerts.push(c);
+                }
+            }
+        }
+        this.state.selectedCerts = allCerts;
+        this.state.selectedCertsLoading = false;
     }
 
     async _loadCertDetails(recipient) {

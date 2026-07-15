@@ -413,6 +413,7 @@ class APSAwardVote(models.Model):
             result.append({
                 'id': v['id'],
                 'recipient_name': v['recipient_partner_id'][1] if v['recipient_partner_id'] else '',
+                'recipient_id': v['recipient_partner_id'][0] if v['recipient_partner_id'] else False,
                 'voter_name': v['voter_partner_id'][1] if v['voter_partner_id'] else '',
                 'round_name': v['vote_round_id'][1] if v['vote_round_id'] else '',
                 'category_name': v['award_category_id'][1] if v['award_category_id'] else '',

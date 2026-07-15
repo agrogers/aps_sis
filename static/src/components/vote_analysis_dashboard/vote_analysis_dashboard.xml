@@ -48,7 +48,8 @@
             <button type="button"
                     class="btn btn-outline-primary btn-sm"
                     t-att-class="{'active': state.filtersOpen}"
-                    t-on-click="toggleFilters">
+                    t-on-click="toggleFilters"
+                    style="min-width: 100px;">
                 <i class="fa fa-filter me-1"/>
                 Filters
                 <i t-att-class="state.filtersOpen ? 'fa fa-chevron-up ms-1' : 'fa fa-chevron-down ms-1'"/>
@@ -266,7 +267,9 @@
                                         </td>
                                     </t>
                                     <td class="text-center">
-                                        <span class="o_vote_analysis_total_badge" t-esc="rec.total"/>
+                                        <span class="o_vote_analysis_total_badge o_vote_analysis_pill_clickable"
+                                              t-esc="rec.total"
+                                              t-on-click="() => this.onTotalClick(rec)"/>
                                     </td>
                                 </tr>
                             </t>
@@ -284,9 +287,17 @@
                         <strong><t t-esc="state.detailHeader"/></strong>
                         <span class="text-muted small ms-2" t-esc="state.detailVotes.length + ' votes'"/>
                     </div>
-                    <button class="btn btn-outline-secondary btn-sm" t-on-click="() => clearDetail()">
-                        <i class="fa fa-times me-1"/>Close
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-outline-success btn-sm"
+                                t-on-click="loadSelectedCerts"
+                                t-att-disabled="state.selectedVoteIds.length === 0">
+                            <i class="fa fa-certificate me-1"/>
+                            <t t-esc="'Show Certificates (' + state.selectedVoteIds.length + ')'"/>
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" t-on-click="() => clearDetail()">
+                            <i class="fa fa-times me-1"/>Close
+                        </button>
+                    </div>
                 </div>
                 <div t-if="state.detailLoading" class="text-center py-3">
                     <i class="fa fa-spinner fa-spin text-muted"/>
@@ -296,6 +307,12 @@
                     <table class="table table-striped table-hover table-sm align-middle mb-0 o_vote_analysis_table">
                         <thead class="table-light">
                             <tr>
+                                <th style="width:40px" class="text-center">
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           t-att-checked="allVotesSelected"
+                                           t-on-change="() => this.toggleAllVotes()"/>
+                                </th>
                                 <th>Voter</th>
                                 <th>Category</th>
                                 <th>Sub-Category</th>
@@ -306,6 +323,12 @@
                         <tbody>
                             <t t-foreach="state.detailVotes" t-as="dv" t-key="dv.id">
                                 <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox"
+                                               class="form-check-input"
+                                               t-att-checked="isSelectedVote(dv.id)"
+                                               t-on-change="() => this.toggleVoteSelection(dv.id)"/>
+                                    </td>
                                     <td><strong t-esc="dv.voter_name"/></td>
                                     <td t-esc="dv.category_name"/>
                                     <td t-esc="dv.sub_category_name"/>
@@ -314,12 +337,50 @@
                                 </tr>
                             </t>
                             <tr t-if="state.detailVotes.length === 0">
-                                <td colspan="5" class="text-center text-muted py-3">
+                                <td colspan="6" class="text-center text-muted py-3">
                                     No votes found for this selection.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <!-- Selected certificates panel -->
+                <div t-if="state.selectedVoteIds.length > 0 &amp;&amp; (state.selectedCerts.length > 0 || state.selectedCertsLoading)">
+                    <div class="card-header">
+                        <strong>Certificates for selected votes</strong>
+                        <span class="text-muted small ms-2" t-esc="state.selectedCerts.length + ' certificates'"/>
+                    </div>
+                    <div t-if="state.selectedCertsLoading" class="text-center py-3">
+                        <i class="fa fa-spinner fa-spin text-muted"/>
+                        <span class="text-muted ms-2">Loading certificates...</span>
+                    </div>
+                    <div t-else="" class="table-responsive">
+                        <table class="table table-striped table-hover table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Category</th>
+                                    <th class="text-center">Date Awarded</th>
+                                    <th>Template</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.selectedCerts" t-as="cert" t-key="cert.id">
+                                    <tr>
+                                        <td><strong t-esc="cert.event"/></td>
+                                        <td t-esc="cert.award_category_name"/>
+                                        <td class="text-center small" t-esc="cert.date_awarded"/>
+                                        <td class="small text-muted" t-esc="cert.certificate_template_name"/>
+                                    </tr>
+                                </t>
+                                <tr t-if="state.selectedCerts.length === 0">
+                                    <td colspan="4" class="text-center text-muted py-3">
+                                        No certificates found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
