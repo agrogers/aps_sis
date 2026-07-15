@@ -17,3 +17,4 @@ from . import aps_partner_voting_token_wizard
 from . import awards
 from . import asc_timetable
 from . import aps_student_matrix
+from . import aps_filter_preset

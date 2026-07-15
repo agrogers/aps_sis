@@ -96,7 +96,7 @@
             <i class="fa fa-wrench me-2"/>Tools
         </h5>
         <div class="row g-3">
-            <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="col-lg-3 col-md-4 col-sm-6">
                 <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_awards_dashboard')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-check-square-o"/>
@@ -104,6 +104,18 @@
                     <div class="smd-card-body">
                         <div class="smd-card-title">Voting Dashboard</div>
                         <div class="smd-card-subtitle text-muted">Open the awards voting portal</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_vote_analysis_dashboard')">
+                    <div class="smd-card-icon bg-info-subtle text-info">
+                        <i class="fa fa-bar-chart"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Vote Analysis</div>
+                        <div class="smd-card-subtitle text-muted">Votes per recipient by round</div>
                     </div>
                     <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
                 </div>

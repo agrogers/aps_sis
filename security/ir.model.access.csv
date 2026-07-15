@@ -125,3 +125,6 @@ access_aps_timetable_entry_teacher,aps.timetable.entry.teacher,model_aps_timetab
 access_aps_sis_search_wizard_teacher,aps.sis.search.wizard.teacher,model_aps_sis_search_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_class_rollover_wizard_teacher,aps.class.rollover.wizard.teacher,model_aps_class_rollover_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_student_matrix_manager,aps.student.matrix.manager,model_aps_student_matrix,aps_sis.group_aps_manager,1,1,1,1
+access_aps_filter_preset_teacher,aps.filter.preset.teacher,model_aps_filter_preset,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_filter_preset_student,aps.filter.preset.student,model_aps_filter_preset,aps_sis.group_aps_student,1,1,1,1
+access_aps_filter_preset_user,aps.filter.preset.user,model_aps_filter_preset,base.group_user,1,1,1,1
