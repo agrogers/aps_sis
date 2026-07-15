@@ -15,9 +15,12 @@ export class StudentMatrix extends Component {
     setup() {
         this.orm = useService("orm");
         this._STORAGE_KEY = "aps_student_matrix_class_selection";
+        this._YEAR_STORAGE_KEY = "aps_student_matrix_year_selection";
 
         this.state = useState({
             loading: true,
+            academicYears: [],
+            selectedYearId: null,
             classes: [],
             selectedClassIds: [],
             students: [],
@@ -29,15 +32,67 @@ export class StudentMatrix extends Component {
         });
 
         onWillStart(async () => {
+            await this._loadAcademicYears();
+            this._restoreYearSelection();
             await this._loadClasses();
             this._restoreSelection();
             this.state.loading = false;
         });
     }
 
+    async _loadAcademicYears() {
+        try {
+            const years = await this.orm.call("aps.student.matrix", "get_academic_years", []);
+            this.state.academicYears = years || [];
+        } catch (err) {
+            console.error("StudentMatrix: failed to load academic years", err);
+            this.state.academicYears = [];
+        }
+    }
+
+    _restoreYearSelection() {
+        try {
+            const raw = localStorage.getItem(this._YEAR_STORAGE_KEY);
+            if (raw) {
+                const savedId = JSON.parse(raw);
+                const validIds = this.state.academicYears.map((y) => y.id);
+                if (validIds.includes(savedId)) {
+                    this.state.selectedYearId = savedId;
+                    return;
+                }
+            }
+        } catch (e) {}
+        // Default to current academic year
+        const current = this.state.academicYears.find((y) => y.is_current);
+        this.state.selectedYearId = current ? current.id : (this.state.academicYears[0]?.id || null);
+    }
+
+    _saveYearSelection() {
+        try {
+            localStorage.setItem(this._YEAR_STORAGE_KEY, JSON.stringify(this.state.selectedYearId));
+        } catch (e) {}
+    }
+
+    onYearChange(ev) {
+        const yearId = parseInt(ev.target.value, 10);
+        this.state.selectedYearId = yearId || null;
+        this._saveYearSelection();
+        // Clear class selection and reload classes for the new year
+        this.state.selectedClassIds = [];
+        this.state.students = [];
+        this.state.subjects = [];
+        this.state.cells = {};
+        this.state.subjectColors = {};
+        this.state.studentTotals = {};
+        this.state.subjectTotals = {};
+        this._saveSelection();
+        this._loadClasses();
+    }
+
     async _loadClasses() {
         try {
-            const classes = await this.orm.call("aps.student.matrix", "get_home_classes", []);
+            const args = this.state.selectedYearId ? [this.state.selectedYearId] : [];
+            const classes = await this.orm.call("aps.student.matrix", "get_home_classes", args);
             this.state.classes = classes || [];
         } catch (err) {
             console.error("StudentMatrix: failed to load classes", err);
@@ -108,7 +163,7 @@ export class StudentMatrix extends Component {
             const data = await this.orm.call(
                 "aps.student.matrix",
                 "get_matrix_data",
-                [this.state.selectedClassIds]
+                [this.state.selectedClassIds, this.state.selectedYearId]
             );
             this.state.students = data.students || [];
             this.state.subjects = data.subjects || [];

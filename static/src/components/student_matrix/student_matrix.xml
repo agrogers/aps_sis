@@ -35,7 +35,18 @@
                         </t>
                     </div>
 
-                    <div class="ms-auto">
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 fw-bold" for="academicYearSelect">Academic Year:</label>
+                        <select id="academicYearSelect"
+                                class="form-select form-select-sm w-auto"
+                                t-on-change="onYearChange">
+                            <t t-foreach="state.academicYears" t-as="year" t-key="year.id">
+                                <option t-att-value="year.id"
+                                        t-att-selected="year.id === state.selectedYearId"
+                                        t-out="year.name"/>
+                            </t>
+                        </select>
+
                         <button class="btn btn-sm btn-outline-primary"
                                 t-on-click="onPrint"
                                 t-if="state.students.length > 0">

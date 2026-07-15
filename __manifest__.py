@@ -69,6 +69,7 @@
 		'views/hr_employee_views.xml',
 		'views/awards/awards_voting_templates.xml',
 		'wizard/aps_class_rollover_wizard_views.xml',
+		'wizard/aps_year_level_rollover_wizard_views.xml',
 		'wizard/aps_class_tag_enrol_wizard_views.xml',
 		'wizard/aps_student_class_bulk_wizard_views.xml',
 		'wizard/aps_partner_profile_pic_views.xml',
