@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="view_aps_student_certificate_list" model="ir.ui.view">
-        <field name="name">aps.student.certificate.list</field>
-        <field name="model">aps.student.certificate</field>
+    <record id="view_aps_certificate_list" model="ir.ui.view">
+        <field name="name">aps.certificate.list</field>
+        <field name="model">aps.certificate</field>
         <field name="arch" type="xml">
             <list>
                 <field name="partner_id" optional="show"/>
@@ -20,9 +20,9 @@
         </field>
     </record>
 
-    <record id="view_aps_student_certificate_form" model="ir.ui.view">
-        <field name="name">aps.student.certificate.form</field>
-        <field name="model">aps.student.certificate</field>
+    <record id="view_aps_certificate_form" model="ir.ui.view">
+        <field name="name">aps.certificate.form</field>
+        <field name="model">aps.certificate</field>
         <field name="arch" type="xml">
             <form string="Student Certificate">
                 <header>
@@ -56,24 +56,24 @@
         </field>
     </record>
 
-    <record id="action_aps_student_certificate" model="ir.actions.act_window">
-        <field name="name">Student Certificates</field>
-        <field name="res_model">aps.student.certificate</field>
+    <record id="action_aps_certificate" model="ir.actions.act_window">
+        <field name="name">Certificates</field>
+        <field name="res_model">aps.certificate</field>
         <field name="view_mode">list,form</field>
     </record>
 
-    <record id="action_aps_student_certificate_list_view" model="ir.actions.act_window.view">
+    <record id="action_aps_certificate_list_view" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">list</field>
-        <field name="view_id" ref="view_aps_student_certificate_list"/>
-        <field name="act_window_id" ref="action_aps_student_certificate"/>
+        <field name="view_id" ref="view_aps_certificate_list"/>
+        <field name="act_window_id" ref="action_aps_certificate"/>
     </record>
 
-    <record id="action_aps_student_certificate_form_view" model="ir.actions.act_window.view">
+    <record id="action_aps_certificate_form_view" model="ir.actions.act_window.view">
         <field name="sequence">2</field>
         <field name="view_mode">form</field>
-        <field name="view_id" ref="view_aps_student_certificate_form"/>
-        <field name="act_window_id" ref="action_aps_student_certificate"/>
+        <field name="view_id" ref="view_aps_certificate_form"/>
+        <field name="act_window_id" ref="action_aps_certificate"/>
     </record>
 
     <record id="view_aps_certificate_template_list" model="ir.ui.view">

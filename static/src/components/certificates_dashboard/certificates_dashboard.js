@@ -25,7 +25,7 @@ export class CertificatesDashboard extends Component {
 
     async _loadCounts() {
         const models = [
-            "aps.student.certificate",
+            "aps.certificate",
             "aps.certificate.template",
             "aps.award.category",
             "aps.award.sub.category",

@@ -29,7 +29,7 @@ class ResPartner(models.Model):
     alias = fields.Char(string='Friendly Name', help="The nick name the person prefers to be called")
 
     submission_ids = fields.One2many('aps.resource.submission', 'student_id', string='Submissions')
-    certificate_ids = fields.One2many('aps.student.certificate', 'partner_id', string='Certificates')
+    certificate_ids = fields.One2many('aps.certificate', 'partner_id', string='Certificates')
     access_token_masked = fields.Char(
         string='Voting Token (Masked)',
         compute='_compute_access_token_masked',

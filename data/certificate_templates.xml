@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="mail_template_student_certificate_a4" model="mail.template">
-            <field name="name">APS Student Certificate A4</field>
-            <field name="model_id" ref="aps_sis.model_aps_student_certificate"/>
+        <record id="mail_template_certificate_a4" model="mail.template">
+            <field name="name">APS Certificate A4</field>
+            <field name="model_id" ref="aps_sis.model_aps_certificate"/>
             <field name="subject">Certificate: {{ object.event }} - {{ object.partner_id.name }}</field>
             <field name="body_html" type="html">
                 <div style="min-height: 100%; padding: 70px 90px; text-align: center; font-family: 'Times New Roman', serif; background: rgba(255, 255, 255, 0.88);">
@@ -23,9 +23,9 @@
             <field name="auto_delete" eval="False"/>
         </record>
 
-        <record id="mail_template_student_certificate_a5" model="mail.template">
-            <field name="name">APS Student Certificate A5</field>
-            <field name="model_id" ref="aps_sis.model_aps_student_certificate"/>
+        <record id="mail_template_certificate_a5" model="mail.template">
+            <field name="name">APS Certificate A5</field>
+            <field name="model_id" ref="aps_sis.model_aps_certificate"/>
             <field name="subject">Certificate (A5): {{ object.event }} - {{ object.partner_id.name }}</field>
             <field name="body_html" type="html">
                 <div style="min-height: 100%; padding: 34px 44px; text-align: center; font-family: Georgia, serif; background: rgba(255, 255, 255, 0.88);">
@@ -50,7 +50,7 @@
             <field name="page_format">a4</field>
             <field name="page_orientation">landscape</field>
             <field name="frame_image" type="base64" file="aps_sis/reports/certificate_frame_1.svg"/>
-            <field name="mail_template_id" ref="aps_sis.mail_template_student_certificate_a4"/>
+            <field name="mail_template_id" ref="aps_sis.mail_template_certificate_a4"/>
             <field name="active" eval="True"/>
         </record>
 
@@ -59,7 +59,7 @@
             <field name="page_format">a5</field>
             <field name="page_orientation">portrait</field>
             <field name="frame_image" type="base64" file="aps_sis/reports/certificate_frame_1.svg"/>
-            <field name="mail_template_id" ref="aps_sis.mail_template_student_certificate_a5"/>
+            <field name="mail_template_id" ref="aps_sis.mail_template_certificate_a5"/>
             <field name="active" eval="True"/>
         </record>
     </data>

@@ -12,7 +12,7 @@
     <menuitem id="menu_apex_certificates_dashboard" name="Overview" parent="menu_apex_certificates" action="aps_sis.action_certificates_dashboard" sequence="1" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_awards_dashboard" name="Voting Dashboard" parent="menu_apex_certificates" action="action_aps_awards_dashboard" sequence="5" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_vote_management_dashboard" name="Vote Management Dashboard" parent="menu_apex_certificates" action="action_open_vote_management_dashboard" sequence="6" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_certificates_list" name="Certificates" parent="menu_apex_certificates" action="action_aps_student_certificate" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_list" name="Certificates" parent="menu_apex_certificates" action="action_aps_certificate" sequence="10" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_award_categories" name="Award Categories" parent="menu_apex_certificates" action="action_aps_award_category" sequence="20" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_vote_rounds" name="Vote Rounds" parent="menu_apex_certificates" action="action_aps_award_vote_round" sequence="25" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_certificates_voting_sets" name="Voting Sets" parent="menu_apex_certificates" action="action_aps_award_voting_set" sequence="27" groups="aps_sis.group_aps_manager"/>

@@ -29,17 +29,17 @@ class APSCertificateTemplate(models.Model):
         'mail.template',
         required=True,
         ondelete='restrict',
-        domain="[('model_id.model', '=', 'aps.student.certificate')]",
+        domain="[('model_id.model', '=', 'aps.certificate')]",
     )
     certificate_ids = fields.One2many(
-        'aps.student.certificate',
+        'aps.certificate',
         'certificate_template_id',
         string='Certificates',
     )
 
-class APSStudentCertificate(models.Model):
-    _name = 'aps.student.certificate'
-    _description = 'APS Student Certificate'
+class APSCertificate(models.Model):
+    _name = 'aps.certificate'
+    _description = 'APS Certificate'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'certificate_date desc, id desc'
 
@@ -73,7 +73,7 @@ class APSStudentCertificate(models.Model):
     )
     related_partner_ids = fields.Many2many(
         'res.partner',
-        'aps_student_certificate_related_partner_rel',
+        'aps_certificate_related_partner_rel',
         'certificate_id',
         'partner_id',
         string='Related People',
@@ -165,10 +165,10 @@ class APSStudentCertificate(models.Model):
         certificate_template = self.certificate_template_id
         self.last_printed = fields.Datetime.now()
         report_xmlid_by_layout = {
-            ('a4', 'portrait'): 'aps_sis.action_report_student_certificate_a4',
-            ('a4', 'landscape'): 'aps_sis.action_report_student_certificate_a4_landscape',
-            ('a5', 'portrait'): 'aps_sis.action_report_student_certificate_a5',
-            ('a5', 'landscape'): 'aps_sis.action_report_student_certificate_a5_landscape',
+            ('a4', 'portrait'): 'aps_sis.action_report_certificate_a4',
+            ('a4', 'landscape'): 'aps_sis.action_report_certificate_a4_landscape',
+            ('a5', 'portrait'): 'aps_sis.action_report_certificate_a5',
+            ('a5', 'landscape'): 'aps_sis.action_report_certificate_a5_landscape',
         }
         page_orientation = certificate_template.page_orientation or 'portrait'
         report_xmlid = report_xmlid_by_layout.get((certificate_template.page_format, page_orientation))

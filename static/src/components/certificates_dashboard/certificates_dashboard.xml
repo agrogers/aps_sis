@@ -8,7 +8,7 @@
         <i class="fa fa-certificate fa-2x text-warning me-3"/>
         <div>
             <h1 class="mb-0 fw-bold text-warning">Certificates &amp; Awards</h1>
-            <small class="text-muted">Manage student certificates, awards, and voting</small>
+            <small class="text-muted">Manage certificates, awards, and voting</small>
         </div>
     </div>
 
@@ -19,13 +19,13 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_student_certificate')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_certificate')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-certificate"/>
                     </div>
                     <div class="smd-card-body">
-                        <div class="smd-card-title">Student Certificates</div>
-                        <div class="smd-card-count" t-esc="this.count('aps.student.certificate')"/>
+                        <div class="smd-card-title">Certificates</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.certificate')"/>
                     </div>
                     <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
                 </div>

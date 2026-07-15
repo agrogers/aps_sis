@@ -374,7 +374,7 @@ class APSAwardVote(models.Model):
             elif explicit_ids:
                 cert_domain.append(('partner_id', 'in', explicit_ids))
 
-            certs = self.env['aps.student.certificate'].search_read(
+            certs = self.env['aps.certificate'].search_read(
                 cert_domain, ['partner_id']
             )
             for c in certs:
@@ -461,7 +461,7 @@ class APSAwardVote(models.Model):
         if filters.get('category_ids'):
             domain.append(('award_category_id', 'in', filters['category_ids']))
 
-        certs = self.env['aps.student.certificate'].search_read(
+        certs = self.env['aps.certificate'].search_read(
             domain,
             ['event', 'award_category_id', 'date_awarded', 'certificate_template_id'],
         )
