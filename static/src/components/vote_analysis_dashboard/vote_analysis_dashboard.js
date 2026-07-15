@@ -408,21 +408,8 @@ export class VoteAnalysisDashboard extends Component {
         this.state.detailRoundId = seriesId;
         const seriesItem = this.state.series.find((r) => r.id === seriesId);
         this.state.detailHeader = recipient.name + " — " + (seriesItem ? seriesItem.name : "Series " + seriesId);
-        const filters = this._getCurrentFilters();
-        filters.recipient_id = recipient.id;
-        // Clear broad filters that conflict with the drill-down series filter
-        delete filters.round_ids;
-        delete filters.category_ids;
-        delete filters.sub_category_ids;
-        delete filters.recipient_ids;
-        // Set the correct series-specific filter based on current series type
-        switch (this.state.seriesBy) {
-            case "round": filters.round_id = seriesId; break;
-            case "category": filters.category_id = seriesId; break;
-            case "sub_category": filters.sub_category_id = seriesId; break;
-            default: filters.round_id = seriesId; break;
-        }
-        this.state.detailVotes = (await this.orm.call("aps.award.vote", "get_vote_details", [], { filters })) || [];
+        const voteIds = (recipient.vote_ids && recipient.vote_ids[seriesId]) || [];
+        this.state.detailVotes = (await this.orm.call("aps.award.vote", "get_vote_details", [], { vote_ids: voteIds })) || [];
         this.state.detailLoading = false;
         this.state.activeTab = "details";
     }

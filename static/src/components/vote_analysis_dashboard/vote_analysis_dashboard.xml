@@ -198,7 +198,7 @@
         </ul>
 
         <!-- Tab 1: Chart (always in DOM so canvas ref stays valid) -->
-        <div t-att-class="state.activeTab === 'chart' ? '' : 'd-none'">
+        <div t-att-class="state.activeTab === 'chart' ? 'o_chart_tab' : 'o_chart_tab d-none'">
             <div class="card">
                 <div class="card-body o_vote_analysis_chart_body">
                     <canvas t-ref="chart"/>

@@ -18,10 +18,29 @@
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
 }
 
+/* Chart tab wrapper must fill remaining space */
+.o_vote_analysis_dashboard .o_chart_tab {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.o_vote_analysis_dashboard .o_chart_tab .card {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.o_vote_analysis_dashboard .o_chart_tab .card .card-body {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+}
+
 /* Chart */
 .o_vote_analysis_dashboard .o_vote_analysis_chart_body {
+    flex: 1;
     min-height: 280px;
-    height: calc(100vh - 200px);
     position: relative;
     cursor: pointer;
 }

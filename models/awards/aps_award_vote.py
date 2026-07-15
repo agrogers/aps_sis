@@ -300,53 +300,51 @@ class APSAwardVote(models.Model):
                 )
                 series_names = {r['id']: r['name'] for r in round_records}
 
-        # Aggregate: recipient -> series item -> count
+        # Aggregate: recipient -> series item -> count + vote IDs
         recipient_data = {}
         for v in votes:
             partner = v['recipient_partner_id']
             if not partner:
                 continue
+            vid = v['id']
             pid = partner[0]
             pname = partner[1]
+
+            def _ensure_recipient(d, p_id, p_name):
+                if p_id not in d:
+                    d[p_id] = {'id': p_id, 'name': p_name, 'votes': {}, 'total': 0, 'vote_ids': {}}
+
+            def _add_vote(d, p_id, s_id, vote_id):
+                d[p_id]['votes'][s_id] = d[p_id]['votes'].get(s_id, 0) + 1
+                d[p_id]['total'] += 1
+                if s_id not in d[p_id]['vote_ids']:
+                    d[p_id]['vote_ids'][s_id] = []
+                d[p_id]['vote_ids'][s_id].append(vote_id)
+                if s_id not in series_ids_in_data:
+                    series_ids_in_data.add(s_id)
 
             # Determine the series ID for this vote
             if series_by == 'voting_set':
                 rid = v['vote_round_id'][0] if v['vote_round_id'] else False
                 vs_ids = round_to_voting_sets.get(rid, []) if rid else []
                 for vs_id in vs_ids:
-                    if pid not in recipient_data:
-                        recipient_data[pid] = {'id': pid, 'name': pname, 'votes': {}, 'total': 0}
-                    recipient_data[pid]['votes'][vs_id] = recipient_data[pid]['votes'].get(vs_id, 0) + 1
-                    recipient_data[pid]['total'] += 1
-                    if vs_id not in series_ids_in_data:
-                        series_ids_in_data.add(vs_id)
+                    _ensure_recipient(recipient_data, pid, pname)
+                    _add_vote(recipient_data, pid, vs_id, vid)
             elif series_by == 'category':
                 sid = v['award_category_id'][0] if v['award_category_id'] else False
                 if sid:
-                    if pid not in recipient_data:
-                        recipient_data[pid] = {'id': pid, 'name': pname, 'votes': {}, 'total': 0}
-                    recipient_data[pid]['votes'][sid] = recipient_data[pid]['votes'].get(sid, 0) + 1
-                    recipient_data[pid]['total'] += 1
-                    if sid not in series_ids_in_data:
-                        series_ids_in_data.add(sid)
+                    _ensure_recipient(recipient_data, pid, pname)
+                    _add_vote(recipient_data, pid, sid, vid)
             elif series_by == 'sub_category':
                 sid = v['award_sub_category_id'][0] if v['award_sub_category_id'] else False
                 if sid:
-                    if pid not in recipient_data:
-                        recipient_data[pid] = {'id': pid, 'name': pname, 'votes': {}, 'total': 0}
-                    recipient_data[pid]['votes'][sid] = recipient_data[pid]['votes'].get(sid, 0) + 1
-                    recipient_data[pid]['total'] += 1
-                    if sid not in series_ids_in_data:
-                        series_ids_in_data.add(sid)
+                    _ensure_recipient(recipient_data, pid, pname)
+                    _add_vote(recipient_data, pid, sid, vid)
             else:  # 'round'
                 sid = v['vote_round_id'][0] if v['vote_round_id'] else False
                 if sid:
-                    if pid not in recipient_data:
-                        recipient_data[pid] = {'id': pid, 'name': pname, 'votes': {}, 'total': 0}
-                    recipient_data[pid]['votes'][sid] = recipient_data[pid]['votes'].get(sid, 0) + 1
-                    recipient_data[pid]['total'] += 1
-                    if sid not in series_ids_in_data:
-                        series_ids_in_data.add(sid)
+                    _ensure_recipient(recipient_data, pid, pname)
+                    _add_vote(recipient_data, pid, sid, vid)
 
         # Sort by total descending, then name
         recipients = sorted(
@@ -391,42 +389,21 @@ class APSAwardVote(models.Model):
         }
 
     @api.model
-    def get_vote_details(self, filters=None):
-        """Return individual vote records for drill-down on a chart bar click.
+    def get_vote_details(self, vote_ids=None):
+        """Return individual vote records by their IDs.
 
         Args:
-            filters: dict with keys including recipient_id and round_id for the drill-down.
+            vote_ids: list of vote record IDs
 
         Returns:
             list of dicts with keys: id, recipient_name, voter_name, round_name,
-            category_name, submitted_date, state, comment
+            category_name, sub_category_name, submitted_date, state, comment
         """
-        filters = filters or {}
-        domain = [('state', 'in', ['submitted', 'closed'])]
-
-        if filters.get('date_from'):
-            domain.append(('submitted_date', '>=', filters['date_from']))
-        if filters.get('date_to'):
-            domain.append(('submitted_date', '<=', filters['date_to']))
-        if filters.get('round_ids'):
-            domain.append(('vote_round_id', 'in', filters['round_ids']))
-        if filters.get('category_ids'):
-            domain.append(('award_category_id', 'in', filters['category_ids']))
-        if filters.get('sub_category_ids'):
-            domain.append(('award_sub_category_id', 'in', filters['sub_category_ids']))
-        if filters.get('recipient_ids'):
-            domain.append(('recipient_partner_id', 'in', filters['recipient_ids']))
-        if filters.get('recipient_id'):
-            domain.append(('recipient_partner_id', '=', filters['recipient_id']))
-        if filters.get('round_id'):
-            domain.append(('vote_round_id', '=', filters['round_id']))
-        if filters.get('category_id'):
-            domain.append(('award_category_id', '=', filters['category_id']))
-        if filters.get('sub_category_id'):
-            domain.append(('award_sub_category_id', '=', filters['sub_category_id']))
+        if not vote_ids:
+            return []
 
         votes = self.search_read(
-            domain,
+            [('id', 'in', vote_ids)],
             ['recipient_partner_id', 'voter_partner_id', 'vote_round_id',
              'award_category_id', 'award_sub_category_id', 'submitted_date', 'state', 'comment'],
         )
