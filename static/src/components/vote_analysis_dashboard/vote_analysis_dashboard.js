@@ -221,6 +221,10 @@ export class VoteAnalysisDashboard extends Component {
         if (tab === "chart") {
             Promise.resolve().then(() => this._renderChart());
         }
+        if (tab === "details" && this.state.detailRecipient && this.state.detailVotes.length > 0) {
+            // Re-initialize grid when switching back to details tab
+            setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
+        }
     }
 
     async onDateFromChange(ev) { this.state.dateFrom = ev.target.value; await this._loadData(); }
@@ -403,7 +407,13 @@ export class VoteAnalysisDashboard extends Component {
 
     _destroyDetailGrid() {
         if (this._voteDetailsGrid) {
-            try { this._voteDetailsGrid.destroy(); } catch (e) { /* ignore */ }
+            try {
+                // Commit any pending edits before destroying (persists comment changes)
+                if (this._voteDetailsGrid.editController) {
+                    this._voteDetailsGrid.editController.commitCurrentEdit();
+                }
+                this._voteDetailsGrid.destroy();
+            } catch (e) { /* ignore */ }
             this._voteDetailsGrid = null;
             this._voteDetailsDataView = null;
         }
@@ -432,14 +442,15 @@ export class VoteAnalysisDashboard extends Component {
             { id: "category_name", name: "Category", field: "category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
             { id: "sub_category_name", name: "Sub-Category", field: "sub_category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
             { id: "submitted_date", name: "Date", field: "submitted_date", minWidth: 80, width: 100, sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center" },
-            { id: "comment", name: "Comment", field: "comment", minWidth: 100, width: 200, sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-muted" },
+            { id: "comment", name: "Comment", field: "comment", minWidth: 100, width: 200, sortable: true, editable: true, editor: { model: Slicker.Editors.text }, cssClass: "va-grid-cell va-grid-cell-muted" },
         ];
 
         const data = votes.map((v, idx) => ({ ...v, _idx: idx }));
 
         const gridBundle = new Slicker.GridBundle(container, columns, {
-            enableCellNavigation: false,
-            editable: false,
+            enableCellNavigation: true,
+            editable: true,
+            autoEdit: true,
             enableColumnReorder: false,
             fullWidthRows: true,
             forceFitColumns: true,
@@ -452,17 +463,46 @@ export class VoteAnalysisDashboard extends Component {
         this._voteDetailsGrid = gridBundle.slickGrid;
         this._voteDetailsDataView = gridBundle.dataView;
 
-        // Checkbox click handler
+        // Comment edit handler — persist on blur
+        this._voteDetailsGrid.onCellChange.subscribe((e, args) => {
+            const item = args.item;
+            if (args.column.field === "comment") {
+                comp.orm.call(
+                    "aps.award.vote",
+                    "update_vote_comment",
+                    [item.id, item.comment || ""]
+                ).catch((err) => console.error("Failed to save comment:", err));
+            }
+        });
+
+        // Persist unsaved comment edits when editor is destroyed (tab switch, click away, etc.)
+        this._voteDetailsGrid.onBeforeCellDestroy.subscribe((e, args) => {
+            const cell = args.cell;
+            if (cell && cell.column && cell.column.field === "comment" && cell.item) {
+                const item = cell.item;
+                const newValue = cell.editor.serializeValue ? cell.editor.serializeValue() : item.comment;
+                if (newValue !== undefined && item.id) {
+                    comp.orm.call(
+                        "aps.award.vote",
+                        "update_vote_comment",
+                        [item.id, newValue || ""]
+                    ).catch((err) => console.error("Failed to save comment on editor close:", err));
+                }
+            }
+        });
+
+        // Checkbox click handler — must return true for non-checkbox clicks to allow cell editing
         this._voteDetailsGrid.onClick.subscribe((e, args) => {
             const target = e.target;
             if (target.type === "checkbox" && target.dataset.voteId) {
                 const voteId = parseInt(target.dataset.voteId, 10);
                 comp.toggleVoteSelection(voteId);
-                // Update checkbox state (OWL re-render might not hit SlickGrid cells)
                 target.checked = comp.isSelectedVote(voteId);
-                // Also update header checkbox
                 comp._updateDetailHeaderCheckbox();
+                e.stopImmediatePropagation();
+                return false;
             }
+            return true;
         });
 
         // Resize observer

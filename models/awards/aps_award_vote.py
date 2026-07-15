@@ -425,6 +425,15 @@ class APSAwardVote(models.Model):
         return result
 
     @api.model
+    def update_vote_comment(self, vote_id, comment):
+        """Update the comment field of a vote record."""
+        vote = self.browse(vote_id)
+        if vote.exists():
+            vote.write({'comment': comment or ''})
+            return True
+        return False
+
+    @api.model
     def get_certificate_details(self, filters=None):
         """Return certificate records for a given recipient.
 
