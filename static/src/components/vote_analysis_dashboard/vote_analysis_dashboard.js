@@ -1,8 +1,9 @@
-import { Component, useState, onWillStart, onMounted, onPatched, useRef } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted, onPatched, useRef, onWillUnmount } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { MultiRecordSelector } from "@web/core/record_selectors/multi_record_selector";
 import { FilterPresetManager } from "../../js/filter_preset_service";
+import { cookie } from "@web/core/browser/cookie";
 
 const COMPONENT_KEY = "vote_analysis_dashboard";
 
@@ -23,6 +24,10 @@ export class VoteAnalysisDashboard extends Component {
         this.notification = useService("notification");
         this.chartRef = useRef("chart");
         this.chart = null;
+        this.voteDetailsGridRef = useRef("voteDetailsGrid");
+        this._voteDetailsGrid = null;
+        this._voteDetailsDataView = null;
+        this._isDarkMode = cookie.get("color_scheme") === "dark";
         this.filterPresets = new FilterPresetManager(this.orm, COMPONENT_KEY);
 
         this.state = useState({
@@ -84,7 +89,12 @@ export class VoteAnalysisDashboard extends Component {
 
         onMounted(() => { this._renderChart(); });
         onPatched(() => { this._renderChart(); });
+        onWillUnmount(() => { this._destroyDetailGrid(); });
     }
+
+    // ------------------------------------------------------------------
+    // Data loading
+    // ------------------------------------------------------------------
 
     async _loadFilterOptions() {
         const options = await this.orm.call("aps.award.vote", "get_vote_analysis_filter_options", [], {});
@@ -124,6 +134,10 @@ export class VoteAnalysisDashboard extends Component {
         this.state.recipientDomain = ids.length ? [["id", "in", ids]] : [];
     }
 
+    // ------------------------------------------------------------------
+    // Chart rendering
+    // ------------------------------------------------------------------
+
     _renderChart() {
         if (!this.chartRef.el) { return; }
         if (this.chart) { this.chart.destroy(); this.chart = null; }
@@ -146,7 +160,6 @@ export class VoteAnalysisDashboard extends Component {
             order: 1,
         }));
 
-        // Certificate overlay line dataset on second Y-axis
         const certCounts = this.state.certificateCounts;
         const hasOverlay = this.state.overlay === "certificates" && Object.keys(certCounts).length > 0;
         if (hasOverlay) {
@@ -198,11 +211,14 @@ export class VoteAnalysisDashboard extends Component {
         return v.length <= maxLen ? v : `${v.slice(0, maxLen - 1)}…`;
     }
 
+    // ------------------------------------------------------------------
+    // Filter event handlers
+    // ------------------------------------------------------------------
+
     toggleFilters() { this.state.filtersOpen = !this.state.filtersOpen; }
     onTabChange(tab) {
         this.state.activeTab = tab;
         if (tab === "chart") {
-            // Re-render after DOM update so Chart.js gets valid dimensions
             Promise.resolve().then(() => this._renderChart());
         }
     }
@@ -254,6 +270,10 @@ export class VoteAnalysisDashboard extends Component {
         this.state.activePresetName = "";
         await this._loadData();
     }
+
+    // ------------------------------------------------------------------
+    // Filter preset management
+    // ------------------------------------------------------------------
 
     _getFilterData() {
         return {
@@ -323,6 +343,10 @@ export class VoteAnalysisDashboard extends Component {
         this.state.presets = this.filterPresets.presetList || [];
     }
 
+    // ------------------------------------------------------------------
+    // Chart click / drill-down
+    // ------------------------------------------------------------------
+
     getRecipientVoteCount(roundId, recipient) { return recipient.votes[roundId] || 0; }
 
     onTableCellClick(recipient, seriesId) {
@@ -334,17 +358,237 @@ export class VoteAnalysisDashboard extends Component {
         for (const seriesId in recipient.vote_ids || {}) {
             allVoteIds.push(...recipient.vote_ids[seriesId]);
         }
+        this._loadDetailVotesByIds(recipient, allVoteIds, recipient.name + " — All Votes");
+    }
+
+    async _loadDetailVotes(recipient, seriesId) {
         this.state.detailLoading = true;
         this.state.detailRecipient = recipient;
-        this.state.detailRoundId = null;
-        this.state.detailHeader = recipient.name + " — All Votes";
-        this.orm.call("aps.award.vote", "get_vote_details", [], { vote_ids: allVoteIds })
-            .then((result) => {
-                this.state.detailVotes = result || [];
-                this.state.detailLoading = false;
-                this.state.activeTab = "details";
-            });
+        this.state.detailRoundId = seriesId;
+        const seriesItem = this.state.series.find((r) => r.id === seriesId);
+        this.state.detailHeader = recipient.name + " — " + (seriesItem ? seriesItem.name : "Series " + seriesId);
+        const voteIds = (recipient.vote_ids && recipient.vote_ids[seriesId]) || [];
+        await this._loadDetailVotesByIds(recipient, voteIds, this.state.detailHeader);
     }
+
+    async _loadDetailVotesByIds(recipient, voteIds, header) {
+        this.state.detailLoading = true;
+        this.state.detailRecipient = recipient;
+        this.state.detailHeader = header;
+        this.state.selectedVoteIds = [];
+        this.state.selectedCerts = [];
+        this.state.selectedCertsLoading = false;
+        this.state.detailVotes = (await this.orm.call("aps.award.vote", "get_vote_details", [], { vote_ids: voteIds })) || [];
+        this.state.detailLoading = false;
+        this.state.activeTab = "details";
+        this._destroyDetailGrid();
+        // Grid init after OWL DOM patch completes
+        setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
+    }
+
+    clearDetail() {
+        this._destroyDetailGrid();
+        this.state.detailRecipient = null;
+        this.state.detailRoundId = null;
+        this.state.detailHeader = "";
+        this.state.detailVotes = [];
+        this.state.selectedVoteIds = [];
+        this.state.selectedCerts = [];
+        this.state.selectedCertsLoading = false;
+    }
+
+    // ------------------------------------------------------------------
+    // SlickGrid: Vote Details grid
+    // ------------------------------------------------------------------
+
+    _destroyDetailGrid() {
+        if (this._voteDetailsGrid) {
+            try { this._voteDetailsGrid.destroy(); } catch (e) { /* ignore */ }
+            this._voteDetailsGrid = null;
+            this._voteDetailsDataView = null;
+        }
+    }
+
+    _initVoteDetailsGrid(votes) {
+        this._destroyDetailGrid();
+        const container = this.voteDetailsGridRef.el;
+        if (!container) { return; }
+        if (!votes || !votes.length) { return; }
+
+        const comp = this;
+        const columns = [
+            {
+                id: "selected", name: "", field: "selected",
+                width: 40, minWidth: 40, maxWidth: 40,
+                sortable: false, editable: false, focusable: false,
+                cssClass: "va-grid-cell-check",
+                formatter: (rowIdx, cellIdx, value, columnDef, item) => {
+                    const checked = comp.isSelectedVote(item.id) ? "checked" : "";
+                    return `<input type="checkbox" class="form-check-input" data-vote-id="${item.id}" ${checked}/>`;
+                },
+            },
+            { id: "voter_name", name: "Voter", field: "voter_name", minWidth: 120, width: 160, sortable: true, editable: false, cssClass: "va-grid-cell" },
+            { id: "round_name", name: "Round", field: "round_name", minWidth: 80, width: 120, sortable: true, editable: false, cssClass: "va-grid-cell" },
+            { id: "category_name", name: "Category", field: "category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
+            { id: "sub_category_name", name: "Sub-Category", field: "sub_category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
+            { id: "submitted_date", name: "Date", field: "submitted_date", minWidth: 80, width: 100, sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center" },
+            { id: "comment", name: "Comment", field: "comment", minWidth: 100, width: 200, sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-muted" },
+        ];
+
+        const data = votes.map((v, idx) => ({ ...v, _idx: idx }));
+
+        const gridBundle = new Slicker.GridBundle(container, columns, {
+            enableCellNavigation: false,
+            editable: false,
+            enableColumnReorder: false,
+            fullWidthRows: true,
+            forceFitColumns: true,
+            syncColumnCellResize: true,
+            rowHeight: 34,
+            autoHeight: true,
+            darkMode: this._isDarkMode,
+        }, data);
+
+        this._voteDetailsGrid = gridBundle.slickGrid;
+        this._voteDetailsDataView = gridBundle.dataView;
+
+        // Checkbox click handler
+        this._voteDetailsGrid.onClick.subscribe((e, args) => {
+            const target = e.target;
+            if (target.type === "checkbox" && target.dataset.voteId) {
+                const voteId = parseInt(target.dataset.voteId, 10);
+                comp.toggleVoteSelection(voteId);
+                // Update checkbox state (OWL re-render might not hit SlickGrid cells)
+                target.checked = comp.isSelectedVote(voteId);
+                // Also update header checkbox
+                comp._updateDetailHeaderCheckbox();
+            }
+        });
+
+        // Resize observer
+        this._detailGridResizeObserver = new ResizeObserver(() => {
+            if (this._voteDetailsGrid) this._voteDetailsGrid.resizeCanvas();
+        });
+        this._detailGridResizeObserver.observe(container);
+        setTimeout(() => this._voteDetailsGrid.resizeCanvas(), 100);
+    }
+
+    _updateDetailHeaderCheckbox() {
+        const container = this.voteDetailsGridRef.el;
+        if (!container) return;
+        const headerCb = container.querySelector(".va-grid-header-check input[type='checkbox']");
+        if (headerCb) {
+            headerCb.checked = this.allVotesSelected;
+            headerCb.indeterminate = this.state.selectedVoteIds.length > 0 && !this.allVotesSelected;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Checkbox / certificate selection
+    // ------------------------------------------------------------------
+
+    toggleAllVotes() {
+        if (this.allVotesSelected) {
+            this.state.selectedVoteIds = [];
+        } else {
+            this.state.selectedVoteIds = this.state.detailVotes.map((v) => v.id);
+        }
+        this._refreshDetailCheckboxes();
+    }
+
+    get allVotesSelected() {
+        return this.state.detailVotes.length > 0 && this.state.selectedVoteIds.length === this.state.detailVotes.length;
+    }
+
+    toggleVoteSelection(voteId) {
+        const ids = [...this.state.selectedVoteIds];
+        const idx = ids.indexOf(voteId);
+        if (idx >= 0) {
+            ids.splice(idx, 1);
+        } else {
+            ids.push(voteId);
+        }
+        this.state.selectedVoteIds = ids;
+    }
+
+    isSelectedVote(voteId) {
+        return this.state.selectedVoteIds.includes(voteId);
+    }
+
+    _refreshDetailCheckboxes() {
+        const container = this.voteDetailsGridRef.el;
+        if (!container) return;
+        const checkboxes = container.querySelectorAll("input[data-vote-id]");
+        const selectedSet = new Set(this.state.selectedVoteIds);
+        checkboxes.forEach((cb) => {
+            const vid = parseInt(cb.dataset.voteId, 10);
+            cb.checked = selectedSet.has(vid);
+        });
+        this._updateDetailHeaderCheckbox();
+    }
+
+    async loadSelectedCerts() {
+        const ids = this.state.selectedVoteIds;
+        if (!ids.length) {
+            this.state.selectedCerts = [];
+            return;
+        }
+        this.state.selectedCertsLoading = true;
+        const partnerIds = [...new Set(
+            this.state.detailVotes
+                .filter((v) => ids.includes(v.id))
+                .map((v) => v.recipient_id)
+                .filter(Boolean)
+        )];
+        const allCerts = [];
+        const seen = new Set();
+        for (const pid of partnerIds) {
+            const filters = {
+                recipient_id: pid,
+                date_from: this.state.dateFrom || false,
+                date_to: this.state.dateTo || false,
+                category_ids: this.state.selectedCategoryIds,
+            };
+            const certs = await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters });
+            for (const c of certs || []) {
+                if (!seen.has(c.id)) {
+                    seen.add(c.id);
+                    allCerts.push(c);
+                }
+            }
+        }
+        this.state.selectedCerts = allCerts;
+        this.state.selectedCertsLoading = false;
+    }
+
+    // ------------------------------------------------------------------
+    // Certificate drill-down
+    // ------------------------------------------------------------------
+
+    async _loadCertDetails(recipient) {
+        this.state.certDetailLoading = true;
+        this.state.certDetailRecipient = recipient;
+        this.state.certDetailHeader = recipient.name + " — Certificates";
+        const filters = {
+            recipient_id: recipient.id,
+            date_from: this.state.dateFrom || false,
+            date_to: this.state.dateTo || false,
+            category_ids: this.state.selectedCategoryIds,
+        };
+        this.state.certDetailList = (await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters })) || [];
+        this.state.certDetailLoading = false;
+        this.state.activeTab = "certs";
+    }
+
+    clearCertDetail() {
+        this.state.certDetailRecipient = null;
+        this.state.certDetailHeader = "";
+        this.state.certDetailList = [];
+    }
+
+    // ------------------------------------------------------------------
+    // Sort helpers
+    // ------------------------------------------------------------------
 
     get sortedRecipients() {
         const recipients = [...this.state.recipients];
@@ -389,13 +633,9 @@ export class VoteAnalysisDashboard extends Component {
         return recipients;
     }
 
-    _getCurrentFilters() {
-        return {
-            date_from: this.state.dateFrom || false, date_to: this.state.dateTo || false,
-            round_ids: this.state.selectedRoundIds, category_ids: this.state.selectedCategoryIds,
-            sub_category_ids: this.state.selectedSubCategoryIds, recipient_ids: this.state.selectedRecipientIds,
-        };
-    }
+    // ------------------------------------------------------------------
+    // Chart click
+    // ------------------------------------------------------------------
 
     _onChartClick(elements) {
         if (!elements.length) { return; }
@@ -407,7 +647,6 @@ export class VoteAnalysisDashboard extends Component {
         const hasOverlay = this.state.overlay === "certificates" && Object.keys(this.state.certificateCounts).length > 0;
         const certDatasetIndex = hasOverlay ? series.length : -1;
 
-        // Click on the certificate line dataset
         if (hasOverlay && element.datasetIndex === certDatasetIndex) {
             if (element.index >= 0 && element.index < recipients.length) {
                 this._loadCertDetails(recipients[element.index]);
@@ -415,117 +654,10 @@ export class VoteAnalysisDashboard extends Component {
             return;
         }
 
-        // Click on a bar dataset
         if (!series.length) { return; }
         if (element.datasetIndex < 0 || element.datasetIndex >= series.length) { return; }
         if (element.index < 0 || element.index >= recipients.length) { return; }
         this._loadDetailVotes(recipients[element.index], series[element.datasetIndex].id);
-    }
-
-    async _loadDetailVotes(recipient, seriesId) {
-        this.state.detailLoading = true;
-        this.state.detailRecipient = recipient;
-        this.state.detailRoundId = seriesId;
-        const seriesItem = this.state.series.find((r) => r.id === seriesId);
-        this.state.detailHeader = recipient.name + " — " + (seriesItem ? seriesItem.name : "Series " + seriesId);
-        const voteIds = (recipient.vote_ids && recipient.vote_ids[seriesId]) || [];
-        this.state.detailVotes = (await this.orm.call("aps.award.vote", "get_vote_details", [], { vote_ids: voteIds })) || [];
-        this.state.detailLoading = false;
-        this.state.activeTab = "details";
-    }
-
-    clearDetail() {
-        this.state.detailRecipient = null;
-        this.state.detailRoundId = null;
-        this.state.detailHeader = "";
-        this.state.detailVotes = [];
-        this.state.selectedVoteIds = [];
-        this.state.selectedCerts = [];
-        this.state.selectedCertsLoading = false;
-    }
-
-    toggleAllVotes() {
-        if (this.state.selectedVoteIds.length === this.state.detailVotes.length) {
-            this.state.selectedVoteIds = [];
-        } else {
-            this.state.selectedVoteIds = this.state.detailVotes.map((v) => v.id);
-        }
-    }
-
-    get allVotesSelected() {
-        return this.state.detailVotes.length > 0 && this.state.selectedVoteIds.length === this.state.detailVotes.length;
-    }
-
-    toggleVoteSelection(voteId) {
-        const ids = [...this.state.selectedVoteIds];
-        const idx = ids.indexOf(voteId);
-        if (idx >= 0) {
-            ids.splice(idx, 1);
-        } else {
-            ids.push(voteId);
-        }
-        this.state.selectedVoteIds = ids;
-    }
-
-    isSelectedVote(voteId) {
-        return this.state.selectedVoteIds.includes(voteId);
-    }
-
-    async loadSelectedCerts() {
-        const ids = this.state.selectedVoteIds;
-        if (!ids.length) {
-            this.state.selectedCerts = [];
-            return;
-        }
-        this.state.selectedCertsLoading = true;
-        // Get unique partner IDs from selected votes
-        const partnerIds = [...new Set(
-            this.state.detailVotes
-                .filter((v) => ids.includes(v.id))
-                .map((v) => v.recipient_partner_id)
-                .filter(Boolean)
-        )];
-        // Fetch certificates for each recipient
-        const allCerts = [];
-        const seen = new Set();
-        for (const pid of partnerIds) {
-            const filters = {
-                recipient_id: pid,
-                date_from: this.state.dateFrom || false,
-                date_to: this.state.dateTo || false,
-                category_ids: this.state.selectedCategoryIds,
-            };
-            const certs = await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters });
-            for (const c of certs || []) {
-                if (!seen.has(c.id)) {
-                    seen.add(c.id);
-                    allCerts.push(c);
-                }
-            }
-        }
-        this.state.selectedCerts = allCerts;
-        this.state.selectedCertsLoading = false;
-    }
-
-    async _loadCertDetails(recipient) {
-        this.state.certDetailLoading = true;
-        this.state.certDetailRecipient = recipient;
-        this.state.certDetailHeader = recipient.name + " — Certificates";
-        const filters = {
-            recipient_id: recipient.id,
-            date_from: this.state.dateFrom || false,
-            date_to: this.state.dateTo || false,
-            category_ids: this.state.selectedCategoryIds,
-        };
-        this.state.certDetailList = (await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters })) || [];
-        this.state.certDetailLoading = false;
-        this.state.activeTab = "certs";
-    }
-
-    clearCertDetail() {
-        this.state.certDetailRecipient = null;
-        this.state.certDetailHeader = "";
-        this.state.certDetailList = [];
     }
 }
 
