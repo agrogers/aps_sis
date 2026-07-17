@@ -222,7 +222,6 @@ export class VoteAnalysisDashboard extends Component {
             Promise.resolve().then(() => this._renderChart());
         }
         if (tab === "details" && this.state.detailRecipient && this.state.detailVotes.length > 0) {
-            // Re-initialize grid when switching back to details tab
             setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
         }
     }
@@ -386,7 +385,6 @@ export class VoteAnalysisDashboard extends Component {
         this.state.detailLoading = false;
         this.state.activeTab = "details";
         this._destroyDetailGrid();
-        // Grid init after OWL DOM patch completes
         setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
     }
 
@@ -408,7 +406,6 @@ export class VoteAnalysisDashboard extends Component {
     _destroyDetailGrid() {
         if (this._voteDetailsGrid) {
             try {
-                // Commit any pending edits before destroying (persists comment changes)
                 if (this._voteDetailsGrid.editController) {
                     this._voteDetailsGrid.editController.commitCurrentEdit();
                 }
@@ -427,22 +424,12 @@ export class VoteAnalysisDashboard extends Component {
 
         const comp = this;
         const columns = [
-            {
-                id: "selected", name: '<div class="va-grid-header-check"><input type="checkbox" class="form-check-input" title="Select all"/></div>', field: "selected",
-                width: 40, minWidth: 40, maxWidth: 40,
-                sortable: false, editable: false, focusable: false,
-                cssClass: "va-grid-cell-check",
-                formatter: (rowIdx, cellIdx, value, columnDef, item) => {
-                    const checked = comp.isSelectedVote(item.id) ? "checked" : "";
-                    return `<input type="checkbox" class="form-check-input" data-vote-id="${item.id}" ${checked}/>`;
-                },
-            },
-            { id: "voter_name", name: "Voter", field: "voter_name", minWidth: 120, width: 160, sortable: true, editable: false, cssClass: "va-grid-cell" },
-            { id: "round_name", name: "Round", field: "round_name", minWidth: 80, width: 120, sortable: true, editable: false, cssClass: "va-grid-cell" },
-            { id: "category_name", name: "Category", field: "category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
-            { id: "sub_category_name", name: "Sub-Category", field: "sub_category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
-            { id: "submitted_date", name: "Date", field: "submitted_date", minWidth: 80, width: 100, sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center" },
-            { id: "comment", name: "Comment", field: "comment", minWidth: 100, width: 200, sortable: true, editable: true, editor: { model: Slicker.Editors.text }, cssClass: "va-grid-cell va-grid-cell-muted" },
+            { id: "voter_name", name: "Voter", field: "voter_name", minWidth: 120, width: 160, sortable: true, editable: false },
+            { id: "round_name", name: "Round", field: "round_name", minWidth: 80, width: 120, sortable: true, editable: false },
+            { id: "category_name", name: "Category", field: "category_name", minWidth: 100, width: 140, sortable: true, editable: false },
+            { id: "sub_category_name", name: "Sub-Category", field: "sub_category_name", minWidth: 100, width: 140, sortable: true, editable: false },
+            { id: "submitted_date", name: "Date", field: "submitted_date", minWidth: 80, width: 100, sortable: true, editable: false },
+            { id: "comment", name: "Comment", field: "comment", minWidth: 100, width: 200, sortable: true, editable: true, editor: { model: Slicker.Editors.text } },
         ];
 
         const data = votes.map((v, idx) => ({ ...v, _idx: idx }));
@@ -459,26 +446,24 @@ export class VoteAnalysisDashboard extends Component {
             rowHeight: 34,
             autoHeight: true,
             darkMode: this._isDarkMode,
+            enableCheckboxSelector: true,
+            enableRowSelection: true,
+            checkboxSelector: {
+                hideSelectAllCheckbox: false,
+                columnId: '_checkbox_selector',
+                cssClass: 'va-grid-cell-check',
+                width: 40,
+            },
         }, data);
 
         this._voteDetailsGrid = gridBundle.slickGrid;
         this._voteDetailsDataView = gridBundle.dataView;
 
-        // Attach select-all header checkbox handler
-        // Use setTimeout to let the grid finish rendering, then find the header checkbox
-        setTimeout(() => {
-            const headerEl = container.querySelector('.slick-header-column[data-id="selected"]');
-            if (headerEl) {
-                const cb = headerEl.querySelector(".va-grid-header-check input[type='checkbox']");
-                if (cb) {
-                    cb.checked = comp.allVotesSelected;
-                    cb.indeterminate = comp.state.selectedVoteIds.length > 0 && !comp.allVotesSelected;
-                    cb.addEventListener("change", () => {
-                        comp.toggleAllVotes();
-                    });
-                }
-            }
-        }, 0);
+        // Handle row selection changes (checkbox column + select-all)
+        this._voteDetailsGrid.onSelectedRowsChanged.subscribe((e, args) => {
+            const selectedItems = args.rows.map((rowIdx) => comp._voteDetailsDataView.getItem(rowIdx));
+            comp.state.selectedVoteIds = selectedItems.map((item) => item.id);
+        });
 
         // Comment edit handler — persist on blur
         this._voteDetailsGrid.onCellChange.subscribe((e, args) => {
@@ -492,7 +477,7 @@ export class VoteAnalysisDashboard extends Component {
             }
         });
 
-        // Persist unsaved comment edits when editor is destroyed (tab switch, click away, etc.)
+        // Persist unsaved comment edits when editor is destroyed
         this._voteDetailsGrid.onBeforeCellEditorDestroy.subscribe((e, args) => {
             const editor = args.editor;
             if (editor && editor.args && editor.args.column && editor.args.column.field === "comment" && editor.args.item) {
@@ -508,20 +493,6 @@ export class VoteAnalysisDashboard extends Component {
             }
         });
 
-        // Checkbox click handler — must return true for non-checkbox clicks to allow cell editing
-        this._voteDetailsGrid.onClick.subscribe((e, args) => {
-            const target = e.target;
-            if (target.type === "checkbox" && target.dataset.voteId) {
-                const voteId = parseInt(target.dataset.voteId, 10);
-                comp.toggleVoteSelection(voteId);
-                target.checked = comp.isSelectedVote(voteId);
-                comp._updateDetailHeaderCheckbox();
-                e.stopImmediatePropagation();
-                return false;
-            }
-            return true;
-        });
-
         // Resize observer
         this._detailGridResizeObserver = new ResizeObserver(() => {
             if (this._voteDetailsGrid) this._voteDetailsGrid.resizeCanvas();
@@ -530,58 +501,26 @@ export class VoteAnalysisDashboard extends Component {
         setTimeout(() => this._voteDetailsGrid.resizeCanvas(), 100);
     }
 
-    _updateDetailHeaderCheckbox() {
-        const container = this.voteDetailsGridRef.el;
-        if (!container) return;
-        const headerCb = container.querySelector(".va-grid-header-check input[type='checkbox']");
-        if (headerCb) {
-            headerCb.checked = this.allVotesSelected;
-            headerCb.indeterminate = this.state.selectedVoteIds.length > 0 && !this.allVotesSelected;
-        }
-    }
-
     // ------------------------------------------------------------------
     // Checkbox / certificate selection
     // ------------------------------------------------------------------
 
     toggleAllVotes() {
+        if (!this._voteDetailsGrid) return;
         if (this.allVotesSelected) {
-            this.state.selectedVoteIds = [];
+            this._voteDetailsGrid.setSelectedRows([]);
         } else {
-            this.state.selectedVoteIds = this.state.detailVotes.map((v) => v.id);
+            const allRows = Array.from({ length: this.state.detailVotes.length }, (_, i) => i);
+            this._voteDetailsGrid.setSelectedRows(allRows);
         }
-        this._refreshDetailCheckboxes();
     }
 
     get allVotesSelected() {
         return this.state.detailVotes.length > 0 && this.state.selectedVoteIds.length === this.state.detailVotes.length;
     }
 
-    toggleVoteSelection(voteId) {
-        const ids = [...this.state.selectedVoteIds];
-        const idx = ids.indexOf(voteId);
-        if (idx >= 0) {
-            ids.splice(idx, 1);
-        } else {
-            ids.push(voteId);
-        }
-        this.state.selectedVoteIds = ids;
-    }
-
     isSelectedVote(voteId) {
         return this.state.selectedVoteIds.includes(voteId);
-    }
-
-    _refreshDetailCheckboxes() {
-        const container = this.voteDetailsGridRef.el;
-        if (!container) return;
-        const checkboxes = container.querySelectorAll("input[data-vote-id]");
-        const selectedSet = new Set(this.state.selectedVoteIds);
-        checkboxes.forEach((cb) => {
-            const vid = parseInt(cb.dataset.voteId, 10);
-            cb.checked = selectedSet.has(vid);
-        });
-        this._updateDetailHeaderCheckbox();
     }
 
     async loadSelectedCerts() {
