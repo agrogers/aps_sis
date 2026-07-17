@@ -195,3 +195,7 @@
     font-weight: 700;
     font-size: 0.85rem;
 }
+
+.icon-checkbox-container {
+    border: 1px solid var(--bs-border-color);
+}

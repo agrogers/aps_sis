@@ -448,10 +448,14 @@ export class VoteAnalysisDashboard extends Component {
             darkMode: this._isDarkMode,
             enableCheckboxSelector: true,
             enableRowSelection: true,
+            multiSelect: true,
+            selectionOptions: {
+                selectActiveRow: false,
+            },
             checkboxSelector: {
                 hideSelectAllCheckbox: false,
                 columnId: '_checkbox_selector',
-                cssClass: 'va-grid-cell-check',
+                cssClass: 'slick-cell-checkboxsel va-grid-cell-check',
                 width: 40,
             },
         }, data);
