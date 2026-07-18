@@ -424,16 +424,6 @@ export class VoteAnalysisDashboard extends Component {
 
         const comp = this;
         const columns = [
-            {
-                id: "selected", name: '<div class="va-grid-header-check"><input type="checkbox" class="form-check-input" title="Select all"/></div>', field: "selected",
-                width: 40, minWidth: 40, maxWidth: 40,
-                sortable: false, editable: false, focusable: false,
-                cssClass: "va-grid-cell-check",
-                formatter: (rowIdx, cellIdx, value, columnDef, item) => {
-                    const checked = comp.isSelectedVote(item.id) ? "checked" : "";
-                    return `<input type="checkbox" class="form-check-input" data-vote-id="${item.id}" ${checked}/>`;
-                },
-            },
             { id: "voter_name", name: "Voter", field: "voter_name", minWidth: 120, width: 160, sortable: true, editable: false, cssClass: "va-grid-cell" },
             { id: "round_name", name: "Round", field: "round_name", minWidth: 80, width: 120, sortable: true, editable: false, cssClass: "va-grid-cell" },
             { id: "category_name", name: "Category", field: "category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
@@ -521,17 +511,8 @@ export class VoteAnalysisDashboard extends Component {
             }
         });
 
-        // Checkbox / cert icon click handler — must return true for non-checkbox clicks to allow cell editing
+        // Cert icon click handler — must return true for non-cert clicks to allow cell editing
         this._voteDetailsGrid.onClick.subscribe((e, args) => {
-            const target = e.target;
-            if (target.type === "checkbox" && target.dataset.voteId) {
-                const voteId = parseInt(target.dataset.voteId, 10);
-                comp.toggleVoteSelection(voteId);
-                target.checked = comp.isSelectedVote(voteId);
-                comp._updateDetailHeaderCheckbox();
-                e.stopImmediatePropagation();
-                return false;
-            }
             // Handle click on cert icon → navigate to certificates tab
             if (args.cell === comp._certColumnIdx && args.grid.getDataItem(args.row).has_certificate) {
                 const item = args.grid.getDataItem(args.row);
@@ -553,26 +534,8 @@ export class VoteAnalysisDashboard extends Component {
     }
 
     // ------------------------------------------------------------------
-    // Checkbox / certificate selection
+    // Certificate selection
     // ------------------------------------------------------------------
-
-    toggleAllVotes() {
-        if (!this._voteDetailsGrid) return;
-        if (this.allVotesSelected) {
-            this._voteDetailsGrid.setSelectedRows([]);
-        } else {
-            const allRows = Array.from({ length: this.state.detailVotes.length }, (_, i) => i);
-            this._voteDetailsGrid.setSelectedRows(allRows);
-        }
-    }
-
-    get allVotesSelected() {
-        return this.state.detailVotes.length > 0 && this.state.selectedVoteIds.length === this.state.detailVotes.length;
-    }
-
-    isSelectedVote(voteId) {
-        return this.state.selectedVoteIds.includes(voteId);
-    }
 
     async loadSelectedCerts() {
         const ids = this.state.selectedVoteIds;

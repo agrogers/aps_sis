@@ -324,9 +324,6 @@
                         <strong><t t-esc="state.certDetailHeader"/></strong>
                         <span class="text-muted small ms-2" t-esc="state.certDetailList.length + ' certificates'"/>
                     </div>
-                    <button class="btn btn-outline-secondary btn-sm" t-on-click="() => clearCertDetail()">
-                        <i class="fa fa-times me-1"/>Close
-                    </button>
                 </div>
                 <div t-if="state.certDetailLoading" class="text-center py-3">
                     <i class="fa fa-spinner fa-spin text-muted"/>
