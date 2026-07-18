@@ -17,6 +17,7 @@
                 <field name="home_class_id" optional="show"/>
                 <field name="last_printed" optional="show"/>
                 <field name="notes" optional="show"/>
+                <field name="related_vote_ids" widget="many2many_tags" optional="hide"/>
                 <button name="action_print_certificate" string="Print" type="object" class="btn-link"/>
             </list>
         </field>
@@ -51,6 +52,10 @@
                     </group>
                     <group string="Related People">
                         <field name="related_partner_ids" nolabel="1"
+                            widget="many2many_tags"/>
+                    </group>
+                    <group string="Related Votes">
+                        <field name="related_vote_ids" nolabel="1"
                             widget="many2many_tags"/>
                     </group>
                     <group string="Notes">

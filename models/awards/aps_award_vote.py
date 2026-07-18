@@ -397,7 +397,7 @@ class APSAwardVote(models.Model):
 
         Returns:
             list of dicts with keys: id, recipient_name, voter_name, round_name,
-            category_name, sub_category_name, submitted_date, state, comment
+            category_name, sub_category_name, submitted_date, state, comment, has_certificate
         """
         if not vote_ids:
             return []
@@ -408,6 +408,16 @@ class APSAwardVote(models.Model):
              'award_category_id', 'award_sub_category_id', 'submitted_date', 'state', 'comment'],
         )
 
+        # Find which votes already have a certificate linked, and how many
+        cert_links = self.env['aps.certificate'].search_read(
+            [('related_vote_ids', 'in', vote_ids)],
+            ['related_vote_ids'],
+        )
+        cert_usage_count = {}
+        for cert in cert_links:
+            for vid in (cert.get('related_vote_ids') or []):
+                cert_usage_count[vid] = cert_usage_count.get(vid, 0) + 1
+
         result = []
         for v in votes:
             result.append({
@@ -415,12 +425,17 @@ class APSAwardVote(models.Model):
                 'recipient_name': v['recipient_partner_id'][1] if v['recipient_partner_id'] else '',
                 'recipient_id': v['recipient_partner_id'][0] if v['recipient_partner_id'] else False,
                 'voter_name': v['voter_partner_id'][1] if v['voter_partner_id'] else '',
+                'voter_id': v['voter_partner_id'][0] if v['voter_partner_id'] else False,
                 'round_name': v['vote_round_id'][1] if v['vote_round_id'] else '',
+                'round_id': v['vote_round_id'][0] if v['vote_round_id'] else False,
                 'category_name': v['award_category_id'][1] if v['award_category_id'] else '',
+                'category_id': v['award_category_id'][0] if v['award_category_id'] else False,
                 'sub_category_name': v['award_sub_category_id'][1] if v['award_sub_category_id'] else '',
                 'submitted_date': v['submitted_date'] or '',
                 'state': v['state'] or '',
                 'comment': v['comment'] or '',
+                'has_certificate': v['id'] in cert_usage_count,
+                'cert_usage_count': cert_usage_count.get(v['id'], 0),
             })
         return result
 
@@ -463,16 +478,114 @@ class APSAwardVote(models.Model):
 
         certs = self.env['aps.certificate'].search_read(
             domain,
-            ['event', 'award_category_id', 'date_awarded', 'certificate_template_id'],
+            ['event', 'award_category_id', 'award_sub_category_id', 'date_awarded',
+             'certificate_template_id', 'related_partner_ids'],
         )
 
         result = []
         for c in certs:
+            related_names = ', '.join(
+                [pid[1] for pid in (c.get('related_partner_ids') or []) if isinstance(pid, (list, tuple)) and len(pid) > 1]
+            )
             result.append({
                 'id': c['id'],
                 'event': c['event'] or '',
                 'award_category_name': c['award_category_id'][1] if c['award_category_id'] else '',
+                'award_sub_category_name': c['award_sub_category_id'][1] if c['award_sub_category_id'] else '',
                 'date_awarded': c['date_awarded'] or '',
                 'certificate_template_name': c['certificate_template_id'][1] if c['certificate_template_id'] else '',
+                'related_partner_names': related_names,
             })
         return result
+
+    @api.model
+    def create_certificate_from_selected_votes(self, vote_ids, recipient_id):
+        """Create an aps.certificate from selected votes for a recipient.
+
+        Args:
+            vote_ids: list of selected vote record IDs
+            recipient_id: partner ID of the recipient
+
+        Returns:
+            dict with created certificate details or error info:
+                - success: bool
+                - certificate_id: int (if success)
+                - recipient_name: str
+                - error: str (if not success)
+        """
+        if not vote_ids or not recipient_id:
+            return {'success': False, 'error': 'Missing vote IDs or recipient ID'}
+
+        # Fetch the selected votes
+        votes = self.search_read(
+            [('id', 'in', vote_ids)],
+            ['voter_partner_id', 'vote_round_id', 'award_category_id', 'award_sub_category_id',
+             'comment', 'recipient_partner_id'],
+        )
+        if not votes:
+            return {'success': False, 'error': 'No valid votes found'}
+
+        # Get the award category from the first selected vote
+        first_vote = votes[0]
+        category_id = first_vote['award_category_id'][0] if first_vote['award_category_id'] else False
+
+        # Look up certificate template from the award category
+        certificate_template_id = False
+        if category_id:
+            category = self.env['aps.award.category'].browse(category_id)
+            if category.exists() and category.certificate_template_id:
+                certificate_template_id = category.certificate_template_id.id
+
+        if not certificate_template_id:
+            return {'success': False, 'error': 'No certificate template found for the award category. Please configure a Default Certificate Template on the Category.'}
+
+        # Get the round name from the first selected vote for the event field
+        round_id = first_vote['vote_round_id'][0] if first_vote['vote_round_id'] else False
+        round_name = first_vote['vote_round_id'][1] if first_vote['vote_round_id'] else ''
+        event = round_name or 'Award Certificate'
+
+        # Collect all unique voter partner IDs
+        voter_ids = set()
+        for v in votes:
+            vid = v['voter_partner_id'][0] if v['voter_partner_id'] else False
+            if vid:
+                voter_ids.add(vid)
+
+        # Collect all non-empty comments
+        comments = []
+        for v in votes:
+            comment = (v.get('comment') or '').strip()
+            if comment:
+                comments.append(comment)
+        notes = '\n'.join(comments) if comments else ''
+
+        # Look up the recipient name
+        recipient = self.env['res.partner'].browse(recipient_id)
+        recipient_name = recipient.name if recipient.exists() else ''
+
+        # Create the certificate
+        cert_vals = {
+            'partner_id': recipient_id,
+            'event': event,
+            'certificate_template_id': certificate_template_id,
+            'date_awarded': fields.Date.today(),
+            'notes': notes,
+            'related_partner_ids': [(6, 0, list(voter_ids))],
+            'related_vote_ids': [(6, 0, [v['id'] for v in votes])],
+        }
+        if category_id:
+            cert_vals['award_category_id'] = category_id
+
+        # Get the sub-category from the first selected vote
+        sub_category_id = first_vote['award_sub_category_id'][0] if first_vote.get('award_sub_category_id') else False
+        if sub_category_id:
+            cert_vals['award_sub_category_id'] = sub_category_id
+
+        certificate = self.env['aps.certificate'].create(cert_vals)
+
+        return {
+            'success': True,
+            'certificate_id': certificate.id,
+            'recipient_name': recipient_name,
+            'event': event,
+        }

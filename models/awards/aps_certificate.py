@@ -49,6 +49,14 @@ class APSCertificate(models.Model):
         'partner_id',
         string='Related People',
     )
+    related_vote_ids = fields.Many2many(
+        'aps.award.vote',
+        'aps_certificate_vote_rel',
+        'certificate_id',
+        'vote_id',
+        string='Related Votes',
+        help='Vote records that were used to generate this certificate.',
+    )
     certificate_template_id = fields.Many2one(
         'aps.certificate.template',
         required=True,

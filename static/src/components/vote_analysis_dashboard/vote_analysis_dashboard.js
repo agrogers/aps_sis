@@ -170,7 +170,7 @@ export class VoteAnalysisDashboard extends Component {
                 borderColor: "#e11d48",
                 backgroundColor: "#e11d48",
                 borderWidth: 2,
-                pointRadius: 4,
+                pointRadius: 8,
                 pointBackgroundColor: "#e11d48",
                 fill: false,
                 yAxisID: "y1",
@@ -442,6 +442,17 @@ export class VoteAnalysisDashboard extends Component {
             { id: "category_name", name: "Category", field: "category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
             { id: "sub_category_name", name: "Sub-Category", field: "sub_category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
             { id: "submitted_date", name: "Date", field: "submitted_date", minWidth: 80, width: 100, sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center" },
+            { id: "cert", name: "Cert", field: "has_certificate", minWidth: 40, width: 55, maxWidth: 55,
+                sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center",
+                formatter: (rowIdx, cellIdx, value, columnDef, item) => {
+                    if (!item.has_certificate) return '';
+                    const icon = '<i class="fa fa-certificate text-success" title="Linked to a certificate"/>';
+                    if (item.cert_usage_count > 1) {
+                        return icon + ' <small class="text-muted">×' + item.cert_usage_count + '</small>';
+                    }
+                    return icon;
+                },
+            },
             { id: "comment", name: "Comment", field: "comment", minWidth: 100, width: 200, sortable: true, editable: true, editor: { model: Slicker.Editors.text }, cssClass: "va-grid-cell va-grid-cell-muted" },
         ];
 
@@ -590,32 +601,41 @@ export class VoteAnalysisDashboard extends Component {
             this.state.selectedCerts = [];
             return;
         }
-        this.state.selectedCertsLoading = true;
-        const partnerIds = [...new Set(
-            this.state.detailVotes
-                .filter((v) => ids.includes(v.id))
-                .map((v) => v.recipient_id)
-                .filter(Boolean)
-        )];
-        const allCerts = [];
-        const seen = new Set();
-        for (const pid of partnerIds) {
-            const filters = {
-                recipient_id: pid,
-                date_from: this.state.dateFrom || false,
-                date_to: this.state.dateTo || false,
-                category_ids: this.state.selectedCategoryIds,
-            };
-            const certs = await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters });
-            for (const c of certs || []) {
-                if (!seen.has(c.id)) {
-                    seen.add(c.id);
-                    allCerts.push(c);
-                }
-            }
+        // We only support creating a cert for the single recipient shown in detail
+        // (the Vote Details tab always shows one recipient's votes).
+        const recipientId = this.state.detailRecipient ? this.state.detailRecipient.id : null;
+        if (!recipientId) {
+            this.notification.add("No recipient selected.", { type: "warning" });
+            return;
         }
-        this.state.selectedCerts = allCerts;
-        this.state.selectedCertsLoading = false;
+
+        this.state.selectedCertsLoading = true;
+        try {
+            const result = await this.orm.call(
+                "aps.award.vote",
+                "create_certificate_from_selected_votes",
+                [ids, recipientId],
+                {},
+            );
+            if (result.success) {
+                this.notification.add(
+                    `Certificate created for ${result.recipient_name} — ${result.event}`,
+                    { type: "success" },
+                );
+                // Navigate to Tab 4: Certificates for this recipient
+                await this._loadCertDetails(this.state.detailRecipient);
+            } else {
+                this.notification.add(
+                    result.error || "Failed to create certificate.",
+                    { type: "danger" },
+                );
+            }
+        } catch (err) {
+            console.error("Failed to create certificate:", err);
+            this.notification.add("Failed to create certificate.", { type: "danger" });
+        } finally {
+            this.state.selectedCertsLoading = false;
+        }
     }
 
     // ------------------------------------------------------------------
@@ -641,6 +661,18 @@ export class VoteAnalysisDashboard extends Component {
         this.state.certDetailRecipient = null;
         this.state.certDetailHeader = "";
         this.state.certDetailList = [];
+    }
+
+    async printCertificate(certId) {
+        const result = await this.orm.call(
+            "aps.certificate",
+            "action_print_certificate",
+            [certId],
+            {},
+        );
+        if (result) {
+            this.actionService.doAction(result);
+        }
     }
 
     // ------------------------------------------------------------------
