@@ -48,7 +48,7 @@
         <record id="aps_certificate_template_a4" model="aps.certificate.template">
             <field name="name">Achievement Certificate (A4)</field>
             <field name="page_format">a4</field>
-            <field name="page_orientation">landscape</field>
+            <field name="page_orientation">portrait</field>
             <field name="frame_image" type="base64" file="aps_sis/reports/certificate_frame_1.svg"/>
             <field name="mail_template_id" ref="aps_sis.mail_template_certificate_a4"/>
             <field name="active" eval="True"/>

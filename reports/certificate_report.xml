@@ -53,7 +53,7 @@
             <field name="name">Certificate (A4 Portrait)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">aps_sis.report_certificate_template</field>
+            <field name="report_name">aps_sis.report_certificate_template_portrait</field>
             <field name="print_report_name">'Certificate - %s' % object.partner_id.name</field>
             <field name="paperformat_id" ref="aps_sis.paperformat_certificate_a4"/>
         </record>
@@ -71,7 +71,7 @@
             <field name="name">Certificate (A5 Portrait)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">aps_sis.report_certificate_template</field>
+            <field name="report_name">aps_sis.report_certificate_template_portrait</field>
             <field name="print_report_name">'Certificate - %s' % object.partner_id.name</field>
             <field name="paperformat_id" ref="aps_sis.paperformat_certificate_a5"/>
         </record>
@@ -86,6 +86,20 @@
         </record>
 
         <template id="report_certificate_template">
+            <t t-call="web.basic_layout">
+                <t t-foreach="docs" t-as="o">
+                    <div class="page o_certificate_page" style="position: relative;">
+                        <t t-if="o._get_certificate_frame_data_uri()">
+                            <div t-attf-style="position: fixed; top: 0; left: 0; #{o._get_page_dimensions_style()} z-index: 0; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-repeat: no-repeat;"/>
+                        </t>
+                        <div style="position: relative; z-index: 1; padding: 28px; display: flex; align-items: center; justify-content: center;">
+                            <div t-out="o._render_certificate_body_html()"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </template>
+        <template id="report_certificate_template_portrait">
             <t t-call="web.basic_layout">
                 <t t-foreach="docs" t-as="o">
                     <div class="page o_certificate_page" style="position: relative;">

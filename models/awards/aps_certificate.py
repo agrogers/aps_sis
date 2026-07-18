@@ -174,4 +174,14 @@ class APSCertificate(models.Model):
         report_xmlid = report_xmlid_by_layout.get((certificate_template.page_format, page_orientation))
         if not report_xmlid:
             raise UserError('Certificate template page format/orientation is not configured.')
-        return self.env.ref(report_xmlid).report_action(self)
+        report = self.env.ref(report_xmlid)
+
+        _logger.warning(
+            "Report=%s id=%s paperformat=%s orientation=%s",
+            report.report_name,
+            report.id,
+            report.paperformat_id.name,
+            report.paperformat_id.orientation,
+        )
+
+        return report.report_action(self)
