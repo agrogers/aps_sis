@@ -62,7 +62,7 @@
             <field name="name">Certificate (A4 Landscape)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">aps_sis.report_certificate_template</field>
+            <field name="report_name">aps_sis.report_certificate_template_landscape</field>
             <field name="print_report_name">'Certificate - %s' % object.partner_id.name</field>
             <field name="paperformat_id" ref="aps_sis.paperformat_certificate_a4_landscape"/>
         </record>
@@ -80,12 +80,12 @@
             <field name="name">Certificate (A5 Landscape)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">aps_sis.report_certificate_template</field>
+            <field name="report_name">aps_sis.report_certificate_template_landscape</field>
             <field name="print_report_name">'Certificate - %s' % object.partner_id.name</field>
             <field name="paperformat_id" ref="aps_sis.paperformat_certificate_a5_landscape"/>
         </record>
 
-        <template id="report_certificate_template">
+        <template id="report_certificate_template_landscape">
             <t t-call="web.basic_layout">
                 <t t-foreach="docs" t-as="o">
                     <div class="page o_certificate_page" style="position: relative;">

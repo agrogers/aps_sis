@@ -59,35 +59,12 @@
 
     <div t-if="state.filtersOpen" class="card mb-3 o_vote_analysis_filters_panel">
         <div class="card-body py-2">
-            <div class="row align-items-end g-2">
-                <div class="col-auto">
-                    <label class="form-label small mb-0">Series</label>
-                    <select class="form-select form-select-sm" t-on-change="onSeriesByChange"
-                            t-att-value="state.seriesBy" style="max-width: 150px;">
-                        <option value="round">Vote Round</option>
-                        <option value="category">Category</option>
-                        <option value="sub_category">Sub Category</option>
-                        <option value="voting_set">Vote Set</option>
-                    </select>
+            <div class="border rounded p-2 mb-2">
+                <div class="d-flex align-items-center mb-1">
+                    <span class="small fw-semibold text-muted me-2">Filter</span>
+                    <div class="flex-grow-1 border-top"/>
                 </div>
-                <div class="col-auto">
-                    <label class="form-label small mb-0">Order</label>
-                    <select class="form-select form-select-sm" t-on-change="onChartOrderChange"
-                            t-att-value="state.chartOrder" style="max-width: 140px;">
-                        <option value="value_desc">Most Votes</option>
-                        <option value="value_asc">Least Votes</option>
-                        <option value="name_asc">Name A-Z</option>
-                        <option value="name_desc">Name Z-A</option>
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <label class="form-label small mb-0">Compare</label>
-                    <select class="form-select form-select-sm" t-on-change="onOverlayChange"
-                            t-att-value="state.overlay" style="max-width: 130px;">
-                        <option value="none">None</option>
-                        <option value="certificates">Certificates</option>
-                    </select>
-                </div>
+                <div class="row align-items-end g-2">
                 <div class="col-auto">
                     <label class="form-label small mb-0">From</label>
                     <input type="date" class="form-control form-control-sm"
@@ -106,13 +83,6 @@
                         update.bind="(resIds) => this.onCategoriesUpdate(resIds)"
                         placeholder="'Search categories...'"/>
                 </div>
-                <div class="col-auto">
-                    <button class="btn btn-outline-secondary btn-sm mt-4" t-on-click="clearAllFilters">
-                        <i class="fa fa-times me-1"/>Clear
-                    </button>
-                </div>
-            </div>
-            <div class="row align-items-end g-2 mt-1">
                 <div class="col-auto">
                     <label class="form-label small mb-0">Recipient Type</label>
                     <select class="form-select form-select-sm" t-on-change="onRecipientTypeChange"
@@ -151,6 +121,48 @@
                         placeholder="'Search recipients...'"
                         domain="state.recipientDomain"/>
                 </div>
+                <div class="col-auto">
+                    <button class="btn btn-outline-secondary btn-sm mt-4" t-on-click="clearAllFilters">
+                        <i class="fa fa-times me-1"/>Clear
+                    </button>
+                </div>
+            </div>
+            </div>
+            <div class="border rounded p-2">
+                <div class="d-flex align-items-center mb-1">
+                    <span class="small fw-semibold text-muted me-2">Chart Format Options</span>
+                    <div class="flex-grow-1 border-top"/>
+                </div>
+                <div class="row align-items-end g-2">
+                <div class="col-auto">
+                    <label class="form-label small mb-0">Series</label>
+                    <select class="form-select form-select-sm" t-on-change="onSeriesByChange"
+                            t-att-value="state.seriesBy" style="max-width: 150px;">
+                        <option value="round">Vote Round</option>
+                        <option value="category">Category</option>
+                        <option value="sub_category">Sub Category</option>
+                        <option value="voting_set">Vote Set</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label small mb-0">Order</label>
+                    <select class="form-select form-select-sm" t-on-change="onChartOrderChange"
+                            t-att-value="state.chartOrder" style="max-width: 140px;">
+                        <option value="value_desc">Most Votes</option>
+                        <option value="value_asc">Least Votes</option>
+                        <option value="name_asc">Name A-Z</option>
+                        <option value="name_desc">Name Z-A</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label small mb-0">Compare</label>
+                    <select class="form-select form-select-sm" t-on-change="onOverlayChange"
+                            t-att-value="state.overlay" style="max-width: 130px;">
+                        <option value="none">None</option>
+                        <option value="certificates">Certificates</option>
+                    </select>
+                </div>
+            </div>
             </div>
         </div>
     </div>
@@ -289,13 +301,10 @@
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <button class="btn btn-outline-success btn-sm"
-                                t-on-click="loadSelectedCerts"
-                                t-att-disabled="state.selectedVoteIds.length === 0">
+                                t-if="state.selectedVoteIds.length > 0"
+                                t-on-click="loadSelectedCerts">
                             <i class="fa fa-certificate me-1"/>
                             <t t-esc="'Show Certificates (' + state.selectedVoteIds.length + ')'"/>
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" t-on-click="() => clearDetail()">
-                            <i class="fa fa-times me-1"/>Close
                         </button>
                     </div>
                 </div>

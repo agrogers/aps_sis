@@ -8,35 +8,6 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 
-class APSCertificateTemplate(models.Model):
-    _name = 'aps.certificate.template'
-    _description = 'APS Certificate Template'
-
-    name = fields.Char(required=True)
-    active = fields.Boolean(default=True)
-    page_format = fields.Selection(
-        [('a4', 'A4'), ('a5', 'A5')],
-        required=True,
-        default='a4',
-    )
-    page_orientation = fields.Selection(
-        [('portrait', 'Portrait'), ('landscape', 'Landscape')],
-        required=True,
-        default='portrait',
-    )
-    frame_image = fields.Binary(string='Certificate Background Frame', attachment=True)
-    mail_template_id = fields.Many2one(
-        'mail.template',
-        required=True,
-        ondelete='restrict',
-        domain="[('model_id.model', '=', 'aps.certificate')]",
-    )
-    certificate_ids = fields.One2many(
-        'aps.certificate',
-        'certificate_template_id',
-        string='Certificates',
-    )
-
 class APSCertificate(models.Model):
     _name = 'aps.certificate'
     _description = 'APS Certificate'
@@ -85,6 +56,15 @@ class APSCertificate(models.Model):
         tracking=True,
     )
     last_printed = fields.Datetime(string='Last Printed', readonly=True, copy=False, tracking=True)
+    home_class_id = fields.Many2one(
+        'aps.class',
+        string='Home Class',
+        compute='_compute_home_class_id',
+        store=True,
+        readonly=False,
+        help='Student home class, auto-populated from the partner\'s student record.',
+    )
+    notes = fields.Text(string='Notes', help='Extended notes about the certificate.')
 
     @api.depends('partner_id', 'event')
     def _compute_name(self):
@@ -93,6 +73,18 @@ class APSCertificate(models.Model):
                 record.name = f'{record.partner_id.name} - {record.event}'
             else:
                 record.name = record.partner_id.name or record.event or 'Certificate'
+
+    @api.depends('partner_id')
+    def _compute_home_class_id(self):
+        for record in self:
+            home_class = self.env['aps.class']
+            if record.partner_id:
+                student = self.env['aps.student'].search(
+                    [('partner_id', '=', record.partner_id.id)], limit=1
+                )
+                if student:
+                    home_class = student.home_class_id
+            record.home_class_id = home_class
 
     # Paper dimensions in mm (width x height) for each format+orientation combo.
     # Used by the PDF report template to size the background image absolutely so

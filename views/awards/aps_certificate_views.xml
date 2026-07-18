@@ -14,7 +14,9 @@
                 <field name="date_awarded" optional="show"/>
                 <field name="certificate_date" optional="show"/>
                 <field name="certificate_template_id" optional="show"/>
+                <field name="home_class_id" optional="show"/>
                 <field name="last_printed" optional="show"/>
+                <field name="notes" optional="show"/>
                 <button name="action_print_certificate" string="Print" type="object" class="btn-link"/>
             </list>
         </field>
@@ -37,6 +39,7 @@
                             <field name="award_sub_category_id"
                                 invisible="not award_category_id"/>
                             <field name="subject_id"/>
+                            <field name="home_class_id"/>
                         </group>
                         <group>
                             <field name="certificate_template_id"/>
@@ -49,6 +52,9 @@
                     <group string="Related People">
                         <field name="related_partner_ids" nolabel="1"
                             widget="many2many_tags"/>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
                     </group>
                 </sheet>
                 <chatter/>
@@ -118,6 +124,7 @@
             <list>
                  <field name="image" widget="image" options="{'size': [24, 24]}" optional="show"/>
                  <field name="name"/>
+                 <field name="description" optional="show"/>
                  <field name="voting_active" optional="show"/>
                  <field name="adhoc_vote" optional="show"/>
                  <field name="open_date" optional="show"/>
@@ -168,6 +175,7 @@
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
+                                    <field name="description"/>
                                 </list>
                             </field>
                         </page>
