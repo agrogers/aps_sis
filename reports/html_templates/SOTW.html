@@ -1,0 +1,96 @@
+<div
+  style="min-height: 100%; padding: 0px 70px; text-align: center"
+  data-oe-version="1.1"
+>
+
+    <img src="/web/image/2277-0849bc4d/MVIS%20Logo%20800px%20White.jpg" 
+        alt="" class="img img-fluid o_we_custom_image" style="width: 150px;" />
+
+    <font face="Elms Sans">
+        <p
+        style="
+            line-height: 1.2;
+            font-weight: 700;
+            font-size: 42px;
+            color: #111111;
+            padding: 50px 0px 0px 0px;
+        "
+        >
+        <t t-out="object.partner_id.name">Student Name</t>
+        </p>
+        <p
+        style="
+            line-height: 1.2;
+            font-weight: 400;
+            font-size: 32px;
+            color: #111111;
+            padding-top: 15px;
+        "
+        >has been awarded the
+        </p>
+    </font>
+
+
+  <p style="color: #000000; line-height: 4em; padding-top:15px; font-weight: 700;">
+    <font face="Amatic SC"> 
+        <span style="font-size: 70px; color: #000000">
+            <t t-out="object.home_class_id.subject_id.level_id.name">YearLevel</t>
+        </span>
+    </font>
+    <br />
+    <span class="display-1-fs" style="font-size: 150px"
+      ><font face="Amatic SC"
+        ><strong style="font-weight: bolder">STUDENT</strong></font
+      ></span
+    >
+    <br />
+    <span class="display-4-fs" style="font-size: 106px"
+      ><font face="Amatic SC"
+        ><strong style="font-weight: bolder">OF THE WEEK</strong></font
+      ></span
+    >
+  </p>
+
+    <font face="Elms Sans">
+        <div
+            style="
+                line-height: 1.2;
+                font-weight: 700;  
+                color: #111111;
+                margin-top: 10px;
+            ">
+            <p style="font-size: 32px;">
+                for
+            </p>
+            
+            <p style="font-size: 42px; margin-top: 10px; ">
+                <t t-out="object.award_sub_category_id.name">SubCategoryName</t>
+            </p>
+            
+
+            <p style="font-size: 22px; font-weight: 400; padding-top: 10px;">
+                by
+            </p>
+            <p style="font-size: 22px;"><t t-foreach="object.related_partner_ids" t-as="partner" t-index="partner_index"><t t-if="partner_index > 0">, </t><t t-esc="partner.name"/></t></p>
+            <p style="font-size: 18px; font-weight: 400; padding-top: 10px; font-style: italic;">
+              <span style="font-family: 'Times New Roman'; font-size: 28px;">“</span>
+                <t t-if="object.notes">
+                  <t t-out="object.notes">teacher notes</t>
+                </t>
+
+              <span style="font-family: 'Times New Roman'; font-size: 28px;">”</span>
+            </p>
+        </div>
+    </font>
+
+
+  <p
+    style="
+      font-size: 19px;
+      color: #000000;
+    "
+  >
+    Awarded On:<t t-out="object.date_awarded">Date Awarded</t>
+  </p>
+
+</div>

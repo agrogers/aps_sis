@@ -182,6 +182,10 @@
     justify-content: center;
 }
 
+.o_vote_analysis_dashboard .va-grid-cell-cert {
+    cursor: pointer;
+}
+
 /* Total badge */
 .o_vote_analysis_dashboard .o_vote_analysis_total_badge {
     display: inline-flex;

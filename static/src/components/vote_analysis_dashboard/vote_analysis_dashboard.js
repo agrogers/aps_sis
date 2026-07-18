@@ -443,10 +443,10 @@ export class VoteAnalysisDashboard extends Component {
             { id: "sub_category_name", name: "Sub-Category", field: "sub_category_name", minWidth: 100, width: 140, sortable: true, editable: false, cssClass: "va-grid-cell" },
             { id: "submitted_date", name: "Date", field: "submitted_date", minWidth: 80, width: 100, sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center" },
             { id: "cert", name: "Cert", field: "has_certificate", minWidth: 40, width: 55, maxWidth: 55,
-                sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center",
+                sortable: true, editable: false, cssClass: "va-grid-cell va-grid-cell-center va-grid-cell-cert",
                 formatter: (rowIdx, cellIdx, value, columnDef, item) => {
                     if (!item.has_certificate) return '';
-                    const icon = '<i class="fa fa-certificate text-success" title="Linked to a certificate"/>';
+                    const icon = '<i class="fa fa-certificate text-success" title="Click to view certificates"/>';
                     if (item.cert_usage_count > 1) {
                         return icon + ' <small class="text-muted">×' + item.cert_usage_count + '</small>';
                     }
@@ -457,6 +457,9 @@ export class VoteAnalysisDashboard extends Component {
         ];
 
         const data = votes.map((v, idx) => ({ ...v, _idx: idx }));
+
+        // Store cert column index for click handler
+        this._certColumnIdx = columns.findIndex((c) => c.id === "cert");
 
         const gridBundle = new Slicker.GridBundle(container, columns, {
             enableCellNavigation: true,
@@ -519,7 +522,7 @@ export class VoteAnalysisDashboard extends Component {
             }
         });
 
-        // Checkbox click handler — must return true for non-checkbox clicks to allow cell editing
+        // Checkbox / cert icon click handler — must return true for non-checkbox clicks to allow cell editing
         this._voteDetailsGrid.onClick.subscribe((e, args) => {
             const target = e.target;
             if (target.type === "checkbox" && target.dataset.voteId) {
@@ -527,6 +530,15 @@ export class VoteAnalysisDashboard extends Component {
                 comp.toggleVoteSelection(voteId);
                 target.checked = comp.isSelectedVote(voteId);
                 comp._updateDetailHeaderCheckbox();
+                e.stopImmediatePropagation();
+                return false;
+            }
+            // Handle click on cert icon → navigate to certificates tab
+            if (args.cell === comp._certColumnIdx && args.grid.getDataItem(args.row).has_certificate) {
+                const item = args.grid.getDataItem(args.row);
+                if (comp.state.detailRecipient) {
+                    comp._loadCertDetails(comp.state.detailRecipient);
+                }
                 e.stopImmediatePropagation();
                 return false;
             }
