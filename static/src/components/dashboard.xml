@@ -137,10 +137,14 @@
                              percentage="state.total_submitted.percentage" icon="'fa-clock-o'" 
                              period_name="state.period_name"
                              onClick="() => this.viewTotalSubmitted()"/>
-                    <KpiCard name="'Submitted Today'" value="state.submitted_today.value" 
-                             percentage="" icon="'fa-cubes'" 
-                             period_name="'and ' + state.submitted_today.submitted_yesterday + ' yesterday'"
-                             onClick="() => this.viewTodaySubmissions()"/>
+                    <KpiCard name="'Due Status'" 
+                             late="state.due_status_kpi.late"
+                             on_time="state.due_status_kpi.on_time"
+                             early="state.due_status_kpi.early"
+                             period_name="state.period_name"
+                             onClickLate="() => this.viewDueStatusSubmissions('late')"
+                             onClickOnTime="() => this.viewDueStatusSubmissions('on-time')"
+                             onClickEarly="() => this.viewDueStatusSubmissions('early')"/>
                 </t>
             </div>
 

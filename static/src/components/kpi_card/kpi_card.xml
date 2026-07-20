@@ -26,6 +26,27 @@
                 
             </div>
         </t>
+        <t t-elif="props.name === 'Due Status'">
+            <div class="shadow-sm p-4 rounded text-center h-100 bg-white">
+                <div class="text-muted fw-bold h5 mb-3" t-esc="props.name"/>
+                <div class="d-flex justify-content-around">
+                    <div class="cursor-pointer" t-on-click.stop="props.onClickLate ? props.onClickLate : () => {}">
+                        <div class="h3 fw-bold text-danger mb-0" t-esc="props.late || 0"/>
+                        <small class="text-muted">Late</small>
+                    </div>
+                    <div class="cursor-pointer" t-on-click.stop="props.onClickOnTime ? props.onClickOnTime : () => {}">
+                        <div class="h3 fw-bold text-secondary mb-0" t-esc="props.on_time || 0"/>
+                        <small class="text-muted">On Time</small>
+                    </div>
+                    <div class="cursor-pointer" t-on-click.stop="props.onClickEarly ? props.onClickEarly : () => {}">
+                        <div class="h3 fw-bold text-success mb-0" t-esc="props.early || 0"/>
+                        <small class="text-muted">Early</small>
+                    </div>
+                </div>
+                <br/>
+                <small t-esc="props.period_name"/>
+            </div>
+        </t>
         <t t-else="">
             <div class="shadow-sm p-4 rounded text-center cursor-pointer h-100 bg-white">    
                 <div class="text-muted fw-bold h5" t-esc="props.name"/>
