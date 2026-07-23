@@ -139,6 +139,9 @@
                                                         <t t-if="!cell.minimized">
                                                             <div class="rht_cell_name">
                                                                 <t t-esc="cell.name"/>
+                                                                <t t-if="(cell.has_notes and cell.has_notes !== 'no') or (cell.links and cell.links.length)">
+                                                                    <i class="fa fa-file-text-o rht_cell_notes_icon ms-1" title="Has notes &amp; resources"/>
+                                                                </t>
                                                             </div>
                                                             <!-- Supporting resource link buttons -->
                                                             <t t-if="state.showLinks and cell.links and cell.links.length">

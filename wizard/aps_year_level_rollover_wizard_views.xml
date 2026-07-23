@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_year_level_rollover_wizard_form" model="ir.ui.view">
+        <field name="name">aps.year.level.rollover.wizard.form</field>
+        <field name="model">aps.year.level.rollover.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Roll Students to Next Level">
+                <sheet>
+                    <div class="oe_title mb16">
+                        <h4>Roll Students to Next Academic Level</h4>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        This wizard processes selected students from oldest to youngest level order.
+                        If you run this in batches, roll older year levels first to avoid students
+                        from previous years ending up in current years accidentally.
+                    </div>
+
+                    <div class="o_horizontal_separator mt-4 mb-2">Select Students</div>
+                    <div class="mt-1 mb-2">
+                        Select the students to promote to the next academic level sequence.
+                    </div>
+
+                    <field name="partner_ids"
+                           widget="many2many_tags"
+                           domain="[('is_student', '=', True)]"
+                           context="{'default_is_student': True}"
+                           options="{'no_create': True, 'no_create_edit': True}"
+                           placeholder="Search and select students..."/>
+
+                    <div class="alert alert-success mt-3" role="alert" invisible="not has_result">
+                        <field name="result_message" widget="html"/>
+                    </div>
+
+                    <field name="has_result" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Roll Levels" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_year_level_rollover_wizard" model="ir.actions.act_window">
+        <field name="name">Roll Students to Next Level</field>
+        <field name="res_model">aps.year.level.rollover.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

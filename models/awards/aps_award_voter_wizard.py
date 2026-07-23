@@ -22,8 +22,10 @@ class APSAwardVoterWizard(models.TransientModel):
     def action_confirm(self):
         self.ensure_one()
         round_rec = self.vote_round_id
-        existing = list(round_rec.eligible_voters or [])
+        data = round_rec._get_voters_dict()
+        existing = data.get('partner_ids', [])
         # Merge new IDs with existing, preserving order and deduplicating
         merged = list(dict.fromkeys(existing + self.partner_ids.ids))
-        round_rec.eligible_voters = merged
+        data['partner_ids'] = merged
+        round_rec._set_voters_dict(data)
         return {'type': 'ir.actions.act_window_close'}

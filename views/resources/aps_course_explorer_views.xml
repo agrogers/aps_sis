@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Course Explorer client action -->
+    <record id="action_course_explorer" model="ir.actions.client">
+        <field name="name">Course Explorer</field>
+        <field name="tag">course_explorer</field>
+        <field name="path">course-explorer</field>
+    </record>
+
+    <!-- Menu item under APEX Resources section -->
+    <record id="menu_course_explorer" model="ir.ui.menu">
+        <field name="name">Course Explorer</field>
+        <field name="action" ref="action_course_explorer"/>
+        <field name="parent_id" ref="aps_sis.menu_apex_resources_heading"/>
+        <field name="sequence" eval="8"/>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
+</odoo>

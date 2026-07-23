@@ -1,9 +1,9 @@
 .aps-teacher-dashboard .table tbody tr:hover td {
-    background-color: rgba(var(--bs-primary-rgb), 0.06);
+    background-color: rgba(var(--body-bg-rgb), 0.12);
 }
 
 .aps-teacher-dashboard .table.table-hover tbody tr.table-primary td {
-    background-color: rgba(var(--bs-primary-rgb), 0.14);
+    background-color: rgba(var(--body-bg-rgb), 0.20);
 }
 
 .aps-teacher-dashboard .card-header {
@@ -24,14 +24,14 @@
 
 /* Clickable resource links */
 .aps-teacher-dashboard .aps-resource-link {
-    color: var(--bs-primary);
+    color: var(--link-color);
     text-decoration: underline dotted;
-    text-decoration-color: rgba(var(--bs-primary-rgb), 0.5);
+    text-decoration-color: rgba(var(--link-color-rgb, 93, 141, 168), 0.5);
 }
 
 .aps-teacher-dashboard .aps-resource-link:hover {
-    color: var(--bs-primary-dark, #0056b3);
-    text-decoration-color: var(--bs-primary);
+    color: var(--link-color);
+    text-decoration-color: var(--link-color);
 }
 
 /* Type icon */

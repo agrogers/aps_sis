@@ -1,15 +1,19 @@
 /**
- * APS SIS - Percent Pie (Ranged Colors)
+ * APS SIS - Percent Pie (Ranged Colors) — Field Wrapper
+ *
+ * Thin Odoo field wrapper around the reusable PercentPie component.
+ * For direct use in dashboards, import PercentPie from:
+ *   @aps_sis/components/percent_pie/percent_pie
  */
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
-import { formatFloat } from "@web/views/fields/formatters";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { Component } from "@odoo/owl";
-import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
+import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
 
 export class PercentPieRangedField extends Component {
     static template = "aps_sis.PercentPieRangedField";
+    static components = { PercentPie };
     static props = {
         ...standardFieldProps,
         string: { type: String, optional: true },
@@ -20,15 +24,6 @@ export class PercentPieRangedField extends Component {
         const num = typeof raw === "number" ? raw : parseFloat(raw || 0);
         if (Number.isNaN(num)) return 0;
         return Math.max(0, Math.min(100, num));
-    }
-
-    get formattedValue() {
-        // return formatFloat(this.value, { trailingZeros: false }) + "%";
-        return formatFloat(this.value, { digits: [16, 0] }) + "%";
-    }
-
-    get color() {
-        return getColorForPercent(this.value);
     }
 }
 

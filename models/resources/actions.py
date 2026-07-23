@@ -1,7 +1,8 @@
 import re
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
+from markupsafe import Markup
 from odoo import _, models, api, fields
 from odoo.exceptions import UserError
 
@@ -86,7 +87,7 @@ class APSResource(models.Model):
         """
         self.ensure_one()
 
-        result = {
+        result: dict[str, date | bool] = {
             'start_date': False,
             'end_date': False,
             'redline_start_date': False,
@@ -288,97 +289,6 @@ class APSResource(models.Model):
 
     def action_open_parent_answer_popup(self):
         return self._action_open_field_source_popup('answer', 'Answer')
-
-    # ------------------------------------------------------------------
-    # Create linked resources from Question headings
-    # ------------------------------------------------------------------
-
-    def action_create_linked_resources_from_question(self):
-        """Parse the top-most heading level from the Question HTML field and
-        create a linked child resource for each heading found at that level.
-
-        Each new resource inherits the current resource as a parent and has
-        has_question / has_answer set to 'use_parent'.
-        """
-        self.ensure_one()
-
-        if not self.question:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'No Question',
-                    'message': 'This resource has no Question content to parse.',
-                    'type': 'warning',
-                    'sticky': False,
-                },
-            }
-
-        headings = self._extract_top_headings_from_html(self.question)
-
-        if not headings:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'No Headings Found',
-                    'message': 'No headings (H1–H6) were found in the Question field.',
-                    'type': 'warning',
-                    'sticky': False,
-                },
-            }
-
-        existing_names = set(self.child_ids.mapped('name'))
-        created = self.env['aps.resources']
-        skipped = []
-        for title in headings:
-            if title in existing_names:
-                skipped.append(title)
-                continue
-            child = self.env['aps.resources'].create({
-                'name': title,
-                'has_question': 'use_parent',
-                'has_answer': 'use_parent',
-                'parent_ids': [(4, self.id)],
-                'primary_parent_id': self.id,
-                'subjects': [(6, 0, self.subjects.ids)],
-                'type_id': self.type_id.id,
-            })
-            created |= child
-
-        if not created and not skipped:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Nothing to Create',
-                    'message': 'No new headings found to create resources from.',
-                    'type': 'warning',
-                    'sticky': False,
-                },
-            }
-
-        # Mark parent as having linked resources and refresh display names
-        if created:
-            self.has_child_resources = 'yes'
-        self._compute_display_name()
-
-        msg_parts = []
-        if created:
-            msg_parts.append(f'Created {len(created)} linked resource(s).')
-        if skipped:
-            msg_parts.append(f'Skipped {len(skipped)} already existing: {", ".join(skipped)}.')
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Resources Created',
-                'message': ' '.join(msg_parts),
-                'type': 'success',
-                'sticky': bool(skipped),
-            },
-        }
 
     @staticmethod
     def _extract_top_headings_from_html(html_content):
@@ -587,7 +497,8 @@ class APSResource(models.Model):
             try:
                 resource._do_auto_assign(today)
             except Exception as exc:
-                _logger.exception('Auto-assign failed for resource %s (%s): %s', resource.id, resource.display_name, exc)
+                safe_name = resource.display_name.encode('ascii', errors='replace').decode('ascii')
+                _logger.exception('Auto-assign failed for resource %s (%s): %s', resource.id, safe_name, exc)
 
     def _do_auto_assign(self, today):
         """Perform one auto-assignment run for this resource."""
@@ -595,7 +506,8 @@ class APSResource(models.Model):
 
         # Respect end date
         if self.auto_assign_end_date and today > self.auto_assign_end_date:
-            _logger.info('Auto-assign skipped for resource %s: past end date', self.display_name)
+            safe_name = self.display_name.encode('ascii', errors='replace').decode('ascii')
+            _logger.info('Auto-assign skipped for resource %s (id=%s): past end date', safe_name, self.id)
             return
 
         task_model = self.env['aps.resource.task']
@@ -803,7 +715,9 @@ class APSResource(models.Model):
                 'id': s.id,
                 'name': s.name,
                 'color': (s.category_id.color_rgb or '') if s.category_id else '',
-                'icon': (s.icon or s.category_id.icon or False) if s.category_id else (s.icon or False),
+                'icon_url': ('/web/image/aps.subject/%d/icon' % s.id) if s.icon
+                    else ('/web/image/aps.subject.category/%d/icon' % s.category_id.id) if s.category_id and s.category_id.icon
+                    else '',
             }
             for s in subjects.sorted('name')
         ]
@@ -892,14 +806,20 @@ class APSResource(models.Model):
             if subject.category_id and subject.category_id.color_rgb:
                 cat_color = subject.category_id.color_rgb
 
-            # Prefer subject icon, fall back to category icon
-            icon = subject.icon or (subject.category_id.icon if subject.category_id else False) or False
+            # Prefer subject icon, fall back to category icon.
+            # Return the /web/image URL so the browser loads it directly.
+            if subject.icon:
+                icon_url = '/web/image/aps.subject/%d/icon' % subject.id
+            elif subject.category_id and subject.category_id.icon:
+                icon_url = '/web/image/aps.subject.category/%d/icon' % subject.category_id.id
+            else:
+                icon_url = False
 
             result.append({
                 'subject_id': subject.id,
                 'subject_name': subject.name or '',
                 'color': cat_color,
-                'icon': icon,
+                'icon_url': icon_url,
                 'roots': root_nodes,
                 'total_cols': sum(n['colspan'] for n in root_nodes),
                 'max_depth': _tree_depth(root_nodes),
@@ -923,3 +843,532 @@ class APSResource(models.Model):
             }
             for t in tags
         ]
+
+    # ------------------------------------------------------------------
+    # Course Explorer client-action data
+    # ------------------------------------------------------------------
+
+    @api.model
+    def get_course_explorer_subject_categories(self):
+        """Return subject categories that have at least one hierarchy-visible
+        resource with notes (has_notes != 'no')."""
+        resources = self.search([
+            ('show_in_hierarchy', '=', True),
+            ('has_notes', '!=', 'no'),
+        ])
+        categories = resources.mapped('subject_categories')
+        return [
+            {
+                'id': c.id,
+                'name': c.name or '',
+                'resource_count': len(resources.filtered(
+                    lambda r, cat=c: cat in r.subject_categories
+                )),
+            }
+            for c in categories.sorted('name')
+        ]
+
+    @staticmethod
+    def _add_lazy_loading(html):
+        """Add loading="lazy" to all <img> tags that don't already have it."""
+        if not html:
+            return html
+        # Match <img tags that don't already have loading= attribute
+        return re.sub(
+            r'(<img\b)(?![^>]*\bloading=)',
+            r'\1 loading="lazy"',
+            html,
+        )
+
+    def _resolve_notes(self):
+        """Return the resource's own notes HTML, if it has any.
+
+        Returns (resolved_notes_html, source_resource_id) or (False, False)
+        if the resource has no notes (has_notes != 'yes').
+        """
+        self.ensure_one()
+        html = self.notes or ''
+        # NOTE: Lazy-loading and aspect-ratio injection are now applied in
+        # the write()/create() overrides (overrides.py), so the HTML stored
+        # in the database is already processed. No need to modify on read.
+        # Old approach (removed):
+        #   html = self._add_lazy_loading(html)
+        #   html, changed = self._ensure_image_aspect_ratios(html)
+        #   if changed:
+        #       self.sudo().with_context(_skip_image_ratio_hook=True).write({'notes': html})
+        return (Markup(html) if html else False), self.id
+
+    @api.model
+    def get_course_explorer_data(self, subject_category_id=False):
+        """Return tree and content data for the course explorer view.
+
+        Builds a recursive tree of resources with ``show_in_hierarchy=True``.
+        Resources with notes (``has_notes != 'no'``) are included as content
+        nodes.  Parent resources that have no notes of their own are still
+        included in the tree when they are ancestors of resources that do
+        have notes, so the hierarchy is always complete.
+
+        Each content section resolves ``has_notes='use_parent'`` up the
+        parent chain and deduplicates so identical inherited content is not
+        rendered twice.
+
+        Args:
+            subject_category_id: optional ``aps.subject.category`` id.
+
+        Returns:
+            dict with keys ``tree`` (list of root node dicts) and
+            ``contentSections`` (list of section dicts).
+        """
+        # Base domain: hierarchy-visible resources
+        base_domain = [('show_in_hierarchy', '=', True)]
+        if subject_category_id:
+            base_domain.append(('subject_categories', 'in', subject_category_id))
+
+        all_hier = self.search(base_domain)
+        all_hier.mapped('child_ids')
+        all_hier.mapped('parent_ids')
+        all_hier.mapped('primary_parent_id')
+        all_hier.mapped('subject_categories')
+
+        # Resources that have notes (or use_parent)
+        has_notes_res = all_hier.filtered(lambda r: r.has_notes != 'no')
+
+        # Include ancestor resources that are parents of has_notes resources
+        # but don't have notes themselves — they serve as structural nodes.
+        extra_parents = self.env['aps.resources']
+        for res in has_notes_res:
+            for parent in res.parent_ids:
+                if parent in all_hier and parent.has_notes == 'no':
+                    extra_parents |= parent
+
+        # All resources that appear in the tree
+        all_resources = has_notes_res | extra_parents
+        filtered_ids = set(all_resources.ids)
+
+        # Identify parents whose notes are "suppressed" because they have
+        # children that use_parent.  These parents get a heading-only
+        # section (no HTML content).
+        suppressed_parents = set()
+        for res in all_resources:
+            if res.has_notes == 'yes':
+                children_use_parent = any(
+                    c.has_notes == 'use_parent'
+                    for c in (res.child_ids & all_resources)
+                )
+                if children_use_parent:
+                    suppressed_parents.add(res.id)
+
+        # Build sections_map:
+        # - Parents with has_notes='yes' that are suppressed → heading-only
+        # - Children with has_notes='use_parent' → resolved notes + heading
+        # - Other has_notes='yes' resources → own notes + heading
+        # - No deduplication: each child gets unique resolved content
+        sections_map = {}
+
+        for res in all_resources:
+            if res.id in suppressed_parents:
+                # Parent whose notes are suppressed: heading only, no HTML
+                sections_map[res.id] = {
+                    'id': res.id,
+                    'name': res.name or '',
+                    'html': '',
+                    'visible': True,
+                    'headingOnly': True,
+                    'resolvedFrom': False,
+                }
+            else:
+                notes_html, source_id = res._resolve_notes()
+                if not notes_html:
+                    continue
+                sections_map[res.id] = {
+                    'id': res.id,
+                    'name': res.name or '',
+                    'html': notes_html,
+                    'visible': True,
+                    'headingOnly': False,
+                    'resolvedFrom': source_id if source_id != res.id else False,
+                }
+
+        # Determine root nodes: resources whose parents are NOT in
+        # the filtered set (or have no parents at all).
+        def _is_root(resource):
+            if not resource.parent_ids:
+                return True
+            return not bool(resource.parent_ids & all_resources)
+
+        root_resources = all_resources.filtered(_is_root).sorted(
+            key=lambda r: (r.sequence or 0, r.name or '')
+        )
+
+        # Build recursive tree
+        visited = set()
+
+        def _build_node(resource, depth=0):
+            if resource.id in visited:
+                return None
+            visited.add(resource.id)
+            children = (resource.child_ids & all_resources).filtered(
+                lambda c: c.id not in visited
+            ).sorted(key=lambda r: (r.sequence or 0, r.name or ''))
+            child_nodes = []
+            for child in children:
+                node = _build_node(child, depth + 1)
+                if node:
+                    child_nodes.append(node)
+            return {
+                'id': resource.id,
+                'name': resource.name or '',
+                'has_notes': resource.has_notes or 'no',
+                'depth': depth,
+                'has_children': bool(child_nodes),
+                'children': child_nodes,
+            }
+
+        tree = []
+        for root in root_resources:
+            if root.id not in visited:
+                node = _build_node(root)
+                if node:
+                    tree.append(node)
+
+        # Compute sectionId for every tree node:
+        # 1. Nodes with a visible section → own id
+        # 2. Structural parents → nearest descendant's section id
+        # 3. If no descendant has a section → nearest ancestor's section id
+        #
+        # Also compute highlightIds: set of all section IDs that would
+        # "belong" to this node (self + all descendants). Used so that
+        # when a child is active but hidden (parent collapsed), the
+        # parent gets highlighted instead.
+        def _assign_section_ids(nodes, ancestor_section_id=False, depth=0):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                if sec:
+                    sec['depth'] = depth
+                if sec and sec['visible']:
+                    node['sectionId'] = node['id']
+                    _assign_section_ids(
+                        node.get('children', []),
+                        ancestor_section_id=node['id'],
+                        depth=depth + 1,
+                    )
+                else:
+                    desc_id = _find_first_visible_section(
+                        node.get('children', [])
+                    )
+                    node['sectionId'] = desc_id or ancestor_section_id or False
+                    _assign_section_ids(
+                        node.get('children', []),
+                        ancestor_section_id=node['sectionId'] or ancestor_section_id,
+                        depth=depth + 1,
+                    )
+                # Collect all section IDs that belong to this subtree
+                node['highlightIds'] = set()
+                if node.get('sectionId'):
+                    node['highlightIds'].add(node['sectionId'])
+                for child in node.get('children', []):
+                    node['highlightIds'].update(child.get('highlightIds', set()))
+
+        def _find_first_visible_section(nodes):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                if sec and sec['visible']:
+                    return node['id']
+                result = _find_first_visible_section(node.get('children', []))
+                if result:
+                    return result
+            return False
+
+        _assign_section_ids(tree)
+
+        # Enrich each section with quiz-type child/supporting resources.
+        # A quiz is any resource whose type has assessment=True.
+        # Pre-fetch task data for the current student in a single query.
+        student = self.env.user.partner_id
+        quiz_resource_ids = set()
+        for res in all_resources:
+            for child in res.child_ids:
+                if child.type_id and child.type_id.assessment:
+                    quiz_resource_ids.add(child.id)
+            for sup in res.supporting_resource_ids:
+                if sup.type_id and sup.type_id.assessment:
+                    quiz_resource_ids.add(sup.id)
+
+        task_map = {}  # resource_id -> task record
+        if quiz_resource_ids and student:
+            tasks = self.env['aps.resource.task'].search([
+                ('resource_id', 'in', list(quiz_resource_ids)),
+                ('student_id', '=', student.id),
+            ])
+            for task in tasks:
+                task_map[task.resource_id.id] = task
+
+        for res in all_resources:
+            sec = sections_map.get(res.id)
+            if not sec:
+                continue
+            quizzes = []
+            seen_quiz_ids = set()
+            # Child resources that are quizzes
+            for child in res.child_ids:
+                if child.type_id and child.type_id.assessment and child.id not in seen_quiz_ids:
+                    seen_quiz_ids.add(child.id)
+                    task = task_map.get(child.id)
+                    quizzes.append({
+                        'id': child.id,
+                        'name': child.name or '',
+                        'typeName': child.type_id.name or '',
+                        'weightedResult': task.weighted_result if task else 0,
+                        'attempts': task.submission_count if task else 0,
+                        'lastResult': task.last_result if task else 0,
+                        'state': task.state if task else 'unassigned',
+                    })
+            # Supporting resources that are quizzes
+            for sup in res.supporting_resource_ids:
+                if sup.type_id and sup.type_id.assessment and sup.id not in seen_quiz_ids:
+                    seen_quiz_ids.add(sup.id)
+                    task = task_map.get(sup.id)
+                    quizzes.append({
+                        'id': sup.id,
+                        'name': sup.name or '',
+                        'typeName': sup.type_id.name or '',
+                        'weightedResult': task.weighted_result if task else 0,
+                        'attempts': task.submission_count if task else 0,
+                        'lastResult': task.last_result if task else 0,
+                        'state': task.state if task else 'unassigned',
+                    })
+            sec['quizzes'] = quizzes
+            # Average weighted result across quizzes for this section
+            wrs = [q['weightedResult'] for q in quizzes if q.get('weightedResult')]
+            sec['avgWeightedResult'] = round(sum(wrs) / len(wrs), 1) if wrs else 0
+
+        # Propagate avgWeightedResult, hasQuizzes and quiz submission
+        # status to tree nodes.
+        def _apply_avg_to_tree(nodes):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                if sec:
+                    node['avgWeightedResult'] = sec.get('avgWeightedResult', 0)
+                    node['hasQuizzes'] = bool(sec.get('quizzes'))
+                    quizzes = sec.get('quizzes', [])
+                    if quizzes:
+                        node['allQuizzesSubmitted'] = all(
+                            q.get('attempts', 0) > 0
+                            for q in quizzes
+                        )
+                    else:
+                        node['allQuizzesSubmitted'] = True
+                else:
+                    node['avgWeightedResult'] = 0
+                    node['hasQuizzes'] = False
+                    node['allQuizzesSubmitted'] = True
+                _apply_avg_to_tree(node.get('children', []))
+        _apply_avg_to_tree(tree)
+
+        # Collect content sections in tree traversal order (depth-first).
+        # Parents appear before their children, each level sorted by
+        # (sequence, name) — matching the visual tree order exactly.
+        ordered_sections = []
+        seen_section_ids = set()
+
+        def _collect_sections(nodes):
+            for node in nodes:
+                sec = sections_map.get(node['id'])
+                if sec and sec['visible'] and sec['id'] not in seen_section_ids:
+                    sec['depth'] = node.get('depth', 0)
+                    ordered_sections.append(sec)
+                    seen_section_ids.add(sec['id'])
+                _collect_sections(node.get('children', []))
+
+        _collect_sections(tree)
+
+        return {
+            'tree': tree,
+            'contentSections': ordered_sections,
+        }
+
+    # ------------------------------------------------------------------
+    # Course Explorer student progress tracking
+    # ------------------------------------------------------------------
+
+    def _compute_resource_progress(self, student_id):
+        """Compute progress for a single resource for a given student.
+
+        Returns a dict with:
+          - progress: float 0-100
+          - hasCheckbox: bool (True if this resource provided notes to the section)
+          - submissionState: str or None
+        """
+        self.ensure_one()
+        result = {
+            'progress': 0.0,
+            'hasCheckbox': False,
+            'submissionState': None,
+        }
+
+        # Find the task for this resource and student, then get the submission.
+        # We search via task because submission.student_id and
+        # submission.resource_id are non-stored related fields, making direct
+        # searches on them unreliable.
+        task = self.env['aps.resource.task'].search([
+            ('resource_id', '=', self.id),
+            ('student_id', '=', student_id),
+        ], limit=1)
+
+        if task:
+            submission = self.env['aps.resource.submission'].search([
+                ('task_id', '=', task.id),
+            ], order='date_assigned desc, id desc', limit=1)
+            if submission:
+                result['progress'] = submission.progress or 0.0
+                result['submissionState'] = submission.state
+
+        return result
+
+    def _compute_children_average_progress(self, children_nodes, student_id):
+        """Compute average progress from child tree nodes."""
+        if not children_nodes:
+            return 0.0
+        total = sum(child.get('progress', 0.0) for child in children_nodes)
+        return total / len(children_nodes) if children_nodes else 0.0
+
+    @api.model
+    def get_course_explorer_progress(self, student_id):
+        """Return progress data for all resources in the tree for a given student.
+
+        Includes both content resources (has_notes != 'no') and structural
+        parent resources (has_notes == 'no') that serve as hierarchy nodes,
+        so the tree always has complete progress data.
+
+        Args:
+            student_id: partner ID of the current student
+
+        Returns:
+            dict mapping resource_id -> progress data
+        """
+        if not student_id:
+            return {}
+
+        # Content resources
+        has_notes_res = self.search([
+            ('show_in_hierarchy', '=', True),
+        ])
+
+        # Structural parents: resources that are ancestors
+        # of content resources — they need progress data for the tree display.
+        extra_parents = self.env['aps.resources']
+        for res in has_notes_res:
+            for parent in res.parent_ids:
+                if parent.show_in_hierarchy:
+                    extra_parents |= parent
+
+        all_resources = has_notes_res | extra_parents
+
+        result = {}
+        for res in all_resources:
+            data = res._compute_resource_progress(student_id)
+            result[res.id] = data
+
+        return result
+
+    @api.model
+    def toggle_resource_completion(self, resource_id):
+        """Toggle the completion state of a resource for the current student.
+
+        - If no submission exists, create one (task + submission) with state='submitted' and progress=100
+        - If submission exists with state='submitted', change to state='assigned' and progress=0
+        - If submission exists with state='assigned', change to state='submitted' and progress=100
+
+        Returns:
+            dict with new state, progress, and parent progress updates
+        """
+        student = self.env.user.partner_id
+        if not student:
+            return {'error': 'No student partner found'}
+
+        resource = self.browse(resource_id)
+        if not resource.exists():
+            return {'error': 'Resource not found'}
+
+        # Find or create task
+        task = self.env['aps.resource.task'].search([
+            ('resource_id', '=', resource.id),
+            ('student_id', '=', student.id),
+        ], limit=1)
+
+        if not task:
+            task = self.env['aps.resource.task'].create({
+                'resource_id': resource.id,
+                'student_id': student.id,
+                'state': 'assigned',
+            })
+
+        # Find existing submission
+        submission = self.env['aps.resource.submission'].search([
+            ('task_id', '=', task.id),
+        ], order='date_assigned desc, id desc', limit=1)
+
+        if submission:
+            # Toggle state
+            if submission.state == 'submitted':
+                submission.write({
+                    'state': 'assigned',
+                    'progress': 0.0,
+                })
+                new_state = 'assigned'
+                new_progress = 0.0
+            else:
+                submission.write({
+                    'state': 'submitted',
+                    'date_submitted': fields.Date.today(),
+                    'progress': 100.0,
+                })
+                new_state = 'submitted'
+                new_progress = 100.0
+        else:
+            # Create new submission with submitted state
+            submission = self.env['aps.resource.submission'].create({
+                'task_id': task.id,
+                'submission_name': resource.display_name or resource.name or '',
+                'date_assigned': fields.Date.today(),
+                'state': 'submitted',
+                'date_submitted': fields.Date.today(),
+                'progress': 100.0,
+            })
+            new_state = 'submitted'
+            new_progress = 100.0
+
+        # Collect parent updates from the auto-propagated data.
+        # Walk the full ancestor chain (not just immediate parents) so
+        # the UI can update progress rings on every level.
+        parent_updates = {}
+        visited = set()
+        to_process = list(resource.parent_ids)
+        while to_process:
+            parent = to_process.pop(0)
+            if parent.id in visited:
+                continue
+            visited.add(parent.id)
+            parent_task = self.env['aps.resource.task'].search([
+                ('resource_id', '=', parent.id),
+                ('student_id', '=', student.id),
+            ], limit=1)
+            if parent_task:
+                parent_sub = self.env['aps.resource.submission'].search([
+                    ('task_id', '=', parent_task.id),
+                ], order='date_assigned desc, id desc', limit=1)
+                if parent_sub:
+                    parent_updates[parent.id] = {
+                        'progress': parent_sub.progress,
+                        'name': parent.name or '',
+                    }
+            for grandparent in parent.parent_ids:
+                if grandparent.id not in visited:
+                    to_process.append(grandparent)
+
+        return {
+            'resourceId': resource.id,
+            'newState': new_state,
+            'newProgress': new_progress,
+            'parentUpdates': parent_updates,
+        }

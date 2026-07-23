@@ -1,15 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- School Management module category, nested under Education from OpenEducat -->
-        <record id="module_category_aps" model="ir.module.category">
+        <!-- School Management module category -->
+        <record id="module_category_root_school_management" model="ir.module.category">
             <field name="name">School Management</field>
-            <field name="description">Academic Progress and Excellence – resource assignment, submissions, and grading.</field>
-            <field name="parent_id" ref="openeducat_core.module_category_all_openeducat"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="module_category_aps_core" model="ir.module.category">
+            <field name="name">APEX Core</field>
+            <field name="parent_id" ref="module_category_root_school_management"/>
+            <field name="description">Core tables - subjects, classes.</field>
             <field name="sequence">20</field>
         </record>
 
-        <!-- APS SIS Security Groups (hierarchy: Student → Teacher → Manager) -->
+        <record id="group_aps_student_core" model="res.groups">
+            <field name="name">Student</field>
+            <field name="category_id" ref="module_category_aps_core"/>
+            <field name="comment">Students can view their own enrolements</field>
+        </record>
+
+        <record id="group_aps_teacher_core" model="res.groups">
+            <field name="name">Teacher</field>
+            <field name="category_id" ref="module_category_aps_core"/>
+            <field name="implied_ids" eval="[(4, ref('group_aps_student_core'))]"/>
+            <field name="comment">Teachers can access classes, subjects, timetables etc</field>
+        </record>
+
+        <record id="group_aps_manager_core" model="res.groups">
+            <field name="name">Manager</field>
+            <field name="category_id" ref="module_category_aps_core"/>
+            <field name="implied_ids" eval="[(4, ref('group_aps_teacher_core'))]"/>
+            <field name="comment">Full administrative access to all APEX core features</field>
+        </record>
+
+
+        <record id="module_category_aps" model="ir.module.category">
+            <field name="name">APEX LMS</field>
+            <field name="parent_id" ref="module_category_root_school_management"/>
+            <field name="description">Academic Progress and Excellence – resource assignment, submissions, and grading.</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- APS SIS Security Groups (hierarchy: Student → Teacher → Manager)
+             A clean linear inheritance chain is what makes Odoo render these
+             as a dropdown instead of checkboxes in user settings. -->
         <record id="group_aps_student" model="res.groups">
             <field name="name">Student</field>
             <field name="category_id" ref="module_category_aps"/>
@@ -39,14 +73,12 @@
             <field name="comment">Controls visibility of student-facing root menus. Not implied by Teacher or Manager.</field>
         </record>
 
+        <!-- Voting Token Access — in a separate category (not module_category_aps)
+             so it doesn't break the Student→Teacher→Manager linear chain. -->
         <record id="group_aps_voting_token_access" model="res.groups">
             <field name="name">Voting Token Access</field>
-            <field name="category_id" ref="module_category_aps"/>
+            <field name="category_id" ref="base.module_category_hidden"/>
             <field name="comment">Can view and reset voting access tokens from the secured partner popup.</field>
-        </record>
-
-        <record id="group_aps_manager" model="res.groups">
-            <field name="implied_ids" eval="[(4, ref('group_aps_voting_token_access'))]"/>
         </record>
     </data>
 </odoo>

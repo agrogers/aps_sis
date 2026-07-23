@@ -33,17 +33,15 @@
                                 aria-haspopup="listbox"
                                 t-att-aria-expanded="state.dropdownOpenIndex === crumb_index ? 'true' : 'false'">
                             <!-- Use solid icon when siblings exist (clickable), outline  otherwise -->
-                            <img t-if="state.arrowHasSiblings[crumb_index]"
-                                 src="/aps_sis/static/src/img/play_solid.svg"
+                            <svg t-if="state.arrowHasSiblings[crumb_index]"
                                  class="breadcrumb-arrow-icon"
                                  t-att-class="state.dropdownOpenIndex === crumb_index ? 'breadcrumb-arrow-open' : ''"
-                                 alt=""
-                                 aria-hidden="true"/>
-                            <img t-else=""
-                                 src="/aps_sis/static/src/img/play_outline.svg"
+                                 viewBox="0 0 64 64" fill="currentColor"
+                                 aria-hidden="true"><path d="m52.713 31.16631-40.3215-26.70855a1 1 0 0 0 -1.55223.83369v53.4171a1 1 0 0 0 1.55223.83369l40.3215-26.70855a1 1 0 0 0 0-1.66738z"/></svg>
+                            <svg t-else=""
                                  class="breadcrumb-arrow-icon breadcrumb-arrow-no-siblings"
-                                 alt=""
-                                 aria-hidden="true"/>
+                                 viewBox="0 0 64 64" fill="currentColor"
+                                 aria-hidden="true"><path d="m10.94775 57.90234v-51.80468a1.50139 1.50139 0 0 1 2.32764-1.251l39.10547 25.90334a1.50022 1.50022 0 0 1 0 2.5l-39.10449 25.90332a1.50148 1.50148 0 0 1 -2.32862-1.25098zm2-50.874v49.94334l37.69925-24.97168z"/></svg>
                         </button>
 
                         <!-- Sibling dropdown panel -->
@@ -92,11 +90,10 @@
                                             t-att-data-item-id="item.id"
                                             t-on-click.stop.prevent="onExpandDropdownItem"
                                             aria-label="Show children">
-                                        <img src="/aps_sis/static/src/img/play_solid.svg"
-                                             class="breadcrumb-arrow-icon"
+                                        <svg class="breadcrumb-arrow-icon"
                                              t-att-class="item.isExpanded ? 'breadcrumb-arrow-open' : ''"
-                                             alt=""
-                                             aria-hidden="true"/>
+                                             viewBox="0 0 64 64" fill="currentColor"
+                                             aria-hidden="true"><path d="m52.713 31.16631-40.3215-26.70855a1 1 0 0 0 -1.55223.83369v53.4171a1 1 0 0 0 1.55223.83369l40.3215-26.70855a1 1 0 0 0 0-1.66738z"/></svg>
                                     </button>
                                 </div>
                             </t>
@@ -136,11 +133,10 @@
                                     aria-haspopup="listbox"
                                     t-att-aria-expanded="state.childrenDropdownOpen ? 'true' : 'false'">
                                 <t t-esc="crumb.label"/>
-                                <img src="/aps_sis/static/src/img/play_solid.svg"
-                                    class="breadcrumb-arrow-icon"
+                                <svg class="breadcrumb-arrow-icon"
                                     t-att-class="state.childrenDropdownOpen ? 'breadcrumb-arrow-open' : ''"
-                                    alt=""
-                                    aria-hidden="true"/>
+                                    viewBox="0 0 64 64" fill="currentColor"
+                                    aria-hidden="true"><path d="m52.713 31.16631-40.3215-26.70855a1 1 0 0 0 -1.55223.83369v53.4171a1 1 0 0 0 1.55223.83369l40.3215-26.70855a1 1 0 0 0 0-1.66738z"/></svg>
 
                             </button>
 
@@ -185,11 +181,10 @@
                                                 t-att-data-item-id="item.id"
                                                 t-on-click.stop.prevent="onExpandDropdownItem"
                                                 aria-label="Show children">
-                                            <img src="/aps_sis/static/src/img/play_solid.svg"
-                                                 class="breadcrumb-arrow-icon"
+                                            <svg class="breadcrumb-arrow-icon"
                                                  t-att-class="item.isExpanded ? 'breadcrumb-arrow-open' : ''"
-                                                 alt=""
-                                                 aria-hidden="true"/>
+                                                 viewBox="0 0 64 64" fill="currentColor"
+                                                 aria-hidden="true"><path d="m52.713 31.16631-40.3215-26.70855a1 1 0 0 0 -1.55223.83369v53.4171a1 1 0 0 0 1.55223.83369l40.3215-26.70855a1 1 0 0 0 0-1.66738z"/></svg>
                                         </button>
                                     </div>
                                 </t>

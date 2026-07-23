@@ -91,6 +91,12 @@ class APSResource(models.Model):
         return res
 
     def write(self, vals):
+        # Apply lazy loading and aspect-ratio to notes HTML before saving
+        if 'notes' in vals and vals['notes'] and not self.env.context.get('_skip_image_processing'):
+            html = self._add_lazy_loading(vals['notes'])
+            html, _changed = self._ensure_image_aspect_ratios(html)
+            vals['notes'] = html
+
         # Before writing, snapshot which parent IDs each record already has so we
         # can detect newly-added parents after the write completes.
         parent_fields_changing = 'parent_ids' in vals or 'supporting_parent_ids' in vals
@@ -201,6 +207,13 @@ class APSResource(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Apply lazy loading and aspect-ratio to notes HTML before saving
+        for vals in vals_list:
+            if vals.get('notes') and not self.env.context.get('_skip_image_processing'):
+                html = self._add_lazy_loading(vals['notes'])
+                html, _changed = self._ensure_image_aspect_ratios(html)
+                vals['notes'] = html
+
         # Before creating, copy subjects/tags from the parent(s) into each
         # vals dict where the resource is being linked to a parent but does not
         # yet have explicit subjects or tag_ids values.

@@ -564,3 +564,132 @@ class APSResource(models.Model):
     def _compute_subject_categories(self):
         for record in self:
             record.subject_categories = [(6, 0, record.subjects.mapped('category_id').ids)]
+
+    def _get_image_bytes_from_url(self, src):
+        """Resolve an image src URL to raw bytes using Odoo's ir.binary.
+
+        Handles:
+          - /web/image/<id>  (attachment by ID, with optional name qualifier)
+          - /web/image/model/id/field[/size]
+          - data:image/...;base64,...
+          - http(s)://...  (external URLs — fetched via requests)
+        Returns bytes or None.
+        """
+        import base64 as b64mod
+        import re as _re
+
+        if not src:
+            return None
+
+        # base64 data URI
+        b64_match = _re.match(r'data:image/[^;]+;base64,(.+)', src, _re.DOTALL)
+        if b64_match:
+            try:
+                return b64mod.b64decode(b64_match.group(1))
+            except Exception:
+                return None
+
+        # /web/image/<id> — attachment by ID (may have name qualifier like 123-foo)
+        att_match = _re.match(r'/web/image/(\d+)(?:[-/].*)?$', src)
+        if att_match:
+            try:
+                att = self.env['ir.attachment'].browse(int(att_match.group(1))).sudo()
+                if att.exists() and att.datas:
+                    import base64 as _b64
+                    return _b64.b64decode(att.datas)
+            except Exception:
+                return None
+
+        # /web/image/model/id/field[/size] — read binary field via ir.binary
+        model_match = _re.match(r'/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src)
+        if model_match:
+            try:
+                model_name, res_id, field_name = model_match.groups()
+                record = self.env[model_name].sudo().browse(int(res_id))
+                if record.exists():
+                    val = record[field_name]
+                    if val:
+                        return val if isinstance(val, bytes) else val.encode('latin-1') if isinstance(val, str) else None
+            except Exception:
+                return None
+
+        # External URL — fetch via requests
+        if src.startswith(('http://', 'https://')):
+            try:
+                import requests
+                resp = requests.get(src, timeout=10)
+                resp.raise_for_status()
+                return resp.content
+            except Exception:
+                return None
+
+        return None
+
+    def _ensure_image_aspect_ratios(self, html):
+        """Inject aspect-ratio CSS into <img> tags that lack it.
+
+        For each <img> in *html* that does not already have an aspect-ratio
+        in its style attribute, resolve the image source, read dimensions
+        with Pillow, and add ``aspect-ratio: W/H`` to the style.
+
+        Returns (updated_html, changed) where *changed* is True if any
+        <img> tags were modified.
+        """
+        import io
+        import re
+        try:
+            from PIL import Image
+        except ImportError:
+            return html, False
+
+        if not html or '<img' not in html.lower():
+            return html, False
+
+        changed = False
+
+        def _replace_img(match):
+            nonlocal changed
+            tag = match.group(0)
+
+            # Skip if style already contains aspect-ratio
+            if 'aspect-ratio' in tag:
+                return tag
+
+            # Extract src
+            src_match = re.search(r'src=["\']([^"\']*)["\']', tag, re.IGNORECASE)
+            if not src_match:
+                return tag
+            src = src_match.group(1)
+
+            # Resolve image bytes
+            img_bytes = self._get_image_bytes_from_url(src)
+            if not img_bytes:
+                return tag
+
+            try:
+                with Image.open(io.BytesIO(img_bytes)) as img:
+                    w, h = img.size
+                if w <= 0 or h <= 0:
+                    return tag
+            except Exception:
+                return tag
+
+            # Compute reduced aspect ratio
+            from math import gcd
+            d = gcd(w, h)
+            ratio_w, ratio_h = w // d, h // d
+
+            # Inject or update style attribute
+            ratio_str = f'aspect-ratio: {ratio_w}/{ratio_h}'
+            style_match = re.search(r'style=["\']([^"\']*)["\']', tag, re.IGNORECASE)
+            if style_match:
+                old_style = style_match.group(1)
+                new_style = f'{old_style.rstrip(";")}; {ratio_str}' if old_style.strip() else ratio_str
+                tag = tag[:style_match.start(1)] + new_style + tag[style_match.end(1):]
+            else:
+                tag = re.sub(r'\s*/?\s*>$', f' style="{ratio_str}">', tag)
+            changed = True
+            return tag
+
+        html = re.sub(r'<img\b[^>]*>', _replace_img, html, flags=re.IGNORECASE)
+        return html, changed

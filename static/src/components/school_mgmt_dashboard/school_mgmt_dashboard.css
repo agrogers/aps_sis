@@ -1,9 +1,9 @@
 .smd-dashboard {
-    background-color: #f4f6f9;
+    background-color: var(--body-bg);
 }
 
 .smd-header {
-    background: #fff;
+    background: var(--gray-200);
     border-radius: 12px;
     box-shadow: 0 1px 4px rgba(0,0,0,.08);
     padding: 1.25rem 1.5rem !important;
@@ -13,28 +13,24 @@
 .smd-section-title {
     font-size: 0.75rem;
     letter-spacing: 0.08em;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.4rem;
 }
 
 .smd-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.07);
-    padding: 1rem 1.25rem;
     cursor: pointer;
     transition: box-shadow 0.15s ease, transform 0.1s ease;
-    border: 1px solid transparent;
     text-decoration: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
 }
 
 .smd-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    box-shadow: 0 4px 12px rgba(0,0,0,.15) !important;
     transform: translateY(-2px);
-    border-color: var(--bs-primary);
+    border-color: var(--link-color) !important;
 }
 
 .smd-card-icon {
@@ -56,7 +52,7 @@
 .smd-card-title {
     font-weight: 600;
     font-size: 0.9rem;
-    color: #1a1d23;
+    color: var(--body-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -65,7 +61,7 @@
 .smd-card-count {
     font-size: 1.4rem;
     font-weight: 700;
-    color: var(--bs-primary);
+    color: var(--link-color);
     line-height: 1.2;
 }
 

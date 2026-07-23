@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_class_tag_enrol_wizard_form" model="ir.ui.view">
+        <field name="name">aps.class.tag.enrol.wizard.form</field>
+        <field name="model">aps.class.tag.enrol.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Auto-Enrol Students by Tag">
+                <sheet>
+                    <div class="oe_title mb16">
+                        <h4>Auto-Enrol Students into Classes</h4>
+                        <p class="text-muted">
+                            Select tags to match. Classes tagged with the selected tags will be listed.
+                            Students whose partner category <strong>names</strong> match the class tag
+                            names will be enrolled.
+                        </p>
+                    </div>
+
+                    <group>
+                        <group string="Criteria">
+                            <field name="academic_year_id"/>
+                            <field name="tag_ids" widget="many2many_tags"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   placeholder="Select tags..."/>
+                        </group>
+                    </group>
+
+                    <div class="o_horizontal_separator mt-4 mb-2">Matching Classes</div>
+                    <div class="mt-1 mb-2 text-muted">
+                        Classes in the selected academic year that have at least one of the chosen tags.
+                    </div>
+                    <field name="matching_class_ids" readonly="1"
+                           widget="many2many_tags"
+                           options="{'no_create': True, 'no_create_edit': True}"/>
+
+                    <div class="alert alert-success mt-3" role="alert" invisible="not has_result">
+                        <field name="result_message" widget="html"/>
+                    </div>
+
+                    <field name="has_result" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_execute" type="object" string="Execute Enrolment" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_class_tag_enrol_wizard" model="ir.actions.act_window">
+        <field name="name">Auto-Enrol by Tag</field>
+        <field name="res_model">aps.class.tag.enrol.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

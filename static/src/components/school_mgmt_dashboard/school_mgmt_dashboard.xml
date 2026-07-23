@@ -19,7 +19,7 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_academic_year_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_academic_year_action')">
                     <div class="smd-card-icon bg-primary-subtle text-primary">
                         <i class="fa fa-calendar-check-o"/>
                     </div>
@@ -31,7 +31,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_academic_term_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_academic_term_action')">
                     <div class="smd-card-icon bg-info-subtle text-info">
                         <i class="fa fa-bookmark"/>
                     </div>
@@ -43,7 +43,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_academic_week_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_academic_week_action')">
                     <div class="smd-card-icon bg-success-subtle text-success">
                         <i class="fa fa-th"/>
                     </div>
@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_school_calendar_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_school_calendar_action')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-calendar"/>
                     </div>
@@ -67,7 +67,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_timetable_entry_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_timetable_entry_action')">
                     <div class="smd-card-icon bg-primary-subtle text-primary">
                         <i class="fa fa-table"/>
                     </div>
@@ -88,7 +88,7 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_teacher_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_teacher_action')">
                     <div class="smd-card-icon bg-primary-subtle text-primary">
                         <i class="fa fa-chalkboard-teacher"/>
                     </div>
@@ -100,7 +100,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_student_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_student_action')">
                     <div class="smd-card-icon bg-success-subtle text-success">
                         <i class="fa fa-graduation-cap"/>
                     </div>
@@ -121,7 +121,7 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_level_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_level_action')">
                     <div class="smd-card-icon bg-secondary-subtle text-secondary">
                         <i class="fa fa-layer-group"/>
                     </div>
@@ -133,19 +133,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_subject_action')">
-                    <div class="smd-card-icon bg-info-subtle text-info">
-                        <i class="fa fa-book"/>
-                    </div>
-                    <div class="smd-card-body">
-                        <div class="smd-card-title">Subjects</div>
-                        <div class="smd-card-count" t-esc="this.count('aps.subject')"/>
-                    </div>
-                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_subject_categories')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_subject_categories')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-tags"/>
                     </div>
@@ -157,7 +145,19 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_class_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_subject_action')">
+                    <div class="smd-card-icon bg-info-subtle text-info">
+                        <i class="fa fa-book"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Subjects</div>
+                        <div class="smd-card-count" t-esc="this.count('aps.subject')"/>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_class_action')">
                     <div class="smd-card-icon bg-danger-subtle text-danger">
                         <i class="fa fa-door-open"/>
                     </div>
@@ -169,7 +169,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.aps_student_class_action')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_student_class_action')">
                     <div class="smd-card-icon bg-primary-subtle text-primary">
                         <i class="fa fa-user-plus"/>
                     </div>
@@ -181,7 +181,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card" t-on-click="() => this.open('aps_sis.action_aps_locations')">
+                <div class="smd-card card" t-on-click="() => this.open('aps_sis.action_aps_locations')">
                     <div class="smd-card-icon bg-secondary-subtle text-secondary">
                         <i class="fa fa-map-marker"/>
                     </div>
@@ -202,7 +202,7 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card smd-card-tool" t-on-click="() => this.open('aps_sis.aps_school_calendar_generate_wizard_action')">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.aps_school_calendar_generate_wizard_action')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-magic"/>
                     </div>
@@ -214,7 +214,7 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card smd-card-tool" t-on-click="() => this.open('aps_sis.aps_academic_week_generate_wizard_action')">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.aps_academic_week_generate_wizard_action')">
                     <div class="smd-card-icon bg-success-subtle text-success">
                         <i class="fa fa-magic"/>
                     </div>
@@ -226,13 +226,49 @@
                 </div>
             </div>
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <div class="smd-card smd-card-tool" t-on-click="() => this.open('aps_sis.action_aps_student_class_bulk_wizard')">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_student_class_bulk_wizard')">
                     <div class="smd-card-icon bg-primary-subtle text-primary">
                         <i class="fa fa-users"/>
                     </div>
                     <div class="smd-card-body">
                         <div class="smd-card-title">Bulk Class Enrolment</div>
                         <div class="smd-card-subtitle text-muted">Enrol students in bulk</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_class_rollover_wizard')">
+                    <div class="smd-card-icon bg-info-subtle text-info">
+                        <i class="fa fa-arrow-right"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Roll Classes to New Year</div>
+                        <div class="smd-card-subtitle text-muted">Carry classes forward</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_year_level_rollover_wizard')">
+                    <div class="smd-card-icon bg-secondary-subtle text-secondary">
+                        <i class="fa fa-level-up"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Roll Students to Next Level</div>
+                        <div class="smd-card-subtitle text-muted">Promote selected students</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_class_tag_enrol_wizard')">
+                    <div class="smd-card-icon bg-success-subtle text-success">
+                        <i class="fa fa-magic"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Auto-Enrol by Tag</div>
+                        <div class="smd-card-subtitle text-muted">Enrol students matching class tags</div>
                     </div>
                     <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
                 </div>

@@ -11,6 +11,7 @@
                 <field name="name"/>
                 <field name="subject_id" optional="show"/>
                 <field name="academic_year_id" optional="show"/>
+                <field name="tag_ids" widget="many2many_tags" optional="show"/>
             </list>
         </field>
     </record>
@@ -52,6 +53,9 @@
                             <field name="assistant_teacher_ids" widget="many2many_tags"
                                    domain="[('is_teacher', '=', True)]"
                                    options="{'no_create': True}" nolabel="1"/>
+                        </group>
+                        <group string="Tags">
+                            <field name="tag_ids" widget="many2many_tags" nolabel="1"/>
                         </group>
                     </group>
                     <notebook>

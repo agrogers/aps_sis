@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         CourseExplorerTreeNode — recursive tree node
+         ═══════════════════════════════════════════════════════════════ -->
+    <t t-name="aps_sis.CourseExplorerTreeNode">
+        <div class="ce_tree_node"
+             t-att-class="isActive ? 'ce_tree_node_active' : ''"
+             t-att-data-node-id="props.node.id"
+             t-att-data-section-id="props.node.sectionId"
+             t-att-style="indentStyle">
+
+            <!-- Expand / collapse chevron -->
+            <span t-if="hasChildren"
+                  class="ce_chevron"
+                  t-att-class="isExpanded ? 'ce_chevron_expanded' : ''"
+                  t-on-click="onToggleClick">
+                <i class="fa fa-caret-down"/>
+            </span>
+            <span t-else="" class="ce_chevron ce_chevron_placeholder"/>
+
+            <!-- Node label — links to sectionId -->
+            <a href="#"
+               class="ce_node_label"
+               t-att-class="isActive ? 'ce_node_label_active' : ''"
+               t-on-click="onNodeClick">
+                <t t-esc="props.node.name"/>
+            </a>
+
+            <!-- Progress indicator -->
+            <t t-if="props.node.progress !== undefined">
+                <div class="ce_progress_cell">
+                    <svg class="ce_progress_ring" viewBox="0 0 36 36">
+                        <defs t-if="props.node.hasQuizzes and !allQuizzesSubmitted">
+                            <linearGradient t-att-id="gradientId" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#d3d3d3"/>
+                                <stop offset="50%" stop-color="#d3d3d3"/>
+                                <stop offset="50%" t-att-stop-color="avgColor"/>
+                                <stop offset="100%" t-att-stop-color="avgColor"/>
+                            </linearGradient>
+                        </defs>
+                        <path class="ce_progress_ring_bg"
+                              d="M18 2.0845
+                                 a 15.9155 15.9155 0 0 1 0 31.831
+                                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke-width="3"/>
+                        <path class="ce_progress_ring_fill"
+                              t-att-stroke-dasharray="props.node.progress + ', 100'"
+                              t-att-style="props.node.progress >= 100 ? 'stroke: #007bff' : 'stroke: #6c757d'"
+                              d="M18 2.0845
+                                 a 15.9155 15.9155 0 0 1 0 31.831
+                                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke-width="3"/>
+                        <circle cx="18" cy="18" r="11"
+                                t-att-fill="props.node.hasQuizzes ? (allQuizzesSubmitted ? avgColor : 'url(#' + gradientId + ')') : 'transparent'"
+                                stroke="none"/>
+                    </svg>
+                    <span class="ce_progress_text"
+                          t-att-style="props.node.hasQuizzes ? '' : 'display:none'">
+                    </span>
+                </div>
+            </t>
+        </div>
+
+        <!-- Children (if expanded) -->
+        <t t-if="isExpanded and props.node.children and props.node.children.length">
+            <t t-foreach="props.node.children" t-as="child" t-key="child.id">
+                <CourseExplorerTreeNode
+                    node="child"
+                    activeSectionId="props.activeSectionId"
+                    depth="props.depth + 1"
+                    expandedIds="props.expandedIds"
+                    onToggle="props.onToggle"
+                    onNavigate="props.onNavigate"/>
+            </t>
+        </t>
+    </t>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         CourseExplorer — main split-pane layout
+         ═══════════════════════════════════════════════════════════════ -->
+    <t t-name="aps_sis.CourseExplorer">
+        <div class="ce_root"
+             t-att-class="state.sidebarCollapsed ? 'ce_sidebar_collapsed' : ''">
+
+            <!-- ── Left Pane ──────────────────────────────────────── -->
+            <div class="ce_left_pane">
+
+                <!-- Toolbar -->
+                <div class="ce_toolbar">
+                    <select class="ce_category_select form-select form-select-sm"
+                            t-on-change="onCategoryChange">
+                        <option value="">Select a subject</option>
+                        <t t-foreach="state.subjectCategories" t-as="cat" t-key="cat.id">
+                            <option t-att-value="cat.id"
+                                    t-att-selected="cat.id === state.selectedCategoryId">
+                                <t t-esc="cat.name"/> (<t t-esc="cat.resource_count"/>)
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Expand / Collapse controls -->
+                <div class="ce_tree_controls">
+                    <button class="btn btn-link btn-sm p-0" t-on-click="expandAll">
+                        <i class="fa fa-plus-square-o me-1"/>Expand All
+                    </button>
+                    <button class="btn btn-link btn-sm p-0" t-on-click="collapseAll">
+                        <i class="fa fa-minus-square-o me-1"/>Collapse All
+                    </button>
+                    <!-- Overall course progress circle -->
+                    <div class="ce_overall_progress" t-if="state.tree.length">
+                        <div class="ce_progress_cell">
+                            <svg class="ce_progress_ring" viewBox="0 0 36 36">
+                                <path class="ce_progress_ring_bg"
+                                      d="M18 2.0845
+                                         a 15.9155 15.9155 0 0 1 0 31.831
+                                         a 15.9155 15.9155 0 0 1 0 -31.831"
+                                      fill="none"
+                                      stroke-width="3"/>
+                                <path class="ce_progress_ring_fill"
+                                      t-att-stroke-dasharray="overallProgress + ', 100'"
+                                      t-att-style="overallProgress >= 100 ? 'stroke: #007bff' : 'stroke: #6c757d'"
+                                      d="M18 2.0845
+                                         a 15.9155 15.9155 0 0 1 0 31.831
+                                         a 15.9155 15.9155 0 0 1 0 -31.831"
+                                      fill="none"
+                                      stroke-width="3"/>
+                                <t t-if="overallAvgScore > 0">
+                                    <circle cx="18" cy="18" r="11"
+                                            t-att-fill="overallColor"
+                                            stroke="none"/>
+                                </t>
+                            </svg>
+                            <t t-if="overallAvgScore > 0">
+                                <span class="ce_progress_text">
+                                    <t t-esc="overallAvgScore"/>
+                                </span>
+                            </t>
+                            <!-- Hover tooltip -->
+                            <div class="ce_progress_tooltip">
+                                <div class="ce_tooltip_row">
+                                    <span class="ce_tooltip_label">Progress</span>
+                                    <span class="ce_tooltip_value"><t t-esc="overallProgress"/>%</span>
+                                </div>
+                                <div class="ce_tooltip_row">
+                                    <span class="ce_tooltip_label">Average Score</span>
+                                    <span class="ce_tooltip_value"><t t-esc="overallAvgScore"/>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable tree -->
+                <div class="ce_tree_container">
+                    <t t-foreach="state.tree" t-as="root" t-key="root.id">
+                        <CourseExplorerTreeNode
+                            node="root"
+                            activeSectionId="state.activeSectionId"
+                            depth="0"
+                            expandedIds="state.expandedNodeIds"
+                            onToggle="(id) => this.toggleNode(id)"
+                            onNavigate="(sectionId) => this.scrollToSection(sectionId)"/>
+                    </t>
+                    <div t-if="!state.loading and !state.tree.length" class="ce_empty text-muted fst-italic p-3">
+                        No resources found.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Sidebar toggle (outside left pane so it's always visible) -->
+            <div class="ce_sidebar_toggle" t-on-click="toggleSidebar">
+                <i t-att-class="state.sidebarCollapsed ? 'fa fa-angle-right' : 'fa fa-angle-left'"/>
+            </div>
+
+            <!-- ── Right Pane (content viewer) ────────────────────── -->
+            <div class="ce_right_pane" t-ref="contentPane" t-key="state.contentVersion">
+
+                <!-- Loading spinner -->
+                <div t-if="state.loading" class="ce_loading text-center py-5">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"/>
+                    Loading course content&#8230;
+                </div>
+
+                <!-- Content sections -->
+                <t t-foreach="visibleContentSections" t-as="section" t-key="state.contentVersion + '-' + section.id + '-' + section_index">
+                    <section class="ce_content_section"
+                             t-att-id="'ce-section-' + section.id"
+                             t-att-data-resource-id="section.id">
+                        <div class="ce_section_heading" t-att-class="'ce_level_' + (section.depth || 0)">
+                            <h3>
+                                <t t-esc="section.name"/>
+                                <t t-if="state.isManager">
+                                    <a href="#" class="ce_open_resource_link"
+                                       title="Open resource"
+                                       t-on-click="(ev) => this.openResource(ev, section.id)">
+                                        <i class="fa fa-external-link"/>
+                                    </a>
+                                </t>
+                            </h3>
+                            <!-- Average weighted result pie (links to quizzes table) -->
+                            <t t-if="section.quizzes and section.quizzes.length">
+                                <a href="#" class="ce_quiz_scroll_link"
+                                   t-on-click="(ev) => { ev.preventDefault(); this.scrollToQuiz(ev, section.id); }">
+                                    <PercentPie value="section.avgWeightedResult || 0"/>
+                                </a>
+                            </t>
+                            <!-- Completion checkbox for resources that provided notes -->
+                            <t t-if="section.hasCheckbox">
+                                <div class="ce_completion_row">
+                                    <label class="ce_completion_label">
+                                        <input type="checkbox"
+                                            class="ce_completion_checkbox"
+                                            t-att-checked="section.checked"
+                                            t-on-change="() => this.onToggleCompletion(section.id)"/>
+                                        <span class="ce_completion_text">
+                                            <t t-if="section.checked">Completed</t>
+                                            <t t-else="">Completed</t>
+                                        </span>
+                                    </label>
+                                </div>
+                            </t>
+
+                        </div>
+                        <div class="ce_section_body oe_calculateKioskHeight"
+                             t-att-data-image-viewer-model="'aps.subject.category'"
+                             t-att-data-image-viewer-id="state.selectedCategoryId"
+                             t-out="section.html"/>
+                        <!-- Quiz table -->
+                        <t t-if="section.quizzes and section.quizzes.length">
+                            <div class="ce_quiz_box" t-att-id="'ce-quiz-' + section.id">
+                                <div class="ce_quiz_box_header">
+                                    <i class="fa fa-question-circle me-1"/>
+                                    <span>Quizzes</span>
+                                </div>
+                                <table class="ce_quiz_table">
+                                    <thead>
+                                        <tr>
+                                            <th class="ce_quiz_th_name">Name</th>
+                                            <th class="ce_quiz_th_num">Weighted Result</th>
+                                            <th class="ce_quiz_th_num">Attempts</th>
+                                            <th class="ce_quiz_th_num">Last Result</th>
+                                            <th class="ce_quiz_th_state">State</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
+                                            <tr class="ce_quiz_row"
+                                                t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
+                                                <td class="ce_quiz_name">
+                                                    <i class="fa fa-file-text-o me-1"/>
+                                                    <t t-esc="quiz.name"/>
+                                                </td>
+                                                <td class="ce_quiz_num">
+                                                    <t t-if="quiz.weightedResult"><t t-esc="quiz.weightedResult"/>%</t>
+                                                    <t t-else="">—</t>
+                                                </td>
+                                                <td class="ce_quiz_num">
+                                                    <t t-esc="quiz.attempts"/>
+                                                </td>
+                                                <td class="ce_quiz_num">
+                                                    <t t-if="quiz.lastResult"><t t-esc="quiz.lastResult"/>%</t>
+                                                    <t t-else="">—</t>
+                                                </td>
+                                                <td>
+                                                    <span t-att-class="'ce_quiz_state ce_quiz_state_' + quiz.state">
+                                                        <t t-esc="quiz.state"/>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+                    </section>
+                </t>
+
+                <div t-if="!state.loading and !visibleContentSections.length" class="ce_empty text-muted fst-italic p-5 text-center">
+                    Select a subject category from the dropdown to view content.
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,699 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Course Explorer — Split-pane layout styles
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Root layout ─────────────────────────────────────────────────── */
+
+.ce_root {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ── Left Pane ───────────────────────────────────────────────────── */
+
+.ce_left_pane {
+    font-size: 12px;
+    width: 300px;
+    min-width: 200px;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--o-border-color, #dee2e6);
+    background: var(--secondary-bg);
+    
+    transition: width 0.2s ease, min-width 0.2s ease;
+    position: relative;
+    z-index: 3;
+}
+
+.ce_sidebar_collapsed .ce_left_pane {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    border-right: none;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+
+.ce_toolbar {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.ce_category_select {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.85rem;
+}
+
+/* ── Tree controls ───────────────────────────────────────────────── */
+
+.ce_tree_controls {
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+}
+
+.ce_tree_controls .btn {
+    color: var(--o-primary, #007bff);
+    font-size: 0.8rem;
+}
+
+.ce_tree_controls .btn:hover {
+    text-decoration: underline;
+}
+
+/* ── Tree container ──────────────────────────────────────────────── */
+
+.ce_tree_container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+/* ── Tree node level font scaling ────────────────────────────────── */
+
+.ce_level_0 > .ce_node_label {
+    font-size: 1.3em;
+}
+
+.ce_level_1 > .ce_node_label {
+    font-size: 1.2em;
+}
+
+.ce_level_2 > .ce_node_label {
+    font-size: 1.1em;
+}
+
+/* ── Tree node ───────────────────────────────────────────────────── */
+
+.ce_tree_node {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px 3px 0;
+    cursor: default;
+    min-height: 28px;
+    transition: background-color 0.1s;
+}
+
+.ce_tree_node:hover {
+    background-color: var(--o-hover, #f0f0f0);
+}
+
+.ce_tree_node_active {
+    background-color: var(--o-primary-bg, #e7f1ff) !important;
+    border-left: 3px solid var(--o-primary, #007bff);
+    padding-left: 0;
+}
+
+.ce_chevron {
+    width: 20px;
+    min-width: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--o-text, #555);
+    font-size: 0.9rem;
+    transition: transform 0.15s ease;
+    user-select: none;
+}
+
+.ce_chevron_expanded {
+    transform: rotate(0deg);
+}
+
+.ce_chevron:not(.ce_chevron_expanded):not(.ce_chevron_placeholder) {
+    transform: rotate(-90deg);
+}
+
+.ce_chevron_placeholder {
+    visibility: hidden;
+}
+
+.ce_node_label {
+    flex: 1;
+    
+    /* color: var(--o-text, #333); */
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.ce_node_label:hover {
+    color: var(--o-primary, #007bff);
+    text-decoration: underline;
+}
+
+.ce_node_label_active {
+    color: var(--o-primary, #007bff);
+    font-weight: 600;
+}
+
+/* ── Progress indicator ──────────────────────────────────────────── */
+
+.ce_progress_cell {
+    width: 24px;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ce_progress_ring {
+    width: 21px;
+    height: 21px;
+    transform: rotate(-90deg);
+}
+
+.ce_progress_ring_bg {
+    stroke: var(--o-border-color, #e0e0e0);
+    opacity: 0.3;
+}
+
+.ce_progress_ring_fill {
+    stroke: var(--o-primary, #007bff);
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.3s ease;
+}
+
+.ce_progress_text {
+    position: absolute;
+    font-size: 0.50rem;
+    font-weight: 400;
+    color: var(--o-text, #333);
+    pointer-events: none;
+}
+
+.ce_progress_cell {
+    position: relative;
+}
+
+.ce_progress_cell .ce_progress_text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* ── Sidebar toggle button (half-circle, no layout space) ────────── */
+
+.ce_sidebar_toggle {
+    position: absolute;
+    left: 305px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--o-webclient-background, #fff);
+    border: 1px solid var(--o-border-color, #dee2e6);
+    border-radius: 0 10px 10px 0;
+    cursor: pointer;
+    z-index: 4;
+    font-size: 0.7rem;
+    color: var(--o-text, #555);
+    transition: left 0.2s ease, background-color 0.15s;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+}
+
+.ce_sidebar_toggle:hover {
+    background-color: var(--o-hover, #f0f0f0);
+}
+
+.ce_sidebar_collapsed .ce_sidebar_toggle {
+    left: 6px;
+    border-radius: 0 10px 10px 0;
+}
+
+/* ── Right Pane ──────────────────────────────────────────────────── */
+
+.ce_right_pane {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0px 10px 20px 10px;
+    scroll-behavior: smooth;
+    background: var(--body-bg);
+
+}
+
+/* ── Content sections ────────────────────────────────────────────── */
+
+.ce_content_section {
+    margin-bottom: 100px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--o-border-color, #eee);
+    scroll-margin-top: 16px;
+}
+
+.ce_content_section:last-child {
+    border-bottom: none;
+}
+
+.ce_section_heading {
+    font-size: 1.2rem;
+    font-weight: 600;
+    /* color: var(--o-text, #333); */
+    margin-left:-10px;
+    margin-right:-10px;
+    padding-left:10px;
+    padding-right:10px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    position: sticky;
+    top: 0;
+    background: var(--body-bg);
+    border-bottom: 1px dotted;
+    border-bottom-color: var(--base-500);
+    z-index: 1;
+    padding-top: 8px;
+
+    /* Flex layout to put heading and checkbox on the same row */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.ce_section_heading.ce_level_0 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    border-bottom: 5px solid
+    
+}
+.ce_section_heading.ce_level_1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    border-bottom: 2px solid
+}
+
+.ce_section_heading.ce_level_2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-bottom: 2px dashed
+}
+
+.ce_section_heading h3 {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ce_section_body {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    /* color: var(--o-text, #333); */
+}
+
+/* Inherit standard Odoo HTML field styling inside sections */
+.ce_section_body h1,
+.ce_section_body h2,
+.ce_section_body h3,
+.ce_section_body h4 {
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+.ce_section_body p {
+    margin-bottom: 8px;
+}
+
+.ce_section_body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    cursor: zoom-in;
+    transition: opacity 0.15s;
+}
+
+.ce_section_body img:hover {
+    opacity: 0.85;
+}
+
+.ce_section_body ul,
+.ce_section_body ol {
+    padding-left: 24px;
+    margin-bottom: 8px;
+}
+
+/* KaTeX math rendering inside course explorer content */
+.ce_section_body .katex {
+    font-size: 1em;
+    vertical-align: middle;
+}
+
+.ce_section_body .katex-display {
+    margin: 0.5em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.ce_section_body .katex-html {
+    position: relative;
+}
+
+.ce_section_body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+}
+
+.ce_section_body table th,
+.ce_section_body table td {
+    padding: 6px 10px;
+    border: 1px solid var(--o-border-color, #dee2e6);
+    text-align: left;
+}
+
+.ce_section_body table th {
+    /* background-color: var(--o-hover, #f8f9fa); */
+    font-weight: 600;
+}
+
+/* ── Completion checkbox ─────────────────────────────────────────── */
+
+.ce_completion_row {
+    flex: 0 0 auto;
+}
+
+.ce_completion_label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.95rem;
+}
+
+.ce_completion_checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--o-success, #28a745);
+}
+
+.ce_completion_text {
+    font-weight: 500;
+}
+
+.ce_completion_label:has(.ce_completion_checkbox:checked) .ce_completion_text {
+    color: var(--o-success, #28a745);
+    text-decoration: line-through;
+}
+
+/* ── Overall course progress (in tree controls) ───────────────────── */
+
+.ce_overall_progress {
+    margin-left: auto;
+}
+
+/* ── Progress circle hover tooltip ────────────────────────────────── */
+
+.ce_progress_cell {
+    position: relative;
+}
+
+.ce_progress_tooltip {
+    display: none;
+    position: fixed;
+    z-index: 1100;
+    min-width: 160px;
+    padding: 10px 14px;
+    background: var(--o-webclient-background, #fff);
+    border: 1px solid var(--o-border-color, #dee2e6);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    font-size: 0.82rem;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.ce_progress_cell:hover .ce_progress_tooltip {
+    display: block;
+}
+
+.ce_tooltip_row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 3px 0;
+}
+
+.ce_tooltip_label {
+    color: var(--o-text-muted, #6c757d);
+    font-weight: 400;
+}
+
+.ce_tooltip_value {
+    color: var(--o-text, #333);
+    font-weight: 600;
+}
+
+.ce_progress_tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 8px;
+    border: 5px solid transparent;
+    border-top-color: var(--o-border-color, #dee2e6);
+}
+
+.ce_progress_tooltip::before {
+    content: "";
+    position: absolute;
+    top: calc(100% - 1px);
+    right: 9px;
+    border: 4px solid transparent;
+    border-top-color: var(--o-webclient-background, #fff);
+}
+
+/* ── Open resource link (manager only, in heading) ────────────────── */
+
+.ce_open_resource_link {
+    color: var(--o-text-muted, #6c757d);
+    font-size: 0.8rem;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.15s, color 0.15s;
+    flex-shrink: 0;
+    padding-left:8px;
+}
+
+.ce_open_resource_link:hover {
+    opacity: 1;
+    color: var(--o-primary, #007bff);
+}
+
+/* ── Quiz scroll link (pie in heading) ────────────────────────────── */
+
+.ce_quiz_scroll_link {
+    text-decoration: none;
+    display: inline-flex;
+    cursor: pointer;
+}
+
+.ce_quiz_scroll_link:hover {
+    opacity: 0.8;
+}
+
+/* ── Quiz box ──────────────────────────────────────────────────────── */
+
+.ce_quiz_box {
+    margin-top: 16px;
+    border: 1px solid var(--o-border-color, #dee2e6);
+    border-radius: 6px;
+    /* background: var(--o-hover, #f8f9fa); */
+    overflow: hidden;
+}
+
+.ce_quiz_box_header {
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    /* background: var(--o-primary-bg, #e7f1ff); */
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    color: var(--body-color, #007bff);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Quiz table ─────────────────────────────────────────────────────── */
+
+.ce_quiz_table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.ce_quiz_table thead th {
+    padding: 6px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--o-text-muted, #6c757d);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    background: var(--o-webclient-background, #fff);
+}
+
+.ce_quiz_th_num {
+    text-align: center !important;
+    width: 100px;
+}
+
+.ce_quiz_th_state {
+    text-align: center !important;
+    width: 110px;
+}
+
+.ce_quiz_row {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.ce_quiz_row:hover {
+    background: var(--o-primary-bg, #e7f1ff);
+}
+
+.ce_quiz_row td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--o-border-color, #eee);
+    vertical-align: middle;
+}
+
+.ce_quiz_name {
+    font-weight: 500;
+    color: var(--o-text, #333);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.ce_quiz_num {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--o-text, #333);
+}
+
+/* ── Quiz state badges ─────────────────────────────────────────────── */
+
+.ce_quiz_state {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    text-transform: capitalize;
+}
+
+.ce_quiz_state_unassigned {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.ce_quiz_state_created {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.ce_quiz_state_assigned {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.ce_quiz_state_reassigned {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.ce_quiz_state_due {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.ce_quiz_state_early {
+    background: #d4edda;
+    color: #155724;
+}
+
+.ce_quiz_state_on-time {
+    background: #d4edda;
+    color: #155724;
+}
+
+.ce_quiz_state_submitted {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.ce_quiz_state_overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.ce_quiz_state_complete {
+    background: #d4edda;
+    color: #155724;
+}
+
+.ce_quiz_state_late {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* ── Loading / empty states ──────────────────────────────────────── */
+
+.ce_loading {
+    color: var(--o-text-muted, #6c757d);
+}
+
+.ce_empty {
+    padding: 40px 20px;
+    text-align: center;
+    font-style: italic;
+}
+
+/* ── Responsive adjustments ──────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .ce_left_pane {
+        width: 240px;
+        min-width: 180px;
+    }
+
+    .ce_sidebar_toggle {
+        left: 245px;
+    }
+
+    .ce_right_pane {
+        padding: 16px;
+    }
+
+    .ce_content_section:first-child .ce_section_heading {
+        top: -20px;
+    }
+    .ce_section_heading {
+        top: -20px;
+    }
+}

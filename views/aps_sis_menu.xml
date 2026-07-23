@@ -1,49 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <menuitem id="menu_op_school_main"
-              name="Students"
-              parent="openeducat_core.menu_op_school_root"
-              sequence="10"
-              action="openeducat_core.act_open_op_student_view"
-              groups="openeducat_core.group_op_faculty"/>
-
-    <menuitem id="students_list_menu"
-              name="Students"
-              parent="menu_op_school_main"
-              sequence="10"
-              action="openeducat_core.act_open_op_student_view"
-              groups="openeducat_core.group_op_faculty"/>
-
-
-    <!-- Add Subject Registration menu under Students -->
-    <menuitem id="subject_registration_student_menu"
-              name="Subject Registration"
-              parent="menu_op_school_main"
-              sequence="30"
-              action="openeducat_core.act_subject_registration_view"
-              groups="openeducat_core.group_op_back_office_admin,openeducat_core.group_op_faculty"/>
-
-    <!-- Add Student Course Detail menu under Students -->
-    <menuitem id="student_course_menu"
-              name="Student Course Detail"
-              parent="menu_op_school_main"
-              sequence="40"
-              action="openeducat_core.act_open_op_student_course_view"
-              groups="openeducat_core.group_op_back_office_admin,openeducat_core.group_op_faculty"/>
-
-    <!-- Override the action to change the name -->
-    <record model="ir.actions.act_window" id="openeducat_core.act_open_op_course_view">
-        <field name="name">Academic Levels</field>
-    </record>
-
-    <!-- Override the menu item to move it under SIS main menu -->
-    <menuitem id="openeducat_core.menu_op_course_sub"
-              parent="openeducat_core.menu_op_school_root"
-              name="Academic Levels"/>
-
-    <!-- Deactivate the original Students menu from core -->
-    <menuitem id="openeducat_core.menu_op_school_main" active="false"/>
 
     <!-- APS SIS Menu Structure -->
     <menuitem id="menu_apex_root" name="APEX" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
@@ -55,7 +12,7 @@
     <menuitem id="menu_apex_certificates_dashboard" name="Overview" parent="menu_apex_certificates" action="aps_sis.action_certificates_dashboard" sequence="1" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_awards_dashboard" name="Voting Dashboard" parent="menu_apex_certificates" action="action_aps_awards_dashboard" sequence="5" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_vote_management_dashboard" name="Vote Management Dashboard" parent="menu_apex_certificates" action="action_open_vote_management_dashboard" sequence="6" groups="aps_sis.group_aps_manager"/>
-    <menuitem id="menu_apex_certificates_list" name="Certificates" parent="menu_apex_certificates" action="action_aps_student_certificate" sequence="10" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_certificates_list" name="Certificates" parent="menu_apex_certificates" action="action_aps_certificate" sequence="10" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_award_categories" name="Award Categories" parent="menu_apex_certificates" action="action_aps_award_category" sequence="20" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_certificates_vote_rounds" name="Vote Rounds" parent="menu_apex_certificates" action="action_aps_award_vote_round" sequence="25" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_certificates_voting_sets" name="Voting Sets" parent="menu_apex_certificates" action="action_aps_award_voting_set" sequence="27" groups="aps_sis.group_aps_manager"/>
@@ -75,6 +32,9 @@
     <menuitem id="menu_apex_teacher_dashboard" parent="menu_apex_root"
               action="action_aps_teacher_dashboard" name="Teacher Dashboard"
               sequence="25" groups="aps_sis.group_aps_teacher"/>
+
+    <menuitem id="menu_apex_search_heading" name="Search" parent="menu_apex_root" sequence="27" groups="aps_sis.group_aps_teacher"/>
+    <menuitem id="menu_apex_resource_search_wizard" name="Resources / Submissions" parent="menu_apex_search_heading" action="action_aps_sis_search_wizard" sequence="10" groups="aps_sis.group_aps_teacher"/>
     
 
     <menuitem id="menu_apex_settings" name="Settings" parent="menu_apex_root" action="" sequence="40" groups="aps_sis.group_aps_manager"/>
@@ -91,6 +51,8 @@
     <menuitem id="menu_apex_school_heading" name="School" parent="menu_apex_settings" sequence="300" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_school_mgmt_dashboard" name="School Overview" parent="menu_apex_school_heading" action="aps_sis.action_school_mgmt_dashboard" sequence="1" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_student_class_bulk" name="Bulk Class Enrollment" parent="menu_apex_school_heading" action="action_aps_student_class_bulk_wizard" sequence="55" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_class_tag_enrol" name="Auto-Enrol by Tag" parent="menu_apex_school_heading" action="action_aps_class_tag_enrol_wizard" sequence="56" groups="aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_student_matrix" name="Student Subject Matrix" parent="menu_apex_school_heading" action="action_aps_student_matrix" sequence="5" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_partner_profile_pic" name="Update Profile Pictures" parent="menu_apex_school_heading" action="action_aps_partner_profile_pic_client" sequence="60" groups="aps_sis.group_aps_manager"/>
     
     <!-- Time Tracking Menus teachers -->

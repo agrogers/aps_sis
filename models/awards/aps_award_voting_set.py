@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class APSAwardVotingSet(models.Model):
@@ -28,9 +28,15 @@ class APSAwardVotingSet(models.Model):
         help='All votes cast across rounds belonging to this voting set.',
     )
 
+    @api.depends('round_ids')
     def _compute_vote_ids(self):
+        all_round_ids = set()
         for rec in self:
-            votes = self.env['aps.award.vote'].search(
-                [('vote_round_id', 'in', rec.round_ids.ids)]
+            all_round_ids.update(rec.round_ids.ids)
+        all_votes = self.env['aps.award.vote'].search(
+            [('vote_round_id', 'in', list(all_round_ids))]
+        ) if all_round_ids else self.env['aps.award.vote']
+        for rec in self:
+            rec.vote_ids = all_votes.filtered(
+                lambda v: v.vote_round_id.id in rec.round_ids.ids
             )
-            rec.vote_ids = votes

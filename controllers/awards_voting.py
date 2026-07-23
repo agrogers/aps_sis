@@ -206,7 +206,7 @@ class AwardsVotingController(http.Controller):
         # category may legitimately be absent (student-whitelist-only rounds)
         # browse(0) can cause ORM errors — use an empty recordset when no real id
         category = request.env['aps.award.category'].sudo().browse(category_id or [])
-        Certificate = request.env['aps.student.certificate'].sudo()
+        Certificate = request.env['aps.certificate'].sudo()
         Student = request.env['aps.student'].sudo()
 
         # ── Resolve candidate constraints from the round (single source of truth) ──

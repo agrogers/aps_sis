@@ -598,15 +598,16 @@
         <field name="path">apex-resources-hierarchy</field>
     </record>
 
-    <!-- Server action: create linked resources from Question headings -->
-    <record id="action_create_linked_resources_from_question" model="ir.actions.server">
-        <field name="name">Create Linked Resources from Question</field>
-        <field name="model_id" ref="model_aps_resources"/>
+    <!-- Action: create linked resources wizard -->
+    <record id="action_create_linked_resources_wizard" model="ir.actions.act_window">
+        <field name="name">Create Linked Resources...</field>
+        <field name="res_model">aps.create.linked.resources</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
         <field name="binding_model_id" ref="model_aps_resources"/>
         <field name="binding_type">action</field>
+        <field name="context">{'default_resource_id': active_id}</field>
         <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_teacher'))]" />
-        <field name="state">code</field>
-        <field name="code">action = record.action_create_linked_resources_from_question()</field>
     </record>
 
     <!-- Server action to force update all display names -->

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Vote Analysis Dashboard client action -->
+    <record id="action_vote_analysis_dashboard" model="ir.actions.client">
+        <field name="name">Vote Analysis Dashboard</field>
+        <field name="tag">vote_analysis_dashboard</field>
+    </record>
+
+</odoo>

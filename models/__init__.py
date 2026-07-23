@@ -16,20 +16,5 @@ from . import res_partner
 from . import aps_partner_voting_token_wizard
 from . import awards
 from . import asc_timetable
-
-
-
-# OpenEducat SIS has table names that do not follow highschool naming conventions.
-# New names for OpenEucat Models
-# op.department -> Department
-# op.program.level -> Program Level (Undergraduate, Graduate)
-# op.program -> Program (e.g., Primary, Seconary, IGCSE)
-# op.course -> Academic Level (e.g., Year 7, Year 8, Year 9)
-# op.student.course -> Student Course
-# op.batch -> Batch (Year 1/2023-24, Year 2/2024-25)
-# op.subject -> Subject (e.g., Mathematics, Science)
-# op.subject.registration -> Subject Registration
-# # op.classroom -> Classroom
-# op.faculty -> Faculty
-# op.student -> Student
-# op.enrollment -> Enrollment
+from . import aps_student_matrix
+from . import aps_filter_preset
