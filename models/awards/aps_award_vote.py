@@ -458,6 +458,7 @@ class APSAwardVote(models.Model):
                 - date_from: str (YYYY-MM-DD) or False
                 - date_to: str (YYYY-MM-DD) or False
                 - category_ids: list of category IDs or empty
+                - vote_id: int or False - filter certs linked to this specific vote
 
         Returns:
             list of dicts with keys: id, event, award_category_name,
@@ -475,6 +476,8 @@ class APSAwardVote(models.Model):
             domain.append(('date_awarded', '<=', filters['date_to']))
         if filters.get('category_ids'):
             domain.append(('award_category_id', 'in', filters['category_ids']))
+        if filters.get('vote_id'):
+            domain.append(('related_vote_ids', 'in', [filters['vote_id']]))
 
         certs = self.env['aps.certificate'].search_read(
             domain,

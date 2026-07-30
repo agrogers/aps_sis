@@ -517,7 +517,7 @@ export class VoteAnalysisDashboard extends Component {
             if (args.cell === comp._certColumnIdx && args.grid.getDataItem(args.row).has_certificate) {
                 const item = args.grid.getDataItem(args.row);
                 if (comp.state.detailRecipient) {
-                    comp._loadCertDetails(comp.state.detailRecipient);
+                    comp._loadCertDetails(comp.state.detailRecipient, item.id);
                 }
                 e.stopImmediatePropagation();
                 return false;
@@ -584,16 +584,20 @@ export class VoteAnalysisDashboard extends Component {
     // Certificate drill-down
     // ------------------------------------------------------------------
 
-    async _loadCertDetails(recipient) {
+    async _loadCertDetails(recipient, voteId) {
         this.state.certDetailLoading = true;
         this.state.certDetailRecipient = recipient;
-        this.state.certDetailHeader = recipient.name + " — Certificates";
+        const suffix = voteId ? " — Certificates (from vote #" + voteId + ")" : " — Certificates";
+        this.state.certDetailHeader = recipient.name + suffix;
         const filters = {
             recipient_id: recipient.id,
             date_from: this.state.dateFrom || false,
             date_to: this.state.dateTo || false,
             category_ids: this.state.selectedCategoryIds,
         };
+        if (voteId) {
+            filters.vote_id = voteId;
+        }
         this.state.certDetailList = (await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters })) || [];
         this.state.certDetailLoading = false;
         this.state.activeTab = "certs";
