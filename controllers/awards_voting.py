@@ -49,6 +49,13 @@ class AwardsVotingController(http.Controller):
     # Dashboard
     # ------------------------------------------------------------------
 
+    @http.route('/awards/vote', type='http', auth='user', website=False)
+    def voting_dashboard_auth(self, **kwargs):
+        """Redirect logged-in users to their token-based voting dashboard."""
+        partner = request.env.user.partner_id
+        token = partner.sudo()._get_or_create_access_token()
+        return request.redirect(f'/awards/vote/{token}')
+
     @http.route('/awards/vote/<string:token>', type='http', auth='public', website=False)
     def voting_dashboard(self, token, **kwargs):
         voter_partner = self._get_partner_by_token(token)

@@ -734,6 +734,15 @@ class APSAwardVoteRound(models.Model):
 
         self.status = 'open'
 
+    def write(self, vals):
+        result = super().write(vals)
+        if vals.get('status') in ('closed', 'finalised'):
+            for rec in self:
+                open_votes = rec.vote_ids.filtered(lambda v: v.state == 'open')
+                if open_votes:
+                    open_votes.write({'state': 'closed'})
+        return result
+
     def copy(self, default=None):
         default = dict(default or {})
         default.setdefault('name', f"{self.name} (Copy)")
