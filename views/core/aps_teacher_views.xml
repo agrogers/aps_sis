@@ -88,23 +88,37 @@
                             <field name="phone" readonly="1"/>
                         </group>
                     </group>
-                    <group string="Workload Allocation">
-                        <group>
-                            <field name="teaching_load"/>
-                            <field name="non_teaching_load"/>
-                        </group>
-                        <group>
-                            <field name="max_load"/>
-                        </group>
-                    </group>
-                    <div class="mb-3">
-                        <button name="action_recompute_timetable_loads" type="object"
-                                string="Refresh from Timetable" icon="fa-refresh"
-                                class="btn btn-secondary"/>
-                    </div>
-                    <group string="Load Details">
-                        <field name="load_details" widget="html" nolabel="1"/>
-                    </group>
+                    <notebook>
+                        <page string="Workload">
+                            <group string="Workload Allocation">
+                                <group>
+                                    <field name="teaching_load"/>
+                                    <field name="non_teaching_load"/>
+                                </group>
+                                <group>
+                                    <field name="max_load"/>
+                                </group>
+                            </group>
+                            <div class="mb-3">
+                                <button name="action_recompute_timetable_loads" type="object"
+                                        string="Refresh from Timetable" icon="fa-refresh"
+                                        class="btn btn-secondary"/>
+                            </div>
+                            <group string="Load Details">
+                                <field name="load_details" widget="html" nolabel="1"/>
+                            </group>
+                        </page>
+                        <page string="Classes">
+                            <field name="class_ids" nolabel="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="subject_id"/>
+                                    <field name="academic_year_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

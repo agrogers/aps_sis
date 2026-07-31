@@ -74,7 +74,10 @@ class APSClass(models.Model):
                 rec.code = False
                 rec.name = False
 
-    @api.depends('name', 'code')
+    @api.depends('name', 'academic_year_id.short_name', 'academic_year_id')
     def _compute_display_name(self):
         for rec in self:
-            rec.display_name = rec.code or rec.name or ''
+            name = rec.code or rec.name or ''
+            if rec.academic_year_id:
+                name = f"{name} [{rec.academic_year_id.short_name or rec.academic_year_id.name}]"
+            rec.display_name = name

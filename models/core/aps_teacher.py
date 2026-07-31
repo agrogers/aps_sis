@@ -49,6 +49,14 @@ class APSTeacher(models.Model):
     phone = fields.Char(related='partner_id.phone', string='Phone')
     image_128 = fields.Image(related='partner_id.image_128', string='Image')
 
+    # Classes this teacher is assigned to (as teacher or assistant)
+    class_ids = fields.One2many(
+        'aps.class',
+        compute='_compute_class_ids',
+        string='Classes',
+        readonly=True,
+    )
+
     _sql_constraints = [
         ('partner_unique', 'UNIQUE(partner_id)', 'A teacher record already exists for this contact.'),
     ]
@@ -89,6 +97,18 @@ class APSTeacher(models.Model):
             if rec.tutor_code:
                 name = f"[{rec.tutor_code}] {name}"
             rec.display_name = name
+
+    @api.depends('partner_id')
+    def _compute_class_ids(self):
+        for rec in self:
+            if rec.partner_id:
+                rec.class_ids = self.env['aps.class'].search([
+                    '|',
+                    ('teacher_ids', 'in', rec.partner_id.id),
+                    ('assistant_teacher_ids', 'in', rec.partner_id.id),
+                ])
+            else:
+                rec.class_ids = False
 
     def action_populate_from_contacts(self):
         """Create/restore teacher records for all partners with is_teacher=True."""

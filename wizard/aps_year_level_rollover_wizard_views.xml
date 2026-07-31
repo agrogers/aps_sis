@@ -16,6 +16,14 @@
                         from previous years ending up in current years accidentally.
                     </div>
 
+                    <div class="alert alert-info" role="alert">
+                        <i class="fa fa-tags me-1"/>
+                        <strong>Tags are synced automatically.</strong> Each academic level has
+                        associated <strong>Contact Tags</strong> configured on the level record.
+                        When a student is promoted, their old level's tags are removed and the
+                        new level's tags are applied to their contact record.
+                    </div>
+
                     <div class="o_horizontal_separator mt-4 mb-2">Select Students</div>
                     <div class="mt-1 mb-2">
                         Select the students to promote to the next academic level sequence.
