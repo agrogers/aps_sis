@@ -115,6 +115,7 @@
                                     <field name="code"/>
                                     <field name="subject_id"/>
                                     <field name="academic_year_id"/>
+                                    <field name="enrollment_count"/>
                                 </list>
                             </field>
                         </page>

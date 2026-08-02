@@ -63,6 +63,16 @@ class APSClass(models.Model):
         column2='tag_id',
         string='Tags',
     )
+    enrollment_count = fields.Integer(
+        string='Students',
+        compute='_compute_enrollment_count',
+        store=True,
+    )
+
+    @api.depends('enrollment_ids')
+    def _compute_enrollment_count(self):
+        for rec in self:
+            rec.enrollment_count = len(rec.enrollment_ids)
 
     @api.depends('subject_id', 'subject_id.code', 'subject_id.name', 'identifier')
     def _compute_code_name(self):
@@ -87,6 +97,34 @@ class APSClass(models.Model):
         string='Copy Students From',
         help='Select a class to copy enrolled students into this class.',
     )
+    copy_from_aca_year_id = fields.Many2one(
+        'aps.academic.year',
+        string='Filter by Academic Year',
+        help='Filter the class list by academic year. Leave empty to show all classes.',
+    )
+    copy_students_preview_ids = fields.Many2many(
+        'res.partner',
+        string='Students to Copy',
+        compute='_compute_copy_students_preview',
+        help='Students enrolled in the selected source class.',
+    )
+
+    @api.depends('copy_students_from_class_id')
+    def _compute_copy_students_preview(self):
+        for rec in self:
+            if rec.copy_students_from_class_id:
+                rec.copy_students_preview_ids = (
+                    rec.copy_students_from_class_id.enrollment_ids.mapped('student_id.partner_id')
+                )
+            else:
+                rec.copy_students_preview_ids = [(5, 0, 0)]
+
+    @api.onchange('copy_from_aca_year_id', 'copy_students_from_class_id')
+    def _onchange_copy_from_aca_year_id(self):
+        """Clear the selected class if it no longer matches the selected academic year."""
+        if self.copy_students_from_class_id and self.copy_from_aca_year_id:
+            if self.copy_students_from_class_id.academic_year_id != self.copy_from_aca_year_id:
+                self.copy_students_from_class_id = False
 
     def action_copy_students(self):
         self.ensure_one()

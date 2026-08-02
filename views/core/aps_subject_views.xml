@@ -66,6 +66,7 @@
                                     <field name="name"/>
                                     <field name="code" optional="show"/>
                                     <field name="academic_year_id" optional="show"/>
+                                    <field name="enrollment_count"/>
                                     <field name="teacher_ids" widget="many2many_tags" optional="show"/>
                                 </list>
                             </field>
@@ -76,6 +77,7 @@
                                     <field name="name"/>
                                     <field name="code" optional="show"/>
                                     <field name="academic_year_id" optional="show"/>
+                                    <field name="enrollment_count"/>
                                     <field name="teacher_ids" widget="many2many_tags" optional="show"/>
                                 </list>
                             </field>
