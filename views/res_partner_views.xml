@@ -58,6 +58,16 @@
                     <field name="alias" invisible="is_company"/>
                 </group>
             </xpath>
+            <!-- Add role badges to the right of the company label -->
+            <xpath expr="//field[@name='company_type']" position="after">
+                <spacer/>
+                <field name="is_teacher" class="ms-4"/>
+                <label for="is_teacher" string="Teacher" class="o_form_label"/>
+                <field name="is_student" invisible="0"/>
+                <label for="is_student" string="Student" class="o_form_label"/>
+                <field name="is_parent" invisible="0"/>
+                <label for="is_parent" string="Parent" class="o_form_label"/>
+            </xpath>
         </field>
     </record>
 
