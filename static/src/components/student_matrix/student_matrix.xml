@@ -95,6 +95,9 @@
                                             <span t-if="hasCell(student.id, subject.id)"
                                                   t-attf-class="o_tick_mark #{getTickClass(student.id, subject.id)}"
                                                   t-out="getTickSymbol(student.id, subject.id)"/>
+                                            <sup t-if="getGcseSuperscript(student.id, subject.id)"
+                                                 class="o_gcse_superscript"
+                                                 t-out="getGcseSuperscript(student.id, subject.id)"/>
                                         </td>
                                     </t>
                                 </tr>

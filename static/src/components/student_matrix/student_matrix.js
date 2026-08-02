@@ -200,6 +200,12 @@ export class StudentMatrix extends Component {
         return '🗸';
     }
 
+    getGcseSuperscript(studentId, subjectId) {
+        const val = this.getCellValue(studentId, subjectId);
+        if (val === null || val === 0 || val === 1) return '';
+        return String(val);
+    }
+
     getSubjectColor(subjectId) {
         return this.state.subjectColors[subjectId] || "#888888";
     }

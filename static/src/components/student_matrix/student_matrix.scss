@@ -1,6 +1,6 @@
 .o_student_matrix_container {
     padding: 16px;
-    background: white;
+    background: var(--body-bg, white);
     height: 100%;
     overflow: auto;
 }
@@ -25,7 +25,7 @@
     width: auto;
 
     th, td {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--o-border-color, #dee2e6);
         padding: 4px 6px;
         text-align: center;
         white-space: nowrap;
@@ -34,7 +34,7 @@
     .o_corner_cell {
         width: 140px;
         min-width: 140px;
-        background-color: #f8f9fa;
+        background-color: var(--o-hover, #f8f9fa);
         position: relative;
         padding: 0;
 
@@ -50,19 +50,20 @@
                 text-align: left;
                 font-weight: 700;
                 font-size: 0.85rem;
+                color: var(--body-color, #212529);
             }
 
             .o_corner_subject_label {
                 text-align: right;
                 font-weight: 700;
                 font-size: 0.85rem;
-                color: #666;
+                color: var(--o-text-muted, #666);
             }
         }
     }
 
     .o_count_header {
-        background-color: #f8f9fa;
+        background-color: var(--o-hover, #f8f9fa);
         font-weight: 700;
         width: 40px;
         min-width: 40px;
@@ -77,6 +78,7 @@
             font-weight: 700;
             font-size: 0.8rem;
             padding: 4px 2px;
+            color: var(--body-color, #212529);
         }
     }
 
@@ -85,7 +87,7 @@
         height: 100px;
         vertical-align: bottom;
         position: relative;
-        background-color: #f8f9fa;
+        background-color: var(--o-hover, #f8f9fa);
 
         .o_subject_name_rotated {
             writing-mode: vertical-rl;
@@ -95,41 +97,45 @@
             font-size: 0.8rem;
             padding: 4px 2px;
             white-space: nowrap;
+            color: var(--body-color, #212529);
         }
     }
 
     .o_totals_header_row {
         th, td {
-            border-top: 2px solid #495057;
-            border-bottom: 2px solid #495057;
+            border-top: 2px solid var(--o-border-color, #495057);
+            border-bottom: 2px solid var(--o-border-color, #495057);
         }
 
         .o_subject_total_header {
             font-weight: 700;
-            background-color: #f8f9fa;
+            background-color: var(--o-hover, #f8f9fa);
+            color: var(--body-color, #212529);
         }
 
         .o_count_cell_header {
-            background-color: #f8f9fa;
+            background-color: var(--o-hover, #f8f9fa);
         }
 
         .o_student_label_cell {
             text-align: left;
             padding-left: 10px;
-            background-color: #f8f9fa;
+            background-color: var(--o-hover, #f8f9fa);
+            color: var(--body-color, #212529);
         }
     }
 
     .o_student_label_row {
-        background-color: #f8f9fa;
+        background-color: var(--o-hover, #f8f9fa);
         td {
-            border-top: 2px solid #495057;
-            border-bottom: 2px solid #495057;
+            border-top: 2px solid var(--o-border-color, #495057);
+            border-bottom: 2px solid var(--o-border-color, #495057);
         }
         .o_student_label_cell {
             text-align: left;
             padding-left: 10px;
             font-weight: 700;
+            color: var(--body-color, #212529);
         }
     }
 
@@ -138,38 +144,48 @@
         font-weight: 500;
         padding-left: 10px;
         min-width: 160px;
-        background-color: #fff;
+        background-color: var(--body-bg, #fff);
+        color: var(--body-color, #212529);
     }
 
     .o_student_total {
         font-weight: 700;
-        background-color: #f8f9fa;
+        background-color: var(--o-hover, #f8f9fa);
+        color: var(--body-color, #212529);
         width: 40px;
         min-width: 40px;
     }
 
-        .o_matrix_cell {
-            width: 36px;
-            min-width: 36px;
-            max-width: 36px;
+    .o_matrix_cell {
+        width: 36px;
+        min-width: 36px;
+        max-width: 36px;
 
-            .o_tick_mark {
-                font-size: 1.1rem;
-                font-weight: 700;
-                color: #212529;
+        .o_tick_mark {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--body-color, #212529);
 
-                &.tick-zero {
-                    color: #999;
-                }
+            &.tick-zero {
+                color: var(--o-text-muted, #999);
             }
         }
 
+        .o_gcse_superscript {
+            font-size: 0.6rem;
+            font-weight: 700;
+            vertical-align: super;
+            line-height: 1;
+            color: var(--body-color, #212529);
+        }
+    }
+
     .o_student_row:nth-child(even) {
-        background-color: #f8f9fa;
+        background-color: rgba(var(--body-bg-rgb), 0.5);
     }
 
     .o_student_row:hover {
-        background-color: #e9ecef;
+        background-color: rgba(var(--body-bg-rgb), 0.12);
     }
 }
 

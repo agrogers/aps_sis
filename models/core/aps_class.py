@@ -92,6 +92,12 @@ class APSClass(models.Model):
                 name = f"{name} [{rec.academic_year_id.short_name or rec.academic_year_id.name}]"
             rec.display_name = name
 
+    def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
+        args = args or []
+        if name:
+            args = [('code', operator, name)] + args
+        return super()._name_search(name='', args=args, operator=operator, limit=limit, name_get_uid=name_get_uid)
+
     copy_students_from_class_id = fields.Many2one(
         'aps.class',
         string='Copy Students From',

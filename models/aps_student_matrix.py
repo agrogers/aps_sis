@@ -92,11 +92,15 @@ class APSStudentMatrix(models.TransientModel):
                 'subject_totals': {},
             }
 
-        # Find ALL enrollments for these students
+        # Find ALL enrollments for these students (optionally filtered by academic year)
         all_enroll_domain = [
             ('student_id', 'in', student_ids.ids),
             ('state', '=', 'enrolled'),
         ]
+        if academic_year_id:
+            all_enroll_domain.append(
+                ('home_class_id.academic_year_id', '=', academic_year_id)
+            )
         all_enrollments = self.env['aps.student.class'].search(all_enroll_domain)
 
         # Get all unique subjects from those enrollments
