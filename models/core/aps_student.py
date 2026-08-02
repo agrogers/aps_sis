@@ -1,4 +1,5 @@
 from odoo import fields, models, api
+from odoo.osv import expression
 
 
 class APSStudent(models.Model):
@@ -6,6 +7,7 @@ class APSStudent(models.Model):
     _description = 'Student'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'partner_id'
+    _rec_name = 'partner_id'
 
     partner_id = fields.Many2one(
         'res.partner',
@@ -28,6 +30,19 @@ class APSStudent(models.Model):
         tracking=True,
         help='Automatically set from enrollments whose subject category is tagged as a Home Class.',
     )
+
+    # @api.model
+    # def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
+    #     """Search by partner name or roll number so that the Many2one dropdown filters correctly."""
+    #     args = list(args or [])
+    #     if name:
+    #         domain = [
+    #             '|',
+    #             ('partner_id', operator, name),
+    #             ('roll', operator, name),
+    #         ]
+    #         args = expression.AND([args, domain])
+    #     return self._search(args, limit=limit, access_rights_uid=name_get_uid)
 
     def _recompute_home_class(self):
         """Find the first enrolled class whose subject category has a home-class tag."""
