@@ -153,6 +153,9 @@ export class CourseExplorer extends Component {
         onPatched(() => {
             this._renderMathIfNeeded();
             this._setupTooltipsIfNeeded();
+            this._setupScrollObserver();
+            this._setupScrollListener();
+            this._setupImageClickHandler();
         });
 
         onWillUnmount(() => {
