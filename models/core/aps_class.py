@@ -81,3 +81,30 @@ class APSClass(models.Model):
             if rec.academic_year_id:
                 name = f"{name} [{rec.academic_year_id.short_name or rec.academic_year_id.name}]"
             rec.display_name = name
+
+    copy_students_from_class_id = fields.Many2one(
+        'aps.class',
+        string='Copy Students From',
+        help='Select a class to copy enrolled students into this class.',
+    )
+
+    def action_copy_students(self):
+        self.ensure_one()
+        if not self.copy_students_from_class_id:
+            return
+        source = self.copy_students_from_class_id
+        Enrollment = self.env['aps.student.class']
+        for enrollment in source.enrollment_ids:
+            existing = Enrollment.with_context(active_test=False).search([
+                ('student_id', '=', enrollment.student_id.id),
+                ('home_class_id', '=', self.id),
+            ], limit=1)
+            if existing:
+                if not existing.active:
+                    existing.write({'active': True})
+            else:
+                Enrollment.create({
+                    'student_id': enrollment.student_id.id,
+                    'home_class_id': self.id,
+                })
+        self.copy_students_from_class_id = False

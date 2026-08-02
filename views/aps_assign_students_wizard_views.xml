@@ -31,7 +31,7 @@
                                 <div>
 
                                     <group>
-                                        <field name="subjects" widget="many2many_tags" options="{'no_create': True}"/>
+                                        <field name="class_ids" widget="many2many_tags" options="{'no_create': True}"/>
 
                                         <field name="student_ids" invisible="1"/>
                                         <field name="student_line_ids" nolabel="1">

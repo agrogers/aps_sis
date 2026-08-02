@@ -73,6 +73,20 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Maintain">
+                            <group>
+                                <group>
+                                    <field name="copy_students_from_class_id"
+                                           domain="[('id', '!=', id)]"
+                                           options="{'no_create': True}"/>
+                                    <button name="action_copy_students"
+                                            type="object"
+                                            string="Copy Students"
+                                            class="btn-primary"
+                                            confirm="Copy all enrolled students from the selected class into this class?"/>
+                                </group>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
             </form>

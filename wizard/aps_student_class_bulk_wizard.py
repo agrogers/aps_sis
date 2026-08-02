@@ -25,7 +25,12 @@ class APSStudentClassBulkWizard(models.TransientModel):
         relation='aps_scbulk_class_rel',
         column1='wizard_id',
         column2='class_id',
-        string='Classes',
+        string='Target Classes',
+    )
+    copy_from_class_id = fields.Many2one(
+        'aps.class',
+        string='Copy Students From Class',
+        help='Select a class to copy its enrolled students into the target classes.',
     )
     operation = fields.Selection(
         [('add', 'Add Classes'), ('remove', 'Remove Classes')],
@@ -39,6 +44,14 @@ class APSStudentClassBulkWizard(models.TransientModel):
     @api.onchange('academic_year_id')
     def _onchange_academic_year_id(self):
         self.class_ids = [(5, 0, 0)]
+
+    @api.onchange('copy_from_class_id')
+    def _onchange_copy_from_class_id(self):
+        if self.copy_from_class_id:
+            partner_ids = self.copy_from_class_id.enrollment_ids.mapped('student_id.partner_id')
+            self.partner_ids = [(6, 0, partner_ids.ids)]
+        else:
+            self.partner_ids = [(5, 0, 0)]
 
     @api.depends('partner_ids', 'class_ids', 'operation')
     def _compute_warning_message(self):

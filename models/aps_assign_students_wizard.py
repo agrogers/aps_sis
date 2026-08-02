@@ -176,7 +176,7 @@ class APSAssignStudentsWizard(models.TransientModel):
 )
     default_answer = fields.Html(string='Default Answer', help='Default answer template for the resource question.')    
 
-    subjects = fields.Many2many('aps.subject', string='Subjects')
+    class_ids = fields.Many2many('aps.class', string='Classes')
     points_scale = fields.Integer(string='Points Scale', default=1, help='Scales the points allocated to the submission. This is useful for resources that are used in different contexts with different grading schemes.')
     notify_student = fields.Boolean(string='Notify Student', default=True, help='If enabled, students will receive a notification when they are assigned to the resource.')
 
@@ -296,7 +296,7 @@ class APSAssignStudentsWizard(models.TransientModel):
     @api.onchange('student_ids')
     def _onchange_student_ids_to_lines(self):
         """Sync student_line_ids whenever student_ids changes.
-        Skips rebuild if lines already match (e.g. built explicitly by _onchange_subjects)."""
+        Skips rebuild if lines already match (e.g. built explicitly by _onchange_class_ids)."""
         current_ids = set(self.student_ids.ids)
         line_ids = set(self.student_line_ids.mapped('student_id').ids)
         if current_ids and current_ids == line_ids:
@@ -313,45 +313,23 @@ class APSAssignStudentsWizard(models.TransientModel):
         if set(line_ids) != set(current_ids):
             self.student_ids = line_ids or False
 
-    @api.onchange('subjects')
-    def _onchange_subjects(self):
-        """Update student list when subjects change"""
-        if self.subjects:
-        
-            # Find all students who are enrolled in running courses with these subjects
+    @api.onchange('class_ids')
+    def _onchange_class_ids(self):
+        """Update student list when classes change"""
+        if self.class_ids:
+            # Find all students enrolled in the selected classes
+            enrollments = self.env['aps.student.class'].search([
+                ('state', '=', 'enrolled'),
+                ('home_class_id', 'in', self.class_ids.ids),
+            ])
+            student_partners = enrollments.mapped('student_id.partner_id')
+        else:
             student_partners = self.env['res.partner']
-            
-            # Get all students enrolled in running courses
 
-            # student_records = self.env['op.student'].search([])
-            # for student_record in student_records:
-            #     running_courses = student_record.course_detail_ids.filtered(lambda c: c.state == 'running')
-            #     student_subjects = running_courses.mapped('subject_ids')
-            #     # If student has any of the resource subjects, include them
-            #     if student_subjects:
-            #         student_partners |= student_record.partner_id
-            
-
-            # 1. Get the subjects we care about (from the submission)
-            relevant_subjects = self.subjects  # Many2many 'aps.subject'
-
-            if not relevant_subjects:
-                # No subjects → no students (or handle differently)
-                student_partners = self.env['res.partner']
-            else:
-                # 2. Find students enrolled in classes with overlapping subjects
-                enrollments = self.env['aps.student.class'].search([
-                    ('state', '=', 'enrolled'),
-                    ('home_class_id.subject_id', 'in', relevant_subjects.ids),
-                ])
-
-                # 3. Get their partners
-                student_partners = enrollments.mapped('student_id.partner_id')
-
-            self.student_ids = student_partners or False
-            self.student_line_ids = [(5, 0, 0)]
-            if student_partners:
-                self.student_line_ids = self._build_student_lines(student_partners)
+        self.student_ids = student_partners or False
+        self.student_line_ids = [(5, 0, 0)]
+        if student_partners:
+            self.student_line_ids = self._build_student_lines(student_partners)
 
     @api.onchange('resource_id')
     def _onchange_resource_id(self):
@@ -378,8 +356,18 @@ class APSAssignStudentsWizard(models.TransientModel):
             if self.student_ids:
                 self.student_line_ids = [(5, 0, 0)]
                 self.student_line_ids = self._build_student_lines(self.student_ids)
+
+            # Default class_ids to current academic year classes matching the resource's subjects
+            if self.resource_id.subjects:
+                self.class_ids = self.env['aps.class'].search([
+                    ('academic_year_id.is_current', '=', True),
+                    ('subject_id', 'in', self.resource_id.subjects.ids),
+                ])
+            else:
+                self.class_ids = False
         else:
             self.affected_resource_line_ids = False
+            self.class_ids = False
 
     def _default_assigned_by(self):
         """Get the teacher record for the current user"""
@@ -461,13 +449,13 @@ class APSAssignStudentsWizard(models.TransientModel):
             initial_state = self._get_initial_state_from_tags(resource)
 
             for student in self.student_line_ids.mapped('student_id'):
+                # Derive subjects from the selected classes
+                wizard_subjects = self.class_ids.mapped('subject_id')
                 
-                if len(self.subjects) < 2:
-                    # If there is only one subject attached to the Resource then assume that is what should be assigned to the student regardless of what subjects they are currently taking.
-                    # This is needed when a resource (eg ESL nugget) needs to be given to a student who doesn't do the subject.
-                    # It assumes that there is only one subject associated then it must be relevant. 
-                    # If there are multiple subjects then we will try to be smarter and only assign the ones that are relevant to the student based on their current courses.
-                    assigned_subjects = self.subjects
+                if len(wizard_subjects) < 2:
+                    # If there is only one subject across selected classes then assume that is what should be
+                    # assigned to the student regardless of what subjects they are currently taking.
+                    assigned_subjects = wizard_subjects
                 else:
                     # Get student's assigned subjects from running courses
                     student_record = self.env['aps.student'].search([('partner_id', '=', student.id)], limit=1)
@@ -477,7 +465,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                             lambda e: e.state == 'enrolled'
                         ).mapped('home_class_id.subject_id')
                     # Intersect with wizard subjects
-                    assigned_subjects = self.subjects & student_subjects
+                    assigned_subjects = wizard_subjects & student_subjects
                 
                 # Check if task exists
                 task = task_model.search([

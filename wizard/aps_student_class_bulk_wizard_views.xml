@@ -20,6 +20,7 @@
 
                     <div class="o_horizontal_separator mt-4 mb-2">Selections</div>
                     <div class="mt-1 mb-2">Depending on the operation, the selected students will be added or removed from  the selected classes</div>
+
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="o_field_widget mb-1">
@@ -31,6 +32,14 @@
                                    context="{'default_is_student': True}"
                                    options="{'no_create': True, 'no_create_edit': True}"
                                    placeholder="Search and select students..."/>
+                            <div class="text-muted small mt-1">
+                                <label class="o_form_label" for="copy_from_class_id">Copy Students From Class</label>
+                                <field name="copy_from_class_id"
+                                       domain="[('id', 'not in', class_ids)]"
+                                       options="{'no_create': True}"
+                                       placeholder="Or copy all students from a class..."
+                                       nolabel="1"/>
+                            </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="o_field_widget mb-1">
