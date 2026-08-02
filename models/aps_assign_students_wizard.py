@@ -71,6 +71,7 @@ from .resources.model import HAS_QUESTION_SELECTION, HAS_ANSWER_SELECTION
 class APSAssignStudentsWizardStudentLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.student.line'
     _description = 'APEX Assign Students Wizard Student Line'
+    _rec_name = 'student_name'
     _order = 'student_name'
 
     wizard_id = fields.Many2one('aps.assign.students.wizard', required=True, ondelete='cascade')
@@ -101,6 +102,7 @@ class APSAssignStudentsWizardStudentLine(models.TransientModel):
 class APSAssignStudentsWizardLine(models.TransientModel):
     _name = 'aps.assign.students.wizard.line'
     _description = 'APEX Assign Students Wizard Line'
+    _rec_name = 'display_name'
     _order = 'sequence, id'
 
     sequence = fields.Integer(string='Sequence', default=10)
@@ -128,6 +130,7 @@ class APSAssignStudentsWizardLine(models.TransientModel):
 class APSAssignStudentsWizard(models.TransientModel):
     _name = 'aps.assign.students.wizard'
     _description = 'APEXAssign Students to Resource Wizard'
+    _rec_name = 'custom_submission_name'
 
     resource_id = fields.Many2one('aps.resources', string='Resource', required=True, readonly=True)
     date_assigned = fields.Date(string='Date Assigned', required=True, default=fields.Date.today)

@@ -406,6 +406,7 @@ class ApsUserMedia(models.Model):
 
     _name = 'aps.user.media'
     _description = 'User Media'
+    _rec_name = 'display_name'
     _order = 'partner_id, media_id'
 
     partner_id = fields.Many2one(
@@ -483,6 +484,7 @@ class ApsUserMediaSettings(models.Model):
 
     _name = 'aps.user.media.settings'
     _description = 'User Media Settings'
+    _rec_name = 'partner_id'
 
     partner_id = fields.Many2one(
         'res.partner',

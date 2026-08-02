@@ -6,6 +6,7 @@ from odoo import _, api, fields, models
 class APSAIRun(models.Model):
     _name = 'aps.ai.run'
     _description = 'APEX AI Background Run'
+    _rec_name = 'display_name'
     _inherit = ['aps.ai.run.mixin']
     _order = 'create_date desc, id desc'
 

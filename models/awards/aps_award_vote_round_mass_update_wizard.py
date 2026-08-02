@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 class APSAwardVoteRoundMassUpdateWizard(models.TransientModel):
     _name = 'aps.award.vote.round.mass.update.wizard'
     _description = 'Mass Update Vote Rounds Wizard'
+    _rec_name = 'id'
 
     vote_round_ids = fields.Many2many(
         'aps.award.vote.round',

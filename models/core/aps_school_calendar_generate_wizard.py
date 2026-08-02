@@ -9,6 +9,7 @@ from odoo.exceptions import ValidationError
 class ApsSchoolCalendarGenerateWizard(models.TransientModel):
     _name = 'aps.school.calendar.generate.wizard'
     _description = 'Generate School Calendar'
+    _rec_name = 'id'
 
     date_start = fields.Date(string='Start Date', required=True)
     date_end = fields.Date(string='End Date', required=True)

@@ -13,6 +13,7 @@ _PARAM_CYCLE_CODES = 'aps_sis.week_wizard_cycle_codes'
 class ApsAcademicWeekGenerateWizard(models.TransientModel):
     _name = 'aps.academic.week.generate.wizard'
     _description = 'Generate Academic Weeks'
+    _rec_name = 'academic_term_id'
 
     academic_term_id = fields.Many2one(
         'aps.academic.term',

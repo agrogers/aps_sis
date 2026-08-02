@@ -4,6 +4,7 @@ from odoo import api, fields, models
 class APSAwardCandidateWizard(models.TransientModel):
     _name = 'aps.award.candidate.wizard'
     _description = 'Add Eligible Candidates Wizard'
+    _rec_name = 'vote_round_id'
 
     vote_round_id = fields.Many2one(
         'aps.award.vote.round',

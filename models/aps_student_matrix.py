@@ -4,6 +4,7 @@ from odoo import fields, models, api
 class APSStudentMatrix(models.TransientModel):
     _name = 'aps.student.matrix'
     _description = 'Student Subject Matrix'
+    _rec_name = 'id'
 
     @api.model
     def get_academic_years(self):

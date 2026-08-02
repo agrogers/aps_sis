@@ -78,6 +78,7 @@ def _weeks_cycle_match(weeks_pattern, week_cycle):
 class ASCTTImportWizard(models.TransientModel):
     _name = 'asctt.import.wizard'
     _description = 'Import aSc Timetable XML'
+    _rec_name = 'id'
 
     xml_file = fields.Binary(string='aSc XML File', required=True, attachment=False)
     xml_filename = fields.Char(string='Filename')

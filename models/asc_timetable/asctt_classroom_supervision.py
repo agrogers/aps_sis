@@ -4,6 +4,7 @@ from odoo import fields, models
 class ASCTTClassroomSupervision(models.Model):
     _name = 'asctt.classroom.supervision'
     _description = 'aSc Timetable Classroom Supervision'
+    _rec_name = 'display_name'
     _order = 'id'
 
     asc_id = fields.Char(string='aSc ID', size=64, index=True)

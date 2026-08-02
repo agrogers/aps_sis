@@ -3,6 +3,7 @@ from odoo import models, fields, api
 class APSDashboard(models.TransientModel):
     _name = 'aps.dashboard'
     _description = 'APS Dashboard'
+    _rec_name = 'id'
 
     total_submissions = fields.Integer(string='Total Submissions', compute='_compute_stats', store=False)
     completed_submissions = fields.Integer(string='Completed Submissions', compute='_compute_stats', store=False)

@@ -4,6 +4,7 @@ from odoo import api, fields, models
 class APSAwardVote(models.Model):
     _name = 'aps.award.vote'
     _description = 'Award Vote'
+    _rec_name = 'description'
     _order = 'submitted_date desc, id desc'
 
     description = fields.Text(

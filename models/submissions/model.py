@@ -13,6 +13,7 @@ sentinel_zero = -0.01
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
     _description = 'APEX Submission'
+    _rec_name = 'display_name'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     display_name = fields.Char(

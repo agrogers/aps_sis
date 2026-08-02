@@ -4,6 +4,7 @@ from odoo import api, fields, models
 class APSPartnerVotingTokenWizard(models.TransientModel):
     _name = 'aps.partner.voting.token.wizard'
     _description = 'Partner Voting Token Wizard'
+    _rec_name = 'partner_id'
 
     partner_id = fields.Many2one('res.partner', string='Partner', required=True, readonly=True)
     token_masked = fields.Char(string='Token (Masked)', compute='_compute_token_fields', readonly=True)

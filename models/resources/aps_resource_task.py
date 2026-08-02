@@ -9,6 +9,7 @@ _logger = logging.getLogger(__name__)
 class APSResourceTask(models.Model):
     _name = 'aps.resource.task'
     _description = 'APEX Task'
+    _rec_name = 'display_name'
     
     _sql_constraints = [
         ('unique_resource_student', 'UNIQUE(resource_id, student_id)', 'This student is already assigned to this resource.'),

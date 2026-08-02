@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 class ApsSchoolCalendar(models.Model):
     _name = 'aps.school.calendar'
     _description = 'School Calendar'
+    _rec_name = 'description'
     _order = 'date, applies_to_level_id'
 
     DATE_TYPE = [

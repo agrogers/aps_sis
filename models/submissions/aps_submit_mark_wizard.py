@@ -29,6 +29,7 @@ class APSSubmitMarkWizard(models.TransientModel):
 
     _name = 'aps.submit.mark.wizard'
     _description = 'APEX Submit Mark Wizard'
+    _rec_name = 'student_id'
 
     # ── Identity helpers ──────────────────────────────────────────────────────
 

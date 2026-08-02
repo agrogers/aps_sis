@@ -4,6 +4,7 @@ from odoo import models, fields, api
 class ASCTTDashboard(models.TransientModel):
     _name = 'asctt.dashboard'
     _description = 'aSc Timetable Dashboard'
+    _rec_name = 'id'
 
     count_periods = fields.Integer(string='Periods', compute='_compute_counts', store=False)
     count_breaks = fields.Integer(string='Breaks', compute='_compute_counts', store=False)

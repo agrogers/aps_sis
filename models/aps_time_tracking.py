@@ -11,6 +11,7 @@ SCHOOL_END_MINUTE = 30     # 15:30
 class APSTimeTracking(models.Model):
     _name = 'aps.time.tracking'
     _description = 'Time Tracking Entry'
+    _rec_name = 'display_name'
     _order = 'start_time desc'
 
     display_name = fields.Char(compute='_compute_display_name')

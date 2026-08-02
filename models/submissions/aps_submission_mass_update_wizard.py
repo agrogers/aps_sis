@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 class APSSubmissionMassUpdateWizard(models.TransientModel):
     _name = 'aps.submission.mass.update.wizard'
     _description = 'Mass Update Submissions Wizard'
+    _rec_name = 'id'
 
     submission_ids = fields.Many2many(
         'aps.resource.submission',
