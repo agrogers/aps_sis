@@ -110,7 +110,7 @@ class APSClassTagEnrolWizard(models.TransientModel):
 
                 existing = Enrollment.search([
                     ('student_id', '=', student.id),
-                    ('home_class_id', '=', cls.id),
+                    ('class_id', '=', cls.id),
                 ], limit=1)
                 if existing:
                     already_enrolled_count += 1
@@ -119,7 +119,7 @@ class APSClassTagEnrolWizard(models.TransientModel):
 
                 Enrollment.create({
                     'student_id': student.id,
-                    'home_class_id': cls.id,
+                    'class_id': cls.id,
                     'start_date': self.academic_year_id.start_date,
                     'end_date': self.academic_year_id.end_date,
                 })

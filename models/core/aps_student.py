@@ -50,9 +50,9 @@ class APSStudent(models.Model):
         for rec in self:
             home_class = self.env['aps.class']
             for enrollment in rec.enrollment_ids.filtered(lambda e: e.state == 'enrolled'):
-                category = enrollment.home_class_id.subject_id.category_id
+                category = enrollment.class_id.subject_id.category_id
                 if category and any(t.name in home_class_tag_names for t in category.tag_ids):
-                    home_class = enrollment.home_class_id
+                    home_class = enrollment.class_id
                     break
             if rec.home_class_id != home_class:
                 rec.home_class_id = home_class
@@ -61,6 +61,26 @@ class APSStudent(models.Model):
     avatar_id = fields.Many2one('aps.avatar', string='Profile Avatar', ondelete='set null')
     image_128 = fields.Image(related='partner_id.image_128', string='Photo', readonly=True)
     enrollment_ids = fields.One2many('aps.student.class', 'student_id', string='Class Enrollments')
+
+    def _get_cohort_keys(self):
+        """Return all cohort keys for the student, e.g. ['Y10 in 25/26', 'Y11 in 26/27'].
+
+        Each key is built from the level short name and academic year short name
+        of an enrolled home class (a class whose subject category has a
+        'Home Class' or 'Pastoral Care Subject' tag).
+        """
+        self.ensure_one()
+        home_class_tag_names = {'Home Class', 'Pastoral Care Subject'}
+        keys = []
+        for enrollment in self.enrollment_ids.filtered(lambda e: e.state == 'enrolled'):
+            category = enrollment.class_id.subject_id.category_id
+            if not category or not any(t.name in home_class_tag_names for t in category.tag_ids):
+                continue
+            level_short = enrollment.class_id.subject_id.level_id.short_name or ''
+            year_short = enrollment.class_id.academic_year_id.short_name or ''
+            if level_short and year_short:
+                keys.append(f"{level_short} in {year_short}")
+        return keys
 
     @api.depends('partner_id', 'roll')
     def _compute_display_name(self):

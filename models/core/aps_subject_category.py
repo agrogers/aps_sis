@@ -48,7 +48,7 @@ class APSSubjectCategory(models.Model):
         if not classes:
             return
         enrollments = self.env['aps.student.class'].search([
-            ('home_class_id', 'in', classes.ids),
+            ('class_id', 'in', classes.ids),
             ('state', '=', 'enrolled'),
         ])
         enrollments.mapped('student_id')._recompute_home_class()

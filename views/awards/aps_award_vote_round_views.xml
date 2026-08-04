@@ -41,7 +41,7 @@
                             invisible="status not in ('open', 'closed')"/>
                     <field name="status" widget="statusbar"
                            statusbar_visible="draft,open,closed,finalised"
-                           clickable="1"/>
+                           options="{'clickable': True}"/>
                 </header>
                 <sheet>
                     <field name="image" widget="image" class="oe_avatar"/>
@@ -56,6 +56,7 @@
                                     <field name="datetime_start"/>
                                     <field name="datetime_end"/>
                                     <field name="recurring_days"/>
+                                    <field name="child_reschedule_id" readonly="1"/>
                                 </group>
                                 <group string="Award">
                                     <field name="voting_set_ids" widget="many2many_tags"/>

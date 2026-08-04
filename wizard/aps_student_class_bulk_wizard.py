@@ -108,7 +108,7 @@ class APSStudentClassBulkWizard(models.TransientModel):
             for student in students:
                 for cls in self.class_ids:
                     existing = Enrollment.with_context(active_test=False).search(
-                        [('student_id', '=', student.id), ('home_class_id', '=', cls.id)],
+                        [('student_id', '=', student.id), ('class_id', '=', cls.id)],
                         limit=1,
                     )
                     if existing:
@@ -117,13 +117,13 @@ class APSStudentClassBulkWizard(models.TransientModel):
                     else:
                         Enrollment.create({
                             'student_id': student.id,
-                            'home_class_id': cls.id,
+                            'class_id': cls.id,
                         })
 
         elif self.operation == 'remove':
             enrollments = self.env['aps.student.class'].search([
                 ('student_id', 'in', students.ids),
-                ('home_class_id', 'in', self.class_ids.ids),
+                ('class_id', 'in', self.class_ids.ids),
             ])
             enrollments.write({'active': False})
 

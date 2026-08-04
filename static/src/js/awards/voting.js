@@ -771,6 +771,42 @@
         },
 
         // ----------------------------------------------------------------
+        // Vote Again — create a fresh open ballot for ad-hoc voting
+        // ----------------------------------------------------------------
+        voteAgain(btn) {
+            const token = btn.dataset.token;
+            const voteId = parseInt(btn.dataset.voteId, 10);
+            const categoryId = parseInt(btn.dataset.categoryId, 10) || 0;
+            if (!token || !voteId) {
+                this._showToast('Could not start vote again. Missing details.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = '…';
+
+            this._jsonRpc(`/awards/vote/${token}/vote_again`, {
+                vote_id: voteId,
+                category_id: categoryId,
+            }).then(result => {
+                if (result.error) {
+                    this._showToast(result.error, 'error');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+                this._showToast('A new ballot has been opened for you to vote again.', 'success');
+                // Reload the page so the new open ballot appears in the cards
+                setTimeout(() => window.location.reload(), 600);
+            }).catch(() => {
+                this._showToast('Request failed. Please try again.', 'error');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            });
+        },
+
+        // ----------------------------------------------------------------
         // JSON-RPC helper
         // ----------------------------------------------------------------
         _jsonRpc(url, params) {

@@ -980,10 +980,14 @@ export class ProgressCharts {
             const comparisonCategoryId = (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false")
                 ? parseInt(this.state.selectedSubjectCategory, 10)
                 : false;
+            const comparisonClassId = (this.state.selectedClass && this.state.selectedClass !== "false")
+                ? parseInt(this.state.selectedClass, 10)
+                : false;
             const comparisonData = await this.orm.call(
                 "aps.resource.submission",
                 "get_student_comparison_data",
-                [comparisonCategoryId]
+                [comparisonCategoryId],
+                { class_id: comparisonClassId }
             );
             
             this._debug('fetchStudentComparisonData: ORM returned', {

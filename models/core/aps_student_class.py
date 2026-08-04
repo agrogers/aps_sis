@@ -14,7 +14,7 @@ class APSStudentClass(models.Model):
         required=True,
         ondelete='cascade',
     )
-    home_class_id = fields.Many2one(
+    class_id = fields.Many2one(
         'aps.class',
         string='Class',
         required=True,
@@ -46,7 +46,7 @@ class APSStudentClass(models.Model):
     )
     notes = fields.Text(string='Notes', help='Internal notes, e.g. reason for withdrawal.')
     subject_icon = fields.Image(
-        related='home_class_id.subject_id.icon',
+        related='class_id.subject_id.icon',
         string='Subject Icon',
         readonly=True,
     )
@@ -73,15 +73,15 @@ class APSStudentClass(models.Model):
             if rec.start_date and rec.end_date and rec.end_date < rec.start_date:
                 raise ValidationError('End date must be on or after start date.')
 
-    @api.depends('student_id', 'home_class_id')
+    @api.depends('student_id', 'class_id')
     def _compute_display_name(self):
         for rec in self:
             student = rec.student_id.display_name or ''
-            cls = rec.home_class_id.display_name or ''
+            cls = rec.class_id.display_name or ''
             rec.display_name = f"{student} / {cls}" if student and cls else student or cls
 
     _sql_constraints = [
-        ('student_class_uniq', 'unique(student_id, home_class_id)', 'This student is already enrolled in this class!'),
+        ('student_class_uniq', 'unique(student_id, class_id)', 'This student is already enrolled in this class!'),
     ]
 
     @api.model_create_multi
@@ -92,7 +92,7 @@ class APSStudentClass(models.Model):
 
     def write(self, vals):
         result = super().write(vals)
-        if any(f in vals for f in ('home_class_id', 'state', 'student_id')):
+        if any(f in vals for f in ('class_id', 'state', 'student_id')):
             self.mapped('student_id')._recompute_home_class()
         return result
 

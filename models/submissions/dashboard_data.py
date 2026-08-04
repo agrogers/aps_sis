@@ -124,6 +124,23 @@ class APSResourceSubmissionDashboardData(models.Model):
         )
 
     @api.model
+    def _get_partner_ids_for_class(self, class_id):
+        """Return set of partner IDs for students enrolled in the given class (current year)."""
+        current_year = self.env['aps.academic.year'].search([('is_current', '=', True)], limit=1)
+        enrollment_domain = [
+            ('class_id', '=', int(class_id)),
+            ('state', '=', 'enrolled'),
+        ]
+        if current_year:
+            enrollment_domain.append(('class_id.academic_year_id', '=', current_year.id))
+        enrollments = self.env['aps.student.class'].search(enrollment_domain)
+        return {
+            enrollment.student_id.partner_id.id
+            for enrollment in enrollments
+            if enrollment.student_id and enrollment.student_id.partner_id
+        }
+
+    @api.model
     def _get_avatar_and_image_maps(self, partner_ids):
         """Return avatar and image maps without forcing filestore binary reads."""
         if not partner_ids:
@@ -141,7 +158,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         return avatar_map, image_map
     
     @api.model
-    def get_progress_leaderboard_data(self, limit=30, category_id=None):
+    def get_progress_leaderboard_data(self, limit=30, category_id=None, class_id=None):
         """Return top N students by average progress across enrolled, non-excluded subjects.
 
         Uses the same subject inclusion/exclusion logic as the Progress charts:
@@ -159,6 +176,11 @@ class APSResourceSubmissionDashboardData(models.Model):
 
         exclude, _exclude_from_avg = self._parse_resource_notes_excludes(progress_resources)
 
+        # Optionally restrict to a class
+        class_partner_ids = None
+        if class_id:
+            class_partner_ids = self._get_partner_ids_for_class(class_id)
+
         # Fetch all active submitted/complete submissions for progress resources
         submissions = self.sudo().search([
             ('resource_id', 'in', progress_resources.ids),
@@ -167,6 +189,14 @@ class APSResourceSubmissionDashboardData(models.Model):
         ], order='date_submitted asc')
         if not submissions:
             return []
+
+        # If class-restricted, keep only submissions whose student belongs to that class
+        if class_partner_ids is not None:
+            submissions = submissions.filtered(
+                lambda s: s.student_id and s.student_id.id in class_partner_ids
+            )
+            if not submissions:
+                return []
 
         # Collect all subjects referenced in these submissions, then filter out excluded ones
         all_subjects = self.env['aps.subject']
@@ -185,7 +215,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         for student_record in student_records:
             enrolled_ids = set(
                 student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
-                .mapped('home_class_id.subject_id').ids
+                .mapped('class_id.subject_id').ids
             )
             student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
             all_enrolled_subject_ids.update(enrolled_ids)
@@ -261,7 +291,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         return result
 
     @api.model
-    def get_completion_leaderboard_data(self, limit=30, category_id=None):
+    def get_completion_leaderboard_data(self, limit=30, category_id=None, class_id=None):
         """Return top N students ranked by predicted total progress at the course deadline.
 
         Uses the same subject inclusion/exclusion and enrolment logic as
@@ -300,6 +330,11 @@ class APSResourceSubmissionDashboardData(models.Model):
         else:
             days_remaining = 0  # No future deadline → no projection, use current progress
 
+        # --- Optionally restrict to a class ---
+        class_partner_ids = None
+        if class_id:
+            class_partner_ids = self._get_partner_ids_for_class(class_id)
+
         # --- Fetch submissions ---
         submissions = self.sudo().search([
             ('resource_id', 'in', progress_resources.ids),
@@ -308,6 +343,14 @@ class APSResourceSubmissionDashboardData(models.Model):
         ], order='date_submitted asc')
         if not submissions:
             return {'entries': [], 'deadline': deadline.isoformat() if deadline else False}
+
+        # If class-restricted, keep only submissions whose student belongs to that class
+        if class_partner_ids is not None:
+            submissions = submissions.filtered(
+                lambda s: s.student_id and s.student_id.id in class_partner_ids
+            )
+            if not submissions:
+                return {'entries': [], 'deadline': deadline.isoformat() if deadline else False}
 
         # --- Collect subjects, apply exclude filter ---
         all_subjects = self.env['aps.subject']
@@ -326,7 +369,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         for student_record in student_records:
             enrolled_ids = set(
                 student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
-                .mapped('home_class_id.subject_id').ids
+                .mapped('class_id.subject_id').ids
             )
             student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
             all_enrolled_subject_ids.update(enrolled_ids)
@@ -547,7 +590,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         if student_record:
             enrolled_subject_ids = set(
                 student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
-                .mapped('home_class_id.subject_id').ids
+                .mapped('class_id.subject_id').ids
             )
         if enrolled_subject_ids:
             all_subjects = all_subjects.filtered(lambda s: s.id in enrolled_subject_ids)
@@ -617,7 +660,7 @@ class APSResourceSubmissionDashboardData(models.Model):
                 # The PACE dates from the resource's notes field apply to ALL subjects linked to that resource
                 # Store PACE info once per resource (not per subject) to avoid duplicate PACE lines
                 if submission.resource_id and submission.resource_id.id not in pace_info:
-                    pace_dates = submission.resource_id.get_pace_dates()
+                    pace_dates = submission.resource_id.get_pace_dates(student_id=student_id)
                     if any([
                         pace_dates['start_date'],
                         pace_dates['end_date'],
@@ -673,7 +716,7 @@ class APSResourceSubmissionDashboardData(models.Model):
         }
 
     @api.model
-    def get_student_comparison_data(self, category_id=False):
+    def get_student_comparison_data(self, category_id=False, class_id=False):
         """
         Get progress comparison data for all students.
         Returns the most recent progress score for each student in each subject.
@@ -716,6 +759,21 @@ class APSResourceSubmissionDashboardData(models.Model):
                 'subject_colors': {},
                 'pace_average': 0
             }
+
+        # Optionally restrict to a class
+        if class_id:
+            class_partner_ids = self._get_partner_ids_for_class(class_id)
+            submissions = submissions.filtered(
+                lambda s: s.student_id and s.student_id.id in class_partner_ids
+            )
+            if not submissions:
+                return {
+                    'student_data': [],
+                    'subject_list': [],
+                    'subject_colors': {},
+                    'pace_average': 0,
+                    'exclude_from_average': []
+                }
         
         # Get all subjects from submissions
         all_subjects = self.env['aps.subject']
@@ -734,12 +792,17 @@ class APSResourceSubmissionDashboardData(models.Model):
         for student_record in student_records:
             enrolled_ids = set(
                 student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
-                .mapped('home_class_id.subject_id').ids
+                .mapped('class_id.subject_id').ids
             )
             student_enrolled_subjects[student_record.partner_id.id] = enrolled_ids
             all_enrolled_subject_ids.update(enrolled_ids)
         if all_enrolled_subject_ids:
             all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+
+        # Collect all cohort keys from all enrolled students (for cohort-scoped pace dates)
+        all_cohort_keys = set()
+        for student_record in student_records:
+            all_cohort_keys.update(student_record._get_cohort_keys())
 
         # Apply optional subject category filter
         if category_id:
@@ -787,7 +850,7 @@ class APSResourceSubmissionDashboardData(models.Model):
             # Calculate PACE and redline for averaging (process each resource only once)
             if submission.resource_id and submission.resource_id.id not in processed_resources_for_pace:
                 processed_resources_for_pace.add(submission.resource_id.id)
-                pace_dates = submission.resource_id.get_pace_dates()
+                pace_dates = submission.resource_id.get_pace_dates(cohort_keys=list(all_cohort_keys))
                 today = datetime.now().date()
                 
                 if pace_dates['start_date'] and pace_dates['end_date']:
@@ -908,9 +971,9 @@ class APSResourceSubmissionDashboardData(models.Model):
         enrollments = self.env['aps.student.class'].search([
             ('student_id', 'in', students.ids),
             ('state', '=', 'enrolled'),
-            ('home_class_id.academic_year_id', '=', current_year.id),
+            ('class_id.academic_year_id', '=', current_year.id),
         ])
-        classes = enrollments.mapped('home_class_id')
+        classes = enrollments.mapped('class_id')
         return [
             {
                 'id': cls.id,
@@ -928,11 +991,11 @@ class APSResourceSubmissionDashboardData(models.Model):
 
         if class_id:
             enrollment_domain = [
-                ('home_class_id', '=', int(class_id)),
+                ('class_id', '=', int(class_id)),
                 ('state', '=', 'enrolled'),
             ]
             if current_year:
-                enrollment_domain.append(('home_class_id.academic_year_id', '=', current_year.id))
+                enrollment_domain.append(('class_id.academic_year_id', '=', current_year.id))
 
             class_enrollments = self.env['aps.student.class'].search(enrollment_domain)
             class_partner_ids = {
@@ -964,7 +1027,7 @@ class APSResourceSubmissionDashboardData(models.Model):
                 ('student_id.partner_id', 'in', list(submission_partner_ids)),
             ]
             if current_year:
-                enrollment_domain.append(('home_class_id.academic_year_id', '=', current_year.id))
+                enrollment_domain.append(('class_id.academic_year_id', '=', current_year.id))
             enrollments = self.env['aps.student.class'].search(enrollment_domain)
             filtered_partner_ids = {
                 enrollment.student_id.partner_id.id

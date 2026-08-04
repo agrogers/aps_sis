@@ -36,14 +36,17 @@ class AwardsVotingController(http.Controller):
         payload = f"{token}:{partner_id}:{version}".encode()
         return hmac.new(secret, payload, hashlib.sha256).hexdigest()
 
-    def _image_url(self, token, partner_id, write_date=None):
-        version = write_date.isoformat() if write_date else '0'
-        sig = self._sign_image_request(token, partner_id, version)
+    def _image_url(self, token, partner):
+        """Return signed image URL for *partner*, or '' if partner has no photo."""
+        if not partner or not partner.image_128:
+            return ''
+        version = partner.write_date.isoformat() if partner.write_date else '0'
+        sig = self._sign_image_request(token, partner.id, version)
         qs = {
             'v': version,
             's': sig,
         }
-        return f"/awards/vote/{token}/candidate_image/{partner_id}?{urlencode(qs)}"
+        return f"/awards/vote/{token}/candidate_image/{partner.id}?{urlencode(qs)}"
 
     # ------------------------------------------------------------------
     # Dashboard
@@ -150,6 +153,7 @@ class AwardsVotingController(http.Controller):
                         'votes': [v],
                         'has_due': has_due,
                         'state': v.state,
+                        'adhoc_vote': v.award_category_id.adhoc_vote if v.award_category_id else False,
                     }
                     my_vote_groups.append(group)
                     if rnd_id:
@@ -272,7 +276,7 @@ class AwardsVotingController(http.Controller):
                 if own_classes:
                     Enrollment = request.env['aps.student.class'].sudo()
                     enrollments = Enrollment.search([
-                        ('home_class_id', 'in', own_classes.ids),
+                        ('class_id', 'in', own_classes.ids),
                         ('active', '=', True),
                     ])
                     own_student_partner_ids = (
@@ -323,18 +327,6 @@ class AwardsVotingController(http.Controller):
             t2 = time.time()
             _logger.info("[voting_candidates] DEPT: Found %d employees in %.3fs", len(dept_employees), t2-t1)
 
-            # Prefetch all relational fields in batch to avoid per-record queries
-            dept_employees.mapped('user_id.partner_id')
-            partner_records = dept_employees.mapped('user_id.partner_id').filtered('id')
-            t3 = time.time()
-            _logger.info("[voting_candidates] DEPT: Found %d partners in %.3fs", len(partner_records), t3-t2)
-            partner_meta_map = {
-                r['id']: r['write_date']
-                for r in partner_records.read(['write_date'])
-            }
-            t4 = time.time()
-            _logger.info("[voting_candidates] DEPT: Read partner write_date for %d partners in %.3fs", len(partner_meta_map), t4-t3)
-
             result = []
             for emp in dept_employees:
                 if not emp.user_id or not emp.user_id.partner_id:
@@ -344,9 +336,7 @@ class AwardsVotingController(http.Controller):
                     continue
 
                 image_url = self._image_url(
-                    token,
-                    partner.id,
-                    write_date=partner_meta_map.get(partner.id),
+                    token, partner,
                 ) if include_images else ''
 
                 result.append({
@@ -456,7 +446,7 @@ class AwardsVotingController(http.Controller):
         if student_cat_ids and not ec_student_ids and not voter_partner_student_ids:
             filtered = Student.browse()
             for s in students:
-                enrolled_cats = s.enrollment_ids.mapped('home_class_id.subject_id.category_id')
+                enrolled_cats = s.enrollment_ids.mapped('class_id.subject_id.category_id')
                 if any(sid in enrolled_cats.ids for sid in student_cat_ids):
                     filtered |= s
             students = filtered
@@ -466,10 +456,6 @@ class AwardsVotingController(http.Controller):
         # Prefetch partner relations and batch-read write_date before the loop
         students.mapped('partner_id')
         student_partners = students.mapped('partner_id').filtered('id')
-        student_meta_map = {
-            r['id']: r['write_date']
-            for r in student_partners.read(['write_date'])
-        }
 
         # Batch-load all certificates for this category in one query (avoid N+1)
         certs_by_partner = {}
@@ -498,12 +484,10 @@ class AwardsVotingController(http.Controller):
                 last_awarded = None
 
             image_url = self._image_url(
-                token,
-                partner.id,
-                write_date=student_meta_map.get(partner.id),
+                token, partner,
             ) if include_images else ''
 
-            enrolled_cats = student.enrollment_ids.mapped('home_class_id.subject_id.category_id')
+            enrolled_cats = student.enrollment_ids.mapped('class_id.subject_id.category_id')
             if student_cat_ids and not is_whitelisted:
                 student_subcat_ids = [i for i in enrolled_cats.ids if i in student_cat_ids]
             else:
@@ -541,16 +525,11 @@ class AwardsVotingController(http.Controller):
                 teacher_classes.mapped('assistant_teacher_ids')
             ).filtered('id')
             existing_ids = {r['id'] for r in result}
-            teacher_partner_meta = {
-                r['id']: r['write_date']
-                for r in teacher_partners.read(['write_date'])
-            }
             for partner in teacher_partners.sorted('name'):
                 if partner.id in excluded_partner_ids or partner.id in existing_ids:
                     continue
                 image_url = self._image_url(
-                    token, partner.id,
-                    write_date=teacher_partner_meta.get(partner.id),
+                    token, partner,
                 ) if include_images else ''
                 result.append({
                     'id': partner.id,
@@ -837,6 +816,21 @@ class AwardsVotingController(http.Controller):
                 allow_no_vote = bool(open_pool[0].vote_round_id.rule_allow_no_vote)
             if not allow_no_vote:
                 return {'error': 'No recipients provided'}
+
+            # If the voter already has a submitted vote with an actual recipient
+            # for this category, the abstention is redundant — just discard the
+            # open ballot(s) instead of creating a pointless "No vote submitted".
+            existing_real = Vote.search_count([
+                ('voter_partner_id', '=', voter_partner.id),
+                ('award_category_id', '=', category.id),
+                ('state', '=', 'submitted'),
+                ('recipient_partner_id', '!=', False),
+            ], limit=1)
+            if existing_real:
+                if open_pool:
+                    Vote.browse([v.id for v in open_pool]).unlink()
+                return {'success': True, 'submitted': []}
+
             vals = {
                 'recipient_partner_id': False,
                 'comment': 'No vote submitted.',
@@ -1003,3 +997,52 @@ class AwardsVotingController(http.Controller):
             to_delete.unlink()
 
         return {'action': 'done'}
+
+    # ------------------------------------------------------------------
+    # Vote Again — create a fresh open ballot from a submitted ad-hoc vote
+    # ------------------------------------------------------------------
+
+    @http.route('/awards/vote/<string:token>/vote_again',
+                type='json', auth='public')
+    def voting_vote_again(self, token, vote_id=None, category_id=None, **kwargs):
+        voter_partner = self._get_partner_by_token(token)
+        if not voter_partner:
+            return {'error': 'Invalid token'}
+
+        Vote = request.env['aps.award.vote'].sudo()
+
+        # Find the original submitted vote
+        original = Vote.browse(int(vote_id)).exists()
+        if not original:
+            return {'error': 'Original vote not found'}
+        if original.voter_partner_id.id != voter_partner.id:
+            return {'error': 'Not authorised'}
+        if original.state not in ('submitted', 'closed'):
+            return {'error': 'Only submitted or closed votes can be re-voted'}
+
+        # Check the category is adhoc_vote
+        cat = original.award_category_id
+        if not cat or not cat.adhoc_vote:
+            return {'error': 'This category does not allow ad-hoc voting'}
+
+        # Check an open ballot doesn't already exist for this voter+category
+        existing_open = Vote.search_count([
+            ('voter_partner_id', '=', voter_partner.id),
+            ('award_category_id', '=', cat.id),
+            ('state', '=', 'open'),
+        ], limit=1)
+        if existing_open:
+            return {'error': 'You already have an open ballot for this category'}
+
+        # Clone the original settings but with no recipient
+        new_vote = Vote.create({
+            'award_category_id': cat.id,
+            'vote_round_id': original.vote_round_id.id if original.vote_round_id else False,
+            'voter_partner_id': voter_partner.id,
+            'state': 'open',
+            'short_description': original.short_description or '',
+            'description': original.description or '',
+            'image': original.image or False,
+        })
+
+        return {'success': True, 'vote_id': new_vote.id}

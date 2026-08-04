@@ -68,7 +68,7 @@ class APSResource(models.Model):
             }
         }
 
-    def get_pace_dates(self):
+    def get_pace_dates(self, student_id=None, cohort_keys=None):
         """
         Parse PACE start_date, end_date, redline_start_date, and redline_end_date
         from the notes field.
@@ -78,12 +78,31 @@ class APSResource(models.Model):
         apply to ALL subjects linked to this resource.
 
         Expected format in notes:
+
+            # Generic dates (fallback when no cohort match or student_id not given)
             start_date: 1/Aug/2025
             end_date: 31/Dec/2027
-            redline_start_date: 1/Nov/2025
-            redline_end_date: 30/Jan/2027
+
+            # Cohort-specific dates (overrides generic when student_id matches)
+            start_date (Y10 in 25/26): 1/Sep/2025
+            end_date (Y10 in 25/26): 31/Dec/2027
+            start_date (Y11 in 25/26): 1/Aug/2026
+            end_date (Y11 in 25/26): 31/Dec/2027
+
+            redline_start_date (Y10 in 25/26): 1/Nov/2025
+            redline_end_date (Y10 in 25/26): 30/Jan/2027
+
+        Cohort keys are derived from the student's enrolled home classes:
+        each home class contributes "LevelShortName in AcadYearShortName",
+        e.g. "Y10 in 25/26". All keys are tried in order; if none match,
+        the unscoped generic dates are used as fallback.
 
         Returns dict with date objects or False for each key if not found.
+
+        Can be called with:
+        - `student_id` — looks up the student's cohort keys automatically
+        - `cohort_keys` — a pre-resolved list of cohort keys (for multi-student contexts)
+        - neither — uses only generic unscoped dates as fallback
         """
         self.ensure_one()
 
@@ -118,25 +137,51 @@ class APSResource(models.Model):
                 pass
             return False
 
-        # Search for start_date (negative lookbehind prevents matching 'redline_start_date:')
-        start_match = re.search(rf'(?<!redline_)start_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
-        if start_match:
-            result['start_date'] = _parse_date_match(start_match) or False
+        def _find_date(label, cohort_keys=None):
+            """Try each cohort-specific format, then fall back to generic."""
+            if cohort_keys:
+                for cohort_key in cohort_keys:
+                    escaped_key = re.escape(cohort_key)
+                    cohort_pattern = rf'(?<!redline_){re.escape(label)}\s*\({escaped_key}\)\s*:\s*{date_pattern}'
+                    cohort_match = re.search(cohort_pattern, plain_text, re.IGNORECASE)
+                    if cohort_match:
+                        return _parse_date_match(cohort_match)
+            # Fallback: generic (no cohort)
+            generic_pattern = rf'(?<!redline_){re.escape(label)}:\s*{date_pattern}'
+            generic_match = re.search(generic_pattern, plain_text, re.IGNORECASE)
+            if generic_match:
+                return _parse_date_match(generic_match)
+            return False
 
-        # Search for end_date (negative lookbehind prevents matching 'redline_end_date:')
-        end_match = re.search(rf'(?<!redline_)end_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
-        if end_match:
-            result['end_date'] = _parse_date_match(end_match) or False
+        def _find_redline_date(label, cohort_keys=None):
+            """Try each cohort-specific redline format, then fall back to generic."""
+            if cohort_keys:
+                for cohort_key in cohort_keys:
+                    escaped_key = re.escape(cohort_key)
+                    cohort_pattern = rf'redline_{re.escape(label)}\s*\({escaped_key}\)\s*:\s*{date_pattern}'
+                    cohort_match = re.search(cohort_pattern, plain_text, re.IGNORECASE)
+                    if cohort_match:
+                        return _parse_date_match(cohort_match)
+            # Fallback: generic (no cohort)
+            generic_pattern = rf'redline_{re.escape(label)}:\s*{date_pattern}'
+            generic_match = re.search(generic_pattern, plain_text, re.IGNORECASE)
+            if generic_match:
+                return _parse_date_match(generic_match)
+            return False
 
-        # Search for redline_start_date
-        redline_start_match = re.search(rf'redline_start_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
-        if redline_start_match:
-            result['redline_start_date'] = _parse_date_match(redline_start_match) or False
+        # Determine cohort keys: explicit keys param > student_id lookup > None
+        if cohort_keys is not None:
+            pass  # use the passed-in list
+        elif student_id:
+            student = self.env['aps.student'].sudo().search([
+                ('partner_id', '=', student_id),
+            ], limit=1)
+            cohort_keys = student._get_cohort_keys() if student else None
 
-        # Search for redline_end_date
-        redline_end_match = re.search(rf'redline_end_date:\s*{date_pattern}', plain_text, re.IGNORECASE)
-        if redline_end_match:
-            result['redline_end_date'] = _parse_date_match(redline_end_match) or False
+        result['start_date'] = _find_date('start_date', cohort_keys) or False
+        result['end_date'] = _find_date('end_date', cohort_keys) or False
+        result['redline_start_date'] = _find_redline_date('start_date', cohort_keys) or False
+        result['redline_end_date'] = _find_redline_date('end_date', cohort_keys) or False
 
         return result
 
@@ -519,7 +564,7 @@ class APSResource(models.Model):
                 students_recs = self.env['aps.student'].search([])
                 enrollments = self.env['aps.student.class'].search([
                     ('state', '=', 'enrolled'),
-                    ('home_class_id.subject_id', 'in', self.subjects.ids),
+                    ('class_id.subject_id', 'in', self.subjects.ids),
                 ])
                 student_partners = enrollments.mapped('student_id.partner_id')
             else:
@@ -574,7 +619,7 @@ class APSResource(models.Model):
                     if student_record:
                         student_subjects = student_record.enrollment_ids.filtered(
                             lambda e: e.state == 'enrolled'
-                        ).mapped('home_class_id.subject_id')
+                        ).mapped('class_id.subject_id')
                         assigned_subjects = self.subjects & student_subjects
                     else:
                         assigned_subjects = self.subjects

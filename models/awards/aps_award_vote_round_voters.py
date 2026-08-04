@@ -168,7 +168,7 @@ class APSAwardVoteRoundVoters(models.AbstractModel):
                 ('subject_id.category_id', 'in', category_ids),
             ])
             enrollments = self.env['aps.student.class'].search([
-                ('home_class_id', 'in', cat_classes.ids),
+                ('class_id', 'in', cat_classes.ids),
                 ('active', '=', True),
             ])
             for enr in enrollments:

@@ -39,7 +39,7 @@ class APSStudentMatrix(models.TransientModel):
             domain.append(('start_date', '>=', year.start_date))
 
         enrollments = self.env['aps.student.class'].search(domain)
-        home_class_ids = enrollments.mapped('home_class_id')
+        home_class_ids = enrollments.mapped('class_id')
 
         result = []
         seen = set()
@@ -76,7 +76,7 @@ class APSStudentMatrix(models.TransientModel):
 
         # Find students enrolled in the selected classes
         enroll_domain = [
-            ('home_class_id', 'in', class_ids),
+            ('class_id', 'in', class_ids),
             ('state', '=', 'enrolled'),
         ]
         enrollments = self.env['aps.student.class'].search(enroll_domain)
@@ -99,12 +99,12 @@ class APSStudentMatrix(models.TransientModel):
         ]
         if academic_year_id:
             all_enroll_domain.append(
-                ('home_class_id.academic_year_id', '=', academic_year_id)
+                ('class_id.academic_year_id', '=', academic_year_id)
             )
         all_enrollments = self.env['aps.student.class'].search(all_enroll_domain)
 
         # Get all unique subjects from those enrollments
-        all_classes = all_enrollments.mapped('home_class_id')
+        all_classes = all_enrollments.mapped('class_id')
         subject_ids = all_classes.mapped('subject_id')
 
         # Build subject colors map
@@ -122,7 +122,7 @@ class APSStudentMatrix(models.TransientModel):
 
         for enrollment in all_enrollments:
             student = enrollment.student_id
-            subject = enrollment.home_class_id.subject_id
+            subject = enrollment.class_id.subject_id
             if student.id in student_totals and subject.id in subject_enrolled_students:
                 key = f"{student.id}_{subject.id}"
                 if key not in cells:

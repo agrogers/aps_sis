@@ -72,8 +72,30 @@
         <field name="code">model.action_send_voting_reminders()</field>
         <field name="active">False</field>
         <field name="interval_number">1</field>
-        <field name="interval_type">weeks</field>
-        <field name="nextcall" eval="(datetime.now() + relativedelta(days=7)).replace(hour=7, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
+    <record id="cron_close_expired_rounds" model="ir.cron">
+        <field name="name">APEX Close Expired Vote Rounds</field>
+        <field name="model_id" ref="aps_sis.model_aps_award_vote_round"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_close_expired_rounds()</field>
+        <field name="active">True</field>
+        <field name="interval_number">10</field>
+        <field name="interval_type">minutes</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
+    <record id="cron_reschedule_rounds" model="ir.cron">
+        <field name="name">APEX Reschedule Recurring Vote Rounds</field>
+        <field name="model_id" ref="aps_sis.model_aps_award_vote_round"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_reschedule_rounds()</field>
+        <field name="active">True</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 
 </odoo>

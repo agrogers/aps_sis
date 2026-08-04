@@ -320,7 +320,7 @@ class APSAssignStudentsWizard(models.TransientModel):
             # Find all students enrolled in the selected classes
             enrollments = self.env['aps.student.class'].search([
                 ('state', '=', 'enrolled'),
-                ('home_class_id', 'in', self.class_ids.ids),
+                ('class_id', 'in', self.class_ids.ids),
             ])
             student_partners = enrollments.mapped('student_id.partner_id')
         else:
@@ -463,7 +463,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     if student_record:
                         student_subjects = student_record.enrollment_ids.filtered(
                             lambda e: e.state == 'enrolled'
-                        ).mapped('home_class_id.subject_id')
+                        ).mapped('class_id.subject_id')
                     # Intersect with wizard subjects
                     assigned_subjects = wizard_subjects & student_subjects
                 

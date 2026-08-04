@@ -132,6 +132,24 @@ export class ApexDashboard extends Component {
         if (this.state.selectedStudent && this.state.selectedStudent !== "false") {
             domain.push([field, '=', parseInt(this.state.selectedStudent, 10)]);
         }
+        // When no specific student is selected, filter by class students if a class is selected
+        if ((!this.state.selectedStudent || this.state.selectedStudent === "false") &&
+            this.state.selectedClass && this.state.selectedClass !== "false") {
+            const studentIds = this.state.students.map(s => s.id);
+            if (studentIds.length > 0) {
+                domain.push(['student_id', 'in', studentIds]);
+            }
+        }
+        return domain;
+    }
+
+    addClassFilter(domain) {
+        if (this.state.selectedClass && this.state.selectedClass !== "false") {
+            const studentIds = this.state.students.map(s => s.id);
+            if (studentIds.length > 0) {
+                domain.push(['student_id', 'in', studentIds]);
+            }
+        }
         return domain;
     }
 
@@ -369,6 +387,7 @@ export class ApexDashboard extends Component {
             ['submission_active', '=', true],
             ['points', '>', 0]
         ];
+        this.addClassFilter(domain);
         this.addSubjectFilter(domain);
 
         try {
@@ -771,6 +790,7 @@ export class ApexDashboard extends Component {
                 ['points', '>', 0],
                 ['date_assigned', '>=', this.getPeriodStartDateStr()],
             ];
+            this.addClassFilter(domain);
             this.addSubjectFilter(domain);
             const data = await this.orm.call(
                 "aps.resource.submission",
@@ -793,6 +813,9 @@ export class ApexDashboard extends Component {
             if (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false") {
                 kwargs.category_id = parseInt(this.state.selectedSubjectCategory, 10);
             }
+            if (this.state.selectedClass && this.state.selectedClass !== "false") {
+                kwargs.class_id = parseInt(this.state.selectedClass, 10);
+            }
             const data = await this.orm.call(
                 "aps.resource.submission",
                 "get_progress_leaderboard_data",
@@ -813,6 +836,9 @@ export class ApexDashboard extends Component {
             const kwargs = { limit: 30 };
             if (this.state.selectedSubjectCategory && this.state.selectedSubjectCategory !== "false") {
                 kwargs.category_id = parseInt(this.state.selectedSubjectCategory, 10);
+            }
+            if (this.state.selectedClass && this.state.selectedClass !== "false") {
+                kwargs.class_id = parseInt(this.state.selectedClass, 10);
             }
             const data = await this.orm.call(
                 "aps.resource.submission",
@@ -1152,6 +1178,8 @@ export class ApexDashboard extends Component {
     async onChangeClass() {
         await this.fetchStudents();
         this.saveSettings();
+        await this.fetchSubjectCategories();
+        await this.loadDashboardData();
     }
 
     async onChangeStudent() {

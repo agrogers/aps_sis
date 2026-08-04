@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="student_id"/>
-                <field name="home_class_id"/>
+                <field name="class_id"/>
                 <field name="start_date" optional="show"/>
                 <field name="end_date" optional="show"/>
                 <field name="state" widget="badge"
@@ -41,7 +41,7 @@
                     <group>
                         <group>
                             <field name="student_id"/>
-                            <field name="home_class_id"/>
+                            <field name="class_id"/>
                         </group>
                         <group>
                             <field name="start_date"/>
@@ -63,14 +63,14 @@
         <field name="arch" type="xml">
             <search string="Student Enrollments">
                 <field name="student_id"/>
-                <field name="home_class_id"/>
+                <field name="class_id"/>
                 <filter string="Enrolled" name="enrolled" domain="[('state', '=', 'enrolled')]"/>
                 <filter string="Withdrawn" name="withdrawn" domain="[('state', '=', 'withdrawn')]"/>
                 <filter string="Finished" name="finished" domain="[('state', '=', 'finished')]"/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
-                    <filter string="Class" name="group_class" context="{'group_by': 'home_class_id'}"/>
+                    <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
                     <filter string="Student" name="group_student" context="{'group_by': 'student_id'}"/>
                 </group>
             </search>

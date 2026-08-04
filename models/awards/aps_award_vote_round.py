@@ -1,3 +1,4 @@
+from datetime import timedelta
 from odoo import api, fields, models
 
 
@@ -107,6 +108,14 @@ class APSAwardVoteRound(models.Model):
 
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
+    # Reschedule tracking
+    child_reschedule_id = fields.Many2one(
+        'aps.award.vote.round',
+        string='Rescheduled To',
+        ondelete='set null',
+        help='When this round has been rescheduled, points to the next round that was created. Empty if the round has not been rescheduled.',
+    )
+
     # ── Onchange handlers ────────────────────────────────────────────────────
 
     @api.onchange('award_category_id')
@@ -140,15 +149,33 @@ class APSAwardVoteRound(models.Model):
             rec.votes_cast = len(votes.filtered(lambda v: v.state in ('submitted', 'closed')))
             rec.active_voter_count = len(votes.mapped('voter_partner_id'))
 
-    # ── Write override: cascade close/finalise to open votes ────────────────
+    # ── Write override: cascade status changes to all votes ────────────────
 
     def write(self, vals):
         result = super().write(vals)
-        if vals.get('status') in ('closed', 'finalised'):
+        new_status = vals.get('status')
+        if new_status in ('closed', 'finalised'):
+            # All votes close — even already-submitted ones
             for rec in self:
-                open_votes = rec.vote_ids.filtered(lambda v: v.state == 'open')
-                if open_votes:
-                    open_votes.write({'state': 'closed'})
+                active_votes = rec.vote_ids.filtered(lambda v: v.state != 'closed')
+                if active_votes:
+                    active_votes.write({'state': 'closed'})
+        elif new_status == 'draft':
+            # Reset votes to pending
+            for rec in self:
+                pending_votes = rec.vote_ids.filtered(
+                    lambda v: v.state not in ('pending')
+                )
+                if pending_votes:
+                    pending_votes.write({'state': 'pending'})
+        elif new_status == 'open':
+            # Votes with a recipient → submitted; without a recipient → open
+            for rec in self:
+                for v in rec.vote_ids:
+                    if v.submitted_date:
+                        v.state = 'submitted'
+                    else:
+                        v.state = 'open'
         return result
 
     # ── Lifecycle actions ───────────────────────────────────────────────────
@@ -181,6 +208,10 @@ class APSAwardVoteRound(models.Model):
 
     def action_close(self):
         self.ensure_one()
+        # Close all open and submitted votes in this round
+        votes_to_close = self.vote_ids.filtered(lambda v: v.state in ('open', 'submitted'))
+        if votes_to_close:
+            votes_to_close.write({'state': 'closed'})
         self.status = 'closed'
 
     def action_finalise(self):
@@ -201,8 +232,19 @@ class APSAwardVoteRound(models.Model):
 
     @api.model
     def action_send_voting_reminders(self):
-        """Cron method: send reminder emails to staff with open votes in reminder-enabled rounds."""
-        open_rounds = self.search([('status', '=', 'open')]).filtered('rule_send_reminder_email')
+        """Cron method: send reminder emails to staff with open votes that close today,
+        for rounds that have reminders enabled.
+        Runs daily at 8 AM — only targets rounds whose datetime_end is today.
+        """
+        today_start = fields.Datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        open_rounds = self.search([
+            ('status', '=', 'open'),
+            ('datetime_end', '>=', today_start),
+            ('datetime_end', '<=', today_end),
+        ]).filtered('rule_send_reminder_email')
+
         if not open_rounds:
             return True
 
@@ -264,4 +306,40 @@ class APSAwardVoteRound(models.Model):
                     force_send=True,
                 )
 
+        return True
+
+    @api.model
+    def cron_close_expired_rounds(self):
+        """Cron method: close rounds whose end datetime has passed.
+        Called every 10 minutes — updates round status and all related
+        open/submitted votes to 'closed'.
+        """
+        now = fields.Datetime.now()
+        expired = self.search([('status', '=', 'open'), ('datetime_end', '<=', now)])
+        for rnd in expired:
+            rnd.action_close()
+        return True
+
+    @api.model
+    def cron_reschedule_rounds(self):
+        """Cron: duplicate rounds where recurring_days > 0 and the reschedule
+        deadline (datetime_start + recurring_days) has passed, but no child
+        round has been created yet.
+        """
+        now = fields.Datetime.now()
+        candidates = self.search([
+            ('recurring_days', '>', 0),
+            ('child_reschedule_id', '=', False),
+            ('datetime_start', '!=', False),
+        ])
+        to_reschedule = candidates.filtered(
+            lambda r: r.datetime_start and (r.datetime_start + timedelta(days=r.recurring_days) <= now)
+        )
+        for rnd in to_reschedule:
+            shift = timedelta(days=rnd.recurring_days)
+            child = rnd.copy({
+                'datetime_start': rnd.datetime_start + shift,
+                'datetime_end': rnd.datetime_end + shift if rnd.datetime_end else False,
+            })
+            rnd.child_reschedule_id = child.id
         return True

@@ -61,27 +61,27 @@ class TestDashboardDataFilters(TransactionCase):
 
         self.env['aps.student.class'].create({
             'student_id': self.student_a.id,
-            'home_class_id': self.class_a.id,
+            'class_id': self.class_a.id,
             'state': 'enrolled',
         })
         self.env['aps.student.class'].create({
             'student_id': self.student_b.id,
-            'home_class_id': self.class_b.id,
+            'class_id': self.class_b.id,
             'state': 'enrolled',
         })
         self.env['aps.student.class'].create({
             'student_id': self.student_c.id,
-            'home_class_id': self.class_a.id,
+            'class_id': self.class_a.id,
             'state': 'withdrawn',
         })
         self.env['aps.student.class'].create({
             'student_id': self.student_d.id,
-            'home_class_id': self.class_no_submission.id,
+            'class_id': self.class_no_submission.id,
             'state': 'enrolled',
         })
         self.env['aps.student.class'].create({
             'student_id': self.student_c.id,
-            'home_class_id': self.class_old.id,
+            'class_id': self.class_old.id,
             'state': 'enrolled',
         })
 

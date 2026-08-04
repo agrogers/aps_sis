@@ -55,7 +55,7 @@ class APSClass(models.Model):
         string='Assistant Teachers',
     )
     active = fields.Boolean(default=True, string='Active')
-    enrollment_ids = fields.One2many('aps.student.class', 'home_class_id', string='Enrolled Students')
+    enrollment_ids = fields.One2many('aps.student.class', 'class_id', string='Enrolled Students')
     tag_ids = fields.Many2many(
         'aps.class.tag',
         relation='aps_class_tag_rel',
@@ -141,7 +141,7 @@ class APSClass(models.Model):
         for enrollment in source.enrollment_ids:
             existing = Enrollment.with_context(active_test=False).search([
                 ('student_id', '=', enrollment.student_id.id),
-                ('home_class_id', '=', self.id),
+                ('class_id', '=', self.id),
             ], limit=1)
             if existing:
                 if not existing.active:
@@ -149,6 +149,6 @@ class APSClass(models.Model):
             else:
                 Enrollment.create({
                     'student_id': enrollment.student_id.id,
-                    'home_class_id': self.id,
+                    'class_id': self.id,
                 })
         self.copy_students_from_class_id = False

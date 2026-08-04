@@ -122,7 +122,7 @@ class APSSubmitMarkWizard(models.TransientModel):
             if student_record:
                 subject_ids = student_record.enrollment_ids.filtered(
                     lambda e: e.state == 'enrolled'
-                ).mapped('home_class_id.subject_id').ids
+                ).mapped('class_id.subject_id').ids
             else:
                 subject_ids = []
             rec.available_subject_ids = [(6, 0, subject_ids)]

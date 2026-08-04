@@ -175,7 +175,7 @@ export class TimerSystrayItem extends Component {
             running: false,
             paused: false,
             startedAt: null,
-            elapsedSeconds: 0,
+            _tick: 0,        // bumped each second to trigger re-render
             pausedSeconds: 0,
             subjects: [],
             partnerId: null,
@@ -198,7 +198,11 @@ export class TimerSystrayItem extends Component {
     }
 
     get elapsedLabel() {
-        const s = this.state.elapsedSeconds;
+        // Compute from real wall-clock time to avoid setInterval drift
+        const now = Date.now();
+        const startedAt = this.state.startedAt ? this.state.startedAt.getTime() : now;
+        const pauseMs = (this.state.pausedSeconds || 0) * 1000;
+        const s = Math.max(0, Math.floor((now - startedAt - pauseMs) / 1000));
         const h = Math.floor(s / 3600);
         const m = Math.floor((s % 3600) / 60);
         const sec = s % 60;
@@ -223,12 +227,12 @@ export class TimerSystrayItem extends Component {
         this.state.startedAt = new Date();
         this.state.running = true;
         this.state.paused = false;
-        this.state.elapsedSeconds = 0;
+        this.state._tick = 0;
         this.state.pausedSeconds = 0;
         this._pauseStart = null;
 
         this._timerInterval = setInterval(() => {
-            this.state.elapsedSeconds += 1;
+            this.state._tick += 1;
         }, 1000);
     }
 
@@ -248,7 +252,7 @@ export class TimerSystrayItem extends Component {
         }
         this.state.paused = false;
         this._timerInterval = setInterval(() => {
-            this.state.elapsedSeconds += 1;
+            this.state._tick += 1;
         }, 1000);
     }
 
@@ -297,12 +301,12 @@ export class TimerSystrayItem extends Component {
             partnerName: this.state.partnerName,
             onSave: () => {
                 this.state.startedAt = null;
-                this.state.elapsedSeconds = 0;
+                this.state._tick = 0;
                 this.state.pausedSeconds = 0;
             },
             onDiscard: () => {
                 this.state.startedAt = null;
-                this.state.elapsedSeconds = 0;
+                this.state._tick = 0;
                 this.state.pausedSeconds = 0;
             },
         });

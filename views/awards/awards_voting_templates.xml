@@ -67,7 +67,7 @@
                             t-attf-data-category-id="#{vote.award_category_id.id or 0}"
                             t-att-data-category-name="vote.vote_round_id.name or vote.award_category_id.name"
                             t-att-data-short-description="vote.short_description or ''"
-                            t-att-data-description="vote.description or ''"
+                            t-att-data-description="(vote.vote_round_id.description or vote.award_category_id.description or '')"
                             t-att-data-token="token"
                             t-attf-data-category-img="#{'/awards/vote/' + token + '/model_image/vote/' + str(vote.id) if vote.image else ''}"
                             t-attf-data-vset-ids="#{' '.join(str(s.id) for s in vote.vote_round_id.voting_set_ids) if vote.vote_round_id else ''}"
@@ -241,6 +241,19 @@
                                         <t t-if="gv.comment">
                                             <span class="av-history-comment">"<t t-esc="gv.comment"/>"</span>
                                         </t>
+                                        <t t-if="grp['state'] == 'submitted' and grp['has_due']">
+                                            <button class="av-history-edit-pencil"
+                                                    t-att-data-vote-ids="str(gv.id)"
+                                                    t-att-data-token="token"
+                                                    t-att-data-vote-id="str(gv.id)"
+                                                    t-att-data-category-id="(cat and cat.id) or 0"
+                                                    t-att-data-category-name="(rnd and rnd.name) or (cat and cat.name) or ''"
+                                                    t-att-data-short-description="(rnd and rnd.short_description) or (v.short_description) or ''"
+                                                    t-att-data-description="(rnd and rnd.description) or (cat and cat.description) or ''"
+                                                    t-attf-data-category-img="#{'/awards/vote/' + token + '/model_image/vote/' + str(v.id) if v.image else ''}"
+                                                    onclick="AwardsVoting.editVote(this)"
+                                                    title="Edit this vote">&#9998;</button>
+                                        </t>
                                     </div>
                                 </t>
                                 <t t-elif="gv.comment">
@@ -271,20 +284,6 @@
                                 </t>
                             </div>
                             <t t-if="grp['state'] == 'submitted'">
-                                <t t-if="grp['has_due']">
-                                    <button class="av-history-delete-btn"
-                                            t-att-data-vote-ids="','.join(str(gv.id) for gv in grp['votes'])"
-                                            t-att-data-token="token"
-                                            t-att-data-vote-id="v.id"
-                                            t-att-data-category-id="(cat and cat.id) or 0"
-                                            t-att-data-category-name="(rnd and rnd.name) or (cat and cat.name) or ''"
-                                            t-att-data-short-description="(rnd and rnd.short_description) or (v.short_description) or ''"
-                                            t-att-data-description="(v.description) or ''"
-                                            t-attf-data-category-img="#{'/awards/vote/' + token + '/model_image/vote/' + str(v.id) if v.image else ''}"
-                                            onclick="AwardsVoting.editVote(this)">
-                                        &#9998; Edit
-                                    </button>
-                                </t>
                                 <button class="av-history-delete-btn"
                                         t-att-data-vote-ids="','.join(str(gv.id) for gv in grp['votes'])"
                                         t-att-data-token="token"
@@ -293,6 +292,15 @@
                                     <t t-if="grp['has_due']">&#8617; Undo</t>
                                     <t t-else="">&#10005; Delete</t>
                                 </button>
+                                <t t-if="grp['adhoc_vote']">
+                                    <button class="av-history-delete-btn"
+                                            t-att-data-token="token"
+                                            t-att-data-vote-id="v.id"
+                                            t-att-data-category-id="(cat and cat.id) or 0"
+                                            onclick="AwardsVoting.voteAgain(this)">
+                                        &#128260; Vote Again
+                                    </button>
+                                </t>
                             </t>
                         </div>
                     </div>

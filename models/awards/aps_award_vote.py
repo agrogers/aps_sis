@@ -10,25 +10,37 @@ class APSAwardVote(models.Model):
     description = fields.Text(
         string='Description',
         compute='_compute_description_fields', store=True, readonly=False,
+        help='Auto-generated description combining round name, voter, recipient and date. Used as the record display name.',
     )
     short_description = fields.Text(
         string='Short Description',
         compute='_compute_description_fields', store=True, readonly=False,
+        help='Short label inherited from the vote round or award category for quick reference.',
     )
     image = fields.Image(
         string='Image',
         compute='_compute_description_fields', store=True, readonly=False,
+        help='Image inherited from the vote round or award category, shown in vote history cards.',
     )
 
     @api.depends(
-        'vote_round_id.description', 'vote_round_id.short_description', 'vote_round_id.image',
-        'award_category_id.description', 'award_category_id.short_description', 'award_category_id.image',
+        'vote_round_id.name', 'voter_partner_id.name', 'recipient_partner_id.name', 'submitted_date',
     )
     def _compute_description_fields(self):
         for rec in self:
             rnd = rec.vote_round_id
             cat = rec.award_category_id
-            rec.description = (rnd and rnd.description) or (cat and cat.description) or False
+            # description is the _rec_name — show round + voter + recipient + date
+            parts = []
+            if rnd and rnd.name:
+                parts.append(rnd.name)
+            if rec.voter_partner_id:
+                parts.append(rec.voter_partner_id.name)
+            if rec.recipient_partner_id:
+                parts.append('→ ' + rec.recipient_partner_id.name)
+            if rec.submitted_date:
+                parts.append(str(rec.submitted_date))
+            rec.description = ' '.join(parts) if parts else False
             rec.short_description = (rnd and rnd.short_description) or (cat and cat.short_description) or False
             rec.image = (rnd and rnd.image) or (cat and cat.image) or False
 
@@ -37,40 +49,46 @@ class APSAwardVote(models.Model):
         string='Award Category',
         required=False,
         ondelete='restrict',
+        help='The award category this vote belongs to (e.g. Academic Excellence, Citizenship). May be empty for adhoc rounds.',
     )
     award_sub_category_id = fields.Many2one(
         'aps.award.sub.category',
         string='Award Sub-Category',
         ondelete='restrict',
         domain="[('category_id', '=', award_category_id)]",
+        help='Optional sub-category for finer-grained award classification within the parent category.',
     )
     academic_week_id = fields.Many2one(
         'aps.academic.week',
         string='Academic Week',
         ondelete='restrict',
+        help='The academic week in which this vote was cast, if applicable.',
     )
     recipient_partner_id = fields.Many2one(
         'res.partner',
         string='Recipient',
         required=False,
         ondelete='restrict',
+        help='The person being voted for. Leave empty for open/undecided votes.',
     )
     voter_partner_id = fields.Many2one(
         'res.partner',
         string='Voter',
         required=True,
         ondelete='restrict',
+        help='The person who cast this vote. Each voter gets one vote record per round.',
     )
-    note = fields.Text(string='Note')
-    comment = fields.Text(string='Comment')
-    submitted_date = fields.Date(string='Date')
-    open_date = fields.Date(string='Open Date')
-    due_date = fields.Date(string='Due Date')
+    note = fields.Text(string='Note', help='Internal note visible to managers. Not shown to the voter.',)
+    comment = fields.Text(string='Comment', help='Optional public comment from the voter about their selection.',)
+    submitted_date = fields.Date(string='Date', help='Date the vote was submitted (set when state changes to Submitted).',)
+    open_date = fields.Date(string='Open Date', help='Date the vote was opened for the voter to act on.',)
+    due_date = fields.Date(string='Due Date', help='Deadline for submitting this vote. Past-due votes cannot be edited.',)
     vote_round_id = fields.Many2one(
         'aps.award.vote.round',
         string='Vote Round',
         required=False,
         ondelete='set null',
+        help='The voting round this vote belongs to. Links to round dates, status, and configuration.',
     )
     state = fields.Selection(
         selection=[
@@ -83,6 +101,7 @@ class APSAwardVote(models.Model):
         default='open',
         required=True,
         tracking=True,
+        help='Current lifecycle state: Pending (not yet ready), Open (awaiting voter action), Submitted (voter has cast), Closed (round ended or finalized).',
     )
 
     # ------------------------------------------------------------------
@@ -91,34 +110,44 @@ class APSAwardVote(models.Model):
 
     round_name = fields.Char(
         related='vote_round_id.name', string='Round', store=True, readonly=True,
+        help='Related round name for efficient list/pivot/group filtering.',
     )
     round_status = fields.Selection(
         related='vote_round_id.status', string='Round Status', store=True, readonly=True,
+        help='Related round status for efficient filtering and grouping.',
     )
     round_image = fields.Image(
         related='vote_round_id.image', string='Round Image', store=True, readonly=True,
+        help='Related round image for display in reports and dashboards.',
     )
     round_datetime_start = fields.Datetime(
         related='vote_round_id.datetime_start', string='Round Start', store=True, readonly=True,
+        help='Related round start datetime.',
     )
     round_datetime_end = fields.Datetime(
         related='vote_round_id.datetime_end', string='Round End', store=True, readonly=True,
+        help='Related round end datetime.',
     )
     category_name = fields.Char(
         related='award_category_id.name', string='Category', store=True, readonly=True,
+        help='Related category name for efficient list/pivot/group filtering.',
     )
     category_image = fields.Image(
         related='award_category_id.image', string='Category Image', store=True, readonly=True,
+        help='Related category image for display in reports and dashboards.',
     )
     recipient_name = fields.Char(
         related='recipient_partner_id.name', string='Recipient Name', store=True, readonly=True,
+        help='Related recipient name for efficient list/pivot/group filtering.',
     )
     voter_name = fields.Char(
         related='voter_partner_id.name', string='Voter Name', store=True, readonly=True,
+        help='Related voter name for efficient list/pivot/group filtering.',
     )
     voter_access_token = fields.Char(
         string='Voter Access Token',
         compute='_compute_voter_access_token',
+        help='The access token for the voter partner, used to generate voting links. Computed from the voter partner record.',
     )
 
     @api.depends('voter_partner_id')

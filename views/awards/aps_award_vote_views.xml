@@ -37,11 +37,11 @@
         <field name="name">aps.award.vote.form</field>
         <field name="model">aps.award.vote</field>
         <field name="arch" type="xml">
-            <form string="Award Vote">
+            <form string="Award Votes">
                 <header>
                     <field name="state" widget="statusbar"
                            statusbar_visible="pending,open,submitted,closed"
-                           clickable="1"/>
+                           options="{'clickable': True}"/>
                 </header>
                 <sheet>
                     <field name="image" widget="image" class="oe_avatar" readonly="1"/>
@@ -79,8 +79,8 @@
                         </group>
                     </group>
                     <group string="Comments">
-                        <field name="comment" nolabel="1" placeholder="Voter comment…"/>
-                        <field name="note" nolabel="1" placeholder="System note…"/>
+                        <field name="comment" nolabel="0" placeholder="Voter comment…"/>
+                        <field name="note" nolabel="0" placeholder="System note…"/>
                     </group>
                 </sheet>
             </form>

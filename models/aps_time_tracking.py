@@ -216,7 +216,7 @@ class APSTimeTracking(models.Model):
         if student:
             subject_records = student.enrollment_ids.filtered(
                 lambda e: e.state == 'enrolled'
-            ).mapped('home_class_id.subject_id')
+            ).mapped('class_id.subject_id')
             subjects = [{'id': s.id, 'name': s.name} for s in subject_records.sorted('name')]
         if not subjects:
             all_subjects = self.env['aps.subject'].search([], order='name asc')
