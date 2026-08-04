@@ -1184,6 +1184,18 @@ export class ProgressCharts {
         // Capture redline data for use inside Chart.js option callbacks
         const redStudentIndices = new Set(this.state.studentComparisonData.redStudentIndices || []);
 
+        // Calculate dynamic Y-axis max: 10% above the highest plotted value, capped at 100
+        let maxPlottedValue = 0;
+        for (const dataset of this.state.studentComparisonData.datasets) {
+            if (dataset.isPace) continue; // skip PACE/redline lines
+            for (const val of dataset.data) {
+                if (val !== null && val > maxPlottedValue) {
+                    maxPlottedValue = val;
+                }
+            }
+        }
+        const yMax = Math.min(100, Math.ceil(maxPlottedValue * 1.1));
+
         this.studentComparisonChartInstance = new Chart(canvas, {
             type: 'line',
             data: {
@@ -1245,7 +1257,7 @@ export class ProgressCharts {
                     },
                     y: {
                         beginAtZero: true,
-                        max: 100,
+                        max: yMax,
                         title: { display: true, text: 'Progress (%)' },
                         ticks: { callback: (value) => value + '%' }
                     }
