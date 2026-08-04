@@ -885,4 +885,98 @@ class APSResourceSubmissionDashboardData(models.Model):
         query += " ORDER BY 2"
         self.env.cr.execute(query, params)
         return [{'id': row[0], 'name': row[1]} for row in self.env.cr.fetchall()]
+
+    @api.model
+    def get_dashboard_classes_for_filters(self):
+        """Return current-year classes with enrolled students who have active submissions."""
+        current_year = self.env['aps.academic.year'].search([('is_current', '=', True)], limit=1)
+        if not current_year:
+            return []
+
+        submissions = self.search([('submission_active', '=', True)])
+        if not submissions:
+            return []
+
+        partner_ids = list({sub.task_id.student_id.id for sub in submissions if sub.task_id and sub.task_id.student_id})
+        if not partner_ids:
+            return []
+
+        students = self.env['aps.student'].search([('partner_id', 'in', partner_ids)])
+        if not students:
+            return []
+
+        enrollments = self.env['aps.student.class'].search([
+            ('student_id', 'in', students.ids),
+            ('state', '=', 'enrolled'),
+            ('home_class_id.academic_year_id', '=', current_year.id),
+        ])
+        classes = enrollments.mapped('home_class_id')
+        return [
+            {
+                'id': cls.id,
+                'name': cls.display_name or cls.name,
+            }
+            for cls in classes.sorted(lambda c: (c.name or '').lower())
+        ]
+
+    @api.model
+    def get_dashboard_students_for_filters(self, class_id=False):
+        """Return dashboard student options, optionally scoped to a class."""
+        current_year = self.env['aps.academic.year'].search([('is_current', '=', True)], limit=1)
+        submission_domain = [('submission_active', '=', True)]
+        class_partner_ids = set()
+
+        if class_id:
+            enrollment_domain = [
+                ('home_class_id', '=', int(class_id)),
+                ('state', '=', 'enrolled'),
+            ]
+            if current_year:
+                enrollment_domain.append(('home_class_id.academic_year_id', '=', current_year.id))
+
+            class_enrollments = self.env['aps.student.class'].search(enrollment_domain)
+            class_partner_ids = {
+                enrollment.student_id.partner_id.id
+                for enrollment in class_enrollments
+                if enrollment.student_id and enrollment.student_id.partner_id
+            }
+            if not class_partner_ids:
+                return []
+            submission_domain.append(('task_id.student_id', 'in', list(class_partner_ids)))
+
+        submissions = self.search(submission_domain)
+        if not submissions:
+            return []
+
+        submission_partner_ids = {
+            sub.task_id.student_id.id
+            for sub in submissions
+            if sub.task_id and sub.task_id.student_id
+        }
+        if not submission_partner_ids:
+            return []
+
+        if class_partner_ids:
+            filtered_partner_ids = submission_partner_ids.intersection(class_partner_ids)
+        else:
+            enrollment_domain = [
+                ('state', '=', 'enrolled'),
+                ('student_id.partner_id', 'in', list(submission_partner_ids)),
+            ]
+            if current_year:
+                enrollment_domain.append(('home_class_id.academic_year_id', '=', current_year.id))
+            enrollments = self.env['aps.student.class'].search(enrollment_domain)
+            filtered_partner_ids = {
+                enrollment.student_id.partner_id.id
+                for enrollment in enrollments
+                if enrollment.student_id and enrollment.student_id.partner_id
+            }
+
+        if not filtered_partner_ids:
+            return []
+
+        students = self.env['res.partner'].search([
+            ('id', 'in', list(filtered_partner_ids)),
+        ], order='name asc')
+        return students.read(['id', 'name'])
 # endregion - Get Data

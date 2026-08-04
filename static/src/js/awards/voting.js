@@ -24,11 +24,14 @@
         _ownStudentPartnerIds: null,  // Set of partner IDs for the voter's own students
         _ownStudentsOnly: false,      // active state of the optional toggle
         _allowNoVote: false,          // voter may submit with no recipient selected
+        _isEditMode: false,           // true when editing submitted votes
+        _editVoteIds: [],             // submitted vote IDs being edited
+        _pendingPrefillRecipients: [], // recipients to prefill after candidate load
 
         // ----------------------------------------------------------------
         // Modal open / close
         // ----------------------------------------------------------------
-        openModal(btn) {
+        openModal(btn, options = {}) {
             this._token        = btn.dataset.token;
             this._categoryId   = parseInt(btn.dataset.categoryId, 10) || 0;
             this._categoryName = btn.dataset.categoryName;
@@ -50,6 +53,9 @@
             this._ownStudentPartnerIds = null;
             this._ownStudentsOnly = false;
             this._allowNoVote = false;
+            this._isEditMode = options.editMode === true;
+            this._editVoteIds = Array.isArray(options.editVoteIds) ? options.editVoteIds : [];
+            this._pendingPrefillRecipients = Array.isArray(options.prefillRecipients) ? options.prefillRecipients : [];
             this._removeOwnStudentsToggle();
 
             // Collapse the filter panel each time the modal opens
@@ -101,6 +107,54 @@
 
         overlayClick(e) {
             if (e.target === document.getElementById('av-modal')) this.closeModal();
+        },
+
+        editVote(btn) {
+            const voteIds = (btn.dataset.voteIds || '')
+                .split(',')
+                .map(s => parseInt(s.trim(), 10))
+                .filter(Boolean);
+            const token = btn.dataset.token;
+            if (!token || !voteIds.length) {
+                this._showToast('Could not start edit. Missing vote details.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Loading…';
+
+            this._jsonRpc(`/awards/vote/${token}/votes/edit_payload`, { vote_ids: voteIds }).then(result => {
+                if (result.error) {
+                    this._showToast('Error: ' + result.error, 'error');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+                const payload = result.payload || {};
+                const syntheticBtn = {
+                    dataset: {
+                        token,
+                        voteId: String(payload.vote_id || btn.dataset.voteId || ''),
+                        categoryId: String(payload.category_id || btn.dataset.categoryId || '0'),
+                        categoryName: payload.category_name || btn.dataset.categoryName || 'Vote',
+                        shortDescription: payload.short_description || btn.dataset.shortDescription || '',
+                        description: payload.description || btn.dataset.description || '',
+                        categoryImg: payload.category_img || btn.dataset.categoryImg || '',
+                    },
+                };
+                this.openModal(syntheticBtn, {
+                    editMode: true,
+                    editVoteIds: voteIds,
+                    prefillRecipients: payload.recipients || [],
+                });
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }).catch(() => {
+                this._showToast('Could not load vote edit data. Please try again.', 'error');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            });
         },
 
         // ----------------------------------------------------------------
@@ -220,6 +274,7 @@
                 this._applyColumnVisibility();
                 this._populateSubjectCatFilter(result.subject_cats || []);
                 this._setupOwnStudentsToggle();
+                this._applyPrefillSelections();
                 this._updateSelectionUI();
                 this._applySearch();
                 this._renderTable();
@@ -227,6 +282,25 @@
                 document.getElementById('av-candidate-list').innerHTML =
                     '<tr><td colspan="7" class="av-no-results">Failed to load candidates. Please try again.</td></tr>';
             });
+        },
+
+        _applyPrefillSelections() {
+            if (!this._pendingPrefillRecipients || !this._pendingPrefillRecipients.length) {
+                return;
+            }
+            const candidateIds = new Set((this._candidates || []).map(c => c.id));
+            for (const rec of this._pendingPrefillRecipients) {
+                const pid = parseInt(rec.id, 10);
+                if (!pid || !candidateIds.has(pid)) continue;
+                this._selected.add(pid);
+                if (rec.comment) {
+                    this._comments.set(pid, rec.comment);
+                }
+                if (rec.sub_category_id) {
+                    this._subCategorySelections.set(pid, parseInt(rec.sub_category_id, 10));
+                }
+            }
+            this._pendingPrefillRecipients = [];
         },
 
         _populateLevelFilter(candidates) {
@@ -506,15 +580,23 @@
                 summary.textContent = summaryText;
                 summary.style.display = 'block';
                 summary.classList.toggle('av-summary-max', this._voteLimit > 0 && count >= this._voteLimit);
-                submitBtn.textContent = count === 1
-                    ? `Submit Vote for ${names}`
-                    : `Submit ${count} Votes`;
+                if (this._isEditMode) {
+                    submitBtn.textContent = count === 1
+                        ? `Update Vote for ${names}`
+                        : `Update ${count} Votes`;
+                } else {
+                    submitBtn.textContent = count === 1
+                        ? `Submit Vote for ${names}`
+                        : `Submit ${count} Votes`;
+                }
                 submitBtn.style.color = '';
                 submitBtn.style.background = '';
                 submitBtn.style.display = 'inline-block';
             } else if (this._allowNoVote) {
                 summary.style.display = 'none';
-                submitBtn.textContent = "Don't Submit A Vote";
+                submitBtn.textContent = this._isEditMode
+                    ? 'Update To No Vote'
+                    : "Don't Submit A Vote";
                 submitBtn.style.background = '#e67e22';
                 submitBtn.style.color = '#fff';
                 submitBtn.style.display = 'inline-block';
@@ -587,13 +669,14 @@
                 category_id: this._categoryId,
                 vote_id: this._voteId,
                 recipients,
+                edit_vote_ids: this._isEditMode ? this._editVoteIds : [],
             }).then(result => {
                 if (result.error) {
                     this._showToast('Error: ' + result.error, 'error');
                     btn.disabled = false;
                     this._updateSelectionUI();
                 } else {
-                    this._showToast('Vote submitted! 🎉', 'success');
+                    this._showToast(this._isEditMode ? 'Vote updated! 🎉' : 'Vote submitted! 🎉', 'success');
                     this.closeModal();
                     // Refresh page stats after short delay
                     setTimeout(() => window.location.reload(), 1800);

@@ -28,6 +28,8 @@ export class ApexDashboard extends Component {
         this.state = useState({
             period: parseInt(savedSettings.period) || 7,
             period_name: "",
+            selectedClass: savedSettings.selectedClass || false,
+            classes: [],
             selectedStudent: false,
             students: [],
             selectedSubjectCategory: false,
@@ -90,8 +92,12 @@ export class ApexDashboard extends Component {
             // Fetch view IDs first (needed for actions)
             await this.fetchViewIds();
 
+            // Resolve user role before filter population.
+            await this.fetchCurrentUserRole();
+            await this.fetchClasses();
+
             // Fetch students first, then subject categories (depend on selected student)
-            await this.fetchStudents();
+            await this.fetchStudents(true);
             await this.fetchSubjectCategories(true);
         });
 
@@ -548,31 +554,7 @@ export class ApexDashboard extends Component {
         this.state.kanban_view_id = data_kanban ? data_kanban.res_id : false;
     }
 
-    async fetchStudents() {
-        // Fetch unique students from submissions, ordered by name
-        const submissionStudents = await this.orm.searchRead("aps.resource.submission", [], ["student_id"]);
-        const studentIds = [...new Set(submissionStudents.map(s => s.student_id && s.student_id[0]).filter(id => id))];
-        this.state.students = await this.orm.searchRead("res.partner", [['id', 'in', studentIds]], ["id", "name"], {order: 'name'});
-
-        // If only one student, automatically select it
-        if (this.state.students.length === 1) {
-            this.state.selectedStudent = this.state.students[0].id;
-        } else {
-            // Set selectedStudent after students are loaded
-            const savedSettings = this.loadSettings();
-            if (savedSettings.selectedStudent) {
-                const selectedId = parseInt(savedSettings.selectedStudent, 10);
-                const studentExists = this.state.students.some(student => student.id === selectedId);
-                if (studentExists) {
-                    this.state.selectedStudent = selectedId;
-                } else {
-                    this.state.selectedStudent = false;
-                }
-            } else {
-                this.state.selectedStudent = false;
-            }
-        }
-
+    async fetchCurrentUserRole() {
         // Check if user is faculty
         try {
             const isTeacher = await this.orm.call(
@@ -586,6 +568,62 @@ export class ApexDashboard extends Component {
         } catch (error) {
             console.error("Could not check user group, defaulting to student view", error);
             this.state.isFaculty = false;
+        }
+    }
+
+    async fetchClasses() {
+        if (!this.state.isFaculty) {
+            this.state.classes = [];
+            this.state.selectedClass = false;
+            return;
+        }
+
+        this.state.classes = await this.orm.call(
+            "aps.resource.submission",
+            "get_dashboard_classes_for_filters",
+            [],
+        );
+
+        const savedSettings = this.loadSettings();
+        if (savedSettings.selectedClass) {
+            const selectedClassId = parseInt(savedSettings.selectedClass, 10);
+            const classExists = this.state.classes.some(cls => cls.id === selectedClassId);
+            this.state.selectedClass = classExists ? selectedClassId : false;
+        }
+    }
+
+    async fetchStudents(restoreSaved = false) {
+        const classId = (this.state.selectedClass && this.state.selectedClass !== 'false')
+            ? parseInt(this.state.selectedClass, 10)
+            : false;
+        const kwargs = classId ? { class_id: classId } : {};
+
+        this.state.students = await this.orm.call(
+            "aps.resource.submission",
+            "get_dashboard_students_for_filters",
+            [],
+            kwargs,
+        );
+
+        // If only one student, automatically select it
+        if (this.state.students.length === 1) {
+            this.state.selectedStudent = this.state.students[0].id;
+        } else if (restoreSaved) {
+            // Set selectedStudent after students are loaded
+            const savedSettings = this.loadSettings();
+            if (savedSettings.selectedStudent) {
+                const selectedId = parseInt(savedSettings.selectedStudent, 10);
+                const studentExists = this.state.students.some(student => student.id === selectedId);
+                this.state.selectedStudent = studentExists ? selectedId : false;
+            } else {
+                this.state.selectedStudent = false;
+            }
+        } else if (this.state.selectedStudent && this.state.selectedStudent !== 'false') {
+            const selectedId = parseInt(this.state.selectedStudent, 10);
+            const studentExists = this.state.students.some(student => student.id === selectedId);
+            if (!studentExists) {
+                this.state.selectedStudent = false;
+            }
         }
 
         // If this is a student user with no selection, auto-select themselves.
@@ -1095,6 +1133,7 @@ export class ApexDashboard extends Component {
         try {
             const settings = {
                 period: this.state.period,
+                selectedClass: this.state.selectedClass,
                 selectedStudent: this.state.selectedStudent,
                 selectedSubjectCategory: this.state.selectedSubjectCategory,
             };
@@ -1108,6 +1147,11 @@ export class ApexDashboard extends Component {
         this.saveSettings();
         await this.fetchSubjectCategories();
         await this.loadDashboardData();
+    }
+
+    async onChangeClass() {
+        await this.fetchStudents();
+        this.saveSettings();
     }
 
     async onChangeStudent() {

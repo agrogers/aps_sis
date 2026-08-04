@@ -699,10 +699,72 @@ class AwardsVotingController(http.Controller):
     # Submit vote
     # ------------------------------------------------------------------
 
+    @http.route('/awards/vote/<string:token>/votes/edit_payload', type='json', auth='public')
+    def voting_edit_payload(self, token, vote_ids=None, **kwargs):
+        if not vote_ids or not isinstance(vote_ids, list):
+            return {'error': 'No vote_ids provided'}
+
+        voter_partner = self._get_partner_by_token(token)
+        if not voter_partner:
+            return {'error': 'Invalid token'}
+
+        Vote = request.env['aps.award.vote'].sudo()
+        raw_ids = [int(vid) for vid in vote_ids if str(vid).strip()]
+        if not raw_ids:
+            return {'error': 'No valid vote IDs provided'}
+
+        votes = Vote.browse(raw_ids).exists()
+        if len(votes) != len(set(raw_ids)):
+            return {'error': 'One or more votes were not found'}
+        if any(v.voter_partner_id.id != voter_partner.id for v in votes):
+            return {'error': 'Not authorised'}
+        if any(v.state != 'submitted' for v in votes):
+            return {'error': 'Only submitted votes can be edited'}
+
+        today = date.today()
+        if any((not v.due_date) or (v.due_date < today) for v in votes):
+            return {'error': 'These votes can no longer be edited'}
+
+        sorted_votes = votes.sorted(key=lambda v: (v.due_date or date.max, v.id))
+        rep = sorted_votes[0]
+        rnd = rep.vote_round_id
+        cat = rep.award_category_id
+
+        category_img = ''
+        if rep.image:
+            category_img = f'/awards/vote/{token}/model_image/vote/{rep.id}'
+        elif rnd and rnd.image:
+            category_img = f'/awards/vote/{token}/model_image/round/{rnd.id}'
+        elif cat and cat.image:
+            category_img = f'/awards/vote/{token}/model_image/category/{cat.id}'
+
+        recipients = []
+        for vote in sorted_votes:
+            if not vote.recipient_partner_id:
+                continue
+            recipients.append({
+                'vote_id': vote.id,
+                'id': vote.recipient_partner_id.id,
+                'comment': vote.comment or '',
+                'sub_category_id': vote.award_sub_category_id.id if vote.award_sub_category_id else False,
+            })
+
+        payload = {
+            'vote_id': rep.id,
+            'category_id': cat.id if cat else 0,
+            'category_name': (rnd.name if rnd else '') or (cat.name if cat else '') or 'Vote',
+            'short_description': (rnd.short_description if rnd else '') or (rep.short_description or ''),
+            'description': rep.description or '',
+            'category_img': category_img,
+            'recipients': recipients,
+        }
+        return {'success': True, 'payload': payload}
+
     @http.route('/awards/vote/<string:token>/submit', type='json', auth='public')
-    def voting_submit(self, token, category_id, recipients, vote_id=None, **kwargs):
+    def voting_submit(self, token, category_id, recipients, vote_id=None, edit_vote_ids=None, **kwargs):
         """recipients: list of {id: int, comment: str}
         If vote_id is provided, that specific open ballot is used for the first recipient.
+        If edit_vote_ids is provided, those submitted votes are rewritten and re-submitted.
         """
         voter_partner = self._get_partner_by_token(token)
         if not voter_partner:
@@ -710,15 +772,42 @@ class AwardsVotingController(http.Controller):
 
         Vote = request.env['aps.award.vote'].sudo()
 
+        edit_mode = bool(edit_vote_ids)
+        edit_pool = []
+        edit_anchor = False
+        if edit_mode:
+            if not isinstance(edit_vote_ids, list):
+                return {'error': 'Invalid edit_vote_ids payload'}
+            requested_ids = [int(vid) for vid in edit_vote_ids if str(vid).strip()]
+            if not requested_ids:
+                return {'error': 'No valid edit vote IDs provided'}
+            edit_votes = Vote.browse(requested_ids).exists()
+            if len(edit_votes) != len(set(requested_ids)):
+                return {'error': 'One or more edit votes were not found'}
+            if any(v.voter_partner_id.id != voter_partner.id for v in edit_votes):
+                return {'error': 'Not authorised'}
+            if any(v.state != 'submitted' for v in edit_votes):
+                return {'error': 'Only submitted votes can be edited'}
+            today = date.today()
+            if any((not v.due_date) or (v.due_date < today) for v in edit_votes):
+                return {'error': 'These votes can no longer be edited'}
+            edit_pool = list(edit_votes.sorted(key=lambda v: (v.due_date or date.max, v.id)))
+            edit_anchor = edit_pool[0] if edit_pool else False
+
         # Derive category: try from category_id, fall back to the vote record itself
         if not category_id and vote_id:
             pinned_for_cat = Vote.browse(int(vote_id))
             if pinned_for_cat.exists() and pinned_for_cat.award_category_id:
                 category_id = pinned_for_cat.award_category_id.id
+        if not category_id and edit_anchor and edit_anchor.award_category_id:
+            category_id = edit_anchor.award_category_id.id
         category = request.env['aps.award.category'].sudo().browse(category_id or [])
 
-        # If a specific vote_id is provided, pin that record as the first in the pool
-        if vote_id:
+        # If edit IDs are provided, rewrite those submitted records first.
+        if edit_mode:
+            open_pool = list(edit_pool)
+        # If a specific vote_id is provided, pin that record as the first in the pool.
+        elif vote_id:
             pinned = Vote.browse(int(vote_id))
             if pinned.exists() and pinned.voter_partner_id.id == voter_partner.id and pinned.state == 'open':
                 open_pool = [pinned]
@@ -766,8 +855,19 @@ class AwardsVotingController(http.Controller):
                 vals['voter_partner_id'] = voter_partner.id
                 vote = Vote.create(vals)
             submitted.append(vote.id)
+
+            # In edit mode, an abstain keeps one submitted record and reopens the rest.
+            if edit_mode and open_pool:
+                open_pool.write({
+                    'state': 'open',
+                    'recipient_partner_id': False,
+                    'award_sub_category_id': False,
+                    'comment': False,
+                    'submitted_date': False,
+                })
             return {'success': True, 'submitted': submitted}
 
+        normalized_recipients = []
         for rec in recipients:
             pid = rec.get('id')
             comment = rec.get('comment', '')
@@ -777,12 +877,27 @@ class AwardsVotingController(http.Controller):
             partner = request.env['res.partner'].sudo().browse(int(pid))
             if not partner.exists():
                 continue
+            normalized_recipients.append({
+                'partner': partner,
+                'comment': comment,
+                'sub_category_id': int(sub_category_id) if sub_category_id else False,
+            })
+
+        if not normalized_recipients:
+            return {'error': 'No valid recipients provided'}
+
+        anchor_vote = edit_anchor or (open_pool[0] if open_pool else False)
+
+        for rec in normalized_recipients:
+            partner = rec['partner']
+            comment = rec['comment']
+            sub_category_id = rec['sub_category_id']
             vals = {
                 'recipient_partner_id': partner.id,
                 'comment': comment,
                 'state': 'submitted',
                 'submitted_date': date.today().isoformat(),
-                'award_sub_category_id': int(sub_category_id) if sub_category_id else False,
+                'award_sub_category_id': sub_category_id,
                 'award_category_id': category.id if category.exists() else False,
             }
             if round_id:
@@ -797,8 +912,21 @@ class AwardsVotingController(http.Controller):
             else:
                 # No open record to reuse — create a new one
                 vals['voter_partner_id'] = voter_partner.id
+                if edit_mode and anchor_vote:
+                    vals['open_date'] = anchor_vote.open_date
+                    vals['due_date'] = anchor_vote.due_date
                 vote = Vote.create(vals)
             submitted.append(vote.id)
+
+        # In edit mode, reduced recipient counts reopen any surplus old submitted rows.
+        if edit_mode and open_pool:
+            open_pool.write({
+                'state': 'open',
+                'recipient_partner_id': False,
+                'award_sub_category_id': False,
+                'comment': False,
+                'submitted_date': False,
+            })
 
         return {'success': True, 'submitted': submitted}
 

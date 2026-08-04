@@ -271,6 +271,20 @@
                                 </t>
                             </div>
                             <t t-if="grp['state'] == 'submitted'">
+                                <t t-if="grp['has_due']">
+                                    <button class="av-history-delete-btn"
+                                            t-att-data-vote-ids="','.join(str(gv.id) for gv in grp['votes'])"
+                                            t-att-data-token="token"
+                                            t-att-data-vote-id="v.id"
+                                            t-att-data-category-id="(cat and cat.id) or 0"
+                                            t-att-data-category-name="(rnd and rnd.name) or (cat and cat.name) or ''"
+                                            t-att-data-short-description="(rnd and rnd.short_description) or (v.short_description) or ''"
+                                            t-att-data-description="(v.description) or ''"
+                                            t-attf-data-category-img="#{'/awards/vote/' + token + '/model_image/vote/' + str(v.id) if v.image else ''}"
+                                            onclick="AwardsVoting.editVote(this)">
+                                        &#9998; Edit
+                                    </button>
+                                </t>
                                 <button class="av-history-delete-btn"
                                         t-att-data-vote-ids="','.join(str(gv.id) for gv in grp['votes'])"
                                         t-att-data-token="token"
