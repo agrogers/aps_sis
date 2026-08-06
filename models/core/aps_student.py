@@ -22,6 +22,7 @@ class APSStudent(models.Model):
         string='Level',
         ondelete='set null',
         tracking=True,
+        help='Current level of the student. This is automatically set from the level of the home class, if any.'
     )
     home_class_id = fields.Many2one(
         'aps.class',
@@ -45,7 +46,8 @@ class APSStudent(models.Model):
     #     return self._search(args, limit=limit, access_rights_uid=name_get_uid)
 
     def _recompute_home_class(self):
-        """Find the first enrolled class whose subject category has a home-class tag."""
+        """Find the first enrolled class whose subject category has a home-class tag,
+        and sync the student's level_id from it."""
         home_class_tag_names = {'Home Class', 'Pastoral Care Subject'}
         for rec in self:
             home_class = self.env['aps.class']
@@ -56,6 +58,10 @@ class APSStudent(models.Model):
                     break
             if rec.home_class_id != home_class:
                 rec.home_class_id = home_class
+            # Sync level from the home class's subject level
+            if home_class and home_class.subject_id.level_id:
+                if rec.level_id != home_class.subject_id.level_id:
+                    rec.level_id = home_class.subject_id.level_id
 
     active = fields.Boolean(default=True, string='Active')
     avatar_id = fields.Many2one('aps.avatar', string='Profile Avatar', ondelete='set null')

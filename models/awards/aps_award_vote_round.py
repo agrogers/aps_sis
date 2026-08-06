@@ -1,4 +1,6 @@
 from datetime import timedelta
+import re
+
 from odoo import api, fields, models
 
 
@@ -330,16 +332,23 @@ class APSAwardVoteRound(models.Model):
         candidates = self.search([
             ('recurring_days', '>', 0),
             ('child_reschedule_id', '=', False),
-            ('datetime_start', '!=', False),
+            ('datetime_end', '!=', False),
         ])
         to_reschedule = candidates.filtered(
-            lambda r: r.datetime_start and (r.datetime_start + timedelta(days=r.recurring_days) <= now)
+            lambda r: r.datetime_end and (r.datetime_end <= now)
         )
         for rnd in to_reschedule:
             shift = timedelta(days=rnd.recurring_days)
+            new_start = rnd.datetime_start + shift if rnd.datetime_start else False
+            new_end = rnd.datetime_end + shift if rnd.datetime_end else False
+            # Strip any existing date suffix like " (6/Aug/26)" from the name
+            base_name = re.sub(r'\s*\(\d{1,2}/\w{3}/\d{2}\)$', '', rnd.name).strip()
+            date_suffix = new_end.strftime('%-d/%b/%y') if new_end else ''
             child = rnd.copy({
-                'datetime_start': rnd.datetime_start + shift,
-                'datetime_end': rnd.datetime_end + shift if rnd.datetime_end else False,
+                'name': f"{base_name} ({date_suffix})",
+                'datetime_start': new_start,
+                'datetime_end': new_end,
+                'status': 'open',
             })
             rnd.child_reschedule_id = child.id
         return True

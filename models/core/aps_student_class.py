@@ -36,6 +36,7 @@ class APSStudentClass(models.Model):
     active = fields.Boolean(default=True, string='Active')
     state = fields.Selection(
         [
+            ('waiting', 'Waiting'),
             ('enrolled', 'Enrolled'),
             ('withdrawn', 'Withdrawn'),
             ('finished', 'Finished'),
@@ -86,15 +87,63 @@ class APSStudentClass(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        today = fields.Date.today()
+        for vals in vals_list:
+            if vals.get('state') not in ('finished', 'withdrawn'):
+                start = vals.get('start_date')
+                end = vals.get('end_date')
+                if start and end:
+                    if today < start:
+                        vals['state'] = 'waiting'
+                    elif today < end:
+                        vals['state'] = 'enrolled'
         records = super().create(vals_list)
         records.mapped('student_id')._recompute_home_class()
         return records
 
     def write(self, vals):
+        # If state is being set to withdrawn (e.g. via the clickable statusbar),
+        # set end_date to today (overriding any future date already on the record).
+        if vals.get('state') == 'withdrawn':
+            vals['end_date'] = fields.Date.today()
         result = super().write(vals)
         if any(f in vals for f in ('class_id', 'state', 'student_id')):
             self.mapped('student_id')._recompute_home_class()
+        # If end_date is set to a future date on a withdrawn record, re-enrol
+        if 'end_date' in vals:
+            today = fields.Date.today()
+            for rec in self:
+                if rec.state == 'withdrawn' and rec.end_date and rec.end_date > today:
+                    rec.state = 'enrolled'
         return result
+
+    @api.model
+    def cron_reconcile_enrollment_states(self):
+        """Cron method: auto-transition states based on today's date.
+
+        - start_date in the future  -> waiting
+        - today within [start, end] -> enrolled
+        - Otherwise (end passed, no manual status) -> finished
+        Withdrawn and manually finished records are left untouched.
+        """
+        today = fields.Date.today()
+        auto_states = self.search([
+            ('state', 'in', ('waiting', 'enrolled', 'finished')),
+        ])
+        for rec in auto_states:
+            if rec.state == 'withdrawn':
+                continue
+            if not rec.start_date or not rec.end_date:
+                continue
+            if today < rec.start_date:
+                new_state = 'waiting'
+            elif rec.start_date <= today <= rec.end_date:
+                new_state = 'enrolled'
+            else:
+                new_state = 'finished'
+            if rec.state != new_state:
+                rec.state = new_state
+        return True
 
     def unlink(self):
         students = self.mapped('student_id')
