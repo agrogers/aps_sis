@@ -98,4 +98,15 @@
         <field name="nextcall" eval="(datetime.now() + relativedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 
+    <record id="cron_reconcile_enrollment_states" model="ir.cron">
+        <field name="name">Reconcile Student Class Enrollment States</field>
+        <field name="model_id" ref="aps_sis.model_aps_student_class"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_reconcile_enrollment_states()</field>
+        <field name="active">True</field>
+        <field name="interval_number">60</field>
+        <field name="interval_type">minutes</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
 </odoo>

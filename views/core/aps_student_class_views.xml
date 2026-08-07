@@ -12,6 +12,7 @@
                 <field name="start_date" optional="show"/>
                 <field name="end_date" optional="show"/>
                 <field name="state" widget="badge"
+                    decoration-info="state == 'waiting'"
                     decoration-success="state == 'enrolled'"
                     decoration-warning="state == 'withdrawn'"
                     decoration-muted="state == 'finished'"/>
@@ -29,9 +30,11 @@
                     <button name="action_withdraw" type="object" string="Withdraw Student"
                         invisible="state != 'enrolled'"
                         class="btn-info"
-                        confirm="Set end date to today and mark this enrollment as Withdrawn?"/>
+                        confirm="Set end date to today and mark this enrollment as Withdrawn?"
+                        />
                     <field name="state" widget="statusbar"
-                        statusbar_visible="enrolled,withdrawn,finished"/>
+                        statusbar_visible="waiting,enrolled,withdrawn,finished"
+                        options="{'clickable': True}" />
                 </header>
                 <div class="alert alert-info" role="alert">
                     <strong>Student Enrollments</strong> record which <strong>Classes</strong> a <strong>Student</strong> is enrolled in,
