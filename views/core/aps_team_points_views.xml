@@ -51,12 +51,7 @@
                     </group>
                     <notebook>
                         <page string="Associated Records">
-                            <field name="associated_record_ids" nolabel="1">
-                                <tree editable="bottom">
-                                    <field name="model"/>
-                                    <field name="res_id"/>
-                                </tree>
-                            </field>
+                            <field name="associated_record_ids" nolabel="1"/>
                         </page>
                     </notebook>
                 </sheet>

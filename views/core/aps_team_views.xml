@@ -43,20 +43,10 @@
                     </group>
                     <notebook>
                         <page string="Student Captains">
-                            <field name="captain_student_ids" nolabel="1">
-                                <tree>
-                                    <field name="name"/>
-                                    <field name="email"/>
-                                </tree>
-                            </field>
+                            <field name="captain_student_ids" nolabel="1" widget="many2many_tags"/>
                         </page>
                         <page string="Staff Captains">
-                            <field name="captain_staff_ids" nolabel="1">
-                                <tree>
-                                    <field name="name"/>
-                                    <field name="email"/>
-                                </tree>
-                            </field>
+                            <field name="captain_staff_ids" nolabel="1" widget="many2many_tags"/>
                         </page>
                     </notebook>
                 </sheet>

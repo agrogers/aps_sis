@@ -15,7 +15,7 @@ class APSTeam(models.Model):
         column1='team_id',
         column2='partner_id',
         string='Student Captains',
-        domain="[('aps_student_ids', '!=', False)]",
+        domain="[('is_student', '=', True)]",
     )
     captain_staff_ids = fields.Many2many(
         'res.partner',
@@ -23,7 +23,7 @@ class APSTeam(models.Model):
         column1='team_id',
         column2='partner_id',
         string='Staff Captains',
-        domain="[('aps_teacher_ids', '!=', False)]",
+        domain="[('is_teacher', '=', True)]",
     )
     active = fields.Boolean(string='Active', default=True)
 
