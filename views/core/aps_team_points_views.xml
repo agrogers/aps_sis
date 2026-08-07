@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_team_points_view_list" model="ir.ui.view">
+        <field name="name">aps.team.points.list</field>
+        <field name="model">aps.team.points</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="team_id"/>
+                <field name="event_id" optional="show"/>
+                <field name="partner_id" optional="show"/>
+                <field name="points"/>
+                <field name="weighted_points" optional="show"/>
+                <field name="date"/>
+                <field name="comment" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_team_points_view_form" model="ir.ui.view">
+        <field name="name">aps.team.points.form</field>
+        <field name="model">aps.team.points</field>
+        <field name="arch" type="xml">
+            <form string="Team Points">
+                <div class="alert alert-info" role="alert">
+                    <strong>Team Points</strong> track scores earned by students and teams.
+                    Use the <em>Associated Records</em> tab to link contributing records — this prevents
+                    the same record from being scored twice.
+                </div>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="team_id" placeholder="Team" options="{'no_create': True}"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="event_id" options="{'no_create': True}"/>
+                            <field name="partner_id" options="{'no_create': True}"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="points"/>
+                            <field name="weighted_points"/>
+                        </group>
+                    </group>
+                    <group string="Comment">
+                        <field name="comment" nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Associated Records">
+                            <field name="associated_record_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="model"/>
+                                    <field name="res_id"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_team_points_view_search" model="ir.ui.view">
+        <field name="name">aps.team.points.search</field>
+        <field name="model">aps.team.points</field>
+        <field name="arch" type="xml">
+            <search string="Team Points">
+                <field name="team_id"/>
+                <field name="event_id"/>
+                <field name="partner_id"/>
+                <field name="date"/>
+                <group expand="0" string="Group By">
+                    <filter string="Team" name="group_team" context="{'group_by': 'team_id'}"/>
+                    <filter string="Event" name="group_event" context="{'group_by': 'event_id'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_team_points_action" model="ir.actions.act_window">
+        <field name="name">Team Points</field>
+        <field name="res_model">aps.team.points</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="aps_team_points_view_search"/>
+        <field name="path">apex-team-points</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Award your first team points to start tracking scores.
+            </p>
+        </field>
+    </record>
+
+</odoo>

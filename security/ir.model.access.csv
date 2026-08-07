@@ -130,3 +130,16 @@ access_aps_student_matrix_manager,aps.student.matrix.manager,model_aps_student_m
 access_aps_filter_preset_teacher,aps.filter.preset.teacher,model_aps_filter_preset,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_filter_preset_student,aps.filter.preset.student,model_aps_filter_preset,aps_sis.group_aps_student,1,1,1,1
 access_aps_filter_preset_user,aps.filter.preset.user,model_aps_filter_preset,base.group_user,1,1,1,1
+
+access_aps_team_teacher,aps.team.teacher,model_aps_team,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_team_student,aps.team.student,model_aps_team,aps_sis.group_aps_student,1,0,0,0
+access_aps_team_user,aps.team.user,model_aps_team,base.group_user,1,0,0,0
+access_aps_event_teacher,aps.event.teacher,model_aps_event,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_event_student,aps.event.student,model_aps_event,aps_sis.group_aps_student,1,0,0,0
+access_aps_event_user,aps.event.user,model_aps_event,base.group_user,1,0,0,0
+access_aps_team_points_teacher,aps.team.points.teacher,model_aps_team_points,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_team_points_student,aps.team.points.student,model_aps_team_points,aps_sis.group_aps_student,1,0,0,0
+access_aps_team_points_user,aps.team.points.user,model_aps_team_points,base.group_user,1,0,0,0
+access_aps_team_points_record_teacher,aps.team.points.record.teacher,model_aps_team_points_record,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_team_points_record_student,aps.team.points.record.student,model_aps_team_points_record,aps_sis.group_aps_student,1,0,0,0
+access_aps_team_points_record_user,aps.team.points.record.user,model_aps_team_points_record,base.group_user,1,0,0,0

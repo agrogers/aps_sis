@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="aps_event_view_list" model="ir.ui.view">
+        <field name="name">aps.event.list</field>
+        <field name="model">aps.event</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="color" widget="color"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="aps_event_view_form" model="ir.ui.view">
+        <field name="name">aps.event.form</field>
+        <field name="model">aps.event</field>
+        <field name="arch" type="xml">
+            <form string="Event">
+                <div class="alert alert-info" role="alert">
+                    <strong>Events</strong> are activities or competitions that teams can participate in.
+                    Use events to group and report on team points earned during specific activities.
+                </div>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Event Name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="color" widget="color"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="icon" widget="image"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="aps_event_view_search" model="ir.ui.view">
+        <field name="name">aps.event.search</field>
+        <field name="model">aps.event</field>
+        <field name="arch" type="xml">
+            <search string="Events">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="aps_event_action" model="ir.actions.act_window">
+        <field name="name">Events</field>
+        <field name="res_model">aps.event</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="aps_event_view_search"/>
+        <field name="path">apex-events</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first event to group team scoring activities.
+            </p>
+        </field>
+    </record>
+
+</odoo>
