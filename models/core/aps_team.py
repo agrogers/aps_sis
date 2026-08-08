@@ -7,8 +7,15 @@ class APSTeam(models.Model):
     _order = 'name'
 
     name = fields.Char(string='Name', required=True)
-    color = fields.Integer(string='Color')
+    color = fields.Char(string='Color', default='#6c757d')
     icon = fields.Image(string='Icon', max_width=128, max_height=128)
+    tag_ids = fields.Many2many(
+        'res.partner.category',
+        relation='aps_team_partner_category_rel',
+        column1='team_id',
+        column2='category_id',
+        string='Tags',
+    )
     captain_student_ids = fields.Many2many(
         'res.partner',
         relation='aps_team_captain_student_rel',

@@ -40,6 +40,17 @@ class ResPartnerStudent(models.Model):
             order='sequence',
         )
 
+    def _get_aps_team_for_partner(self):
+        """Find the first team whose tags intersect with this partner's tags."""
+        self.ensure_one()
+        if not self.category_id:
+            return self.env['aps.team']
+        return self.env['aps.team'].search(
+            [('tag_ids', 'in', self.category_id.ids)],
+            limit=1,
+            order='name, id',
+        )
+
     def write(self, vals):
         result = super().write(vals)
         if self.env.context.get('skip_student_sync'):
@@ -50,29 +61,41 @@ class ResPartnerStudent(models.Model):
                 existing = Student.search([('partner_id', '=', partner.id)], limit=1)
                 if partner.is_student:
                     level = partner._get_aps_level_for_partner()
+                    team = partner._get_aps_team_for_partner()
                     if existing:
                         write_vals = {}
                         if not existing.active:
                             write_vals['active'] = True
                         if level and existing.level_id != level:
                             write_vals['level_id'] = level.id
+                        if team and existing.team_id != team:
+                            write_vals['team_id'] = team.id
                         if write_vals:
                             existing.with_context(skip_student_sync=True).write(write_vals)
                     else:
                         new_vals = {'partner_id': partner.id}
                         if level:
                             new_vals['level_id'] = level.id
+                        if team:
+                            new_vals['team_id'] = team.id
                         Student.with_context(skip_student_sync=True).create(new_vals)
                 else:
                     if existing and existing.active:
                         existing.with_context(skip_student_sync=True).active = False
         elif 'category_id' in vals:
-            # Tags changed — re-sync level for active student records
+            # Tags changed — always derive the student's team from the current
+            # partner tags. The student team is authoritative only when the
+            # partner tags are not being changed.
             for partner in self:
                 existing = Student.search([('partner_id', '=', partner.id)], limit=1)
                 if existing and existing.active:
                     level = partner._get_aps_level_for_partner()
-                    existing.with_context(skip_student_sync=True).level_id = level.id if level else False
+                    team = partner._get_aps_team_for_partner()
+                    write_vals = {
+                        'level_id': level.id if level else False,
+                        'team_id': team.id if team else False,
+                    }
+                    existing.with_context(skip_student_sync=True).write(write_vals)
         return result
 
     @api.model_create_multi
@@ -85,8 +108,11 @@ class ResPartnerStudent(models.Model):
                     existing = Student.search([('partner_id', '=', record.id)], limit=1)
                     if not existing:
                         level = record._get_aps_level_for_partner()
+                        team = record._get_aps_team_for_partner()
                         new_vals = {'partner_id': record.id}
                         if level:
                             new_vals['level_id'] = level.id
+                        if team:
+                            new_vals['team_id'] = team.id
                         Student.with_context(skip_student_sync=True).create(new_vals)
         return records

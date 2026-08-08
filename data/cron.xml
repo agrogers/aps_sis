@@ -109,4 +109,26 @@
         <field name="nextcall" eval="(datetime.now() + relativedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 
+    <record id="cron_process_award_vote_team_points" model="ir.cron">
+        <field name="name">Process Team Points Allocations</field>
+        <field name="model_id" ref="aps_sis.model_aps_team_points"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_process_points()</field>
+        <field name="active">True</field>
+        <field name="interval_number">10</field>
+        <field name="interval_type">minutes</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
+    <record id="cron_sync_student_team_tags" model="ir.cron">
+        <field name="name">Synchronize Student Team Tags</field>
+        <field name="model_id" ref="aps_sis.model_aps_student"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_sync_team_tags()</field>
+        <field name="active">True</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(days=1)).replace(hour=2, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
 </odoo>
