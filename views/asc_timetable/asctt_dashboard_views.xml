@@ -265,12 +265,4 @@ action = {
         </field>
     </record>
 
-    <!-- Menu item: under Settings > School, below School Overview -->
-    <menuitem id="menu_asctt_root"
-              name="aSc Timetable"
-              parent="menu_apex_school_heading"
-              action="asctt_dashboard_open_action"
-              sequence="2"
-              groups="aps_sis.group_aps_teacher"/>
-
 </odoo>

@@ -1,5 +1,4 @@
 from odoo import fields, models, api
-from odoo.osv import expression
 
 
 class APSStudent(models.Model):
@@ -31,19 +30,6 @@ class APSStudent(models.Model):
         tracking=True,
         help='Automatically set from enrollments whose subject category is tagged as a Home Class.',
     )
-    team_id = fields.Many2one(
-        'aps.team',
-        string='Team',
-        ondelete='set null',
-        tracking=True,
-        help='Team assigned to this student for team-based scoring and competitions.',
-    )
-    team_color = fields.Char(
-        related='team_id.color',
-        string='Team Color',
-        readonly=True,
-    )
-
     # @api.model
     # def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
     #     """Search by partner name or roll number so that the Many2one dropdown filters correctly."""
@@ -110,59 +96,8 @@ class APSStudent(models.Model):
         ('partner_uniq', 'unique(partner_id)', 'A student record already exists for this partner!'),
     ]
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        for rec in records:
-            if rec.partner_id and not rec.partner_id.is_student:
-                rec.partner_id.with_context(skip_student_sync=True).is_student = True
-            if rec.partner_id and 'team_id' in rec._fields and rec.team_id:
-                rec._sync_partner_team_tags()
-        return records
-
-    def _sync_partner_team_tags(self):
-        """Make the student's team tags on the contact match ``team_id``.
-
-        Team tags are additive. Existing contact tags are always preserved;
-        selecting a team only adds that team's tags to the contact.
-        """
-        for student in self:
-            if not student.partner_id:
-                continue
-            current_tag_ids = set(student.partner_id.category_id.ids)
-            selected_tag_ids = set(student.team_id.tag_ids.ids) if student.team_id else set()
-            new_tag_ids = current_tag_ids | selected_tag_ids
-            if new_tag_ids != current_tag_ids:
-                student.partner_id.with_context(
-                    skip_student_sync=True,
-                    skip_student_team_tag_sync=True,
-                ).write({'category_id': [(6, 0, list(new_tag_ids))]})
-
-    @api.model
-    def cron_sync_team_tags(self):
-        """Ensure student teams and their contact tags are synchronized.
-
-        Existing student teams remain authoritative. A missing team is filled
-        from the first team matching the partner's tags, while team tags are
-        then added to the contact without removing any existing tags.
-        """
-        students = self.sudo().with_context(active_test=False).search([
-            ('partner_id', '!=', False),
-        ])
-        for student in students:
-            if not student.team_id and hasattr(student.partner_id, '_get_aps_team_for_partner'):
-                team = student.partner_id._get_aps_team_for_partner()
-                if team:
-                    student.with_context(skip_student_team_tag_sync=True).write({
-                        'team_id': team.id,
-                    })
-            student._sync_partner_team_tags()
-        return True
-
     def write(self, vals):
         result = super().write(vals)
-        if 'team_id' in vals and not self.env.context.get('skip_student_team_tag_sync'):
-            self._sync_partner_team_tags()
         if 'active' in vals or 'partner_id' in vals:
             for rec in self.with_context(active_test=False):
                 if rec.partner_id:

@@ -23,6 +23,8 @@ export class StudentMatrix extends Component {
             selectedYearId: null,
             classes: [],
             selectedClassIds: [],
+            selectedStudentId: null,
+            selectedSubjectId: null,
             students: [],
             subjects: [],
             cells: {},
@@ -79,6 +81,8 @@ export class StudentMatrix extends Component {
         this._saveYearSelection();
         // Clear class selection and reload classes for the new year
         this.state.selectedClassIds = [];
+        this.state.selectedStudentId = null;
+        this.state.selectedSubjectId = null;
         this.state.students = [];
         this.state.subjects = [];
         this.state.cells = {};
@@ -140,6 +144,8 @@ export class StudentMatrix extends Component {
 
     onClearAll() {
         this.state.selectedClassIds = [];
+        this.state.selectedStudentId = null;
+        this.state.selectedSubjectId = null;
         this.state.students = [];
         this.state.subjects = [];
         this.state.cells = {};
@@ -151,6 +157,8 @@ export class StudentMatrix extends Component {
 
     async _loadMatrix() {
         if (this.state.selectedClassIds.length === 0) {
+            this.state.selectedStudentId = null;
+            this.state.selectedSubjectId = null;
             this.state.students = [];
             this.state.subjects = [];
             this.state.cells = {};
@@ -166,6 +174,8 @@ export class StudentMatrix extends Component {
                 [this.state.selectedClassIds, this.state.selectedYearId]
             );
             this.state.students = data.students || [];
+            this.state.selectedStudentId = null;
+            this.state.selectedSubjectId = null;
             this.state.subjects = data.subjects || [];
             this.state.cells = data.cells || {};
             this.state.subjectColors = data.subject_colors || {};
@@ -222,8 +232,60 @@ export class StudentMatrix extends Component {
         return this.state.selectedClassIds.includes(classId);
     }
 
+    get visibleStudents() {
+        let students = this.state.students;
+        if (this.state.selectedSubjectId) {
+            students = students.filter((student) =>
+                this.hasCell(student.id, this.state.selectedSubjectId)
+            );
+        }
+        if (this.state.selectedStudentId) {
+            students = students.filter(
+                (student) => student.id === this.state.selectedStudentId
+            );
+        }
+        return students;
+    }
+
+    get visibleSubjects() {
+        const studentsForSubjects = this.state.selectedStudentId
+            ? this.state.students.filter(
+                  (student) => student.id === this.state.selectedStudentId
+              )
+            : this.state.students;
+        const visibleStudentIds = new Set(studentsForSubjects.map((student) => student.id));
+        return this.state.subjects.filter((subject) =>
+            [...visibleStudentIds].some((studentId) =>
+                this.hasCell(studentId, subject.id)
+            )
+        ).filter((subject) =>
+            !this.state.selectedSubjectId || subject.id === this.state.selectedSubjectId
+        );
+    }
+
+    onStudentClick(studentId) {
+        this.state.selectedSubjectId = null;
+        this.state.selectedStudentId =
+            this.state.selectedStudentId === studentId ? null : studentId;
+    }
+
+    onShowAllStudents() {
+        this.state.selectedStudentId = null;
+        this.state.selectedSubjectId = null;
+    }
+
+    onSubjectClick(subjectId) {
+        this.state.selectedStudentId = null;
+        this.state.selectedSubjectId =
+            this.state.selectedSubjectId === subjectId ? null : subjectId;
+    }
+
+    onShowAllSubjects() {
+        this.state.selectedSubjectId = null;
+    }
+
     get grandTotal() {
-        return this.state.students.length;
+        return this.visibleStudents.length;
     }
 
     onPrint() {

@@ -18,11 +18,4 @@
         <field name="view_mode">list</field>
     </record>
 
-    <!-- Menu Item -->
-    <menuitem id="menu_apex_certificates_award_tags"
-              name="Award Tags"
-              parent="menu_apex_certificates"
-              action="action_aps_award_tag"
-              sequence="28"
-              groups="aps_sis.group_aps_manager"/>
 </odoo>

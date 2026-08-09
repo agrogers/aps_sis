@@ -7,6 +7,14 @@ class APSAwardCategory(models.Model):
     _order = 'name'
 
     name = fields.Char(required=True)
+    vote_points = fields.Float(
+        string='Vote Points', default=0.0,
+        help='Points awarded to the recipient when a vote is submitted in this category.',
+    )
+    certificate_points = fields.Float(
+        string='Certificate Points', default=0.0,
+        help='Points awarded when a certificate is issued for this category.',
+    )
     description = fields.Text(string='Description')
     short_description = fields.Text(string='Short Description')
     image = fields.Image(string='Image')

@@ -12,8 +12,6 @@
                 <field name="roll" optional="show"/>
                 <field name="level_id" optional="show"/>
                 <field name="home_class_id" optional="show"/>
-                <field name="team_id" optional="show"/>
-                <field name="team_color" widget="color" string="Team Colour" optional="show"/>
                 <field name="active" optional="hide"/>
             </list>
         </field>
@@ -42,7 +40,6 @@
                             <field name="roll"/>
                             <field name="level_id"/>
                             <field name="home_class_id" readonly="1"/>
-                            <field name="team_id"/>
                         </group>
                     </group>
                     <notebook>
@@ -134,18 +131,15 @@
                 <field name="roll"/>
                 <field name="level_id"/>
                 <field name="home_class_id"/>
-                <field name="team_id"/>
                 <filter string="Active" name="active" domain="[('active', '=', True)]"/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Level" name="group_level" context="{'group_by': 'level_id'}"/>
                     <filter string="Class" name="group_class" context="{'group_by': 'home_class_id'}"/>
-                    <filter string="Team" name="group_team" context="{'group_by': 'team_id'}"/>
                 </group>
                 <searchpanel>
                     <field name="level_id" string="Level" icon="fa-graduation-cap" enable_counters="1"/>
                     <field name="home_class_id" string="Class" icon="fa-users" enable_counters="1"/>
-                    <field name="team_id" string="Team" icon="fa-users" enable_counters="1"/>
                 </searchpanel>
             </search>
         </field>

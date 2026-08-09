@@ -13,5 +13,13 @@ class APSAwardSubCategory(models.Model):
         ondelete='cascade',
     )
     name = fields.Char(string='Name', required=True)
+    vote_points = fields.Float(
+        string='Vote Points', default=0.0,
+        help='Points awarded to the recipient when a vote is submitted in this sub-category.',
+    )
+    certificate_points = fields.Float(
+        string='Certificate Points', default=0.0,
+        help='Points awarded when a certificate is issued for this sub-category.',
+    )
     description = fields.Char(string='Description')
     sequence = fields.Integer(string='Sequence', default=10)

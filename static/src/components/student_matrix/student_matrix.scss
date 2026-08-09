@@ -89,6 +89,21 @@
         position: relative;
         background-color: var(--o-hover, #f8f9fa);
 
+        .o_subject_filter_button {
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+
+            &:hover,
+            &:focus-visible,
+            &.is-selected {
+                color: var(--o-brand-primary, #714b67);
+                text-decoration: underline;
+            }
+        }
+
         .o_subject_name_rotated {
             writing-mode: vertical-rl;
             transform: rotate(180deg);
@@ -111,6 +126,22 @@
             font-weight: 700;
             background-color: var(--o-hover, #f8f9fa);
             color: var(--body-color, #212529);
+
+            .o_subject_total_filter_button {
+                border: 0;
+                padding: 0;
+                background: transparent;
+                color: inherit;
+                font: inherit;
+                cursor: pointer;
+
+                &:hover,
+                &:focus-visible,
+                &.is-selected {
+                    color: var(--o-brand-primary, #714b67);
+                    text-decoration: underline;
+                }
+            }
         }
 
         .o_count_cell_header {
@@ -122,6 +153,22 @@
             padding-left: 10px;
             background-color: var(--o-hover, #f8f9fa);
             color: var(--body-color, #212529);
+
+            .o_students_filter_button {
+                border: 0;
+                padding: 0;
+                background: transparent;
+                color: inherit;
+                font: inherit;
+                cursor: pointer;
+                text-align: left;
+
+                &:hover,
+                &:focus-visible {
+                    color: var(--o-brand-primary, #714b67);
+                    text-decoration: underline;
+                }
+            }
         }
     }
 
@@ -146,6 +193,23 @@
         min-width: 160px;
         background-color: var(--body-bg, #fff);
         color: var(--body-color, #212529);
+
+        .o_student_filter_button {
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            text-align: left;
+
+            &:hover,
+            &:focus-visible,
+            &.is-selected {
+                color: var(--o-brand-primary, #714b67);
+                text-decoration: underline;
+            }
+        }
     }
 
     .o_student_total {

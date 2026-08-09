@@ -65,31 +65,58 @@
                                 <th class="o_count_header">
                                     <div class="o_subjects_label_rotated">Subjects</div>
                                 </th>
-                                <t t-foreach="state.subjects" t-as="subject" t-key="subject.id">
+                                <t t-foreach="visibleSubjects" t-as="subject" t-key="subject.id">
                                     <th class="o_subject_header"
                                         t-att-style="'background-color:' + subject.color + '20;'">
-                                        <div class="o_subject_name_rotated" t-out="subject.name"/>
+                                        <button class="o_subject_filter_button"
+                                                type="button"
+                                                t-att-class="state.selectedSubjectId === subject.id ? 'is-selected' : ''"
+                                                t-att-title="state.selectedSubjectId === subject.id ? 'Show all subjects' : 'Show only ' + subject.name"
+                                                t-on-click="() => this.onSubjectClick(subject.id)">
+                                            <div class="o_subject_name_rotated" t-out="subject.name"/>
+                                        </button>
                                     </th>
                                 </t>
                             </tr>
                             <!-- Subject totals row -->
                             <tr class="o_totals_header_row">
-                                <th class="o_student_label_cell"><strong>Student</strong></th>
+                                <th class="o_student_label_cell">
+                                    <button class="o_students_filter_button"
+                                            type="button"
+                                            title="Show all students"
+                                            t-on-click="onShowAllStudents">
+                                        <strong>Students</strong>
+                                    </button>
+                                </th>
                                 <td class="o_count_cell_header"><strong>GCSE</strong></td>
-                                <t t-foreach="state.subjects" t-as="subject" t-key="'total_' + subject.id">
+                                <t t-foreach="visibleSubjects" t-as="subject" t-key="'total_' + subject.id">
                                     <td class="o_subject_total_header"
                                         t-att-style="'background-color:' + subject.color + '30;'">
-                                        <strong t-out="getSubjectTotal(subject.id)"/>
+                                        <button class="o_subject_total_filter_button"
+                                                type="button"
+                                                t-att-class="state.selectedSubjectId === subject.id ? 'is-selected' : ''"
+                                                title="Show all subjects"
+                                                t-on-click="onShowAllSubjects">
+                                            <strong t-out="getSubjectTotal(subject.id)"/>
+                                        </button>
                                     </td>
                                 </t>
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-foreach="state.students" t-as="student" t-key="student.id">
+                            <t t-foreach="visibleStudents" t-as="student" t-key="student.id">
                                 <tr class="o_student_row">
-                                    <td class="o_student_name" t-out="student.name"/>
+                                    <td class="o_student_name">
+                                        <button class="o_student_filter_button"
+                                                type="button"
+                                                t-att-class="state.selectedStudentId === student.id ? 'is-selected' : ''"
+                                                t-att-title="state.selectedStudentId === student.id ? 'Show all students' : 'Show only ' + student.name"
+                                                t-on-click="() => this.onStudentClick(student.id)">
+                                            <t t-out="student.name"/>
+                                        </button>
+                                    </td>
                                     <td class="o_student_total" t-out="getStudentTotal(student.id)"/>
-                                    <t t-foreach="state.subjects" t-as="subject" t-key="student.id + '_' + subject.id">
+                                    <t t-foreach="visibleSubjects" t-as="subject" t-key="student.id + '_' + subject.id">
                                         <td class="o_matrix_cell"
                                             t-att-style="hasCell(student.id, subject.id) ? 'background-color:' + subject.color + '40;' : ''">
                                             <span t-if="hasCell(student.id, subject.id)"

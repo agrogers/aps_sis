@@ -8,14 +8,11 @@ from . import aps_school_calendar_generate_wizard
 from . import aps_level
 from . import aps_class_tag
 from . import aps_class
-from . import aps_event
 from . import aps_student
 from . import aps_student_class
 from . import aps_subject_category_tag
 from . import aps_subject_category
 from . import aps_subject
-from . import aps_team
-from . import aps_team_points
 from . import aps_teacher
 from . import aps_timetable_entry
 from . import res_partner_teacher
