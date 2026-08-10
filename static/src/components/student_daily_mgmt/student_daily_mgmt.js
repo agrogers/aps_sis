@@ -333,6 +333,13 @@ export class StudentDailyMgmtDashboard extends Component {
         return this.state.attendanceStatuses.find((status) => status.id === statusId) || null;
     }
 
+    isAbsent(student) {
+        const status = this.attendanceStatus(student);
+        const code = String(status?.status_code || "").toLowerCase();
+        const name = String(status?.name || "").toLowerCase();
+        return code === "absent" || name === "absent";
+    }
+
     attendanceIconUrl(status) {
         return status && status.icon
             ? `/web/image/apex.attendance.status/${status.id}/icon`
@@ -409,10 +416,10 @@ export class StudentDailyMgmtDashboard extends Component {
             for (const student of this.filteredStudents) {
                 const currentStatusId = this.state.attendance[student.id];
                 const currentIndex = defaultStatuses.findIndex((status) => status.id === currentStatusId);
-                if (currentIndex < 0) {
+                if (currentIndex < 0 || currentIndex >= defaultStatuses.length - 1) {
                     continue;
                 }
-                const nextStatus = defaultStatuses[(currentIndex + 1) % defaultStatuses.length];
+                const nextStatus = defaultStatuses[currentIndex + 1];
                 const recordId = this.state.attendanceRecords[student.id];
                 if (recordId) {
                     await this.orm.write("apex.attendance", [recordId], { status_id: nextStatus.id });

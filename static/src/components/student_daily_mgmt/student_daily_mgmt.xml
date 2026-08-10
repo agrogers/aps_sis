@@ -65,16 +65,18 @@
             <div class="sdm-student-grid">
                 <t t-foreach="this.filteredStudents" t-as="student" t-key="student.id">
                     <div class="sdm-student-grid-item">
-                        <div t-att-class="'sdm-student-card card h-100 ' + (student.gender === 'female' ? 'sdm-card-female' : student.gender === 'male' ? 'sdm-card-male' : '')">
-                            <div class="sdm-student-header p-1">
-                                <div class="sdm-student-top d-flex align-items-center gap-1">
-                                    <div class="sdm-photo-wrap" t-on-click="() => this.openStudent(student)">
+                        <div t-att-class="'sdm-student-card card h-100 ' + (student.gender === 'female' ? 'sdm-card-female' : student.gender === 'male' ? 'sdm-card-male' : '') + (this.isAbsent(student) ? ' sdm-card-absent' : '')">
+                            <div class="sdm-student-layout">
+                                <div class="sdm-photo-column" t-on-click="() => this.openStudent(student)">
+                                    <div class="sdm-photo-wrap">
                                         <img t-if="student.image_128" class="sdm-photo" t-att-src="'data:image/png;base64,' + student.image_128" alt="Student photo"></img>
                                         <div t-else="" class="sdm-photo-placeholder"><i class="fa fa-user"></i></div>
                                         <span t-if="this.hasBirthday(student)" class="sdm-student-cake sdm-cake-lottie" role="img" aria-label="Birthday"></span>
                                     </div>
+                                </div>
+                                <div class="sdm-student-header">
                                     <div class="sdm-student-summary text-center">
-                                        <div class="d-flex justify-content-center">
+                                        <div class="sdm-icon-buttons d-flex justify-content-center">
                                             <div class="sdm-status-control d-flex flex-column align-items-center">
                                                 <button class="sdm-status-button btn btn-light" t-att-disabled="!state.isSchoolDay" t-att-title="this.attendanceStatus(student) ? this.attendanceStatus(student).name : 'No attendance record'" t-on-click="() => this.cycleAttendance(student)">
                                                     <img t-if="this.attendanceStatus(student) &amp;&amp; this.attendanceStatus(student).icon" class="sdm-status-icon" t-att-src="this.attendanceIconUrl(this.attendanceStatus(student))" t-att-alt="this.attendanceStatus(student).name"></img>
@@ -82,23 +84,25 @@
                                                 </button>
                                                 <span class="sdm-status-label text-muted text-truncate" t-esc="this.attendanceStatus(student) ? this.attendanceStatus(student).name : 'No status'"/>
                                             </div>
-                                            <button t-att-class="'sdm-uniform-button btn btn-light ms-2 ' + (this.uniformInfringementTypes(student).length ? 'has-infringement' : '')" t-att-disabled="!state.isSchoolDay" t-att-title="this.uniformInfringementTypes(student).length ? 'Uniform infringement recorded' : 'Record uniform infringement'" t-on-click="() => this.openUniformInfringement(student)">
-                                                <span class="sdm-uniform-icon-wrap">
-                                                    <img class="sdm-uniform-icon" t-att-src="this.uniformIconUrl(student)" alt="Uniform infringement"></img>
-                                                    <t t-foreach="this.uniformInfringementTypes(student)" t-as="infringementType" t-key="infringementType">
-                                                        <span class="sdm-uniform-x" t-att-class="this.uniformInfringementMarkerClass(infringementType)" t-att-title="infringementType">×</span>
-                                                    </t>
-                                                </span>
-                                            </button>
+                                            <t t-if="!this.isAbsent(student)">
+                                                <button t-att-class="'sdm-uniform-button btn btn-light ms-2 ' + (this.uniformInfringementTypes(student).length ? 'has-infringement' : '')" t-att-disabled="!state.isSchoolDay" t-att-title="this.uniformInfringementTypes(student).length ? 'Uniform infringement recorded' : 'Record uniform infringement'" t-on-click="() => this.openUniformInfringement(student)">
+                                                    <span class="sdm-uniform-icon-wrap">
+                                                        <img class="sdm-uniform-icon" t-att-src="this.uniformIconUrl(student)" alt="Uniform infringement"></img>
+                                                        <t t-foreach="this.uniformInfringementTypes(student)" t-as="infringementType" t-key="infringementType">
+                                                            <span class="sdm-uniform-x" t-att-class="this.uniformInfringementMarkerClass(infringementType)" t-att-title="infringementType">×</span>
+                                                        </t>
+                                                    </span>
+                                                </button>
+                                            </t>
                                         </div>
                                         <div class="sdm-attendance-history justify-content-center" aria-label="Attendance for the last five school days">
                                             <t t-foreach="this.attendanceHistory(student)" t-as="attendanceDay" t-key="attendanceDay.date">
                                                 <span class="sdm-attendance-dot" t-att-class="attendanceDay.className" t-att-title="attendanceDay.date + ': ' + (attendanceDay.status || 'Not recorded')"></span>
                                             </t>
                                         </div>
+                                        <div class="sdm-student-name fw-semibold text-start text-truncate" t-esc="student.partner_id[1]"/>
                                     </div>
                                 </div>
-                                <div class="fw-semibold text-start text-truncate mt-1" t-esc="student.partner_id[1]"/>
                             </div>
                             <div class="card-body pt-0 p-1">
                             </div>

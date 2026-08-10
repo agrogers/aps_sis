@@ -83,11 +83,12 @@
 }
 
 .sdm-student-card {
+    position: relative;
     width: 100%;
     max-width: 220px;
     margin-right: auto;
     margin-left: auto;
-    overflow: hidden;
+    overflow: visible;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -98,7 +99,12 @@
 }
 
 .sdm-student-grid-item {
+    position: relative;
     min-width: 0;
+}
+
+.sdm-student-card:has(.sdm-student-cake) {
+    z-index: 2;
 }
 
 .sdm-student-card:hover {
@@ -114,30 +120,69 @@
     background-color: #eef6ff;
 }
 
-.sdm-photo-wrap {
+.sdm-student-card.sdm-card-absent {
+    background-color: #d1d5db;
+    color: #495057;
+}
+
+.sdm-student-card.sdm-card-absent .sdm-photo-column {
+    background-color: #8b929b;
+}
+
+.sdm-student-card.sdm-card-absent .sdm-photo,
+.sdm-student-card.sdm-card-absent .sdm-photo-placeholder {
+    filter: grayscale(1);
+}
+
+.sdm-student-layout {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    min-height: 92px;
+}
+
+.sdm-photo-column {
     position: relative;
-    flex: 0 0 52px;
-    width: 52px;
-    height: 52px;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
     cursor: pointer;
     background: #edf1f8;
-    border: 2px solid #dce3ef;
-    border-radius: 50%;
+}
+
+.sdm-card-female .sdm-photo-column {
+    background: #e83e8c;
+}
+
+.sdm-card-male .sdm-photo-column {
+    background: #0d6efd;
+}
+
+.sdm-photo-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 92px;
     overflow: visible;
 }
 
 .sdm-student-header {
+    display: flex;
+    align-items: center;
     min-width: 0;
-}
-
-.sdm-student-top {
-    min-width: 0;
-    justify-content: center;
+    padding: 0.3rem 0.4rem;
 }
 
 .sdm-student-summary {
     min-width: 0;
-    flex: 1 1 auto;
+    width: 100%;
+}
+
+.sdm-icon-buttons {
+    gap: 0.25rem;
+}
+
+.sdm-student-name {
+    margin-top: 0.3rem;
+    width: 100%;
 }
 
 .sdm-attendance-history {
@@ -176,17 +221,15 @@
 .sdm-photo,
 .sdm-photo-placeholder {
     display: block;
-    width: 52px;
-    height: 52px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: 50%;
 }
 
 .sdm-photo-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
     color: #9aa5b5;
     font-size: 2rem;
 }
@@ -197,11 +240,11 @@
     top: -0.5rem;
     width: 2rem;
     height: 2rem;
-    padding: 0.25rem;
+    padding: 0.1rem;
     border-radius: 50%;
     background: white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-    z-index: 2;
+    z-index: 10;
 }
 
 .sdm-status-button {
@@ -325,12 +368,12 @@
 }
 
 @media (max-width: 575.98px) {
-    .sdm-student-top {
-        gap: 0.25rem !important;
+    .sdm-student-layout {
+        grid-template-columns: 64px minmax(0, 1fr);
     }
 
-    .sdm-student-summary {
-        min-width: 0;
+    .sdm-photo-wrap {
+        min-height: 84px;
     }
 
     .sdm-status-button {
