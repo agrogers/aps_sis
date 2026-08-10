@@ -8,6 +8,12 @@ class APSLevel(models.Model):
 
     name = fields.Char(string='Name', required=True)
     short_name = fields.Char(string='Short Name', size=20)
+    department_id = fields.Many2one(
+        'hr.department',
+        string='Department',
+        ondelete='set null',
+        help='Department associated with this academic level.',
+    )
     sequence = fields.Integer(string='Sequence', default=10)
     active = fields.Boolean(default=True)
     description = fields.Text(string='Description')

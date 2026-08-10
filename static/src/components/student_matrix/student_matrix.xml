@@ -63,7 +63,12 @@
                             <tr class="o_subject_header_row">
                                 <th class="o_corner_cell"/>
                                 <th class="o_count_header">
-                                    <div class="o_subjects_label_rotated">Subjects</div>
+                                    <button class="o_subjects_label_button"
+                                            type="button"
+                                            title="Show all subjects"
+                                            t-on-click="onShowAllSubjects">
+                                        <div class="o_subjects_label_rotated">Subjects</div>
+                                    </button>
                                 </th>
                                 <t t-foreach="visibleSubjects" t-as="subject" t-key="subject.id">
                                     <th class="o_subject_header"
@@ -95,8 +100,8 @@
                                         <button class="o_subject_total_filter_button"
                                                 type="button"
                                                 t-att-class="state.selectedSubjectId === subject.id ? 'is-selected' : ''"
-                                                title="Show all subjects"
-                                                t-on-click="onShowAllSubjects">
+                                                title="Hide this subject"
+                                                t-on-click="() => this.onSubjectTotalClick(subject.id)">
                                             <strong t-out="getSubjectTotal(subject.id)"/>
                                         </button>
                                     </td>

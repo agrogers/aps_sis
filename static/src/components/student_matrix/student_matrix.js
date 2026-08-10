@@ -25,6 +25,7 @@ export class StudentMatrix extends Component {
             selectedClassIds: [],
             selectedStudentId: null,
             selectedSubjectId: null,
+            hiddenSubjectIds: [],
             students: [],
             subjects: [],
             cells: {},
@@ -83,6 +84,7 @@ export class StudentMatrix extends Component {
         this.state.selectedClassIds = [];
         this.state.selectedStudentId = null;
         this.state.selectedSubjectId = null;
+        this.state.hiddenSubjectIds = [];
         this.state.students = [];
         this.state.subjects = [];
         this.state.cells = {};
@@ -146,6 +148,7 @@ export class StudentMatrix extends Component {
         this.state.selectedClassIds = [];
         this.state.selectedStudentId = null;
         this.state.selectedSubjectId = null;
+        this.state.hiddenSubjectIds = [];
         this.state.students = [];
         this.state.subjects = [];
         this.state.cells = {};
@@ -159,6 +162,7 @@ export class StudentMatrix extends Component {
         if (this.state.selectedClassIds.length === 0) {
             this.state.selectedStudentId = null;
             this.state.selectedSubjectId = null;
+            this.state.hiddenSubjectIds = [];
             this.state.students = [];
             this.state.subjects = [];
             this.state.cells = {};
@@ -176,6 +180,7 @@ export class StudentMatrix extends Component {
             this.state.students = data.students || [];
             this.state.selectedStudentId = null;
             this.state.selectedSubjectId = null;
+            this.state.hiddenSubjectIds = [];
             this.state.subjects = data.subjects || [];
             this.state.cells = data.cells || {};
             this.state.subjectColors = data.subject_colors || {};
@@ -259,7 +264,8 @@ export class StudentMatrix extends Component {
                 this.hasCell(studentId, subject.id)
             )
         ).filter((subject) =>
-            !this.state.selectedSubjectId || subject.id === this.state.selectedSubjectId
+            (!this.state.selectedSubjectId || subject.id === this.state.selectedSubjectId) &&
+            !this.state.hiddenSubjectIds.includes(subject.id)
         );
     }
 
@@ -282,6 +288,15 @@ export class StudentMatrix extends Component {
 
     onShowAllSubjects() {
         this.state.selectedSubjectId = null;
+        this.state.hiddenSubjectIds = [];
+    }
+
+    onSubjectTotalClick(subjectId) {
+        this.state.selectedStudentId = null;
+        this.state.selectedSubjectId = null;
+        if (!this.state.hiddenSubjectIds.includes(subjectId)) {
+            this.state.hiddenSubjectIds.push(subjectId);
+        }
     }
 
     get grandTotal() {

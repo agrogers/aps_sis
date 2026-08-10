@@ -19,6 +19,18 @@
         </h5>
         <div class="row g-3">
             <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_student_daily_mgmt_dashboard')">
+                    <div class="smd-card-icon bg-primary-subtle text-primary">
+                        <i class="fa fa-calendar-check-o"/>
+                    </div>
+                    <div class="smd-card-body">
+                        <div class="smd-card-title">Daily Student Management</div>
+                        <div class="smd-card-subtitle text-muted">Attendance and conduct notices</div>
+                    </div>
+                    <i class="fa fa-chevron-right smd-card-arrow text-muted"/>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
                 <div class="smd-card card" t-on-click="() => this.open('aps_sis.aps_academic_year_action')">
                     <div class="smd-card-icon bg-primary-subtle text-primary">
                         <i class="fa fa-calendar-check-o"/>

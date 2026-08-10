@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.StudentDailyMgmtDashboard">
+        <div t-ref="root" class="sdm-dashboard vh-100 overflow-auto p-2">
+            <div class="sdm-header d-flex align-items-center justify-content-between gap-3 mb-4">
+                <div>
+                    <div class="text-uppercase text-muted small fw-semibold">APEX School Management System</div>
+                    <h1 class="mb-1 fw-bold text-primary">Daily Student Management</h1>
+                    <div class="text-muted">Record attendance and review student conduct for the selected day.</div>
+                </div>
+                <div class="sdm-date-picker position-relative">
+                    <button class="btn btn-outline-primary d-flex align-items-center gap-2" t-on-click="toggleCalendar">
+                        <i class="fa fa-calendar"></i>
+                        <span t-esc="this.selectedDateLabel"/>
+                        <i class="fa fa-chevron-down small"></i>
+                    </button>
+                    <div t-if="state.calendarOpen" class="sdm-calendar card shadow-lg p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <button class="btn btn-sm btn-light" t-on-click="previousMonth"><i class="fa fa-chevron-left"></i></button>
+                            <strong t-esc="this.calendarTitle"/>
+                            <button class="btn btn-sm btn-light" t-on-click="nextMonth"><i class="fa fa-chevron-right"></i></button>
+                        </div>
+                        <div class="sdm-calendar-weekdays">
+                            <t t-foreach="['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" t-as="dayName" t-key="dayName">
+                                <span class="text-muted small fw-semibold" t-esc="dayName"/>
+                            </t>
+                        </div>
+                        <div class="sdm-calendar-grid">
+                            <t t-foreach="this.calendarDays" t-as="day" t-key="day.key">
+                                <div t-if="day.empty" class="sdm-calendar-empty"/>
+                                <button t-else="" class="sdm-calendar-day" t-att-class="day.isSelected ? 'is-selected' : ''" t-on-click="() => this.selectDate(day.isoDate)">
+                                    <span t-esc="day.day"/>
+                                    <span t-if="day.hasBirthday" class="sdm-cake-icon sdm-cake-lottie" role="img" aria-label="Birthday"></span>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" t-att-disabled="state.submitting || !state.isSchoolDay" t-on-click="submitAttendance">
+                    <i class="fa fa-check me-1"></i> Submit
+                </button>
+            </div>
+
+            <div class="sdm-toolbar card p-3 mb-4">
+                <label class="form-label fw-semibold mb-1" for="sdm-home-class">Home Class</label>
+                <select id="sdm-home-class" class="form-select" t-model="state.selectedClass">
+                    <option value="all">All students currently enrolled</option>
+                    <t t-foreach="state.classes" t-as="schoolClass" t-key="schoolClass.id">
+                        <option t-att-value="schoolClass.id" t-esc="schoolClass.name"/>
+                    </t>
+                </select>
+                <div t-if="this.birthdayStudentsForDate().length" class="alert alert-warning mt-3 mb-0 d-flex align-items-center gap-2">
+                    <span class="sdm-cake-icon sdm-cake-lottie" role="img" aria-label="Birthday"></span>
+                    <span><strong>Birthday reminder:</strong> <t t-esc="this.birthdayStudentsForDate().map((student) => student.partner_id[1]).join(', ')"/></span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h2 class="h5 mb-0">Students <span class="text-muted">(<t t-esc="this.filteredStudents.length"/>)</span></h2>
+                <span class="text-muted small" t-esc="this.selectedDateLabel"/>
+            </div>
+            <div class="sdm-student-grid">
+                <t t-foreach="this.filteredStudents" t-as="student" t-key="student.id">
+                    <div class="sdm-student-grid-item">
+                        <div t-att-class="'sdm-student-card card h-100 ' + (student.gender === 'female' ? 'sdm-card-female' : student.gender === 'male' ? 'sdm-card-male' : '')">
+                            <div class="sdm-student-header p-1">
+                                <div class="sdm-student-top d-flex align-items-center gap-1">
+                                    <div class="sdm-photo-wrap" t-on-click="() => this.openStudent(student)">
+                                        <img t-if="student.image_128" class="sdm-photo" t-att-src="'data:image/png;base64,' + student.image_128" alt="Student photo"></img>
+                                        <div t-else="" class="sdm-photo-placeholder"><i class="fa fa-user"></i></div>
+                                        <span t-if="this.hasBirthday(student)" class="sdm-student-cake sdm-cake-lottie" role="img" aria-label="Birthday"></span>
+                                    </div>
+                                    <div class="sdm-student-summary text-center">
+                                        <div class="d-flex justify-content-center">
+                                            <div class="sdm-status-control d-flex flex-column align-items-center">
+                                                <button class="sdm-status-button btn btn-light" t-att-disabled="!state.isSchoolDay" t-att-title="this.attendanceStatus(student) ? this.attendanceStatus(student).name : 'No attendance record'" t-on-click="() => this.cycleAttendance(student)">
+                                                    <img t-if="this.attendanceStatus(student) &amp;&amp; this.attendanceStatus(student).icon" class="sdm-status-icon" t-att-src="this.attendanceIconUrl(this.attendanceStatus(student))" t-att-alt="this.attendanceStatus(student).name"></img>
+                                                    <i t-else="" class="fa fa-question sdm-status-icon-placeholder"></i>
+                                                </button>
+                                                <span class="sdm-status-label text-muted text-truncate" t-esc="this.attendanceStatus(student) ? this.attendanceStatus(student).name : 'No status'"/>
+                                            </div>
+                                            <button t-att-class="'sdm-uniform-button btn btn-light ms-2 ' + (this.uniformInfringementTypes(student).length ? 'has-infringement' : '')" t-att-disabled="!state.isSchoolDay" t-att-title="this.uniformInfringementTypes(student).length ? 'Uniform infringement recorded' : 'Record uniform infringement'" t-on-click="() => this.openUniformInfringement(student)">
+                                                <span class="sdm-uniform-icon-wrap">
+                                                    <img class="sdm-uniform-icon" t-att-src="this.uniformIconUrl(student)" alt="Uniform infringement"></img>
+                                                    <t t-foreach="this.uniformInfringementTypes(student)" t-as="infringementType" t-key="infringementType">
+                                                        <span class="sdm-uniform-x" t-att-class="this.uniformInfringementMarkerClass(infringementType)" t-att-title="infringementType">×</span>
+                                                    </t>
+                                                </span>
+                                            </button>
+                                        </div>
+                                        <div class="sdm-attendance-history justify-content-center" aria-label="Attendance for the last five school days">
+                                            <t t-foreach="this.attendanceHistory(student)" t-as="attendanceDay" t-key="attendanceDay.date">
+                                                <span class="sdm-attendance-dot" t-att-class="attendanceDay.className" t-att-title="attendanceDay.date + ': ' + (attendanceDay.status || 'Not recorded')"></span>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="fw-semibold text-start text-truncate mt-1" t-esc="student.partner_id[1]"/>
+                            </div>
+                            <div class="card-body pt-0 p-1">
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <div t-if="!this.filteredStudents.length" class="col-12">
+                    <div class="alert alert-info">No currently enrolled students match the selected Home Class.</div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+                <button class="btn btn-primary" t-att-disabled="state.submitting || !state.isSchoolDay" t-on-click="submitAttendance">
+                    <i class="fa fa-check me-1"></i> Submit
+                </button>
+            </div>
+        </div>
+    </t>
+</templates>

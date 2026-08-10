@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_aps_student_daily_mgmt_dashboard" model="ir.actions.client">
+        <field name="name">Daily Student Management</field>
+        <field name="tag">aps_student_daily_mgmt_dashboard</field>
+        <field name="path">aps-student-daily-mgmt</field>
+    </record>
+
+    <menuitem id="menu_apex_student_daily_mgmt_dashboard"
+              name="Daily Student Management"
+              parent="aps_sis.menu_apex_root"
+              action="action_aps_student_daily_mgmt_dashboard"
+              sequence="23"
+              groups="aps_sis.group_aps_teacher"/>
+</odoo>

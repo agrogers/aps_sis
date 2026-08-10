@@ -17,7 +17,7 @@
                     </div>
 
                     <div class="alert alert-info" role="alert">
-                        <i class="fa fa-tags me-1"/>
+                        <i class="fa fa-tags me-1" title="Contact tags"></i>
                         <strong>Tags are synced automatically.</strong> Each academic level has
                         associated <strong>Contact Tags</strong> configured on the level record.
                         When a student is promoted, their old level's tags are removed and the

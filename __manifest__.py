@@ -56,6 +56,7 @@
 		'views/aps_time_tracking_dashboard_views.xml',
 		'views/aps_teacher_dashboard_views.xml',
 		'views/aps_school_mgmt_dashboard_views.xml',
+		'views/aps_student_daily_mgmt_dashboard_views.xml',
 		'views/awards/aps_certificates_dashboard_views.xml',
 		'views/aps_media_views.xml',
 		'views/awards/aps_certificate_views.xml',
@@ -95,6 +96,7 @@
 	'assets': {
 		'web.assets_backend': [
             'aps_sis/static/src/lib/chart.js',
+			'aps_sis/static/src/lib/lottie/lottie.min.js',
 			'aps_sis/static/src/js/utils/color_utils.js',
 			'aps_sis/static/src/js/utils/svg_progress_utils.js',
 			'aps_sis/static/src/css/ribbon_styles.css',
@@ -135,6 +137,8 @@
             'aps_sis/static/src/lib/slickgrid/universal/slickgrid-theme-bootstrap.css',
             'aps_sis/static/src/components/**/*.js',
             'aps_sis/static/src/components/**/*.xml',
+			'aps_sis/static/src/components/student_daily_mgmt/uniform_infringement_dialog.js',
+			'aps_sis/static/src/components/student_daily_mgmt/uniform_infringement_dialog.xml',
             'aps_sis/static/src/components/**/*.scss',
             'aps_sis/static/src/components/**/*.css',
             'aps_sis/static/src/js/image_result_widget.js',

@@ -1,0 +1,363 @@
+.sdm-dashboard {
+    background: #f5f7fb;
+}
+
+.sdm-dashboard > * {
+    max-width: none;
+}
+
+@media (max-width: 575.98px) {
+    .sdm-dashboard {
+        padding-left: 0.25rem !important;
+        padding-right: 0.25rem !important;
+    }
+}
+
+.sdm-header {
+    padding: 1.5rem 1.75rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #eef3ff 0%, #ffffff 70%);
+    border: 1px solid #dce5ff;
+}
+
+.sdm-toolbar,
+.sdm-student-card {
+    border: 1px solid #e4e8f0;
+    border-radius: 14px;
+}
+
+.sdm-toolbar {
+    max-width: 520px;
+}
+
+.sdm-calendar {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    width: min(430px, 80vw);
+}
+
+.sdm-calendar-weekdays,
+.sdm-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.35rem;
+    text-align: center;
+}
+
+.sdm-calendar-weekdays {
+    margin-bottom: 0.35rem;
+}
+
+.sdm-calendar-day {
+    position: relative;
+    min-height: 3.5rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--body-color);
+}
+
+.sdm-calendar-day:hover,
+.sdm-calendar-day.is-selected {
+    border-color: var(--link-color);
+    background: #eef3ff;
+}
+
+.sdm-cake-icon {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+}
+
+.sdm-cake-lottie svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.sdm-calendar-day .sdm-cake-icon {
+    display: block;
+    margin: 0.2rem auto 0;
+}
+
+.sdm-student-card {
+    width: 100%;
+    max-width: 220px;
+    margin-right: auto;
+    margin-left: auto;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sdm-student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: 0.25rem;
+}
+
+.sdm-student-grid-item {
+    min-width: 0;
+}
+
+.sdm-student-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1.25rem rgba(30, 42, 70, 0.14);
+}
+
+.sdm-student-card.sdm-card-female {
+    background-color: #fff0f5;
+}
+
+.sdm-student-card.sdm-card-male {
+    background-color: #eef6ff;
+}
+
+.sdm-photo-wrap {
+    position: relative;
+    flex: 0 0 52px;
+    width: 52px;
+    height: 52px;
+    cursor: pointer;
+    background: #edf1f8;
+    border: 2px solid #dce3ef;
+    border-radius: 50%;
+    overflow: visible;
+}
+
+.sdm-student-header {
+    min-width: 0;
+}
+
+.sdm-student-top {
+    min-width: 0;
+    justify-content: center;
+}
+
+.sdm-student-summary {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.sdm-attendance-history {
+    display: flex;
+    gap: 0.3rem;
+    margin-top: 0.35rem;
+}
+
+.sdm-attendance-dot {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border: none;
+    border-radius: 50%;
+    background: #eef1f5;
+}
+
+.sdm-attendance-dot.is-present {
+    border-color: #198754;
+    background: #198754;
+}
+
+.sdm-attendance-dot.is-absent {
+    border-color: #dc3545;
+    background: #dc3545;
+}
+
+.sdm-attendance-dot.is-early-departure {
+    background: linear-gradient(90deg, #198754 50%, #dc3545 50%);
+}
+
+.sdm-attendance-dot.is-late-arrival {
+    background: linear-gradient(90deg, #dc3545 50%, #198754 50%);
+}
+
+.sdm-photo,
+.sdm-photo-placeholder {
+    display: block;
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.sdm-photo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    color: #9aa5b5;
+    font-size: 2rem;
+}
+
+.sdm-student-cake {
+    position: absolute;
+    right: -0.5rem;
+    top: -0.5rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0.25rem;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    z-index: 2;
+}
+
+.sdm-status-button {
+    width: 40px;
+    height: 40px;
+    padding: 0.2rem;
+    border: none;
+    border-radius: 50%;
+}
+
+.sdm-status-control {
+    width: 76px;
+    flex: 0 0 76px;
+}
+
+.sdm-status-button:not(:disabled):hover {
+    background: #eef3ff;
+    border-color: #6c8fe8;
+}
+
+.sdm-status-label {
+    display: block;
+    width: 76px;
+    max-width: 76px;
+    margin-top: 0.1rem;
+    font-size: 0.55rem;
+    line-height: 1.05;
+    white-space: nowrap;
+}
+
+.sdm-status-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.sdm-status-icon-placeholder {
+    color: #8b96a8;
+    font-size: 1.25rem;
+}
+
+.sdm-uniform-button {
+    width: 40px;
+    height: 40px;
+    padding: 0.2rem;
+    border: none;
+    border-radius: 50%;
+}
+
+.sdm-uniform-button:not(:disabled):hover {
+    background: #fff4f4;
+}
+
+.sdm-uniform-icon-wrap {
+    position: relative;
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+}
+
+.sdm-uniform-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: grayscale(1);
+}
+
+.sdm-uniform-button.has-infringement {
+    width: 44px;
+    height: 44px;
+}
+
+.sdm-uniform-button.has-infringement .sdm-uniform-icon-wrap,
+.sdm-uniform-button.has-infringement .sdm-uniform-icon {
+    width: 36px;
+    height: 36px;
+}
+
+.sdm-uniform-button.has-infringement .sdm-uniform-icon {
+    filter: none;
+}
+
+.sdm-uniform-x {
+    position: absolute;
+    color: #dc3545;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 0 2px #fff;
+    z-index: 2;
+}
+
+.sdm-uniform-x-hair {
+    top: 0%;
+    right: 0%;
+}
+
+.sdm-uniform-x-top {
+    top: 30%;
+    right: 0%;
+}
+
+.sdm-uniform-x-bottom {
+    bottom: 20%;
+    right: 0%;
+}
+
+.sdm-uniform-x-shoes {
+    bottom: 0%;
+    right: 0%;
+}
+
+.sdm-uniform-x-skin {
+    top: 50%;
+    left: 0%;
+}
+
+.sdm-uniform-x-other {
+    bottom: 0;
+    left: 0%;
+}
+
+@media (max-width: 575.98px) {
+    .sdm-student-top {
+        gap: 0.25rem !important;
+    }
+
+    .sdm-student-summary {
+        min-width: 0;
+    }
+
+    .sdm-status-button {
+        width: 36px;
+        height: 36px;
+    }
+
+    .sdm-status-icon,
+    .sdm-uniform-icon-wrap,
+    .sdm-uniform-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .sdm-uniform-button {
+        width: 36px;
+        height: 36px;
+    }
+
+    .sdm-uniform-button.has-infringement {
+        width: 40px;
+        height: 40px;
+    }
+
+    .sdm-uniform-button.has-infringement .sdm-uniform-icon-wrap,
+    .sdm-uniform-button.has-infringement .sdm-uniform-icon {
+        width: 32px;
+        height: 32px;
+    }
+}

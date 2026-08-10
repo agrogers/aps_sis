@@ -21,6 +21,8 @@ class ResPartner(models.Model):
         ('other', 'Other')
     ], string='Gender')
 
+    birthday = fields.Date(string='Date of Birth')
+
     # Redefine to change labels
     is_parent = fields.Boolean("Parent")
     is_student = fields.Boolean("Student")

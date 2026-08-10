@@ -71,6 +71,20 @@
         height: 100px;
         vertical-align: bottom;
 
+        .o_subjects_label_button {
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+
+            &:hover,
+            &:focus-visible {
+                color: var(--o-brand-primary, #714b67);
+                text-decoration: underline;
+            }
+        }
+
         .o_subjects_label_rotated {
             writing-mode: vertical-rl;
             transform: rotate(180deg);
