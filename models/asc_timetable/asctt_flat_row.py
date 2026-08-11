@@ -20,6 +20,17 @@ _PERIOD_MINUTES_EXPR = """
     END
 """.strip()
 
+_TEACHER_FIRST_ID_EXPR = """
+    COALESCE(
+        NULLIF(SPLIT_PART(l.teacher_order, ',', 1), '')::INTEGER,
+        (
+            SELECT MIN(ltr2.teacher_id)
+            FROM asctt_lesson_teacher_rel ltr2
+            WHERE ltr2.lesson_id = l.id
+        )
+    )
+""".strip()
+
 
 class ASCTTFlatRow(models.Model):
     """Read-only SQL view providing one row per teacher per card/supervision.
@@ -115,15 +126,10 @@ class ASCTTFlatRow(models.Model):
                         ELSE COALESCE(s.name, 'Unknown')
                     END AS subject_name,
 
-                    -- is_assistant: any teacher beyond the first
-                    -- (first = smallest teacher_id in the lesson's teacher set),
+                    -- is_assistant: any teacher beyond the first teacher in aSc's order,
                     -- or always True for no-class (supervision-type) lessons
                     (
-                        t.id <> (
-                            SELECT MIN(ltr2.teacher_id)
-                            FROM   asctt_lesson_teacher_rel ltr2
-                            WHERE  ltr2.lesson_id = l.id
-                        )
+                        t.id <> ({teacher_first_id})
                         OR cls.id IS NULL
                     ) AS is_assistant,
 
@@ -188,4 +194,5 @@ class ASCTTFlatRow(models.Model):
         """.format(
             period_minutes=_PERIOD_MINUTES_EXPR,
             week_weight=_WEEK_WEIGHT_EXPR,
+            teacher_first_id=_TEACHER_FIRST_ID_EXPR,
         ))

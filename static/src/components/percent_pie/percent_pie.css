@@ -12,9 +12,16 @@
 }
 
 .o_pie {
+     /* Keep the chart circular even when its flex container has a constrained
+         width or height. The fixed flex basis prevents the percentage pie from
+         being compressed into an oval by the surrounding field layout. */
     width: 28px;
     height: 28px;
-    flex-shrink: 0;
+    min-width: 28px;
+    min-height: 28px;
+    aspect-ratio: 1 / 1;
+    flex: 0 0 28px;
+    display: block;
 }
 
 .o_pie_info .o_pie_value {

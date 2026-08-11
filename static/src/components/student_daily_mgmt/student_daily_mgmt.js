@@ -6,10 +6,11 @@ import { UniformInfringementDialog } from "./uniform_infringement_dialog";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
     weekday: "long",
+    month: "short",
     day: "numeric",
-    month: "long",
     year: "numeric",
 });
+const SELECTED_CLASS_STORAGE_KEY = "aps_sis.student_daily_mgmt.selected_class";
 
 export class StudentDailyMgmtDashboard extends Component {
     static template = "aps_sis.StudentDailyMgmtDashboard";
@@ -27,10 +28,16 @@ export class StudentDailyMgmtDashboard extends Component {
         this.dialog = useService("dialog");
         this.notification = useService("notification");
         this.root = useRef("root");
+        let selectedClass = "all";
+        try {
+            selectedClass = window.localStorage.getItem(SELECTED_CLASS_STORAGE_KEY) || "all";
+        } catch {
+            // Local storage may be unavailable in private/restricted browser contexts.
+        }
         this.state = useState({
             classes: [],
             students: [],
-            selectedClass: "all",
+            selectedClass,
             selectedDate: this._today(),
             calendarOpen: false,
             calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -104,17 +111,35 @@ export class StudentDailyMgmtDashboard extends Component {
     async _loadClasses() {
         this.state.classes = await this.orm.searchRead(
             "aps.class",
-            [["active", "=", true]],
+            [
+                ["active", "=", true],
+                ["academic_year_id.is_current", "=", true],
+                // Home classes are identified by the Home Class/Pastoral Care
+                // tag on the subject category.
+                ["subject_id.category_id.tag_ids.name", "in", ["Home Class", "Pastoral Care Subject"]],
+            ],
             ["name"],
             { order: "name" }
         );
+        if (!this.state.classes.some((schoolClass) => String(schoolClass.id) === this.state.selectedClass)) {
+            this.state.selectedClass = "all";
+            this._saveSelectedClass();
+        }
+    }
+
+    _saveSelectedClass() {
+        try {
+            window.localStorage.setItem(SELECTED_CLASS_STORAGE_KEY, this.state.selectedClass);
+        } catch {
+            // Local storage may be unavailable in private/restricted browser contexts.
+        }
     }
 
     async _loadStudents() {
         this.state.students = await this.orm.searchRead(
             "aps.student",
             [["active", "=", true], ["enrollment_ids.state", "=", "enrolled"]],
-            ["partner_id", "home_class_id", "image_128", "birthday"],
+            ["partner_id", "home_class_id", "birthday"],
             { order: "partner_id" }
         );
         const partnerIds = this.state.students.map((student) => student.partner_id[0]);
@@ -195,7 +220,7 @@ export class StudentDailyMgmtDashboard extends Component {
             "aps.school.calendar",
             [["date", "<=", this.state.selectedDate], ["date_type", "=", "school_day"]],
             ["date"],
-            { order: "date desc", limit: 5 }
+            { order: "date desc", limit: 10 }
         );
         this.state.schoolDays = schoolDays.sort((left, right) => left.date.localeCompare(right.date));
         const studentIds = this.state.students.map((student) => student.id);
@@ -257,7 +282,12 @@ export class StudentDailyMgmtDashboard extends Component {
     }
 
     get selectedDateLabel() {
-        return DATE_FORMATTER.format(new Date(`${this.state.selectedDate}T00:00:00`));
+        const parts = Object.fromEntries(
+            DATE_FORMATTER.formatToParts(new Date(`${this.state.selectedDate}T00:00:00`))
+                .filter((part) => part.type !== "literal")
+                .map((part) => [part.type, part.value])
+        );
+        return `${parts.weekday} ${parts.day}, ${parts.month} ${parts.year}`;
     }
 
     get calendarTitle() {
@@ -343,6 +373,13 @@ export class StudentDailyMgmtDashboard extends Component {
     attendanceIconUrl(status) {
         return status && status.icon
             ? `/web/image/apex.attendance.status/${status.id}/icon`
+            : "";
+    }
+
+    photoBackgroundStyle(student) {
+        const partnerId = student.partner_id && student.partner_id[0];
+        return partnerId
+            ? `background-image: url("/web/image/res.partner/${partnerId}/avatar_128");`
             : "";
     }
 

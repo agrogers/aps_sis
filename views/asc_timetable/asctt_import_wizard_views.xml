@@ -29,9 +29,14 @@
                     <div class="alert alert-info" invisible="not generate_timetable" role="alert">
                         <strong>How this works:</strong> The timetable will be generated for all
                         <em>School Days</em> in the School Calendar that fall within the selected
-                        date range, matching aSc cards by day-of-week and week cycle.
+                        date range, matching aSc cards by day-of-week and week cycle. The
+                        <em>Apply From</em> date sets the first date to generate. If an academic
+                        term is selected, that term sets the final date; otherwise the current
+                        academic year is used.
                         Only teachers linked to an APEX teacher with a contact will be included.
-                        Any existing entries in the same date range will be replaced.
+                        Any existing entries from <em>Apply From</em> through the end of the
+                        effective date range will be replaced. Entries before <em>Apply From</em>
+                        and after the selected term or academic year will be preserved.
                     </div>
                 </sheet>
                 <footer>

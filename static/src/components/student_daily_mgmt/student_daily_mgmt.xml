@@ -8,8 +8,17 @@
                     <h1 class="mb-1 fw-bold text-primary">Daily Student Management</h1>
                     <div class="text-muted">Record attendance and review student conduct for the selected day.</div>
                 </div>
+                <div class="sdm-home-class-picker">
+                    <label class="form-label fw-semibold mb-1" for="sdm-home-class">Home Class</label>
+                    <select id="sdm-home-class" class="form-select" t-model="state.selectedClass" t-on-change="_saveSelectedClass">
+                        <option value="all">All students currently enrolled</option>
+                        <t t-foreach="state.classes" t-as="schoolClass" t-key="schoolClass.id">
+                            <option t-att-value="schoolClass.id" t-esc="schoolClass.name"/>
+                        </t>
+                    </select>
+                </div>
                 <div class="sdm-date-picker position-relative">
-                    <button class="btn btn-outline-primary d-flex align-items-center gap-2" t-on-click="toggleCalendar">
+                    <button t-att-class="'btn d-flex align-items-center gap-2 ' + (this.state.selectedDate === this._today() ? 'btn-outline-success' : 'btn-outline-primary')" t-on-click="toggleCalendar">
                         <i class="fa fa-calendar"></i>
                         <span t-esc="this.selectedDateLabel"/>
                         <i class="fa fa-chevron-down small"></i>
@@ -38,24 +47,14 @@
                 </div>
             </div>
 
-            <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-primary" t-att-disabled="state.submitting || !state.isSchoolDay" t-on-click="submitAttendance">
-                    <i class="fa fa-check me-1"></i> Submit
-                </button>
-            </div>
-
-            <div class="sdm-toolbar card p-3 mb-4">
-                <label class="form-label fw-semibold mb-1" for="sdm-home-class">Home Class</label>
-                <select id="sdm-home-class" class="form-select" t-model="state.selectedClass">
-                    <option value="all">All students currently enrolled</option>
-                    <t t-foreach="state.classes" t-as="schoolClass" t-key="schoolClass.id">
-                        <option t-att-value="schoolClass.id" t-esc="schoolClass.name"/>
-                    </t>
-                </select>
-                <div t-if="this.birthdayStudentsForDate().length" class="alert alert-warning mt-3 mb-0 d-flex align-items-center gap-2">
+            <div class="sdm-submit-row d-flex align-items-center justify-content-between gap-3 mb-3">
+                <div t-if="this.birthdayStudentsForDate().length" class="alert alert-warning mb-0 d-flex align-items-center gap-2">
                     <span class="sdm-cake-icon sdm-cake-lottie" role="img" aria-label="Birthday"></span>
                     <span><strong>Birthday reminder:</strong> <t t-esc="this.birthdayStudentsForDate().map((student) => student.partner_id[1]).join(', ')"/></span>
                 </div>
+                <button class="btn btn-primary" t-att-disabled="state.submitting || !state.isSchoolDay" t-on-click="submitAttendance">
+                    <i class="fa fa-check me-1"></i> Submit
+                </button>
             </div>
 
             <div class="d-flex align-items-center justify-content-between mb-3">
@@ -67,10 +66,9 @@
                     <div class="sdm-student-grid-item">
                         <div t-att-class="'sdm-student-card card h-100 ' + (student.gender === 'female' ? 'sdm-card-female' : student.gender === 'male' ? 'sdm-card-male' : '') + (this.isAbsent(student) ? ' sdm-card-absent' : '')">
                             <div class="sdm-student-layout">
-                                <div class="sdm-photo-column" t-on-click="() => this.openStudent(student)">
+                                <div class="sdm-photo-column" t-att-style="this.photoBackgroundStyle(student)" t-on-click="() => this.openStudent(student)">
                                     <div class="sdm-photo-wrap">
-                                        <img t-if="student.image_128" class="sdm-photo" t-att-src="'data:image/png;base64,' + student.image_128" alt="Student photo"></img>
-                                        <div t-else="" class="sdm-photo-placeholder"><i class="fa fa-user"></i></div>
+                                        <div t-if="!student.partner_id" class="sdm-photo-placeholder"><i class="fa fa-user"></i></div>
                                         <span t-if="this.hasBirthday(student)" class="sdm-student-cake sdm-cake-lottie" role="img" aria-label="Birthday"></span>
                                     </div>
                                 </div>
@@ -95,7 +93,7 @@
                                                 </button>
                                             </t>
                                         </div>
-                                        <div class="sdm-attendance-history justify-content-center" aria-label="Attendance for the last five school days">
+                                        <div class="sdm-attendance-history justify-content-center" aria-label="Attendance for the last ten school days">
                                             <t t-foreach="this.attendanceHistory(student)" t-as="attendanceDay" t-key="attendanceDay.date">
                                                 <span class="sdm-attendance-dot" t-att-class="attendanceDay.className" t-att-title="attendanceDay.date + ': ' + (attendanceDay.status || 'Not recorded')"></span>
                                             </t>

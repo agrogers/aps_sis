@@ -36,6 +36,7 @@
                         </h1>
                     </div>
                     <group>
+                        <field name="current_academic_year_id" invisible="1"/>
                         <group>
                             <field name="code"/>
                             <field name="category_id"/>

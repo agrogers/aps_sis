@@ -546,7 +546,7 @@ class ASCTTImportWizard(models.TransientModel):
         """Import ``<lesson>`` elements into ``asctt.lesson`` (upsert by asc_id).
 
         Syncs all four many-to-many relations: ``class_ids``, ``group_ids``,
-        ``teacher_ids``, and ``classroom_ids``.
+        ``teacher_ids``, ``teacher_order``, and ``classroom_ids``.
         """
         created = updated = 0
         subject_map   = self._build_asc_id_map('asctt.subject')
@@ -584,6 +584,9 @@ class ASCTTImportWizard(models.TransientModel):
                 'terms_def_id':     terms_def_map.get(el.get('termsdefid', '').strip(), False),
                 'seminar_group':    el.get('seminargroup', '').strip() or False,
                 'capacity':         el.get('capacity', '').strip() or False,
+                # Many2many relations do not preserve aSc's teacher order.
+                # Keep the imported order explicitly: first is lead, rest are assistants.
+                'teacher_order':    ','.join(str(teacher_id) for teacher_id in teacher_ids) or False,
             }
             rec = Lesson.search([('asc_id', '=', asc_id)], limit=1)
             if rec:
@@ -739,7 +742,8 @@ class ASCTTImportWizard(models.TransientModel):
 
         Maps the abstract aSc timetable (day + period + weeks pattern) to real
         calendar dates using ``aps.school.calendar`` school-day records.  One
-        entry is created per (teacher, card, matching school day) combination.
+        entry is created per lesson occurrence, with adjacent periods for the
+        same lesson consolidated into one longer entry.
 
         :returns: Number of entries created.
         """
@@ -761,13 +765,13 @@ class ASCTTImportWizard(models.TransientModel):
                 start_date.replace(year=start_date.year + 1)
             )
 
-        # 2. Delete existing entries that overlap the new range ─────────────────
-        if term:
-            TimetableEntry.search([('academic_term_id', '=', term.id)]).unlink()
-        else:
-            TimetableEntry.search([
-                ('start_datetime', '>=', datetime.combine(start_date, dt_time.min)),
-            ]).unlink()
+        # 2. Delete existing entries that overlap the effective date range ──────
+        # A selected term limits the generation end date; it must not delete
+        # earlier entries from that term, including entries before Apply From.
+        TimetableEntry.search([
+            ('start_datetime', '>=', datetime.combine(start_date, dt_time.min)),
+            ('start_datetime', '<=', datetime.combine(end_date, dt_time.max)),
+        ]).unlink()
 
         # 3. Build school-day lookup: date → academic week ──────────────────────
         school_days = self.env['aps.school.calendar'].search([
@@ -873,6 +877,38 @@ class ASCTTImportWizard(models.TransientModel):
                         'source_card_id': card.id,
                     })
 
-        if to_create:
-            TimetableEntry.create(to_create)
-        return len(to_create)
+        # A double/triple period is represented by separate aSc cards.  Merge
+        # cards for the same lesson when their periods touch, so the calendar
+        # shows one continuous event instead of one event per period.
+        merged_entries = []
+        last_entry_by_key = {}
+        for values in sorted(
+            to_create,
+            key=lambda item: (
+                item['teacher_id'],
+                item['subject_name'] or '',
+                item['class_names'] or '',
+                item['classroom'] or '',
+                item['start_datetime'],
+            ),
+        ):
+            source_card = self.env['asctt.card'].browse(values['source_card_id'])
+            merge_key = (
+                values['teacher_id'],
+                source_card.lesson_id.id,
+                values['subject_category_id'],
+                values['classroom'],
+                values['class_names'],
+                values['academic_term_id'],
+            )
+            previous = last_entry_by_key.get(merge_key)
+            if previous and previous['stop_datetime'] == values['start_datetime']:
+                previous['stop_datetime'] = values['stop_datetime']
+            else:
+                merged_entries.append(values)
+                last_entry_by_key[merge_key] = values
+
+        entries_to_create = merged_entries
+        if entries_to_create:
+            TimetableEntry.create(entries_to_create)
+        return len(entries_to_create)

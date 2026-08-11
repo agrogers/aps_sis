@@ -62,8 +62,8 @@
                         domain="[('start_datetime', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0))),
                                   ('start_datetime', '&lt;',  datetime.datetime.combine(context_today(), datetime.time(23,59,59)))]"/>
                 <filter string="This Week" name="filter_this_week"
-                        domain="[('start_datetime', '&gt;=', (context_today() - relativedelta(weekday=0)).strftime('%Y-%m-%d 00:00:00')),
-                                  ('start_datetime', '&lt;=', (context_today() + relativedelta(weekday=4)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    domain="[('start_datetime', '&gt;=', (context_today() + relativedelta(days=1, weekday=0, weeks=-1)).strftime('%Y-%m-%d 00:00:00')),
+                          ('start_datetime', '&lt;', (context_today() + relativedelta(days=1, weekday=0)).strftime('%Y-%m-%d 00:00:00'))]"/>
                 <group expand="0" string="Group By">
                     <filter string="Teacher" name="group_teacher" context="{'group_by': 'teacher_id'}"/>
                     <filter string="Subject Category" name="group_subject" context="{'group_by': 'subject_category_id'}"/>

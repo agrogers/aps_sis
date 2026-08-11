@@ -449,8 +449,14 @@ class APSResource(models.Model):
 
     def action_get_or_create_submission(self):
         """Return an action opening the most recent submission for the current
-        student on this resource.  If no submission exists, create a task and
-        submission first (no due date)."""
+        student on this resource. If no submission exists, create a task and
+        an incomplete submission first. These submissions have no assigned
+        date because opening a quiz from the student resource explorers is
+        not itself an assignment. Leaving ``date_assigned`` empty keeps the
+        submission inactive and therefore hidden by the default active-only
+        student submission list, while retaining it for later completion and
+        progress tracking. This method is shared by the Course Explorer and
+        the student resource hierarchy/table."""
         self.ensure_one()
         student = self.env.user.partner_id
 
@@ -463,12 +469,13 @@ class APSResource(models.Model):
             ('student_id', '=', student.id),
         ], limit=1)
 
-        submission = False
-        if task:
-            # Most recent submission
-            submission = submission_model.search([
-                ('task_id', '=', task.id),
-            ], order='id desc', limit=1)
+        # Find the most recent submission across all matching tasks. This is
+        # deliberately not limited to the first task so legacy or imported
+        # duplicate tasks cannot cause another submission to be created.
+        submission = submission_model.search([
+            ('task_id.resource_id', '=', self.id),
+            ('task_id.student_id', '=', student.id),
+        ], order='id desc', limit=1)
 
         if not submission:
             # Create task if missing
@@ -482,7 +489,9 @@ class APSResource(models.Model):
             submission = submission_model.create({
                 'task_id': task.id,
                 'submission_name': self.display_name or self.name or '',
-                'date_assigned': fields.Date.today(),
+                # Opening a quiz creates an incomplete submission for access,
+                # not a student-facing assignment.
+                'date_assigned': False,
                 'state': 'assigned',
                 'question': self.question if self.has_question == 'yes' else False,
                 'has_question': self.has_question,
@@ -1251,22 +1260,15 @@ class APSResource(models.Model):
             'submissionState': None,
         }
 
-        # Find the task for this resource and student, then get the submission.
-        # We search via task because submission.student_id and
-        # submission.resource_id are non-stored related fields, making direct
-        # searches on them unreliable.
-        task = self.env['aps.resource.task'].search([
-            ('resource_id', '=', self.id),
-            ('student_id', '=', student_id),
-        ], limit=1)
-
-        if task:
-            submission = self.env['aps.resource.submission'].search([
-                ('task_id', '=', task.id),
-            ], order='date_assigned desc, id desc', limit=1)
-            if submission:
-                result['progress'] = submission.progress or 0.0
-                result['submissionState'] = submission.state
+        # Search across all matching tasks so progress follows an existing
+        # submission even if more than one legacy task is present.
+        submission = self.env['aps.resource.submission'].search([
+            ('task_id.resource_id', '=', self.id),
+            ('task_id.student_id', '=', student_id),
+        ], order='date_assigned desc, id desc', limit=1)
+        if submission:
+            result['progress'] = submission.progress or 0.0
+            result['submissionState'] = submission.state
 
         return result
 
@@ -1348,9 +1350,11 @@ class APSResource(models.Model):
                 'state': 'assigned',
             })
 
-        # Find existing submission
+        # Find an existing submission across all tasks for this resource and
+        # student. Do not limit the search to the first matching task.
         submission = self.env['aps.resource.submission'].search([
-            ('task_id', '=', task.id),
+            ('task_id.resource_id', '=', resource.id),
+            ('task_id.student_id', '=', student.id),
         ], order='date_assigned desc, id desc', limit=1)
 
         if submission:
@@ -1358,6 +1362,9 @@ class APSResource(models.Model):
             if submission.state == 'submitted':
                 submission.write({
                     'state': 'assigned',
+                    # An incomplete Course Explorer item is progress-tracking
+                    # data, not an active assignment in the student list.
+                    'date_assigned': False,
                     'progress': 0.0,
                 })
                 new_state = 'assigned'

@@ -19,6 +19,7 @@ export class CourseExplorerTreeNode extends Component {
         expandedIds: { type: Object },
         onToggle: { type: Function },
         onNavigate: { type: Function },
+        onQuizNavigate: { type: Function, optional: true },
     };
     static components = {}; // self-referential; set after class def
 
@@ -76,6 +77,15 @@ export class CourseExplorerTreeNode extends Component {
         ev.preventDefault();
         const sectionId = this.props.node.sectionId || this.props.node.id;
         this.props.onNavigate(sectionId);
+    }
+
+    onQuizClick(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const sectionId = this.props.node.sectionId || this.props.node.id;
+        if (this.props.onQuizNavigate) {
+            this.props.onQuizNavigate(sectionId);
+        }
     }
 }
 CourseExplorerTreeNode.components = { CourseExplorerTreeNode };
@@ -494,6 +504,10 @@ export class CourseExplorer extends Component {
         if (!target) return;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
         this._scrollToTarget(target);
+    }
+
+    scrollToQuizFromSidebar(sectionId) {
+        this.scrollToQuiz({ preventDefault() {} }, sectionId);
     }
 
     _scrollToTarget(target) {

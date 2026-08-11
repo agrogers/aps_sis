@@ -27,20 +27,47 @@ class APSSubject(models.Model):
         help='Subject icon. Defaults to the category icon if not set.',
     )
     active = fields.Boolean(default=True, string='Active')
+    current_academic_year_id = fields.Many2one(
+        'aps.academic.year',
+        string='Current Academic Year',
+        compute='_compute_current_academic_year_id',
+    )
     class_current_year_ids = fields.One2many(
         'aps.class',
         'subject_id',
         string='Current Year Classes',
-        domain="[('academic_year_id.is_current', '=', True)]",
+        compute='_compute_class_year_ids',
     )
     class_other_year_ids = fields.One2many(
         'aps.class',
         'subject_id',
         string='Other Year Classes',
-        domain="[('academic_year_id.is_current', '!=', True)]",
+        compute='_compute_class_year_ids',
     )
     show_add_classes = fields.Boolean(string='Add Classes', default=False)
     classes_to_create = fields.Integer(string='Number of Classes', default=1)
+
+    def _compute_current_academic_year_id(self):
+        current_year = self.env['aps.academic.year'].search(
+            [('is_current', '=', True)], limit=1
+        )
+        for subject in self:
+            subject.current_academic_year_id = current_year
+
+    def _compute_class_year_ids(self):
+        current_year = self.env['aps.academic.year'].search(
+            [('is_current', '=', True)], limit=1
+        )
+        for subject in self:
+            classes = self.env['aps.class'].search([
+                ('subject_id', '=', subject.id),
+            ])
+            subject.class_current_year_ids = classes.filtered(
+                lambda cls: cls.academic_year_id == current_year
+            )
+            subject.class_other_year_ids = classes.filtered(
+                lambda cls: cls.academic_year_id != current_year
+            )
 
     subject_coordinator_ids = fields.Many2many(
         'res.partner',

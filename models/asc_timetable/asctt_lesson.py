@@ -34,6 +34,10 @@ class ASCTTLesson(models.Model):
         column2='teacher_id',
         string='Teachers',
     )
+    teacher_order = fields.Text(
+        string='Teacher Order',
+        help='Internal teacher IDs in the order supplied by aSc. The first teacher is the lead teacher.',
+    )
     classroom_ids = fields.Many2many(
         'asctt.classroom',
         relation='asctt_lesson_classroom_rel',

@@ -56,7 +56,9 @@
                               stroke-width="3"/>
                         <circle cx="18" cy="18" r="11"
                                 t-att-fill="props.node.hasQuizzes ? (allQuizzesSubmitted ? avgColor : 'url(#' + gradientId + ')') : 'transparent'"
-                                stroke="none"/>
+                            stroke="none"
+                            t-att-class="props.node.hasQuizzes ? 'ce_quiz_score_circle' : ''"
+                            t-on-click="props.node.hasQuizzes ? onQuizClick : undefined"/>
                     </svg>
                     <span class="ce_progress_text"
                           t-att-style="props.node.hasQuizzes ? '' : 'display:none'">
@@ -74,7 +76,8 @@
                     depth="props.depth + 1"
                     expandedIds="props.expandedIds"
                     onToggle="props.onToggle"
-                    onNavigate="props.onNavigate"/>
+                    onNavigate="props.onNavigate"
+                    onQuizNavigate="props.onQuizNavigate"/>
             </t>
         </t>
     </t>
@@ -164,7 +167,8 @@
                             depth="0"
                             expandedIds="state.expandedNodeIds"
                             onToggle="(id) => this.toggleNode(id)"
-                            onNavigate="(sectionId) => this.scrollToSection(sectionId)"/>
+                            onNavigate="(sectionId) => this.scrollToSection(sectionId)"
+                            onQuizNavigate="(sectionId) => this.scrollToQuizFromSidebar(sectionId)"/>
                     </t>
                     <div t-if="!state.loading and !state.tree.length" class="ce_empty text-muted fst-italic p-3">
                         No resources found.

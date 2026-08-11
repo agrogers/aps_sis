@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Teacher workload: one row per teacher per card -->
+    <record id="asctt_teacher_workload_view_search" model="ir.ui.view">
+        <field name="name">asctt.teacher.workload.search</field>
+        <field name="model">asctt.teacher.workload</field>
+        <field name="arch" type="xml">
+            <search string="Teacher Workload">
+                <field name="teacher_id"/>
+                <field name="aps_teacher_id"/>
+                <field name="subject_name"/>
+                <filter name="filter_supervision" string="Supervisions Only" domain="[('is_supervision','=',True)]"/>
+                <filter name="filter_lessons" string="Lessons Only" domain="[('is_supervision','=',False)]"/>
+                <filter name="filter_assistant" string="Assistants Only" domain="[('is_assistant','=',True)]"/>
+                <filter name="filter_lead" string="Lead Teachers Only" domain="[('is_assistant','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_teacher" string="Teacher" context="{'group_by': 'teacher_id'}"/>
+                    <filter name="group_day" string="Day" context="{'group_by': 'day_name'}"/>
+                    <filter name="group_period" string="Period" context="{'group_by': 'period_id'}"/>
+                    <filter name="group_subject" string="Subject" context="{'group_by': 'subject_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="asctt_teacher_workload_view_list" model="ir.ui.view">
+        <field name="name">asctt.teacher.workload.list</field>
+        <field name="model">asctt.teacher.workload</field>
+        <field name="arch" type="xml">
+            <list string="Teacher Workload" create="false" edit="false" delete="false">
+                <field name="day_name"/>
+                <field name="period_id"/>
+                <field name="teacher_id"/>
+                <field name="aps_teacher_id" optional="show"/>
+                <field name="class_names"/>
+                <field name="subject_name"/>
+                <field name="weighted_minutes"/>
+                <field name="is_assistant" optional="show"/>
+                <field name="is_supervision" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_teacher_workload_view_pivot" model="ir.ui.view">
+        <field name="name">asctt.teacher.workload.pivot</field>
+        <field name="model">asctt.teacher.workload</field>
+        <field name="arch" type="xml">
+            <pivot string="Teacher Workload" disable_linking="true">
+                <field name="teacher_id" type="row"/>
+                <field name="day_name" type="col"/>
+                <field name="weighted_minutes" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="asctt_teacher_workload_action" model="ir.actions.act_window">
+        <field name="name">Teacher Workload</field>
+        <field name="res_model">asctt.teacher.workload</field>
+        <field name="view_mode">pivot,list</field>
+    </record>
+    <record id="asctt_teacher_workload_action_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="asctt_teacher_workload_view_pivot"/>
+        <field name="act_window_id" ref="asctt_teacher_workload_action"/>
+    </record>
+    <record id="asctt_teacher_workload_action_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="asctt_teacher_workload_view_list"/>
+        <field name="act_window_id" ref="asctt_teacher_workload_action"/>
+    </record>
+
+    <!-- Class workload: one row per class per card -->
+    <record id="asctt_class_workload_view_search" model="ir.ui.view">
+        <field name="name">asctt.class.workload.search</field>
+        <field name="model">asctt.class.workload</field>
+        <field name="arch" type="xml">
+            <search string="Class Workload">
+                <field name="class_id"/>
+                <field name="aps_class_id"/>
+                <field name="subject_name"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_class" string="Class" context="{'group_by': 'class_id'}"/>
+                    <filter name="group_day" string="Day" context="{'group_by': 'day_name'}"/>
+                    <filter name="group_period" string="Period" context="{'group_by': 'period_id'}"/>
+                    <filter name="group_subject" string="Subject" context="{'group_by': 'subject_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="asctt_class_workload_view_list" model="ir.ui.view">
+        <field name="name">asctt.class.workload.list</field>
+        <field name="model">asctt.class.workload</field>
+        <field name="arch" type="xml">
+            <list string="Class Workload" create="false" edit="false" delete="false">
+                <field name="day_name"/>
+                <field name="period_id"/>
+                <field name="class_id"/>
+                <field name="aps_class_id" optional="show"/>
+                <field name="teacher_names"/>
+                <field name="subject_name"/>
+                <field name="weighted_minutes"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="asctt_class_workload_view_pivot" model="ir.ui.view">
+        <field name="name">asctt.class.workload.pivot</field>
+        <field name="model">asctt.class.workload</field>
+        <field name="arch" type="xml">
+            <pivot string="Class Workload" disable_linking="true">
+                <field name="class_id" type="row"/>
+                <field name="day_name" type="col"/>
+                <field name="weighted_minutes" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="asctt_class_workload_action" model="ir.actions.act_window">
+        <field name="name">Class Workload</field>
+        <field name="res_model">asctt.class.workload</field>
+        <field name="view_mode">pivot,list</field>
+    </record>
+    <record id="asctt_class_workload_action_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="asctt_class_workload_view_pivot"/>
+        <field name="act_window_id" ref="asctt_class_workload_action"/>
+    </record>
+    <record id="asctt_class_workload_action_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="asctt_class_workload_view_list"/>
+        <field name="act_window_id" ref="asctt_class_workload_action"/>
+    </record>
+
+</odoo>

@@ -3,7 +3,7 @@
 
 
     <!-- APS SIS Menu Structure -->
-    <menuitem id="menu_apex_root" name="APEX" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
+    <menuitem id="menu_apex_root" name="APEX LMS" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
 
     <menuitem id="menu_apex_resources" name="Resources" parent="menu_apex_root" action="action_aps_resources" sequence="9" groups="aps_sis.group_aps_teacher"/>
 

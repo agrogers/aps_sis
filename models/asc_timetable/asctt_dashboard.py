@@ -4,7 +4,13 @@ from odoo import models, fields, api
 class ASCTTDashboard(models.TransientModel):
     _name = 'asctt.dashboard'
     _description = 'aSc Timetable Dashboard'
-    _rec_name = 'id'
+    _rec_name = 'name'
+
+    name = fields.Char(
+        string='Name',
+        default='aSc Timetable Dashboard',
+        readonly=True,
+    )
 
     count_periods = fields.Integer(string='Periods', compute='_compute_counts', store=False)
     count_breaks = fields.Integer(string='Breaks', compute='_compute_counts', store=False)
@@ -105,7 +111,15 @@ class ASCTTDashboard(models.TransientModel):
         }
 
     def action_open_flat_view(self):
-        action = self.env.ref('aps_sis.asctt_flat_row_action')
+        action = self.env.ref('aps_sis.asctt_teacher_workload_action')
+        return action.read()[0]
+
+    def action_open_teacher_workload(self):
+        action = self.env.ref('aps_sis.asctt_teacher_workload_action')
+        return action.read()[0]
+
+    def action_open_class_workload(self):
+        action = self.env.ref('aps_sis.asctt_class_workload_action')
         return action.read()[0]
 
     def action_open_class_subject_view(self):

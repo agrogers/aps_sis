@@ -15,7 +15,8 @@
                         </div>
                         <div>
                             <button name="action_import_xml" type="object" string="Import XML" class="btn btn-primary" icon="fa-upload"/>
-                            <button name="action_open_flat_view" type="object" string="Workload Pivot" class="btn btn-secondary" icon="fa-table"/>
+                            <button name="action_open_teacher_workload" type="object" string="Teacher Workload" class="btn btn-secondary" icon="fa-table"/>
+                            <button name="action_open_class_workload" type="object" string="Class Workload" class="btn btn-secondary" icon="fa-users"/>
                             <button name="action_open_class_subject_view" type="object" string="Minutes/Subject" class="btn btn-secondary" icon="fa-pie-chart"/>
                             <button name="action_open_timetable" type="object" string="School Timetable" class="btn btn-info" icon="fa-calendar"/>
                         </div>
@@ -260,7 +261,10 @@ action = {
     'res_id': record.id,
     'view_mode': 'form',
     'view_id': env.ref('aps_sis.asctt_dashboard_view_form').id,
-    'target': 'current',
+                    # Replace the current action so this transient dashboard
+                    # does not remain as a numeric breadcrumb in child views.
+                    'target': 'main',
+    'context': {'no_breadcrumbs': True},
 }
         </field>
     </record>

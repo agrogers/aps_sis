@@ -14,6 +14,8 @@ from . import asctt_lesson
 from . import asctt_card
 from . import asctt_classroom_supervision
 from . import asctt_flat_row
+from . import asctt_teacher_workload
+from . import asctt_class_workload
 from . import asctt_class_subject_minutes
 from . import asctt_dashboard
 from . import asctt_import_wizard
