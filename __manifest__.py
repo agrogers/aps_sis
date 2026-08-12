@@ -138,8 +138,6 @@
             'aps_sis/static/src/lib/slickgrid/universal/slickgrid-theme-bootstrap.css',
             'aps_sis/static/src/components/**/*.js',
             'aps_sis/static/src/components/**/*.xml',
-			'aps_sis/static/src/components/student_daily_mgmt/uniform_infringement_dialog.js',
-			'aps_sis/static/src/components/student_daily_mgmt/uniform_infringement_dialog.xml',
             'aps_sis/static/src/components/**/*.scss',
             'aps_sis/static/src/components/**/*.css',
             'aps_sis/static/src/js/image_result_widget.js',

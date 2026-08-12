@@ -489,6 +489,7 @@ class APSResource(models.Model):
             submission = submission_model.create({
                 'task_id': task.id,
                 'submission_name': self.display_name or self.name or '',
+                'submission_label': self.display_name or self.name or '',
                 # Opening a quiz creates an incomplete submission for access,
                 # not a student-facing assignment.
                 'date_assigned': False,

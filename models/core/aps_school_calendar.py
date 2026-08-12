@@ -18,6 +18,10 @@ class ApsSchoolCalendar(models.Model):
     ]
 
     date = fields.Date(string='Date', required=True, index=True)
+    date_display = fields.Char(
+        string='Day',
+        compute='_compute_date_display',
+    )
     date_type = fields.Selection(
         DATE_TYPE,
         string='Type',
@@ -60,6 +64,18 @@ class ApsSchoolCalendar(models.Model):
     def _compute_color(self):
         for rec in self:
             rec.color = self._DATE_TYPE_COLOR.get(rec.date_type, 0)
+
+    @api.depends('date')
+    def _compute_date_display(self):
+        for rec in self:
+            if rec.date:
+                date_value = fields.Date.to_date(rec.date)
+                rec.date_display = (
+                    f'{date_value.strftime("%A")} '
+                    f'{date_value.day} {date_value.strftime("%B")} {date_value.strftime("%Y")}'
+                )
+            else:
+                rec.date_display = False
 
     # Computed: which academic week does this date fall in?
     week_id = fields.Many2one(
