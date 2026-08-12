@@ -56,6 +56,7 @@ class APSTeacher(models.Model):
         string='Classes',
         readonly=True,
     )
+    class_count = fields.Integer(string='Classes', compute='_compute_class_count')
 
     _sql_constraints = [
         ('partner_unique', 'UNIQUE(partner_id)', 'A teacher record already exists for this contact.'),
@@ -109,6 +110,21 @@ class APSTeacher(models.Model):
                 ])
             else:
                 rec.class_ids = False
+
+    def _compute_class_count(self):
+        for rec in self:
+            rec.class_count = len(rec.class_ids)
+
+    def action_view_classes(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Classes',
+            'res_model': 'aps.class',
+            'view_mode': 'list,form',
+            'domain': ['|', ('teacher_ids', 'in', self.partner_id.id),
+                       ('assistant_teacher_ids', 'in', self.partner_id.id)],
+        }
 
     def action_populate_from_contacts(self):
         """Create/restore teacher records for all partners with is_teacher=True."""

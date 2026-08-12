@@ -46,6 +46,7 @@ class APSClass(models.Model):
         column1='class_id',
         column2='partner_id',
         string='Teachers',
+        domain=[('is_teacher', '=', True)],
     )
     assistant_teacher_ids = fields.Many2many(
         'res.partner',
@@ -53,6 +54,7 @@ class APSClass(models.Model):
         column1='class_id',
         column2='partner_id',
         string='Assistant Teachers',
+        domain=[('is_teacher', '=', True)],
     )
     active = fields.Boolean(default=True, string='Active')
     enrollment_ids = fields.One2many('aps.student.class', 'class_id', string='Enrolled Students')
@@ -68,6 +70,17 @@ class APSClass(models.Model):
         compute='_compute_enrollment_count',
         store=True,
     )
+
+    def action_view_enrollments(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Enrolled Students',
+            'res_model': 'aps.student.class',
+            'view_mode': 'list,form',
+            'domain': [('class_id', '=', self.id)],
+            'context': {'default_class_id': self.id},
+        }
 
     @api.depends('enrollment_ids')
     def _compute_enrollment_count(self):

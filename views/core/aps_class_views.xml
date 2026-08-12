@@ -29,6 +29,12 @@
                     Assign <strong>Teachers</strong> and enrol <strong>Students</strong> below.
                 </div>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_enrollments" type="object" class="oe_stat_button"
+                                icon="fa-users">
+                            <field name="enrollment_count" widget="statinfo" string="Students"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" placeholder="Class Name"/>
@@ -47,13 +53,11 @@
                     <group>
                         <group string="Teachers">
                             <field name="teacher_ids" widget="many2many_tags"
-                                   domain="[('is_teacher', '=', True)]"
-                                   options="{'no_create': True}" nolabel="1"/>
+                                options="{'no_create': True}" nolabel="1"/>
                         </group>
                         <group string="Assistant Teachers">
                             <field name="assistant_teacher_ids" widget="many2many_tags"
-                                   domain="[('is_teacher', '=', True)]"
-                                   options="{'no_create': True}" nolabel="1"/>
+                                options="{'no_create': True}" nolabel="1"/>
                         </group>
                         <group string="Tags">
                             <field name="tag_ids" widget="many2many_tags" nolabel="1"/>

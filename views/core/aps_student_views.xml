@@ -29,6 +29,12 @@
                     Use the <strong>Classes</strong> tab to manage all class enrollments for this student, including historical enrollments.
                 </div>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_enrollments" type="object" class="oe_stat_button"
+                                icon="fa-users">
+                            <field name="enrollment_count" widget="statinfo" string="Classes"/>
+                        </button>
+                    </div>
                     <field name="image_128" widget="image" class="oe_avatar o_image_48_max" options="{'preview_image': 'image_128'}"/>
                     <div class="oe_title">
                         <h1>

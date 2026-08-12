@@ -134,7 +134,7 @@ class APSResourceSubmissionGradebook(models.Model):
         """Return column definitions for the gradebook grid."""
         cols = [
             {'id': 'student_name', 'name': _('Student'), 'field': 'student_name',
-             'width': 200, 'sortable': True, 'editable': False, 'locked': True},
+             'width': 200, 'maxWidth': 400, 'sortable': True, 'editable': False, 'locked': True},
         ]
         if expanded:
             cols.append({'id': 'date_assigned', 'name': _('Date'), 'field': 'date_assigned',

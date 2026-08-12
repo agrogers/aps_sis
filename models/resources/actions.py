@@ -8,6 +8,8 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+_COURSE_EXPLORER_HIDE_CHILD_NOTES_TAG = 'course explorer: hide child notes'
+
 
 class APSResource(models.Model):
     _inherit = 'aps.resources'
@@ -943,6 +945,12 @@ class APSResource(models.Model):
         """
         self.ensure_one()
         html = self.notes or ''
+        if any(
+            (tag.name or '').strip().casefold()
+            == _COURSE_EXPLORER_HIDE_CHILD_NOTES_TAG
+            for tag in self.tag_ids
+        ):
+            html = self._truncate_course_explorer_notes(html)
         # NOTE: Lazy-loading and aspect-ratio injection are now applied in
         # the write()/create() overrides (overrides.py), so the HTML stored
         # in the database is already processed. No need to modify on read.
@@ -952,6 +960,20 @@ class APSResource(models.Model):
         #   if changed:
         #       self.sudo().with_context(_skip_image_ratio_hook=True).write({'notes': html})
         return (Markup(html) if html else False), self.id
+
+    @staticmethod
+    def _truncate_course_explorer_notes(html):
+        """Keep only the notes before the first HTML heading element.
+
+        A resource with the ``Course Explorer: Hide Child Notes`` tag can be
+        used as a notes source by child resources.  The parent note normally
+        contains the parent text followed by headings for each child; the
+        heading and everything after it must not be repeated in the child
+        section.
+        """
+        if not html:
+            return html
+        return re.split(r'<h[1-6]\\b[^>]*>', html, maxsplit=1, flags=re.IGNORECASE)[0]
 
     @api.model
     def get_course_explorer_data(self, subject_category_id=False):

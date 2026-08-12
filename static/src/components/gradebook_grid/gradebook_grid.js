@@ -177,6 +177,7 @@ export class GradebookGrid extends Component {
                 name: col.name,
                 field: col.field,
                 width: col.width || 150,
+                maxWidth: col.maxWidth || 400,
                 sortable: col.sortable || false,
                 editable: col.editable || false,
                 locked: col.locked || false,

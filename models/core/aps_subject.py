@@ -20,6 +20,11 @@ class APSSubject(models.Model):
         ondelete='set null',
         help='Academic level this subject belongs to (e.g. Year 1, Year 2)',
     )
+    class_ids = fields.One2many(
+        'aps.class',
+        'subject_id',
+        string='Classes',
+    )
     icon = fields.Image(
         string='Icon',
         max_width=128,
@@ -44,6 +49,7 @@ class APSSubject(models.Model):
         string='Other Year Classes',
         compute='_compute_class_year_ids',
     )
+    class_count = fields.Integer(string='Classes', compute='_compute_class_count')
     show_add_classes = fields.Boolean(string='Add Classes', default=False)
     classes_to_create = fields.Integer(string='Number of Classes', default=1)
 
@@ -68,6 +74,10 @@ class APSSubject(models.Model):
             subject.class_other_year_ids = classes.filtered(
                 lambda cls: cls.academic_year_id != current_year
             )
+
+    def _compute_class_count(self):
+        for subject in self:
+            subject.class_count = len(subject.class_ids)
 
     subject_coordinator_ids = fields.Many2many(
         'res.partner',
@@ -96,6 +106,17 @@ class APSSubject(models.Model):
         new_classes = self.env['aps.class'].create(vals_list)
         new_classes._compute_code_name()
         self.write({'show_add_classes': False, 'classes_to_create': 1})
+
+    def action_view_classes(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Classes',
+            'res_model': 'aps.class',
+            'view_mode': 'list,form',
+            'domain': [('subject_id', '=', self.id)],
+            'context': {'default_subject_id': self.id},
+        }
 
     @api.onchange('category_id')
     def _onchange_category_id(self):

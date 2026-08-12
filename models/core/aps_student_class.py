@@ -93,6 +93,8 @@ class APSStudentClass(models.Model):
                 start = vals.get('start_date')
                 end = vals.get('end_date')
                 if start and end:
+                    start = fields.Date.to_date(start)
+                    end = fields.Date.to_date(end)
                     if today < start:
                         vals['state'] = 'waiting'
                     elif today < end:

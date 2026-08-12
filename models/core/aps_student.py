@@ -72,6 +72,23 @@ class APSStudent(models.Model):
         help='Date of birth inherited from the linked partner.',
     )
     enrollment_ids = fields.One2many('aps.student.class', 'student_id', string='Class Enrollments')
+    enrollment_count = fields.Integer(string='Classes', compute='_compute_enrollment_count')
+
+    @api.depends('enrollment_ids')
+    def _compute_enrollment_count(self):
+        for student in self:
+            student.enrollment_count = len(student.enrollment_ids)
+
+    def action_view_enrollments(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Class Enrollments',
+            'res_model': 'aps.student.class',
+            'view_mode': 'list,form',
+            'domain': [('student_id', '=', self.id)],
+            'context': {'default_student_id': self.id},
+        }
 
     def _get_cohort_keys(self):
         """Return all cohort keys for the student, e.g. ['Y10 in 25/26', 'Y11 in 26/27'].
