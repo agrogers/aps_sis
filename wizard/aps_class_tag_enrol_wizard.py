@@ -33,23 +33,31 @@ class APSClassTagEnrolWizard(models.TransientModel):
     result_message = fields.Html(readonly=True)
     has_result = fields.Boolean(default=False)
 
+    def _get_matching_classes(self):
+        self.ensure_one()
+        if not self.tag_ids or not self.academic_year_id:
+            return self.env['aps.class']
+        return self.env['aps.class'].search([
+            ('tag_ids', 'in', self.tag_ids.ids),
+            ('academic_year_id', '=', self.academic_year_id.id),
+        ])
+
     @api.onchange('tag_ids', 'academic_year_id')
     def _onchange_tags(self):
         """Compute classes whose tag_ids intersect with the selected tags."""
         for rec in self:
-            if rec.tag_ids and rec.academic_year_id:
-                rec.matching_class_ids = self.env['aps.class'].search([
-                    ('tag_ids', 'in', rec.tag_ids.ids),
-                    ('academic_year_id', '=', rec.academic_year_id.id),
-                ])
-            else:
-                rec.matching_class_ids = [(5, 0, 0)]
+            rec.matching_class_ids = rec._get_matching_classes()
 
     def action_execute(self):
         self.ensure_one()
         if not self.tag_ids:
             raise UserError(_("Please select at least one tag."))
-        if not self.matching_class_ids:
+
+        # Recompute this on the server.  The displayed value is populated by
+        # onchange, but readonly many2many values are not guaranteed to be
+        # written back to a transient record before an object button is called.
+        matching_classes = self._get_matching_classes()
+        if not matching_classes:
             raise UserError(_("No classes match the selected tags for this academic year."))
 
         tag_names = self.tag_ids.mapped('name')
@@ -85,7 +93,7 @@ class APSClassTagEnrolWizard(models.TransientModel):
 
         Enrollment = self.env['aps.student.class']
 
-        for cls in self.matching_class_ids:
+        for cls in matching_classes:
             # Find partners whose categories intersect with THIS class's tags by name
             cls_tag_names = cls.tag_ids.mapped('name')
             matching_partner_cats = PartnerCategory.search([('name', 'in', cls_tag_names)])
@@ -134,7 +142,7 @@ class APSClassTagEnrolWizard(models.TransientModel):
 
         summary = (
             f"<b>{enrolled_count}</b> student(s) enrolled across "
-            f"{len(self.matching_class_ids)} class(es)."
+            f"{len(matching_classes)} class(es)."
         )
         if already_enrolled_count:
             summary += f"<br/><b>{already_enrolled_count}</b> already enrolled (skipped)."
