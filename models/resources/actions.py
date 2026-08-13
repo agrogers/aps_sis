@@ -973,7 +973,7 @@ class APSResource(models.Model):
         """
         if not html:
             return html
-        return re.split(r'<h[1-6]\\b[^>]*>', html, maxsplit=1, flags=re.IGNORECASE)[0]
+        return re.split(r'<h[1-6]\b[^>]*>', html, maxsplit=1, flags=re.IGNORECASE)[0]
 
     @api.model
     def get_course_explorer_data(self, subject_category_id=False):

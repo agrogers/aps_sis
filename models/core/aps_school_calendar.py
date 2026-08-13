@@ -1,12 +1,11 @@
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
 
 
 class ApsSchoolCalendar(models.Model):
     _name = 'aps.school.calendar'
     _description = 'School Calendar'
     _rec_name = 'description'
-    _order = 'date, applies_to_level_id'
+    _order = 'date, date_type, id'
 
     DATE_TYPE = [
         ('school_day', 'School Day'),
@@ -34,11 +33,12 @@ class ApsSchoolCalendar(models.Model):
     )
     description = fields.Char(string='Description')
     notes = fields.Text(string='Notes')
-    applies_to_level_id = fields.Many2one(
+    applies_to_level_ids = fields.Many2many(
         'aps.level',
-        string='Applies To Level',
-        ondelete='set null',
-        index=True,
+        string='Applies to Levels',
+        relation='aps_school_calendar_level_rel',
+        column1='calendar_id',
+        column2='level_id',
         help='Leave blank to apply to all levels.',
     )
 
@@ -114,16 +114,3 @@ class ApsSchoolCalendar(models.Model):
             if rec.description:
                 rec.display_name = f'{rec.display_name} ({rec.description})'
 
-    @api.constrains('date', 'applies_to_level_id')
-    def _check_unique_date_level(self):
-        for rec in self:
-            domain = [('date', '=', rec.date), ('id', '!=', rec.id)]
-            if rec.applies_to_level_id:
-                domain.append(('applies_to_level_id', '=', rec.applies_to_level_id.id))
-            else:
-                domain.append(('applies_to_level_id', '=', False))
-            if self.search_count(domain):
-                level_label = rec.applies_to_level_id.display_name if rec.applies_to_level_id else 'All Levels'
-                raise ValidationError(
-                    f'A calendar entry for {rec.date} already exists for {level_label}.'
-                )

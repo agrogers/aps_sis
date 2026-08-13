@@ -15,7 +15,7 @@
                        decoration-muted="date_type == 'weekend'"/>
                 <field name="description"/>
                 <field name="repeating" optional="show"/>
-                <field name="applies_to_level_id" optional="show"/>
+                <field name="applies_to_level_ids" optional="show"/>
                 <field name="week_id" optional="show"/>
                 <field name="notes" optional="hide"/>
             </list>
@@ -34,8 +34,9 @@
                             <field name="date"/>
                             <field name="date_display" readonly="True"/>
                             <field name="date_type"/>
-                            <field name="applies_to_level_id"
-                                   placeholder="Leave blank for all levels"/>
+                            <field name="applies_to_level_ids"
+                                widget="many2many_tags"
+                                placeholder="Leave blank for all levels"/>
                         </group>
                         <group>
                             <field name="week_id" readonly="True"/>
@@ -59,7 +60,7 @@
             <search string="School Calendar">
                 <field name="date"/>
                 <field name="description"/>
-                <field name="applies_to_level_id"/>
+                <field name="applies_to_level_ids"/>
                 <field name="week_id"/>
                 <filter string="Public Holidays" name="public_holiday"
                         domain="[('date_type', '=', 'public_holiday')]"/>
@@ -74,10 +75,10 @@
                         domain="[('repeating', '=', True)]"/>
                 <separator/>
                 <filter string="All Levels" name="all_levels"
-                        domain="[('applies_to_level_id', '=', False)]"/>
+                        domain="[('applies_to_level_ids', '=', False)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Type" name="group_type" context="{'group_by': 'date_type'}"/>
-                    <filter string="Level" name="group_level" context="{'group_by': 'applies_to_level_id'}"/>
+                    <filter string="Level" name="group_level" context="{'group_by': 'applies_to_level_ids'}"/>
                     <filter string="Week" name="group_week" context="{'group_by': 'week_id'}"/>
                 </group>
             </search>
@@ -96,7 +97,7 @@
                       quick_create="false">
                 <field name="date_type"/>
                 <field name="description"/>
-                <field name="applies_to_level_id"/>
+                <field name="applies_to_level_ids"/>
             </calendar>
         </field>
     </record>

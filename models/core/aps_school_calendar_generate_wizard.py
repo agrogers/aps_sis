@@ -30,12 +30,12 @@ class ApsSchoolCalendarGenerateWizard(models.TransientModel):
         self.ensure_one()
         Calendar = self.env['aps.school.calendar']
 
-        # Build a set of existing (date, level_id) pairs for fast lookup
+        # Build a set of dates with an all-level entry for fast lookup.
         existing = set(
             Calendar.search([
                 ('date', '>=', self.date_start),
                 ('date', '<=', self.date_end),
-                ('applies_to_level_id', '=', False),
+                ('applies_to_level_ids', '=', False),
             ]).mapped('date')
         )
 
@@ -47,12 +47,14 @@ class ApsSchoolCalendarGenerateWizard(models.TransientModel):
             ('date', '>=', prev_start),
             ('date', '<=', prev_end),
             ('repeating', '=', True),
-            ('applies_to_level_id', '=', False),
+            ('applies_to_level_ids', '=', False),
         ])
-        # Key: (month, day) → entry
-        repeating_map = {
-            (e.date.month, e.date.day): e for e in prev_entries
-        }
+        # Key: (month, day) → all repeating entries.  A date may contain
+        # several events, so preserve every entry when carrying the calendar
+        # forward into the next year.
+        repeating_map = {}
+        for entry in prev_entries:
+            repeating_map.setdefault((entry.date.month, entry.date.day), []).append(entry)
 
         to_create = []
         created = skipped = 0
@@ -66,28 +68,33 @@ class ApsSchoolCalendarGenerateWizard(models.TransientModel):
 
             vals = {
                 'date': current,
-                'applies_to_level_id': False,
+                'applies_to_level_ids': False,
             }
+            previous_entries = []
 
             if current.weekday() >= 5:
                 # Saturday (5) or Sunday (6)
                 vals['date_type'] = 'weekend'
                 vals['description'] = current.strftime('%A')
                 vals['repeating'] = False
+                to_create.append(vals)
             else:
                 # Check for a repeating entry from the previous year on the same calendar date
-                prev = repeating_map.get((current.month, current.day))
-                if prev:
-                    vals['date_type'] = prev.date_type
-                    vals['description'] = prev.description or ''
-                    vals['notes'] = prev.notes or ''
-                    vals['repeating'] = True  # carry the repeating flag forward
+                previous_entries = repeating_map.get((current.month, current.day), [])
+                if previous_entries:
+                    for previous_entry in previous_entries:
+                        repeated_vals = dict(vals)
+                        repeated_vals['date_type'] = previous_entry.date_type
+                        repeated_vals['description'] = previous_entry.description or ''
+                        repeated_vals['notes'] = previous_entry.notes or ''
+                        repeated_vals['repeating'] = True
+                        to_create.append(repeated_vals)
                 else:
                     # Normal school day
                     vals['date_type'] = 'school_day'
 
-            to_create.append(vals)
-            created += 1
+                    to_create.append(vals)
+            created += len(previous_entries) if previous_entries else 1
             current += datetime.timedelta(days=1)
 
         if to_create:

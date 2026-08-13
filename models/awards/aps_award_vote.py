@@ -7,6 +7,19 @@ class APSAwardVote(models.Model):
     _rec_name = 'description'
     _order = 'submitted_date desc, id desc'
 
+    @api.model
+    def get_open_round_count_for_current_user(self):
+        """Return open voting rounds awaiting the current user's vote."""
+        partner = self.env.user.partner_id
+        if not partner:
+            return 0
+        votes = self.search([
+            ('voter_partner_id', '=', partner.id),
+            ('state', '=', 'open'),
+            ('vote_round_id.status', '=', 'open'),
+        ])
+        return len(set(votes.mapped('vote_round_id').ids))
+
     description = fields.Text(
         string='Description',
         compute='_compute_description_fields', store=True, readonly=False,
