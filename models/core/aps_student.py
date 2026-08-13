@@ -100,7 +100,11 @@ class APSStudent(models.Model):
         self.ensure_one()
         home_class_tag_names = {'Home Class', 'Pastoral Care Subject'}
         keys = []
-        for enrollment in self.enrollment_ids.filtered(lambda e: e.state == 'enrolled'):
+        # Include historical as well as current home-class enrolments. Progress
+        # records are keyed to the cohort the student belonged to when that
+        # Progress schedule was created, so a current Y11 student may need the
+        # exact Y10/year pair from the previous enrolment.
+        for enrollment in self.enrollment_ids:
             category = enrollment.class_id.subject_id.category_id
             if not category or not any(t.name in home_class_tag_names for t in category.tag_ids):
                 continue

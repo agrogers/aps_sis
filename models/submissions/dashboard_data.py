@@ -212,6 +212,9 @@ class APSResourceSubmissionDashboardData(models.Model):
         all_enrolled_subject_ids = set()
         partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
         student_records = self.env['aps.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        student_record_by_partner = {
+            student.partner_id.id: student for student in student_records
+        }
         for student_record in student_records:
             enrolled_ids = set(
                 student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
@@ -312,23 +315,25 @@ class APSResourceSubmissionDashboardData(models.Model):
 
         progress_resources = self._get_progress_resources()
         if not progress_resources:
-            return {'entries': [], 'deadline': False}
+            return {
+                'entries': [],
+                'deadline': False,
+                'diagnostics': {
+                    'stage': 'no_progress_resources',
+                    'progress_resource_count': 0,
+                    'submission_count': 0,
+                    'student_count': 0,
+                    'subject_count': 0,
+                    'enrolled_subject_count': 0,
+                    'history_student_count': 0,
+                    'prediction_count': 0,
+                    'resources': [],
+                },
+            }
 
         exclude, _exclude_from_avg = self._parse_resource_notes_excludes(progress_resources)
 
-        # --- Determine global deadline (latest end_date across all progress resources) ---
-        deadline = None
-        for resource in progress_resources:
-            pace_dates = resource.get_pace_dates()
-            if pace_dates.get('end_date'):
-                if deadline is None or pace_dates['end_date'] > deadline:
-                    deadline = pace_dates['end_date']
-
         today = date_type.today()
-        if deadline and deadline > today:
-            days_remaining = (deadline - today).days
-        else:
-            days_remaining = 0  # No future deadline → no projection, use current progress
 
         # --- Optionally restrict to a class ---
         class_partner_ids = None
@@ -341,8 +346,25 @@ class APSResourceSubmissionDashboardData(models.Model):
             ('submission_active', '=', True),
             ('state', 'in', ['submitted', 'complete']),
         ], order='date_submitted asc')
+        diagnostics = {
+            'stage': 'submissions_loaded',
+            'progress_resource_count': len(progress_resources),
+            'progress_resources': [
+                {'id': resource.id, 'name': resource.name}
+                for resource in progress_resources
+            ],
+            'submission_count': len(submissions),
+            'student_count': 0,
+            'subject_count': 0,
+            'enrolled_subject_count': 0,
+            'history_student_count': 0,
+            'prediction_count': 0,
+            'class_partner_count': len(class_partner_ids) if class_partner_ids is not None else None,
+            'resources': [],
+        }
         if not submissions:
-            return {'entries': [], 'deadline': deadline.isoformat() if deadline else False}
+            diagnostics['stage'] = 'no_submissions'
+            return {'entries': [], 'deadline': False, 'diagnostics': diagnostics}
 
         # If class-restricted, keep only submissions whose student belongs to that class
         if class_partner_ids is not None:
@@ -350,7 +372,10 @@ class APSResourceSubmissionDashboardData(models.Model):
                 lambda s: s.student_id and s.student_id.id in class_partner_ids
             )
             if not submissions:
-                return {'entries': [], 'deadline': deadline.isoformat() if deadline else False}
+                diagnostics['stage'] = 'no_submissions_after_class_filter'
+                diagnostics['submission_count_after_class_filter'] = 0
+                return {'entries': [], 'deadline': False, 'diagnostics': diagnostics}
+            diagnostics['submission_count_after_class_filter'] = len(submissions)
 
         # --- Collect subjects, apply exclude filter ---
         all_subjects = self.env['aps.subject']
@@ -360,12 +385,17 @@ class APSResourceSubmissionDashboardData(models.Model):
             all_subjects = all_subjects.filtered(lambda s: s.name not in exclude)
         if category_id:
             all_subjects = all_subjects.filtered(lambda s: s.category_id.id == category_id)
+        diagnostics['student_count'] = len(set(sub.student_id.id for sub in submissions if sub.student_id))
+        diagnostics['subject_count'] = len(all_subjects)
 
         # --- Restrict to enrolled subjects ---
         student_enrolled_subjects = {}
         all_enrolled_subject_ids = set()
         partner_ids = list({sub.student_id.id for sub in submissions if sub.student_id})
         student_records = self.env['aps.student'].sudo().search([('partner_id', 'in', partner_ids)])
+        student_record_by_partner = {
+            student.partner_id.id: student for student in student_records
+        }
         for student_record in student_records:
             enrolled_ids = set(
                 student_record.enrollment_ids.filtered(lambda e: e.state == 'enrolled')
@@ -375,6 +405,7 @@ class APSResourceSubmissionDashboardData(models.Model):
             all_enrolled_subject_ids.update(enrolled_ids)
         if all_enrolled_subject_ids:
             all_subjects = all_subjects.filtered(lambda s: s.id in all_enrolled_subject_ids)
+        diagnostics['enrolled_subject_count'] = len(all_subjects)
 
         all_subject_ids_set = set(all_subjects.ids)
 
@@ -383,11 +414,31 @@ class APSResourceSubmissionDashboardData(models.Model):
         # student_history: {student_id: {subject_id: [(date, result_percent), ...]}}
         student_history = {}
         student_names = {}
+        student_deadlines = {}
+        pace_dates_cache = {}
         for submission in submissions:
             student_id = submission.student_id.id
             if not student_id:
                 continue
             student_names[student_id] = submission.student_id.name
+
+            # Dates are cohort-specific.  Resolving these without a student (the
+            # old behaviour) falls back to generic notes and makes the predicted
+            # leaderboard use current progress whenever only cohort dates exist.
+            student_record = student_record_by_partner.get(student_id)
+            cache_key = (submission.resource_id.id, student_id)
+            if cache_key not in pace_dates_cache:
+                pace_dates_cache[cache_key] = submission.resource_id.get_pace_dates(
+                    cohort_keys=student_record._get_cohort_keys() if student_record else []
+                )
+            pace_dates = pace_dates_cache[cache_key]
+            resource_end = pace_dates.get('end_date')
+            if resource_end and (
+                student_id not in student_deadlines
+                or resource_end > student_deadlines[student_id]
+            ):
+                student_deadlines[student_id] = resource_end
+
             if student_id not in student_history:
                 student_history[student_id] = {}
             student_enrolled = student_enrolled_subjects.get(student_id)
@@ -408,9 +459,28 @@ class APSResourceSubmissionDashboardData(models.Model):
                     (date_to_use, submission.result_percent or 0)
                 )
 
+        diagnostics['history_student_count'] = len(student_history)
+        diagnostics['history_subject_count'] = sum(
+            len(subjects) for subjects in student_history.values()
+        )
+        diagnostics['deadline_count'] = len(student_deadlines)
+        diagnostics['resources'] = [
+            {
+                'id': resource.id,
+                'name': resource.name,
+                'submission_count': sum(
+                    1 for submission in submissions
+                    if submission.resource_id.id == resource.id
+                ),
+            }
+            for resource in progress_resources
+        ]
+
         # --- Calculate predicted total progress per student ---
         leaderboard = []
         for student_id, subjects in student_history.items():
+            deadline = student_deadlines.get(student_id)
+            days_remaining = (deadline - today).days if deadline and deadline > today else 0
             predicted_totals = []
             for subject_id, data_points in subjects.items():
                 if not data_points:
@@ -456,6 +526,8 @@ class APSResourceSubmissionDashboardData(models.Model):
 
         leaderboard.sort(key=lambda x: x['avg_predicted'], reverse=True)
         leaderboard = leaderboard[:limit]
+        diagnostics['prediction_count'] = len(leaderboard)
+        diagnostics['stage'] = 'predictions_calculated' if leaderboard else 'no_predictions'
 
         result = [
             {
@@ -474,9 +546,12 @@ class APSResourceSubmissionDashboardData(models.Model):
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
             entry['has_image'] = image_map.get(entry['student_id'], False)
 
+        deadlines = [value for value in student_deadlines.values() if value]
+        display_deadline = max(deadlines) if deadlines else False
         return {
             'entries': result,
-            'deadline': deadline.isoformat() if deadline else False,
+            'deadline': display_deadline.isoformat() if display_deadline else False,
+            'diagnostics': diagnostics,
         }
 
     @api.model
@@ -555,6 +630,44 @@ class APSResourceSubmissionDashboardData(models.Model):
             }
         
         exclude, exclude_from_average = self._parse_resource_notes_excludes(progress_resources)
+
+        student_record = self.env['aps.student'].sudo().search([
+            ('partner_id', '=', student_id)
+        ], limit=1)
+        cohort_keys = student_record._get_cohort_keys() if student_record else []
+        pace_info = {}
+        pace_diagnostics = {
+            'student_id': student_id,
+            'cohort_keys': cohort_keys,
+            'cohort_label': ', '.join(cohort_keys) if cohort_keys else 'not found',
+            'resources': [],
+            'redline_resource_count': 0,
+        }
+        for resource in progress_resources:
+            matched_cohort_keys = resource._get_declared_pace_cohort_keys(cohort_keys)
+            pace_dates = resource.get_pace_dates(cohort_keys=cohort_keys)
+            resource_info = {
+                'resource_id': resource.id,
+                'resource_name': resource.name,
+                'matched_cohort_keys': matched_cohort_keys,
+                'dates': {
+                    key: value.isoformat() if value else False
+                    for key, value in pace_dates.items()
+                },
+                'has_pace_dates': bool(pace_dates['start_date'] and pace_dates['end_date']),
+                'has_redline_dates': bool(
+                    pace_dates['redline_start_date'] and pace_dates['redline_end_date']
+                ),
+            }
+            if any(pace_dates.values()):
+                pace_info[resource.id] = {
+                    key: value.isoformat() if value else False
+                    for key, value in pace_dates.items()
+                }
+                pace_info[resource.id]['resource_name'] = resource.name
+            pace_diagnostics['resources'].append(resource_info)
+            if resource_info['has_redline_dates']:
+                pace_diagnostics['redline_resource_count'] += 1
         
         # Build domain for submissions
         domain = [
@@ -571,7 +684,8 @@ class APSResourceSubmissionDashboardData(models.Model):
             return {
                 'line_data': [],
                 'bar_data': [],
-                'pace_data': {},
+                'pace_data': pace_info,
+                'pace_diagnostics': pace_diagnostics,
                 'subject_colors': {},
                 'exclude_from_average': exclude_from_average,
                 'exclude': exclude,
@@ -583,9 +697,6 @@ class APSResourceSubmissionDashboardData(models.Model):
             all_subjects |= sub.subjects
 
         # Restrict to the student's currently enrolled subjects
-        student_record = self.env['aps.student'].sudo().search([
-            ('partner_id', '=', student_id)
-        ], limit=1)
         enrolled_subject_ids = set()
         if student_record:
             enrolled_subject_ids = set(
@@ -610,7 +721,8 @@ class APSResourceSubmissionDashboardData(models.Model):
             return {
                 'line_data': [],
                 'bar_data': [],
-                'pace_data': {},
+                'pace_data': pace_info,
+                'pace_diagnostics': pace_diagnostics,
                 'subject_colors': {},
                 'exclude_from_average': exclude_from_average,
                 'exclude': exclude,
@@ -626,7 +738,6 @@ class APSResourceSubmissionDashboardData(models.Model):
         # Group submissions by subject and build historical data
         subject_data = {}  # {subject_id: [(date, result_percent), ...]}
         current_progress = {}  # {subject_id: {'result_percent': x, 'date': y}}
-        pace_info = {}  # {resource_id: {start_date, end_date, redline_start_date, redline_end_date, resource_name}}
         
         for submission in submissions:
             for subject in submission.subjects:
@@ -655,25 +766,6 @@ class APSResourceSubmissionDashboardData(models.Model):
                             'date': fields.Date.to_date(date_to_use)
                         }
                 
-                # Get PACE/redline dates from resource notes
-                # Note: resource.subjects is a Many2many field - one resource can have multiple subjects
-                # The PACE dates from the resource's notes field apply to ALL subjects linked to that resource
-                # Store PACE info once per resource (not per subject) to avoid duplicate PACE lines
-                if submission.resource_id and submission.resource_id.id not in pace_info:
-                    pace_dates = submission.resource_id.get_pace_dates(student_id=student_id)
-                    if any([
-                        pace_dates['start_date'],
-                        pace_dates['end_date'],
-                        pace_dates['redline_start_date'],
-                        pace_dates['redline_end_date'],
-                    ]):
-                        pace_info[submission.resource_id.id] = {
-                            'start_date': pace_dates['start_date'].isoformat() if pace_dates['start_date'] else False,
-                            'end_date': pace_dates['end_date'].isoformat() if pace_dates['end_date'] else False,
-                            'redline_start_date': pace_dates['redline_start_date'].isoformat() if pace_dates['redline_start_date'] else False,
-                            'redline_end_date': pace_dates['redline_end_date'].isoformat() if pace_dates['redline_end_date'] else False,
-                            'resource_name': submission.resource_id.name,
-                        }
         
         # Return all data points (sorted by date) - no filtering by period
         # Frontend will handle zooming to the selected period
@@ -708,6 +800,7 @@ class APSResourceSubmissionDashboardData(models.Model):
             'line_data': all_subject_data,
             'bar_data': bar_data,
             'pace_data': pace_info,
+            'pace_diagnostics': pace_diagnostics,
             'subject_colors': subject_colors,
             'exclude_from_average': exclude_from_average,
             'exclude': exclude,

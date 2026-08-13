@@ -271,7 +271,36 @@ class APSTimeTracking(models.Model):
         }
 
     @api.model
-    def get_dashboard_data(self, days=14):
+    def get_dashboard_students(self):
+        """Return students that have at least one recorded time entry."""
+        partner_ids = self.search([
+            ('partner_id', '!=', False),
+        ]).mapped('partner_id').ids
+        partners = self.env['res.partner'].browse(partner_ids).sorted(
+            key=lambda partner: partner.display_name.lower()
+        )
+        return [
+            {'id': partner.id, 'name': partner.display_name}
+            for partner in partners
+        ]
+
+    @api.model
+    def get_dashboard_subject_categories(self):
+        """Return categories used by at least one recorded time entry."""
+        categories = self.search([
+            ('subject_id.category_id', '!=', False),
+        ]).mapped('subject_id.category_id').sorted(
+            key=lambda category: category.name.lower()
+        )
+        return [
+            {'id': category.id, 'name': category.name}
+            for category in categories
+        ]
+
+    @api.model
+    def get_dashboard_data(
+        self, days=14, partner_id=None, category_id=None, date_filter=None
+    ):
         """
         Return aggregated data for the time-tracking dashboard.
 
@@ -285,6 +314,23 @@ class APSTimeTracking(models.Model):
         from datetime import timedelta
 
         tz = pytz.timezone(self.env.user.tz or 'UTC')
+        try:
+            days = max(1, int(days))
+        except (TypeError, ValueError):
+            days = 14
+        try:
+            partner_id = int(partner_id) if partner_id else False
+        except (TypeError, ValueError):
+            partner_id = False
+        try:
+            category_id = int(category_id) if category_id else False
+        except (TypeError, ValueError):
+            category_id = False
+        date_filter = str(date_filter or '').strip().lower()
+
+        student_domain = [('partner_id', '=', partner_id)] if partner_id else []
+        category_domain = [('subject_id.category_id', '=', category_id)] if category_id else []
+        dashboard_domain = student_domain + category_domain
         now_local = datetime.now(tz)
         today = now_local.date()
 
@@ -297,6 +343,7 @@ class APSTimeTracking(models.Model):
         # ── Weekly comparison by subject ──────────────────────────────────────
         def _sum_by_subject(date_from, date_to):
             recs = self.search([
+                *dashboard_domain,
                 ('date', '>=', date_from),
                 ('date', '<=', date_to),
             ])
@@ -320,8 +367,21 @@ class APSTimeTracking(models.Model):
         ]
 
         # ── Doughnut – total minutes by subject (over requested days) ─────────
-        history_start = today - timedelta(days=days - 1)
-        recs_all = self.search([('date', '>=', history_start)])
+        if date_filter == 'today':
+            history_start = today
+        elif date_filter == 'yesterday':
+            history_start = today - timedelta(days=1)
+        elif date_filter == 'this_week':
+            history_start = this_week_start
+        elif date_filter == 'last_7_days':
+            history_start = today - timedelta(days=6)
+        else:
+            history_start = today - timedelta(days=days - 1)
+        recs_all = self.search([
+            *dashboard_domain,
+            ('date', '>=', history_start),
+            ('date', '<=', today),
+        ])
         doughnut_totals = {}  # {subject_name: minutes}
         doughnut_subject_ids = {}  # {subject_name: subject_id}
         for r in recs_all:
@@ -355,10 +415,53 @@ class APSTimeTracking(models.Model):
             'colors': doughnut_colors,
         }
 
+        # ── Student stacked bar – minutes by student and subject ─────────────
+        student_data = {}  # {student_name: {subject_name: minutes}}
+        for r in recs_all:
+            if not r.partner_id:
+                continue
+            student_name = r.partner_id.display_name
+            subject_name = r.subject_id.name if r.subject_id else 'Unknown'
+            student_data.setdefault(student_name, {})
+            student_data[student_name][subject_name] = (
+                student_data[student_name].get(subject_name, 0.0)
+                + (r.total_minutes or 0.0)
+            )
+
+        student_labels = sorted(student_data.keys())
+        student_subjects = sorted({
+            subject_name
+            for subjects in student_data.values()
+            for subject_name in subjects
+        })
+        student_datasets = []
+        for idx, subject_name in enumerate(student_subjects):
+            color = name_to_color.get(
+                subject_name,
+                doughnut_default_colors[idx % len(doughnut_default_colors)],
+            )
+            student_datasets.append({
+                'label': subject_name,
+                'data': [round(student_data[name].get(subject_name, 0.0), 1)
+                         for name in student_labels],
+                'backgroundColor': color + '80',
+                'borderColor': color,
+                'borderWidth': 2,
+            })
+
+        student_bar = {
+            'labels': student_labels,
+            'datasets': student_datasets,
+        }
+
         # ── Historical stacked bar ─────────────────────────────────────────────
         # Group by date (daily for ≤90 days, by week for >90 days)
         use_weekly = days > 90
-        history_recs = self.search([('date', '>=', history_start)])
+        history_recs = self.search([
+            *dashboard_domain,
+            ('date', '>=', history_start),
+            ('date', '<=', today),
+        ])
 
         bar_data = {}  # {label: {subject: minutes}}
         for r in history_recs:
@@ -402,5 +505,6 @@ class APSTimeTracking(models.Model):
         return {
             'weekly_comparison': weekly_comparison,
             'subject_doughnut': subject_doughnut,
+            'student_bar': student_bar,
             'history_bar': history_bar,
         }

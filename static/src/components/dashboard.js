@@ -64,6 +64,7 @@ export class ApexDashboard extends Component {
             periodStart: null,  // For zoom reference
             periodEnd: null,
             paceData: {},  // Store PACE data for all resources
+            paceDiagnostics: null,  // Date/cohort reconciliation details
             paceForToday: 0,  // Current PACE percentage for today
             redlineForToday: 0,  // Current Redline percentage for today
             excludeFromAverage: [],  // Subject names excluded from redline highlight
@@ -79,6 +80,8 @@ export class ApexDashboard extends Component {
             // Completion Leaderboard Prediction
             completionLeaderboardData: [],
             completionDeadline: false,
+            completionLeaderboardDiagnostics: null,
+            completionLeaderboardDiagnosticsText: "",
             loadingCompletionLeaderboard: true,
         });
 
@@ -847,10 +850,23 @@ export class ApexDashboard extends Component {
             );
             this.state.completionLeaderboardData = data?.entries || [];
             this.state.completionDeadline = data?.deadline || false;
+            this.state.completionLeaderboardDiagnostics = data?.diagnostics || null;
+            this.state.completionLeaderboardDiagnosticsText = data?.diagnostics
+                ? JSON.stringify(data.diagnostics, null, 2)
+                : "";
         } catch (error) {
             console.error("Error fetching completion leaderboard data:", error);
             this.state.completionLeaderboardData = [];
             this.state.completionDeadline = false;
+            this.state.completionLeaderboardDiagnostics = {
+                stage: "client_error",
+                error: error.message || String(error),
+            };
+            this.state.completionLeaderboardDiagnosticsText = JSON.stringify(
+                this.state.completionLeaderboardDiagnostics,
+                null,
+                2
+            );
         } finally {
             this.state.loadingCompletionLeaderboard = false;
         }

@@ -226,6 +226,12 @@
                         <t t-else="">
                             <Leaderboard entries="state.completionLeaderboardData" displayLimit="30" valueSuffix="'%'" isFaculty="state.isFaculty" trackMode="'completion'" currentUserPartnerId="user.partnerId" selectedStudentPartnerId="state.selectedStudent"/>
                         </t>
+                        <t t-if="state.completionLeaderboardDiagnostics">
+                            <details class="mt-3 border-top pt-2">
+                                <summary class="text-muted small">Completion prediction diagnostics</summary>
+                                <pre class="small bg-light p-2 mt-2 mb-0" style="max-height: 320px; overflow: auto; white-space: pre-wrap;"><t t-esc="state.completionLeaderboardDiagnosticsText"/></pre>
+                            </details>
+                        </t>
                     </div>
                 </div>
             </div>
@@ -257,6 +263,18 @@
                             <div style="height: 350px; position: relative;">
                                 <canvas t-ref="progressBarChart"></canvas>
                             </div>
+                            <t t-if="state.paceDiagnostics">
+                                <div class="alert alert-info mt-3 mb-0 py-2 small">
+                                    <strong>Date reconciliation:</strong>
+                                    cohort <b><t t-esc="state.paceDiagnostics.cohort_label"/></b>.
+                                    <t t-if="state.paceDiagnostics.redline_resource_count">
+                                        <t t-esc="state.paceDiagnostics.redline_resource_count"/> resource(s) have matching redline dates.
+                                    </t>
+                                    <t t-else="">
+                                        No resource has a complete redline date pair for this student.
+                                    </t>
+                                </div>
+                            </t>
                         </t>
                     </div>
                 </div>
@@ -303,6 +321,23 @@
                             <div style="height: 350px; position: relative;">
                                 <canvas t-ref="progressLineChart"></canvas>
                             </div>
+                            <t t-if="state.paceDiagnostics">
+                                <details class="mt-3 small text-muted">
+                                    <summary>Show resolved progress dates</summary>
+                                    <ul class="mb-0 mt-2">
+                                        <t t-foreach="state.paceDiagnostics.resources" t-as="resource" t-key="resource.resource_id">
+                                            <li>
+                                                <b><t t-esc="resource.resource_name"/></b>:
+                                                Cohort <t t-esc="resource.matched_cohort_keys.join(', ') || 'none'"/>;
+                                                PACE <t t-esc="resource.has_pace_dates ? 'matched' : 'missing/incomplete'"/>;
+                                                Redline <t t-esc="resource.has_redline_dates ? 'matched' : 'missing/incomplete'"/>
+                                                (<t t-esc="resource.dates.redline_start_date || 'no start'"/> →
+                                                <t t-esc="resource.dates.redline_end_date || 'no end'"/>)
+                                            </li>
+                                        </t>
+                                    </ul>
+                                </details>
+                            </t>
                         </t>
                     </div>
                 </div>

@@ -70,6 +70,32 @@ class APSResource(models.Model):
             }
         }
 
+    def _get_declared_pace_cohort_keys(self, candidate_keys):
+        """Return resource cohort labels matching the student's progression.
+
+        A student's home-class enrolments provide the candidate level/year
+        pairs. A Progress record is selected only when it declares one of
+        those exact pairs. No level or academic year is inferred or reduced.
+        """
+        self.ensure_one()
+        if not candidate_keys or not self.notes:
+            return []
+        plain_text = re.sub(r'<[^>]+>', '', self.notes)
+        declared_keys = {
+            match.group(1).strip()
+            for match in re.finditer(
+                r'(?:redline_)?(?:start_date|end_date)\s*\(([^)]+)\)\s*:',
+                plain_text,
+                re.IGNORECASE,
+            )
+        }
+        return [
+            declared
+            for candidate in candidate_keys
+            for declared in declared_keys
+            if declared.casefold() == candidate.casefold()
+        ]
+
     def get_pace_dates(self, student_id=None, cohort_keys=None):
         """
         Parse PACE start_date, end_date, redline_start_date, and redline_end_date
@@ -179,6 +205,11 @@ class APSResource(models.Model):
                 ('partner_id', '=', student_id),
             ], limit=1)
             cohort_keys = student._get_cohort_keys() if student else None
+
+        # A student may have several active home classes. Only use a cohort
+        # when this particular Progress resource declares that cohort in its
+        # notes; never let an unrelated student cohort select these dates.
+        cohort_keys = self._get_declared_pace_cohort_keys(cohort_keys)
 
         result['start_date'] = _find_date('start_date', cohort_keys) or False
         result['end_date'] = _find_date('end_date', cohort_keys) or False

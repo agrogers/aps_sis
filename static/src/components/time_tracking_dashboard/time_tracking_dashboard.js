@@ -20,21 +20,41 @@ export class TimeTrackingDashboard extends Component {
         this.weeklyChartRef = useRef("weeklyChart");
         this.doughnutChartRef = useRef("doughnutChart");
         this.historyChartRef = useRef("historyChart");
+        this.studentChartRef = useRef("studentChart");
 
         this._weeklyChart = null;
         this._doughnutChart = null;
         this._historyChart = null;
+        this._studentChart = null;
 
         this.state = useState({
             loading: true,
             days: 30,
+            dateFilter: "30",
+            partnerId: "",
+            categoryId: "",
+            students: [],
+            categories: [],
             weeklyComparison: [],
             subjectDoughnut: { labels: [], data: [] },
+            studentBar: { labels: [], datasets: [] },
             historyBar: { labels: [], datasets: [] },
         });
 
         onWillStart(async () => {
             await loadJS("/aps_sis/static/src/lib/chart.js");
+            this.state.students = await this.orm.call(
+                "aps.time.tracking",
+                "get_dashboard_students",
+                [],
+                {}
+            );
+            this.state.categories = await this.orm.call(
+                "aps.time.tracking",
+                "get_dashboard_subject_categories",
+                [],
+                {}
+            );
             await this._fetchData();
         });
 
@@ -52,11 +72,17 @@ export class TimeTrackingDashboard extends Component {
         const data = await this.orm.call(
             "aps.time.tracking",
             "get_dashboard_data",
-            [parseInt(this.state.days)],
+            [
+                parseInt(this.state.days),
+                this.state.partnerId ? parseInt(this.state.partnerId) : false,
+                this.state.categoryId ? parseInt(this.state.categoryId) : false,
+                this.state.dateFilter,
+            ],
             {}
         );
         this.state.weeklyComparison = data.weekly_comparison || [];
         this.state.subjectDoughnut = data.subject_doughnut || { labels: [], data: [] };
+        this.state.studentBar = data.student_bar || { labels: [], datasets: [] };
         this.state.historyBar = data.history_bar || { labels: [], datasets: [] };
         this.state.loading = false;
 
@@ -68,6 +94,7 @@ export class TimeTrackingDashboard extends Component {
         if (this._weeklyChart) { this._weeklyChart.destroy(); this._weeklyChart = null; }
         if (this._doughnutChart) { this._doughnutChart.destroy(); this._doughnutChart = null; }
         if (this._historyChart) { this._historyChart.destroy(); this._historyChart = null; }
+        if (this._studentChart) { this._studentChart.destroy(); this._studentChart = null; }
     }
 
     _renderCharts() {
@@ -75,6 +102,7 @@ export class TimeTrackingDashboard extends Component {
         this._renderWeeklyChart();
         this._renderDoughnutChart();
         this._renderHistoryChart();
+        this._renderStudentChart();
     }
 
     _renderWeeklyChart() {
@@ -207,8 +235,55 @@ export class TimeTrackingDashboard extends Component {
         });
     }
 
+    _renderStudentChart() {
+        const el = this.studentChartRef.el;
+        if (!el) return;
+        if (this._studentChart) return;
+
+        const { labels, datasets } = this.state.studentBar;
+        if (!labels || !labels.length) return;
+
+        this._studentChart = new Chart(el, {
+            type: "bar",
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "bottom" },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} min`,
+                        },
+                    },
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: {
+                        stacked: true,
+                        title: { display: true, text: "Minutes" },
+                        beginAtZero: true,
+                    },
+                },
+            },
+        });
+    }
+
     async onChangeDays(ev) {
-        this.state.days = ev.target.value;
+        this.state.dateFilter = ev.target.value;
+        if (/^\d+$/.test(ev.target.value)) {
+            this.state.days = parseInt(ev.target.value);
+        }
+        await this._fetchData();
+    }
+
+    async onChangeStudent(ev) {
+        this.state.partnerId = ev.target.value;
+        await this._fetchData();
+    }
+
+    async onChangeCategory(ev) {
+        this.state.categoryId = ev.target.value;
         await this._fetchData();
     }
 

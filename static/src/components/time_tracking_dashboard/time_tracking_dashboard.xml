@@ -4,13 +4,17 @@
 
             <!-- Header -->
             <div class="row mb-4 align-items-center bg-white shadow-sm p-3 mx-0 rounded">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <h1 class="text-primary fw-bold mb-0">
                         <i class="fa fa-clock-o me-2"/>Time Tracking Dashboard
                     </h1>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
                     <select class="form-select" t-on-change="onChangeDays">
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="this_week">This Week</option>
+                        <option value="last_7_days">Last 7 Days</option>
                         <option value="14">Last 14 Days</option>
                         <option value="30" selected="selected">Last 30 Days</option>
                         <option value="90">Last 90 Days</option>
@@ -18,7 +22,23 @@
                         <option value="365">Last Year</option>
                     </select>
                 </div>
-                <div class="col-md-2 text-end">
+                <div class="col-md-2">
+                    <select class="form-select" t-on-change="onChangeStudent">
+                        <option value="">All Students</option>
+                        <t t-foreach="state.students" t-as="student" t-key="student.id">
+                            <option t-att-value="student.id"><t t-esc="student.name"></t></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" t-on-change="onChangeCategory">
+                        <option value="">All Subject Categories</option>
+                        <t t-foreach="state.categories" t-as="category" t-key="category.id">
+                            <option t-att-value="category.id"><t t-esc="category.name"></t></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3 text-end">
                     <button class="btn btn-outline-primary btn-sm" t-on-click="openTimeList">
                         <i class="fa fa-list me-1"/> All Entries
                     </button>
@@ -48,7 +68,7 @@
                                 </div>
                             </t>
                             <t t-else="">
-                                <div style="height: 300px; position: relative;">
+                                <div style="height: 360px; position: relative;">
                                     <canvas t-ref="weeklyChart"/>
                                 </div>
                             </t>
@@ -66,7 +86,7 @@
                                 </div>
                             </t>
                             <t t-else="">
-                                <div style="height: 300px; position: relative;">
+                                <div style="height: 360px; position: relative;">
                                     <canvas t-ref="doughnutChart"/>
                                 </div>
                             </t>
@@ -88,8 +108,30 @@
                                 </div>
                             </t>
                             <t t-else="">
-                                <div style="height: 360px; position: relative;">
+                                <div style="height: 432px; position: relative;">
                                     <canvas t-ref="historyChart"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Student stacked bar -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="bg-white shadow-sm p-4 rounded">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fa fa-users me-1"/>
+                                Study Time by Student
+                            </h5>
+                            <t t-if="state.studentBar.labels.length === 0">
+                                <div class="d-flex justify-content-center align-items-center" style="height: 280px;">
+                                    <p class="text-muted">No student time data for the selected period.</p>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div style="height: 432px; position: relative;">
+                                    <canvas t-ref="studentChart"/>
                                 </div>
                             </t>
                         </div>

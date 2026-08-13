@@ -182,19 +182,22 @@ export class ProgressCharts {
             });
 
             this.state.periodStart = progressData.period_start;
-            this.state.periodEnd = progressData.period_end;
+            const today = new Date().toISOString().split('T')[0];
+            // The historical chart must stop at today.  Do not let a course
+            // deadline or future-dated submission extend the x-axis.
+            this.state.periodEnd = today;
 
             const lineData = progressData.line_data || {};
             const paceData = progressData.pace_data || {};
             const subjectColors = progressData.subject_colors || {};
             
             this.state.paceData = paceData;
+            this.state.paceDiagnostics = progressData.pace_diagnostics || null;
             this.state.paceForToday = this.calculatePaceForToday(paceData);
             this.state.redlineForToday = this.calculateRedlineForToday(paceData);
             this.state.excludeFromAverage = progressData.exclude_from_average || [];
 
             const datasets = [];
-            const today = new Date().toISOString().split('T')[0];
 
             for (const [subjectId, dataPoints] of Object.entries(lineData)) {
                 if (!dataPoints || dataPoints.length === 0) continue;
@@ -203,7 +206,10 @@ export class ProgressCharts {
                 const subjectName = this.cleanSubjectName(dataPoints[0].subject_name);
                 const color = subjectColors[subjectIdNum];
 
-                const sortedPoints = dataPoints.sort((a, b) => a.date.localeCompare(b.date));
+                const sortedPoints = dataPoints
+                    .filter(point => point.date <= today)
+                    .sort((a, b) => a.date.localeCompare(b.date));
+                if (sortedPoints.length === 0) continue;
 
                 datasets.push({
                     label: subjectName,
@@ -236,6 +242,15 @@ export class ProgressCharts {
             }
 
             this.state.progressLineData = datasets;
+
+            this._debug('PACE/redline reconciliation', {
+                cohortKeys: this.state.paceDiagnostics?.cohort_keys || [],
+                resources: this.state.paceDiagnostics?.resources || [],
+                paceResources: Object.keys(paceData).length,
+                redlineResources: Object.values(paceData).filter(
+                    pace => pace.redline_start_date && pace.redline_end_date
+                ).length,
+            });
 
             const barData = progressData.bar_data || [];
             this.state.progressBarData = barData
@@ -352,7 +367,7 @@ export class ProgressCharts {
     /**
      * Calculate PACE line showing expected progress over time.
      */
-    calculatePaceLine(startDateStr, endDateStr, periodStartStr, todayStr, resourceName) {
+    calculatePaceLine(startDateStr, endDateStr, periodStartStr, todayStr, resourceName, lineType = 'PACE') {
         try {
             const startDate = new Date(startDateStr);
             const endDate = new Date(endDateStr);
@@ -375,7 +390,11 @@ export class ProgressCharts {
                 y: Math.max(0, Math.min(100, startProgress))
             });
 
-            const displayEnd = today < endDate ? today : endDate;
+            // PACE is shown up to today. Redline must remain visible when its
+            // window is still in the future, so draw the complete redline span.
+            const displayEnd = lineType === 'Redline'
+                ? endDate
+                : (today < endDate ? today : endDate);
             const daysFromStartToEnd = (displayEnd - startDate) / (1000 * 60 * 60 * 24);
             const currentProgress = (daysFromStartToEnd / totalDays) * 100;
 
@@ -385,9 +404,8 @@ export class ProgressCharts {
             });
 
             return {
-                label: `${resourceName} PACE`,
+                label: `${resourceName} ${lineType}`,
                 data: paceData,
-                borderColor: '#808080',
                 backgroundColor: 'transparent',
                 borderDash: [5, 3],
                 tension: 0,
@@ -396,7 +414,9 @@ export class ProgressCharts {
                 pointHoverRadius: 0,
                 pointHitRadius: 0,
                 borderWidth: 2,
-                isPace: true
+                borderColor: lineType === 'Redline' ? '#dc3545' : '#808080',
+                isPace: true,
+                isRedline: lineType === 'Redline'
             };
         } catch (error) {
             console.error("Error calculating PACE line:", error);
