@@ -161,9 +161,24 @@ class APSCertificate(models.Model):
         return Markup(body_html)
 
     def action_print_certificate(self):
-        self.ensure_one()
-        certificate_template = self.certificate_template_id
-        self.last_printed = fields.Datetime.now()
+        """Print one or more certificates selected in the list view."""
+        if not self:
+            raise UserError('Please select at least one certificate to print.')
+
+        layouts = self.mapped(
+            lambda certificate: (
+                certificate.certificate_template_id.page_format,
+                certificate.certificate_template_id.page_orientation or 'portrait',
+            )
+        )
+        if len(set(layouts)) > 1:
+            raise UserError(
+                'Selected certificates must use the same page format and orientation '
+                'to print them together.'
+            )
+
+        certificate_template = self[0].certificate_template_id
+        self.write({'last_printed': fields.Datetime.now()})
         report_xmlid_by_layout = {
             ('a4', 'portrait'): 'aps_sis.action_report_certificate_a4',
             ('a4', 'landscape'): 'aps_sis.action_report_certificate_a4_landscape',

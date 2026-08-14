@@ -5,6 +5,9 @@
         <field name="model">aps.certificate</field>
         <field name="arch" type="xml">
             <list>
+                <header>
+                    <button name="action_print_certificate" string="Print Certificates" type="object"/>
+                </header>
                 <field name="partner_id" optional="show"/>
                 <field name="event" optional="show"/>
                 <field name="award_category_id" optional="show"/>
