@@ -24,6 +24,9 @@ export class VoteAnalysisDashboard extends Component {
         this.notification = useService("notification");
         this.chartRef = useRef("chart");
         this.chart = null;
+        this._chartClickHandler = null;
+        this._chartMouseMoveHandler = null;
+        this._chartIconRects = [];
         this.voteDetailsGridRef = useRef("voteDetailsGrid");
         this._voteDetailsGrid = null;
         this._voteDetailsDataView = null;
@@ -89,7 +92,17 @@ export class VoteAnalysisDashboard extends Component {
 
         onMounted(() => { this._renderChart(); });
         onPatched(() => { this._renderChart(); });
-        onWillUnmount(() => { this._destroyDetailGrid(); });
+        onWillUnmount(() => {
+            this._destroyDetailGrid();
+            if (this._chartClickHandler && this.chartRef.el) {
+                this.chartRef.el.removeEventListener('click', this._chartClickHandler);
+                this._chartClickHandler = null;
+            }
+            if (this._chartMouseMoveHandler && this.chartRef.el) {
+                this.chartRef.el.removeEventListener('mousemove', this._chartMouseMoveHandler);
+                this._chartMouseMoveHandler = null;
+            }
+        });
     }
 
     // ------------------------------------------------------------------
@@ -140,7 +153,16 @@ export class VoteAnalysisDashboard extends Component {
 
     _renderChart() {
         if (!this.chartRef.el) { return; }
+        if (this._chartClickHandler) {
+            this.chartRef.el.removeEventListener('click', this._chartClickHandler);
+            this._chartClickHandler = null;
+        }
+        if (this._chartMouseMoveHandler) {
+            this.chartRef.el.removeEventListener('mousemove', this._chartMouseMoveHandler);
+            this._chartMouseMoveHandler = null;
+        }
         if (this.chart) { this.chart.destroy(); this.chart = null; }
+        this._chartIconRects = [];
 
         const series = this.state.series;
         const recipients = this.chartOrderedRecipients;
@@ -159,6 +181,26 @@ export class VoteAnalysisDashboard extends Component {
             yAxisID: "y",
             order: 1,
         }));
+
+        // Average line
+        const avgTotal = recipients.length > 0
+            ? recipients.reduce((sum, r) => sum + (r.total || 0), 0) / recipients.length
+            : 0;
+
+        datasets.push({
+            label: "Average",
+            data: recipients.map(() => avgTotal),
+            type: "line",
+            borderColor: "#f97316",
+            backgroundColor: "transparent",
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            fill: false,
+            yAxisID: "y",
+            order: 2,
+        });
 
         const certCounts = this.state.certificateCounts;
         const hasOverlay = this.state.overlay === "certificates" && Object.keys(certCounts).length > 0;
@@ -191,6 +233,61 @@ export class VoteAnalysisDashboard extends Component {
             };
         }
 
+        const self = this;
+        const xAxisLabelPlugin = {
+            id: 'xAxisLabelIcons',
+            afterDraw(chart) {
+                const ctx = chart.ctx;
+                const xScale = chart.scales.x;
+                const yScale = chart.scales.y;
+                const yBottom = yScale.getPixelForValue(yScale.min);
+                const iconW = 11;
+                const iconH = 9;
+                // Position icons just below the x-axis line (above the tick labels)
+                const iconY = yBottom + 2;
+                self._chartIconRects = [];
+
+                ctx.save();
+                ctx.globalAlpha = 0.5;
+                ctx.font = 'bold 7px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                recipients.forEach((_r, idx) => {
+                    const xCenter = xScale.getPixelForValue(idx);
+                    const iconX = xCenter - iconW / 2;
+                    // Store for click detection
+                    self._chartIconRects.push({
+                        x: iconX, y: iconY, w: iconW, h: iconH, index: idx,
+                    });
+                    // Draw rounded rect
+                    const radius = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(iconX + radius, iconY);
+                    ctx.lineTo(iconX + iconW - radius, iconY);
+                    ctx.quadraticCurveTo(iconX + iconW, iconY, iconX + iconW, iconY + radius);
+                    ctx.lineTo(iconX + iconW, iconY + iconH - radius);
+                    ctx.quadraticCurveTo(iconX + iconW, iconY + iconH, iconX + iconW - radius, iconY + iconH);
+                    ctx.lineTo(iconX + radius, iconY + iconH);
+                    ctx.quadraticCurveTo(iconX, iconY + iconH, iconX, iconY + iconH - radius);
+                    ctx.lineTo(iconX, iconY + radius);
+                    ctx.quadraticCurveTo(iconX, iconY, iconX + radius, iconY);
+                    ctx.closePath();
+                    ctx.fillStyle = '#f8f9fa';
+                    ctx.fill();
+                    ctx.strokeStyle = '#adb5bd';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    // Draw icon text
+                    ctx.fillStyle = '#495057';
+                    ctx.fillText('☰', xCenter, iconY + iconH / 2 + 1);
+                });
+                ctx.restore();
+            },
+        };
+
+        const plugins = [xAxisLabelPlugin];
+
         this.chart = new Chart(this.chartRef.el, {
             type: "bar", data: { labels, datasets },
             options: {
@@ -203,7 +300,59 @@ export class VoteAnalysisDashboard extends Component {
                 onClick: (_event, elements) => { this._onChartClick(elements); },
                 scales,
             },
+            plugins,
         });
+
+        // Native click listener for the ☰ icon buttons below each bar
+        this._chartClickHandler = (nativeEvent) => {
+            const rect = this.chartRef.el.getBoundingClientRect();
+            const x = nativeEvent.clientX - rect.left;
+            const y = nativeEvent.clientY - rect.top;
+            // Check if click hit a bar element — if so, let Chart.js onClick handle it
+            const elements = this.chart.getElementsAtEventForMode(nativeEvent, 'index', { intersect: false }, false);
+            if (elements.length > 0) return;
+            // Check icon rects
+            const iconRects = this._chartIconRects;
+            if (!iconRects) return;
+            for (const iconRect of iconRects) {
+                if (x >= iconRect.x && x <= iconRect.x + iconRect.w &&
+                    y >= iconRect.y && y <= iconRect.y + iconRect.h) {
+                    const recipients = this.chartOrderedRecipients;
+                    if (iconRect.index >= 0 && iconRect.index < recipients.length) {
+                        this.onTotalClick(recipients[iconRect.index]);
+                    }
+                    return;
+                }
+            }
+        };
+        this.chartRef.el.addEventListener('click', this._chartClickHandler);
+
+        // Mousemove handler for tooltip + pointer cursor on icon hover
+        this._chartMouseMoveHandler = (nativeEvent) => {
+            const rect = this.chartRef.el.getBoundingClientRect();
+            const x = nativeEvent.clientX - rect.left;
+            const y = nativeEvent.clientY - rect.top;
+            const iconRects = this._chartIconRects;
+            let found = false;
+            if (iconRects) {
+                for (const iconRect of iconRects) {
+                    if (x >= iconRect.x && x <= iconRect.x + iconRect.w &&
+                        y >= iconRect.y && y <= iconRect.y + iconRect.h) {
+                        const recipients = this.chartOrderedRecipients;
+                        const name = recipients[iconRect.index]?.name || '';
+                        this.chartRef.el.title = 'View all votes for ' + name;
+                        this.chartRef.el.style.cursor = 'pointer';
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (!found) {
+                this.chartRef.el.title = '';
+                this.chartRef.el.style.cursor = '';
+            }
+        };
+        this.chartRef.el.addEventListener('mousemove', this._chartMouseMoveHandler);
     }
 
     _truncateLabel(text, maxLen = 20) {
