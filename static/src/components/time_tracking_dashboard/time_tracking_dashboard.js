@@ -2,6 +2,7 @@ import { Component, useState, onWillStart, onMounted, onPatched, useRef } from "
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { loadJS } from "@web/core/assets";
+import { user } from "@web/core/user";
 
 export class TimeTrackingDashboard extends Component {
     static template = "aps_sis.TimeTrackingDashboard";
@@ -33,6 +34,7 @@ export class TimeTrackingDashboard extends Component {
             dateFilter: "30",
             partnerId: "",
             categoryId: "",
+            canSelectStudent: false,
             students: [],
             categories: [],
             weeklyComparison: [],
@@ -43,12 +45,17 @@ export class TimeTrackingDashboard extends Component {
 
         onWillStart(async () => {
             await loadJS("/aps_sis/static/src/lib/chart.js");
-            this.state.students = await this.orm.call(
-                "aps.time.tracking",
-                "get_dashboard_students",
-                [],
-                {}
+            this.state.canSelectStudent = await user.hasGroup(
+                "aps_sis.group_aps_teacher"
             );
+            if (this.state.canSelectStudent) {
+                this.state.students = await this.orm.call(
+                    "aps.time.tracking",
+                    "get_dashboard_students",
+                    [],
+                    {}
+                );
+            }
             this.state.categories = await this.orm.call(
                 "aps.time.tracking",
                 "get_dashboard_subject_categories",

@@ -22,14 +22,16 @@
                         <option value="365">Last Year</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <select class="form-select" t-on-change="onChangeStudent">
-                        <option value="">All Students</option>
-                        <t t-foreach="state.students" t-as="student" t-key="student.id">
-                            <option t-att-value="student.id"><t t-esc="student.name"></t></option>
-                        </t>
-                    </select>
-                </div>
+                <t t-if="state.canSelectStudent">
+                    <div class="col-md-2">
+                        <select class="form-select" t-on-change="onChangeStudent">
+                            <option value="">All Students</option>
+                            <t t-foreach="state.students" t-as="student" t-key="student.id">
+                                <option t-att-value="student.id"><t t-esc="student.name"></t></option>
+                            </t>
+                        </select>
+                    </div>
+                </t>
                 <div class="col-md-2">
                     <select class="form-select" t-on-change="onChangeCategory">
                         <option value="">All Subject Categories</option>

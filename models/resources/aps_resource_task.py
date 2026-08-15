@@ -6,6 +6,20 @@ from odoo import models, fields, api
 
 _logger = logging.getLogger(__name__)
 
+
+def _submission_sort_date(submission):
+    """Return a consistent date value for ordering submissions.
+
+    ``date_assigned`` is a Date field while ``create_date`` is a Datetime
+    field.  Python cannot compare ``datetime.date`` and ``datetime.datetime``
+    values when a recordset is sorted.
+    """
+    value = submission.date_assigned or submission.create_date
+    if isinstance(value, datetime):
+        value = value.date()
+    return value or datetime.min.date()
+
+
 class APSResourceTask(models.Model):
     _name = 'aps.resource.task'
     _description = 'APEX Task'
@@ -129,7 +143,7 @@ class APSResourceTask(models.Model):
             # 3. All submissions are submitted/complete — use the most recent
             else:
                 most_recent = submissions.sorted(
-                    lambda s: s.date_assigned or s.create_date or fields.Date.today(),
+                    _submission_sort_date,
                     reverse=True
                 )[:1]
                 new_state = most_recent.due_status
@@ -140,7 +154,7 @@ class APSResourceTask(models.Model):
     @api.depends('submission_ids', 'submission_ids.date_assigned', 'submission_ids.create_date', 'submission_ids.state', 'submission_ids.result_percent', 'submission_ids.confidence_rating')
     def _compute_submission_stats(self):
         for rec in self:
-            submissions = rec.submission_ids.filtered(lambda a: a.state in ['submitted', 'complete'] and a.score != -0.01).sorted(lambda s: s.date_assigned or s.create_date)
+            submissions = rec.submission_ids.filtered(lambda a: a.state in ['submitted', 'complete'] and a.score != -0.01).sorted(_submission_sort_date)
             rec.submission_count = len(submissions)
             if submissions:
                 scores = submissions.mapped('result_percent')
@@ -206,7 +220,7 @@ class APSResourceTask(models.Model):
             # Get last 3 submissions, most recent first
             # The most recent are first because they are the ones that the user is most likely to want to see.
             # This looks weird though when there are a lot of submission created for far distant dates.
-            submissions = rec.submission_ids.filtered(lambda s: s.submission_active).sorted(lambda s: s.date_assigned or s.create_date or datetime.min, reverse=True)[:3]
+            submissions = rec.submission_ids.filtered(lambda s: s.submission_active).sorted(_submission_sort_date, reverse=True)[:3]
             
             pills = []
             state_colors = {
