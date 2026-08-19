@@ -16,6 +16,14 @@ class APSStudent(models.Model):
         tracking=True,
         help='The partner record associated with this student.',
     )
+    guardian_partner_id = fields.Many2one(
+        'res.partner',
+        string='Guardian',
+        compute='_compute_guardian_partner',
+        store=True,
+        readonly=True,
+        help='The highest-priority guardian partner related to this student (is Guardian Of, Pays For, is Parent Of).',
+    )
     roll = fields.Char(string='Roll Number', size=20, tracking=True)
     level_id = fields.Many2one(
         'aps.level',
@@ -74,6 +82,23 @@ class APSStudent(models.Model):
     )
     enrollment_ids = fields.One2many('aps.student.class', 'student_id', string='Class Enrollments')
     enrollment_count = fields.Integer(string='Classes', compute='_compute_enrollment_count')
+
+    @api.depends('partner_id')
+    def _compute_guardian_partner(self):
+        relation_model = self.env['res.partner.relation.all']
+        for student in self:
+            guardian = self.env['res.partner']
+            if student.partner_id:
+                for relation_name in ('is Guardian Of', 'Pays For', 'is Parent Of'):
+                    relation = relation_model.search([
+                        ('other_partner_id', '=', student.partner_id.id),
+                        ('type_selection_id.display_name', '=', relation_name),
+                        ('active', '=', True),
+                    ], limit=1, order='id')
+                    if relation:
+                        guardian = relation.this_partner_id
+                        break
+            student.guardian_partner_id = guardian
 
     @api.depends('enrollment_ids')
     def _compute_enrollment_count(self):
@@ -187,3 +212,44 @@ class APSStudent(models.Model):
                 'sticky': False,
             },
         }
+
+
+class ResPartnerRelation(models.Model):
+    _inherit = 'res.partner.relation'
+
+    def _recompute_related_student_guardians(self, partner_ids):
+        partner_ids = set(partner_ids)
+        if not partner_ids:
+            return
+        students = self.env['aps.student'].search([
+            ('partner_id', 'in', list(partner_ids)),
+        ])
+        if students:
+            students._compute_guardian_partner()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        partner_ids = records.mapped('left_partner_id').ids + records.mapped('right_partner_id').ids
+        self._recompute_related_student_guardians(partner_ids)
+        return records
+
+    def write(self, vals):
+        partner_ids = self.mapped('left_partner_id').ids + self.mapped('right_partner_id').ids
+        result = super().write(vals)
+        if {
+            'left_partner_id',
+            'right_partner_id',
+            'type_id',
+            'date_start',
+            'date_end',
+        } & set(vals):
+            partner_ids += self.mapped('left_partner_id').ids + self.mapped('right_partner_id').ids
+            self._recompute_related_student_guardians(partner_ids)
+        return result
+
+    def unlink(self):
+        partner_ids = self.mapped('left_partner_id').ids + self.mapped('right_partner_id').ids
+        result = super().unlink()
+        self._recompute_related_student_guardians(partner_ids)
+        return result
