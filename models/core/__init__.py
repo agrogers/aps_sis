@@ -1,3 +1,4 @@
+# These models really should be in the apex_core module, but they are here for now because it is a pain to move and rename them.
 from . import aps_location
 from . import aps_academic_year
 from . import aps_academic_term

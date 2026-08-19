@@ -8,7 +8,7 @@
                     <div class="apex-leaderboard-entry"
                          t-att-class="{'apex-leaderboard-entry--current-user': isCurrentUser(entry), 'apex-leaderboard-entry--selected': isSelectedStudent(entry)}"
                          t-att-data-rank="entry.rank"
-                         t-att-style="'--ring-color:' + getRingColor(entry.rank)">
+                         t-att-style="'--ring-color:' + getRingColor(getDisplayRank(entry))">
 
                         <div class="apex-leaderboard-avatar-shell">
                             <img
@@ -18,13 +18,23 @@
                                 onerror="this.onerror=null;this.src='/web/static/img/placeholder.png';"
                             />
                             <span class="apex-leaderboard-medal">
-                                <t t-esc="getRingLabel(entry.rank)"/>
+                                <t t-esc="getDisplayRingLabel(entry)"/>
                             </span>
                         </div>
 
                         <div class="apex-leaderboard-name" t-esc="entry.student_name"/>
                         <div class="apex-leaderboard-points">
                             <t t-esc="entry.total_points"/><t t-if="props.valueSuffix" t-esc="props.valueSuffix"/>
+                            <t t-if="props.trackMode === 'completion' and entry.total_points === 100 and entry.completion_days !== false and entry.completion_days_lower_bound">
+                                <div class="apex-leaderboard-completion-days">
+                                    (&gt;<t t-esc="entry.completion_days"/> days)
+                                </div>
+                            </t>
+                            <t t-elif="props.trackMode === 'completion' and entry.total_points === 100 and entry.completion_days !== false">
+                                <div class="apex-leaderboard-completion-days">
+                                    (<t t-esc="entry.completion_days"/> days)
+                                </div>
+                            </t>
                         </div>
 
                     </div>

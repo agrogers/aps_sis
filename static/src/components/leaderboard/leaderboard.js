@@ -88,6 +88,20 @@ export class Leaderboard extends Component {
         return labels[rank] || `#${rank}`;
     }
 
+    // Display competition ranking on the avatar: equal leaderboard values
+    // share a position, and the next position skips the tied places.
+    getDisplayRank(entry) {
+        const entries = this.props.entries || [];
+        const preceding = entries.filter(other =>
+            other.total_points > entry.total_points
+        ).length;
+        return preceding + 1;
+    }
+
+    getDisplayRingLabel(entry) {
+        return this.getRingLabel(this.getDisplayRank(entry));
+    }
+
     // Image URL based on viewer role and available images.
     // Students see game avatars; teachers see partner photos (with avatar fallback).
     getImageUrl(entry) {

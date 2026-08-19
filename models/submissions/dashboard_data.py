@@ -307,8 +307,12 @@ class APSResourceSubmissionDashboardData(models.Model):
         - Determine the deadline: the latest end_date across all progress resources.
         - Project: predicted_total = min(current + daily_rate * days_remaining, 100)
         - Average the predicted totals across all enrolled, non-excluded subjects.
+        - Calculate the projected completion time for the slowest subject.
+        - Treat stalled subjects at 97% or above as complete for prediction.
+        - Exclude lower-progress stalled subjects from the projected day count.
 
-        Returns up to `limit` students ranked by predicted average (descending).
+        Returns up to `limit` students ranked by projected completion time
+        (ascending), with predicted average as the tie-breaker.
         Each entry: rank, student_id, student_name, total_points (= rounded predicted %)
         """
         from datetime import date as date_type, timedelta
@@ -482,6 +486,8 @@ class APSResourceSubmissionDashboardData(models.Model):
             deadline = student_deadlines.get(student_id)
             days_remaining = (deadline - today).days if deadline and deadline > today else 0
             predicted_totals = []
+            subject_completion_days = []
+            excluded_stalled_subject = False
             for subject_id, data_points in subjects.items():
                 if not data_points:
                     continue
@@ -494,6 +500,7 @@ class APSResourceSubmissionDashboardData(models.Model):
 
                 if current_progress >= 100:
                     predicted_totals.append(100.0)
+                    subject_completion_days.append(0.0)
                     continue
 
                 # Calculate daily rate using only the last 4 months of data
@@ -508,23 +515,56 @@ class APSResourceSubmissionDashboardData(models.Model):
                 else:
                     daily_rate = 0
 
-                if daily_rate > 0 and days_remaining > 0:
+                # A stalled subject at 97% or above is close enough to treat
+                # as complete. This prevents a tiny final administrative
+                # update from making an otherwise complete student appear
+                # unprojectable.
+                if current_progress >= 97 and daily_rate <= 0:
+                    predicted_total = 100.0
+                    days_to_completion = 0.0
+                elif daily_rate > 0 and days_remaining > 0:
                     predicted_total = min(current_progress + daily_rate * days_remaining, 100.0)
+                    days_to_completion = max(
+                        0.0, (100.0 - current_progress) / daily_rate
+                    )
                 else:
                     predicted_total = current_progress
+                    # A stalled subject is excluded from the day estimate. The
+                    # displayed '>' communicates that the estimate is a lower
+                    # bound because this subject is not progressing.
+                    excluded_stalled_subject = True
+                    days_to_completion = None
 
                 predicted_totals.append(predicted_total)
+                if days_to_completion is not None:
+                    subject_completion_days.append(days_to_completion)
 
             if not predicted_totals:
                 continue
             avg_predicted = sum(predicted_totals) / len(predicted_totals)
+            if subject_completion_days:
+                completion_days = max(subject_completion_days)
+            elif excluded_stalled_subject and days_remaining > 0:
+                # There is no finite subject estimate left after excluding
+                # stalled subjects. Use the remaining deadline horizon as the
+                # conservative lower bound instead of returning "not projected".
+                completion_days = float(days_remaining)
+            else:
+                completion_days = None
             leaderboard.append({
                 'student_id': student_id,
                 'student_name': student_names.get(student_id, ''),
                 'avg_predicted': avg_predicted,
+                'completion_days': completion_days,
+                'completion_days_lower_bound': excluded_stalled_subject,
             })
 
-        leaderboard.sort(key=lambda x: x['avg_predicted'], reverse=True)
+        leaderboard.sort(
+            key=lambda x: (
+                -x['avg_predicted'],
+                x['completion_days'] if x['completion_days'] is not None else float('inf'),
+            )
+        )
         leaderboard = leaderboard[:limit]
         diagnostics['prediction_count'] = len(leaderboard)
         diagnostics['stage'] = 'predictions_calculated' if leaderboard else 'no_predictions'
@@ -535,6 +575,12 @@ class APSResourceSubmissionDashboardData(models.Model):
                 'student_id': entry['student_id'],
                 'student_name': entry['student_name'],
                 'total_points': round(entry['avg_predicted']),
+                'completion_days': (
+                    round(entry['completion_days'])
+                    if entry['completion_days'] is not None
+                    else False
+                ),
+                'completion_days_lower_bound': entry['completion_days_lower_bound'],
             }
             for i, entry in enumerate(leaderboard)
         ]

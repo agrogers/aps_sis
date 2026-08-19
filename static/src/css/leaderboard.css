@@ -139,6 +139,14 @@
     /* border: solid 1px white; */
 }
 
+/* Completion-time detail shown only on the completion prediction leaderboard. */
+.apex-leaderboard-completion-days {
+    font-size: 0.58rem;
+    color: #868e96;
+    line-height: 0.75rem;
+    white-space: nowrap;
+}
+
 /* ---- Proportional spacer between cards ---- */
 .apex-leaderboard-spacer {
     flex-shrink: 0;

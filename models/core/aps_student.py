@@ -14,6 +14,7 @@ class APSStudent(models.Model):
         required=True,
         ondelete='cascade',
         tracking=True,
+        help='The partner record associated with this student.',
     )
     roll = fields.Char(string='Roll Number', size=20, tracking=True)
     level_id = fields.Many2one(
