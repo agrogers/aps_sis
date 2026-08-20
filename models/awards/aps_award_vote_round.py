@@ -343,12 +343,16 @@ class APSAwardVoteRound(models.Model):
             new_end = rnd.datetime_end + shift if rnd.datetime_end else False
             # Strip any existing date suffix like " (6/Aug/26)" from the name
             base_name = re.sub(r'\s*\(\d{1,2}/\w{3}/\d{2}\)$', '', rnd.name).strip()
-            date_suffix = new_end.strftime('%-d/%b/%y') if new_end else ''
+            date_suffix = f'{new_end.day}/{new_end.strftime("%b/%y")}' if new_end else ''
             child = rnd.copy({
                 'name': f"{base_name} ({date_suffix})",
                 'datetime_start': new_start,
                 'datetime_end': new_end,
-                'status': 'open',
+                # Do not copy the previous round's vote records.  action_open
+                # creates a fresh vote for each currently eligible voter.
+                'vote_ids': [(5, 0, 0)],
+                'status': 'draft',
             })
+            child.action_open()
             rnd.child_reschedule_id = child.id
         return True

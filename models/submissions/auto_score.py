@@ -186,8 +186,11 @@ class APSResourceSubmissionAutoScore(models.Model):
                     })
 
                 # Find or create the parent submission (same label if present)
-                parent_domain = [('task_id', '=', parent_task.id)]
-                if record.submission_label:
+                parent_domain = [
+                    ('task_id', '=', parent_task.id),
+                    ('is_course_explorer', '=', record.is_course_explorer),
+                ]
+                if record.submission_label and not record.is_course_explorer:
                     parent_domain.append(('submission_label', '=', record.submission_label))
 
                 parent_submission = self.search(parent_domain, order='create_date desc', limit=1)
@@ -195,10 +198,11 @@ class APSResourceSubmissionAutoScore(models.Model):
                     parent_submission = self.create({
                         'task_id': parent_task.id,
                         'submission_name': parent_res.display_name or parent_res.name or '',
-                        'submission_label': record.submission_label or False,
-                        'date_assigned': fields.Date.today(),
+                        'submission_label': record.submission_label if not record.is_course_explorer else False,
+                        'date_assigned': fields.Date.today() if not record.is_course_explorer else False,
                         'state': 'assigned',
                         'progress': 0.0,
+                        'is_course_explorer': record.is_course_explorer,
                     })
 
                 # Compute average progress from children that have content.
@@ -214,6 +218,7 @@ class APSResourceSubmissionAutoScore(models.Model):
                     child_sub = self.search([
                         ('resource_id', '=', child.id),
                         ('student_id', '=', record.student_id.id),
+                        ('is_course_explorer', '=', record.is_course_explorer),
                     ], order='date_assigned desc, id desc', limit=1)
                     children_progress.append(child_sub.progress if child_sub else 0.0)
 

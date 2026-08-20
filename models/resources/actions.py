@@ -508,6 +508,7 @@ class APSResource(models.Model):
         submission = submission_model.search([
             ('task_id.resource_id', '=', self.id),
             ('task_id.student_id', '=', student.id),
+            ('is_course_explorer', '=', True),
         ], order='id desc', limit=1)
 
         if not submission:
@@ -527,6 +528,8 @@ class APSResource(models.Model):
                 # not a student-facing assignment.
                 'date_assigned': False,
                 'state': 'assigned',
+                'progress': 0.0,
+                'is_course_explorer': True,
                 'question': self.question if self.has_question == 'yes' else False,
                 'has_question': self.has_question,
                 'points_scale': self.points_scale,
@@ -1319,6 +1322,7 @@ class APSResource(models.Model):
         submission = self.env['aps.resource.submission'].search([
             ('task_id.resource_id', '=', self.id),
             ('task_id.student_id', '=', student_id),
+            ('is_course_explorer', '=', True),
         ], order='date_assigned desc, id desc', limit=1)
         if submission:
             result['progress'] = submission.progress or 0.0
@@ -1409,6 +1413,7 @@ class APSResource(models.Model):
         submission = self.env['aps.resource.submission'].search([
             ('task_id.resource_id', '=', resource.id),
             ('task_id.student_id', '=', student.id),
+            ('is_course_explorer', '=', True),
         ], order='date_assigned desc, id desc', limit=1)
 
         if submission:
@@ -1426,6 +1431,7 @@ class APSResource(models.Model):
             else:
                 submission.write({
                     'state': 'submitted',
+                    'date_assigned': fields.Date.today(),
                     'date_submitted': fields.Date.today(),
                     'progress': 100.0,
                 })
@@ -1438,11 +1444,17 @@ class APSResource(models.Model):
                 'submission_name': resource.display_name or resource.name or '',
                 'date_assigned': fields.Date.today(),
                 'state': 'submitted',
+                'is_course_explorer': True,
                 'date_submitted': fields.Date.today(),
                 'progress': 100.0,
             })
             new_state = 'submitted'
             new_progress = 100.0
+
+            # Creation does not pass through the submission write override, so
+            # explicitly propagate the first Course Explorer completion to all
+            # ancestors as well.
+            submission._propagate_progress_to_parents()
 
         # Collect parent updates from the auto-propagated data.
         # Walk the full ancestor chain (not just immediate parents) so
@@ -1462,6 +1474,7 @@ class APSResource(models.Model):
             if parent_task:
                 parent_sub = self.env['aps.resource.submission'].search([
                     ('task_id', '=', parent_task.id),
+                    ('is_course_explorer', '=', True),
                 ], order='date_assigned desc, id desc', limit=1)
                 if parent_sub:
                     parent_updates[parent.id] = {

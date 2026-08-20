@@ -620,4 +620,27 @@
         <field name="code">env['aps.resources'].action_force_update_display_names()
         </field>
     </record>
+
+    <!-- Global maintenance action: discover leaf submissions and rebuild
+         marked Course Explorer ancestor submissions. -->
+    <record id="action_repair_course_explorer_submissions" model="ir.actions.server">
+        <field name="name">Repair Course Explorer Submissions</field>
+        <field name="model_id" ref="model_aps_resource_submission"/>
+        <field name="binding_model_id" ref="model_aps_resource_submission"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">result = env['aps.resource.submission'].action_repair_course_explorer_submissions()
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'Course Explorer Repair',
+        'message': str(result),
+        'type': 'success',
+        'sticky': True,
+    },
+}
+        </field>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_manager'))]"/>
+    </record>
 </odoo>

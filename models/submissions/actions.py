@@ -1,4 +1,4 @@
-from odoo import models, fields, _
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
 from .model import sentinel_zero
@@ -11,6 +11,76 @@ class APSResourceSubmissionActions(models.Model):
     _inherit = 'aps.resource.submission'
 
 # region - Action Methods
+    @api.model
+    def action_repair_course_explorer_submissions(self):
+        """Rebuild Course Explorer records from existing leaf submissions.
+
+        This is intentionally a global maintenance operation. It treats the
+        newest submission for each student/resource leaf pair as the source
+        record, marks it as Course Explorer, and lets the normal parent
+        propagation code recreate the derived ancestor chain. Other records
+        are preserved for manual review and cleanup.
+        """
+        submissions = self.search([
+            ('task_id', '!=', False),
+            ('student_id', '!=', False),
+            ('resource_id', '!=', False),
+        ])
+        candidates = {}
+        skipped = 0
+        for submission in submissions:
+            resource = submission.resource_id
+            if not resource:
+                skipped += 1
+                continue
+            visible_content_children = resource.child_ids.filtered(
+                lambda child: child.show_in_hierarchy and child.has_notes != 'no'
+            )
+            if visible_content_children:
+                continue
+            key = (submission.student_id.id, resource.id)
+            current = candidates.get(key)
+            if not current or (submission.create_date, submission.id) > (
+                current.create_date, current.id
+            ):
+                candidates[key] = submission
+
+        repaired = 0
+        parents_created = 0
+        parents_reused = 0
+        for submission in candidates.values():
+            if not submission.is_course_explorer:
+                submission.write({'is_course_explorer': True})
+                repaired += 1
+            if submission.state == 'assigned' and submission.date_assigned:
+                submission.with_context(course_explorer_repair=True).write({
+                    'date_assigned': False,
+                })
+
+            before = self.search_count([
+                ('task_id.student_id', '=', submission.student_id.id),
+                ('task_id.resource_id', 'in', submission.resource_id.parent_ids.ids),
+                ('is_course_explorer', '=', True),
+            ])
+            submission._propagate_progress_to_parents()
+            after = self.search_count([
+                ('task_id.student_id', '=', submission.student_id.id),
+                ('task_id.resource_id', 'in', submission.resource_id.parent_ids.ids),
+                ('is_course_explorer', '=', True),
+            ])
+            parents_created += max(after - before, 0)
+            parents_reused += min(before, after)
+
+        return {
+            'scanned': len(submissions),
+            'leaf_candidates': len(candidates),
+            'repaired': repaired,
+            'parents_created': parents_created,
+            'parents_reused': parents_reused,
+            'skipped': skipped,
+            'duplicates_preserved': max(len(submissions) - len(candidates), 0),
+        }
+
     def action_mark_complete(self):
         today = fields.Date.today()
 

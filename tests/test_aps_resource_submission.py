@@ -396,6 +396,146 @@ class TestAPSResourceSubmissionProgressOrdering(TransactionCase):
         self.assertEqual(collapsed[1]['result_percent'], 65)
 
 
+class TestCourseExplorerSubmissionLifecycle(TransactionCase):
+    """Course Explorer keeps one undated progress submission per resource."""
+
+    def setUp(self):
+        super().setUp()
+        self.student = self.env.user.partner_id
+        self.grandparent = self.env['aps.resources'].create({
+            'name': 'Course',
+            'has_notes': 'no',
+        })
+        self.parent = self.env['aps.resources'].create({
+            'name': 'Unit',
+            'has_notes': 'no',
+            'parent_ids': [(6, 0, [self.grandparent.id])],
+            'primary_parent_id': self.grandparent.id,
+        })
+        self.resource = self.env['aps.resources'].create({
+            'name': 'Lesson',
+            'has_notes': 'yes',
+            'notes': '<p>Lesson notes</p>',
+            'parent_ids': [(6, 0, [self.parent.id])],
+            'primary_parent_id': self.parent.id,
+        })
+
+    def _course_submissions(self, resource):
+        return self.env['aps.resource.submission'].search([
+            ('resource_id', '=', resource.id),
+            ('student_id', '=', self.student.id),
+            ('is_course_explorer', '=', True),
+        ])
+
+    def test_opening_resource_creates_one_undated_inactive_submission(self):
+        action = self.resource.action_get_or_create_submission()
+        submission = self.env['aps.resource.submission'].browse(action['res_id'])
+
+        self.assertTrue(submission.is_course_explorer)
+        self.assertEqual(submission.state, 'assigned')
+        self.assertFalse(submission.date_assigned)
+        self.assertFalse(submission.submission_active)
+        self.assertEqual(len(self._course_submissions(self.resource)), 1)
+
+        second_action = self.resource.action_get_or_create_submission()
+        self.assertEqual(second_action['res_id'], submission.id)
+        self.assertEqual(len(self._course_submissions(self.resource)), 1)
+
+    def test_completion_reuses_submission_and_dates_it(self):
+        self.resource.action_get_or_create_submission()
+        result = self.env['aps.resources'].toggle_resource_completion(self.resource.id)
+        submission = self._course_submissions(self.resource)
+
+        self.assertEqual(result['newState'], 'submitted')
+        self.assertEqual(len(submission), 1)
+        self.assertEqual(submission.state, 'submitted')
+        self.assertEqual(submission.progress, 100.0)
+        self.assertEqual(submission.date_assigned, fields.Date.today())
+        self.assertEqual(submission.date_submitted, fields.Date.today())
+        self.assertTrue(submission.submission_active)
+
+        self.env['aps.resources'].toggle_resource_completion(self.resource.id)
+        submission.invalidate_recordset()
+        self.assertEqual(len(self._course_submissions(self.resource)), 1)
+        self.assertEqual(submission.state, 'assigned')
+        self.assertEqual(submission.progress, 0.0)
+        self.assertFalse(submission.date_assigned)
+        self.assertFalse(submission.submission_active)
+
+    def test_completion_creates_undated_assigned_parent_chain(self):
+        result = self.env['aps.resources'].toggle_resource_completion(self.resource.id)
+
+        self.assertEqual(result['newState'], 'submitted')
+        for resource in (self.parent, self.grandparent):
+            task = self.env['aps.resource.task'].search([
+                ('resource_id', '=', resource.id),
+                ('student_id', '=', self.student.id),
+            ])
+            submission = self._course_submissions(resource)
+            self.assertEqual(len(task), 1)
+            self.assertEqual(len(submission), 1)
+            self.assertEqual(submission.state, 'assigned')
+            self.assertFalse(submission.date_assigned)
+            self.assertGreater(submission.progress, 0.0)
+
+        # Repeating completion must reuse every Course Explorer record.
+        self.env['aps.resources'].toggle_resource_completion(self.resource.id)
+        self.env['aps.resources'].toggle_resource_completion(self.resource.id)
+        for resource in (self.resource, self.parent, self.grandparent):
+            self.assertEqual(len(self._course_submissions(resource)), 1)
+
+    def test_ordinary_submission_is_not_reused_as_course_explorer_submission(self):
+        task = self.env['aps.resource.task'].create({
+            'resource_id': self.resource.id,
+            'student_id': self.student.id,
+        })
+        ordinary = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'submission_name': 'Teacher assignment',
+            'date_assigned': fields.Date.today(),
+            'state': 'assigned',
+        })
+
+        self.env['aps.resources'].toggle_resource_completion(self.resource.id)
+
+        self.assertFalse(ordinary.is_course_explorer)
+        self.assertEqual(len(self._course_submissions(self.resource)), 1)
+        self.assertEqual(ordinary.state, 'assigned')
+        self.assertEqual(ordinary.date_assigned, fields.Date.today())
+
+    def test_global_repair_marks_leaves_and_rebuilds_parents(self):
+        task = self.env['aps.resource.task'].create({
+            'resource_id': self.resource.id,
+            'student_id': self.student.id,
+        })
+        leaf = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'submission_name': 'Existing leaf',
+            'state': 'submitted',
+            'progress': 100.0,
+            'date_assigned': fields.Date.today(),
+            'date_submitted': fields.Date.today(),
+        })
+
+        result = self.env['aps.resource.submission'].action_repair_course_explorer_submissions()
+
+        leaf.invalidate_recordset()
+        self.assertTrue(leaf.is_course_explorer)
+        self.assertEqual(result['leaf_candidates'], 1)
+        self.assertEqual(len(self._course_submissions(self.parent)), 1)
+        self.assertEqual(len(self._course_submissions(self.grandparent)), 1)
+        for resource in (self.parent, self.grandparent):
+            parent_submission = self._course_submissions(resource)
+            self.assertEqual(parent_submission.state, 'assigned')
+            self.assertFalse(parent_submission.date_assigned)
+
+        second_result = self.env['aps.resource.submission'].action_repair_course_explorer_submissions()
+        self.assertEqual(second_result['repaired'], 0)
+        self.assertEqual(len(self._course_submissions(self.resource)), 1)
+        self.assertEqual(len(self._course_submissions(self.parent)), 1)
+        self.assertEqual(len(self._course_submissions(self.grandparent)), 1)
+
+
 class TestAPSAITargetedFeedback(TransactionCase):
 
     def test_build_submission_answer_chunks_preserves_html_block_boundaries(self):

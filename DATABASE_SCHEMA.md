@@ -791,7 +791,7 @@ Adds `_generate_color_from_name()` for deterministic color generation and `get_s
 
 ### 8.1 aps.student.class.bulk.wizard
 
-**File:** `wizard/aps_student_class_bulk_wizard.py`
+**File:** `wizard/class/aps_student_class_bulk_wizard.py`
 **Description:** Bulk Maintain Student Class Enrollments
 
 | Field | Type | Key Attributes |
