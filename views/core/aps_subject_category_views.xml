@@ -25,7 +25,7 @@
                 <sheet>
                     <field name="icon" widget="image" class="oe_avatar" options="{'preview_image': 'icon'}"/>
                     <div class="oe_title">
-                        <label for="name" class="oe_edit_only"/>
+                        <label for="name" class="oe_edit_only" string="Subject Category Name"/>
                         <h1><field name="name"/></h1>
                     </div>
                     <group>

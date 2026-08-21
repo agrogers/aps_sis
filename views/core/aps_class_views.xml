@@ -36,9 +36,11 @@
                         </button>
                     </div>
                     <div class="oe_title">
+                        <label for="name" class="oe_edit_only" string="Class Name"/>
                         <h1>
                             <field name="name" placeholder="Class Name"/>
                         </h1>
+                        <label for="code" class="oe_edit_only" string="Class Code"/>
                         <h2>
                             <field name="code" placeholder="Code"/>
                         </h2>
