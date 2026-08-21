@@ -13,6 +13,67 @@ sentinel_zero = -0.01
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
     _description = 'APEX Submission'
+    _rec_name = 'display_name'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    
+    display_name = fields.Char(
+        compute='_compute_display_name', store=True,
+        help='The submission name'
+        )
+    submission_name = fields.Char(
+        string='Submission Name',
+    )
+    submission_name_normalized = fields.Char(
+        string='Submission Name (Searchable)',
+        compute='_compute_submission_name_normalized',
+        store=True,
+        help='Arrow characters replaced with > to allow plain-text searching.'
+    )
+    task_id = fields.Many2one('aps.resource.task', string='Task', required=True)
+    resource_id = fields.Many2one('aps.resources', string='Resource', related='task_id.resource_id')
+    type_id = fields.Many2one(
+        'aps.resource.types',
+        string='Resource Type',
+        related='resource_id.type_id',
+        readonly=True,
+        store=True,
+    )
+    subject_categories = fields.Many2many(
+        'aps.subject.category',
+        'aps_submission_subject_category_rel',
+        'submission_id',
+        'category_id',
+        string='Subject Categories',
+        compute='_compute_subject_categories',
+        readonly=True,
+        store=True,
+    )
+    url = fields.Char(
+        string='URL',
+        tracking=True,
+        help='Optional submission-specific URL override for the main assigned resource.'
+    )
+    subjects = fields.Many2many('aps.subject', string='Subjects')
+    student_id = fields.Many2one('res.partner', string='Student', related='task_id.student_id')
+    assigned_by = fields.Many2one('aps.teacher', string='Assigned By', default=lambda self: self._default_assigned_by())
+    submission_label = fields.Char(
+        string='Label',
+        help='Identifier for grouping submissions, e.g., S1 Exam, Exam Prep, Homework .'
+    )
+    submission_order = fields.Integer(string='Submission Order')
+    state = fields.Selection([
+        ('assigned', 'Assigned'),
+        ('submitted', 'Submitted'),
+        ('complete', 'Finalised'),  # Leave the underlying value as 'complete' for easier sync with task state 
+        ], string='State', default='assigned', 
+        tracking=True,
+        required=True)
+    progress = fields.Float(
+        string='Progress %',
+        default=0.0,
+        digits=(5, 1),
+        help='0 for assigned, 100 for submitted/finalised. Used by Course Explorer for student progress tracking.',
+    )
     date_assigned = fields.Date(
         string='Date Assigned',
         default=fields.Date.today)
