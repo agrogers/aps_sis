@@ -455,8 +455,17 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
     def _apply_ai_feedback_result(self, result):
         self.ensure_one()
-        feedback_html = result.get('feedback_html') or '<p><em>No detailed feedback was returned by the AI model.</em></p>'
+        feedback_html = result.get('feedback_html') or ''
         score = result.get('score')
+        score_comment = result.get('score_comment')
+
+        # When the AI returned no detailed feedback sections but did return a
+        # score comment, use the comment as the feedback body instead of the
+        # "no detailed feedback" placeholder.
+        comment_is_feedback = bool(score_comment) and self._is_no_detailed_feedback_html(feedback_html)
+        if comment_is_feedback:
+            feedback_html = '<p><em>%s</em></p>' % escape(score_comment)
+
         vals = {
             **self._get_ai_feedback_result_write_vals(result),
             'ai_last_model_id': result.get('model_id'),
@@ -464,12 +473,16 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'ai_last_completion_tokens': result.get('completion_tokens') or 0,
             'ai_last_estimated_cost': result.get('estimated_cost') or 0.0,
         }
+        if comment_is_feedback:
+            vals['feedback'] = feedback_html
 
         if self.out_of_marks and self.out_of_marks > 0 and self.out_of_marks != sentinel_zero:
             if score is None:
-                score_comment = result.get('score_comment')
-                no_score_note = score_comment or 'No mark was returned by the AI model.'
-                vals['feedback'] = '%s<p><em>%s</em></p>' % (feedback_html, no_score_note)
+                if not comment_is_feedback:
+                    no_score_note = score_comment or _('No mark was returned by the AI model.')
+                    vals['feedback'] = '%s<p><em>%s</em></p>' % (feedback_html, no_score_note)
+                # When the comment already forms the feedback body there is
+                # nothing to append — adding it again would duplicate it.
             else:
                 vals['score'] = max(0.0, min(round(float(score), 2), self.out_of_marks))
 

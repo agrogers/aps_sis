@@ -1,6 +1,8 @@
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
+NO_DETAILED_FEEDBACK_HTML = '<p><em>No detailed feedback was returned by the AI model.</em></p>'
+
 
 class APSAIFeedbackStorageMixin(models.AbstractModel):
     _name = 'aps.ai.feedback.storage.mixin'
@@ -24,6 +26,17 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             'ai_feedback_items': result.get('feedback_items') or False,
             'ai_feedback_links': result.get('feedback_links') or False,
         }
+
+    def _is_no_detailed_feedback_html(self, feedback_html):
+        """Return True when *feedback_html* is empty or the standard placeholder.
+
+        ``aps_ai`` emits ``NO_DETAILED_FEEDBACK_HTML`` whenever no structured
+        feedback sections could be assembled from the AI response, so callers
+        can detect that case and substitute more meaningful content (e.g. the
+        score comment).
+        """
+        text = (feedback_html or '').strip()
+        return not text or text == NO_DETAILED_FEEDBACK_HTML
 
     # -------------------------------------------------------------------------
     # Shared AI run notification helpers
