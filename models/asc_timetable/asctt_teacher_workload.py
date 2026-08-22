@@ -24,14 +24,20 @@ class ASCTTTeacherWorkload(models.Model):
     ], string='Day', readonly=True)
     period_id = fields.Many2one('asctt.period', string='Period', readonly=True)
     period_length_minutes = fields.Integer(string='Period Length (min)', readonly=True)
-    week_weight = fields.Float(string='Week Weight', digits=(3, 2), readonly=True)
-    weighted_minutes = fields.Float(string='Weighted Minutes', digits=(7, 2), readonly=True)
+    week_weight = fields.Float(
+        string='Week Weight', digits=(3, 2), readonly=True,
+        help='',
+        )
+    weighted_minutes = fields.Float(
+        string='Weighted Minutes', digits=(7, 2), readonly=True,
+        help='Weighted minutes = period length * week weight',
+        )
     teacher_id = fields.Many2one('asctt.teacher', string='aSc Teacher', readonly=True)
     aps_teacher_id = fields.Many2one('aps.teacher', string='APEX Teacher', readonly=True)
     class_names = fields.Char(string='Classes', readonly=True)
     subject_name = fields.Char(string='Subject', readonly=True)
-    is_assistant = fields.Boolean(string='Assistant', readonly=True)
-    is_supervision = fields.Boolean(string='Supervision', readonly=True)
+    is_assistant = fields.Boolean(string='Assistant', readonly=True, help="This lesson is taught by this teacher as an assistant, not the main teacher.")
+    is_supervision = fields.Boolean(string='Supervision', readonly=True, help="This lesson is a supervision duty, not a teaching lesson.")
     card_id = fields.Many2one('asctt.card', string='Card', readonly=True)
     supervision_id = fields.Many2one(
         'asctt.classroom.supervision', string='Supervision', readonly=True)
@@ -58,6 +64,7 @@ class ASCTTTeacherWorkload(models.Model):
                     COALESCE(s.name, 'Unknown') AS subject_name,
                     (
                         t.id <> ({teacher_first_id})
+                        OR COALESCE(s.force_assistant, FALSE)
                     ) AS is_assistant,
                     FALSE AS is_supervision,
                     c.id AS card_id,

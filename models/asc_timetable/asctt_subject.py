@@ -17,3 +17,10 @@ class ASCTTSubject(models.Model):
         ondelete='set null',
         help='Link to the corresponding APEX Subject Category record.',
     )
+
+    # Workload classification
+    force_assistant = fields.Boolean(
+        string='Force Assistant',
+        help='Treat all timetable cards of this subject as assistant '
+             '(non-teaching) periods, regardless of teacher order.',
+    )

@@ -239,6 +239,7 @@
                 <field name="name"/>
                 <field name="short"/>
                 <field name="aps_subject_category_id"/>
+                <field name="force_assistant" widget="boolean_toggle"/>
                 <field name="asc_id" optional="hide"/>
             </list>
         </field>
@@ -255,6 +256,7 @@
                             <field name="asc_id"/>
                             <field name="name"/>
                             <field name="short"/>
+                            <field name="force_assistant"/>
                         </group>
                         <group>
                             <field name="aps_subject_category_id"/>

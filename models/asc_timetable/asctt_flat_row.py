@@ -127,10 +127,12 @@ class ASCTTFlatRow(models.Model):
                     END AS subject_name,
 
                     -- is_assistant: any teacher beyond the first teacher in aSc's order,
-                    -- or always True for no-class (supervision-type) lessons
+                    -- no-class (supervision-type) lessons, or subjects flagged
+                    -- force_assistant on asctt.subject
                     (
                         t.id <> ({teacher_first_id})
                         OR cls.id IS NULL
+                        OR COALESCE(s.force_assistant, FALSE)
                     ) AS is_assistant,
 
                     FALSE          AS is_supervision,
