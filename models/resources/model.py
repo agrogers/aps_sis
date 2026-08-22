@@ -341,6 +341,15 @@ class APSResource(models.Model):
         domain=[('is_student', '=', True)],
         help='Students to assign when "Assign All Students" is disabled.',
     )
+    auto_assign_class_ids = fields.Many2many(
+        'aps.class',
+        'aps_resources_auto_assign_classes_rel',
+        'resource_id',
+        'class_id',
+        string='Classes',
+        domain=[('active', '=', True)],
+        help='All students with an enrolled membership in these classes are included when "Assign All Students" is disabled.',
+    )
     auto_assign_notify_student = fields.Boolean(
         string='Notify Student',
         default=True,

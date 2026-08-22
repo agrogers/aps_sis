@@ -209,7 +209,23 @@ class APSResourceSubmissionAutoScore(models.Model):
                         'state': 'assigned',
                         'progress': 0.0,
                         'is_course_explorer': record.is_course_explorer,
+                        # Course Explorer parent submissions represent the
+                        # parent resource, so copy its subjects. This also
+                        # gives the computed subject_icons field the correct
+                        # source icon instead of leaving the parent blank.
+                        'subjects': [(6, 0, parent_res.subjects.ids)]
+                        if record.is_course_explorer else False,
                     })
+
+                # Keep existing Course Explorer parent records in sync too.
+                # This covers parents created before the subject propagation
+                # was added, as well as resources whose subjects changed later.
+                if record.is_course_explorer:
+                    parent_subject_ids = set(parent_res.subjects.ids)
+                    if set(parent_submission.subjects.ids) != parent_subject_ids:
+                        parent_submission.write({
+                            'subjects': [(6, 0, parent_res.subjects.ids)],
+                        })
 
                 # Compute average progress from children that have content.
                 # Children with has_notes='no' are structural/organisational

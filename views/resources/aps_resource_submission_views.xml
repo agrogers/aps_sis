@@ -291,6 +291,7 @@
                             <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px"/>
                             <field name="submission_name" nolabel="1" class="fs-3 fw-bold" />
                         </div>
+                        <field name="student_id"/>
                     </group>
 
                     <field name="model_answer_is_notes" invisible="1"/>
@@ -299,7 +300,7 @@
                             <group>
                                 <group string="Submission Details">
                                     <field name="task_id" readonly="1"/>
-                                    <!-- <field name="student_id"/> -->
+                                
                                     <field name="resource_id" readonly="1"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="allow_subject_editing"  widget="boolean_toggle" />

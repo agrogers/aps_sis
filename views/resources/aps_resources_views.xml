@@ -342,6 +342,10 @@
                                     <field name="auto_assign_student_ids" widget="many2many_tags"
                                            options="{'no_create': True}"
                                            invisible="auto_assign_all_students"/>
+                                     <field name="auto_assign_class_ids" widget="many2many_tags"
+                                         options="{'no_create': True}"
+                                         domain="[('active', '=', True), ('academic_year_id.is_current', '=', True), ('subject_id', 'in', subjects)]"
+                                         invisible="auto_assign_all_students"/>
                                     <field name="auto_assign_notify_student" widget="boolean_toggle"/>
                                 </group>
                             </group>

@@ -341,6 +341,7 @@ This document describes every database model defined or extended by the `aps_sis
 | `auto_assign_time` | Float | | decimal time (14.5 = 14:30) |
 | `auto_assign_all_students` | Boolean | | default=True |
 | `auto_assign_student_ids` | Many2many → `res.partner` | | relation=`aps_resources_auto_assign_students_rel` |
+| `auto_assign_class_ids` | Many2many → `aps.class` | | relation=`aps_resources_auto_assign_classes_rel` |
 | `auto_assign_notify_student` | Boolean | | default=True |
 | `auto_assign_custom_name` | Char | | name override for auto-assigned submissions |
 | `auto_assign_log` | Text | | readonly, audit trail |

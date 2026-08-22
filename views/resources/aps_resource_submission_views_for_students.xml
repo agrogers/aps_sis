@@ -99,13 +99,13 @@
                             </div>
                         </group>
                         <group colspan="4">
-                            <field name="review_requested_by" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
                         </group>
                     </group>
-                    <group col="12" class="mb-4">
+                    <group col="12" class="mb-1">
                         <group colspan="3">
-                            <field name="student_id" readonly="1" nolabel="1" class="fw-bold"/>
-                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
+                            <field name="student_id" readonly="1" nolabel="1" class="fs-4" invisible="not is_current_user_faculty"/>
+
                         </group>
                         <group colspan="9">
                             <div class="d-flex justify-content-end w-100">
@@ -140,13 +140,6 @@
                                 </group>
                                 </div>
                             </group>
-                            <group>
-                                <field name="confidence_rating"
-                                       widget="priority"
-                                       string="Confidence Rating"
-                                       invisible="state == 'complete' and not confidence_rating"
-                                       readonly="state == 'complete'"/>
-                            </group>
                             <field name="subjects" widget="clickable_many2many_tags" invisible="allow_subject_editing==False" no_add="True" no_open="True" options="{'no_create': True}"/>
                             
                             <div class="text-muted" style="font-size: 1.2em;" invisible="state == 'assigned' or answer">
@@ -169,6 +162,19 @@
                                     invisible="(state != 'assigned' and not answer) or has_feedback"/>
                                 
                             </div>
+                            <group col="2" class="pt-4" invisible="state == 'assigned'">
+                                <group>
+                                    <field name="review_requested_by" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
+                                </group>
+                                <group>
+                                    
+                                    <field name="confidence_rating"
+                                        widget="priority"
+                                        string="Confidence Rating"
+                                        invisible="state == 'complete' and not confidence_rating"
+                                        readonly="state == 'complete'"/>
+                                </group>
+                            </group>
                         </page>
 
 

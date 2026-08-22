@@ -2,6 +2,78 @@ from odoo.tests.common import TransactionCase
 
 class TestAPSResource(TransactionCase):
 
+    def _make_auto_assign_fixture(self):
+        year = self.env['aps.academic.year'].create({
+            'name': 'Auto Assign Year',
+            'short_name': 'AAY',
+            'start_date': '2026-01-01',
+            'end_date': '2026-12-31',
+            'is_current': True,
+        })
+        subject = self.env['aps.subject'].create({'name': 'Auto Assign Subject'})
+        class_a = self.env['aps.class'].create({
+            'subject_id': subject.id,
+            'identifier': 'A',
+            'academic_year_id': year.id,
+        })
+        class_b = self.env['aps.class'].create({
+            'subject_id': subject.id,
+            'identifier': 'B',
+            'academic_year_id': year.id,
+        })
+        partners = self.env['res.partner'].create([
+            {'name': 'Auto Student A', 'is_student': True},
+            {'name': 'Auto Student B', 'is_student': True},
+            {'name': 'Auto Student C', 'is_student': True},
+            {'name': 'Auto Student D', 'is_student': True},
+        ])
+        students = self.env['aps.student'].create([
+            {'partner_id': partner.id} for partner in partners
+        ])
+        self.env['aps.student.class'].create([
+            {'student_id': students[0].id, 'class_id': class_a.id, 'state': 'enrolled'},
+            {'student_id': students[0].id, 'class_id': class_b.id, 'state': 'enrolled'},
+            {'student_id': students[1].id, 'class_id': class_b.id, 'state': 'enrolled'},
+            {'student_id': students[2].id, 'class_id': class_a.id, 'state': 'withdrawn'},
+            {'student_id': students[3].id, 'class_id': class_a.id, 'state': 'waiting'},
+        ])
+        resource = self.env['aps.resources'].create({
+            'name': 'Auto Assign Resource',
+            'subjects': [(6, 0, [subject.id])],
+            'auto_assign_all_students': False,
+            'auto_assign_class_ids': [(6, 0, [class_a.id, class_b.id])],
+            'auto_assign_student_ids': [(6, 0, [partners[2].id])],
+        })
+        return resource, class_a, class_b, partners
+
+    def test_auto_assign_combines_class_and_individual_students(self):
+        """Class targets and individual targets form one unique student set."""
+        resource, _class_a, _class_b, partners = self._make_auto_assign_fixture()
+
+        selected = resource._get_auto_assign_student_partners()
+
+        self.assertEqual(set(selected.ids), {partners[0].id, partners[1].id, partners[2].id})
+        self.assertEqual(len(selected), 3)
+
+    def test_auto_assign_empty_targets_do_not_fall_back_to_all_students(self):
+        """Disabling all-student mode with no targets selects nobody."""
+        resource, _class_a, _class_b, _partners = self._make_auto_assign_fixture()
+        resource.write({
+            'auto_assign_class_ids': [(5, 0, 0)],
+            'auto_assign_student_ids': [(5, 0, 0)],
+        })
+
+        self.assertFalse(resource._get_auto_assign_student_partners())
+
+    def test_auto_assign_all_students_mode_is_unchanged(self):
+        """All-student mode still uses enrolled classes for resource subjects."""
+        resource, _class_a, _class_b, partners = self._make_auto_assign_fixture()
+        resource.auto_assign_all_students = True
+
+        selected = resource._get_auto_assign_student_partners()
+
+        self.assertEqual(set(selected.ids), {partners[0].id, partners[1].id})
+
     def test_compute_display_name_simple(self):
         """Test that display_name is set correctly for a resource with no parents."""
         resource = self.env['aps.resources'].create({

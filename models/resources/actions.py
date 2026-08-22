@@ -604,19 +604,10 @@ class APSResource(models.Model):
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
 
-        # Determine students to assign
-        if self.auto_assign_all_students:
-            if self.subjects:
-                students_recs = self.env['aps.student'].search([])
-                enrollments = self.env['aps.student.class'].search([
-                    ('state', '=', 'enrolled'),
-                    ('class_id.subject_id', 'in', self.subjects.ids),
-                ])
-                student_partners = enrollments.mapped('student_id.partner_id')
-            else:
-                student_partners = self.env['res.partner']
-        else:
-            student_partners = self.auto_assign_student_ids
+        # Determine students to assign.  Class and individual selections are
+        # combined when all-student assignment is disabled; recordset union
+        # removes students who belong to more than one selected class.
+        student_partners = self._get_auto_assign_student_partners()
 
         if not student_partners:
             _logger.info('Auto-assign skipped for resource %s: no students found', self.display_name)
@@ -716,6 +707,28 @@ class APSResource(models.Model):
             'auto_assign_date': next_date,
             'auto_assign_log': f'{log_entry}\n{existing_log}'.strip(),
         })
+
+    def _get_auto_assign_student_partners(self):
+        """Return the unique student partners targeted by Auto Assign."""
+        self.ensure_one()
+
+        if self.auto_assign_all_students:
+            if self.subjects:
+                enrollments = self.env['aps.student.class'].search([
+                    ('state', '=', 'enrolled'),
+                    ('class_id.subject_id', 'in', self.subjects.ids),
+                ])
+                return enrollments.mapped('student_id.partner_id')
+            return self.env['res.partner']
+
+        student_partners = self.auto_assign_student_ids
+        if self.auto_assign_class_ids:
+            enrollments = self.env['aps.student.class'].search([
+                ('state', '=', 'enrolled'),
+                ('class_id', 'in', self.auto_assign_class_ids.ids),
+            ])
+            student_partners |= enrollments.mapped('student_id.partner_id')
+        return student_partners
 
     # ------------------------------------------------------------------
     # Resource Hierarchy client-action data
@@ -1447,6 +1460,7 @@ class APSResource(models.Model):
                 'is_course_explorer': True,
                 'date_submitted': fields.Date.today(),
                 'progress': 100.0,
+                'subjects': [(6, 0, resource.subjects.ids)],
             })
             new_state = 'submitted'
             new_progress = 100.0
