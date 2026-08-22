@@ -169,6 +169,12 @@ class APSResourceSubmissionAutoScore(models.Model):
         Children with *no* submission at all are treated as progress=0.
         """
         for record in self:
+            # Parent progress records are maintained only for Course Explorer
+            # submissions. Ordinary assignments must not create parent tasks
+            # or parent submissions as a side effect of state/progress changes.
+            if not record.is_course_explorer:
+                continue
+
             if not record.resource_id or not record.resource_id.parent_ids:
                 continue
 

@@ -74,6 +74,12 @@ class APSResourceSubmission(models.Model):
         digits=(5, 1),
         help='0 for assigned, 100 for submitted/finalised. Used by Course Explorer for student progress tracking.',
     )
+    is_course_explorer = fields.Boolean(
+        string='Course Explorer',
+        default=False,
+        index=True,
+        help='Identifies submissions created for Course Explorer progress tracking.',
+    )
     date_assigned = fields.Date(
         string='Date Assigned',
         default=fields.Date.today)
