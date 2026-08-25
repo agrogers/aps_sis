@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="aps_sis.SchoolCalendarReport" owl="1">
+    <div class="scr-wrap vh-100 overflow-auto p-3 bg-100">
+
+        <!-- Toolbar -->
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <label class="fw-semibold mb-0">Academic Year</label>
+            <select class="form-select w-auto" t-on-change="onYearChange">
+                <t t-foreach="state.years" t-as="year" t-key="year.id">
+                    <option t-att-value="year.id"
+                            t-att-selected="year.id === state.yearId"
+                            t-esc="year.short_name || year.name"/>
+                </t>
+            </select>
+            <button class="btn btn-primary ms-auto" t-on-click="printPdf">
+                <i class="fa fa-print me-2"/>Print PDF
+            </button>
+        </div>
+
+        <!-- Calendar sheet -->
+        <div class="scr-sheet mx-auto bg-white shadow p-4">
+
+            <!-- Header -->
+            <div class="scr-header d-flex align-items-center mb-2">
+                <img t-if="state.logoUrl" t-att-src="state.logoUrl"
+                     class="scr-logo me-3" alt="Logo"/>
+                <h1 class="scr-title flex-grow-1 text-center mb-0">
+                    <t t-esc="state.yearName"/> ACADEMIC CALENDAR
+                </h1>
+            </div>
+            <div class="scr-rule mb-3"/>
+
+            <!-- Month rows: events | month | month | events -->
+            <t t-foreach="monthRows" t-as="row" t-key="row_index">
+                <table class="scr-row w-100 mb-2">
+                    <tr>
+                        <td class="scr-events-cell scr-events-left">
+                            <t t-if="row[0]">
+                                <table class="scr-event-list scr-event-list-right">
+                                    <tr t-foreach="row[0].events" t-as="ev" t-key="ev_index">
+                                        <td class="scr-ev-title" t-esc="ev.title"/>
+                                        <td class="scr-ev-dates">
+                                            <span class="scr-ev-badge"
+                                                  t-attf-style="background-color: {{ ev.color }}"
+                                                  t-esc="ev.dates"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </t>
+                        </td>
+                        <td class="scr-month-cell">
+                            <t t-if="row[0]">
+                                <t t-call="aps_sis.SchoolCalendarMonth">
+                                    <t t-set="month" t-value="row[0]"/>
+                                </t>
+                            </t>
+                        </td>
+                        <td class="scr-month-cell">
+                            <t t-if="row[1]">
+                                <t t-call="aps_sis.SchoolCalendarMonth">
+                                    <t t-set="month" t-value="row[1]"/>
+                                </t>
+                            </t>
+                        </td>
+                        <td class="scr-events-cell scr-events-right">
+                            <t t-if="row[1]">
+                                <table class="scr-event-list">
+                                    <tr t-foreach="row[1].events" t-as="ev" t-key="ev_index">
+                                        <td class="scr-ev-dates">
+                                            <span class="scr-ev-badge"
+                                                  t-attf-style="background-color: {{ ev.color }}"
+                                                  t-esc="ev.dates"/>
+                                        </td>
+                                        <td class="scr-ev-title" t-esc="ev.title"/>
+                                    </tr>
+                                </table>
+                            </t>
+                        </td>
+                    </tr>
+                </table>
+            </t>
+
+        </div>
+    </div>
+</t>
+
+<!-- Single month panel; expects `month` in scope -->
+<t t-name="aps_sis.SchoolCalendarMonth" owl="1">
+    <div class="scr-month">
+        <div class="scr-month-title" t-esc="month.label"/>
+        <table t-attf-class="scr-grid #{month.weeks.some(w => w.saturday) ? 'has-saturday' : ''}">
+            <tr class="scr-weekdays">
+                <th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th class="scr-sat-hd"/>
+            </tr>
+            <t t-foreach="month.weeks" t-as="week" t-key="week_index">
+                <tr>
+                    <t t-foreach="week.days" t-as="cell" t-key="cell_index">
+                        <td t-attf-class="scr-day #{cell and cell.day ? '' : 'scr-empty'}"
+                            t-attf-style="#{cell and cell.color and cell.color !== '#FFFFFF' ? 'background-color:' + cell.color : ''}"
+                            t-esc="cell ? cell.day or '' : ''"/>
+                    </t>
+                    <td t-if="week.saturday" class="scr-day scr-saturday"
+                        t-attf-style="background-color: {{ week.saturday.color }}"
+                        t-esc="week.saturday.day"/>
+                    <t t-else="">
+                        <td class="scr-sat-hidden"/>
+                    </t>
+                </tr>
+            </t>
+        </table>
+    </div>
+</t>
+
+</templates>

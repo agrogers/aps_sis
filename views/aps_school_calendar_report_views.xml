@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Academic Calendar Report: HTML preview client action -->
+    <record id="action_school_calendar_report" model="ir.actions.client">
+        <field name="name">Academic Calendar</field>
+        <field name="tag">school_calendar_report</field>
+    </record>
+
+</odoo>

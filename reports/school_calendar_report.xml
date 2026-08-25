@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Paper format: A4 portrait, tight margins, no header -->
+        <record id="paperformat_school_calendar" model="report.paperformat">
+            <field name="name">School Calendar Format</field>
+            <field name="format">A4</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">8</field>
+            <field name="margin_bottom">8</field>
+            <field name="margin_left">8</field>
+            <field name="margin_right">8</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+        </record>
+
+        <!-- Report action (invoked from the HTML preview Print button) -->
+        <record id="school_calendar_report_action" model="ir.actions.report">
+            <field name="name">Academic Calendar</field>
+            <field name="model">aps.school.calendar</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">aps_sis.report_school_calendar_template</field>
+            <field name="print_report_name">'Academic Calendar'</field>
+            <field name="binding_model_id" eval="False"/>
+            <field name="paperformat_id" ref="aps_sis.paperformat_school_calendar"/>
+        </record>
+
+        <!-- Report template -->
+        <template id="report_school_calendar_template">
+            <t t-call="web.basic_layout">
+                <t t-set="doc"
+                   t-value="env['aps.academic.year'].browse(data.get('academic_year_id') or docs and docs[0].id) if data else env['aps.academic.year'].search([('is_current', '=', True)], limit=1)"/>
+
+                <div class="scr-pdf">
+                    <style>
+                        .scr-pdf { font-family: Arial, Helvetica, sans-serif; }
+                        .scr-pdf table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+                        .scr-header td { padding-bottom: 2mm; }
+                        .scr-logo-cell { width: 20mm; }
+                        .scr-logo-cell img { max-height: 9mm; max-width: 19mm; }
+                        .scr-title-cell {
+                            color: #1760C8; font-weight: bold; font-size: 20pt;
+                            text-align: center;
+                        }
+                        .scr-rule-cell { border-top: 2px solid #E53935; }
+                        .scr-events-cell { width: 22%; vertical-align: middle; padding: 0 4px; }
+                        .scr-month-cell { width: 28%; vertical-align: top; padding: 0 4px; }
+                        .scr-event-list { font-size: 7pt; }
+                        .scr-ev-dates { font-weight: bold; text-align: right; padding-right: 5px; white-space: nowrap; }
+                        .scr-ev-title { text-align: left; }
+                        .scr-month-title {
+                            background-color: #9565E8; color: white; font-weight: bold;
+                            text-align: center; font-size: 9pt; padding: 1px 0;
+                        }
+                        .scr-grid th, .scr-grid td {
+                            border: 1px solid #222; text-align: center;
+                            vertical-align: middle; height: 5.5mm; font-size: 7.5pt;
+                        }
+                        .scr-weekdays th { background-color: #B8CBE8; font-weight: bold; height: 5mm; }
+                    </style>
+
+                    <!-- Header -->
+                    <table class="scr-header">
+                        <tr>
+                            <td class="scr-logo-cell">
+                                <img t-if="env.company.logo"
+                                     t-att-src="'/logo.png?company=%s' % env.company.id"
+                                     alt="Logo"/>
+                            </td>
+                            <td class="scr-title-cell">
+                                <t t-esc="doc.short_name or doc.name"/> ACADEMIC CALENDAR
+                            </td>
+                            <td class="scr-logo-cell"/>
+                        </tr>
+                        <tr><td colspan="3" class="scr-rule-cell"/></tr>
+                    </table>
+
+                    <!-- Month rows -->
+                    <t t-set="months"
+                       t-value="env['aps.school.calendar'].get_calendar_report_data(doc.start_date, doc.end_date)"/>
+                    <t t-foreach="range(0, len(months), 2)" t-as="i">
+                        <table class="scr-row">
+                            <tr>
+                                <td class="scr-events-cell">
+                                    <table class="scr-event-list">
+                                        <tr t-foreach="months[i]['events']" t-as="ev">
+                                            <td class="scr-ev-title" t-esc="ev['title']"/>
+                                            <td class="scr-ev-dates" t-esc="ev['dates']"/>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <t t-foreach="[months[i], months[i + 1] if i + 1 &lt; len(months) else None]" t-as="month">
+                                    <td class="scr-month-cell">
+                                        <t t-if="month">
+                                            <div class="scr-month-title" t-esc="month['label']"/>
+                                            <table class="scr-grid">
+                                                <tr class="scr-weekdays">
+                                                    <th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th/>
+                                                </tr>
+                                                <t t-foreach="month['weeks']" t-as="week">
+                                                    <tr>
+                                                        <t t-foreach="week['days']" t-as="cell">
+                                                            <td t-attf-style="#{cell and cell['color'] != '#FFFFFF' ? 'background-color:' + cell['color'] : ''}"
+                                                                t-esc="cell['day'] if cell else ''"/>
+                                                        </t>
+                                                        <td t-if="week['saturday']"
+                                                            t-attf-style="'background-color:' + week['saturday']['color']"
+                                                            t-esc="week['saturday']['day']"/>
+                                                        <t t-else="">
+                                                            <td style="border:none;"/>
+                                                        </t>
+                                                    </tr>
+                                                </t>
+                                            </table>
+                                        </t>
+                                    </td>
+                                </t>
+                                <td class="scr-events-cell">
+                                    <t t-if="i + 1 &lt; len(months)">
+                                        <table class="scr-event-list">
+                                            <tr t-foreach="months[i + 1]['events']" t-as="ev">
+                                                <td class="scr-ev-dates" t-esc="ev['dates']"/>
+                                                <td class="scr-ev-title" t-esc="ev['title']"/>
+                                            </tr>
+                                        </table>
+                                    </t>
+                                </td>
+                            </tr>
+                        </table>
+                    </t>
+                </div>
+            </t>
+        </template>
+
+    </data>
+</odoo>

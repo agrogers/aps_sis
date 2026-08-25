@@ -181,10 +181,6 @@
         <field name="model">res.users</field>
         <field name="inherit_id" ref="hr.res_users_view_form_profile"/>
         <field name="arch" type="xml">
-            <!-- Hide the base-preferences avatar selector on HR profile forms to avoid a duplicate top-right badge. -->
-            <xpath expr="//div[@name='base_avatar_wrapper']//field[@name='avatar_id']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
             <xpath expr="//field[@name='avatar_128']/following-sibling::field[@name='image_1920'][1]" position="replace">
                 <div style="position:relative;display:inline-block;float:right;margin-bottom:10px;">
                     <field name="image_1920" widget="image" class="oe_avatar"

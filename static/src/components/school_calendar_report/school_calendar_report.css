@@ -1,0 +1,132 @@
+/* School Calendar Report — printable academic calendar preview */
+
+.scr-sheet {
+    width: 210mm;          /* narrower than A4 so side text gets more room */
+    min-height: 297mm;
+}
+
+.scr-header .scr-logo {
+    max-height: 9mm;
+    max-width: 20mm;
+    object-fit: contain;
+}
+
+.scr-title {
+    color: black;
+    font-weight: bold;
+    font-size: 22pt;
+    letter-spacing: 0.5px;
+}
+
+.scr-rule {
+    border-top: 2px solid #E53935;
+}
+
+/* Row layout: events | month | month | events */
+.scr-row {
+    table-layout: fixed;
+}
+.scr-events-cell {
+    width: 22%;
+    vertical-align: middle;
+    padding: 0 4px;
+}
+.scr-month-cell {
+    width: 20%;
+    vertical-align: top;
+    padding: 0 4px;
+}
+
+/* Event list */
+.scr-event-list {
+    width: 100%;
+    font-size: 7.5pt;
+    border-collapse: collapse;
+}
+.scr-event-list-right {
+    /* Left column: hug the calendar edge */
+    margin-left: auto;
+    width: auto;
+}
+.scr-ev-dates {
+    font-weight: bold;
+    text-align: right;
+    padding-right: 5px;
+    white-space: nowrap;
+    width: 1%;
+}
+.scr-ev-badge {
+    display: inline-block;
+    min-width: 14px;
+    height: 14px;
+    line-height: 14px;
+    padding: 0 2px;
+    border-radius: 50%;
+    background-color: #A5D6A7;   /* default; overridden per event via inline style */
+    color: #fff;
+    font-size: 6.5pt;
+    text-align: center;
+}
+.scr-events-left .scr-ev-title {
+    text-align: right;
+}
+.scr-events-right .scr-ev-title {
+    text-align: left;
+}
+
+/* Month panel */
+.scr-month-title {
+    background-color: #555555;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 10pt;
+    padding: 1px 0;
+}
+
+.scr-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.scr-grid th,
+.scr-grid td {
+    border: 1px solid #222;
+    text-align: center;
+    vertical-align: middle;
+    height: 5.5mm;
+    font-size: 8pt;
+}
+.scr-weekdays th {
+    background-color: #aaaaaa;
+    font-weight: bold;
+    height: 5mm;
+}
+.scr-empty {
+    background-color: #FFFFFF;
+}
+.scr-sat-hd,
+.scr-sat-hidden {
+    width: 0;
+    border: none !important;
+    padding: 0;
+}
+/* Tables containing a Saturday school day: reserve a narrow column
+   (half a normal day cell) via the weekday header so table-layout:fixed
+   honours it. */
+.scr-grid.has-saturday .scr-sat-hd {
+    width: 12.5%;
+    border: 1px solid #222 !important;
+    background-color: #B8CBE8;
+}
+.scr-saturday {
+    font-size: 8pt;
+}
+
+@media print {
+    .o_action_manager > *:not(.scr-wrap),
+    .o_main_navbar,
+    .o_action_manager > .o_action > *:not(*) {
+        display: none !important;
+    }
+}

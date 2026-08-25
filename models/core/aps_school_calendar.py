@@ -114,3 +114,145 @@ class ApsSchoolCalendar(models.Model):
             if rec.description:
                 rec.display_name = f'{rec.display_name} ({rec.description})'
 
+    @api.model
+    def get_calendar_report_data(self, year_start, year_end):
+        """Build per-month calendar data for the printable academic calendar.
+
+        Returns a list of month dicts (chronological) each containing:
+          - label: e.g. 'Aug-26'
+          - weeks: list of week rows; each row is a list of cell dicts
+            ({'day': int|None, 'color': hex str}) Monday-first, 5 columns
+            plus an optional trailing Saturday cell when a school day falls
+            on that Saturday.
+          - events: grouped event list entries {'dates': '13,21,28', 'title': ...}
+        """
+        import calendar as cal_mod
+        from datetime import date, timedelta
+
+        year_start = fields.Date.to_date(year_start)
+        year_end = fields.Date.to_date(year_end)
+
+        Color = self._DATE_TYPE_COLOR
+        HEX = {
+            0: '#FFFFFF',   # grey/normal -> white for print
+            2: '#FFB74D',   # orange
+            3: '#FFF176',   # yellow
+            6: '#FF8A80',   # salmon
+            7: '#90CAF9',   # blue
+            10: '#A5D6A7',  # green
+        }
+
+        def default_hex(date_type):
+            return HEX.get(Color.get(date_type, 0), '#FFFFFF')
+
+        # Fetch all calendar entries in range.
+        # by_date: one entry per date (first found) — used for grid colouring.
+        # all_events: every described/typed entry — used for the event list.
+        records = self.search([
+            ('date', '>=', year_start),
+            ('date', '<=', year_end),
+        ])
+        by_date = {}
+        all_events = []
+        for rec in records:
+            # Skip pure weekend noise from the printed grid
+            if rec.date_type == 'weekend':
+                continue
+            if rec.date not in by_date:
+                by_date[rec.date] = {
+                    'date_type': rec.date_type,
+                    'description': rec.description or '',
+                }
+            all_events.append({
+                'date': rec.date,
+                'date_type': rec.date_type,
+                'description': rec.description or '',
+            })
+
+        months = []
+        d = year_start
+        while (d.year, d.month) <= (year_end.year, year_end.month):
+            label = d.strftime('%b-%y')
+            cal = cal_mod.Calendar(firstweekday=0)  # Monday first
+            weeks = []
+            events_by_key = {}
+
+            for week in cal.monthdatescalendar(d.year, d.month):
+                row = [None] * 5
+                saturday_cell = None
+                for day in week:
+                    in_month = day.month == d.month
+                    info = by_date.get(day)
+                    if day.weekday() < 5:
+                        cell = {
+                            'day': day.day if in_month else None,
+                            'color': default_hex(info['date_type']) if info and in_month else '#FFFFFF',
+                        }
+                        row[day.weekday()] = cell
+                    elif day.weekday() == 5:
+                        # Saturday: only shown when a school day is forced onto it
+                        if info and info['date_type'] == 'school_day':
+                            saturday_cell = {
+                                'day': day.day,
+                                'color': default_hex(info['date_type']),
+                            }
+                    # Sunday never rendered
+
+                # Row may be entirely blank leading/trailing cells — keep for grid shape
+                weeks.append({'days': row, 'saturday': saturday_cell})
+
+            # Drop fully blank rows (e.g. month starting on Sunday, or trailing
+            # week whose only in-month days fall on the hidden weekend)
+            weeks = [
+                w for w in weeks
+                if any(c and c['day'] for c in w['days']) or w['saturday']
+            ]
+
+            # Group events for this month (ALL events, not just the grid winner)
+            TYPE_LABELS = dict(self.DATE_TYPE)
+            month_events = [e for e in all_events
+                            if e['date'].year == d.year and e['date'].month == d.month
+                            and (e['description'] or e['date_type'] != 'school_day')]
+            for e in sorted(month_events, key=lambda x: x['date']):
+                # Use description; fall back to the type label (e.g. 'Public Holiday')
+                desc = e['description'] or TYPE_LABELS.get(e['date_type'], '')
+                key = (desc, e['date_type'])
+                events_by_key.setdefault(key, []).append(e['date'])
+
+            events = []
+            for (desc, date_type), dates in sorted(
+                    events_by_key.items(), key=lambda kv: kv[1][0]):
+                # Merge consecutive runs into ranges, comma-separate the rest
+                parts = []
+                run_start = prev = dates[0]
+                for cur in dates[1:] + [None]:
+                    if cur is not None and (cur - prev).days == 1:
+                        prev = cur
+                        continue
+                    if run_start == prev:
+                        parts.append(str(run_start.day))
+                    elif (prev - run_start).days <= 2 and run_start.weekday() > 3:
+                        # short runs over a weekend: list days
+                        parts.append(','.join(str(x.day) for x in
+                                              [run_start + timedelta(days=i)
+                                               for i in range((prev - run_start).days + 1)]))
+                    else:
+                        parts.append(f'{run_start.day}\u2013{prev.day}')
+                    if cur is not None:
+                        run_start = prev = cur
+                events.append({
+                    'dates': ','.join(parts),
+                    'title': desc,
+                    'color': default_hex(date_type),
+                })
+
+            months.append({
+                'label': label,
+                'weeks': weeks,
+                'events': events,
+            })
+            # advance to first of next month
+            d = date(d.year + (d.month // 12), (d.month % 12) + 1, 1)
+
+        return months
+
