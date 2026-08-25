@@ -25,6 +25,9 @@ access_aps_school_calendar_teacher,aps.school.calendar.teacher,model_aps_school_
 access_aps_school_calendar_student,aps.school.calendar.student,model_aps_school_calendar,aps_sis.group_aps_student,1,0,0,0
 access_aps_school_calendar_user,aps.school.calendar.user,model_aps_school_calendar,base.group_user,1,0,0,0
 access_aps_school_calendar_generate_wizard_teacher,aps.school.calendar.generate.wizard.teacher,model_aps_school_calendar_generate_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_calendar_date_type_teacher,aps.calendar.date.type.teacher,model_aps_calendar_date_type,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_calendar_date_type_student,aps.calendar.date.type.student,model_aps_calendar_date_type,aps_sis.group_aps_student,1,0,0,0
+access_aps_calendar_date_type_user,aps.calendar.date.type.user,model_aps_calendar_date_type,base.group_user,1,0,0,0
 access_aps_academic_week_generate_wizard_user,aps.academic.week.generate.wizard.user,model_aps_academic_week_generate_wizard,base.group_user,1,1,1,1
 access_aps_class_teacher,aps.class.teacher,model_aps_class,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_class_student,aps.class.student,model_aps_class,aps_sis.group_aps_student,1,0,0,0

@@ -9,6 +9,8 @@ class APSAcademicTerm(models.Model):
 
     name = fields.Char(string='Name', required=True, translate=True, help='e.g. Term 1 2025-2026')
     short_name = fields.Char(string='Short Name', size=20, help='e.g. T1-25')
+    simple_name = fields.Char(string='Simple Name', size=20, help='e.g. Term 1, Term 2, Term 3')
+    simple_short_name = fields.Char(string='Simple Short Name', size=20, help='e.g. T1, T2, T3')
     academic_year_id = fields.Many2one(
         'aps.academic.year',
         string='Academic Year',

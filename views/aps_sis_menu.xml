@@ -29,6 +29,7 @@
 
     <menuitem id="menu_apex_settings" name="Settings" parent="menu_apex_root" action="" sequence="40" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_school_calendar_report" name="Academic Calendar" parent="menu_apex_settings" action="action_school_calendar_report" sequence="50" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_manager"/>
+    <menuitem id="menu_apex_calendar_date_types" name="Calendar Date Types" parent="menu_apex_settings" action="aps_calendar_date_type_action" sequence="55" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_resources_heading" name="Resources" parent="menu_apex_settings" sequence="100" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_resource_hierarchy_table" name="Subject Overview" parent="menu_apex_resources_heading" action="action_aps_resource_hierarchy_table" sequence="7" groups="aps_sis.group_aps_manager"/>
     <menuitem id="menu_apex_resource_types" name="Resource Types" parent="menu_apex_resources_heading" action="action_aps_resource_types" sequence="15" groups="aps_sis.group_aps_manager"/>    

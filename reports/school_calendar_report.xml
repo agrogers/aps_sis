@@ -48,6 +48,12 @@
                         .scr-month-cell { width: 28%; vertical-align: top; padding: 0 4px; }
                         .scr-event-list { font-size: 7pt; }
                         .scr-ev-dates { font-weight: bold; text-align: right; padding-right: 5px; white-space: nowrap; }
+                        .scr-ev-badge {
+                            display: inline-block; min-width: 4mm; line-height: 3.6mm;
+                            padding: 0 1mm; border-radius: 1mm;
+                            background-color: #A5D6A7; color: white;
+                            font-size: 6.5pt; text-align: center;
+                        }
                         .scr-ev-title { text-align: left; }
                         .scr-month-title {
                             background-color: #9565E8; color: white; font-weight: bold;
@@ -86,7 +92,9 @@
                                     <table class="scr-event-list">
                                         <tr t-foreach="months[i]['events']" t-as="ev">
                                             <td class="scr-ev-title" t-esc="ev['title']"/>
-                                            <td class="scr-ev-dates" t-esc="ev['dates']"/>
+                                            <td class="scr-ev-dates">
+                                                <span class="scr-ev-badge" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
+                                            </td>
                                         </tr>
                                     </table>
                                 </td>
@@ -101,11 +109,14 @@
                                                 <t t-foreach="month['weeks']" t-as="week">
                                                     <tr>
                                                         <t t-foreach="week['days']" t-as="cell">
-                                                            <td t-attf-style="#{cell and cell['color'] != '#FFFFFF' ? 'background-color:' + cell['color'] : ''}"
-                                                                t-esc="cell['day'] if cell else ''"/>
-                                                        </t>
-                                                        <td t-if="week['saturday']"
-                                                            t-attf-style="'background-color:' + week['saturday']['color']"
+                                                            <td t-att-style="(cell and cell['color'] and cell['color'].upper() != '#FFFFFF') and ('background-color:' + cell['color']) or ((cell and (not cell.get('color') or cell['color'].upper() == '#FFFFFF')) and 'color:#000;') or None">
+                                                                <t t-esc="cell['day'] if cell else ''"/>
+                                                                <img t-if="cell and cell.get('icon_url')"
+                                                                     t-att-src="cell['icon_url']"
+                                                                     style="position:absolute;top:0;right:0;height:4mm;width:4mm;object-fit:contain;"/>
+                                                            </td>
+                                                        </t>                                                        <td t-if="week['saturday']"
+                                                            t-att-style="'background-color:' + week['saturday']['color'] + (';color:#000;' if week['saturday']['color'].upper() == '#FFFFFF' else '')"
                                                             t-esc="week['saturday']['day']"/>
                                                         <t t-else="">
                                                             <td style="border:none;"/>
@@ -120,7 +131,9 @@
                                     <t t-if="i + 1 &lt; len(months)">
                                         <table class="scr-event-list">
                                             <tr t-foreach="months[i + 1]['events']" t-as="ev">
-                                                <td class="scr-ev-dates" t-esc="ev['dates']"/>
+                                                <td class="scr-ev-dates">
+                                                    <span class="scr-ev-badge" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
+                                                </td>
                                                 <td class="scr-ev-title" t-esc="ev['title']"/>
                                             </tr>
                                         </table>

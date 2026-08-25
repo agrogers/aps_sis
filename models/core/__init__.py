@@ -4,6 +4,7 @@ from . import aps_academic_year
 from . import aps_academic_term
 from . import aps_academic_week
 from . import aps_academic_week_generate_wizard
+from . import aps_calendar_date_type
 from . import aps_school_calendar
 from . import aps_school_calendar_generate_wizard
 from . import aps_level

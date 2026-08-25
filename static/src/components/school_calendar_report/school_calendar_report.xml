@@ -98,11 +98,14 @@
                 <tr>
                     <t t-foreach="week.days" t-as="cell" t-key="cell_index">
                         <td t-attf-class="scr-day #{cell and cell.day ? '' : 'scr-empty'}"
-                            t-attf-style="#{cell and cell.color and cell.color !== '#FFFFFF' ? 'background-color:' + cell.color : ''}"
-                            t-esc="cell ? cell.day or '' : ''"/>
+                            t-attf-style="#{(cell and cell.color and cell.color !== '#FFFFFF' ? 'background-color:' + cell.color + ';' : '') + (cell and (!cell.color || cell.color.toUpperCase() === '#FFFFFF') ? 'color:#000;' : '')} position:relative;">
+                            <t t-esc="cell ? cell.day or '' : ''"/>
+                            <img t-if="cell and cell.icon_url" class="scr-cell-icon"
+                                 t-att-src="cell.icon_url" alt=""/>
+                        </td>
                     </t>
                     <td t-if="week.saturday" class="scr-day scr-saturday"
-                        t-attf-style="background-color: {{ week.saturday.color }}"
+                        t-attf-style="background-color: {{ week.saturday.color }}; {{ week.saturday.color &amp;&amp; week.saturday.color.toUpperCase() === '#FFFFFF' ? 'color:#000;' : '' }}"
                         t-esc="week.saturday.day"/>
                     <t t-else="">
                         <td class="scr-sat-hidden"/>

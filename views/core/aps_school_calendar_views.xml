@@ -8,11 +8,11 @@
         <field name="arch" type="xml">
             <list default_order="date">
                 <field name="date"/>
-                <field name="date_type"
-                       decoration-danger="date_type == 'public_holiday'"
-                       decoration-warning="date_type == 'school_holiday'"
-                       decoration-info="date_type == 'student_free'"
-                       decoration-muted="date_type == 'weekend'"/>
+                <field name="date_type_id"
+                       decoration-danger="date_type_id.code == 'public_holiday'"
+                       decoration-warning="date_type_id.code == 'school_holiday'"
+                       decoration-info="date_type_id.code == 'student_free'"
+                       decoration-muted="date_type_id.code == 'weekend'"/>
                 <field name="description"/>
                 <field name="repeating" optional="show"/>
                 <field name="applies_to_level_ids" optional="show"/>
@@ -33,7 +33,7 @@
                         <group>
                             <field name="date"/>
                             <field name="date_display" readonly="True"/>
-                            <field name="date_type"/>
+                            <field name="date_type_id"/>
                             <field name="applies_to_level_ids"
                                 widget="many2many_tags"
                                 placeholder="Leave blank for all levels"/>
@@ -42,6 +42,8 @@
                             <field name="week_id" readonly="True"/>
                             <field name="description"/>
                             <field name="repeating"/>
+                            <field name="icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
+
                         </group>
                     </group>
                     <group string="Notes">
@@ -63,13 +65,13 @@
                 <field name="applies_to_level_ids"/>
                 <field name="week_id"/>
                 <filter string="Public Holidays" name="public_holiday"
-                        domain="[('date_type', '=', 'public_holiday')]"/>
+                        domain="[('date_type_id.code', '=', 'public_holiday')]"/>
                 <filter string="School Holidays" name="school_holiday"
-                        domain="[('date_type', '=', 'school_holiday')]"/>
+                        domain="[('date_type_id.code', '=', 'school_holiday')]"/>
                 <filter string="Student Free Days" name="student_free"
-                        domain="[('date_type', '=', 'student_free')]"/>
+                        domain="[('date_type_id.code', '=', 'student_free')]"/>
                 <filter string="Weekends" name="weekend"
-                        domain="[('date_type', '=', 'weekend')]"/>
+                        domain="[('date_type_id.code', '=', 'weekend')]"/>
                 <separator/>
                 <filter string="Repeats Annually" name="repeating"
                         domain="[('repeating', '=', True)]"/>
@@ -77,7 +79,7 @@
                 <filter string="All Levels" name="all_levels"
                         domain="[('applies_to_level_ids', '=', False)]"/>
                 <group expand="0" string="Group By">
-                    <filter string="Type" name="group_type" context="{'group_by': 'date_type'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'date_type_id'}"/>
                     <filter string="Level" name="group_level" context="{'group_by': 'applies_to_level_ids'}"/>
                     <filter string="Week" name="group_week" context="{'group_by': 'week_id'}"/>
                 </group>
@@ -95,7 +97,7 @@
                       color="color"
                       mode="month"
                       quick_create="false">
-                <field name="date_type"/>
+                <field name="date_type_id"/>
                 <field name="description"/>
                 <field name="applies_to_level_ids"/>
             </calendar>
@@ -113,6 +115,28 @@
                 Add your first school calendar entry.
             </p>
         </field>
+    </record>
+
+    <!-- Date Type management -->
+    <record id="aps_calendar_date_type_view_list" model="ir.ui.view">
+        <field name="name">aps.calendar.date.type.list</field>
+        <field name="model">aps.calendar.date.type</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="print_color" widget="color"/>
+                <field name="color" optional="hide"/>
+                <field name="active" widget="boolean_toggle" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="aps_calendar_date_type_action" model="ir.actions.act_window">
+        <field name="name">Calendar Date Types</field>
+        <field name="res_model">aps.calendar.date.type</field>
+        <field name="view_mode">list,form</field>
     </record>
 
 </odoo>

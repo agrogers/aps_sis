@@ -5,26 +5,18 @@ class ApsSchoolCalendar(models.Model):
     _name = 'aps.school.calendar'
     _description = 'School Calendar'
     _rec_name = 'description'
-    _order = 'date, date_type, id'
-
-    DATE_TYPE = [
-        ('school_day', 'School Day'),
-        ('event', 'Event'),
-        ('public_holiday', 'Public Holiday'),
-        ('school_holiday', 'School Holiday'),
-        ('student_free', 'Student Free Day'),
-        ('weekend', 'Weekend'),
-    ]
+    _order = 'date, id'
 
     date = fields.Date(string='Date', required=True, index=True)
     date_display = fields.Char(
         string='Day',
         compute='_compute_date_display',
     )
-    date_type = fields.Selection(
-        DATE_TYPE,
+    date_type_id = fields.Many2one(
+        'aps.calendar.date.type',
         string='Type',
         required=True,
+        ondelete='restrict',
     )
     repeating = fields.Boolean(
         string='Repeats Annually',
@@ -41,18 +33,8 @@ class ApsSchoolCalendar(models.Model):
         column2='level_id',
         help='Leave blank to apply to all levels.',
     )
-
-    # Calendar colour index per date_type
-    # Odoo palette: 0=grey, 1=red, 2=orange, 3=yellow, 4=teal, 5=purple,
-    #               6=salmon, 7=blue, 8=pink, 10=green, 11=dark-blue
-    _DATE_TYPE_COLOR = {
-        'school_day':    10,   # green
-        'event':          7,   # blue
-        'public_holiday': 3,   # yellow
-        'school_holiday': 2,   # orange
-        'student_free':   6,   # salmon
-        'weekend':        0,   # grey
-    }
+    icon = fields.Image(string='Icon', max_width=128, max_height=128)
+    
 
     color = fields.Integer(
         string='Color',
@@ -60,10 +42,10 @@ class ApsSchoolCalendar(models.Model):
         store=True,
     )
 
-    @api.depends('date_type')
+    @api.depends('date_type_id')
     def _compute_color(self):
         for rec in self:
-            rec.color = self._DATE_TYPE_COLOR.get(rec.date_type, 0)
+            rec.color = rec.date_type_id.color or 0
 
     @api.depends('date')
     def _compute_date_display(self):
@@ -132,18 +114,14 @@ class ApsSchoolCalendar(models.Model):
         year_start = fields.Date.to_date(year_start)
         year_end = fields.Date.to_date(year_end)
 
-        Color = self._DATE_TYPE_COLOR
-        HEX = {
-            0: '#FFFFFF',   # grey/normal -> white for print
-            2: '#FFB74D',   # orange
-            3: '#FFF176',   # yellow
-            6: '#FF8A80',   # salmon
-            7: '#90CAF9',   # blue
-            10: '#A5D6A7',  # green
+        # {code: (label, print_color)} from the configurable date-type table
+        TYPE_INFO = {
+            t.code: (t.name, t.print_color or '#FFFFFF')
+            for t in self.env['aps.calendar.date.type'].search([])
         }
 
-        def default_hex(date_type):
-            return HEX.get(Color.get(date_type, 0), '#FFFFFF')
+        def default_hex(code):
+            return TYPE_INFO.get(code, ('', '#FFFFFF'))[1]
 
         # Fetch all calendar entries in range.
         # by_date: one entry per date (first found) — used for grid colouring.
@@ -156,16 +134,27 @@ class ApsSchoolCalendar(models.Model):
         all_events = []
         for rec in records:
             # Skip pure weekend noise from the printed grid
-            if rec.date_type == 'weekend':
+            if rec.date_type_id.code == 'weekend':
                 continue
+            code = rec.date_type_id.code
             if rec.date not in by_date:
                 by_date[rec.date] = {
-                    'date_type': rec.date_type,
+                    'date_type': code,
                     'description': rec.description or '',
+                    'icon': rec.id if rec.icon else None,
+                }
+            elif (code != 'school_day'
+                  and by_date[rec.date]['date_type'] == 'school_day'):
+                # A special entry (event/holiday/free day) on the same date
+                # outranks the plain school day for grid colouring.
+                by_date[rec.date] = {
+                    'date_type': code,
+                    'description': rec.description or '',
+                    'icon': rec.id if rec.icon else None,
                 }
             all_events.append({
                 'date': rec.date,
-                'date_type': rec.date_type,
+                'date_type': code,
                 'description': rec.description or '',
             })
 
@@ -187,6 +176,9 @@ class ApsSchoolCalendar(models.Model):
                         cell = {
                             'day': day.day if in_month else None,
                             'color': default_hex(info['date_type']) if info and in_month else '#FFFFFF',
+                            'icon_url': (
+                                f'/web/image/aps.school.calendar/{info["icon"]}/icon'
+                                if info and info.get('icon') and in_month else None),
                         }
                         row[day.weekday()] = cell
                     elif day.weekday() == 5:
@@ -209,7 +201,7 @@ class ApsSchoolCalendar(models.Model):
             ]
 
             # Group events for this month (ALL events, not just the grid winner)
-            TYPE_LABELS = dict(self.DATE_TYPE)
+            TYPE_LABELS = {code: label for code, (label, _) in TYPE_INFO.items()}
             month_events = [e for e in all_events
                             if e['date'].year == d.year and e['date'].month == d.month
                             and (e['description'] or e['date_type'] != 'school_day')]

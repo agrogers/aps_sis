@@ -777,7 +777,7 @@ class ASCTTImportWizard(models.TransientModel):
         school_days = self.env['aps.school.calendar'].search([
             ('date', '>=', start_date),
             ('date', '<=', end_date),
-            ('date_type', '=', 'school_day'),
+            ('date_type_id.code', '=', 'school_day'),
         ])
         # {date: week_cycle_str_or_None}
         date_to_cycle = {

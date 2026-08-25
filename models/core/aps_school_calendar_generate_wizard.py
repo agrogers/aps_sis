@@ -29,6 +29,12 @@ class ApsSchoolCalendarGenerateWizard(models.TransientModel):
     def action_generate(self):
         self.ensure_one()
         Calendar = self.env['aps.school.calendar']
+        DateType = self.env['aps.calendar.date.type']
+
+        # Resolve date types by stable code once.
+        type_map = DateType._load_type_map()
+        weekend_type = type_map.get('weekend')
+        school_day_type = type_map.get('school_day')
 
         # Build a set of dates with an all-level entry for fast lookup.
         existing = set(
@@ -74,7 +80,7 @@ class ApsSchoolCalendarGenerateWizard(models.TransientModel):
 
             if current.weekday() >= 5:
                 # Saturday (5) or Sunday (6)
-                vals['date_type'] = 'weekend'
+                vals['date_type_id'] = weekend_type
                 vals['description'] = current.strftime('%A')
                 vals['repeating'] = False
                 to_create.append(vals)
@@ -84,14 +90,14 @@ class ApsSchoolCalendarGenerateWizard(models.TransientModel):
                 if previous_entries:
                     for previous_entry in previous_entries:
                         repeated_vals = dict(vals)
-                        repeated_vals['date_type'] = previous_entry.date_type
+                        repeated_vals['date_type_id'] = previous_entry.date_type_id
                         repeated_vals['description'] = previous_entry.description or ''
                         repeated_vals['notes'] = previous_entry.notes or ''
                         repeated_vals['repeating'] = True
                         to_create.append(repeated_vals)
                 else:
                     # Normal school day
-                    vals['date_type'] = 'school_day'
+                    vals['date_type_id'] = school_day_type
 
                     to_create.append(vals)
             created += len(previous_entries) if previous_entries else 1

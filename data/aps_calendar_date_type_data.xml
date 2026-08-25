@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Seed the six standard date types. Codes are stable technical keys;
+             names and print colours are user-editable. -->
+        <record id="date_type_school_day" model="aps.calendar.date.type">
+            <field name="sequence">10</field>
+            <field name="code">school_day</field>
+            <field name="name">School Day</field>
+            <field name="print_color">#FFFFFF</field>
+            <field name="color">10</field>
+        </record>
+        <record id="date_type_event" model="aps.calendar.date.type">
+            <field name="sequence">20</field>
+            <field name="code">event</field>
+            <field name="name">Event</field>
+            <field name="print_color">#90CAF9</field>
+            <field name="color">7</field>
+        </record>
+        <record id="date_type_public_holiday" model="aps.calendar.date.type">
+            <field name="sequence">30</field>
+            <field name="code">public_holiday</field>
+            <field name="name">Public Holiday</field>
+            <field name="print_color">#FFF176</field>
+            <field name="color">3</field>
+        </record>
+        <record id="date_type_school_holiday" model="aps.calendar.date.type">
+            <field name="sequence">40</field>
+            <field name="code">school_holiday</field>
+            <field name="name">School Holiday</field>
+            <field name="print_color">#FFB74D</field>
+            <field name="color">2</field>
+        </record>
+        <record id="date_type_student_free" model="aps.calendar.date.type">
+            <field name="sequence">50</field>
+            <field name="code">student_free</field>
+            <field name="name">Student Free Day</field>
+            <field name="print_color">#FF8A80</field>
+            <field name="color">6</field>
+        </record>
+        <record id="date_type_weekend" model="aps.calendar.date.type">
+            <field name="sequence">60</field>
+            <field name="code">weekend</field>
+            <field name="name">Weekend</field>
+            <field name="print_color">#FFFFFF</field>
+            <field name="color">0</field>
+        </record>
+    </data>
+</odoo>

@@ -19,7 +19,7 @@
 }
 
 .scr-rule {
-    border-top: 2px solid #E53935;
+    border-top: 2px solid purple;
 }
 
 /* Row layout: events | month | month | events */
@@ -32,7 +32,7 @@
     padding: 0 4px;
 }
 .scr-month-cell {
-    width: 20%;
+    width: 18%;
     vertical-align: top;
     padding: 0 4px;
 }
@@ -40,7 +40,7 @@
 /* Event list */
 .scr-event-list {
     width: 100%;
-    font-size: 7.5pt;
+    font-size: 8.5pt;
     border-collapse: collapse;
 }
 .scr-event-list-right {
@@ -60,8 +60,8 @@
     min-width: 14px;
     height: 14px;
     line-height: 14px;
-    padding: 0 2px;
-    border-radius: 50%;
+    padding: 0 3px;
+    border-radius: 4px;   /* rounded rectangle — stays a pill with multiple numbers */
     background-color: #A5D6A7;   /* default; overridden per event via inline style */
     color: #fff;
     font-size: 6.5pt;
@@ -94,8 +94,18 @@
     border: 1px solid #222;
     text-align: center;
     vertical-align: middle;
-    height: 5.5mm;
+    height: 5.0mm;
     font-size: 8pt;
+    position: relative;
+}
+/* Event icon pinned to the top-right corner of a date cell */
+.scr-cell-icon {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    height: 2mm;
+    width: 2mm;
+    object-fit: contain;
 }
 .scr-weekdays th {
     background-color: #aaaaaa;
@@ -123,10 +133,52 @@
     font-size: 8pt;
 }
 
-@media print {
+/* @media print {
     .o_action_manager > *:not(.scr-wrap),
     .o_main_navbar,
     .o_action_manager > .o_action > *:not(*) {
         display: none !important;
     }
+} */
+
+@media print {
+  /* Robust print isolation: hide everything, then show only the calendar
+     sheet. Works regardless of Odoo's navbar/sidebar DOM structure. */
+  body * {
+    visibility: hidden !important;
+    box-shadow: none !important;
+  }
+  .scr-sheet,
+  .scr-sheet * {
+    visibility: visible !important;
+  }
+
+  /* Pin the calendar sheet to the top-left of the printed page */
+  .scr-sheet {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Neutralise scroll containers so nothing clips the output */
+  html, body,
+  .o_web_client, .o_action_manager, .o_content,
+  .scr-wrap {
+    overflow: visible !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Never print buttons/controls even if nested inside the sheet */
+  .scr-sheet button,
+  .scr-sheet .btn {
+    display: none !important;
+  }
 }
