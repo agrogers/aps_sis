@@ -43,7 +43,7 @@
                                         <td class="scr-ev-title" t-esc="ev.title"/>
                                         <td class="scr-ev-dates">
                                             <span class="scr-ev-badge"
-                                                  t-attf-style="background-color: {{ ev.color }}"
+                                                  t-attf-style="background-color: {{ ev.color }}; {{ (!ev.color || ev.color.toUpperCase() === '#FFFFFF') ? 'color:#000; border:1px solid #999;' : '' }}"
                                                   t-esc="ev.dates"/>
                                         </td>
                                     </tr>
@@ -70,7 +70,7 @@
                                     <tr t-foreach="row[1].events" t-as="ev" t-key="ev_index">
                                         <td class="scr-ev-dates">
                                             <span class="scr-ev-badge"
-                                                  t-attf-style="background-color: {{ ev.color }}"
+                                                  t-attf-style="background-color: {{ ev.color }}; {{ (!ev.color || ev.color.toUpperCase() === '#FFFFFF') ? 'color:#000; border:1px solid #999;' : '' }}"
                                                   t-esc="ev.dates"/>
                                         </td>
                                         <td class="scr-ev-title" t-esc="ev.title"/>

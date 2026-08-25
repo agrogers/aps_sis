@@ -54,6 +54,7 @@
                             background-color: #A5D6A7; color: white;
                             font-size: 6.5pt; text-align: center;
                         }
+                        .scr-ev-badge.scr-badge-light { color: #000; border: 1px solid #999; }
                         .scr-ev-title { text-align: left; }
                         .scr-month-title {
                             background-color: #9565E8; color: white; font-weight: bold;
@@ -93,7 +94,7 @@
                                         <tr t-foreach="months[i]['events']" t-as="ev">
                                             <td class="scr-ev-title" t-esc="ev['title']"/>
                                             <td class="scr-ev-dates">
-                                                <span class="scr-ev-badge" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
+                                                <span t-attf-class="scr-ev-badge #{not ev['color'] or ev['color'].upper() == '#FFFFFF' ? 'scr-badge-light' : ''}" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
                                             </td>
                                         </tr>
                                     </table>
@@ -132,7 +133,7 @@
                                         <table class="scr-event-list">
                                             <tr t-foreach="months[i + 1]['events']" t-as="ev">
                                                 <td class="scr-ev-dates">
-                                                    <span class="scr-ev-badge" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
+                                                    <span t-attf-class="scr-ev-badge #{not ev['color'] or ev['color'].upper() == '#FFFFFF' ? 'scr-badge-light' : ''}" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
                                                 </td>
                                                 <td class="scr-ev-title" t-esc="ev['title']"/>
                                             </tr>
