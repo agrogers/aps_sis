@@ -66,17 +66,17 @@
         <field name="arch" type="xml">
             <form create="false" delete="false">
                <header>
+                    <field name="has_ai_feedback" invisible="1"/>
+                    <img src="/aps_sis/static/src/img/ai.png" alt="AI Feedback"
+                         invisible="not has_ai_feedback"
+                         style="width: 24px; height: 24px; margin-left: 8px;"
+                         title="This submission has AI-generated feedback"/>
                     <button name="action_open_submission" string="Submission Details" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>
                     <field name="is_current_user_faculty" invisible="1"/>
                     <field name="is_current_user_reviewed" invisible="1"/>
-                    <field name="has_ai_feedback" invisible="1"/>
-                    <img src="/aps_sis/static/src/img/ai.png" alt="AI Feedback"
-                         invisible="not has_ai_feedback"
-                         style="width: 24px; height: 24px; margin-left: 8px;"
-                         title="This submission has AI-generated feedback"/>
                     <button name="action_mark_reviewed" string="Reviewed" invisible="not is_current_user_faculty or is_current_user_reviewed" type="object" class="btn-secondary"/>
                     <button name="action_mark_unsubmitted" string="Unsubmit" type="object" class="btn-secondary" invisible="state != 'submitted'"/>
                     <button name="action_mark_submitted" string="Submit" type="object" class="btn-primary" invisible="state != 'assigned'"/>

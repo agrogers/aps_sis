@@ -37,6 +37,18 @@
                             <field name="color_rgb" widget="color"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Subjects" name="subjects">
+                            <field name="subject_ids">
+                                <list string="Subjects" editable="bottom">
+                                    <field name="name"/>
+                                    <field name="code" optional="show"/>
+                                    <field name="icon" widget="image" options="{'size': [24, 24]}" optional="show"/>
+                                    <field name="active" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                     <group string="Description">
                         <field name="description" colspan="4"/>
                     </group>

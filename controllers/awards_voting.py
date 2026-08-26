@@ -2,7 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
 
 from odoo import http
@@ -158,6 +158,13 @@ class AwardsVotingController(http.Controller):
                     my_vote_groups.append(group)
                     if rnd_id:
                         seen_round_ids[rnd_id] = group
+
+        # Sort history cards DESC by round end date (fall back to start date).
+        def _round_end_key(grp):
+            rnd = grp['rep'].vote_round_id
+            return (rnd.datetime_end or rnd.datetime_start or datetime.min)
+
+        my_vote_groups.sort(key=_round_end_key, reverse=True)
 
         # Build unique voting sets from all visible votes (open cards + history).
         # Include a set if: it has no dates, OR today falls within its date range

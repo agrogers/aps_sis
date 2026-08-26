@@ -163,5 +163,7 @@ class APSClass(models.Model):
                 Enrollment.create({
                     'student_id': enrollment.student_id.id,
                     'class_id': self.id,
+                    'start_date': self.academic_year_id.start_date,
+                    'end_date': self.academic_year_id.end_date,
                 })
         self.copy_students_from_class_id = False

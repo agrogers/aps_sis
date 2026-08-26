@@ -36,7 +36,7 @@ class APSStudentMatrix(models.TransientModel):
             ('state', '=', 'enrolled'),
         ]
         if year:
-            domain.append(('start_date', '>=', year.start_date))
+            domain.append(('class_id.academic_year_id', '=', year.id))
 
         enrollments = self.env['aps.student.class'].search(domain)
         home_class_ids = enrollments.mapped('class_id')

@@ -24,6 +24,11 @@ class APSSubjectCategory(models.Model):
         column2='tag_id',
         string='Tags',
     )
+    subject_ids = fields.One2many(
+        'aps.subject',
+        'category_id',
+        string='Subjects',
+    )
 
     _sql_constraints = [
         ('name_uniq', 'unique(name)', 'Category name must be unique!'),
