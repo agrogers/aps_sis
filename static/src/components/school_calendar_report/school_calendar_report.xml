@@ -14,9 +14,6 @@
                             t-esc="year.short_name || year.name"/>
                 </t>
             </select>
-            <button class="btn btn-primary ms-auto" t-on-click="printPdf">
-                <i class="fa fa-print me-2"/>Print PDF
-            </button>
         </div>
 
         <!-- Calendar sheet -->
@@ -30,7 +27,58 @@
                     <t t-esc="state.yearName"/> ACADEMIC CALENDAR
                 </h1>
             </div>
-            <div class="scr-rule mb-3"/>
+
+            <!-- Semester summary -->
+            <t t-if="state.semesters and state.semesters.length">
+                <table class="scr-sem-wrap w-100 mb-3">
+                    <tr>
+                        <t t-foreach="state.semesters" t-as="sem" t-key="sem.name">
+                            <td class="align-top px-2">
+                                <table class="scr-sem-table w-100">
+                                    <tr class="scr-sem-head">
+                                        <th t-att-colspan="sem.terms ? 4 : 2" t-esc="sem.name"/>
+                                    </tr>
+                                    <tr class="scr-sem-sub">
+                                        <t t-if="sem.terms">
+                                            <th>Term</th><th>Weeks</th><th>Days</th><th>Dates</th>
+                                        </t>
+                                        <t t-else="">
+                                            <th>Weeks</th><th>Days</th>
+                                        </t>
+                                    </tr>
+                                    <t t-if="sem.terms">
+                                        <tr t-foreach="sem.terms" t-as="row" t-key="row_index">
+                                            <td t-esc="row.term"/>
+                                            <td t-esc="row.weeks"/>
+                                            <td t-esc="row.days"/>
+                                            <td t-esc="row.dates"/>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr>
+                                            <td t-esc="sem.weeks"/>
+                                            <td t-esc="sem.days"/>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="scr-sem-note">Calendar is subject to change.</td>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </td>
+                        </t>
+                    </tr>
+                    <tr>
+                        <td colspan="100" class="scr-sem-legend-cell">
+                            <t t-foreach="state.semesters[2].legend || []" t-as="item" t-key="item.name">
+                                <span class="scr-sem-legend-item">
+                                    <span class="scr-sem-legend-swatch" t-attf-style="background-color: {{ item.color }}"/>
+                                    <span t-esc="item.name"/>
+                                </span>
+                            </t>
+                        </td>
+                    </tr>
+                </table>
+            </t>
 
             <!-- Month rows: events | month | month | events -->
             <t t-foreach="monthRows" t-as="row" t-key="row_index">
@@ -40,8 +88,8 @@
                             <t t-if="row[0]">
                                 <table class="scr-event-list scr-event-list-right">
                                     <tr t-foreach="row[0].events" t-as="ev" t-key="ev_index">
-                                        <td class="scr-ev-title" t-esc="ev.title"/>
-                                        <td class="scr-ev-dates">
+                                        <td class="scr-ev-entry">
+                                            <span class="scr-ev-title" t-esc="ev.title"/>
                                             <span class="scr-ev-badge"
                                                   t-attf-style="background-color: {{ ev.color }}; {{ (!ev.color || ev.color.toUpperCase() === '#FFFFFF') ? 'color:#000; border:1px solid #999;' : '' }}"
                                                   t-esc="ev.dates"/>
@@ -68,12 +116,12 @@
                             <t t-if="row[1]">
                                 <table class="scr-event-list">
                                     <tr t-foreach="row[1].events" t-as="ev" t-key="ev_index">
-                                        <td class="scr-ev-dates">
+                                        <td class="scr-ev-entry">
                                             <span class="scr-ev-badge"
                                                   t-attf-style="background-color: {{ ev.color }}; {{ (!ev.color || ev.color.toUpperCase() === '#FFFFFF') ? 'color:#000; border:1px solid #999;' : '' }}"
                                                   t-esc="ev.dates"/>
+                                            <span class="scr-ev-title" t-esc="ev.title"/>
                                         </td>
-                                        <td class="scr-ev-title" t-esc="ev.title"/>
                                     </tr>
                                 </table>
                             </t>
@@ -92,7 +140,7 @@
         <div class="scr-month-title" t-esc="month.label"/>
         <table t-attf-class="scr-grid #{month.weeks.some(w => w.saturday) ? 'has-saturday' : ''}">
             <tr class="scr-weekdays">
-                <th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th class="scr-sat-hd"/>
+                <th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th class="scr-sat-hd"><t t-if="month.weeks.some(w => w.saturday)">S</t></th>
             </tr>
             <t t-foreach="month.weeks" t-as="week" t-key="week_index">
                 <tr>

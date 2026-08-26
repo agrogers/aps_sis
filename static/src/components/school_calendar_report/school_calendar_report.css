@@ -55,6 +55,10 @@
     white-space: nowrap;
     width: 1%;
 }
+.scr-ev-entry {
+    white-space: nowrap;
+    vertical-align: middle;
+}
 .scr-ev-badge {
     display: inline-block;
     min-width: 14px;
@@ -63,12 +67,15 @@
     padding: 0 3px;
     border-radius: 4px;   /* rounded rectangle — stays a pill with multiple numbers */
     background-color: #A5D6A7;   /* default; overridden per event via inline style */
-    color: #fff;
+    color: black;             /* default; overridden per event via inline style */
     font-size: 6.5pt;
     text-align: center;
+    margin: 0 5px;
 }
-.scr-events-left .scr-ev-title {
+
+.scr-events-left {
     text-align: right;
+    margin-left: 4px;
 }
 .scr-events-right .scr-ev-title {
     text-align: left;
@@ -76,12 +83,61 @@
 
 /* Month panel */
 .scr-month-title {
-    background-color: #555555;
+    background-color: dimgray;
     color: white;
     font-weight: bold;
     text-align: center;
     font-size: 10pt;
     padding: 1px 0;
+}
+
+/* Semester summary tables */
+.scr-sem-table {
+    font-size: 8pt;
+    border-collapse: collapse;
+}
+.scr-sem-table th,
+.scr-sem-table td {
+    border: 1px solid #222;
+    text-align: center;
+    padding: 1px 4px;
+}
+.scr-sem-table .scr-sem-head th {
+    background-color: dimgray;
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+.scr-sem-table .scr-sem-sub th {
+    background-color: darkgray;
+    font-weight: bold;
+}
+.scr-sem-note {
+    font-size: 8pt;
+    font-style: italic;
+    padding: 3px 4px;
+}
+.scr-sem-legend-cell {
+    padding: 5px 4px 0;
+    text-align: center;
+}
+.scr-sem-legend-title {
+    font-size: 8pt;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+.scr-sem-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 7pt;
+    margin: 0 5px 2px 0;
+}
+.scr-sem-legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border: 1px solid #777;
 }
 
 .scr-grid {
@@ -103,12 +159,11 @@
     position: absolute;
     top: 1px;
     left: 1px;
-    height: 2mm;
-    width: 2mm;
+    height: 8px;
     object-fit: contain;
 }
 .scr-weekdays th {
-    background-color: #aaaaaa;
+    background-color: darkgray;
     font-weight: bold;
     height: 5mm;
 }
@@ -127,7 +182,7 @@
 .scr-grid.has-saturday .scr-sat-hd {
     width: 12.5%;
     border: 1px solid #222 !important;
-    background-color: #B8CBE8;
+    background-color: #aaaaaa;
 }
 .scr-saturday {
     font-size: 8pt;

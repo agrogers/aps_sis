@@ -97,6 +97,79 @@ class ApsSchoolCalendar(models.Model):
                 rec.display_name = f'{rec.display_name} ({rec.description})'
 
     @api.model
+    def get_term_summary_data(self, year_start, year_end):
+        """Build per-semester summary rows for the printable calendar header.
+
+        Returns a list of section dicts: {'name', 'weeks', 'days'} for
+        Semester 1, Semester 2 and Full Year. Weeks is the number of academic
+        weeks in the section's terms; days counts only calendar entries with
+        the School Day or Event date type within those terms.
+        """
+        year_start = fields.Date.to_date(year_start)
+        year_end = fields.Date.to_date(year_end)
+
+        terms = self.env['aps.academic.term'].search([
+            ('academic_year_id.start_date', '=', year_start),
+            ('academic_year_id.end_date', '=', year_end),
+        ], order='start_date')
+
+        Calendar = self.env['aps.school.calendar']
+        Week = self.env['aps.academic.week']
+
+        def _counts(term_ids):
+            weeks = Week.search_count([('academic_term_id', 'in', term_ids.ids)])
+            days = 0
+            days = Calendar.search_count([
+                ('date', '>=', min(term_ids.mapped('start_date'))),
+                ('date', '<=', max(term_ids.mapped('end_date'))),
+                ('date_type_id.code', 'in', ['school_day', 'event']),
+            ]) if term_ids else 0
+            return weeks, days
+
+        def _term_row(term):
+            weeks, days = _counts(term)
+            dates = (f"{term.start_date.strftime('%d %b').lstrip('0')} to "
+                     f"{term.end_date.strftime('%d %b %y').lstrip('0')}")
+            return {
+                'term': term.simple_short_name or term.short_name or term.name,
+                'weeks': weeks,
+                'days': days,
+                'dates': dates,
+            }
+
+        # Split terms evenly: first half → Semester 1, second half → Semester 2
+        half = (len(terms) + 1) // 2
+        sem1, sem2 = terms[:half], terms[half:]
+
+        sections = []
+        if sem1:
+            sections.append({
+                'name': 'Semester 1',
+                'terms': [_term_row(term) for term in sem1],
+            })
+        if sem2:
+            sections.append({
+                'name': 'Semester 2',
+                'terms': [_term_row(term) for term in sem2],
+            })
+        if terms:
+            weeks, days = _counts(terms)
+            legend = self.env['aps.calendar.date.type'].search(
+                [('active', '=', True), ('code', '!=', 'weekend')],
+                order='sequence, name',
+            )
+            sections.append({
+                'name': 'Full Year',
+                'weeks': weeks,
+                'days': days,
+                'legend': [
+                    {'name': date_type.name, 'color': date_type.print_color or '#FFFFFF'}
+                    for date_type in legend
+                ],
+            })
+        return sections
+
+    @api.model
     def get_calendar_report_data(self, year_start, year_end):
         """Build per-month calendar data for the printable academic calendar.
 

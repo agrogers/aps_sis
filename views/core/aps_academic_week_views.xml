@@ -6,7 +6,7 @@
         <field name="name">aps.academic.week.list</field>
         <field name="model">aps.academic.week</field>
         <field name="arch" type="xml">
-            <list default_order="sequence,week_number">
+            <list default_order="date_start desc">
                 <field name="sequence" widget="handle"/>
                 <field name="week_number"/>
                 <field name="name"/>

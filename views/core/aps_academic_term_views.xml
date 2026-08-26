@@ -6,7 +6,7 @@
         <field name="name">aps.academic.term.list</field>
         <field name="model">aps.academic.term</field>
         <field name="arch" type="xml">
-            <list>
+            <list default_order="start_date desc">
                 <field name="name"/>
                 <field name="short_name" optional="show"/>
                 <field name="simple_name" optional="hide"/>
