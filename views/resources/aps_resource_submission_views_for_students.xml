@@ -105,7 +105,7 @@
                             <div class="d-flex flex-column align-items-stretch w-100">
                                 <field name="result_percent" invisible="1"/>
                                 <field name="out_of_marks" invisible="1"/>
-                                <field name="score" widget="submission_score"  style="margin-bottom:7px" nolabel="1"/>
+                                <field name="score" widget="submission_score"  style="margin-bottom:7px" nolabel="1" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
                                 <div class="d-flex justify-content-end w-100">
                                     <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '45px', 'show_name':True, 'show_results':True}"/>
                                 </div>

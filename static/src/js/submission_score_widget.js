@@ -30,6 +30,26 @@ export class SubmissionScoreField extends Component {
         return Number.isFinite(score) && score !== -0.01 && outOfMarks > 0;
     }
 
+    get editable() {
+        return !this.props.readonly && this.props.record.isInEdition;
+    }
+
+    get scoreInputWidth() {
+        const value = this.props.record.data.score;
+        const text = value === false || value === null || value === undefined ? "" : String(value);
+        return `${Math.max(1, text.length + 1)}ch`;
+    }
+
+    async onScoreChange(ev) {
+        const outOfMarks = Number(this.props.record.data.out_of_marks);
+        const value = Number(ev.target.value);
+        if (!Number.isFinite(value)) {
+            return;
+        }
+        const score = Math.max(0, Math.min(value, outOfMarks));
+        await this.props.record.update({ score });
+    }
+
     formatNumber(value) {
         if (value === false || value === null || value === undefined || Number(value) === -0.01) {
             return "–";

@@ -42,6 +42,32 @@
     font-size: 1.55rem;
 }
 
+.submission-score-input {
+    width: 1ch;
+    min-width: 1ch;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    font-size: 1.55rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+.submission-score-input::-webkit-outer-spin-button,
+.submission-score-input::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+}
+
+.submission-score-input {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.submission-score-input:focus {
+    outline: 1px solid #6c757d;
+}
+
 .submission-score-out-of {
     font-size: inherit;
     
