@@ -54,7 +54,7 @@
                             background-color: #A5D6A7; color: white;
                             font-size: 6.5pt; text-align: center;
                         }
-                        .scr-ev-badge.scr-badge-light { color: #000; border: 1px solid #999; }
+                        .scr-ev-badge.scr-badge-light { color: #000; }
                         .scr-ev-title { text-align: left; }
                         .scr-month-title {
                             background-color: #9565E8; color: white; font-weight: bold;
@@ -65,6 +65,19 @@
                             vertical-align: middle; height: 5.5mm; font-size: 7.5pt;
                         }
                         .scr-weekdays th { background-color: #B8CBE8; font-weight: bold; height: 5mm; }
+                        .scr-sem-wrap { width: 100%; border-collapse: collapse; margin-bottom: 3mm; }
+                        .scr-sem-cell { width: 33%; padding: 0 2mm; vertical-align: top; }
+                        .scr-sem-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+                        .scr-sem-table th, .scr-sem-table td {
+                            border: 1px solid #222; text-align: center; padding: 1px 4px;
+                        }
+                        .scr-sem-table .scr-sem-head th { background-color: #9565E8; color: white; font-weight: bold; }
+                        .scr-sem-table .scr-sem-sub th { background-color: #B8CBE8; font-weight: bold; }
+                        .scr-sem-note { font-size: 8pt; font-style: italic; text-align: center; padding: 1mm; }
+                        .scr-sem-legend-cell { padding: 2mm 1mm 0; text-align: center; }
+                        .scr-sem-legend-title { font-size: 8pt; font-weight: bold; margin-bottom: 1mm; }
+                        .scr-sem-legend-item { display: inline-block; font-size: 7pt; margin: 0 2mm 1mm 0; }
+                        .scr-sem-legend-swatch { display: inline-block; width: 3mm; height: 3mm; border: 1px solid #777; vertical-align: middle; margin-right: 1mm; }
                     </style>
 
                     <!-- Header -->
@@ -83,6 +96,61 @@
                         <tr><td colspan="3" class="scr-rule-cell"/></tr>
                     </table>
 
+                    <!-- Semester summary -->
+                    <t t-set="sections"
+                       t-value="env['aps.school.calendar'].get_term_summary_data(doc.start_date, doc.end_date)"/>
+                    <t t-if="sections">
+                        <table class="scr-sem-wrap">
+                            <tr>
+                                <t t-foreach="sections" t-as="sem">
+                                    <td class="scr-sem-cell">
+                                        <table class="scr-sem-table">
+                                            <tr class="scr-sem-head">
+                                                <th t-att-colspan="sem.get('terms') and 4 or 2" t-esc="sem['name']"/>
+                                            </tr>
+                                            <tr class="scr-sem-sub">
+                                                <t t-if="sem.get('terms')">
+                                                    <th>Term</th><th>Weeks</th><th>Days</th><th>Dates</th>
+                                                </t>
+                                                <t t-else="">
+                                                    <th>Weeks</th><th>Days</th>
+                                                </t>
+                                            </tr>
+                                            <t t-if="sem.get('terms')">
+                                                <tr t-foreach="sem['terms']" t-as="row">
+                                                    <td t-esc="row['term']"/>
+                                                    <td t-esc="row['weeks']"/>
+                                                    <td t-esc="row['days']"/>
+                                                    <td t-esc="row['dates']"/>
+                                                </tr>
+                                            </t>
+                                            <t t-else="">
+                                                <tr>
+                                                    <td t-esc="sem['weeks']"/>
+                                                    <td t-esc="sem['days']"/>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="2" class="scr-sem-note">Calendar is subject to change.</td>
+                                                </tr>
+                                            </t>
+                                        </table>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr>
+                                <td colspan="100" class="scr-sem-legend-cell">
+                                    <div class="scr-sem-legend-title">Day Types</div>
+                                    <t t-foreach="sections[2].get('legend', [])" t-as="item">
+                                        <span class="scr-sem-legend-item">
+                                            <span class="scr-sem-legend-swatch" t-att-style="'background-color:' + item['color']"/>
+                                            <span t-esc="item['name']"/>
+                                        </span>
+                                    </t>
+                                </td>
+                            </tr>
+                        </table>
+                    </t>
+
                     <!-- Month rows -->
                     <t t-set="months"
                        t-value="env['aps.school.calendar'].get_calendar_report_data(doc.start_date, doc.end_date)"/>
@@ -92,8 +160,8 @@
                                 <td class="scr-events-cell">
                                     <table class="scr-event-list">
                                         <tr t-foreach="months[i]['events']" t-as="ev">
-                                            <td class="scr-ev-title" t-esc="ev['title']"/>
-                                            <td class="scr-ev-dates">
+                                            <td class="scr-ev-entry">
+                                                <span class="scr-ev-title" t-esc="ev['title']"/>
                                                 <span t-attf-class="scr-ev-badge #{not ev['color'] or ev['color'].upper() == '#FFFFFF' ? 'scr-badge-light' : ''}" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
                                             </td>
                                         </tr>
@@ -105,7 +173,7 @@
                                             <div class="scr-month-title" t-esc="month['label']"/>
                                             <table class="scr-grid">
                                                 <tr class="scr-weekdays">
-                                                    <th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th/>
+                                                    <th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th><t t-if="any(w['saturday'] for w in month['weeks'])">S</t></th>
                                                 </tr>
                                                 <t t-foreach="month['weeks']" t-as="week">
                                                     <tr>
@@ -132,10 +200,10 @@
                                     <t t-if="i + 1 &lt; len(months)">
                                         <table class="scr-event-list">
                                             <tr t-foreach="months[i + 1]['events']" t-as="ev">
-                                                <td class="scr-ev-dates">
+                                                <td class="scr-ev-entry">
                                                     <span t-attf-class="scr-ev-badge #{not ev['color'] or ev['color'].upper() == '#FFFFFF' ? 'scr-badge-light' : ''}" t-att-style="'background-color:' + ev['color']" t-esc="ev['dates']"/>
+                                                    <span class="scr-ev-title" t-esc="ev['title']"/>
                                                 </td>
-                                                <td class="scr-ev-title" t-esc="ev['title']"/>
                                             </tr>
                                         </table>
                                     </t>

@@ -24,6 +24,7 @@ export class SchoolCalendarReport extends Component {
             yearId: null,
             yearName: "",
             months: [],
+            semesters: [],
             schoolName: "",
             logoUrl: "",
         });
@@ -73,6 +74,11 @@ export class SchoolCalendarReport extends Component {
         this.state.months = await this.orm.call(
             "aps.school.calendar",
             "get_calendar_report_data",
+            [year.start_date, year.end_date]
+        );
+        this.state.semesters = await this.orm.call(
+            "aps.school.calendar",
+            "get_term_summary_data",
             [year.start_date, year.end_date]
         );
     }
