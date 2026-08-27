@@ -11,7 +11,9 @@
                         {{color}} 0% {{displayValue}}%,
                         rgba(0, 0, 0, 0.15) 0% 100%
                     ); --PercentPieField-color-active: {{color}};"
-            />
+            >
+                <span t-if="displayValue === 100" class="o_pie_full_divider"/>
+            </figure>
         </div>
 
     </t>

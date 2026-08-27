@@ -1,0 +1,48 @@
+.submission-score-widget {
+    position: relative;
+    border: 1px dotted gray;
+    background-color: silver;
+    border-radius: 5px;
+    padding: 2px 5px;
+    background-color: #f8f9fa;
+    font-size: 1rem;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.submission-score-label {
+    position: absolute;
+    top: -0.7em;
+    left: 0.0rem;
+    padding: 0 0.25rem;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    font-size: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    margin-bottom: 1px;
+}
+
+.submission-score-content {
+    line-height: 1;
+}
+
+.submission-score-not-graded {
+    color: #6c757d;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.55rem;
+    letter-spacing: 0.04em;
+}
+
+.submission-score-value {
+    
+    font-weight: 700;
+    font-size: 1.55rem;
+}
+
+.submission-score-out-of {
+    font-size: inherit;
+    
+}

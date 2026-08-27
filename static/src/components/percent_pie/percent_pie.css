@@ -22,6 +22,20 @@
     aspect-ratio: 1 / 1;
     flex: 0 0 28px;
     display: block;
+    position: relative;
+}
+
+/* A full conic gradient has no visible boundary, so keep the 12 o'clock
+   divider visible even when the value reaches 100%. */
+.o_pie_full_divider {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 50%;
+    background-color: rgba(255, 255, 255, 0.85);
+    transform: translateX(-50%);
+    transform-origin: bottom center;
 }
 
 .o_pie_info .o_pie_value {

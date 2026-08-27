@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.SubmissionScoreField">
+        <span class="d-inline-flex flex-column align-items-start submission-score-widget" title="Score">
+            <span class="submission-score-label">SCORE</span>
+            <span t-if="isGraded" class="d-inline-flex align-items-center gap-1 submission-score-content">
+                <PercentPie value="percent"/>
+                <span class="submission-score-value"><t t-esc="score" /></span><span class="mx-0">/</span><span class="submission-score-out-of"><t t-esc="outOfMarks"/></span>
+            </span>
+            <span t-else="" class="submission-score-not-graded">NOT GRADED</span>
+        </span>
+    </t>
+</templates>

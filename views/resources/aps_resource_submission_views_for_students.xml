@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
 
@@ -92,27 +91,29 @@
                     
                     <group col="12">
                         <group colspan="8">
-                            <div class="d-flex align-items-left gap-1">
-                                <field name="type_icon" widget="image_result" options="{'size': [52, 52], 'task_id': 'task_id'}" nolabel="1" style="width:60px" readonly="1"/>
-
-                                <field name="submission_name" nolabel="1" class="fs-3 fw-bold" options="{'no_open': True}"/>
+                            <div class="d-flex align-items-start gap-1 w-100">
+                                <field name="type_icon" widget="image_result" options="{'size': [52, 52], 'task_id': 'task_id'}" nolabel="1" style="width:60px; flex-shrink:0" readonly="1"/>
+                                <div class="d-flex flex-column flex-grow-1" style="min-width:0">
+                                    <field name="submission_name" nolabel="1" class="w-100 fs-3 fw-bold" style="white-space: normal; overflow: visible; text-overflow: clip;" options="{'no_open': True}"/>
+                                    <field name="student_id" readonly="1" nolabel="1" class="fs-5" invisible="not is_current_user_faculty"/>
+                                </div>
                             </div>
+                       
                         </group>
+                        
                         <group colspan="4">
-                            <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
-                        </group>
-                    </group>
-                    <group col="12" class="mb-1">
-                        <group colspan="3">
-                            <field name="student_id" readonly="1" nolabel="1" class="fs-4" invisible="not is_current_user_faculty"/>
+                            <div class="d-flex flex-column align-items-stretch w-100">
+                                <field name="result_percent" invisible="1"/>
+                                <field name="out_of_marks" invisible="1"/>
+                                <field name="score" widget="submission_score"  style="margin-bottom:7px" nolabel="1"/>
+                                <div class="d-flex justify-content-end w-100">
+                                    <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '45px', 'show_name':True, 'show_results':True}"/>
+                                </div>
 
-                        </group>
-                        <group colspan="9">
-                            <div class="d-flex justify-content-end w-100">
-                                <field name="supporting_resources_buttons" widget="resource_links" nolabel="1" options="{'size': '50px', 'show_name':True, 'show_results':True}"/>
                             </div>
-                        </group>
+                        </group>  
                     </group>
+
                     
 
                     <notebook >
@@ -123,20 +124,6 @@
                                     <div class="o_row fs-3" invisible="out_of_marks != 0">
                                         This task is not graded. Just submit it when you're done!
                                     </div>
-                                    <div class="o_row fs-2 fw-bold  flex-nowrap" style="white-space:nowrap" invisible="out_of_marks == 0">
-                                        <span>
-                                            <label for="score" string="Score:" class="oe_inline fs-2 me-2"/>
-                                            <field name="score" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline fixed-score-width" nolabel="1" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
-                                            <span class="oe_inline mx-1"> / </span>
-                                            <field name="out_of_marks" widget="float_sentinel" options="{'sentinel': -0.01}" class="oe_inline fixed-score-width" nolabel="1" readonly="1"/>
-                                            <span class="ps-2">⇒</span>
-                                            <field name="result_percent" widget="percentpie_ranged" class="oe_inline ms-3" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
-                                            <span>  </span>
-                                        </span> 
-                                    </div>
-                                </group>
-                                <group style="max-width:125px" class="col d-flex justify-content-end fs-2" invisible="state == 'assigned'">
-                                    <field name="points" style="max-width:40px" string="Pts"/>
                                 </group>
                                 </div>
                             </group>
@@ -163,8 +150,13 @@
                                 
                             </div>
                             <group col="2" class="pt-4" invisible="state == 'assigned'">
+  
+
+
+                            </group>
+                            <group col="4" class="pt-4" >
                                 <group>
-                                    <field name="review_requested_by" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
+                                    <field name="review_requested_by" invisible="state == 'assigned'" string="Review:" widget="many2many_tags" options="{'no_create': True}"/>
                                 </group>
                                 <group>
                                     
@@ -173,6 +165,11 @@
                                         string="Confidence Rating"
                                         invisible="state == 'complete' and not confidence_rating"
                                         readonly="state == 'complete'"/>
+                                </group>
+                                <group >
+                                    <field name="date_due" widget="datetime" string="Due:" options="{'format': 'D/MMM/YY HH:mm'}" readonly="not is_current_user_faculty"/>
+                                </group>
+                                <group>    <field name="points" style="max-width:40px" string="Pts"/>
                                 </group>
                             </group>
                         </page>
