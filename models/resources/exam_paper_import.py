@@ -274,6 +274,7 @@ class APSExamPaperImport(models.Model):
                         'display_label': full_label,
                         'root_key': root_label,
                         'maximum_mark': False,
+                        'question_summary': '',
                         'question_pages': [],
                         'question_regions': [],
                         'review_warning': False,
@@ -281,6 +282,8 @@ class APSExamPaperImport(models.Model):
                     }
                 section['question_pages'].append(page.page_number)
                 section['question_regions'].extend(detection.get('regions') or [])
+                if detection.get('question_summary'):
+                    section['question_summary'] = detection['question_summary']
                 if detection.get('visible_mark') is not None:
                     section['maximum_mark'] = detection['visible_mark']
                 confidence = detection.get('confidence')
@@ -415,9 +418,12 @@ class APSExamPaperImport(models.Model):
             'labels and their visual regions. Treat labels as layout markers, including a bare root '
             'number such as "1", a part such as "(b)", or a subpart such as "(i)" at the start of '
             'a line or sentence. Do not require the label to be followed by question text on the same '
-            'line. Do not transcribe OCR and do not invent question text. Report the label exactly as '
+            'line. Do not transcribe OCR and do not invent question text. Provide a concise '
+            'question_summary of no more than 20 words describing what the student is asked to do; '
+            'do not provide an answer. Report the label exactly as '
             'printed on the current page in raw_label; do not combine it with previous-page context. '
             'Return only JSON with this shape: {"detections": [{"raw_label": string, '
+            '"question_summary": string, '
             '"label_kind": "root"|"part"|"subpart"|"continuation", "regions": [{"x1": number, '
             '"y1": number, "x2": number, "y2": number}], "visible_mark": number|null, '
             '"mark_confidence": number, "continues_from_previous_page": boolean, '
@@ -618,6 +624,7 @@ class APSExamPaperSection(models.Model):
     resource_key = fields.Char(readonly=True)
     maximum_mark = fields.Float(string='Maximum Mark', digits=(16, 1))
     question_text = fields.Text(string='Question Text')
+    question_summary = fields.Char(string='Question Summary')
     mark_scheme_text = fields.Text(string='Mark Scheme Text')
     question_html = fields.Html(string='Question HTML')
     answer_html = fields.Html(string='Answer HTML')

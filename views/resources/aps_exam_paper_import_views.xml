@@ -23,7 +23,7 @@
             <form string="IGCSE Exam Paper Import">
                 <header>
                     <button name="action_render_pages" type="object" string="Render Pages" class="btn-primary" invisible="state not in ['uploaded', 'review', 'failed']"/>
-                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse" class="btn-primary" invisible="not ai_model_id or state not in ['uploaded', 'review']"/>
+                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse Pages" class="btn-primary" invisible="not ai_model_id or state not in ['uploaded', 'review']"/>
                     <button name="action_validate" type="object" string="Validate" invisible="state != 'review'"/>
                     <button name="action_build_resources" type="object" string="Build Resources" class="btn-primary" invisible="state != 'review'"/>
                     <button name="action_retry" type="object" string="Retry" invisible="state != 'failed'"/>
@@ -56,6 +56,7 @@
                                     <field name="display_label"/>
                                     <field name="source_key" readonly="1"/>
                                     <field name="maximum_mark"/>
+                                    <field name="question_summary"/>
                                     <field name="match_confidence"/>
                                     <field name="review_warning"/>
                                     <field name="question_text" optional="hide"/>

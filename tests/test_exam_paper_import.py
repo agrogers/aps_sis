@@ -57,6 +57,8 @@ class TestExamPaperImport(TransactionCase):
         self.assertIn('regions', prompt)
         self.assertIn('raw_label', prompt)
         self.assertIn('second pass', prompt)
+        self.assertIn('question_summary', prompt)
+        self.assertIn('no more than 20 words', prompt)
 
     def test_resolve_page_labels_across_pages(self):
         resolver = self.env['aps.exam.paper.import']
