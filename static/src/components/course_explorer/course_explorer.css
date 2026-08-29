@@ -345,11 +345,22 @@
 }
 
 .ce_section_body img {
-    max-width: 100%;
+    max-width: min(100%, 1000px);
     height: auto;
     border-radius: 4px;
     cursor: zoom-in;
     transition: opacity 0.15s;
+}
+
+.ce_section_body iframe,
+.ce_section_body video {
+    display: block;
+    width: min(100%, 800px);
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    margin: 12px 0;
+    border: 0;
 }
 
 .ce_section_body img:hover {

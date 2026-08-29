@@ -156,6 +156,7 @@ export class CourseExplorer extends Component {
             this._setupScrollObserver();
             this._setupScrollListener();
             this._setupImageClickHandler();
+            this._renderEmbeddedVideos();
             this._renderMathIfNeeded();
             this._setupTooltips();
         });
@@ -166,6 +167,7 @@ export class CourseExplorer extends Component {
             this._setupScrollObserver();
             this._setupScrollListener();
             this._setupImageClickHandler();
+            this._renderEmbeddedVideos();
         });
 
         onWillUnmount(() => {
@@ -250,6 +252,33 @@ export class CourseExplorer extends Component {
             });
         } catch {
             // Ignore math rendering failures and keep content visible.
+        }
+    }
+
+    _renderEmbeddedVideos() {
+        const root = this.contentRef.el;
+        if (!root) return;
+        for (const placeholder of root.querySelectorAll(
+            '.ce_section_body [data-embedded="video"]'
+        )) {
+            let props;
+            try {
+                props = JSON.parse(placeholder.dataset.embeddedProps || '{}');
+            } catch {
+                continue;
+            }
+            if (props.platform !== 'youtube' || !props.videoId) continue;
+
+            const iframe = document.createElement('iframe');
+            const params = new URLSearchParams({
+                rel: props.params?.rel ? '1' : '0',
+                autoplay: props.params?.autoplay ? '1' : '0',
+            });
+            iframe.src = `https://www.youtube.com/embed/${encodeURIComponent(props.videoId)}?${params}`;
+            iframe.title = 'YouTube video';
+            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+            iframe.setAttribute('allowfullscreen', '');
+            placeholder.replaceWith(iframe);
         }
     }
 
