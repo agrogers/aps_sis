@@ -1,10 +1,9 @@
-import hashlib
-import io
 import json
 import logging
-import re
 import base64
 import mimetypes
+import re
+from io import BytesIO
 from html import escape
 from typing import Any
 
@@ -35,7 +34,7 @@ class APSExamPaperImport(models.Model):
     )
     state = fields.Selection([
         ('draft', 'Draft'),
-        ('uploaded', 'Uploaded'),
+        ('uploaded', 'Rendered'),
         ('analysing', 'Analysing'),
         ('review', 'Review Required'),
         ('building', 'Building Resources'),
@@ -45,25 +44,34 @@ class APSExamPaperImport(models.Model):
     ], default='draft', required=True, tracking=True)
     progress = fields.Integer(default=0, tracking=True)
     error_message = fields.Text(readonly=True)
-    question_text = fields.Text(readonly=True)
-    mark_scheme_text = fields.Text(readonly=True)
     parser_version = fields.Char(default='1.0', readonly=True)
     ai_model_id = fields.Many2one(
         'aps.ai.model', string='Vision Analysis Model',
         domain="[('enabled', '=', True), ('provider_id.enabled', '=', True), ('supports_vision', '=', True)]",
         help='Vision-capable model used to detect question regions. It must return JSON only.',
     )
+    single_page_ai_model_id = fields.Many2one(
+        'aps.ai.model', string='Individual Page Vision Model',
+        domain="[('enabled', '=', True), ('provider_id.enabled', '=', True), ('supports_vision', '=', True)]",
+        help='Optional vision-capable model used when analysing an individual page. Defaults to the main vision model.',
+    )
     ai_prompt_version = fields.Char(default='1.0', readonly=True)
     render_dpi = fields.Integer(default=150, required=True)
     page_ids = fields.One2many('aps.exam.paper.page', 'import_id', string='Rendered Pages')
     page_count = fields.Integer(compute='_compute_counts')
-    question_sha256 = fields.Char(readonly=True)
-    mark_scheme_sha256 = fields.Char(readonly=True)
     section_ids = fields.One2many('aps.exam.paper.section', 'import_id', string='Detected Sections')
     section_count = fields.Integer(compute='_compute_counts')
     warning_count = fields.Integer(compute='_compute_counts')
     started_at = fields.Datetime(readonly=True)
     completed_at = fields.Datetime(readonly=True)
+
+    _CROP_LEFT = 75
+    _CROP_TOP = 85
+    _CROP_RIGHT = 75
+    _CROP_BOTTOM = 100
+    _RENDER_HEIGHT_PIXELS = 1500
+    _LABEL_Y_TOLERANCE = 0.025
+    _CONTINUATION_TOP_LIMIT = 0.20
 
     _sql_constraints = [
         ('resource_import_unique', 'unique(resource_id, question_attachment_id, mark_scheme_attachment_id)',
@@ -79,8 +87,6 @@ class APSExamPaperImport(models.Model):
 
     def action_render_pages(self):
         self.ensure_one()
-        if self.state not in ('uploaded', 'review', 'failed'):
-            raise UserError(_('Pages cannot be rendered in the current state.'))
         if not 72 <= self.render_dpi <= 300:
             raise ValidationError(_('Render DPI must be between 72 and 300.'))
         try:
@@ -104,14 +110,12 @@ class APSExamPaperImport(models.Model):
             raise ValidationError(_('The %s PDF attachment is empty.') % document_type.replace('_', ' '))
         document = fitz.open(stream=content, filetype='pdf')
         page_model = self.env['aps.exam.paper.page']
+        existing_pages = self.page_ids.filtered(lambda item: item.document_type == document_type)
+        if existing_pages:
+            existing_pages.unlink()
         for page_number, page in enumerate(document, 1):
-            existing = page_model.search([
-                ('import_id', '=', self.id), ('document_type', '=', document_type),
-                ('page_number', '=', page_number), ('render_dpi', '=', self.render_dpi),
-            ], limit=1)
-            if existing:
-                continue
-            pixmap = page.get_pixmap(dpi=self.render_dpi, alpha=False)
+            zoom = self._RENDER_HEIGHT_PIXELS / page.rect.height if page.rect.height else 1.0
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
             image_data = pixmap.tobytes('png')
             attachment = self.env['ir.attachment'].create({
                 'name': '%s-page-%03d.png' % (document_type, page_number),
@@ -169,194 +173,268 @@ class APSExamPaperImport(models.Model):
             'state': 'uploaded',
         })
 
-    def action_analyse(self):
-        self.ensure_one()
-        if self.state not in ('uploaded', 'failed', 'review'):
-            raise UserError(_('This import cannot be analysed in its current state.'))
-        try:
-            self.write({
-                'state': 'analysing',
-                'progress': 10,
-                'error_message': False,
-                'started_at': fields.Datetime.now(),
-            })
-            question_bytes = self._attachment_bytes(self.question_attachment_id)
-            answer_bytes = self._attachment_bytes(self.mark_scheme_attachment_id)
-            question_text = self._extract_pdf_text(question_bytes)
-            answer_text = self._extract_pdf_text(answer_bytes)
-            self.write({
-                'question_text': question_text,
-                'mark_scheme_text': answer_text,
-                'question_sha256': hashlib.sha256(question_bytes).hexdigest(),
-                'mark_scheme_sha256': hashlib.sha256(answer_bytes).hexdigest(),
-                'progress': 35,
-            })
-            self._build_detected_sections(question_text, answer_text)
-            self.write({'state': 'review', 'progress': 60})
-        except Exception as exc:
-            _logger.exception('IGCSE import analysis failed for %s', self.display_name)
-            self.write({'state': 'failed', 'error_message': str(exc)})
-            raise UserError(_('Analysis failed: %s') % exc) from exc
-        return self._open_form()
-
     def action_analyse_pages_with_ai(self):
-        """Analyse already-rendered pages through the selected vision model.
-
-        Rendering is intentionally delegated to a separate adapter. This method
-        accepts page images as attachments linked to the source PDF attachment,
-        allowing a later renderer/queue worker to populate them independently.
-        """
+        """Queue analysis of all rendered pages and show the shared progress dialog."""
         self.ensure_one()
-        model = self.ai_model_id
-        if not model or not model.enabled or not model.provider_id.enabled:
-            raise UserError(_('Select an enabled vision-capable AI model first.'))
-        if not model.supports_vision:
-            raise UserError(_('The selected AI model is not marked as vision-capable.'))
-        page_images = self.env['ir.attachment'].search([
-            ('res_model', '=', 'aps.exam.paper.import'),
-            ('res_id', '=', self.id),
-            ('mimetype', 'in', ['image/png', 'image/jpeg']),
-        ])
-        if not page_images:
-            raise UserError(_('No rendered page images are attached to this import yet.'))
-        for page_image in page_images.sorted('name'):
-            page_record = self.env['aps.exam.paper.page'].search([
-                ('import_id', '=', self.id), ('attachment_id', '=', page_image.id),
-            ], limit=1)
-            try:
-                response, log_record = self._analyse_page_image(
-                    model, page_record, self._page_analysis_context(page_record)
-                )
-                page_record.write({
-                    'ai_response': response,
-                    'ai_state': 'complete',
-                    'error_message': False,
-                    'ai_call_log_id': log_record.id if log_record else False,
-                })
-            except Exception as exc:
-                page_record.write({'ai_state': 'failed', 'error_message': str(exc)})
-                _logger.exception('Vision analysis failed for rendered page %s', page_image.name)
-        self._build_sections_from_page_analysis()
+        run = self._create_page_analysis_run()
+        return self._build_analysis_run_notification(run)
+
+    def action_detect_sections(self):
+        """Build detected sections from the stored page-analysis responses."""
+        self.ensure_one()
+        summary = self._build_sections_from_page_analysis()
         self.write({'state': 'review', 'progress': 60})
-        return self._open_form()
+        return self._notification(
+            _('Sections Detected'),
+            _('%s section(s) added, %s updated, %s already existed.') % (
+                summary['added'], summary['updated'], summary['already_existed'],
+            ),
+            'success',
+        )
+
+    def _create_page_analysis_run(self, page=None, model=None):
+        model = model or self.ai_model_id
+        if not model or not model.enabled or not model.provider_id.enabled or not model.supports_vision:
+            raise UserError(_('Select an enabled vision-capable AI model first.'))
+        pages = self.page_ids.filtered(
+            lambda item: item.attachment_id
+        ) if not page else page
+        if not pages:
+            raise UserError(_('No rendered question-paper pages are available.'))
+        pages.write({'ai_state': 'pending', 'error_message': False})
+        run = self.env['aps.exam.paper.import.run'].sudo().create({
+            'import_id': self.id,
+            'page_ids': [(6, 0, pages.ids)],
+            'ai_model_id': model.id,
+            'requested_by_id': self.env.user.id,
+            'state': 'queued',
+            'status_message': _('Queued page analysis...'),
+        })
+        run._queue_background_processing()
+        return run
+
+    def _build_analysis_run_notification(self, run):
+        return {
+            'type': 'ir.actions.client', 'tag': 'display_notification',
+            'params': {
+                'title': _('Page Analysis Started'),
+                'message': _('Page analysis is running in the background.'),
+                'run_id': run.id, 'run_model': 'aps.exam.paper.import.run',
+                'title': _('Exam Paper Page Analysis'),
+            },
+        }
+
+    def action_open_detected_sections(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Detected Sections'),
+            'res_model': 'aps.exam.paper.section',
+            'view_mode': 'list,form',
+            'domain': [('import_id', '=', self.id)],
+        }
+
+    def action_open_rendered_pages(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Rendered Pages'),
+            'res_model': 'aps.exam.paper.page',
+            'view_mode': 'list,form',
+            'domain': [('import_id', '=', self.id)],
+        }
 
     def _build_sections_from_page_analysis(self):
         """Resolve raw labels detected on question pages into sections."""
         self.ensure_one()
-        pages = self.page_ids.filtered(
-            lambda page: page.document_type == 'question' and page.ai_state == 'complete'
-        ).sorted('page_number')
-        if not pages:
+        question_detections = self._collect_page_detections('question')
+        if not question_detections:
             raise UserError(_('No completed question-paper page analyses are available.'))
 
         resolved = {}
-        root_label = False
-        part_label = False
-        sequence = 0
-        for page in pages:
-            for detection in (page.ai_response or {}).get('detections', []):
-                raw_label = (detection.get('raw_label') or detection.get('display_label') or '').strip()
-                if not raw_label:
-                    continue
-                full_label, root_label, part_label = self._resolve_page_label(
-                    raw_label, detection.get('label_kind', ''), root_label, part_label,
-                )
-                if not full_label:
-                    continue
-                key = self._normalise_key(full_label)
-                section = resolved.get(key)
-                if not section:
-                    sequence += 1
-                    section = resolved[key] = {
-                        'import_id': self.id,
-                        'sequence': sequence,
-                        'source_key': key,
-                        'display_label': full_label,
-                        'root_key': root_label,
-                        'maximum_mark': False,
-                        'question_summary': '',
-                        'question_pages': [],
-                        'question_regions': [],
-                        'review_warning': False,
-                        'match_confidence': 0.0,
-                    }
-                section['question_pages'].append(page.page_number)
-                section['question_regions'].extend(detection.get('regions') or [])
-                if detection.get('question_summary'):
-                    section['question_summary'] = detection['question_summary']
-                if detection.get('visible_mark') is not None:
-                    section['maximum_mark'] = detection['visible_mark']
-                confidence = detection.get('confidence')
-                if confidence is not None:
-                    section['match_confidence'] = max(section['match_confidence'], confidence)
-                section['review_warning'] |= bool(
-                    detection.get('continues_from_previous_page')
-                    or detection.get('continues_on_next_page')
-                    or not detection.get('regions')
-                    or (confidence is not None and confidence < 0.8)
-                )
+        for item in question_detections:
+            page = item['page']
+            detection = item['detection']
+            key = self._normalise_key(item['label'])
+            section = resolved.setdefault(key, {
+                'import_id': self.id,
+                'sequence': len(resolved) + 1,
+                'source_key': key,
+                'display_label': item['label'],
+                'root_key': item['root_label'],
+                'hierarchy_level': self._label_hierarchy_level(item['label']),
+                'maximum_mark': False,
+                'question_summary': '',
+                'include_resource': True,
+                'include_parent_question': False,
+                'question_pages': [],
+                'question_regions': [],
+                'answer_pages': [],
+                'answer_regions': [],
+                'review_warning': False,
+                'match_confidence': 0.0,
+            })
+            section['question_pages'].append(page.page_number)
+            section['question_regions'].extend(self._regions_with_page_data(
+                detection.get('regions') or [], page, item['label'], len(section['question_regions']),
+                item.get('analysis') or {},
+            ))
+            if detection.get('include_parent_question') is not None:
+                section['include_parent_question'] = detection['include_parent_question']
+            if detection.get('question_summary'):
+                section['question_summary'] = detection['question_summary']
+            if detection.get('visible_mark') is not None and section['maximum_mark'] is False:
+                section['maximum_mark'] = detection['visible_mark']
+            confidence = detection.get('confidence')
+            if confidence is not None:
+                section['match_confidence'] = max(section['match_confidence'], confidence)
+            section['review_warning'] |= bool(
+                detection.get('continues_from_previous_page')
+                or detection.get('continues_on_next_page')
+                or not detection.get('regions')
+                or (confidence is not None and confidence < 0.8)
+            )
+
+        for item in self._collect_page_detections('mark_scheme'):
+            section = resolved.get(self._normalise_key(item['label']))
+            if not section:
+                continue
+            page = item['page']
+            detection = item['detection']
+            section['answer_pages'].append(page.page_number)
+            section['answer_regions'].extend(self._regions_with_page_data(
+                detection.get('regions') or [], page, item['label'], len(section['answer_regions']),
+                item.get('analysis') or {},
+            ))
+            # The mark scheme is authoritative when it reports a mark.
+            if detection.get('visible_mark') is not None:
+                section['maximum_mark'] = detection['visible_mark']
+            section['review_warning'] |= not bool(detection.get('regions'))
 
         if not resolved:
             raise UserError(_('The AI did not detect any question labels.'))
-        self.section_ids.unlink()
-        self.env['aps.exam.paper.section'].create([
-            dict(
+        section_model = self.env['aps.exam.paper.section']
+        existing_sections = {
+            section.source_key: section
+            for section in self.section_ids
+        }
+        detected_values = []
+        added_count = 0
+        updated_count = 0
+        already_existed_count = 0
+        for section in resolved.values():
+            values = dict(
                 section,
                 question_pages=','.join(str(p) for p in sorted(set(section['question_pages']))),
                 question_regions=section['question_regions'],
+                answer_pages=','.join(str(p) for p in sorted(set(section['answer_pages']))),
+                answer_regions=section['answer_regions'],
+                review_warning=section['review_warning'] or section['maximum_mark'] is False,
             )
-            for section in resolved.values()
-        ])
+            existing = existing_sections.get(section['source_key'])
+            if existing:
+                update_values = {
+                    key: value for key, value in values.items()
+                    if key not in {
+                        'import_id', 'sequence', 'source_key', 'display_label',
+                        'hierarchy_level', 'include_resource', 'include_parent_question',
+                    }
+                }
+                if any(existing[key] != value for key, value in update_values.items()):
+                    existing.write(update_values)
+                    updated_count += 1
+                else:
+                    already_existed_count += 1
+            else:
+                detected_values.append(values)
+        if detected_values:
+            section_model.create(detected_values)
+            added_count = len(detected_values)
+        return {
+            'added': added_count,
+            'updated': updated_count,
+            'already_existed': already_existed_count,
+        }
+
+    @staticmethod
+    def _regions_with_page_data(regions, page, label, start_index, analysis):
+        result = []
+        for index, region in enumerate(regions, start_index):
+            original = dict(region)
+            region = APSExamPaperImport._scale_region_to_page(original, page, analysis)
+            region.update({
+                'document_type': page.document_type,
+                'page_number': page.page_number,
+                'detection_label': label,
+                'detection_order': index,
+                'ai_coordinates': original,
+                'ai_image_width': analysis.get('image_width'),
+                'ai_image_height': analysis.get('image_height'),
+                'ai_coordinate_system': analysis.get('coordinate_system', 'pixels'),
+            })
+            result.append(region)
+        return result
+
+    @staticmethod
+    def _scale_region_to_page(region, page, analysis):
+        returned_width = float(analysis.get('image_width') or page.width or 1)
+        returned_height = float(analysis.get('image_height') or page.height or 1)
+        coordinate_system = (analysis.get('coordinate_system') or 'pixels').casefold()
+        scaled = {}
+        for axis, dimension, page_dimension in (
+            ('x', returned_width, page.width), ('y', returned_height, page.height),
+        ):
+            for suffix in ('1', '2'):
+                key = '%s%s' % (axis, suffix)
+                try:
+                    value = float(region.get(key, 0) or 0)
+                except (TypeError, ValueError):
+                    value = 0.0
+                if coordinate_system in ('normalized', 'normalized_0_1', '0..1'):
+                    value *= dimension
+                elif coordinate_system in ('normalized_0_1000', '0..1000'):
+                    value *= dimension / 1000
+                scaled[key] = round(value * page_dimension / dimension)
+        return scaled
 
     @classmethod
     def _resolve_page_label(cls, raw_label, kind, root_label, part_label):
-        compact = re.sub(r'[^A-Za-z0-9]', '', raw_label)
-        if not compact:
+        value = (raw_label or '').strip()
+        if not value:
             return False, root_label, part_label
-        if compact.casefold().startswith('q') and compact[1:].isdigit():
+        roman_labels = {'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'}
+        explicit = re.fullmatch(
+            r'(?:Q)?(\d+)\s*(?:\(([A-Za-z])\)|([A-Za-z]))?\s*'
+            r'(?:\(([ivxIVX]+)\)|\.([ivxIVX]+))?', value,
+        )
+        if explicit:
+            number, explicit_part, plain_part, explicit_subpart, plain_subpart = explicit.groups()
+            root_label = 'Q%s' % number
+            part_label = (explicit_part or plain_part or '').casefold() or False
+            subpart = (explicit_subpart or plain_subpart or '').casefold() or False
+            if subpart and subpart not in roman_labels:
+                return False, root_label, part_label
+            label = '%s%s' % (root_label, part_label or '')
+            return '%s.%s' % (label, subpart) if subpart and part_label else label, root_label, part_label
+
+        part_match = re.match(r'^\s*\(([A-Za-z])\)', value)
+        subpart_match = re.match(r'^\s*\(([ivxIVX]+)\)', value)
+        compact = re.sub(r'[^A-Za-z0-9]', '', value).casefold()
+        if compact.startswith('q') and compact[1:].isdigit():
             compact = compact[1:]
         if compact.isdigit():
             root_label, part_label = 'Q%s' % compact, False
             return root_label, root_label, part_label
-        if kind in ('part', 'subpart', 'continuation') or raw_label.startswith('('):
-            if not root_label:
-                return False, root_label, part_label
-            if compact.casefold() in {'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'}:
-                if not part_label:
-                    return False, root_label, part_label
-                return '%s%s.%s' % (root_label, part_label, compact.casefold()), root_label, part_label
-            if len(compact) == 1 and compact.isalpha():
-                part_label = compact.casefold()
-                return '%s%s' % (root_label, part_label), root_label, part_label
-        complete = re.match(r'^(?:Q)?(\d+)([A-Za-z])?(?:([ivx]+))?$', compact, re.I)
-        if complete:
-            root_label = 'Q%s' % complete.group(1)
-            part_label = complete.group(2).casefold() if complete.group(2) else False
-            suffix = '.%s' % complete.group(3).casefold() if complete.group(3) else ''
-            return '%s%s%s' % (root_label, part_label or '', suffix), root_label, part_label
+        if not root_label:
+            return False, root_label, part_label
+        if subpart_match:
+            subpart = subpart_match.group(1).casefold()
+            if part_label and subpart in {'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'}:
+                return '%s%s.%s' % (root_label, part_label, subpart), root_label, part_label
+        if part_match and kind in ('part', 'subpart', 'continuation'):
+            part_label = part_match.group(1).casefold()
+            return '%s%s' % (root_label, part_label), root_label, part_label
         return False, root_label, part_label
-
-    def _page_analysis_context(self, page_record):
-        previous_pages = self.page_ids.filtered(
-            lambda page: page.document_type == page_record.document_type
-            and page.page_number < page_record.page_number
-        ).sorted('page_number')[-3:]
-        labels = []
-        for previous in previous_pages:
-            for detection in (previous.ai_response or {}).get('detections', []):
-                if detection.get('display_label'):
-                    labels.append(
-                        'page %s: %s' % (previous.page_number, detection['display_label'])
-                    )
-        if not labels:
-            return 'No analysed preceding pages are available.'
-        return 'Recent detected labels on preceding pages: %s' % ', '.join(labels)
-
-    def _previous_page_for_analysis(self, page_record):
-        return self.page_ids.filtered(
-            lambda page: page.document_type == page_record.document_type
-            and page.page_number == page_record.page_number - 1
-        )[:1]
 
     @staticmethod
     def _image_data_uri(attachment):
@@ -366,26 +444,21 @@ class APSExamPaperImport(models.Model):
         mime_type = attachment.mimetype or mimetypes.guess_type(attachment.name or '')[0] or 'image/png'
         return 'data:%s;base64,%s' % (mime_type, base64.b64encode(image_data).decode('ascii'))
 
-    def _analyse_page_image(self, model, page_record, page_context=None):
+    def _analyse_page_image(self, model, page_record):
         page_image = page_record.attachment_id
         image_uri = self._image_data_uri(page_image)
         if not image_uri:
             raise UserError(_('Rendered page %s is empty.') % page_image.name)
-        previous_page = self._previous_page_for_analysis(page_record)
-        previous_uri = self._image_data_uri(previous_page.attachment_id) if previous_page else False
         content: list[dict[str, Any]] = [
             {'type': 'text', 'text': (
-                'Analyse only the current page %s of the %s. The previous page image, if supplied, '
-                'is context only and must not produce detections. %s'
-                % (page_record.page_number, page_record.document_type, page_context or '')
+                'Analyse only page %s of the %s. Return only labels visibly printed on this page. '
+                'The current image is exactly %sx%s pixels. Return all region coordinates as pixel '
+                'coordinates relative to this exact image size. Include image_width=%s, image_height=%s, '
+                'and coordinate_system="pixels" in the JSON response.'
+                % (page_record.page_number, page_record.document_type, page_record.width, page_record.height,
+                   page_record.width, page_record.height)
             )},
         ]
-        if previous_uri:
-            content.extend([
-                {'type': 'text', 'text': 'Previous page (context only):'},
-                {'type': 'image_url', 'image_url': {'url': previous_uri}},
-                {'type': 'text', 'text': 'Current page to detect:'},
-            ])
         content.append({'type': 'image_url', 'image_url': {'url': image_uri}})
         payload = {
             'model': model.model_key,
@@ -402,9 +475,17 @@ class APSExamPaperImport(models.Model):
             request_type='exam_paper_page_analysis',
             related_record=page_record,
         )
+        log_record = result.get('log_record')
+        if log_record:
+            page_record.write({'ai_call_log_id': log_record.id})
         response_json = model._parse_router_response_json(
             model._extract_message_content(result['response_json'])
         )
+        if isinstance(response_json, list):
+            if len(response_json) == 1 and isinstance(response_json[0], dict) and 'detections' in response_json[0]:
+                response_json = response_json[0]
+            elif all(isinstance(item, dict) for item in response_json):
+                response_json = {'detections': response_json}
         if not isinstance(response_json, dict) or not isinstance(response_json.get('detections'), list):
             raise ValidationError(_('Vision analysis for %s did not return the required detections JSON.') % page_image.name)
         return response_json, result.get('log_record')
@@ -412,30 +493,29 @@ class APSExamPaperImport(models.Model):
     @staticmethod
     def _vision_system_prompt():
         return (
-            'You analyse one page of an IGCSE examination paper. Pages are sequential and a question '
-            'may start with a bare number such as 1 on one page, then continue with labels such as '
-            '(a), (i), and (ii) on later pages. Detect question and sub-question '
+            'You analyse exactly one isolated page of an IGCSE examination paper. Detect question and sub-question '
             'labels and their visual regions. Treat labels as layout markers, including a bare root '
             'number such as "1", a part such as "(b)", or a subpart such as "(i)" at the start of '
             'a line or sentence. Do not require the label to be followed by question text on the same '
             'line. Do not transcribe OCR and do not invent question text. Provide a concise '
             'question_summary of no more than 20 words describing what the student is asked to do; '
             'do not provide an answer. Report the label exactly as '
-            'printed on the current page in raw_label; do not combine it with previous-page context. '
-            'Return only JSON with this shape: {"detections": [{"raw_label": string, '
+            'printed on the current page in raw_label; return it exactly as visible. '
+            'Return only JSON with this shape: {"image_width": number, "image_height": number, '
+            '"coordinate_system": "pixels", "detections": [{"raw_label": string, '
             '"question_summary": string, '
             '"label_kind": "root"|"part"|"subpart"|"continuation", "regions": [{"x1": number, '
             '"y1": number, "x2": number, "y2": number}], "visible_mark": number|null, '
             '"mark_confidence": number, "continues_from_previous_page": boolean, '
             '"continues_on_next_page": boolean, "contains_diagram": boolean, "confidence": number}]}. '
-            'Coordinates must be normalized from 0 to 1 relative to the image. Include only actual '
+            'Coordinates must be integer pixel coordinates relative to the declared image_width and image_height. Include only actual '
             'answer-bearing question parts; exclude headers, footers, general instructions, and blank '
             'answer spaces. A bare number starts a root question. On later pages, resolve (a), (b), '
             '(i), and (ii) as raw labels only. The application will resolve them against the most likely '
             'preceding root/part in a second pass. Read marks printed at the end of question text, commonly as (2), but '
             'do not confuse them with numbering. '
-            'Use the previous-page image only to resolve the parent root/part of a current-page label. '
-            'Never return a detection for a label that appears only on the previous page. '
+            'Return raw labels only; the application resolves continuation labels across pages. '
+            'Never return a detection for a label that is not visibly present on this page. '
             'When uncertain, include the detection with a lower confidence rather than guessing.'
         )
 
@@ -443,101 +523,369 @@ class APSExamPaperImport(models.Model):
         self.ensure_one()
         errors = []
         seen = set()
-        for section in self.section_ids:
+        sections = self.section_ids.filtered('include_resource')
+        for section in sections:
             if section.source_key in seen:
                 errors.append(_('Duplicate section: %s') % section.display_label)
             seen.add(section.source_key)
-            if not section.question_text:
-                errors.append(_('%s has no question text.') % section.display_label)
-            if not section.mark_scheme_text:
-                errors.append(_('%s has no matching mark-scheme text.') % section.display_label)
-            if section.maximum_mark is False:
+            if not section.question_regions:
+                errors.append(_('%s has no question-page region.') % section.display_label)
+            if not section.answer_regions:
+                errors.append(_('%s has no mark-scheme region.') % section.display_label)
+            if section.maximum_mark in (False, None):
                 errors.append(_('%s has no maximum mark.') % section.display_label)
         if errors:
             raise ValidationError('\n'.join(errors))
         return self._notification(_('Validation passed'), _('The detected sections are ready to build resources.'), 'success')
 
+    def _section_regions(self, section, document_type):
+        field_name = 'question_regions' if document_type == 'question' else 'answer_regions'
+        regions = [dict(region) for region in (getattr(section, field_name) or [])]
+        if document_type == 'question' and section.include_parent_question:
+            parent = self._find_parent_section(section)
+            if parent:
+                regions = self._section_regions(parent, document_type) + regions
+        return regions
+
+    def _find_parent_section(self, section):
+        """Find the nearest earlier, lower-level question section in the same root."""
+        if not section.root_key or not section.hierarchy_level:
+            return self.env['aps.exam.paper.section']
+        root_key = self._normalise_key(section.root_key)
+        candidates = self.section_ids.filtered(
+            lambda candidate: candidate.sequence < section.sequence
+            and self._normalise_key(candidate.root_key or candidate.source_key) == root_key
+            and candidate.hierarchy_level < section.hierarchy_level
+        ).sorted(key=lambda candidate: candidate.sequence, reverse=True)
+        return candidates[:1]
+
+    def _append_image_update_log(self, section, message):
+        section.write({
+            'image_update_log': '%s[%s] %s\n' % (
+                section.image_update_log or '', fields.Datetime.now(), message,
+            ),
+        })
+
+    def _page_label_positions(self, document_type):
+        positions = {}
+        for item in self._collect_page_detections(document_type):
+            regions = item['detection'].get('regions') or []
+            if not regions:
+                continue
+            page = item['page']
+            y_value = min(self._region_y_as_fraction(region, page) for region in regions)
+            positions.setdefault(item['page'].page_number, []).append({
+                'label': item['label'], 'y': y_value,
+            })
+        for values in positions.values():
+            values.sort(key=lambda value: value['y'])
+        return positions
+
+    @staticmethod
+    def _region_y_as_fraction(region, page):
+        try:
+            y_value = float(region.get('y1', 0))
+        except (TypeError, ValueError):
+            return 0.0
+        return APSExamPaperImport._coordinate_as_fraction(y_value, page.height)
+
+    @staticmethod
+    def _coordinate_as_fraction(value, dimension):
+        """Convert AI coordinates from 0..1, 0..1000, or rendered pixels."""
+        if value <= 1:
+            return value
+        if value <= 1000:
+            return value / 1000
+        return value / dimension if dimension else 0.0
+
+    @staticmethod
+    def _coordinate_scale(region):
+        values = []
+        for key in ('x1', 'y1', 'x2', 'y2'):
+            try:
+                values.append(float(region.get(key, 0) or 0))
+            except (TypeError, ValueError):
+                continue
+        if not values or max(values) <= 1:
+            return 'normalized 0..1'
+        if max(values) <= 1000:
+            return 'normalized 0..1000'
+        return 'rendered pixels'
+
+    def _crop_bounds(self, region, page, label_positions):
+        start_y = max(0.0, min(1.0, self._region_y_as_fraction(region, page)))
+        next_y = None
+        for candidate in label_positions.get(page.page_number, []):
+            if candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
+                next_y = candidate['y']
+                break
+        left = max(0, min(page.width, self._CROP_LEFT))
+        top = max(0, min(page.height, max(self._CROP_TOP, round(start_y * page.height))))
+        right = max(left + 1, min(page.width, page.width - self._CROP_RIGHT))
+        bottom = page.height if next_y is None else round(next_y * page.height)
+        bottom_limit = max(top + 1, page.height - self._CROP_BOTTOM)
+        bottom = bottom_limit if next_y is None else round(next_y * page.height)
+        bottom = max(top + 1, min(bottom_limit, bottom))
+        return left, top, right, bottom
+
+    def _crop_section_images(self, section, document_type, log=False):
+        label_positions = self._page_label_positions(document_type)
+        images = []
+        seen = set()
+        regions = self._section_regions(section, document_type)
+        if log:
+            self._append_image_update_log(section, '%s: found %s region(s), label positions on page(s): %s.' % (
+                document_type, len(regions), ', '.join(str(page) for page in sorted(label_positions)) or 'none',
+            ))
+        for index, region in enumerate(regions, 1):
+            page_number = region.get('page_number')
+            if not page_number:
+                pages = [value for value in (section.question_pages if document_type == 'question' else section.answer_pages or '').split(',') if value]
+                page_number = int(pages[index - 1]) if index <= len(pages) else False
+            try:
+                page_number = int(page_number) if page_number else False
+            except (TypeError, ValueError):
+                page_number = False
+            page = self.page_ids.filtered(
+                lambda item: item.document_type == document_type and item.page_number == page_number
+            )[:1]
+            if not page or not page.width or not page.height:
+                if log:
+                    self._append_image_update_log(section, '%s region %s: no rendered image/page found for page %s.' % (
+                        document_type, index, page_number or 'unknown',
+                    ))
+                continue
+            bounds = self._crop_bounds(region, page, label_positions)
+            if log:
+                self._append_image_update_log(section, '%s region %s: raw coordinates=%s (%s), page %s image %sx%s, crop x=%s..%s y=%s..%s.' % (
+                    document_type, index, region, self._coordinate_scale(region), page_number,
+                    page.width, page.height, *bounds,
+                ))
+            key = (page.id, bounds)
+            if key in seen:
+                if log:
+                    self._append_image_update_log(section, '%s region %s: duplicate crop skipped.' % (document_type, index))
+                continue
+            seen.add(key)
+            images.append((page, bounds))
+        return images
+
+    def _remove_section_images(self, resource, section):
+        marker = 'aps_exam_import_section:%s' % section.id
+        attachments = self.env['ir.attachment'].search([
+            ('res_model', '=', 'aps.resources'), ('res_id', '=', resource.id),
+            ('description', 'ilike', marker),
+        ])
+        attachments.unlink()
+        pattern = r'<div[^>]*data-aps-exam-import-section=["\']%s["\'][^>]*>.*?</div>' % section.id
+        return re.sub(pattern, '', resource.question or '', flags=re.S), re.sub(pattern, '', resource.answer or '', flags=re.S)
+
+    def _replace_section_images(self, resource, section, document_type, html, log=False):
+        marker_pattern = r'<div[^>]*data-aps-exam-import-section=["\']%s["\'][^>]*>.*?</div>' % section.id
+        if re.search(marker_pattern, html or '', flags=re.S):
+            if log:
+                self._append_image_update_log(section, '%s: existing generated block found; replacing it.' % document_type)
+            return re.sub(marker_pattern, self._build_section_image_html(resource, section, document_type, log=log), html, flags=re.S)
+        heading = '<h1>%s</h1>' % escape(section.display_label)
+        image_html = self._build_section_image_html(resource, section, document_type, log=log)
+        if log:
+            self._append_image_update_log(section, '%s: heading %s.' % (
+                document_type, 'found; inserting generated HTML' if heading in (html or '') else 'not found; generated HTML was not inserted',
+            ))
+        return (html or '').replace(heading, heading + image_html, 1)
+
+    def _build_section_image_html(self, resource, section, document_type, log=False):
+        blocks = []
+        for index, (page, bounds) in enumerate(self._crop_section_images(section, document_type, log=log), 1):
+            image = page.attachment_id
+            image_bytes = self._attachment_bytes(image)
+            if not image_bytes:
+                if log:
+                    self._append_image_update_log(section, '%s image on page %s: source attachment %s has no bytes.' % (
+                        document_type, page.page_number, image.id,
+                    ))
+                continue
+            try:
+                from PIL import Image
+                with Image.open(BytesIO(image_bytes)) as source:
+                    crop = source.crop(bounds)
+                    output = BytesIO()
+                    crop.save(output, format='PNG', optimize=True)
+                    crop_bytes = output.getvalue()
+            except ImportError as exc:
+                raise UserError(_('Image insertion requires the Pillow package in the Odoo environment.')) from exc
+            attachment = self.env['ir.attachment'].create({
+                'name': 'exam-import-%s-%s-%s.png' % (section.source_key, document_type, index),
+                'type': 'binary', 'datas': base64.b64encode(crop_bytes),
+                'mimetype': 'image/png', 'res_model': 'aps.resources', 'res_id': resource.id,
+                'description': 'aps_exam_import_section:%s document:%s page:%s' % (
+                    section.id, document_type, page.page_number,
+                ),
+            })
+            if log:
+                self._append_image_update_log(section, '%s image on page %s: created crop attachment %s (%s bytes).' % (
+                    document_type, page.page_number, attachment.id, len(crop_bytes),
+                ))
+            blocks.append(
+                '<img src="/web/image/%s" class="img-fluid" style="width: 100%%;" alt="%s %s page %s"></img>' % (
+                    attachment.id, escape(section.display_label), document_type, page.page_number,
+                )
+            )
+        if not blocks:
+            if log:
+                self._append_image_update_log(section, '%s: no image HTML was generated.' % document_type)
+            return ''
+        return '<div data-aps-exam-import-section="%s" data-aps-exam-import-document="%s">%s</div>' % (
+            section.id, document_type, ''.join(blocks),
+        )
+
+    def _refresh_section_images(self, section):
+        section.ensure_one()
+        section.write({'image_update_log': '[%s] Refresh started for %s.\n' % (
+            fields.Datetime.now(), section.display_label,
+        )})
+        if not section.resource_id:
+            self._append_image_update_log(section, 'Stopped: section has no linked resource. Build Resources first.')
+            raise UserError(_('Build the resources before inserting section images.'))
+        resource = section.import_id.resource_id.child_ids.filtered(
+            lambda item: item.name == (section.root_key or section.display_label)
+        )[:1]
+        if not resource:
+            resource = section.resource_id
+        self._append_image_update_log(section, 'Target resource is %s (%s); section resource is %s.' % (
+            resource.display_name if resource else 'not found',
+            resource.id if resource else 'unknown',
+            section.resource_id.id,
+        ))
+        if not resource:
+            self._append_image_update_log(section, 'Stopped: no second-level root resource was found.')
+            raise UserError(_('The second-level resource for this section was not found.'))
+        question, answer = self._remove_section_images(resource, section)
+        self._append_image_update_log(section, 'Removed previous generated image blocks. Existing text was retained.')
+        question = self._replace_section_images(resource, section, 'question', question, log=True)
+        answer = self._replace_section_images(resource, section, 'mark_scheme', answer, log=True)
+        resource.write({'question': question, 'answer': answer})
+        self._append_image_update_log(section, 'Resource %s updated: question HTML=%s characters, answer HTML=%s characters.' % (
+            resource.id, len(question), len(answer),
+        ))
+        self._append_image_update_log(section, 'Refresh completed.')
+
+    def _append_section_content(self, root, section, headings, answers):
+        question_html = self._build_section_image_html(root, section, 'question')
+        answer_html = self._build_section_image_html(root, section, 'mark_scheme')
+        headings.append('<h1>%s</h1>%s' % (escape(section.display_label), question_html))
+        answers.append('<h1>%s</h1>%s' % (escape(section.display_label), answer_html))
+
     def action_build_resources(self):
         self.ensure_one()
-        self.action_validate()
         self.write({'state': 'building', 'progress': 70})
         roots = {}
-        for section in self.section_ids.sorted(key=lambda s: (s.sequence, s.source_key)):
+        created_resource_count = 0
+        reused_resource_count = 0
+        included_sections = self.section_ids.filtered('include_resource').sorted(
+            key=lambda s: (s.sequence, s.source_key)
+        )
+        for section in included_sections:
             root_key = section.root_key or section.source_key
             root = roots.get(root_key)
             if not root:
+                existing_child_ids = set(self.resource_id.child_ids.ids)
                 root = self._find_or_create_resource(root_key, self.resource_id)
+                if root.id in existing_child_ids:
+                    reused_resource_count += 1
+                else:
+                    created_resource_count += 1
                 roots[root_key] = root
-            child = self._find_or_create_resource(section.display_label, root)
-            child.write({
-                'question': section.question_html or '<p>%s</p>' % escape(section.question_ocr or section.question_text or ''),
-                'answer': section.answer_html or '<p>%s</p>' % escape(section.answer_ocr or section.mark_scheme_text or ''),
+
+        sections_by_root = {}
+        for section in included_sections:
+            sections_by_root.setdefault(section.root_key or section.source_key, []).append(section)
+
+        for root_key, sections in sections_by_root.items():
+            root = roots[root_key]
+            headings = []
+            answers = []
+            total_marks = 0.0
+            root_pages = set()
+            root_regions = []
+            for section in sections:
+                self._remove_section_images(root, section)
+            for section in sections:
+                # The root-number detection (for example Q1) identifies the
+                # second-level resource. It is not a child of itself. Only
+                # mark-bearing descendants such as Q1a or Q1b.i become
+                # third-level resources.
+                if self._normalise_key(section.display_label) == self._normalise_key(root.name):
+                    root_pages.update(filter(None, (section.question_pages or '').split(',')))
+                    root_regions.extend(section.question_regions or [])
+                    continue
+                existing_child_ids = set(root.child_ids.ids)
+                child = self._find_or_create_resource(section.display_label, root)
+                if child.id in existing_child_ids:
+                    reused_resource_count += 1
+                else:
+                    created_resource_count += 1
+                question_regions = self._section_regions(section, 'question')
+                question_pages = set(filter(None, (section.question_pages or '').split(',')))
+                question_pages.update(
+                    str(region['page_number'])
+                    for region in question_regions
+                    if region.get('page_number')
+                )
+                root_pages.update(question_pages)
+                total_marks += section.maximum_mark or 0.0
+                root_regions.extend(question_regions)
+                self._append_section_content(root, section, headings, answers)
+                child.write({
+                    'has_question': 'use_parent',
+                    'has_answer': 'use_parent',
+                    'marks': section.maximum_mark,
+                    'description': section.question_summary or False,
+                })
+                section.resource_id = child.id
+                section.write({'resource_key': str(child.id)})
+
+            root.write({
+                'has_child_resources': 'yes',
                 'has_question': 'yes',
                 'has_answer': 'yes',
-                'marks': section.maximum_mark,
-                'description': _('Imported from %s') % self.name,
+                'question': ''.join(headings),
+                'answer': ''.join(answers),
+                'marks': total_marks,
+                'description': False,
             })
-            section.resource_id = child.id
-            section.write({'resource_key': child.id and str(child.id)})
         self.write({'state': 'completed', 'progress': 100, 'completed_at': fields.Datetime.now()})
-        return self._notification(_('Import completed'), _('Resources were created without duplicating existing children.'), 'success')
+        return self._notification(
+            _('Import completed'),
+            _('%s resource(s) created; %s existing resource(s) reused.') % (
+                created_resource_count, reused_resource_count,
+            ),
+            'success',
+        )
 
     def action_retry(self):
         self.ensure_one()
         if self.state != 'failed':
             raise UserError(_('Only failed imports can be retried.'))
-        return self.action_analyse()
-
     def _find_or_create_resource(self, name, parent):
         child = parent.child_ids.filtered(lambda r: r.name == name)[:1]
         if child:
             return child
+        resource_type = self.env['aps.resource.types'].search([
+            ('name', '=', 'Question (Past Paper)'),
+        ], limit=1)
+        if not resource_type:
+            raise UserError(_('The resource type "Question (Past Paper)" was not found.'))
         return self.env['aps.resources'].create({
             'name': name,
             'parent_ids': [(4, parent.id)],
             'primary_parent_id': parent.id,
             'subjects': [(6, 0, parent.subjects.ids)],
-            'type_id': parent.type_id.id,
+            'type_id': resource_type.id,
             'has_question': 'no',
             'has_answer': 'no',
             'category': 'mandatory',
         })
-
-    def _build_detected_sections(self, question_text, answer_text):
-        self.section_ids.unlink()
-        question_matches = list(re.finditer(
-            r'(?im)^\s*((?:q\s*)?\d+(?:\s*[.(]?[a-zivx]+[.)]?)+)\s*(?:\[(\d+(?:\.\d+)?)\])?',
-            question_text or '',
-        ))
-        answer_by_key = self._numbered_blocks(answer_text)
-        vals = []
-        for sequence, match in enumerate(question_matches, 1):
-            label = re.sub(r'\s+', '', match.group(1))
-            root_match = re.match(r'^(Q?\d+)', label, re.I)
-            if not root_match:
-                continue
-            start = match.start()
-            end = question_matches[sequence].start() if sequence < len(question_matches) else len(question_text)
-            question_block = question_text[start:end].strip()
-            key = self._normalise_key(label)
-            answer_block = answer_by_key.get(key, '')
-            mark = float(match.group(2)) if match.group(2) else self._extract_mark(answer_block)
-            vals.append({
-                'import_id': self.id, 'sequence': sequence,
-                'source_key': key, 'display_label': label,
-                'root_key': root_match.group(0).upper(), 'maximum_mark': mark,
-                'question_text': question_block, 'mark_scheme_text': answer_block,
-                'review_warning': not bool(answer_block) or mark is False,
-                'match_confidence': 1.0 if answer_block else 0.0,
-            })
-        if not vals and question_text.strip():
-            vals.append({
-                'import_id': self.id, 'sequence': 1, 'source_key': 'paper',
-                'display_label': 'Paper', 'root_key': 'Paper',
-                'question_text': question_text, 'mark_scheme_text': answer_text,
-                'review_warning': True,
-            })
-        self.env['aps.exam.paper.section'].create(vals)
 
     def _collect_page_detections(self, document_type):
         """Return raw AI detections resolved in page order for one document."""
@@ -548,7 +896,13 @@ class APSExamPaperImport(models.Model):
             lambda page: page.document_type == document_type and page.ai_state == 'complete'
         ).sorted('page_number')
         for page in pages:
-            for detection in (page.ai_response or {}).get('detections', []):
+            detections = list(enumerate((page.ai_response or {}).get('detections', [])))
+            detections.sort(key=lambda item: (
+                min((float(region.get('y1', 0) or 0) for region in item[1].get('regions', [])
+                     if isinstance(region, dict)), default=float('inf')),
+                item[0],
+            ))
+            for _, detection in detections:
                 raw_label = (detection.get('raw_label') or detection.get('display_label') or '').strip()
                 if not raw_label:
                     continue
@@ -559,44 +913,26 @@ class APSExamPaperImport(models.Model):
                     result.append({
                         'page': page, 'detection': detection,
                         'label': label, 'root_label': root_label,
+                        'analysis': page.ai_response or {},
                     })
         return result
-
-    @staticmethod
-    def _numbered_blocks(text):
-        matches = list(re.finditer(
-            r'(?im)^\s*((?:q\s*)?\d+(?:\s*[.(]?[a-zivx]+[.)]?)+)', text or ''
-        ))
-        return {
-            APSExamPaperImport._normalise_key(m.group(1)): (
-                text[m.start():matches[i + 1].start() if i + 1 < len(matches) else len(text)].strip()
-            )
-            for i, m in enumerate(matches)
-        }
 
     @staticmethod
     def _normalise_key(value):
         return re.sub(r'[^a-z0-9]', '', value.casefold()).removeprefix('q')
 
     @staticmethod
-    def _extract_mark(text):
-        marks = re.findall(r'\[(\d+(?:\.\d+)?)\]', text or '')
-        return float(marks[-1]) if marks else False
+    def _label_hierarchy_level(label):
+        value = (label or '').casefold()
+        if '.' in value:
+            return 3
+        if re.search(r'\d+[a-z](?:$|[^a-z])', value):
+            return 2
+        return 1
 
     @staticmethod
     def _attachment_bytes(attachment):
         return attachment.raw or b''
-
-    @staticmethod
-    def _extract_pdf_text(content):
-        if not content:
-            raise ValidationError(_('The PDF attachment is empty.'))
-        try:
-            from pypdf import PdfReader
-        except ImportError as exc:
-            raise UserError(_('PDF extraction requires the pypdf package in the Odoo environment.')) from exc
-        reader = PdfReader(io.BytesIO(content))
-        return '\n\n'.join(page.extract_text() or '' for page in reader.pages).strip()
 
     def _open_form(self):
         return {
@@ -620,16 +956,24 @@ class APSExamPaperSection(models.Model):
     source_key = fields.Char(required=True, index=True)
     display_label = fields.Char(required=True)
     root_key = fields.Char()
+    hierarchy_level = fields.Integer(
+        string='Hierarchy Level', default=1, index=True,
+        help='Question nesting level: 1=root, 2=part, 3=subpart. Editable during review.',
+    )
     resource_id = fields.Many2one('aps.resources', readonly=True, ondelete='set null')
     resource_key = fields.Char(readonly=True)
     maximum_mark = fields.Float(string='Maximum Mark', digits=(16, 1))
-    question_text = fields.Text(string='Question Text')
     question_summary = fields.Char(string='Question Summary')
-    mark_scheme_text = fields.Text(string='Mark Scheme Text')
+    include_resource = fields.Boolean(
+        string='Include Resource', default=True,
+        help='When enabled, create or update an LMS resource for this detected section.',
+    )
+    include_parent_question = fields.Boolean(
+        string='Include Parent Question Content', default=False,
+        help='Include the parent/root question region and content when building this section resource.',
+    )
     question_html = fields.Html(string='Question HTML')
     answer_html = fields.Html(string='Answer HTML')
-    question_ocr = fields.Text(string='Question OCR')
-    answer_ocr = fields.Text(string='Answer OCR')
     question_pages = fields.Char()
     question_regions = fields.Json(string='Question Regions')
     answer_pages = fields.Char()
@@ -638,10 +982,20 @@ class APSExamPaperSection(models.Model):
     ocr_confidence = fields.Float(string='OCR Confidence')
     review_warning = fields.Boolean(string='Review Required')
     review_notes = fields.Text()
+    image_update_log = fields.Text(string='Image Update Log', readonly=True)
 
     _sql_constraints = [
         ('import_source_key_unique', 'unique(import_id, source_key)', 'Each detected section must have a unique source key.'),
     ]
+
+    def action_update_resource_images(self):
+        self.ensure_one()
+        self.import_id._refresh_section_images(self)
+        return {
+            'type': 'ir.actions.act_window', 'name': _('Imported Section'),
+            'res_model': self._name, 'res_id': self.id,
+            'view_mode': 'form', 'target': 'current',
+        }
 
 
 class APSExamPaperPage(models.Model):
@@ -689,38 +1043,153 @@ class APSExamPaperPage(models.Model):
             'target': 'new',
         }
 
+    def action_delete(self):
+        self.ensure_one()
+        self.unlink()
+        return {'type': 'ir.actions.act_window_close'}
+
+    def unlink(self):
+        attachments = self.mapped('attachment_id')
+        result = super().unlink()
+        attachments.unlink()
+        return result
+
     def action_analyse_page_with_ai(self):
         self.ensure_one()
-        importer = self.import_id
-        model = importer.ai_model_id
-        if not model:
-            raise UserError(_('Select a vision-capable AI model on the import job first.'))
-        self.write({'ai_state': 'pending', 'error_message': False})
+        run = self.import_id._create_page_analysis_run(
+            self, model=self.import_id.single_page_ai_model_id or self.import_id.ai_model_id,
+        )
+        return self.import_id._build_analysis_run_notification(run)
+
+
+class APSExamPaperImportRun(models.Model):
+    _name = 'aps.exam.paper.import.run'
+    _description = 'Exam Paper Page Analysis Run'
+    _inherit = ['aps.ai.run.mixin']
+    _order = 'create_date desc, id desc'
+
+    import_id = fields.Many2one('aps.exam.paper.import', required=True, ondelete='cascade', readonly=True)
+    page_ids = fields.Many2many(
+        'aps.exam.paper.page', 'aps_exam_import_run_page_rel',
+        'run_id', 'page_id', string='Pages', readonly=True,
+    )
+    ai_model_id = fields.Many2one('aps.ai.model', readonly=True)
+
+    def _process_background(self):
+        self.ensure_one()
+        if self.state not in ('queued', 'running'):
+            return
+        started_perf = __import__('time').perf_counter()
+        self._write_progress({
+            'state': 'running',
+            'status_message': _('Starting page analysis...'),
+            'started_at': fields.Datetime.now(),
+            'finished_at': False,
+            'error_message': False,
+        })
         try:
-            response, log_record = importer._analyse_page_image(
-                model, self, importer._page_analysis_context(self)
-            )
-            self.write({
-                'ai_response': response,
-                'ai_state': 'complete',
-                'ai_call_log_id': log_record.id if log_record else False,
+            importer = self.import_id
+            model = self.ai_model_id or importer.ai_model_id
+            pages = self.page_ids.sorted(key=lambda page: (page.document_type, page.page_number))
+            total = len(pages)
+            for index, page in enumerate(pages, 1):
+                self._write_progress({
+                    'status_message': _('Analysing %s page %s of %s...') % (
+                        dict(page._fields['document_type'].selection).get(page.document_type, page.document_type),
+                        index, total,
+                    ),
+                })
+                page.write({'ai_state': 'pending', 'error_message': False})
+                last_error = None
+                for attempt in range(3):
+                    try:
+                        response, log_record = importer._analyse_page_image(model, page)
+                        page.write({
+                            'ai_response': response,
+                            'ai_state': 'complete',
+                            'error_message': False,
+                            'ai_call_log_id': log_record.id if log_record else False,
+                        })
+                        last_error = None
+                        break
+                    except Exception as exc:
+                        last_error = exc
+                        latest_log = self.env['aps.ai.call.log'].search([
+                            ('related_model', '=', 'aps.exam.paper.page'),
+                            ('related_res_id', '=', page.id),
+                            ('request_type', '=', 'exam_paper_page_analysis'),
+                        ], order='create_date desc, id desc', limit=1)
+                        if latest_log:
+                            page.write({'ai_call_log_id': latest_log.id})
+                        if attempt < 2 and 'empty completion' in str(exc).casefold():
+                            _logger.warning(
+                                'Retrying empty vision completion for %s (attempt %s/3).',
+                                page.display_name, attempt + 2,
+                            )
+                            continue
+                        break
+                if last_error:
+                    page.write({'ai_state': 'failed', 'error_message': str(last_error)})
+                    _logger.exception(
+                        'Vision analysis failed for rendered page %s', page.display_name,
+                        exc_info=(type(last_error), last_error, last_error.__traceback__),
+                    )
+                self._write_progress({'status_message': _('Completed page %s of %s.') % (index, total)})
+            importer._build_sections_from_page_analysis()
+            self._write_progress({
+                'state': 'completed',
+                'status_message': _('Completed.'),
+                'result_message': _('Analysed %s rendered page(s).') % total,
+                'finished_at': fields.Datetime.now(),
+                'duration_ms': int((__import__('time').perf_counter() - started_perf) * 1000),
             })
         except Exception as exc:
-            self.write({'ai_state': 'failed', 'error_message': str(exc)})
-            raise UserError(_('Page analysis failed: %s') % exc) from exc
-        return self.action_view_analysis()
+            self._write_progress({
+                'state': 'failed', 'status_message': _('Failed.'),
+                'error_message': str(exc), 'finished_at': fields.Datetime.now(),
+                'duration_ms': int((__import__('time').perf_counter() - started_perf) * 1000),
+            })
 
 
 class APSResourceExamPaperImport(models.Model):
     _inherit = 'aps.resources'
 
     exam_import_ids = fields.One2many('aps.exam.paper.import', 'resource_id', string='Exam Imports')
-    exam_import_count = fields.Integer(compute='_compute_exam_import_count')
+    exam_import_count = fields.Integer(compute='_compute_exam_import_count', store=True)
+    detected_section_count = fields.Integer(compute='_compute_exam_import_count', store=True)
+    rendered_page_count = fields.Integer(compute='_compute_exam_import_count', store=True)
 
     @api.depends('exam_import_ids')
     def _compute_exam_import_count(self):
         for resource in self:
             resource.exam_import_count = len(resource.exam_import_ids)
+            resource.detected_section_count = sum(resource.exam_import_ids.mapped('section_count'))
+            resource.rendered_page_count = sum(resource.exam_import_ids.mapped('page_count'))
+
+    def action_open_exam_imports(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window', 'name': _('Exam Paper Imports'),
+            'res_model': 'aps.exam.paper.import', 'view_mode': 'list,form',
+            'domain': [('resource_id', '=', self.id)],
+            'context': {'default_resource_id': self.id},
+        }
+
+    def action_open_detected_sections(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window', 'name': _('Detected Sections'),
+            'res_model': 'aps.exam.paper.section', 'view_mode': 'list,form',
+            'domain': [('import_id.resource_id', '=', self.id)],
+        }
+
+    def action_open_rendered_pages(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window', 'name': _('Rendered Pages'),
+            'res_model': 'aps.exam.paper.page', 'view_mode': 'list,form',
+            'domain': [('import_id.resource_id', '=', self.id)],
+        }
 
     def action_start_exam_paper_import(self):
         self.ensure_one()

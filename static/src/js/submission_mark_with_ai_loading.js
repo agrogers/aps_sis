@@ -23,8 +23,11 @@ patch(FormController.prototype, {
     async beforeExecuteActionButton(clickParams) {
         const isMarkWithAI = clickParams?.type === "object" && clickParams?.name === "action_start_mark_with_ai";
         const isTestMark = clickParams?.type === "object" && clickParams?.name === "action_ai_test_mark";
+        const isExamPaperAnalysis = clickParams?.type === "object" && (
+            clickParams?.name === "action_analyse_pages_with_ai"
+        );
 
-        if (!isMarkWithAI && !isTestMark) {
+        if (!isMarkWithAI && !isTestMark && !isExamPaperAnalysis) {
             return super.beforeExecuteActionButton(...arguments);
         }
 
@@ -35,6 +38,10 @@ patch(FormController.prototype, {
 
         const buttonEl = isTestMark
             ? document.activeElement?.closest?.("button[name='action_ai_test_mark']") || null
+            : isExamPaperAnalysis
+                ? document.activeElement?.closest?.(
+                    `button[name='${clickParams.name}']`
+                ) || null
             : getMarkWithAIButton();
         const originalHtml = buttonEl?.innerHTML;
         const originalDisabled = buttonEl?.disabled;
@@ -68,9 +75,11 @@ patch(FormController.prototype, {
             }
             if (runId) {
                 this.env.services.dialog.add(AiRunProgressDialog, {
-                    runModel: 'aps.ai.run',
+                    runModel: action?.params?.run_model || 'aps.ai.run',
                     runId,
-                    title: action?.params?.title || "AI Marking Progress",
+                    title: action?.params?.title || (isExamPaperAnalysis
+                        ? "Exam Paper Analysis Progress"
+                        : "AI Marking Progress"),
                     onCompleted: async () => {
                         if (this.model?.root?.resId) {
                             await this.model.load({

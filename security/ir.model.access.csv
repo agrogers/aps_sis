@@ -75,6 +75,7 @@ access_aps_create_linked_resources_wizard_teacher,aps.create.linked.resources.wi
 access_aps_exam_paper_import_teacher,aps.exam.paper.import.teacher,model_aps_exam_paper_import,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_exam_paper_section_teacher,aps.exam.paper.section.teacher,model_aps_exam_paper_section,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_exam_paper_page_teacher,aps.exam.paper.page.teacher,model_aps_exam_paper_page,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_exam_paper_import_run_teacher,aps.exam.paper.import.run.teacher,model_aps_exam_paper_import_run,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_level_student,aps.level.student,model_aps_level,aps_sis.group_aps_student,1,0,0,0
 access_aps_level_user,aps.level.user,model_aps_level,base.group_user,1,0,0,0
 access_aps_teacher_teacher,aps.teacher.teacher,model_aps_teacher,aps_sis.group_aps_teacher,1,1,1,1

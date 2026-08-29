@@ -137,9 +137,13 @@
                     <field name="auto_assign" invisible="1"/>
                     <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher" invisible="auto_assign"/>
                     <button name="action_assign_students" string="Assign Students (Auto Enabled)" type="object" class="btn-success" groups="aps_sis.group_aps_teacher" invisible="not auto_assign"/>
-                    <button name="action_start_exam_paper_import" string="Import Exam Paper" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher"/>
+                    <button name="action_start_exam_paper_import" string="Import Exam Paper" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher" invisible="type_id.name != 'Past Paper (Pearson)'"/>
                 </header>
                 <sheet>
+                    <!-- Technical fields used by the importer smart-button modifiers. -->
+                    <field name="exam_import_count" invisible="1"/>
+                    <field name="detected_section_count" invisible="1"/>
+                    <field name="rendered_page_count" invisible="1"/>
                     <div name="button_box" class="oe_button_box">
                         <button name="action_open_all_submissions" type="object"
                                 class="oe_stat_button" icon="fa-inbox"
@@ -160,6 +164,21 @@
                                 class="oe_stat_button" icon="fa-life-ring"
                                 invisible="supporting_resource_count == 0">
                             <field name="supporting_resource_count" widget="statinfo" string="Supporting"/>
+                        </button>
+                        <button name="action_open_exam_imports" type="object"
+                                class="oe_stat_button" icon="fa-file-pdf-o"
+                                invisible="exam_import_count == 0" groups="aps_sis.group_aps_teacher">
+                            <field name="exam_import_count" widget="statinfo" string="Imports"/>
+                        </button>
+                        <button name="action_open_detected_sections" type="object"
+                                class="oe_stat_button" icon="fa-list-alt"
+                                invisible="detected_section_count == 0" groups="aps_sis.group_aps_teacher">
+                            <field name="detected_section_count" widget="statinfo" string="Sections"/>
+                        </button>
+                        <button name="action_open_rendered_pages" type="object"
+                                class="oe_stat_button" icon="fa-picture-o"
+                                invisible="rendered_page_count == 0" groups="aps_sis.group_aps_teacher">
+                            <field name="rendered_page_count" widget="statinfo" string="Pages"/>
                         </button>
                     </div>
                     <div class="aps_ribbon" invisible="not type_id">

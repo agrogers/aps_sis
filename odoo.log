@@ -1,0 +1,136 @@
+2026-08-29 16:40:42,665 25908 WARNING odoov18B_20260611 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1B\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1B\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1B\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1B\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1B\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1B\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1B\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1B\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1B\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-08-29 16:40:44,357 25908 WARNING odoov18B_20260611 py.warnings: D:\Dev\Odoo\mvis1B\odoo\api.py:482: DeprecationWarning: The model odoo.addons.email_from_transformer.models.mail_message is not overriding the create method in batch
+  File "D:\Dev\Odoo\mvis1B\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1B\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1B\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "d:\git\odoo_b_custom_addons\email_from_transformer\__init__.py", line 1, in <module>
+    from . import models
+  File "d:\git\odoo_b_custom_addons\email_from_transformer\models\__init__.py", line 1, in <module>
+    from . import mail_message
+  File "d:\git\odoo_b_custom_addons\email_from_transformer\models\mail_message.py", line 10, in <module>
+    class MailMessage(models.Model):
+  File "d:\git\odoo_b_custom_addons\email_from_transformer\models\mail_message.py", line 13, in MailMessage
+    @api.model
+  File "D:\Dev\Odoo\mvis1B\odoo\api.py", line 429, in model
+    return model_create_single(method)
+  File "D:\Dev\Odoo\mvis1B\odoo\api.py", line 482, in model_create_single
+    warnings.warn(
+ 
+2026-08-29 16:40:45,111 25908 WARNING odoov18B_20260611 py.warnings: D:\Dev\Odoo\mvis1B\odoo\api.py:482: DeprecationWarning: The model odoo.addons.aui_enhancements.models.aui_log_viewer is not overriding the create method in batch
+  File "D:\Dev\Odoo\mvis1B\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1B\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1B\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1B\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1B\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1B\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "d:\git\odoo_b_custom_addons\aui_enhancements\__init__.py", line 1, in <module>
+    from . import models
+  File "d:\git\odoo_b_custom_addons\aui_enhancements\models\__init__.py", line 6, in <module>
+    from . import aui_log_viewer
+  File "d:\git\odoo_b_custom_addons\aui_enhancements\models\aui_log_viewer.py", line 8, in <module>
+    class AuiLogViewer(models.TransientModel):
+  File "d:\git\odoo_b_custom_addons\aui_enhancements\models\aui_log_viewer.py", line 54, in AuiLogViewer
+    @api.model
+  File "D:\Dev\Odoo\mvis1B\odoo\api.py", line 429, in model
+    return model_create_single(method)
+  File "D:\Dev\Odoo\mvis1B\odoo\api.py", line 482, in model_create_single
+    warnings.warn(
+ 
+2026-08-29 16:40:50,998 25908 ERROR odoov18B_20260611 odoo.modules.registry: Model ar_markbook.markbook_gradebook has no table. 
+2026-08-29 16:40:52,131 25908 ERROR odoov18B_20260611 odoo.modules.registry: Model ar_markbook.markbook_gradebook has no table. 
+2026-08-29 16:40:53,412 25908 ERROR odoov18B_20260611 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-08-29 16:40:53,856 25908 ERROR odoov18B_20260611 odoo.modules.registry: Model ar_markbook.markbook_gradebook has no table. 

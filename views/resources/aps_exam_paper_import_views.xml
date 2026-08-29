@@ -22,14 +22,29 @@
         <field name="arch" type="xml">
             <form string="IGCSE Exam Paper Import">
                 <header>
-                    <button name="action_render_pages" type="object" string="Render Pages" class="btn-primary" invisible="state not in ['uploaded', 'review', 'failed']"/>
-                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse Pages" class="btn-primary" invisible="not ai_model_id or state not in ['uploaded', 'review']"/>
-                    <button name="action_validate" type="object" string="Validate" invisible="state != 'review'"/>
-                    <button name="action_build_resources" type="object" string="Build Resources" class="btn-primary" invisible="state != 'review'"/>
+                    <button name="action_render_pages" type="object" string="Render Pages" class="btn-primary" />
+                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse Pages" class="btn-primary" invisible="not ai_model_id "/>
+                    <button name="action_detect_sections" type="object" string="Detect Sections" class="btn-primary" />
+                    <button name="action_validate" type="object" string="Validate" />
+                    <button name="action_build_resources" type="object" string="Build Resources" class="btn-primary" />
                     <button name="action_retry" type="object" string="Retry" invisible="state != 'failed'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,analysing,review,building,completed"/>
                 </header>
                 <sheet>
+                    <field name="section_count" invisible="1"/>
+                    <field name="page_count" invisible="1"/>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_open_detected_sections" type="object"
+                                class="oe_stat_button" icon="fa-list-alt"
+                                invisible="section_count == 0">
+                            <field name="section_count" widget="statinfo" string="Sections"/>
+                        </button>
+                        <button name="action_open_rendered_pages" type="object"
+                                class="oe_stat_button" icon="fa-picture-o"
+                                invisible="page_count == 0">
+                            <field name="page_count" widget="statinfo" string="Pages"/>
+                        </button>
+                    </div>
                     <group>
                         <group>
                             <field name="name"/>
@@ -41,6 +56,7 @@
                             <field name="question_attachment_id" readonly="1"/>
                             <field name="mark_scheme_attachment_id" readonly="1"/>
                             <field name="ai_model_id" options="{'no_create': True}"/>
+                            <field name="single_page_ai_model_id" options="{'no_create': True}"/>
                             <field name="ai_prompt_version" readonly="1"/>
                             <field name="section_count" readonly="1"/>
                             <field name="warning_count" readonly="1"/>
@@ -55,27 +71,58 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="display_label"/>
                                     <field name="source_key" readonly="1"/>
+                                    <field name="hierarchy_level"/>
+                                    <field name="include_resource" widget="boolean_toggle"/>
+                                    <field name="include_parent_question" widget="boolean_toggle"/>
                                     <field name="maximum_mark"/>
                                     <field name="question_summary"/>
                                     <field name="match_confidence"/>
                                     <field name="review_warning"/>
-                                    <field name="question_text" optional="hide"/>
-                                    <field name="mark_scheme_text" optional="hide"/>
                                     <field name="question_pages" optional="hide"/>
                                     <field name="question_regions" optional="hide"/>
                                     <field name="answer_pages" optional="hide"/>
                                     <field name="answer_regions" optional="hide"/>
+                                    <button name="action_update_resource_images" type="object" string="Update Images" icon="fa-picture-o" class="btn-link" invisible="not resource_id"/>
                                 </list>
                             </field>
                         </page>
-                        <page string="Extracted Text">
-                            <group>
-                                <field name="question_text" readonly="1"/>
-                                <field name="mark_scheme_text" readonly="1"/>
-                            </group>
-                        </page>
                         <page string="Rendered Pages">
-                            <field name="page_ids">
+                            <field name="page_ids" mode="kanban">
+                                <kanban default_order="document_type,page_number" class="o_kanban_mobile">
+                                    <field name="document_type"/>
+                                    <field name="page_number"/>
+                                    <field name="attachment_id"/>
+                                    <field name="ai_state"/>
+                                    <templates>
+                                        <t t-name="card">
+                                            <div class="o_kanban_record">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <strong>
+                                                        <t t-esc="record.document_type.value"/>
+                                                        <t t-esc="' — Page ' + record.page_number.value"/>
+                                                    </strong>
+                                                    <span t-att-class="'badge ' + (record.ai_state.raw_value === 'complete' ? 'text-bg-success' : record.ai_state.raw_value === 'failed' ? 'text-bg-danger' : 'text-bg-secondary')">
+                                                        <t t-esc="record.ai_state.value"/>
+                                                    </span>
+                                                </div>
+                                                <div class="text-center bg-light rounded p-2">
+                                                    <img t-att-src="'/web/content/' + record.attachment_id.raw_value + '?download=false'"
+                                                         class="img-fluid" alt="Rendered exam paper page"></img>
+                                                </div>
+                                                <div class="d-flex gap-2 mt-2">
+                                                    <button name="action_view_page" type="object" string="View" icon="fa-eye" class="btn btn-sm btn-secondary"/>
+                                                    <t t-if="record.ai_state.raw_value === 'complete'">
+                                                        <button name="action_view_analysis" type="object" string="Result" icon="fa-list-alt" class="btn btn-sm btn-secondary"/>
+                                                    </t>
+                                                    <t t-if="record.attachment_id.raw_value">
+                                                        <button name="action_analyse_page_with_ai" type="object" string="Analyse" icon="fa-magic" class="btn btn-sm btn-primary"/>
+                                                    </t>
+                                                    <button name="action_delete" type="object" string="Delete" icon="fa-trash" class="btn btn-sm btn-danger" confirm="Delete this rendered page?"/>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
                                 <list default_order="document_type,page_number">
                                     <field name="document_type"/>
                                     <field name="page_number"/>
@@ -122,5 +169,77 @@
         <field name="name">Exam Paper Imports</field>
         <field name="res_model">aps.exam.paper.import</field>
         <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_aps_exam_paper_section_list" model="ir.ui.view">
+        <field name="name">aps.exam.paper.section.list</field>
+        <field name="model">aps.exam.paper.section</field>
+        <field name="arch" type="xml">
+            <list default_order="import_id,sequence">
+                <field name="display_label"/>
+                <field name="source_key" readonly="1" optional="hide"/>
+                <field name="import_id"/>
+                <field name="hierarchy_level" optional="show"/>
+                <field name="maximum_mark"/>
+                <field name="question_pages" optional="hide"/>
+                <field name="answer_pages" optional="hide"/>
+                <field name="match_confidence" optional="hide"/>
+                <field name="review_warning"/>
+                <field name="resource_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_exam_paper_section_form" model="ir.ui.view">
+        <field name="name">aps.exam.paper.section.form</field>
+        <field name="model">aps.exam.paper.section</field>
+        <field name="arch" type="xml">
+            <form string="Imported Section">
+                <header>
+                    <button name="action_update_resource_images" type="object" string="Update Images" class="btn-primary" invisible="not resource_id"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="import_id" readonly="1"/>
+                        <field name="display_label"/>
+                        <field name="source_key" readonly="1"/>
+                        <field name="hierarchy_level"/>
+                        <field name="resource_id" readonly="1"/>
+                        <field name="maximum_mark"/>
+                        <field name="question_summary"/>
+                        <field name="include_resource"/>
+                        <field name="include_parent_question"/>
+                    </group>
+                    <field name="image_update_log" readonly="1" placeholder="Image update diagnostics will appear here."/>
+                    <notebook>
+                        <page string="Question Regions">
+                            <field name="question_pages" readonly="1"/>
+                            <field name="question_regions" readonly="1" widget="json"/>
+                        </page>
+                        <page string="Answer Regions">
+                            <field name="answer_pages" readonly="1"/>
+                            <field name="answer_regions" readonly="1" widget="json"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_aps_exam_paper_page_list" model="ir.ui.view">
+        <field name="name">aps.exam.paper.page.list</field>
+        <field name="model">aps.exam.paper.page</field>
+        <field name="arch" type="xml">
+            <list default_order="import_id,document_type,page_number">
+                <field name="import_id"/>
+                <field name="document_type"/>
+                <field name="page_number"/>
+                <field name="render_dpi"/>
+                <field name="attachment_id"/>
+                <field name="ai_state"/>
+                <button name="action_view_page" type="object" string="View" icon="fa-eye"/>
+                <button name="action_view_analysis" type="object" string="Analysis" icon="fa-list-alt" invisible="ai_state != 'complete'"/>
+            </list>
+        </field>
     </record>
 </odoo>
