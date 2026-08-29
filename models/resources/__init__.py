@@ -12,3 +12,4 @@ from . import aps_resource_tags
 from . import aps_resource_types
 from . import aps_resource_task
 from . import aps_resource_mass_update_wizard
+from . import exam_paper_import
