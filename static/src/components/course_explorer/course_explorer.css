@@ -51,26 +51,23 @@
     flex: 1;
     min-width: 0;
     font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+    background-color: #333333;
 }
 
-/* ── Tree controls ───────────────────────────────────────────────── */
-
-.ce_tree_controls {
-    padding: 4px 10px;
-    border-bottom: 1px solid var(--o-border-color, #dee2e6);
-    display: flex;
-    gap: 12px;
-    flex-shrink: 0;
-    font-size: 0.8rem;
+.ce_category_select option {
+    color: rgba(255, 255, 255, 0.8);
+    background-color: #333333;
 }
 
-.ce_tree_controls .btn {
+.ce_tree_control {
     color: var(--o-primary, #007bff);
     font-size: 0.8rem;
+    flex-shrink: 0;
 }
 
-.ce_tree_controls .btn:hover {
-    text-decoration: underline;
+.ce_tree_control:hover {
+    color: var(--o-primary-dark, #0056b3);
 }
 
 /* ── Tree container ──────────────────────────────────────────────── */
@@ -263,6 +260,81 @@
     position: relative;
 }
 
+.ce_resource_toc {
+    position: sticky;
+    top: 56px;
+    float: right;
+    width: 220px;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    margin: 0 0 16px 28px;
+    padding: 10px 0;
+    border-left: 1px solid var(--o-border-color, #dee2e6);
+    background: var(--body-bg);
+    z-index: 2;
+    box-shadow: -8px 0 18px -14px rgba(0, 0, 0, 0.8), 4px 0 18px -14px rgba(0, 0, 0, 0.55);
+}
+
+.ce_right_pane .ce_section_body {
+    margin-right: 248px;
+}
+
+.ce_right_pane:has(.ce_resource_toc.is-collapsed) .ce_section_body {
+    margin-right: 0;
+}
+
+.ce_resource_toc.is-collapsed {
+    width: 28px;
+    min-height: 42px;
+    overflow: hidden;
+}
+
+.ce_resource_toc_toggle {
+    position: absolute;
+    top: 10;
+    left: -1px;
+    width: 12px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--o-webclient-background, #fff);
+    border: 1px solid var(--o-border-color, #dee2e6);
+    border-radius: 0 10px 10px 0;
+    color: var(--o-text, #555);
+    cursor: pointer;
+    z-index: 4;
+    font-size: 0.7rem;
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.08);
+    transition: background-color 0.15s;
+}
+
+.ce_resource_toc_toggle:hover {
+    background-color: var(--o-hover, #f0f0f0);
+}
+
+.ce_resource_toc_link {
+    display: block;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    color: var(--o-body-color, #495057);
+    font-size: 0.8rem;
+    line-height: 1.3;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+}
+
+.ce_resource_toc nav {
+    padding-left: 15px;
+}
+
+.ce_resource_toc_link:hover,
+.ce_resource_toc_link.is-active {
+    color: var(--o-brand-primary, #714b67);
+    background: rgba(0, 0, 0, 0.04);
+    border-left-color: var(--o-brand-primary, #714b67);
+}
+
 /* ── Content sections ────────────────────────────────────────────── */
 
 .ce_content_section {
@@ -441,7 +513,8 @@
 /* ── Overall course progress (in tree controls) ───────────────────── */
 
 .ce_overall_progress {
-    margin-left: auto;
+    margin-left: 2px;
+    flex-shrink: 0;
 }
 
 /* ── Progress circle hover tooltip ────────────────────────────────── */
@@ -712,10 +785,27 @@
         padding: 16px;
     }
 
+    .ce_resource_toc {
+        float: none;
+        width: auto;
+        max-height: none;
+        margin: 0 0 16px;
+    }
+
+    .ce_right_pane .ce_section_body {
+        margin-right: 0;
+    }
+
     .ce_content_section:first-child .ce_section_heading {
         top: -20px;
     }
     .ce_section_heading {
         top: -20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ce_resource_toc {
+        display: none;
     }
 }

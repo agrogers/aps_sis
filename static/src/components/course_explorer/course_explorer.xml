@@ -104,15 +104,13 @@
                             </option>
                         </t>
                     </select>
-                </div>
-
-                <!-- Expand / Collapse controls -->
-                <div class="ce_tree_controls">
-                    <button class="btn btn-link btn-sm p-0" t-on-click="expandAll">
-                        <i class="fa fa-plus-square-o me-1"/>Expand All
+                    <button type="button" class="ce_tree_control btn btn-link btn-sm p-0"
+                            title="Expand all" aria-label="Expand all" t-on-click="expandAll">
+                        <i class="fa fa-plus-square-o"/>
                     </button>
-                    <button class="btn btn-link btn-sm p-0" t-on-click="collapseAll">
-                        <i class="fa fa-minus-square-o me-1"/>Collapse All
+                    <button type="button" class="ce_tree_control btn btn-link btn-sm p-0"
+                            title="Collapse all" aria-label="Collapse all" t-on-click="collapseAll">
+                        <i class="fa fa-minus-square-o"/>
                     </button>
                     <!-- Overall course progress circle -->
                     <div class="ce_overall_progress" t-if="state.tree.length">
@@ -184,6 +182,28 @@
 
             <!-- ── Right Pane (content viewer) ────────────────────── -->
             <div class="ce_right_pane" t-ref="contentPane" t-key="state.contentVersion">
+
+                <aside class="ce_resource_toc"
+                       t-att-class="state.resourceTocCollapsed ? 'is-collapsed' : ''">
+                    <button t-if="resourceTocForActiveSection.length"
+                            type="button" class="ce_resource_toc_toggle"
+                            t-att-aria-expanded="!state.resourceTocCollapsed"
+                            aria-label="Collapse table of contents"
+                            title="Collapse table of contents"
+                            t-on-click="toggleResourceToc">
+                        <i t-att-class="state.resourceTocCollapsed ? 'fa fa-angle-left' : 'fa fa-angle-right'"/>
+                    </button>
+                    <nav t-if="resourceTocForActiveSection.length and !state.resourceTocCollapsed"
+                        aria-label="Resource contents">
+                        <a t-foreach="resourceTocForActiveSection" t-as="entry" t-key="entry.id"
+                           href="#" class="ce_resource_toc_link"
+                           t-att-class="entry.id === state.activeHeadingId ? 'is-active' : ''"
+                           t-att-style="'padding-left: ' + (entry.level === 1 ? 4 : (entry.level - 1) * 2 + 4) + 'px'"
+                           t-on-click="(ev) => this.onResourceTocClick(ev, entry)">
+                            <t t-esc="entry.text"/>
+                        </a>
+                    </nav>
+                </aside>
 
                 <!-- Loading spinner -->
                 <div t-if="state.loading" class="ce_loading text-center py-5">
