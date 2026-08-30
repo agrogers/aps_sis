@@ -542,10 +542,10 @@ class APSExamPaperImport(models.Model):
 
     @staticmethod
     def _regions_with_page_data(regions, page, label, start_index, analysis):
-        result = []
+        result: list[dict[str, Any]] = []
         for index, region in enumerate(regions, start_index):
-            original = dict(region)
-            region = APSExamPaperImport._scale_region_to_page(original, page, analysis)
+            original: dict[str, Any] = dict(region)
+            region: dict[str, Any] = APSExamPaperImport._scale_region_to_page(original, page, analysis)
             region.update({
                 'document_type': page.document_type,
                 'page_number': page.page_number,
@@ -560,10 +560,15 @@ class APSExamPaperImport(models.Model):
         return result
 
     @staticmethod
-    def _scale_region_to_page(region, page, analysis):
+    def _scale_region_to_page(region, page, analysis) -> dict[str, Any]:
         returned_width = float(analysis.get('image_width') or page.width or 1)
         returned_height = float(analysis.get('image_height') or page.height or 1)
         coordinate_system = (analysis.get('coordinate_system') or 'pixels').casefold()
+        if coordinate_system in ('pixels', 'pixel'):
+            return {
+                key: round(float(region.get(key, 0) or 0))
+                for key in ('x1', 'y1', 'x2', 'y2')
+            }
         scaled = {}
         for axis, dimension, page_dimension in (
             ('x', returned_width, page.width), ('y', returned_height, page.height),
@@ -773,7 +778,12 @@ class APSExamPaperImport(models.Model):
             if not regions:
                 continue
             page = item['page']
-            y_value = min(self._region_y_as_fraction(region, page) for region in regions)
+            y_value = min(
+                self._region_y_as_fraction(
+                    self._scale_region_to_page(region, page, item.get('analysis') or {}), page,
+                )
+                for region in regions
+            )
             positions.setdefault(item['page'].page_number, []).append({
                 'label': item['label'], 'y': y_value,
             })
@@ -787,6 +797,9 @@ class APSExamPaperImport(models.Model):
             y_value = float(region.get('y1', 0))
         except (TypeError, ValueError):
             return 0.0
+        coordinate_system = (region.get('ai_coordinate_system') or '').casefold()
+        if coordinate_system in ('pixels', 'pixel'):
+            return y_value / page.height if page.height else 0.0
         return APSExamPaperImport._coordinate_as_fraction(y_value, page.height)
 
     @staticmethod
@@ -820,7 +833,7 @@ class APSExamPaperImport(models.Model):
                 next_y = candidate['y']
                 break
         left = max(0, min(page.width, self._CROP_LEFT))
-        top = max(0, min(page.height, max(self._CROP_TOP, round(start_y * page.height))))
+        top = max(0, min(page.height, max(self._CROP_TOP, round(start_y * page.height) - 10)))
         right = max(left + 1, min(page.width, page.width - self._CROP_RIGHT))
         bottom = page.height if next_y is None else round(next_y * page.height)
         bottom_limit = max(top + 1, page.height - self._CROP_BOTTOM)

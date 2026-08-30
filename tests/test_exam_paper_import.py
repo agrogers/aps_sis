@@ -268,6 +268,20 @@ class TestExamPaperImport(TransactionCase):
     def test_ai_1000_scale_coordinates_are_not_pixels(self):
         importer = self.env['aps.exam.paper.import']
         self.assertAlmostEqual(importer._coordinate_as_fraction(146, 1754), 0.146)
+
+    def test_pixel_regions_are_not_scaled(self):
+        importer = self.env['aps.exam.paper.import']
+        page = self.env['aps.exam.paper.page'].new({
+            'width': 1062, 'height': 1500,
+        })
+        region = {'x1': 120, 'y1': 494, 'x2': 220, 'y2': 514}
+
+        scaled = importer._scale_region_to_page(region, page, {
+            'image_width': 1062, 'image_height': 1500,
+            'coordinate_system': 'pixels',
+        })
+
+        self.assertEqual(scaled, region)
         self.assertAlmostEqual(importer._coordinate_as_fraction(247, 1754), 0.247)
         self.assertEqual(importer._coordinate_scale({
             'x1': 447, 'x2': 465, 'y1': 146, 'y2': 160,
