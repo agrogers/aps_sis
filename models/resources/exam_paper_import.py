@@ -787,7 +787,10 @@ class APSExamPaperImport(models.Model):
                 for region in scaled_regions
             )
             positions.setdefault(item['page'].page_number, []).append({
-                'label': item['label'], 'y': y_value,
+                'label': item['label'],
+                'normalised_label': self._normalise_key(item['label']),
+                'hierarchy_level': self._label_hierarchy_level(item['label']),
+                'y': y_value,
             })
         for values in positions.values():
             values.sort(key=lambda value: value['y'])
@@ -830,8 +833,23 @@ class APSExamPaperImport(models.Model):
     def _crop_bounds(self, region, page, label_positions):
         start_y = max(0.0, min(1.0, self._region_y_as_fraction(region, page)))
         next_y = None
+        source_label = self._normalise_key(region.get('detection_label') or '')
         for candidate in label_positions.get(page.page_number, []):
-            if candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
+            candidate_label = candidate.get('normalised_label', '')
+            is_descendant = (
+                source_label
+                and candidate_label.startswith(source_label)
+                and candidate_label != source_label
+                and len(candidate_label) > len(source_label)
+            )
+            # A parent section must stop at its first child, even when the
+            # vision model puts the child label a few pixels above the
+            # parent's label.  Without this, Q1a's crop can run through
+            # Q1a.i and become part of every later sub-question.
+            if is_descendant and candidate['y'] >= start_y - self._LABEL_Y_TOLERANCE:
+                next_y = candidate['y']
+                break
+            if not is_descendant and candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
                 next_y = candidate['y']
                 break
         left = max(0, min(page.width, self._CROP_LEFT))
