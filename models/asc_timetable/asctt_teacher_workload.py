@@ -1,10 +1,6 @@
 from odoo import fields, models
 
-from .asctt_flat_row import (
-    _PERIOD_MINUTES_EXPR,
-    _TEACHER_FIRST_ID_EXPR,
-    _WEEK_WEIGHT_EXPR,
-)
+from .asctt_flat_row import get_timetable_view_query
 
 
 class ASCTTTeacherWorkload(models.Model):
@@ -44,74 +40,4 @@ class ASCTTTeacherWorkload(models.Model):
 
     def init(self):
         self.env.cr.execute('DROP VIEW IF EXISTS asctt_teacher_workload CASCADE')
-        self.env.cr.execute("""
-            CREATE VIEW asctt_teacher_workload AS (
-                SELECT
-                    ROW_NUMBER() OVER (ORDER BY c.id, t.id) AS id,
-                    c.day,
-                    CASE c.day
-                        WHEN 1 THEN 'Monday' WHEN 2 THEN 'Tuesday'
-                        WHEN 3 THEN 'Wednesday' WHEN 4 THEN 'Thursday'
-                        WHEN 5 THEN 'Friday' ELSE 'Unknown'
-                    END AS day_name,
-                    c.period_id,
-                    {period_minutes} AS period_length_minutes,
-                    {week_weight} AS week_weight,
-                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
-                    t.id AS teacher_id,
-                    t.aps_teacher_id,
-                    classes.class_names,
-                    COALESCE(s.name, 'Unknown') AS subject_name,
-                    (
-                        t.id <> ({teacher_first_id})
-                        OR COALESCE(s.force_assistant, FALSE)
-                    ) AS is_assistant,
-                    FALSE AS is_supervision,
-                    c.id AS card_id,
-                    NULL::INTEGER AS supervision_id
-                FROM asctt_card c
-                JOIN asctt_lesson l ON l.id = c.lesson_id
-                JOIN asctt_lesson_teacher_rel ltr ON ltr.lesson_id = l.id
-                JOIN asctt_teacher t ON t.id = ltr.teacher_id
-                LEFT JOIN asctt_period p ON p.id = c.period_id
-                LEFT JOIN asctt_weeks_def wd ON wd.id = c.weeks_def_id
-                LEFT JOIN asctt_subject s ON s.id = l.subject_id
-                LEFT JOIN LATERAL (
-                    SELECT STRING_AGG(DISTINCT cls.name, ', ' ORDER BY cls.name) AS class_names
-                    FROM asctt_lesson_class_rel lcr
-                    JOIN asctt_class cls ON cls.id = lcr.class_id
-                    WHERE lcr.lesson_id = l.id
-                ) classes ON TRUE
-
-                UNION ALL
-
-                SELECT
-                    1000000 + ROW_NUMBER() OVER (ORDER BY sv.id) AS id,
-                    sv.day + 1 AS day,
-                    CASE sv.day
-                        WHEN 0 THEN 'Monday' WHEN 1 THEN 'Tuesday'
-                        WHEN 2 THEN 'Wednesday' WHEN 3 THEN 'Thursday'
-                        WHEN 4 THEN 'Friday' ELSE 'Unknown'
-                    END AS day_name,
-                    sv.period_id,
-                    {period_minutes} AS period_length_minutes,
-                    {week_weight} AS week_weight,
-                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
-                    t.id AS teacher_id,
-                    t.aps_teacher_id,
-                    NULL::VARCHAR AS class_names,
-                    'Supervision' AS subject_name,
-                    TRUE AS is_assistant,
-                    TRUE AS is_supervision,
-                    NULL::INTEGER AS card_id,
-                    sv.id AS supervision_id
-                FROM asctt_classroom_supervision sv
-                JOIN asctt_teacher t ON t.id = sv.teacher_id
-                LEFT JOIN asctt_period p ON p.id = sv.period_id
-                LEFT JOIN asctt_weeks_def wd ON wd.id = sv.weeks_def_id
-            )
-        """.format(
-            period_minutes=_PERIOD_MINUTES_EXPR,
-            week_weight=_WEEK_WEIGHT_EXPR,
-            teacher_first_id=_TEACHER_FIRST_ID_EXPR,
-        ))
+        self.env.cr.execute(get_timetable_view_query('teacher_workload'))

@@ -155,9 +155,9 @@ class APSTeacher(models.Model):
     def _recompute_timetable_loads(self):
         """Recompute teaching_load and non_teaching_load from the live timetable.
 
-        Queries ``asctt_flat_row`` and sums ``weighted_minutes`` per teacher,
-        split into teaching vs supervision rows.  ``max_load`` is left
-        unchanged — it is a manually-set cap.
+        Queries ``asctt_teacher_workload`` and sums ``weighted_minutes`` per
+        teacher, matching the Teacher Workload pivot's one-row-per-card
+        semantics.  ``max_load`` is left unchanged — it is a manually-set cap.
         """
         if not self:
             return
@@ -166,7 +166,7 @@ class APSTeacher(models.Model):
                 aps_teacher_id,
                 SUM(CASE WHEN NOT is_assistant THEN weighted_minutes ELSE 0 END) AS teaching_mins,
                 SUM(CASE WHEN     is_assistant THEN weighted_minutes ELSE 0 END) AS non_teaching_mins
-            FROM asctt_flat_row
+            FROM asctt_teacher_workload
             WHERE aps_teacher_id = ANY(%s)
             GROUP BY aps_teacher_id
         """, [self.ids])
@@ -187,5 +187,9 @@ class APSTeacher(models.Model):
                 'message': f'Teaching and supervision loads refreshed for {len(self)} teacher(s).',
                 'type': 'success',
                 'sticky': False,
+                'next': {
+                    'type': 'ir.actions.client',
+                    'tag': 'reload',
+                },
             },
         }
