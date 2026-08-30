@@ -27,6 +27,7 @@
                     <button name="action_detect_sections" type="object" string="Detect Sections" class="btn-primary" />
                     <button name="action_validate" type="object" string="Validate" />
                     <button name="action_build_resources" type="object" string="Build Resources" class="btn-primary" />
+                    <button name="action_ocr_resources" type="object" string="OCR Resources" class="btn-primary" />
                     <button name="action_retry" type="object" string="Retry" invisible="state != 'failed'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,analysing,review,building,completed"/>
                 </header>
@@ -57,6 +58,7 @@
                             <field name="mark_scheme_attachment_id" readonly="1"/>
                             <field name="ai_model_id" options="{'no_create': True}"/>
                             <field name="single_page_ai_model_id" options="{'no_create': True}"/>
+                            <field name="ocr_ai_model_id" options="{'no_create': True}"/>
                             <field name="ai_prompt_version" readonly="1"/>
                             <field name="section_count" readonly="1"/>
                             <field name="warning_count" readonly="1"/>
@@ -78,11 +80,13 @@
                                     <field name="question_summary"/>
                                     <field name="match_confidence"/>
                                     <field name="review_warning"/>
+                                    <field name="ocr_state" optional="hide"/>
                                     <field name="question_pages" optional="hide"/>
                                     <field name="question_regions" optional="hide"/>
                                     <field name="answer_pages" optional="hide"/>
                                     <field name="answer_regions" optional="hide"/>
                                     <button name="action_update_resource_images" type="object" string="Update Images" icon="fa-picture-o" class="btn-link" invisible="not resource_id"/>
+                                    <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id"/>
                                 </list>
                             </field>
                         </page>
@@ -186,6 +190,7 @@
                 <field name="match_confidence" optional="hide"/>
                 <field name="review_warning"/>
                 <field name="resource_id" optional="hide"/>
+                <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id"/>
             </list>
         </field>
     </record>
