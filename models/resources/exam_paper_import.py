@@ -778,11 +778,13 @@ class APSExamPaperImport(models.Model):
             if not regions:
                 continue
             page = item['page']
-            y_value = min(
-                self._region_y_as_fraction(
-                    self._scale_region_to_page(region, page, item.get('analysis') or {}), page,
-                )
+            scaled_regions = [
+                self._scale_region_to_page(region, page, item.get('analysis') or {})
                 for region in regions
+            ]
+            y_value = min(
+                float(region.get('y1', 0) or 0) / page.height
+                for region in scaled_regions
             )
             positions.setdefault(item['page'].page_number, []).append({
                 'label': item['label'], 'y': y_value,
