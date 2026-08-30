@@ -32,6 +32,151 @@ _TEACHER_FIRST_ID_EXPR = """
 """.strip()
 
 
+def get_timetable_view_query(view_name):
+    """Return the SQL for one of the related timetable workload views.
+
+    Keep both view definitions here because changes to timetable workload
+    calculations may need to be applied to both views.
+    """
+    queries = {
+        'flat_row': """
+            CREATE VIEW asctt_flat_row AS (
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY c.id, t.id) AS id,
+                    c.day,
+                    CASE c.day
+                        WHEN 1 THEN 'Monday' WHEN 2 THEN 'Tuesday'
+                        WHEN 3 THEN 'Wednesday' WHEN 4 THEN 'Thursday'
+                        WHEN 5 THEN 'Friday' ELSE 'Unknown'
+                    END AS day_name,
+                    c.period_id,
+                    {period_minutes} AS period_length_minutes,
+                    {week_weight} AS week_weight,
+                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
+                    t.id AS teacher_id,
+                    t.aps_teacher_id,
+                    cls.id AS class_id,
+                    cls.aps_class_id,
+                    CASE WHEN cls.id IS NULL THEN 'Supervision'
+                         ELSE COALESCE(s.name, 'Unknown') END AS subject_name,
+                    (t.id <> ({teacher_first_id})
+                     OR cls.id IS NULL
+                     OR COALESCE(s.force_assistant, FALSE)) AS is_assistant,
+                    FALSE AS is_supervision,
+                    c.id AS card_id,
+                    NULL::INTEGER AS supervision_id
+                FROM asctt_card c
+                JOIN asctt_lesson l ON l.id = c.lesson_id
+                JOIN asctt_lesson_teacher_rel ltr ON ltr.lesson_id = l.id
+                JOIN asctt_teacher t ON t.id = ltr.teacher_id
+                LEFT JOIN asctt_period p ON p.id = c.period_id
+                LEFT JOIN asctt_weeks_def wd ON wd.id = c.weeks_def_id
+                LEFT JOIN asctt_subject s ON s.id = l.subject_id
+                LEFT JOIN asctt_lesson_class_rel lcr ON lcr.lesson_id = l.id
+                LEFT JOIN asctt_class cls ON cls.id = lcr.class_id
+
+                UNION ALL
+
+                SELECT
+                    1000000 + ROW_NUMBER() OVER (ORDER BY sv.id) AS id,
+                    sv.day + 1 AS day,
+                    CASE sv.day
+                        WHEN 0 THEN 'Monday' WHEN 1 THEN 'Tuesday'
+                        WHEN 2 THEN 'Wednesday' WHEN 3 THEN 'Thursday'
+                        WHEN 4 THEN 'Friday' ELSE 'Unknown'
+                    END AS day_name,
+                    sv.period_id,
+                    {period_minutes} AS period_length_minutes,
+                    {week_weight} AS week_weight,
+                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
+                    t.id AS teacher_id,
+                    t.aps_teacher_id,
+                    NULL::INTEGER AS class_id,
+                    NULL::INTEGER AS aps_class_id,
+                    'Supervision' AS subject_name,
+                    TRUE AS is_assistant,
+                    TRUE AS is_supervision,
+                    NULL::INTEGER AS card_id,
+                    sv.id AS supervision_id
+                FROM asctt_classroom_supervision sv
+                JOIN asctt_teacher t ON t.id = sv.teacher_id
+                LEFT JOIN asctt_period p ON p.id = sv.period_id
+                LEFT JOIN asctt_weeks_def wd ON wd.id = sv.weeks_def_id
+            )
+        """,
+        'teacher_workload': """
+            CREATE VIEW asctt_teacher_workload AS (
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY c.id, t.id) AS id,
+                    c.day,
+                    CASE c.day
+                        WHEN 1 THEN 'Monday' WHEN 2 THEN 'Tuesday'
+                        WHEN 3 THEN 'Wednesday' WHEN 4 THEN 'Thursday'
+                        WHEN 5 THEN 'Friday' ELSE 'Unknown'
+                    END AS day_name,
+                    c.period_id,
+                    {period_minutes} AS period_length_minutes,
+                    {week_weight} AS week_weight,
+                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
+                    t.id AS teacher_id,
+                    t.aps_teacher_id,
+                    classes.class_names,
+                    COALESCE(s.name, 'Unknown') AS subject_name,
+                    (t.id <> ({teacher_first_id})
+                     OR COALESCE(s.force_assistant, FALSE)) AS is_assistant,
+                    FALSE AS is_supervision,
+                    c.id AS card_id,
+                    NULL::INTEGER AS supervision_id
+                FROM asctt_card c
+                JOIN asctt_lesson l ON l.id = c.lesson_id
+                JOIN asctt_lesson_teacher_rel ltr ON ltr.lesson_id = l.id
+                JOIN asctt_teacher t ON t.id = ltr.teacher_id
+                LEFT JOIN asctt_period p ON p.id = c.period_id
+                LEFT JOIN asctt_weeks_def wd ON wd.id = c.weeks_def_id
+                LEFT JOIN asctt_subject s ON s.id = l.subject_id
+                LEFT JOIN LATERAL (
+                    SELECT STRING_AGG(DISTINCT cls.name, ', ' ORDER BY cls.name) AS class_names
+                    FROM asctt_lesson_class_rel lcr
+                    JOIN asctt_class cls ON cls.id = lcr.class_id
+                    WHERE lcr.lesson_id = l.id
+                ) classes ON TRUE
+
+                UNION ALL
+
+                SELECT
+                    1000000 + ROW_NUMBER() OVER (ORDER BY sv.id) AS id,
+                    sv.day + 1 AS day,
+                    CASE sv.day
+                        WHEN 0 THEN 'Monday' WHEN 1 THEN 'Tuesday'
+                        WHEN 2 THEN 'Wednesday' WHEN 3 THEN 'Thursday'
+                        WHEN 4 THEN 'Friday' ELSE 'Unknown'
+                    END AS day_name,
+                    sv.period_id,
+                    {period_minutes} AS period_length_minutes,
+                    {week_weight} AS week_weight,
+                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
+                    t.id AS teacher_id,
+                    t.aps_teacher_id,
+                    NULL::VARCHAR AS class_names,
+                    'Supervision' AS subject_name,
+                    TRUE AS is_assistant,
+                    TRUE AS is_supervision,
+                    NULL::INTEGER AS card_id,
+                    sv.id AS supervision_id
+                FROM asctt_classroom_supervision sv
+                JOIN asctt_teacher t ON t.id = sv.teacher_id
+                LEFT JOIN asctt_period p ON p.id = sv.period_id
+                LEFT JOIN asctt_weeks_def wd ON wd.id = sv.weeks_def_id
+            )
+        """,
+    }
+    return queries[view_name].format(
+        period_minutes=_PERIOD_MINUTES_EXPR,
+        week_weight=_WEEK_WEIGHT_EXPR,
+        teacher_first_id=_TEACHER_FIRST_ID_EXPR,
+    )
+
+
 class ASCTTFlatRow(models.Model):
     """Read-only SQL view providing one row per teacher per card/supervision.
 
@@ -87,114 +232,6 @@ class ASCTTFlatRow(models.Model):
     # ── SQL view definition ────────────────────────────────────────────────────
 
     def init(self):
-        # DROP first: CREATE OR REPLACE VIEW cannot rename existing columns.
+        # Keep this view's SQL beside the related teacher-workload view above.
         self.env.cr.execute("DROP VIEW IF EXISTS asctt_flat_row CASCADE")
-        self.env.cr.execute("""
-            CREATE VIEW asctt_flat_row AS (
-
-                -- ── Card rows: one row per teacher per card ──────────────────
-                SELECT
-                    ROW_NUMBER() OVER (ORDER BY c.id, t.id) AS id,
-
-                    -- Day (1-indexed, 1=Monday)
-                    c.day,
-                    CASE c.day
-                        WHEN 1 THEN 'Monday'
-                        WHEN 2 THEN 'Tuesday'
-                        WHEN 3 THEN 'Wednesday'
-                        WHEN 4 THEN 'Thursday'
-                        WHEN 5 THEN 'Friday'
-                        ELSE 'Unknown'
-                    END AS day_name,
-
-                    c.period_id,
-                    {period_minutes} AS period_length_minutes,
-                    {week_weight}    AS week_weight,
-                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
-
-                    -- Teacher
-                    t.id  AS teacher_id,
-                    t.aps_teacher_id,
-
-                    -- Class (one row per class; NULL for no-class/supervision lessons)
-                    cls.id              AS class_id,
-                    cls.aps_class_id,
-
-                    -- Subject: 'Supervision' when lesson has no classes
-                    CASE
-                        WHEN cls.id IS NULL THEN 'Supervision'
-                        ELSE COALESCE(s.name, 'Unknown')
-                    END AS subject_name,
-
-                    -- is_assistant: any teacher beyond the first teacher in aSc's order,
-                    -- no-class (supervision-type) lessons, or subjects flagged
-                    -- force_assistant on asctt.subject
-                    (
-                        t.id <> ({teacher_first_id})
-                        OR cls.id IS NULL
-                        OR COALESCE(s.force_assistant, FALSE)
-                    ) AS is_assistant,
-
-                    FALSE          AS is_supervision,
-                    c.id           AS card_id,
-                    NULL::INTEGER  AS supervision_id
-
-                FROM  asctt_card c
-                JOIN  asctt_lesson l
-                         ON l.id = c.lesson_id
-                JOIN  asctt_lesson_teacher_rel ltr
-                         ON ltr.lesson_id = l.id
-                JOIN  asctt_teacher t
-                         ON t.id = ltr.teacher_id
-                LEFT JOIN asctt_period    p   ON p.id   = c.period_id
-                LEFT JOIN asctt_weeks_def wd  ON wd.id  = c.weeks_def_id
-                LEFT JOIN asctt_subject   s   ON s.id   = l.subject_id
-                -- Expand to one row per class; NULL row kept for no-class lessons
-                LEFT JOIN asctt_lesson_class_rel lcr ON lcr.lesson_id = l.id
-                LEFT JOIN asctt_class        cls ON cls.id = lcr.class_id
-
-                UNION ALL
-
-                -- ── Supervision rows ─────────────────────────────────────────
-                SELECT
-                    1000000 + ROW_NUMBER() OVER (ORDER BY sv.id) AS id,
-
-                    -- day: stored as 0-indexed integer, convert to 1-indexed
-                    sv.day + 1 AS day,
-                    CASE sv.day
-                        WHEN 0 THEN 'Monday'
-                        WHEN 1 THEN 'Tuesday'
-                        WHEN 2 THEN 'Wednesday'
-                        WHEN 3 THEN 'Thursday'
-                        WHEN 4 THEN 'Friday'
-                        ELSE 'Unknown'
-                    END AS day_name,
-
-                    sv.period_id,
-                    {period_minutes} AS period_length_minutes,
-                    {week_weight}    AS week_weight,
-                    ({period_minutes}) * ({week_weight}) AS weighted_minutes,
-
-                    t.id  AS teacher_id,
-                    t.aps_teacher_id,
-
-                    NULL::INTEGER AS class_id,
-                    NULL::INTEGER AS aps_class_id,
-                    'Supervision' AS subject_name,
-
-                    TRUE  AS is_assistant,
-                    TRUE  AS is_supervision,
-
-                    NULL::INTEGER AS card_id,
-                    sv.id         AS supervision_id
-
-                FROM  asctt_classroom_supervision sv
-                JOIN  asctt_teacher   t  ON t.id  = sv.teacher_id
-                LEFT JOIN asctt_period    p  ON p.id  = sv.period_id
-                LEFT JOIN asctt_weeks_def wd ON wd.id = sv.weeks_def_id
-            )
-        """.format(
-            period_minutes=_PERIOD_MINUTES_EXPR,
-            week_weight=_WEEK_WEIGHT_EXPR,
-            teacher_first_id=_TEACHER_FIRST_ID_EXPR,
-        ))
+        self.env.cr.execute(get_timetable_view_query('flat_row'))

@@ -117,6 +117,8 @@ export class CourseExplorer extends Component {
         this._renderMathRaf = 0;
         this._loadDataRequestId = 0;
         this._lastTooltipVersion = -1;
+        this._programmaticSectionId = 0;
+        this._programmaticSectionTimer = null;
 
         const saved = this._loadStorage();
 
@@ -126,6 +128,9 @@ export class CourseExplorer extends Component {
             selectedCategoryId: saved.selectedCategoryId || false,
             tree: [],
             contentSections: [],
+            resourceToc: [],
+            activeHeadingId: "",
+            resourceTocCollapsed: saved.resourceTocCollapsed === true,
             contentVersion: 0,
             activeSectionId: saved.activeSectionId || 0,
             sidebarCollapsed: saved.sidebarCollapsed || false,
@@ -157,6 +162,7 @@ export class CourseExplorer extends Component {
             this._setupScrollListener();
             this._setupImageClickHandler();
             this._renderEmbeddedVideos();
+            this._scanResourceToc();
             this._renderMathIfNeeded();
             this._setupTooltips();
         });
@@ -168,9 +174,13 @@ export class CourseExplorer extends Component {
             this._setupScrollListener();
             this._setupImageClickHandler();
             this._renderEmbeddedVideos();
+            this._scanResourceToc();
         });
 
         onWillUnmount(() => {
+            if (this._programmaticSectionTimer) {
+                clearTimeout(this._programmaticSectionTimer);
+            }
             if (this._scrollTimer) {
                 clearTimeout(this._scrollTimer);
             }
@@ -209,6 +219,7 @@ export class CourseExplorer extends Component {
                 selectedCategoryId: this.state.selectedCategoryId,
                 activeSectionId: this.state.activeSectionId,
                 sidebarCollapsed: this.state.sidebarCollapsed,
+                resourceTocCollapsed: this.state.resourceTocCollapsed,
                 scrollPosition: this.contentRef.el
                     ? this.contentRef.el.scrollTop
                     : 0,
@@ -282,6 +293,79 @@ export class CourseExplorer extends Component {
         }
     }
 
+    _scanResourceToc() {
+        const root = this.contentRef.el;
+        if (!root) return;
+        const entries = [];
+        let headingIndex = 0;
+        for (const section of root.querySelectorAll('.ce_content_section')) {
+            const sectionId = Number(section.dataset.resourceId);
+            for (const heading of section.querySelectorAll(
+                '.ce_section_body h1, .ce_section_body h2, .ce_section_body h3, .ce_section_body h4, .ce_section_body h5, .ce_section_body h6'
+            )) {
+                const text = heading.textContent.trim();
+                const tocText = text.replace(
+                    /\s*(?:\(\s*p\d+(?:\s*,\s*p\d+)*\s*\)|\[\s*p\d+(?:\s*,\s*p\d+)*\s*\])\s*$/i,
+                    "",
+                ).trim();
+                if (!text) continue;
+                if (!heading.id) {
+                    heading.id = `ce-heading-${sectionId}-${headingIndex}`;
+                }
+                entries.push({
+                    id: heading.id,
+                    text: tocText || text,
+                    level: Number(heading.tagName.substring(1)),
+                    sectionId,
+                });
+                headingIndex++;
+            }
+        }
+        const unchanged = entries.length === this.state.resourceToc.length
+            && entries.every((entry, index) => {
+                const previous = this.state.resourceToc[index];
+                return previous
+                    && previous.id === entry.id
+                    && previous.text === entry.text
+                    && previous.level === entry.level
+                    && previous.sectionId === entry.sectionId;
+            });
+        if (!unchanged) {
+            this.state.resourceToc = entries;
+        }
+        this._updateActiveHeading();
+    }
+
+    _updateActiveHeading() {
+        const root = this.contentRef.el;
+        if (!root || !this.state.resourceToc.length) return;
+        const threshold = root.getBoundingClientRect().top + 48;
+        let active = this.state.resourceToc[0].id;
+        for (const entry of this.state.resourceToc) {
+            const heading = root.querySelector(`#${CSS.escape(entry.id)}`);
+            if (heading && heading.getBoundingClientRect().top <= threshold) {
+                active = entry.id;
+            }
+        }
+        if (active !== this.state.activeHeadingId) {
+            this.state.activeHeadingId = active;
+        }
+    }
+
+    onResourceTocClick(ev, entry) {
+        ev.preventDefault();
+        const root = this.contentRef.el;
+        const heading = root?.querySelector(`#${CSS.escape(entry.id)}`);
+        if (!heading) return;
+        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        this.state.activeHeadingId = entry.id;
+    }
+
+    toggleResourceToc() {
+        this.state.resourceTocCollapsed = !this.state.resourceTocCollapsed;
+        this._saveStorage();
+    }
+
     _renderMathIfNeeded() {
         if (this._lastRenderedMathVersion === this._mathRenderVersion) {
             return;
@@ -317,6 +401,8 @@ export class CourseExplorer extends Component {
         if (!this.state.selectedCategoryId) {
             this.state.tree = [];
             this.state.contentSections = [];
+            this.state.resourceToc = [];
+            this.state.activeHeadingId = "";
             this.state.activeSectionId = 0;
             this.state.contentVersion++;
             return;
@@ -337,6 +423,8 @@ export class CourseExplorer extends Component {
                 ...sec,
                 html: sec.html ? markup(sec.html) : "",
             }));
+            this.state.resourceToc = [];
+            this.state.activeHeadingId = "";
             this.state.contentVersion++;
             this._mathRenderVersion++;
             this.state.activeSectionId = 0;
@@ -346,6 +434,8 @@ export class CourseExplorer extends Component {
             console.error("CourseExplorer: failed to load data", err);
             this.state.tree = [];
             this.state.contentSections = [];
+            this.state.resourceToc = [];
+            this.state.activeHeadingId = "";
         } finally {
             if (requestId === this._loadDataRequestId) {
                 this.state.loading = false;
@@ -520,9 +610,9 @@ export class CourseExplorer extends Component {
         const target = el.querySelector(`#ce-section-${sectionId}`);
         if (!target) return;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
+        this._holdProgrammaticSection(sectionId);
         this.state.activeSectionId = sectionId;
         this._saveStorage();
-        this._scrollToTarget(target);
     }
 
     scrollToQuiz(ev, sectionId) {
@@ -532,11 +622,21 @@ export class CourseExplorer extends Component {
         const target = el.querySelector(`#ce-quiz-${sectionId}`);
         if (!target) return;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
-        this._scrollToTarget(target);
     }
 
     scrollToQuizFromSidebar(sectionId) {
         this.scrollToQuiz({ preventDefault() {} }, sectionId);
+    }
+
+    _holdProgrammaticSection(sectionId) {
+        this._programmaticSectionId = sectionId;
+        if (this._programmaticSectionTimer) {
+            clearTimeout(this._programmaticSectionTimer);
+        }
+        this._programmaticSectionTimer = setTimeout(() => {
+            this._programmaticSectionId = 0;
+            this._programmaticSectionTimer = null;
+        }, 1200);
     }
 
     _scrollToTarget(target) {
@@ -634,6 +734,8 @@ export class CourseExplorer extends Component {
     _onScrollDetect() {
         const el = this.contentRef.el;
         if (!el) return;
+        this._updateActiveHeading();
+        if (this._programmaticSectionId) return;
         const sections = el.querySelectorAll(".ce_content_section");
         if (!sections.length) return;
 
@@ -654,20 +756,15 @@ export class CourseExplorer extends Component {
 
         if (bestId && bestId !== this.state.activeSectionId) {
             this.state.activeSectionId = bestId;
-            this._highlightTreeNode(bestId);
             this._saveStorage();
         }
     }
 
-    /** Ensure the active tree node is visible (expand ancestors if needed). */
+    /** Find the active tree node without changing either pane's scroll position. */
     _highlightTreeNode(resourceId) {
-        // Find the tree node element and scroll it into view in the tree pane
         const treeEl = document.querySelector(".ce_tree_container");
         if (!treeEl) return;
-        const nodeEl = treeEl.querySelector(`[data-node-id="${resourceId}"]`);
-        if (nodeEl) {
-            nodeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
+        return treeEl.querySelector(`[data-node-id="${resourceId}"]`);
     }
 
     // ── Image viewer ────────────────────────────────────────────────
@@ -787,6 +884,12 @@ export class CourseExplorer extends Component {
         return this.state.contentSections.filter((section) => section.visible);
     }
 
+    get resourceTocForActiveSection() {
+        return this.state.resourceToc.filter(
+            (entry) => entry.sectionId === this.state.activeSectionId
+        );
+    }
+
     // ── Heading level classes ────────────────────────────────────────
 
     _setupTooltipsIfNeeded() {
@@ -800,7 +903,7 @@ export class CourseExplorer extends Component {
     _setupTooltips() {
         const el = this.contentRef.el;
         if (!el) return;
-        const treeControls = document.querySelector(".ce_tree_controls");
+        const treeControls = document.querySelector(".ce_toolbar");
         const cells = [];
         if (treeControls) {
             cells.push(...treeControls.querySelectorAll(".ce_progress_cell"));

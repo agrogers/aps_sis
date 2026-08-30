@@ -5,12 +5,12 @@
         <field name="model">aps.exam.paper.import</field>
         <field name="arch" type="xml">
             <list default_order="create_date desc">
-                <field name="name"/>
-                <field name="resource_id"/>
-                <field name="state" widget="badge"/>
-                <field name="progress" widget="progressbar"/>
-                <field name="section_count"/>
-                <field name="warning_count"/>
+                <field name="name" optional="show"/>
+                <field name="resource_id" optional="show"/>
+                <field name="state" widget="badge" optional="show"/>
+                <field name="progress" widget="progressbar" optional="show"/>
+                <field name="section_count" optional="hide"/>
+                <field name="warning_count" optional="hide"/>
                 <field name="create_date" optional="hide"/>
             </list>
         </field>
