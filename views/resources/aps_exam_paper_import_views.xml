@@ -71,22 +71,22 @@
                             <field name="section_ids">
                                 <list editable="bottom" default_order="sequence,source_key">
                                     <field name="sequence" widget="handle"/>
-                                    <field name="display_label"/>
-                                    <field name="source_key" readonly="1"/>
-                                    <field name="hierarchy_level"/>
-                                    <field name="include_resource" widget="boolean_toggle"/>
-                                    <field name="include_parent_question" widget="boolean_toggle"/>
-                                    <field name="maximum_mark"/>
-                                    <field name="question_summary"/>
-                                    <field name="match_confidence"/>
-                                    <field name="review_warning"/>
+                                    <field name="display_label" optional="show"/>
+                                    <field name="source_key" readonly="1" optional="show"/>
+                                    <field name="hierarchy_level" optional="show"/>
+                                    <field name="include_resource" widget="boolean_toggle" optional="show"/>
+                                    <field name="include_parent_question" widget="boolean_toggle" optional="show"/>
+                                    <field name="maximum_mark" optional="show"/>
+                                    <field name="question_summary" optional="show"/>
+                                    <field name="match_confidence" optional="show"/>
+                                    <field name="review_warning" optional="show"/>
                                     <field name="ocr_state" optional="hide"/>
                                     <field name="question_pages" optional="hide"/>
                                     <field name="question_regions" optional="hide"/>
                                     <field name="answer_pages" optional="hide"/>
                                     <field name="answer_regions" optional="hide"/>
-                                    <button name="action_update_resource_images" type="object" string="Update Images" icon="fa-picture-o" class="btn-link" invisible="not resource_id"/>
-                                    <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id"/>
+                                    <button name="action_update_resource_images" type="object" string="Update Images" icon="fa-picture-o" class="btn-link" invisible="not resource_id" optional="show"/>
+                                    <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id" optional="show"/>
                                 </list>
                             </field>
                         </page>
