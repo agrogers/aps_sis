@@ -1015,6 +1015,7 @@ class APSExamPaperImport(models.Model):
         sections_by_root = {}
         for section in included_sections:
             sections_by_root.setdefault(section.root_key or section.source_key, []).append(section)
+        resource_sections = {}
 
         for root_key, sections in sections_by_root.items():
             root = roots[root_key]
@@ -1033,9 +1034,19 @@ class APSExamPaperImport(models.Model):
                 if self._normalise_key(section.display_label) == self._normalise_key(root.name):
                     root_pages.update(filter(None, (section.question_pages or '').split(',')))
                     root_regions.extend(section.question_regions or [])
+                    resource_sections[section.id] = root
+                    section.write({'resource_key': str(root.id)})
                     continue
-                existing_child_ids = set(root.child_ids.ids)
-                child = self._find_or_create_resource(section.display_label, root)
+                parent_sections = [candidate for candidate in sections
+                                   if candidate.sequence < section.sequence
+                                   and candidate.hierarchy_level < section.hierarchy_level
+                                   and candidate.id in resource_sections]
+                parent_section = max(parent_sections, key=lambda candidate: candidate.sequence) if parent_sections else None
+                parent_resource = resource_sections[parent_section.id] if parent_section else root
+                existing_child_ids = set(parent_resource.child_ids.ids)
+                child = self._find_or_create_resource(
+                    section.display_label, parent_resource, section.resource_id,
+                )
                 if child.id in existing_child_ids:
                     reused_resource_count += 1
                 else:
@@ -1051,14 +1062,25 @@ class APSExamPaperImport(models.Model):
                 total_marks += section.maximum_mark or 0.0
                 root_regions.extend(question_regions)
                 self._append_section_content(root, section, headings, answers)
+                question_html = '<h1>%s</h1>%s' % (
+                    escape(section.display_label),
+                    self._build_section_image_html(child, section, 'question'),
+                )
+                answer_html = '<h1>%s</h1>%s' % (
+                    escape(section.display_label),
+                    self._build_section_image_html(child, section, 'mark_scheme'),
+                )
                 child.write({
-                    'has_question': 'use_parent',
-                    'has_answer': 'use_parent',
+                    'has_question': 'yes',
+                    'has_answer': 'yes',
+                    'question': question_html,
+                    'answer': answer_html,
                     'marks': section.maximum_mark,
                     'description': section.question_summary or False,
                 })
                 section.resource_id = child.id
                 section.write({'resource_key': str(child.id)})
+                resource_sections[section.id] = child
 
             root.write({
                 'has_child_resources': 'yes',
@@ -1082,7 +1104,15 @@ class APSExamPaperImport(models.Model):
         self.ensure_one()
         if self.state != 'failed':
             raise UserError(_('Only failed imports can be retried.'))
-    def _find_or_create_resource(self, name, parent):
+    def _find_or_create_resource(self, name, parent, existing_resource=None):
+        child = existing_resource.filtered(lambda r: r.name == name)[:1] if existing_resource else False
+        if child:
+            if child.primary_parent_id != parent or parent not in child.parent_ids:
+                child.write({
+                    'parent_ids': [(6, 0, [parent.id])],
+                    'primary_parent_id': parent.id,
+                })
+            return child
         child = parent.child_ids.filtered(lambda r: r.name == name)[:1]
         if child:
             return child

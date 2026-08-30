@@ -235,7 +235,7 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(len(child), 1)
         self.assertEqual(q1.has_child_resources, 'yes')
         self.assertEqual(q1.marks, 2)
-        self.assertEqual(child.has_question, 'use_parent')
+        self.assertEqual(child.has_question, 'yes')
         self.assertEqual(child.description, 'Calculate the missing angle.')
         self.assertNotIn('Imported from', child.description)
         self.assertNotIn('Question pages', child.description)
