@@ -66,6 +66,33 @@ class TestExamPaperImport(TransactionCase):
         subpart, _, _ = resolver._resolve_page_label('(i)', 'subpart', root_context, part_context)
         self.assertEqual(subpart, 'Q1a.i')
 
+    def test_roman_subparts_are_not_resolved_as_alphabetic_parts(self):
+        resolver = self.env['aps.exam.paper.import']
+        root, root_context, part_context = resolver._resolve_page_label('6', 'root', False, False)
+        part, root_context, part_context = resolver._resolve_page_label('(a)', 'part', root_context, part_context)
+        self.assertEqual(part, 'Q6a')
+        subpart, root_context, part_context = resolver._resolve_page_label('(i)', 'subpart', root_context, part_context)
+        self.assertEqual(subpart, 'Q6a.i')
+        subpart, root_context, part_context = resolver._resolve_page_label('(ii)', 'subpart', root_context, part_context)
+        self.assertEqual(subpart, 'Q6a.ii')
+
+        unresolved, _, _ = resolver._resolve_page_label('(iii)', 'subpart', 'Q6', False)
+        self.assertFalse(unresolved)
+
+    def test_combined_part_and_subpart_labels_are_resolved(self):
+        resolver = self.env['aps.exam.paper.import']
+        for raw_label, root_context, part_context in (
+            ('6(a)(i)', False, False),
+            ('6a(i)', False, False),
+            ('(a) (i)', 'Q6', False),
+        ):
+            label, root, part = resolver._resolve_page_label(
+                raw_label, 'subpart', root_context, part_context,
+            )
+            self.assertEqual(label, 'Q6a.i', raw_label)
+            self.assertEqual(root, 'Q6', raw_label)
+            self.assertEqual(part, 'a', raw_label)
+
     def test_vision_response_accepts_single_object_array(self):
         response = [{
             'image_width': 1241,

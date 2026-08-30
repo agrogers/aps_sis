@@ -55,6 +55,11 @@ class APSExamPaperImport(models.Model):
         domain="[('enabled', '=', True), ('provider_id.enabled', '=', True), ('supports_vision', '=', True)]",
         help='Optional vision-capable model used when analysing an individual page. Defaults to the main vision model.',
     )
+    ocr_ai_model_id = fields.Many2one(
+        'aps.ai.model', string='OCR Vision Model',
+        domain="[('enabled', '=', True), ('provider_id.enabled', '=', True), ('supports_vision', '=', True)]",
+        help='Optional vision-capable model used to convert imported question and mark-scheme images to text.',
+    )
     ai_prompt_version = fields.Char(default='1.0', readonly=True)
     render_dpi = fields.Integer(default=150, required=True)
     page_ids = fields.One2many('aps.exam.paper.page', 'import_id', string='Rendered Pages')
@@ -192,6 +197,38 @@ class APSExamPaperImport(models.Model):
             'success',
         )
 
+    def action_ocr_resources(self):
+        self.ensure_one()
+        sections = self.section_ids.filtered('resource_id')
+        if not sections:
+            raise UserError(_('No linked sections are available for OCR. Build resources first.'))
+        run = self._create_ocr_run(sections)
+        return self._build_ocr_run_notification(run)
+
+    def _create_ocr_run(self, sections):
+        model = self.ocr_ai_model_id or self.single_page_ai_model_id or self.ai_model_id
+        if not model or not model.enabled or not model.provider_id.enabled or not model.supports_vision:
+            raise UserError(_('Select an enabled vision-capable OCR model first.'))
+        run = self.env['aps.exam.paper.import.run'].sudo().create({
+            'import_id': self.id, 'ocr_section_ids': [(6, 0, sections.ids)],
+            'run_type': 'ocr', 'ai_model_id': model.id,
+            'requested_by_id': self.env.user.id, 'state': 'queued',
+            'status_message': _('Queued OCR...'),
+        })
+        run._queue_background_processing()
+        return run
+
+    def _build_ocr_run_notification(self, run):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'aps_ai_run_progress',
+            'params': {
+                'runId': run.id,
+                'runModel': 'aps.exam.paper.import.run',
+                'title': _('OCR Resources'),
+            },
+        }
+
     def _create_page_analysis_run(self, page=None, model=None):
         model = model or self.ai_model_id
         if not model or not model.enabled or not model.provider_id.enabled or not model.supports_vision:
@@ -223,6 +260,153 @@ class APSExamPaperImport(models.Model):
                 'title': _('Exam Paper Page Analysis'),
             },
         }
+
+    def _ocr_section(self, section, model=None):
+        section.ensure_one()
+        model = model or self.ocr_ai_model_id or self.single_page_ai_model_id or self.ai_model_id
+        if not model or not model.enabled or not model.provider_id.enabled or not model.supports_vision:
+            raise UserError(_('Select an enabled vision-capable OCR model first.'))
+        resource = self._ocr_resource_for_section(section)
+        question_images = self._section_images_from_resource_html(resource, section, 'question')
+        answer_images = self._section_images_from_resource_html(resource, section, 'answer')
+        section.write({'ocr_state': 'processing', 'ocr_error': False})
+        try:
+            question_markdown = self._ocr_images(model, question_images, 'question')
+            answer_markdown = self._ocr_images(model, answer_images, 'mark scheme')
+            question_html = self._ocr_markdown_to_html(model, question_markdown)
+            answer_html = self._ocr_markdown_to_html(model, answer_markdown)
+            section.write({
+                'question_html': question_html or False,
+                'answer_html': answer_html or False,
+                'ocr_state': 'complete',
+                'ocr_model_id': model.id,
+                'ocr_error': False,
+            })
+            self._insert_section_ocr_text(section)
+        except Exception as exc:
+            section.write({'ocr_state': 'failed', 'ocr_error': str(exc)})
+            raise
+
+    def _ocr_images(self, model, images, document_label):
+        if not images:
+            return ''
+        content = [{
+            'type': 'text',
+            'text': (
+                'Convert these ordered %s images into accurate Markdown. The text is primarily OCR: preserve '
+                'all visible words, labels, numbers, mathematical notation, marks, alternatives, and meaningful '
+                'bold or italic emphasis. Do not invent or silently omit content. If a diagram, graph, circuit, '
+                'map, apparatus setup, image, or other meaningful visual appears, add a concise description in '
+                'the appropriate location, including labels, relationships, trends, and values that are clearly '
+                'visible. Do not describe decorative elements or answer lines. '
+                'For a question, describe visuals only when they are relevant to understanding or answering it. '
+                'For a mark scheme, rewrite the source layout so it reads naturally as prose: convert borderless '
+                'table rows and columns into paragraphs, bullets, numbered points, or bold criterion labels, '
+                'making the relationship between each criterion and its marks clear. Preserve alternative answers '
+                'and conditions. Do not use Markdown tables unless the source is an actual table that students '
+                'must complete or interpret. Return Markdown only, with no preface or commentary.'
+            ) % document_label,
+        }]
+        for attachment in images:
+            image_bytes = self._attachment_bytes(attachment)
+            if not image_bytes:
+                continue
+            content.append({
+                'type': 'image_url',
+                'image_url': {'url': 'data:image/png;base64,%s' % base64.b64encode(
+                    image_bytes,).decode('ascii')},
+            })
+        result = model._execute_logged_router_call({
+            'model': model.model_key,
+            'messages': [
+                {'role': 'system', 'content': 'You are an accurate examination-paper transcription assistant.'},
+                {'role': 'user', 'content': content},
+            ],
+            'temperature': 0,
+            'max_completion_tokens': min(model.max_completion_tokens or 2400, 6000),
+        }, request_type='ocr', related_record=self)
+        return model._extract_message_content(result['response_json'])
+
+    @staticmethod
+    def _ocr_markdown_to_html(model, markdown_text):
+        """Convert OCR Markdown without introducing resource heading levels."""
+        normalized_lines = []
+        for line in (markdown_text or '').splitlines():
+            heading = re.match(r'^\s*(#{1,6})\s+(.+?)\s*#*\s*$', line)
+            if heading:
+                text = heading.group(2).strip()
+                if len(heading.group(1)) == 1:
+                    normalized_lines.append('<p><u><strong>%s</strong></u></p>' % escape(text))
+                else:
+                    normalized_lines.append('**%s**' % escape(text))
+                continue
+            normalized_lines.append(line)
+        html = model._markdown_to_html('\n'.join(normalized_lines))
+        return html
+
+    def _ocr_resource_for_section(self, section):
+        resource = self.resource_id.child_ids.filtered(
+            lambda item: item.name == (section.root_key or section.display_label)
+        )[:1]
+        resource = resource or section.resource_id
+        if not resource:
+            raise UserError(_('No resource is linked to section %s.') % section.display_label)
+        return resource
+
+    def _section_images_from_resource_html(self, resource, section, document_type):
+        """Return only image attachments inside this section's H1 block."""
+        field_name = 'question' if document_type == 'question' else 'answer'
+        html = getattr(resource, field_name) or ''
+        heading = escape(section.display_label or '')
+        block_match = re.search(
+            r'<h1>%s</h1>(.*?)(?=<h1>|$)' % re.escape(heading), html, flags=re.S | re.I,
+        )
+        if not block_match:
+            return self.env['ir.attachment']
+        attachment_ids = []
+        for match in re.finditer(
+            r'(?:/web/(?:image|content)/)(\d+)', block_match.group(1), flags=re.I,
+        ):
+            attachment_id = int(match.group(1))
+            if attachment_id not in attachment_ids:
+                attachment_ids.append(attachment_id)
+        return self.env['ir.attachment'].browse(attachment_ids).exists()
+
+    def _insert_section_ocr_text(self, section):
+        resource = self._ocr_resource_for_section(section)
+        for field_name, text_field, document_type in (
+            ('question', 'question_html', 'question'),
+            ('answer', 'answer_html', 'mark_scheme'),
+        ):
+            html = getattr(resource, field_name) or ''
+            marker = 'data-aps-exam-import-section="%s" data-aps-exam-import-document="%s"' % (
+                section.id, document_type,
+            )
+            text_html = getattr(section, text_field) or ''
+            summary = 'Question Text' if document_type == 'question' else 'Answer Text'
+            block = '<p></p><details class="aps-exam-import-section-ocr aps-exam-import-section-ocr-%s-%s"><summary>%s</summary>%s</details><p></p>' % (
+                section.id, document_type, summary, text_html,
+            )
+            pattern = r'<details[^>]*class=["\'][^"\']*aps-exam-import-section-ocr-%s-%s[^"\']*["\'][^>]*>.*?</details>' % (
+                section.id, document_type,
+            )
+            if re.search(pattern, html, flags=re.S):
+                html = re.sub(pattern, block, html, flags=re.S)
+            elif marker in html:
+                close = html.find('</div>', html.find(marker))
+                if close >= 0:
+                    close += len('</div>')
+                    html = html[:close] + block + html[close:]
+            else:
+                heading = escape(section.display_label or '')
+                section_pattern = r'(<h1>%s</h1>.*?)(?=<h1>|$)' % re.escape(heading)
+                if re.search(section_pattern, html, flags=re.S | re.I):
+                    html = re.sub(
+                        section_pattern,
+                        lambda match: match.group(1) + block,
+                        html, count=1, flags=re.S | re.I,
+                    )
+            resource.write({field_name: html})
 
     def action_open_detected_sections(self):
         self.ensure_one()
@@ -399,6 +583,11 @@ class APSExamPaperImport(models.Model):
 
     @classmethod
     def _resolve_page_label(cls, raw_label, kind, root_label, part_label):
+        # Labels may be printed in several equivalent forms: ``6``, ``(a)``,
+        # ``(i)``, ``6(a)(i)``, ``6a(i)``, or ``(a) (i)``. Complete labels
+        # provide their own context; contextual labels such as ``(i)`` and
+        # ``(a) (i)`` use the preceding root and part tracked across the
+        # document, which may have been detected on an earlier page.
         value = (raw_label or '').strip()
         if not value:
             return False, root_label, part_label
@@ -417,7 +606,9 @@ class APSExamPaperImport(models.Model):
             label = '%s%s' % (root_label, part_label or '')
             return '%s.%s' % (label, subpart) if subpart and part_label else label, root_label, part_label
 
-        part_match = re.match(r'^\s*\(([A-Za-z])\)', value)
+        part_match = re.match(
+            r'^\s*\(([A-Za-z])\)\s*(?:\(([ivxIVX]+)\))?', value,
+        )
         subpart_match = re.match(r'^\s*\(([ivxIVX]+)\)', value)
         compact = re.sub(r'[^A-Za-z0-9]', '', value).casefold()
         if compact.startswith('q') and compact[1:].isdigit():
@@ -432,7 +623,13 @@ class APSExamPaperImport(models.Model):
             if part_label and subpart in {'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'}:
                 return '%s%s.%s' % (root_label, part_label, subpart), root_label, part_label
         if part_match and kind in ('part', 'subpart', 'continuation'):
-            part_label = part_match.group(1).casefold()
+            candidate_part = part_match.group(1).casefold()
+            if candidate_part in roman_labels:
+                return False, root_label, part_label
+            part_label = candidate_part
+            subpart = part_match.group(2)
+            if subpart and subpart.casefold() in roman_labels:
+                return '%s%s.%s' % (root_label, part_label, subpart.casefold()), root_label, part_label
             return '%s%s' % (root_label, part_label), root_label, part_label
         return False, root_label, part_label
 
@@ -506,11 +703,14 @@ class APSExamPaperImport(models.Model):
             '"question_summary": string, '
             '"label_kind": "root"|"part"|"subpart"|"continuation", "regions": [{"x1": number, '
             '"y1": number, "x2": number, "y2": number}], "visible_mark": number|null, '
+            '"is_answer_space_number": boolean, '
             '"mark_confidence": number, "continues_from_previous_page": boolean, '
             '"continues_on_next_page": boolean, "contains_diagram": boolean, "confidence": number}]}. '
             'Coordinates must be integer pixel coordinates relative to the declared image_width and image_height. Include only actual '
             'answer-bearing question parts; exclude headers, footers, general instructions, and blank '
-            'answer spaces. A bare number starts a root question. On later pages, resolve (a), (b), '
+            'answer spaces. Do not detect standalone numbers printed beside answer lines or boxes; set '
+            'is_answer_space_number=true for those markers. A bare number starts a root question only when '
+            'it begins actual question text. On later pages, resolve (a), (b), '
             '(i), and (ii) as raw labels only. The application will resolve them against the most likely '
             'preceding root/part in a second pass. Read marks printed at the end of question text, commonly as (2), but '
             'do not confuse them with numbering. '
@@ -727,7 +927,7 @@ class APSExamPaperImport(models.Model):
                     document_type, page.page_number, attachment.id, len(crop_bytes),
                 ))
             blocks.append(
-                '<img src="/web/image/%s" class="img-fluid" style="width: 100%%;" alt="%s %s page %s"></img>' % (
+                '<p><img src="/web/image/%s" class="img-fluid" style="width: 100%%;" alt="%s %s page %s"></img></p>' % (
                     attachment.id, escape(section.display_label), document_type, page.page_number,
                 )
             )
@@ -906,6 +1106,8 @@ class APSExamPaperImport(models.Model):
                 raw_label = (detection.get('raw_label') or detection.get('display_label') or '').strip()
                 if not raw_label:
                     continue
+                if self._is_answer_space_number(detection, raw_label, page):
+                    continue
                 label, root_label, part_label = self._resolve_page_label(
                     raw_label, detection.get('label_kind', ''), root_label, part_label,
                 )
@@ -916,6 +1118,25 @@ class APSExamPaperImport(models.Model):
                         'analysis': page.ai_response or {},
                     })
         return result
+
+    @staticmethod
+    def _is_answer_space_number(detection, raw_label, page):
+        """Exclude numbered answer lines that resemble root-question labels."""
+        if detection.get('is_answer_space_number') is True:
+            return True
+        if not re.fullmatch(r'\d+', raw_label) or detection.get('label_kind') not in ('root', ''):
+            return False
+        if (detection.get('question_summary') or '').strip():
+            return False
+        regions = [region for region in detection.get('regions') or [] if isinstance(region, dict)]
+        if not regions or not page.width or not page.height:
+            return False
+        try:
+            width = max(float(region.get('x2', 0)) - float(region.get('x1', 0)) for region in regions)
+            height = max(float(region.get('y2', 0)) - float(region.get('y1', 0)) for region in regions)
+        except (TypeError, ValueError):
+            return False
+        return width <= page.width * 0.2 and height <= page.height * 0.08
 
     @staticmethod
     def _normalise_key(value):
@@ -983,6 +1204,12 @@ class APSExamPaperSection(models.Model):
     review_warning = fields.Boolean(string='Review Required')
     review_notes = fields.Text()
     image_update_log = fields.Text(string='Image Update Log', readonly=True)
+    ocr_state = fields.Selection([
+        ('pending', 'Pending'), ('processing', 'Processing'),
+        ('complete', 'Complete'), ('failed', 'Failed'),
+    ], default='pending', string='OCR Status', readonly=True)
+    ocr_model_id = fields.Many2one('aps.ai.model', string='OCR Model', readonly=True)
+    ocr_error = fields.Text(string='OCR Error', readonly=True)
 
     _sql_constraints = [
         ('import_source_key_unique', 'unique(import_id, source_key)', 'Each detected section must have a unique source key.'),
@@ -996,6 +1223,13 @@ class APSExamPaperSection(models.Model):
             'res_model': self._name, 'res_id': self.id,
             'view_mode': 'form', 'target': 'current',
         }
+
+    def action_ocr_section(self):
+        self.ensure_one()
+        if not self.resource_id:
+            raise UserError(_('Build a resource for this section before running OCR.'))
+        run = self.import_id._create_ocr_run(self)
+        return self.import_id._build_ocr_run_notification(run)
 
 
 class APSExamPaperPage(models.Model):
@@ -1074,6 +1308,11 @@ class APSExamPaperImportRun(models.Model):
         'run_id', 'page_id', string='Pages', readonly=True,
     )
     ai_model_id = fields.Many2one('aps.ai.model', readonly=True)
+    run_type = fields.Selection([('analysis', 'Page Analysis'), ('ocr', 'OCR')], default='analysis', readonly=True)
+    ocr_section_ids = fields.Many2many(
+        'aps.exam.paper.section', 'aps_exam_import_run_section_rel',
+        'run_id', 'section_id', string='OCR Sections', readonly=True,
+    )
 
     def _process_background(self):
         self.ensure_one()
@@ -1090,6 +1329,27 @@ class APSExamPaperImportRun(models.Model):
         try:
             importer = self.import_id
             model = self.ai_model_id or importer.ai_model_id
+            if self.run_type == 'ocr':
+                sections = self.ocr_section_ids.filtered('resource_id')
+                updated = failed = 0
+                for index, section in enumerate(sections, 1):
+                    self._write_progress({'status_message': _('OCR %s section %s of %s...') % (
+                        section.display_label, index, len(sections),
+                    )})
+                    try:
+                        importer._ocr_section(section, model=model)
+                        updated += 1
+                    except Exception as exc:
+                        failed += 1
+                        _logger.exception('OCR failed for exam paper section %s', section.display_label)
+                    self._write_progress({'status_message': _('Completed OCR section %s.') % section.display_label})
+                self._write_progress({
+                    'state': 'completed', 'status_message': _('Completed.'),
+                    'result_message': _('%s section(s) updated; %s failed.') % (updated, failed),
+                    'finished_at': fields.Datetime.now(),
+                    'duration_ms': int((__import__('time').perf_counter() - started_perf) * 1000),
+                })
+                return
             pages = self.page_ids.sorted(key=lambda page: (page.document_type, page.page_number))
             total = len(pages)
             for index, page in enumerate(pages, 1):
