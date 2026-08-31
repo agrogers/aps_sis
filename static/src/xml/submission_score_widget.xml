@@ -5,7 +5,7 @@
             <span class="submission-score-label">SCORE</span>
             <span t-if="isGraded" class="d-inline-flex align-items-center gap-1 submission-score-content">
                 <PercentPie value="percent"/>
-                <input t-if="editable" class="submission-score-input" type="number" min="0" step="0.01" t-att-max="props.record.data.out_of_marks" t-att-value="props.record.data.score" t-att-style="'width: ' + scoreInputWidth + ';'" t-on-change="onScoreChange"/>
+                <input t-if="editable" class="submission-score-input" type="number" min="0" step="0.01" t-att-max="props.record.data.out_of_marks" t-att-value="score" t-att-style="'width: ' + scoreInputWidth + ';'" t-on-input="onScoreInput" t-on-change="onScoreChange"/>
                 <span t-else="" class="submission-score-value"><t t-esc="score" /></span><span class="mx-0">/</span><span class="submission-score-out-of"><t t-esc="outOfMarks"/></span>
             </span>
             <span t-else="" class="submission-score-not-graded">NOT GRADED</span>
