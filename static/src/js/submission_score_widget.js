@@ -25,9 +25,8 @@ export class SubmissionScoreField extends Component {
     }
 
     get isGraded() {
-        const score = Number(this.props.record.data.score);
         const outOfMarks = Number(this.props.record.data.out_of_marks);
-        return Number.isFinite(score) && score !== -0.01 && outOfMarks > 0;
+        return Number.isFinite(outOfMarks) && outOfMarks > 0;
     }
 
     get editable() {
@@ -36,8 +35,12 @@ export class SubmissionScoreField extends Component {
 
     get scoreInputWidth() {
         const value = this.props.record.data.score;
-        const text = value === false || value === null || value === undefined ? "" : String(value);
+        const text = value === false || value === null || value === undefined || Number(value) === -0.01 ? "" : String(value);
         return `${Math.max(1, text.length + 1)}ch`;
+    }
+
+    onScoreInput(ev) {
+        ev.target.style.width = `${Math.max(1, String(ev.target.value).length + 1)}ch`;
     }
 
     async onScoreChange(ev) {
@@ -52,7 +55,7 @@ export class SubmissionScoreField extends Component {
 
     formatNumber(value) {
         if (value === false || value === null || value === undefined || Number(value) === -0.01) {
-            return "–";
+            return "";
         }
         return Number(value).toString();
     }
