@@ -1,14 +1,8 @@
-import time
-
 from odoo import _, api, fields, models
 
 
 class APSAIRun(models.Model):
-    _name = 'aps.ai.run'
-    _description = 'APEX AI Background Run'
-    _rec_name = 'display_name'
-    _inherit = ['aps.ai.run.mixin']
-    _order = 'create_date desc, id desc'
+    _inherit = 'aps.ai.run'
 
     submission_id = fields.Many2one('aps.resource.submission', ondelete='cascade', readonly=True)
     resource_id = fields.Many2one('aps.resources', ondelete='cascade', readonly=True)
@@ -21,64 +15,24 @@ class APSAIRun(models.Model):
     )
     attempt_number = fields.Integer(readonly=True)
     override_model_id = fields.Many2one('aps.ai.model', string='Override Model', readonly=True, ondelete='set null')
-    display_name = fields.Char(compute='_compute_display_name', store=True)
-
-    @api.depends('submission_id.display_name', 'resource_id.display_name', 'state', 'create_date')
-    def _compute_display_name(self):
-        state_labels = dict(self._fields['state'].selection)
-        for record in self:
-            if record.resource_id:
-                subject_label = record.resource_id.display_name or _('Resource')
-            else:
-                subject_label = record.submission_id.display_name or _('Submission')
-            state_label = state_labels.get(record.state, record.state or _('Unknown'))
-            created = fields.Datetime.to_string(record.create_date) if record.create_date else ''
-            record.display_name = '%s - %s%s' % (
-                subject_label,
-                state_label,
-                (' - %s' % created) if created else '',
-            )
+    def _get_run_subject_label(self):
+        self.ensure_one()
+        if self.resource_id:
+            return self.resource_id.display_name or _('Resource')
+        return self.submission_id.display_name or _('Submission')
 
     def _process_background(self):
         self.ensure_one()
         if self.state not in ('queued', 'running'):
             return
 
-        started_at = fields.Datetime.now()
-        started_perf = time.perf_counter()
-        self._write_progress({
-            'state': 'running',
-            'status_message': _('Preparing AI marking...'),
-            'started_at': started_at,
-            'finished_at': False,
-            'result_message': False,
-            'error_message': False,
-            'thinking_text': False,
-            'response_preview': False,
-            'ai_model_id': False,
-            'prompt_tokens': 0,
-            'completion_tokens': 0,
-            'estimated_cost': 0.0,
-            'duration_ms': 0,
-        })
+        super()._process_background()
 
-        try:
-            if self.resource_id:
-                self._process_background_resource(started_perf)
-            else:
-                self._process_background_submission(started_perf)
-        except Exception as exc:
-            from .utils import _exception_to_text
-            duration_ms = int((time.perf_counter() - started_perf) * 1000)
-            self._write_progress({
-                'state': 'failed',
-                'status_message': _('Failed.'),
-                'error_message': _exception_to_text(exc),
-                'finished_at': fields.Datetime.now(),
-                'duration_ms': duration_ms,
-            })
-            if self.request_origin == 'automatic' and self.submission_id.exists():
-                self.submission_id.sudo()._handle_auto_ai_run_failure(self, _exception_to_text(exc))
+    def _process_background_domain(self, started_perf):
+        if self.resource_id:
+            self._process_background_resource(started_perf)
+        else:
+            self._process_background_submission(started_perf)
 
     def _process_background_submission(self, started_perf):
         self.ensure_one()

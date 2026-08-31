@@ -81,7 +81,7 @@
         <record id="group_aps_manager" model="res.groups">
             <field name="name">Manager</field>
             <field name="category_id" ref="module_category_aps"/>
-            <field name="implied_ids" eval="[(4, ref('group_aps_teacher')), (4, ref('group_awards_manager'))]"/>
+            <field name="implied_ids" eval="[(4, ref('group_aps_teacher')), (4, ref('group_awards_manager')), (4, ref('aps_ai.group_aps_ai_manager'))]"/>
             <field name="comment">Full administrative access to all APEX features</field>
         </record>
 

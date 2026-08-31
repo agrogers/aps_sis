@@ -81,7 +81,6 @@
 		'views/aps_sis_menu.xml',
 		'views/aps_student_daily_mgmt_dashboard_views.xml',
 		'views/resources/aps_course_explorer_views.xml',
-		'views/aps_ai_views.xml',
 		'views/ai_prompts_views.xml',
 		'reports/submission_report.xml',
 		'reports/school_calendar_report.xml',
