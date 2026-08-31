@@ -8,9 +8,8 @@
                 <field name="name" optional="show"/>
                 <field name="resource_id" optional="show"/>
                 <field name="state" widget="badge" optional="show"/>
-                <field name="progress" widget="progressbar" optional="show"/>
                 <field name="section_count" optional="hide"/>
-                <field name="warning_count" optional="hide"/>
+
                 <field name="create_date" optional="hide"/>
             </list>
         </field>
@@ -22,19 +21,30 @@
         <field name="arch" type="xml">
             <form string="IGCSE Exam Paper Import">
                 <header>
-                    <button name="action_render_pages" type="object" string="Render Pages" class="btn-primary" />
-                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse Pages" class="btn-primary" invisible="not ai_model_id "/>
-                    <button name="action_detect_sections" type="object" string="Detect Sections" class="btn-primary" />
-                    <button name="action_validate" type="object" string="Validate" />
-                    <button name="action_build_resources" type="object" string="Build Resources" class="btn-primary" />
-                    <button name="action_ocr_resources" type="object" string="OCR Resources" class="btn-primary" />
+                    <button name="action_render_pages" type="object" string="Render Pages" class="btn-primary" invisible="state != 'draft'" />
+                    <button name="action_render_pages" type="object" string="Render Pages" class="btn-secondary" invisible="state == 'draft'" />
+                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse ALL Pages" class="btn-primary" invisible="not ai_model_id or analysis_scope != 'all' or state != 'uploaded'"/>
+                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse ALL Pages" class="btn-secondary" invisible="not ai_model_id or analysis_scope != 'all' or state == 'uploaded'"/>
+                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse Pending Pages" class="btn-primary" invisible="not ai_model_id or analysis_scope != 'pending' or state != 'uploaded'"/>
+                    <button name="action_analyse_pages_with_ai" type="object" string="Analyse Pending Pages" class="btn-secondary" invisible="not ai_model_id or analysis_scope != 'pending' or state == 'uploaded'"/>
+                    <button name="action_detect_sections" type="object" string="Detect Sections" class="btn-secondary"  />
+                    <button name="action_build_resources" type="object" string="Build Resources" class="btn-primary" invisible="state != 'analysing'" />
+                    <button name="action_build_resources" type="object" string="Build Resources" class="btn-secondary" invisible="state == 'analysing'" />
+                    <button name="action_ocr_resources" type="object" string="OCR Resources" class="btn-primary" invisible="state != 'completed'" />
+                    <button name="action_ocr_resources" type="object" string="OCR Resources" class="btn-secondary" invisible="state == 'completed'" />
                     <button name="action_retry" type="object" string="Retry" invisible="state != 'failed'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,analysing,review,building,completed"/>
                 </header>
                 <sheet>
                     <field name="section_count" invisible="1"/>
                     <field name="page_count" invisible="1"/>
+                    <field name="child_resource_count" invisible="1"/>
                     <div name="button_box" class="oe_button_box">
+                        <button name="action_open_child_resources" type="object"
+                                class="oe_stat_button" icon="fa-sitemap"
+                                invisible="child_resource_count == 0">
+                            <field name="child_resource_count" widget="statinfo" string="Child Resources"/>
+                        </button>
                         <button name="action_open_detected_sections" type="object"
                                 class="oe_stat_button" icon="fa-list-alt"
                                 invisible="section_count == 0">
@@ -50,26 +60,24 @@
                         <group>
                             <field name="name"/>
                             <field name="resource_id" readonly="1"/>
-                            <field name="progress" widget="progressbar" readonly="1"/>
-                            <field name="render_dpi"/>
-                        </group>
-                        <group>
                             <field name="question_attachment_id" readonly="1"/>
                             <field name="mark_scheme_attachment_id" readonly="1"/>
+                            <field name="section_count" readonly="1"/>
+                            <field name="page_count" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="analysis_scope"/>
                             <field name="ai_model_id" options="{'no_create': True}"/>
                             <field name="single_page_ai_model_id" options="{'no_create': True}"/>
                             <field name="ocr_ai_model_id" options="{'no_create': True}"/>
-                            <field name="ai_prompt_version" readonly="1"/>
-                            <field name="section_count" readonly="1"/>
-                            <field name="warning_count" readonly="1"/>
-                            <field name="page_count" readonly="1"/>
+                            <field name="render_dpi"/>
                         </group>
                     </group>
                     <field name="error_message" readonly="1" invisible="not error_message"/>
                     <notebook>
                         <page string="Detected Sections">
                             <field name="section_ids">
-                                <list editable="bottom" default_order="sequence,source_key">
+                                <list editable="bottom" default_order="sequence,source_key" limit="999">
                                     <field name="sequence" widget="handle"/>
                                     <field name="display_label" optional="show"/>
                                     <field name="source_key" readonly="1" optional="show"/>
@@ -79,7 +87,6 @@
                                     <field name="maximum_mark" optional="show"/>
                                     <field name="question_summary" optional="show"/>
                                     <field name="match_confidence" optional="show"/>
-                                    <field name="review_warning" optional="show"/>
                                     <field name="ocr_state" optional="hide"/>
                                     <field name="question_pages" optional="hide"/>
                                     <field name="question_regions" optional="hide"/>
@@ -91,8 +98,8 @@
                             </field>
                         </page>
                         <page string="Rendered Pages">
-                            <field name="page_ids" mode="kanban">
-                                <kanban default_order="document_type,page_number" class="o_kanban_mobile">
+                            <field name="page_ids" mode="kanban" class="aui-image-viewer-scope">
+                                <kanban default_order="document_type,page_number" class="o_kanban_mobile" limit="999">
                                     <field name="document_type"/>
                                     <field name="page_number"/>
                                     <field name="attachment_id"/>
@@ -111,10 +118,9 @@
                                                 </div>
                                                 <div class="text-center bg-light rounded p-2">
                                                     <img t-att-src="'/web/content/' + record.attachment_id.raw_value + '?download=false'"
-                                                         class="img-fluid" alt="Rendered exam paper page"></img>
+                                                         class="img-fluid aui-image-viewer-clickable" alt="Rendered exam paper page" style="cursor: zoom-in;"></img>
                                                 </div>
                                                 <div class="d-flex gap-2 mt-2">
-                                                    <button name="action_view_page" type="object" string="View" icon="fa-eye" class="btn btn-sm btn-secondary"/>
                                                     <t t-if="record.ai_state.raw_value === 'complete'">
                                                         <button name="action_view_analysis" type="object" string="Result" icon="fa-list-alt" class="btn btn-sm btn-secondary"/>
                                                     </t>
@@ -127,7 +133,7 @@
                                         </t>
                                     </templates>
                                 </kanban>
-                                <list default_order="document_type,page_number">
+                                <list default_order="document_type,page_number" limit="999">
                                     <field name="document_type"/>
                                     <field name="page_number"/>
                                     <field name="render_dpi"/>
@@ -188,7 +194,6 @@
                 <field name="question_pages" optional="hide"/>
                 <field name="answer_pages" optional="hide"/>
                 <field name="match_confidence" optional="hide"/>
-                <field name="review_warning"/>
                 <field name="resource_id" optional="hide"/>
                 <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id"/>
             </list>

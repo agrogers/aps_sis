@@ -135,9 +135,10 @@
                     'form_view_ref': 'view_aps_resources_form_brief'}">
                 <header>
                     <field name="auto_assign" invisible="1"/>
+                    <field name="is_pearson_past_paper" invisible="1"/>
                     <button name="action_assign_students" string="Assign Students" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher" invisible="auto_assign"/>
                     <button name="action_assign_students" string="Assign Students (Auto Enabled)" type="object" class="btn-success" groups="aps_sis.group_aps_teacher" invisible="not auto_assign"/>
-                    <button name="action_start_exam_paper_import" string="Import Exam Paper" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher" invisible="type_id.name != 'Past Paper (Pearson)'"/>
+                    <button name="action_start_exam_paper_import" string="Import Exam Paper" type="object" class="btn-primary" groups="aps_sis.group_aps_teacher" invisible="not is_pearson_past_paper"/>
                 </header>
                 <sheet>
                     <!-- Technical fields used by the importer smart-button modifiers. -->

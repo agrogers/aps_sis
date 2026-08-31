@@ -38,6 +38,7 @@
                        decoration-success="state == 'completed'"
                        decoration-danger="state == 'failed'"
                        decoration-info="state in ('queued', 'running')"/>
+                  <field name="processor_key" optional="show"/>
                 <field name="request_origin" optional="hide"/>
                 <field name="requested_by_id" optional="hide"/>
                 <field name="submission_id" optional="show"/>
@@ -66,6 +67,8 @@
                             <field name="attempt_number"/>
                         </group>
                         <group string="Subject">
+                            <field name="processor_key"/>
+                            <field name="import_id"/>
                             <field name="submission_id"/>
                             <field name="resource_id"/>
                             <field name="ai_model_id"/>

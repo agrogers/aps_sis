@@ -21,13 +21,19 @@ class APSAIRun(models.Model):
     )
     attempt_number = fields.Integer(readonly=True)
     override_model_id = fields.Many2one('aps.ai.model', string='Override Model', readonly=True, ondelete='set null')
+    processor_key = fields.Selection(
+        [('standard', 'Standard AI Marking')],
+        default='standard', required=True, readonly=True,
+    )
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
-    @api.depends('submission_id.display_name', 'resource_id.display_name', 'state', 'create_date')
+    @api.depends('submission_id.display_name', 'resource_id.display_name', 'state', 'create_date', 'processor_key')
     def _compute_display_name(self):
         state_labels = dict(self._fields['state'].selection)
         for record in self:
-            if record.resource_id:
+            if record.processor_key != 'standard':
+                subject_label = record._get_processor_display_name()
+            elif record.resource_id:
                 subject_label = record.resource_id.display_name or _('Resource')
             else:
                 subject_label = record.submission_id.display_name or _('Submission')
@@ -38,6 +44,9 @@ class APSAIRun(models.Model):
                 state_label,
                 (' - %s' % created) if created else '',
             )
+
+    def _get_processor_display_name(self):
+        return _('AI Job')
 
     def _process_background(self):
         self.ensure_one()
@@ -63,7 +72,9 @@ class APSAIRun(models.Model):
         })
 
         try:
-            if self.resource_id:
+            if self.processor_key != 'standard':
+                self._process_specialised_background(started_perf)
+            elif self.resource_id:
                 self._process_background_resource(started_perf)
             else:
                 self._process_background_submission(started_perf)
@@ -79,6 +90,9 @@ class APSAIRun(models.Model):
             })
             if self.request_origin == 'automatic' and self.submission_id.exists():
                 self.submission_id.sudo()._handle_auto_ai_run_failure(self, _exception_to_text(exc))
+
+    def _process_specialised_background(self, started_perf):
+        raise UserError(_('No processor is registered for AI run type %s.') % self.processor_key)
 
     def _process_background_submission(self, started_perf):
         self.ensure_one()

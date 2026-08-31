@@ -2,8 +2,8 @@ from . import aps_avatar
 from . import aps_media
 from . import aps_time_tracking
 from . import ai_feedback_storage_mixin
-from . import resources
 from . import ai
+from . import resources
 from . import submissions
 from . import aps_assign_students_wizard
 from . import aps_dashboard
