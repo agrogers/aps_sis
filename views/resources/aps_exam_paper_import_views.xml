@@ -92,7 +92,7 @@
                                     <field name="question_regions" optional="hide"/>
                                     <field name="answer_pages" optional="hide"/>
                                     <field name="answer_regions" optional="hide"/>
-                                    <button name="action_update_resource_images" type="object" string="Update Images" icon="fa-picture-o" class="btn-link" invisible="not resource_id" optional="show"/>
+                                    <button name="action_update_resource_images" type="object" string="Update Resource" icon="fa-picture-o" class="btn-link" invisible="not resource_id" optional="show"/>
                                     <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id" optional="show"/>
                                 </list>
                             </field>
@@ -186,15 +186,31 @@
         <field name="model">aps.exam.paper.section</field>
         <field name="arch" type="xml">
             <list default_order="import_id,sequence">
+                <field name="sequence" widget="handle"/>
                 <field name="display_label"/>
                 <field name="source_key" readonly="1" optional="hide"/>
-                <field name="import_id"/>
+                <field name="import_id" optional="hide"/>
+                <field name="root_key" optional="hide"/>
                 <field name="hierarchy_level" optional="show"/>
-                <field name="maximum_mark"/>
-                <field name="question_pages" optional="hide"/>
-                <field name="answer_pages" optional="hide"/>
-                <field name="match_confidence" optional="hide"/>
+                <field name="resource_key" optional="hide"/>
                 <field name="resource_id" optional="hide"/>
+                <field name="maximum_mark" optional="show"/>
+                <field name="question_summary" optional="hide"/>
+                <field name="include_resource" optional="hide"/>
+                <field name="include_parent_question" optional="hide"/>
+                <field name="question_html" optional="hide"/>
+                <field name="answer_html" optional="hide"/>
+                <field name="question_pages" optional="hide"/>
+                <field name="question_regions" optional="hide"/>
+                <field name="answer_pages" optional="hide"/>
+                <field name="answer_regions" optional="hide"/>
+                <field name="match_confidence" optional="hide"/>
+                <field name="ocr_confidence" optional="hide"/>
+                <field name="review_notes" optional="hide"/>
+                <field name="image_update_log" optional="hide"/>
+                <field name="ocr_state" optional="hide"/>
+                <field name="ocr_model_id" optional="hide"/>
+                <field name="ocr_error" optional="hide"/>
                 <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id"/>
             </list>
         </field>

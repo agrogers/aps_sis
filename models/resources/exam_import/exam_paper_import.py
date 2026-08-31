@@ -81,6 +81,7 @@ class APSExamPaperImport(models.Model):
     _CROP_TOP = 85
     _CROP_RIGHT = 75
     _CROP_BOTTOM = 100
+    _CROP_Y_ADJUSTMENT = 6
     _RENDER_HEIGHT_PIXELS = 1500
     _LABEL_Y_TOLERANCE = 0.025
     _CONTINUATION_TOP_LIMIT = 0.20
@@ -217,9 +218,12 @@ class APSExamPaperImport(models.Model):
         return {
             'type': 'ir.actions.act_window', 'res_model': self._name,
             'res_id': self.id, 'view_mode': 'form', 'target': 'current',
+            # The web client's _preprocessAction calls views.map(...), so the
+            # views list must always be present on a returned act_window.
+            'views': [(False, 'form')],
         }
 
-    def _notification(self, title, message, msg_type='info'):
+    def _notification(self, title, message, msg_type='info', next=None):
         return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {
-            'title': title, 'message': message, 'type': msg_type,
+            'title': title, 'message': message, 'type': msg_type, 'next': next,
         }}

@@ -137,20 +137,30 @@ class APSExamPaperImportDetect(models.Model):
         """Default "Include Resource" / "Include Parent Question Content":
         - level 1: include resource only
         - level 3: include resource and parent content
-        - level 2 with no level-3 children in the same root: include resource and parent content
+        - level 2 with no level-3 children: include resource and parent content
         - level 2 with level-3 children: excluded (its subparts cover it)
         """
-        roots_with_subparts = {
-            section['root_key'] for section in resolved.values()
-            if section['hierarchy_level'] >= 3
+        # A root can contain both a standalone part (Q1b) and a part with
+        # subparts (Q1a.i, Q1a.ii).  Checking only ``root_key`` therefore
+        # incorrectly excludes every level-2 section below Q1.  Match each
+        # level-3 section to its immediate level-2 parent instead.
+        level_2_parents_with_subparts = {
+            re.sub(
+                r'[^a-z0-9]', '', section['display_label'].split('.', 1)[0].casefold()
+            ).removeprefix('q')
+            for section in resolved.values()
+            if section['hierarchy_level'] >= 3 and '.' in section['display_label']
         }
         for section in resolved.values():
             level = section['hierarchy_level']
             if section['ai_include_parent_question'] is not None:
                 continue
-            if level >= 3 or (level == 2 and section['root_key'] not in roots_with_subparts):
+            if level >= 3 or (
+                level == 2
+                and section['source_key'] not in level_2_parents_with_subparts
+            ):
                 section['include_parent_question'] = True
-            if level == 2 and section['root_key'] in roots_with_subparts:
+            if level == 2 and section['source_key'] in level_2_parents_with_subparts:
                 section['include_resource'] = False
 
     @staticmethod

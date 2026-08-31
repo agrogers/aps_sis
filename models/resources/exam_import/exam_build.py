@@ -120,7 +120,7 @@ class APSExamPaperImportBuild(models.Model):
             return 'normalized 0..1000'
         return 'rendered pixels'
 
-    def _crop_bounds(self, region, page, label_positions):
+    def _crop_bounds(self, region, page, label_positions, y_adjustment=0):
         start_y = max(0.0, min(1.0, self._region_y_as_fraction(region, page)))
         next_y = None
         source_label = self._normalise_key(region.get('detection_label') or '')
@@ -143,11 +143,10 @@ class APSExamPaperImportBuild(models.Model):
                 next_y = candidate['y']
                 break
         left = max(0, min(page.width, self._CROP_LEFT))
-        top = max(0, min(page.height, max(self._CROP_TOP, round(start_y * page.height) - 10)))
+        top = max(0, min(page.height, max(self._CROP_TOP, round(start_y * page.height) - y_adjustment)))
         right = max(left + 1, min(page.width, page.width - self._CROP_RIGHT))
-        bottom = page.height if next_y is None else round(next_y * page.height)
         bottom_limit = max(top + 1, page.height - self._CROP_BOTTOM)
-        bottom = bottom_limit if next_y is None else round(next_y * page.height)
+        bottom = bottom_limit if next_y is None else round(next_y * page.height) - y_adjustment
         bottom = max(top + 1, min(bottom_limit, bottom))
         return left, top, right, bottom
 
@@ -178,7 +177,10 @@ class APSExamPaperImportBuild(models.Model):
                         document_type, index, page_number or 'unknown',
                     ))
                 continue
-            bounds = self._crop_bounds(region, page, label_positions)
+            # The Y adjustment trims the label edge on both question and
+            # mark-scheme crops.
+            y_adjustment = self._CROP_Y_ADJUSTMENT
+            bounds = self._crop_bounds(region, page, label_positions, y_adjustment)
             if log:
                 self._append_image_update_log(section, '%s region %s: raw coordinates=%s (%s), page %s image %sx%s, crop x=%s..%s y=%s..%s.' % (
                     document_type, index, region, self._coordinate_scale(region), page_number,
@@ -379,12 +381,16 @@ class APSExamPaperImportBuild(models.Model):
                 'description': False,
             })
         self.write({'state': 'completed', 'progress': 100, 'completed_at': fields.Datetime.now()})
+        # Show the completion toast and then re-open the form so the refreshed
+        # state, progress and section resource links are shown without a
+        # manual reload.
         return self._notification(
             _('Import completed'),
             _('%s resource(s) created; %s existing resource(s) reused.') % (
                 created_resource_count, reused_resource_count,
             ),
             'success',
+            next=self._open_form(),
         )
 
     def _find_or_create_resource(self, name, parent):
