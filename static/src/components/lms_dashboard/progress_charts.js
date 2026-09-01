@@ -158,6 +158,7 @@ export class ProgressCharts {
             this._debug('fetchProgressData: No student selected, clearing data');
             this.state.progressLineData = [];
             this.state.progressBarData = [];
+            this.state.predictionData = [];
             this.state.loadingProgress = false;
             return;
         }
@@ -264,6 +265,8 @@ export class ProgressCharts {
                 }))
                 .sort((a, b) => a.subject_name.localeCompare(b.subject_name));
 
+            this.state.predictionData = progressData.prediction_data || [];
+
             this._debug('fetchProgressData: Processed datasets', {
                 progressLineDatasets: this.state.progressLineData?.length,
                 progressBarItems: this.state.progressBarData?.length
@@ -274,6 +277,7 @@ export class ProgressCharts {
             this._debug('fetchProgressData: ERROR', error.message);
             this.state.progressLineData = [];
             this.state.progressBarData = [];
+            this.state.predictionData = [];
         }
 
         this.state.loadingProgress = false;
@@ -533,71 +537,21 @@ export class ProgressCharts {
     }
 
     /**
-     * Calculate predicted additional progress per subject by the course deadline.
-     * Uses the current rate of progress (derived from historical line data) and
-     * the remaining days until the pace end_date to project forward.
-     * Returns an array of prediction segment values aligned to progressBarData.
+     * Prediction segments per subject, aligned to progressBarData.
+     *
+     * Computed by the backend (get_progress_data_for_dashboard → prediction_data)
+     * using the same shared helper as the completion leaderboard, so the chart
+     * and the leaderboard always agree. Falls back to all-zeros when the
+     * backend did not provide predictions (e.g. cached response).
      */
     _calculatePredictionData() {
-        const today = new Date();
-
-        // Determine the deadline from paceData (use the latest end_date across all resources)
-        let deadline = null;
-        const paceData = this.state.paceData || {};
-        for (const pace of Object.values(paceData)) {
-            if (pace && pace.end_date) {
-                const endDate = new Date(pace.end_date);
-                if (!deadline || endDate > deadline) {
-                    deadline = endDate;
-                }
-            }
-        }
-
-        // No prediction if there is no deadline or if the deadline has already passed
-        if (!deadline || deadline <= today) {
-            return (this.state.progressBarData || []).map(() => 0);
-        }
-
-        const daysRemaining = (deadline - today) / (1000 * 60 * 60 * 24);
-
-        return (this.state.progressBarData || []).map(item => {
-            const currentProgress = item.progress || 0;
-
-            // Already complete – no prediction needed
-            if (currentProgress >= 100) return 0;
-
-            // Find this subject's historical dataset in progressLineData
-            const subjectDataset = (this.state.progressLineData || []).find(
-                ds => !ds.isPace && ds.label === item.subject_name
-            );
-
-            if (!subjectDataset || !subjectDataset.data || subjectDataset.data.length < 2) {
-                return 0;
-            }
-
-            // Sort data points by date ascending (x is a date string like '2025-01-15')
-            const sorted = [...subjectDataset.data].sort((a, b) => {
-                return new Date(a.x).getTime() - new Date(b.x).getTime();
-            });
-
-            const lastPoint = sorted[sorted.length - 1];
-            // Use only data points within the last 4 months for the rate calculation
-            const fourMonthsAgo = new Date(today);
-            fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
-            const recentPoints = sorted.filter(p => new Date(p.x) >= fourMonthsAgo);
-            const firstPoint = recentPoints.length >= 2 ? recentPoints[0] : sorted[0];
-            const daysBetween = (new Date(lastPoint.x) - new Date(firstPoint.x)) / (1000 * 60 * 60 * 24);
-
-            if (daysBetween <= 0) return 0;
-
-            const dailyRate = (lastPoint.y - firstPoint.y) / daysBetween;
-
-            // No prediction if the student is not making forward progress
-            if (dailyRate <= 0) return 0;
-
-            const predictedTotal = Math.min(currentProgress + dailyRate * daysRemaining, 100);
-            return Math.max(0, predictedTotal - currentProgress);
-        });
+        const predictionData = this.state.predictionData || [];
+        const bySubjectId = new Map(
+            predictionData.map(item => [item.subject_id, item.prediction_segment || 0])
+        );
+        return (this.state.progressBarData || []).map(
+            item => bySubjectId.get(item.subject_id) || 0
+        );
     }
 
     /**

@@ -93,6 +93,84 @@ class APSResourceSubmissionDashboardData(models.Model):
         )
 
     @api.model
+    def _predict_subject_progress(self, sorted_points, deadline, today):
+        """Single source of truth for progress prediction.
+
+        Used by both the dashboard bar chart (via get_progress_data_for_dashboard)
+        and the completion leaderboard (via get_completion_leaderboard_data).
+
+        Args:
+            sorted_points: list of (date, result_percent) tuples sorted ascending
+                by date. Dates may be date or datetime objects.
+            deadline: date object for the course end date, or falsy.
+            today: date object.
+
+        Returns a dict:
+            current: latest result_percent (float)
+            daily_rate: progress percent per day over the recent window (float)
+            predicted_total: projected percent at the deadline (float)
+            prediction_segment: additional percent between now and deadline,
+                for stacking on the bar chart (float, >= 0)
+            stalled_complete: True when a >=97% stalled subject was treated as
+                complete (bool)
+        """
+        from datetime import timedelta
+
+        result = {
+            'current': 0.0,
+            'daily_rate': 0.0,
+            'predicted_total': 0.0,
+            'prediction_segment': 0.0,
+            'stalled_complete': False,
+        }
+        if not sorted_points:
+            return result
+
+        current = float(sorted_points[-1][1] or 0)
+        result['current'] = current
+
+        # Already complete – no prediction needed.
+        if current >= 100:
+            result['predicted_total'] = 100.0
+            return result
+
+        # Daily rate from the last 4 months of data, excluding future-dated
+        # points (the chart stops at today).
+        four_months_ago = today - timedelta(days=120)
+        recent_points = [
+            (d, p) for d, p in sorted_points if four_months_ago <= d <= today
+        ]
+        first_date, first_progress = (
+            recent_points[0] if len(recent_points) >= 2 else sorted_points[0]
+        )
+        last_date, last_progress = sorted_points[-1]
+        days_between = (last_date - first_date).days
+        daily_rate = (
+            (float(last_progress or 0) - float(first_progress or 0)) / days_between
+            if days_between > 0 else 0.0
+        )
+        result['daily_rate'] = daily_rate
+
+        days_remaining = (deadline - today).days if deadline and deadline > today else 0
+
+        # A stalled subject at 97% or above is close enough to treat as
+        # complete. This prevents a tiny final administrative update from
+        # making an otherwise complete student appear unprojectable.
+        if current >= 97 and daily_rate <= 0:
+            result['predicted_total'] = 100.0
+            result['stalled_complete'] = True
+            return result
+
+        if daily_rate > 0 and days_remaining > 0:
+            predicted_total = min(current + daily_rate * days_remaining, 100.0)
+            result['predicted_total'] = predicted_total
+            result['prediction_segment'] = max(0.0, predicted_total - current)
+        else:
+            # No forward progress or no deadline: prediction stays at current.
+            result['predicted_total'] = current
+        return result
+
+    @api.model
     def _collapse_progress_points_by_date(self, data_points):
         """Return one point per date, keeping the highest score for that day."""
         points_by_date = {}
@@ -418,30 +496,12 @@ class APSResourceSubmissionDashboardData(models.Model):
         # student_history: {student_id: {subject_id: [(date, result_percent), ...]}}
         student_history = {}
         student_names = {}
-        student_deadlines = {}
         pace_dates_cache = {}
         for submission in submissions:
             student_id = submission.student_id.id
             if not student_id:
                 continue
             student_names[student_id] = submission.student_id.name
-
-            # Dates are cohort-specific.  Resolving these without a student (the
-            # old behaviour) falls back to generic notes and makes the predicted
-            # leaderboard use current progress whenever only cohort dates exist.
-            student_record = student_record_by_partner.get(student_id)
-            cache_key = (submission.resource_id.id, student_id)
-            if cache_key not in pace_dates_cache:
-                pace_dates_cache[cache_key] = submission.resource_id.get_pace_dates(
-                    cohort_keys=student_record._get_cohort_keys() if student_record else []
-                )
-            pace_dates = pace_dates_cache[cache_key]
-            resource_end = pace_dates.get('end_date')
-            if resource_end and (
-                student_id not in student_deadlines
-                or resource_end > student_deadlines[student_id]
-            ):
-                student_deadlines[student_id] = resource_end
 
             if student_id not in student_history:
                 student_history[student_id] = {}
@@ -467,6 +527,23 @@ class APSResourceSubmissionDashboardData(models.Model):
         diagnostics['history_subject_count'] = sum(
             len(subjects) for subjects in student_history.values()
         )
+
+        # --- Resolve the deadline the same way the progress bar chart does ---
+        # The chart uses the latest end_date across ALL progress resources for
+        # the selected student (cohort-resolved), regardless of whether that
+        # resource has submissions. Mirror that here so both views agree.
+        student_deadlines = {}
+        for partner_id in student_history:
+            student_record = student_record_by_partner.get(partner_id)
+            cohort_keys = student_record._get_cohort_keys() if student_record else []
+            for resource in progress_resources:
+                pace_dates = resource.get_pace_dates(cohort_keys=cohort_keys)
+                resource_end = pace_dates.get('end_date')
+                if resource_end and (
+                    partner_id not in student_deadlines
+                    or resource_end > student_deadlines[partner_id]
+                ):
+                    student_deadlines[partner_id] = resource_end
         diagnostics['deadline_count'] = len(student_deadlines)
         diagnostics['resources'] = [
             {
@@ -496,48 +573,29 @@ class APSResourceSubmissionDashboardData(models.Model):
                     data_points,
                     key=lambda x: self._progress_result_sort_key(x[0], x[1]),
                 )
-                current_progress = sorted_points[-1][1]  # Latest result_percent
+                prediction = self._predict_subject_progress(sorted_points, deadline, today)
+                current_progress = prediction['current']
+                daily_rate = prediction['daily_rate']
 
                 if current_progress >= 100:
                     predicted_totals.append(100.0)
                     subject_completion_days.append(0.0)
                     continue
 
-                # Calculate daily rate using only the last 4 months of data
-                last_date, last_progress = sorted_points[-1]
-                four_months_ago = today - timedelta(days=120)
-                recent_points = [(d, p) for d, p in sorted_points if d >= four_months_ago]
-                first_date, first_progress = recent_points[0] if len(recent_points) >= 2 else sorted_points[0]
-                days_between = (last_date - first_date).days
-
-                if days_between > 0:
-                    daily_rate = (last_progress - first_progress) / days_between
-                else:
-                    daily_rate = 0
-
-                # A stalled subject at 97% or above is close enough to treat
-                # as complete. This prevents a tiny final administrative
-                # update from making an otherwise complete student appear
-                # unprojectable.
-                if current_progress >= 97 and daily_rate <= 0:
-                    predicted_total = 100.0
-                    days_to_completion = 0.0
+                if prediction['stalled_complete']:
+                    predicted_totals.append(100.0)
+                    subject_completion_days.append(0.0)
                 elif daily_rate > 0 and days_remaining > 0:
-                    predicted_total = min(current_progress + daily_rate * days_remaining, 100.0)
-                    days_to_completion = max(
-                        0.0, (100.0 - current_progress) / daily_rate
+                    predicted_totals.append(prediction['predicted_total'])
+                    subject_completion_days.append(
+                        max(0.0, (100.0 - current_progress) / daily_rate)
                     )
                 else:
-                    predicted_total = current_progress
+                    predicted_totals.append(prediction['predicted_total'])
                     # A stalled subject is excluded from the day estimate. The
                     # displayed '>' communicates that the estimate is a lower
                     # bound because this subject is not progressing.
                     excluded_stalled_subject = True
-                    days_to_completion = None
-
-                predicted_totals.append(predicted_total)
-                if days_to_completion is not None:
-                    subject_completion_days.append(days_to_completion)
 
             if not predicted_totals:
                 continue
@@ -841,10 +899,38 @@ class APSResourceSubmissionDashboardData(models.Model):
                     'progress_recent': progress_recent,
                     'color': subject_colors.get(subject_id, '#6c757d'),
                 })
-        
+
+        # Prediction segments per subject (aligned to bar_data order), computed
+        # by the shared helper so the chart and the completion leaderboard agree.
+        from datetime import datetime as dt_type
+        today = dt_type.now().date()
+        deadline = None
+        for pace in pace_info.values():
+            end_date = pace.get('end_date')
+            if end_date:
+                parsed = fields.Date.to_date(end_date)
+                if parsed and (not deadline or parsed > deadline):
+                    deadline = parsed
+        prediction_data = []
+        for item in bar_data:
+            subject_id = item['subject_id']
+            points = [
+                (fields.Date.to_date(p['date']), p['result_percent'])
+                for p in all_subject_data.get(subject_id, [])
+            ]
+            points.sort(key=lambda x: self._progress_result_sort_key(x[0], x[1]))
+            prediction = self._predict_subject_progress(points, deadline, today)
+            prediction_data.append({
+                'subject_id': subject_id,
+                'predicted_total': prediction['predicted_total'],
+                'prediction_segment': prediction['prediction_segment'],
+            })
+
         return {
             'line_data': all_subject_data,
             'bar_data': bar_data,
+            'prediction_data': prediction_data,
+            'prediction_deadline': deadline.isoformat() if deadline else False,
             'pace_data': pace_info,
             'pace_diagnostics': pace_diagnostics,
             'subject_colors': subject_colors,
