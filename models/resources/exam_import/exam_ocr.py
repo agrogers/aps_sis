@@ -16,12 +16,21 @@ class APSExamPaperImportOcr(models.Model):
     def action_ocr_resources(self):
         self.ensure_one()
         sections = self.section_ids.filtered('resource_id')
+        if self.analysis_scope == 'pending':
+            sections = sections.filtered(lambda section: section.ocr_state != 'complete')
         if not sections:
+            if self.analysis_scope == 'pending':
+                raise UserError(_('All linked sections have already been processed by OCR.'))
             raise UserError(_('No linked sections are available for OCR. Build resources first.'))
         run = self._create_ocr_run(sections)
         return self._build_ocr_run_notification(run)
 
     def _create_ocr_run(self, sections):
+        sections = sections.filtered('resource_id')
+        if self.analysis_scope == 'pending':
+            sections = sections.filtered(lambda section: section.ocr_state != 'complete')
+        if not sections:
+            raise UserError(_('No sections require OCR.'))
         model = self.ocr_ai_model_id or self.single_page_ai_model_id or self.ai_model_id
         if not model or not model.enabled or not model.provider_id.enabled or not model.supports_vision:
             raise UserError(_('Select an enabled vision-capable OCR model first.'))

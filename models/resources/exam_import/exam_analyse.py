@@ -1,4 +1,5 @@
 """AI vision analysis of rendered exam paper pages."""
+import base64
 import logging
 import mimetypes
 from typing import Any

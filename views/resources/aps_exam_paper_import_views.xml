@@ -30,8 +30,10 @@
                     <button name="action_detect_sections" type="object" string="Detect Sections" class="btn-secondary"  />
                     <button name="action_build_resources" type="object" string="Build Resources" class="btn-primary" invisible="state != 'analysing'" />
                     <button name="action_build_resources" type="object" string="Build Resources" class="btn-secondary" invisible="state == 'analysing'" />
-                    <button name="action_ocr_resources" type="object" string="OCR Resources" class="btn-primary" invisible="state != 'completed'" />
-                    <button name="action_ocr_resources" type="object" string="OCR Resources" class="btn-secondary" invisible="state == 'completed'" />
+                    <button name="action_ocr_resources" type="object" string="OCR ALL Sections" class="btn-primary" invisible="analysis_scope != 'all' or state != 'completed'" />
+                    <button name="action_ocr_resources" type="object" string="OCR ALL Sections" class="btn-secondary" invisible="analysis_scope != 'all' or state == 'completed'" />
+                    <button name="action_ocr_resources" type="object" string="OCR Pending Sections" class="btn-primary" invisible="analysis_scope != 'pending' or state != 'completed'" />
+                    <button name="action_ocr_resources" type="object" string="OCR Pending Sections" class="btn-secondary" invisible="analysis_scope != 'pending' or state == 'completed'" />
                     <button name="action_retry" type="object" string="Retry" invisible="state != 'failed'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,analysing,review,building,completed"/>
                 </header>
