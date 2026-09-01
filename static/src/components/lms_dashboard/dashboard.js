@@ -2,12 +2,12 @@ import { Component, useState, onWillStart, onMounted, onPatched } from "@odoo/ow
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
-import { KpiCard } from "./kpi_card/kpi_card";
-import { KpiGauge } from "./kpi_gauge/kpi_gauge";
-import { ChartRenderer } from "./chart_renderer/chart_renderer";
+import { KpiCard } from "../kpi_card/kpi_card";
+import { KpiGauge } from "../kpi_gauge/kpi_gauge";
+import { ChartRenderer } from "../chart_renderer/chart_renderer";
 import { Domain } from "@web/core/domain";
 import { ProgressCharts } from "./progress_charts";
-import { Leaderboard } from "./leaderboard/leaderboard";
+import { Leaderboard } from "../leaderboard/leaderboard";
 
 
 export class ApexDashboard extends Component {
@@ -60,6 +60,7 @@ export class ApexDashboard extends Component {
             // Progress tracking
             progressLineData: [],
             progressBarData: [],
+            predictionData: [],
             loadingProgress: true,
             periodStart: null,  // For zoom reference
             periodEnd: null,

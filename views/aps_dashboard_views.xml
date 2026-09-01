@@ -5,8 +5,8 @@
     This helps implements a fully custom OWL component, not a server-rendered Odoo view.
     
     Action:    ir.actions.client → tag "apex_dashboard_main", path "apex-dashboard"
-    JS class:  static/src/components/dashboard.js → ApexDashboard
-    Template:  static/src/components/dashboard.xml → apex_dashboard.Dashboard
+    JS class:  static/src/components/lms_dashboard/dashboard.js → ApexDashboard
+    Template:  static/src/components/lms_dashboard/dashboard.xml → apex_dashboard.Dashboard
 
     Sub-components (static/src/components/)
         kpi_card/       → KpiCard         (apex_dashboard.KpiCard)
