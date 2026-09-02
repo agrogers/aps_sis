@@ -122,14 +122,35 @@
         <field name="name">aps.calendar.date.type.list</field>
         <field name="model">aps.calendar.date.type</field>
         <field name="arch" type="xml">
-            <list editable="bottom">
+            <list editable="bottom" open_form_view="1">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="code"/>
+                <field name="icon" widget="image" optional="hide"/>
                 <field name="print_color" widget="color"/>
-                <field name="color" optional="hide"/>
+                <field name="color" widget="color" optional="hide"/>
                 <field name="active" widget="boolean_toggle" optional="show"/>
             </list>
+        </field>
+    </record>
+
+    <record id="aps_calendar_date_type_view_form" model="ir.ui.view">
+        <field name="name">aps.calendar.date.type.form</field>
+        <field name="model">aps.calendar.date.type</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="sequence"/>
+                        <field name="icon" widget="image" options="{'size': [64, 64]}"/>
+                        <field name="print_color" widget="color"/>
+                        <field name="color" widget="color"/>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+                </sheet>
+            </form>
         </field>
     </record>
 
@@ -137,6 +158,20 @@
         <field name="name">Calendar Date Types</field>
         <field name="res_model">aps.calendar.date.type</field>
         <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="aps_calendar_date_type_action_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="aps_calendar_date_type_view_list"/>
+        <field name="act_window_id" ref="aps_calendar_date_type_action"/>
+    </record>
+
+    <record id="aps_calendar_date_type_action_view_form" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="aps_calendar_date_type_view_form"/>
+        <field name="act_window_id" ref="aps_calendar_date_type_action"/>
     </record>
 
 </odoo>

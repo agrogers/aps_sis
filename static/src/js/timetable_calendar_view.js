@@ -4,6 +4,7 @@ import { calendarView } from "@web/views/calendar/calendar_view";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
+
 /**
  * Extends the common renderer to restrict visible hours to 08:00–17:00
  * and to overlay school-calendar day labels (e.g. "T4-W6") as native
@@ -18,13 +19,38 @@ class TimetableCalendarCommonRenderer extends CalendarCommonRenderer {
     }
 
     get options() {
+        const options = super.options;
+        const originalEventContent = options.eventContent;
         return {
-            ...super.options,
+            ...options,
             slotMinTime: "08:00:00",
             slotMaxTime: "17:00:00",
             scrollTime: "08:00:00",
-            slotDuration: "00:10:00",
+            slotDuration: "00:15:00",
             slotLabelInterval: "01:00:00",
+            eventContent: (info) => {
+                const renderResult = originalEventContent
+                    ? originalEventContent.call(this, info)
+                    : {};
+                if (String(info.event.id).startsWith("sc_")) return renderResult;
+
+                const record = this.props.model.records[info.event.id];
+                const raw = record?.rawRecord;
+                const domNode = renderResult.domNodes?.[0];
+                if (!raw || !domNode) return renderResult;
+
+                const category = raw.subject_category_id;
+                const categoryId = Array.isArray(category) ? category[0] : category;
+                const title = domNode.querySelector(".o_event_title, .fc-event-title");
+                if (categoryId && title && !title.querySelector(".o_timetable_subject_icon")) {
+                    const icon = document.createElement("img");
+                    icon.src = `/web/image/aps.subject.category/${categoryId}/icon`;
+                    icon.alt = "";
+                    icon.className = "o_timetable_subject_icon";
+                    title.prepend(icon);
+                }
+                return renderResult;
+            },
             // School-calendar labels as a second FullCalendar event source.
             // They are all-day events so FullCalendar places them in the
             // all-day row automatically, with colour from aps.school.calendar.
@@ -63,6 +89,7 @@ class TimetableCalendarCommonRenderer extends CalendarCommonRenderer {
             ],
         };
     }
+
 }
 
 /**

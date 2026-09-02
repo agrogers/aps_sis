@@ -16,6 +16,12 @@ class ApsCalendarDateType(models.Model):
              'Do not change after creation.',
     )
     name = fields.Char(string='Name', required=True)
+    icon = fields.Image(
+        string='Icon',
+        max_width=64,
+        max_height=64,
+        help='Icon displayed for calendar entries of this type.',
+    )
     print_color = fields.Char(
         string='Print Color',
         default='#FFFFFF',

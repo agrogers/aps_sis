@@ -753,17 +753,19 @@ class ASCTTImportWizard(models.TransientModel):
         # 1. Determine the effective date range ─────────────────────────────────
         start_date = self.apply_from_date
         term = self.apply_to_term_id
+        current_year = self.env['aps.academic.year'].search(
+            [('is_current', '=', True)], limit=1
+        )
         if term:
             start_date = max(start_date, term.start_date)
             end_date = term.end_date
+            academic_year = term.academic_year_id or current_year
+            if academic_year:
+                end_date = min(end_date, academic_year.end_date)
         else:
-            # Fall back to current academic year end, or 52 weeks ahead
-            current_year = self.env['aps.academic.year'].search(
-                [('is_current', '=', True)], limit=1
-            )
-            end_date = current_year.end_date if current_year else (
-                start_date.replace(year=start_date.year + 1)
-            )
+            end_date = current_year.end_date if current_year else start_date
+        if not start_date or not end_date or start_date > end_date:
+            return 0
 
         # 2. Delete existing entries that overlap the effective date range ──────
         # A selected term limits the generation end date; it must not delete
@@ -843,7 +845,19 @@ class ASCTTImportWizard(models.TransientModel):
                 continue
 
             class_names = ', '.join(
-                cl.name for cl in lesson.class_ids if cl.name
+                (
+                    cl.short
+                    or (
+                        (
+                            cl.aps_class_id.subject_id.level_id.short_name
+                            or cl.aps_class_id.subject_id.level_id.name
+                        )
+                        if cl.aps_class_id and cl.aps_class_id.subject_id
+                        and cl.aps_class_id.subject_id.level_id
+                        else cl.name
+                    )
+                )
+                for cl in lesson.class_ids if cl.name
             )
             classroom = ', '.join(
                 cr.name for cr in card.classroom_ids if cr.name

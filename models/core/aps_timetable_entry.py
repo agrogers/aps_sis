@@ -14,6 +14,15 @@ class APSTimetableEntry(models.Model):
     _description = 'School Timetable Entry'
     _order = 'start_datetime, teacher_id'
 
+    @api.model
+    def get_current_teacher_id(self):
+        """Return the timetable teacher record for the logged-in user."""
+        teacher = self.env['aps.teacher'].search([
+            ('partner_id', '=', self.env.user.partner_id.id),
+            ('active', '=', True),
+        ], limit=1)
+        return teacher.id or False
+
     name = fields.Char(string='Title', required=True)
 
     # ── Teacher ───────────────────────────────────────────────────────────────
@@ -59,6 +68,17 @@ class APSTimetableEntry(models.Model):
         string='Color Index',
     )
     subject_name = fields.Char(string='Subject')
+    subject_category_icon = fields.Image(
+        related='subject_category_id.icon',
+        string='Subject Category Icon',
+        store=True,
+        readonly=True,
+    )
+    subject_category_id_value = fields.Integer(
+        related='subject_category_id.id',
+        string='Subject Category ID',
+        readonly=True,
+    )
 
     # ── Time ──────────────────────────────────────────────────────────────────
     start_datetime = fields.Datetime(string='Start', required=True, index=True)
