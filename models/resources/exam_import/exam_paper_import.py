@@ -65,9 +65,9 @@ class APSExamPaperImport(models.Model):
     )
     analysis_scope = fields.Selection([
         ('all', 'All Pages'),
-        ('pending', 'Not Yet Analysed (Pending or Failed)'),
-    ], default='all', required=True, string='Analyse Pages Scope',
-        help='Controls which rendered pages the "Analyse Pages" button processes.')
+        ('pending', 'Not Completed (Pending or Failed)'),
+    ], default='all', required=True, string='Pages Scope',
+        help='Controls which rendered pages the "Analyse Pages" and "OCR" buttons process.')
     render_dpi = fields.Integer(default=150, required=True)
     page_ids = fields.One2many('aps.exam.paper.page', 'import_id', string='Rendered Pages')
     page_count = fields.Integer(compute='_compute_counts')
