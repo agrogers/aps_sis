@@ -10,6 +10,13 @@ class TestAPSResource(TransactionCase):
             'end_date': '2026-12-31',
             'is_current': True,
         })
+        previous_year = self.env['aps.academic.year'].create({
+            'name': 'Previous Auto Assign Year',
+            'short_name': 'PAAY',
+            'start_date': '2025-01-01',
+            'end_date': '2025-12-31',
+            'is_current': False,
+        })
         subject = self.env['aps.subject'].create({'name': 'Auto Assign Subject'})
         class_a = self.env['aps.class'].create({
             'subject_id': subject.id,
@@ -20,6 +27,11 @@ class TestAPSResource(TransactionCase):
             'subject_id': subject.id,
             'identifier': 'B',
             'academic_year_id': year.id,
+        })
+        previous_class = self.env['aps.class'].create({
+            'subject_id': subject.id,
+            'identifier': 'Previous',
+            'academic_year_id': previous_year.id,
         })
         partners = self.env['res.partner'].create([
             {'name': 'Auto Student A', 'is_student': True},
@@ -36,7 +48,9 @@ class TestAPSResource(TransactionCase):
             {'student_id': students[1].id, 'class_id': class_b.id, 'state': 'enrolled'},
             {'student_id': students[2].id, 'class_id': class_a.id, 'state': 'withdrawn'},
             {'student_id': students[3].id, 'class_id': class_a.id, 'state': 'waiting'},
+            {'student_id': students[3].id, 'class_id': previous_class.id, 'state': 'enrolled'},
         ])
+        students[2].active = False
         resource = self.env['aps.resources'].create({
             'name': 'Auto Assign Resource',
             'subjects': [(6, 0, [subject.id])],
@@ -52,8 +66,8 @@ class TestAPSResource(TransactionCase):
 
         selected = resource._get_auto_assign_student_partners()
 
-        self.assertEqual(set(selected.ids), {partners[0].id, partners[1].id, partners[2].id})
-        self.assertEqual(len(selected), 3)
+        self.assertEqual(set(selected.ids), {partners[0].id, partners[1].id})
+        self.assertEqual(len(selected), 2)
 
     def test_auto_assign_empty_targets_do_not_fall_back_to_all_students(self):
         """Disabling all-student mode with no targets selects nobody."""
@@ -73,6 +87,26 @@ class TestAPSResource(TransactionCase):
         selected = resource._get_auto_assign_student_partners()
 
         self.assertEqual(set(selected.ids), {partners[0].id, partners[1].id})
+
+    def test_auto_assign_excludes_previous_academic_year(self):
+        """Class-based assignment only uses classes in the current year."""
+        resource, _class_a, _class_b, partners = self._make_auto_assign_fixture()
+
+        resource.auto_assign_all_students = True
+
+        selected = resource._get_auto_assign_student_partners()
+
+        self.assertNotIn(partners[3], selected)
+
+    def test_auto_assign_excludes_archived_students(self):
+        """Archived student records are excluded from all assignment modes."""
+        resource, _class_a, _class_b, partners = self._make_auto_assign_fixture()
+
+        resource.auto_assign_all_students = True
+
+        selected = resource._get_auto_assign_student_partners()
+
+        self.assertNotIn(partners[2], selected)
 
     def test_compute_display_name_simple(self):
         """Test that display_name is set correctly for a resource with no parents."""

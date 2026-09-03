@@ -170,7 +170,7 @@ export class VoteAnalysisDashboard extends Component {
 
         const fullNames = recipients.map((r) => r.name);
         const labels = fullNames.map((name) => this._truncateLabel(name, 20));
-        const colors = ["#0d6efd","#198754","#ffc107","#dc3545","#6f42c1","#fd7e14","#20c997","#6610f2","#d63384","#0dcaf0"];
+        const colors = ["#0d6efd","#198754","#ffc107","#6f42c1","#fd7e14","#20c997","#6610f2","#d63384","#0dcaf0","#dc3545"];
 
         const datasets = series.map((round, idx) => ({
             label: round.name,
@@ -227,9 +227,12 @@ export class VoteAnalysisDashboard extends Component {
         };
         if (hasOverlay) {
             scales.y1 = {
-                beginAtZero: true, ticks: { stepSize: 1 },
-                title: { display: true, text: "Certificates" },
-                position: "right", grid: { drawOnChartArea: false },
+                beginAtZero: true,
+                ticks: { stepSize: 1, color: "#e11d48" },
+                title: { display: true, text: "Certificates", color: "#e11d48" },
+                position: "right",
+                border: { color: "#e11d48" },
+                grid: { drawOnChartArea: false },
             };
         }
 

@@ -716,15 +716,23 @@ class APSResource(models.Model):
             if self.subjects:
                 enrollments = self.env['aps.student.class'].search([
                     ('state', '=', 'enrolled'),
+                    ('student_id.active', '=', True),
+                    ('class_id.academic_year_id.is_current', '=', True),
                     ('class_id.subject_id', 'in', self.subjects.ids),
                 ])
                 return enrollments.mapped('student_id.partner_id')
             return self.env['res.partner']
 
-        student_partners = self.auto_assign_student_ids
+        active_student_partners = self.env['aps.student'].search([
+            ('partner_id', 'in', self.auto_assign_student_ids.ids),
+            ('active', '=', True),
+        ]).mapped('partner_id')
+        student_partners = active_student_partners
         if self.auto_assign_class_ids:
             enrollments = self.env['aps.student.class'].search([
                 ('state', '=', 'enrolled'),
+                ('student_id.active', '=', True),
+                ('class_id.academic_year_id.is_current', '=', True),
                 ('class_id', 'in', self.auto_assign_class_ids.ids),
             ])
             student_partners |= enrollments.mapped('student_id.partner_id')
