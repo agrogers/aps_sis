@@ -67,5 +67,5 @@ class APSExamPaperSection(models.Model):
         self.ensure_one()
         if not self.resource_id:
             raise UserError(_('Build a resource for this section before running OCR.'))
-        run = self.import_id._create_ocr_run(self)
+        run = self.import_id._create_ocr_run(self, force=True)
         return self.import_id._build_ocr_run_notification(run)

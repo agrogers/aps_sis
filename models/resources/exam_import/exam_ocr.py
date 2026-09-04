@@ -25,9 +25,9 @@ class APSExamPaperImportOcr(models.Model):
         run = self._create_ocr_run(sections)
         return self._build_ocr_run_notification(run)
 
-    def _create_ocr_run(self, sections):
+    def _create_ocr_run(self, sections, force=False):
         sections = sections.filtered('resource_id')
-        if self.analysis_scope == 'pending':
+        if self.analysis_scope == 'pending' and not force:
             sections = sections.filtered(lambda section: section.ocr_state != 'complete')
         if not sections:
             raise UserError(_('No sections require OCR.'))
