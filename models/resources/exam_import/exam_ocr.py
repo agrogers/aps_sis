@@ -16,7 +16,12 @@ class APSExamPaperImportOcr(models.Model):
     def action_ocr_resources(self):
         self.ensure_one()
         sections = self.section_ids.filtered('resource_id')
-        if self.analysis_scope == 'pending':
+        if self.analysis_scope == 'all':
+            # A full OCR request is an explicit re-run. Reset every linked
+            # section before queuing the run so the status reflects that work
+            # is pending again, including sections previously marked complete.
+            sections.write({'ocr_state': 'pending', 'ocr_error': False})
+        elif self.analysis_scope == 'pending':
             sections = sections.filtered(lambda section: section.ocr_state != 'complete')
         if not sections:
             if self.analysis_scope == 'pending':
