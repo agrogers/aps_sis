@@ -199,5 +199,74 @@
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
         </record>
 
+        <!-- Award voting visibility: teachers are assigned through voting sets.
+             APEX and Awards Managers receive unrestricted overrides below. -->
+        <record id="rule_aps_award_voting_set_teacher" model="ir.rule">
+            <field name="name">Teacher (APEX): Assigned Award Voting Sets</field>
+            <field name="model_id" ref="model_aps_award_voting_set"/>
+            <field name="domain_force">[('vote_set_managers', '=', user.partner_id.id)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+        </record>
+
+        <record id="rule_aps_award_vote_round_teacher" model="ir.rule">
+            <field name="name">Teacher (APEX): Assigned Award Vote Rounds</field>
+            <field name="model_id" ref="model_aps_award_vote_round"/>
+            <field name="domain_force">[('voting_set_ids.vote_set_managers', '=', user.partner_id.id)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+        </record>
+
+        <record id="rule_aps_award_vote_teacher" model="ir.rule">
+            <field name="name">Teacher (APEX): Assigned Award Votes or Own Votes</field>
+            <field name="model_id" ref="model_aps_award_vote"/>
+            <field name="domain_force">
+                ['|',
+                  ('voter_partner_id', '=', user.partner_id.id),
+                  ('vote_round_id.voting_set_ids.vote_set_managers', '=', user.partner_id.id)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+        </record>
+
+        <record id="rule_aps_award_voting_set_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Award Voting Sets</field>
+            <field name="model_id" ref="model_aps_award_voting_set"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_award_vote_round_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Award Vote Rounds</field>
+            <field name="model_id" ref="model_aps_award_vote_round"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_award_vote_manager" model="ir.rule">
+            <field name="name">Manager (APEX): All Award Votes</field>
+            <field name="model_id" ref="model_aps_award_vote"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_aps_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_award_voting_set_awards_manager" model="ir.rule">
+            <field name="name">Awards Manager: All Award Voting Sets</field>
+            <field name="model_id" ref="model_aps_award_voting_set"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_awards_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_award_vote_round_awards_manager" model="ir.rule">
+            <field name="name">Awards Manager: All Award Vote Rounds</field>
+            <field name="model_id" ref="model_aps_award_vote_round"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_awards_manager'))]"/>
+        </record>
+
+        <record id="rule_aps_award_vote_awards_manager" model="ir.rule">
+            <field name="name">Awards Manager: All Award Votes</field>
+            <field name="model_id" ref="model_aps_award_vote"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_awards_manager'))]"/>
+        </record>
+
     </data>
 </odoo>

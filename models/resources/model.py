@@ -276,6 +276,7 @@ class APSResource(models.Model):
     )
     child_ids = fields.Many2many('aps.resources', 'aps_resources_rel', 'parent_id', 'child_id', string='Linked Resources', domain="[('id', '!=', id)]")
     child_count = fields.Integer(string='Total Children', compute='_compute_child_count')
+    all_child_count = fields.Integer(string='All Child Resources', compute='_compute_all_child_count')
     has_multiple_parents = fields.Boolean(string='Has Multiple Parents', compute='_compute_has_multiple_parents')
     supporting_resource_ids = fields.Many2many('aps.resources', 'aps_supporting_resources_rel', 'parent_id', 'child_id', string='Supporting Resources', domain="[('id', '!=', id)]")
     supporting_resource_count = fields.Integer(string='Supporting Resources Count', compute='_compute_supporting_resource_count')

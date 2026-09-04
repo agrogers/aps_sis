@@ -13,6 +13,16 @@ class APSAwardVotingSet(models.Model):
     date_start = fields.Date(string='Start Date')
     date_end = fields.Date(string='End Date')
 
+    vote_set_managers = fields.Many2many(
+        'res.partner',
+        'aps_award_voting_set_manager_rel',
+        'voting_set_id',
+        'partner_id',
+        string='Vote Set Managers',
+        domain=[('user_ids', '!=', False)],
+        help='Users who can view votes belonging to this voting set.',
+    )
+
     round_ids = fields.Many2many(
         'aps.award.vote.round',
         'aps_vote_round_voting_set_rel',

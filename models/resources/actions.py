@@ -264,6 +264,27 @@ class APSResource(models.Model):
             'target': 'current',
         }
 
+    def action_open_all_child_resources_list(self):
+        """Open all descendants of this resource in a standard list/form view."""
+        self.ensure_one()
+        descendants = self.env['aps.resources'].browse()
+        frontier = self.child_ids
+        while frontier:
+            frontier -= descendants
+            if not frontier:
+                break
+            descendants |= frontier
+            frontier = self.env['aps.resources'].search([('parent_ids', 'in', frontier.ids)])
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'All Child Resources: {self.name}',
+            'res_model': 'aps.resources',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', descendants.ids)],
+            'context': {'default_subjects': self.subjects.ids},
+            'target': 'current',
+        }
+
     def action_open_supporting_resources_list(self):
         """Open supporting resources in a standard list/form view with navigation."""
         self.ensure_one()

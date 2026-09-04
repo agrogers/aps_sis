@@ -161,6 +161,11 @@
                                 invisible="child_count == 0">
                             <field name="child_count" widget="statinfo" string="Linked"/>
                         </button>
+                        <button name="action_open_all_child_resources_list" type="object"
+                                class="oe_stat_button" icon="fa-sitemap"
+                                invisible="all_child_count == 0">
+                            <field name="all_child_count" widget="statinfo" string="All Children"/>
+                        </button>
                         <button name="action_open_supporting_resources_list" type="object"
                                 class="oe_stat_button" icon="fa-life-ring"
                                 invisible="supporting_resource_count == 0">
