@@ -35,6 +35,12 @@ class APSResourceMassUpdateWizard(models.TransientModel):
     update_marks = fields.Boolean(string='Out of Marks')
     marks_value = fields.Float(string='Value', digits=(16, 1))
 
+    update_sequence = fields.Boolean(string='Sequence')
+    sequence_value = fields.Integer(string='Value')
+
+    update_weight = fields.Boolean(string='Weight')
+    weight_value = fields.Float(string='Value', digits=(16, 1))
+
     update_points_scale = fields.Boolean(string='Points Scale')
     points_scale_value = fields.Integer(string='Value', default=1)
 
@@ -43,6 +49,12 @@ class APSResourceMassUpdateWizard(models.TransientModel):
 
     update_url = fields.Boolean(string='URL')
     url_value = fields.Char(string='Value')
+
+    update_subjects = fields.Boolean(string='Subjects')
+    subject_ids_value = fields.Many2many(
+        'aps.subject', 'aps_mass_update_subject_rel', 'wizard_id', 'subject_id',
+        string='Value',
+    )
 
     update_has_question = fields.Boolean(string='Has Question')
     has_question_value = fields.Selection([
@@ -88,6 +100,77 @@ class APSResourceMassUpdateWizard(models.TransientModel):
 
     update_show_in_hierarchy = fields.Boolean(string='Show in Hierarchy')
     show_in_hierarchy_value = fields.Boolean(string='Value')
+
+    update_auto_assign = fields.Boolean(string='Auto Assign')
+    auto_assign_value = fields.Boolean(string='Value')
+    update_auto_assign_date = fields.Boolean(string='Next Assign Date')
+    auto_assign_date_value = fields.Date(string='Value')
+    update_auto_assign_end_date = fields.Boolean(string='Auto Assign End Date')
+    auto_assign_end_date_value = fields.Date(string='Value')
+    update_auto_assign_due_days = fields.Boolean(string='Auto Assign Due Days')
+    auto_assign_due_days_value = fields.Integer(string='Value')
+    update_auto_assign_frequency = fields.Boolean(string='Auto Assign Frequency')
+    auto_assign_frequency_value = fields.Integer(string='Value')
+    update_auto_assign_time = fields.Boolean(string='Auto Assign Time')
+    auto_assign_time_value = fields.Float(string='Value')
+    update_auto_assign_all_students = fields.Boolean(string='Assign All Students')
+    auto_assign_all_students_value = fields.Boolean(string='Value')
+    update_auto_assign_notify_student = fields.Boolean(string='Notify Student')
+    auto_assign_notify_student_value = fields.Boolean(string='Value')
+    update_auto_assign_custom_name = fields.Boolean(string='Auto Assign Custom Name')
+    auto_assign_custom_name_value = fields.Char(string='Value')
+
+    update_ai_instructions = fields.Boolean(string='AI Instructions')
+    ai_instructions_value = fields.Html(string='Value')
+    update_ai_model_id = fields.Boolean(string='AI Model')
+    ai_model_id_value = fields.Many2one('aps.ai.model', string='Value', domain=[('enabled', '=', True)])
+    update_ai_model_ids = fields.Boolean(string='AI Models')
+    ai_model_ids_value = fields.Many2many(
+        'aps.ai.model', 'aps_mass_update_ai_model_rel', 'wizard_id', 'model_id',
+        string='Value', domain=[('enabled', '=', True)],
+    )
+    update_ai_prompt_ids = fields.Boolean(string='AI Prompts')
+    ai_prompt_ids_value = fields.Many2many(
+        'ai_prompts', 'aps_mass_update_ai_prompt_rel', 'wizard_id', 'prompt_id',
+        string='Value', domain=[('enabled', '=', True)],
+    )
+    update_ai_action = fields.Boolean(string='AI Action')
+    ai_action_value = fields.Selection([
+        ('none', 'None'), ('mark_submission', 'Mark Submission'),
+        ('mark_submission_use_answer', '--Dont Use---'), ('manual', 'Manual Action'),
+    ], string='Value')
+    _AI_BOOLEAN_FIELDS = (
+        'ai_use_model_answer', 'ai_use_question', 'ai_merge_responses',
+        'ai_merge_response_chunks', 'ai_use_notes', 'ai_use_supporting_resources',
+        'ai_targeted_feedback', 'ai_toc', 'ai_summary', 'ai_analysis',
+        'ai_table_of_results', 'ai_test_prompt', 'ai_show_saved_responses',
+    )
+    update_ai_use_model_answer = fields.Boolean(string='Use AI Model Answer')
+    ai_use_model_answer_value = fields.Boolean(string='Value')
+    update_ai_use_question = fields.Boolean(string='Use AI Question')
+    ai_use_question_value = fields.Boolean(string='Value')
+    update_ai_merge_responses = fields.Boolean(string='Merge AI Responses')
+    ai_merge_responses_value = fields.Boolean(string='Value')
+    update_ai_merge_response_chunks = fields.Boolean(string='Merge AI Response Chunks')
+    ai_merge_response_chunks_value = fields.Boolean(string='Value')
+    update_ai_use_notes = fields.Boolean(string='Use AI Notes')
+    ai_use_notes_value = fields.Boolean(string='Value')
+    update_ai_use_supporting_resources = fields.Boolean(string='Use AI Supporting Resources')
+    ai_use_supporting_resources_value = fields.Boolean(string='Value')
+    update_ai_targeted_feedback = fields.Boolean(string='Targeted AI Feedback')
+    ai_targeted_feedback_value = fields.Boolean(string='Value')
+    update_ai_toc = fields.Boolean(string='AI TOC')
+    ai_toc_value = fields.Boolean(string='Value')
+    update_ai_summary = fields.Boolean(string='AI Summary')
+    ai_summary_value = fields.Boolean(string='Value')
+    update_ai_analysis = fields.Boolean(string='AI Analysis')
+    ai_analysis_value = fields.Boolean(string='Value')
+    update_ai_table_of_results = fields.Boolean(string='AI Table of Results')
+    ai_table_of_results_value = fields.Boolean(string='Value')
+    update_ai_test_prompt = fields.Boolean(string='Test AI Prompt')
+    ai_test_prompt_value = fields.Boolean(string='Value')
+    update_ai_show_saved_responses = fields.Boolean(string='Show Saved AI Responses')
+    ai_show_saved_responses_value = fields.Boolean(string='Value')
 
     # HTML fields — toggled on Options tab, edited on their own tabs
     update_question = fields.Boolean(string='Question')
@@ -170,6 +253,12 @@ class APSResourceMassUpdateWizard(models.TransientModel):
         if self.update_marks:
             updates['marks'] = self.marks_value
 
+        if self.update_sequence:
+            updates['sequence'] = self.sequence_value
+
+        if self.update_weight:
+            updates['weight'] = self.weight_value
+
         if self.update_points_scale:
             updates['points_scale'] = self.points_scale_value
 
@@ -178,6 +267,9 @@ class APSResourceMassUpdateWizard(models.TransientModel):
 
         if self.update_url:
             updates['url'] = self.url_value
+
+        if self.update_subjects:
+            updates['subjects'] = [(6, 0, self.subject_ids_value.ids)]
 
         if self.update_has_question:
             updates['has_question'] = self.has_question_value
@@ -205,6 +297,30 @@ class APSResourceMassUpdateWizard(models.TransientModel):
 
         if self.update_show_in_hierarchy:
             updates['show_in_hierarchy'] = self.show_in_hierarchy_value
+
+        for field_name in self._AI_BOOLEAN_FIELDS:
+            if getattr(self, 'update_' + field_name):
+                updates[field_name] = getattr(self, field_name + '_value')
+
+        if self.update_ai_instructions:
+            updates['ai_instructions'] = self.ai_instructions_value
+        if self.update_ai_model_id:
+            updates['ai_model_id'] = self.ai_model_id_value.id or False
+        if self.update_ai_model_ids:
+            updates['ai_model_ids'] = [(6, 0, self.ai_model_ids_value.ids)]
+        if self.update_ai_prompt_ids:
+            updates['ai_prompt_ids'] = [(6, 0, self.ai_prompt_ids_value.ids)]
+        if self.update_ai_action:
+            updates['ai_action'] = self.ai_action_value
+
+        for field_name in (
+            'auto_assign', 'auto_assign_date', 'auto_assign_end_date',
+            'auto_assign_due_days', 'auto_assign_frequency', 'auto_assign_time',
+            'auto_assign_all_students', 'auto_assign_notify_student',
+            'auto_assign_custom_name',
+        ):
+            if getattr(self, 'update_' + field_name):
+                updates[field_name] = getattr(self, field_name + '_value')
 
         if self.update_question:
             updates['question'] = self.question_value

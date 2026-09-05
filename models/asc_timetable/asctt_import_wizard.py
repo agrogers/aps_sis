@@ -803,6 +803,32 @@ class ASCTTImportWizard(models.TransientModel):
         # 6. Iterate cards ───────────────────────────────────────────────────────
         cards = self.env['asctt.card'].search([])
         to_create = []
+        grade_level_cache = {}
+
+        def get_class_for_asctt_class(asctt_class, subject_category):
+            """Resolve the first enrolled APEX class for the import range."""
+            if not subject_category or not asctt_class.grade:
+                return self.env['aps.class']
+            try:
+                grade_number = int(asctt_class.grade)
+            except (TypeError, ValueError):
+                return self.env['aps.class']
+            if grade_number not in grade_level_cache:
+                grade = self.env['asctt.grade'].search(
+                    [('grade', '=', grade_number)], limit=1
+                )
+                grade_level_cache[grade_number] = grade.aps_level_id
+            level = grade_level_cache[grade_number]
+            if not level:
+                return self.env['aps.class']
+            return self.env['aps.class'].search([
+                ('subject_id.category_id', '=', subject_category.id),
+                ('subject_id.level_id', '=', level.id),
+                ('enrollment_ids.start_date', '<=', end_date),
+                '|',
+                ('enrollment_ids.end_date', '=', False),
+                ('enrollment_ids.end_date', '>=', start_date),
+            ], order='id', limit=1)
 
         for card in cards:
             if not card.lesson_id:
@@ -844,25 +870,10 @@ class ASCTTImportWizard(models.TransientModel):
             if target_weekday < 0 or target_weekday > 4:
                 continue
 
-            class_names = ', '.join(
-                (
-                    cl.short
-                    or (
-                        (
-                            cl.aps_class_id.subject_id.level_id.short_name
-                            or cl.aps_class_id.subject_id.level_id.name
-                        )
-                        if cl.aps_class_id and cl.aps_class_id.subject_id
-                        and cl.aps_class_id.subject_id.level_id
-                        else cl.name
-                    )
-                )
-                for cl in lesson.class_ids if cl.name
-            )
             classroom = ', '.join(
                 cr.name for cr in card.classroom_ids if cr.name
             )
-            entry_name = f"{subject_name} – {class_names}" if class_names else subject_name or 'Lesson'
+            lesson_classes = lesson.class_ids or self.env['asctt.class']
 
             # 7. Match against school days ────────────────────────────────────
             for sc_date in weekday_to_dates.get(target_weekday, []):
@@ -876,20 +887,33 @@ class ASCTTImportWizard(models.TransientModel):
                 utc_start = user_tz.localize(local_start).astimezone(pytz.utc).replace(tzinfo=None)
                 utc_end = user_tz.localize(local_end).astimezone(pytz.utc).replace(tzinfo=None)
 
-                for teacher in teachers:
-                    to_create.append({
-                        'name': entry_name,
-                        'teacher_id': teacher.id,
-                        'partner_ids': [(4, teacher.partner_id.id)],
-                        'subject_category_id': subject_cat.id if subject_cat else False,
-                        'start_datetime': utc_start,
-                        'stop_datetime': utc_end,
-                        'classroom': classroom or False,
-                        'class_names': class_names or False,
-                        'subject_name': subject_name or False,
-                        'academic_term_id': term.id if term else False,
-                        'source_card_id': card.id,
-                    })
+                for asctt_class in lesson_classes:
+                    aps_class = get_class_for_asctt_class(
+                        asctt_class, subject_cat
+                    )
+                    class_name = (
+                        aps_class.display_name if aps_class else
+                        asctt_class.short or asctt_class.name
+                    )
+                    entry_name = (
+                        f"{subject_name} – {class_name}"
+                        if class_name else subject_name or 'Lesson'
+                    )
+                    for teacher in teachers:
+                        to_create.append({
+                            'name': entry_name,
+                            'aps_class_id': aps_class.id if aps_class else False,
+                            'teacher_id': teacher.id,
+                            'partner_ids': [(4, teacher.partner_id.id)],
+                            'subject_category_id': subject_cat.id if subject_cat else False,
+                            'start_datetime': utc_start,
+                            'stop_datetime': utc_end,
+                            'classroom': classroom or False,
+                            'class_names': class_name or False,
+                            'subject_name': subject_name or False,
+                            'academic_term_id': term.id if term else False,
+                            'source_card_id': card.id,
+                        })
 
         # A double/triple period is represented by separate aSc cards.  Merge
         # cards for the same lesson when their periods touch, so the calendar
@@ -910,6 +934,7 @@ class ASCTTImportWizard(models.TransientModel):
             merge_key = (
                 values['teacher_id'],
                 source_card.lesson_id.id,
+                values['aps_class_id'],
                 values['subject_category_id'],
                 values['classroom'],
                 values['class_names'],

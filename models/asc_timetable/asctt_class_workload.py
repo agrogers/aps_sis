@@ -45,7 +45,7 @@ class ASCTTClassWorkload(models.Model):
                     {week_weight} AS week_weight,
                     ({period_minutes}) * ({week_weight}) AS weighted_minutes,
                     cls.id AS class_id,
-                    cls.aps_class_id,
+                    NULL::INTEGER AS aps_class_id,
                     teachers.teacher_names,
                     COALESCE(s.name, 'Unknown') AS subject_name,
                     c.id AS card_id

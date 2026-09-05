@@ -56,7 +56,7 @@ def get_timetable_view_query(view_name):
                     t.id AS teacher_id,
                     t.aps_teacher_id,
                     cls.id AS class_id,
-                    cls.aps_class_id,
+                    NULL::INTEGER AS aps_class_id,
                     CASE WHEN cls.id IS NULL THEN 'Supervision'
                          ELSE COALESCE(s.name, 'Unknown') END AS subject_name,
                     (t.id <> ({teacher_first_id})

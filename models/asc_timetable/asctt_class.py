@@ -23,10 +23,8 @@ class ASCTTClass(models.Model):
     )
     grade = fields.Char(string='Grade', size=20)
 
-    # APEX link
-    aps_class_id = fields.Many2one(
-        'aps.class',
-        string='APEX Class',
-        ondelete='set null',
-        help='Link to the corresponding APEX Class record.',
+    aps_class_identifier = fields.Char(
+        string='APEX Class Identifier',
+        size=64,
+        help='Optional identifier used to document the corresponding APEX class.',
     )

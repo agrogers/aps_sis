@@ -60,6 +60,12 @@ class APSTimetableEntry(models.Model):
         ondelete='set null',
         index=True,
     )
+    aps_class_id = fields.Many2one(
+        'aps.class',
+        string='APEX Class',
+        ondelete='set null',
+        index=True,
+    )
     # Integer colour index (0-10) driven by the subject category.
     # Used by the Odoo calendar view ``color`` attribute.
     color = fields.Integer(

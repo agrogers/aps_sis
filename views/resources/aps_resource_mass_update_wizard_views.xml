@@ -42,6 +42,12 @@
                                     </group>
                                     <group colspan="8"><field name="marks_value" invisible="not update_marks"/></group>
 
+                                    <group colspan="4"><field name="update_sequence" nolabel="1" widget="boolean_toggle"/><label for="update_sequence" class="mb-0">Sequence</label></group>
+                                    <group colspan="8"><field name="sequence_value" invisible="not update_sequence"/></group>
+
+                                    <group colspan="4"><field name="update_weight" nolabel="1" widget="boolean_toggle"/><label for="update_weight" class="mb-0">Weight</label></group>
+                                    <group colspan="8"><field name="weight_value" invisible="not update_weight"/></group>
+
                                     <group colspan="4">
                                         <field name="update_points_scale" nolabel="1" widget="boolean_toggle"/>
                                         <label for="update_points_scale" class="mb-0">Points Scale</label>
@@ -53,6 +59,9 @@
                                         <label for="update_url" class="mb-0">URL</label>
                                     </group>
                                     <group colspan="8"><field name="url_value" invisible="not update_url"/></group>
+
+                                    <group colspan="4"><field name="update_subjects" nolabel="1" widget="boolean_toggle"/><label for="update_subjects" class="mb-0">Subjects</label></group>
+                                    <group colspan="8"><field name="subject_ids_value" widget="many2many_tags" invisible="not update_subjects"/></group>
 
                                     <group colspan="4">
                                         <field name="update_has_question" nolabel="1" widget="boolean_toggle"/>
@@ -144,6 +153,51 @@
                                         <label for="update_show_in_hierarchy" class="mb-0">Show in Hierarchy</label>
                                     </group>
                                     <group colspan="8"><field name="show_in_hierarchy_value" widget="boolean_toggle" invisible="not update_show_in_hierarchy"/></group>
+
+                                    <group colspan="4"><field name="update_auto_assign" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign" class="mb-0">Auto Assign</label></group>
+                                    <group colspan="8"><field name="auto_assign_value" widget="boolean_toggle" invisible="not update_auto_assign"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_date" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_date" class="mb-0">Next Assign Date</label></group>
+                                    <group colspan="8"><field name="auto_assign_date_value" invisible="not update_auto_assign_date"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_end_date" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_end_date" class="mb-0">Auto Assign End Date</label></group>
+                                    <group colspan="8"><field name="auto_assign_end_date_value" invisible="not update_auto_assign_end_date"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_due_days" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_due_days" class="mb-0">Auto Assign Due Days</label></group>
+                                    <group colspan="8"><field name="auto_assign_due_days_value" invisible="not update_auto_assign_due_days"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_frequency" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_frequency" class="mb-0">Auto Assign Frequency</label></group>
+                                    <group colspan="8"><field name="auto_assign_frequency_value" invisible="not update_auto_assign_frequency"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_time" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_time" class="mb-0">Auto Assign Time</label></group>
+                                    <group colspan="8"><field name="auto_assign_time_value" invisible="not update_auto_assign_time"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_all_students" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_all_students" class="mb-0">Assign All Students</label></group>
+                                    <group colspan="8"><field name="auto_assign_all_students_value" widget="boolean_toggle" invisible="not update_auto_assign_all_students"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_notify_student" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_notify_student" class="mb-0">Notify Student</label></group>
+                                    <group colspan="8"><field name="auto_assign_notify_student_value" widget="boolean_toggle" invisible="not update_auto_assign_notify_student"/></group>
+                                    <group colspan="4"><field name="update_auto_assign_custom_name" nolabel="1" widget="boolean_toggle"/><label for="update_auto_assign_custom_name" class="mb-0">Auto Assign Custom Name</label></group>
+                                    <group colspan="8"><field name="auto_assign_custom_name_value" invisible="not update_auto_assign_custom_name"/></group>
+
+                                    <group colspan="4"><field name="update_ai_instructions" nolabel="1" widget="boolean_toggle"/><label for="update_ai_instructions" class="mb-0">AI Instructions</label></group>
+                                    <group colspan="8"><field name="ai_instructions_value" widget="html" invisible="not update_ai_instructions"/></group>
+                                    <group colspan="4"><field name="update_ai_model_id" nolabel="1" widget="boolean_toggle"/><label for="update_ai_model_id" class="mb-0">AI Model</label></group>
+                                    <group colspan="8"><field name="ai_model_id_value" invisible="not update_ai_model_id"/></group>
+                                    <group colspan="4"><field name="update_ai_model_ids" nolabel="1" widget="boolean_toggle"/><label for="update_ai_model_ids" class="mb-0">AI Models</label></group>
+                                    <group colspan="8"><field name="ai_model_ids_value" widget="many2many_tags" invisible="not update_ai_model_ids"/></group>
+                                    <group colspan="4"><field name="update_ai_prompt_ids" nolabel="1" widget="boolean_toggle"/><label for="update_ai_prompt_ids" class="mb-0">AI Prompts</label></group>
+                                    <group colspan="8"><field name="ai_prompt_ids_value" widget="many2many_tags" invisible="not update_ai_prompt_ids"/></group>
+                                    <group colspan="4"><field name="update_ai_action" nolabel="1" widget="boolean_toggle"/><label for="update_ai_action" class="mb-0">AI Action</label></group>
+                                    <group colspan="8"><field name="ai_action_value" invisible="not update_ai_action"/></group>
+
+                                    <group colspan="4"><span class="o_form_label fw-bold">AI Options</span></group><group colspan="8"/>
+                                    <group colspan="4"><field name="update_ai_use_model_answer" nolabel="1" widget="boolean_toggle"/><label for="update_ai_use_model_answer" class="mb-0">Use Model Answer</label></group><group colspan="8"><field name="ai_use_model_answer_value" widget="boolean_toggle" invisible="not update_ai_use_model_answer"/></group>
+                                    <group colspan="4"><field name="update_ai_use_question" nolabel="1" widget="boolean_toggle"/><label for="update_ai_use_question" class="mb-0">Use Question</label></group><group colspan="8"><field name="ai_use_question_value" widget="boolean_toggle" invisible="not update_ai_use_question"/></group>
+                                    <group colspan="4"><field name="update_ai_use_notes" nolabel="1" widget="boolean_toggle"/><label for="update_ai_use_notes" class="mb-0">Use Notes</label></group><group colspan="8"><field name="ai_use_notes_value" widget="boolean_toggle" invisible="not update_ai_use_notes"/></group>
+                                    <group colspan="4"><field name="update_ai_use_supporting_resources" nolabel="1" widget="boolean_toggle"/><label for="update_ai_use_supporting_resources" class="mb-0">Use Supporting Resources</label></group><group colspan="8"><field name="ai_use_supporting_resources_value" widget="boolean_toggle" invisible="not update_ai_use_supporting_resources"/></group>
+                                    <group colspan="4"><field name="update_ai_targeted_feedback" nolabel="1" widget="boolean_toggle"/><label for="update_ai_targeted_feedback" class="mb-0">Targeted Feedback</label></group><group colspan="8"><field name="ai_targeted_feedback_value" widget="boolean_toggle" invisible="not update_ai_targeted_feedback"/></group>
+                                    <group colspan="4"><field name="update_ai_toc" nolabel="1" widget="boolean_toggle"/><label for="update_ai_toc" class="mb-0">TOC</label></group><group colspan="8"><field name="ai_toc_value" widget="boolean_toggle" invisible="not update_ai_toc"/></group>
+                                    <group colspan="4"><field name="update_ai_summary" nolabel="1" widget="boolean_toggle"/><label for="update_ai_summary" class="mb-0">Summary</label></group><group colspan="8"><field name="ai_summary_value" widget="boolean_toggle" invisible="not update_ai_summary"/></group>
+                                    <group colspan="4"><field name="update_ai_analysis" nolabel="1" widget="boolean_toggle"/><label for="update_ai_analysis" class="mb-0">Analysis</label></group><group colspan="8"><field name="ai_analysis_value" widget="boolean_toggle" invisible="not update_ai_analysis"/></group>
+                                    <group colspan="4"><field name="update_ai_table_of_results" nolabel="1" widget="boolean_toggle"/><label for="update_ai_table_of_results" class="mb-0">Table of Results</label></group><group colspan="8"><field name="ai_table_of_results_value" widget="boolean_toggle" invisible="not update_ai_table_of_results"/></group>
+                                    <group colspan="4"><field name="update_ai_test_prompt" nolabel="1" widget="boolean_toggle"/><label for="update_ai_test_prompt" class="mb-0">Test Prompt</label></group><group colspan="8"><field name="ai_test_prompt_value" widget="boolean_toggle" invisible="not update_ai_test_prompt"/></group>
+                                    <group colspan="4"><field name="update_ai_show_saved_responses" nolabel="1" widget="boolean_toggle"/><label for="update_ai_show_saved_responses" class="mb-0">Show Saved Responses</label></group><group colspan="8"><field name="ai_show_saved_responses_value" widget="boolean_toggle" invisible="not update_ai_show_saved_responses"/></group>
+                                    <group colspan="4"><field name="update_ai_merge_responses" nolabel="1" widget="boolean_toggle"/><label for="update_ai_merge_responses" class="mb-0">Merge Responses</label></group><group colspan="8"><field name="ai_merge_responses_value" widget="boolean_toggle" invisible="not update_ai_merge_responses"/></group>
+                                    <group colspan="4"><field name="update_ai_merge_response_chunks" nolabel="1" widget="boolean_toggle"/><label for="update_ai_merge_response_chunks" class="mb-0">Merge Response Chunks</label></group><group colspan="8"><field name="ai_merge_response_chunks_value" widget="boolean_toggle" invisible="not update_ai_merge_response_chunks"/></group>
 
                                     <group colspan="4">
                                         <field name="update_tags" nolabel="1" widget="boolean_toggle"/>

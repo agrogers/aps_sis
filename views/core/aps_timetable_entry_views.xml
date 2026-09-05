@@ -10,6 +10,7 @@
                 <field name="start_datetime" string="Start"/>
                 <field name="stop_datetime" string="End" optional="hide"/>
                 <field name="teacher_id"/>
+                <field name="aps_class_id" optional="show"/>
                 <field name="partner_id" invisible="1"/>
                 <field name="name" string="Lesson"/>
                 <field name="subject_category_id" optional="show"/>
@@ -36,6 +37,7 @@
                         <group string="Lesson">
                             <field name="name"/>
                             <field name="teacher_id"/>
+                            <field name="aps_class_id"/>
                             <field name="subject_category_id"/>
                             <field name="subject_category_icon" widget="image"/>
                             <field name="subject_category_id_value" readonly="1"/>
@@ -64,6 +66,7 @@
         <field name="arch" type="xml">
             <search string="School Timetable">
                 <field name="teacher_id"/>
+                <field name="aps_class_id"/>
                 <field name="subject_category_id"/>
                 <field name="name"/>
                 <field name="class_names"/>
@@ -74,6 +77,7 @@
                                   ('start_datetime', '&lt;',  datetime.datetime.combine(context_today(), datetime.time(23,59,59)))]"/>
                 <group expand="0" string="Group By">
                     <filter string="Teacher" name="group_teacher" context="{'group_by': 'teacher_id'}"/>
+                    <filter string="APEX Class" name="group_class" context="{'group_by': 'aps_class_id'}"/>
                     <filter string="Subject Category" name="group_subject" context="{'group_by': 'subject_category_id'}"/>
                     <filter string="Term" name="group_term" context="{'group_by': 'academic_term_id'}"/>
                 </group>
@@ -111,6 +115,7 @@
                        avatar_field="avatar_128"/>
                 <field name="name"/>
                 <field name="teacher_id"/>
+                <field name="aps_class_id"/>
                 <field name="subject_category_id"/>
                 <field name="subject_category_icon" invisible="1"/>
                 <field name="subject_category_id_value" invisible="1"/>

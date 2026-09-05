@@ -65,7 +65,7 @@ class ASCTTClassSubjectMinutes(models.Model):
                     ROW_NUMBER() OVER (ORDER BY cls.id, COALESCE(s.id, 0)) AS id,
 
                     cls.id          AS class_id,
-                    cls.aps_class_id,
+                    NULL::INTEGER AS aps_class_id,
                     cls.name        AS class_name,
 
                     s.id            AS subject_id,
@@ -86,7 +86,7 @@ class ASCTTClassSubjectMinutes(models.Model):
                 LEFT JOIN asctt_lesson_class_rel lcr ON lcr.lesson_id = l.id
                 LEFT JOIN asctt_class cls ON cls.id = lcr.class_id
                 WHERE cls.id IS NOT NULL
-                GROUP BY cls.id, cls.aps_class_id, cls.name,
+                GROUP BY cls.id, cls.name,
                          s.id, s.name
             )
         """.format(

@@ -469,7 +469,7 @@
                 <field name="short"/>
                 <field name="teacher_id"/>
                 <field name="grade" optional="show"/>
-                <field name="aps_class_id"/>
+                <field name="aps_class_identifier" optional="show"/>
                 <field name="asc_id" optional="hide"/>
             </list>
         </field>
@@ -490,7 +490,7 @@
                         </group>
                         <group>
                             <field name="teacher_id"/>
-                            <field name="aps_class_id"/>
+                            <field name="aps_class_identifier"/>
                         </group>
                     </group>
                     <group string="Classrooms">
@@ -574,6 +574,7 @@
             <list>
                 <field name="asc_id"/>
                 <field name="subject_id"/>
+                <field name="class_ids" widget="many2many_tags" optional="show"/>
                 <field name="periods_per_card"/>
                 <field name="periods_per_week"/>
                 <field name="days_def_id" optional="show"/>
@@ -609,6 +610,7 @@
                             <list>
                                 <field name="name"/>
                                 <field name="short"/>
+                                <field name="aps_class_identifier"/>
                             </list>
                         </field>
                     </group>
