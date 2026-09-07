@@ -89,6 +89,7 @@ class APSSubject(models.Model):
     gcse_certificate = fields.Float(string='GCSE Certificate', default=0.0, help='The number of GCSE certificates awarded for this subject')
 
     def action_create_current_year_classes(self):
+        self.ensure_one()
         current_year = self.env['aps.academic.year'].search([('is_current', '=', True)], limit=1)
         if not current_year:
             raise UserError(_(
@@ -96,15 +97,21 @@ class APSSubject(models.Model):
                 "Please mark an academic year as current before adding classes."
             ))
         count = max(1, self.classes_to_create or 1)
-        if count == 1:
-            vals_list = [{'subject_id': self.id, 'academic_year_id': current_year.id}]
-        else:
-            vals_list = [
-                {'subject_id': self.id, 'academic_year_id': current_year.id, 'identifier': str(i)}
-                for i in range(1, count + 1)
-            ]
+        identifiers = [None] if count == 1 else [str(i) for i in range(1, count + 1)]
+        vals_list = []
+        for identifier in identifiers:
+            suffix = identifier or ''
+            vals_list.append({
+                'subject_id': self.id,
+                'academic_year_id': current_year.id,
+                'identifier': identifier,
+                # These values must be supplied during create because ``name``
+                # is required. The stored compute will keep them in sync if
+                # the subject or identifier is later changed.
+                'code': f'{self.code or ""}{suffix}'.strip(),
+                'name': f'{self.name} {suffix}'.strip(),
+            })
         new_classes = self.env['aps.class'].create(vals_list)
-        new_classes._compute_code_name()
         self.write({'show_add_classes': False, 'classes_to_create': 1})
 
     def action_view_classes(self):
