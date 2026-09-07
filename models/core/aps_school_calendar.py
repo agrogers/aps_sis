@@ -18,6 +18,12 @@ class ApsSchoolCalendar(models.Model):
         required=True,
         ondelete='restrict',
     )
+    timetable_day_id = fields.Many2one(
+        'asctt.days.def',
+        string='Timetable Day',
+        ondelete='set null',
+        help='Overrides the normal weekday used when generating timetable entries.',
+    )
     repeating = fields.Boolean(
         string='Repeats Annually',
         default=False,
@@ -80,11 +86,18 @@ class ApsSchoolCalendar(models.Model):
             else:
                 rec.week_id = False
 
-    @api.depends('date', 'description', 'week_id.short_name', 'week_id.academic_term_id.short_name')
+    @api.depends(
+        'date',
+        'description',
+        'week_id.short_name',
+        'week_id.week_cycle',
+        'week_id.academic_term_id.simple_short_name',
+    )
     def _compute_display_name(self):
         for rec in self:
-            term_code = rec.week_id.academic_term_id.short_name if rec.week_id and rec.week_id.academic_term_id else None
+            term_code = rec.week_id.academic_term_id.simple_short_name if rec.week_id and rec.week_id.academic_term_id else None
             week_code = rec.week_id.short_name if rec.week_id else None
+            week_cycle = rec.week_id.week_cycle if rec.week_id else None
             if term_code and week_code:
                 rec.display_name = f'{term_code}-{week_code}'
             elif week_code:
@@ -93,6 +106,8 @@ class ApsSchoolCalendar(models.Model):
                 rec.display_name = rec.date.strftime('%d %b')
             else:
                 rec.display_name = '(no date)'
+            if week_cycle:
+                rec.display_name = f'{rec.display_name} ({week_cycle})'
             if rec.description:
                 rec.display_name = f'{rec.display_name} ({rec.description})'
 

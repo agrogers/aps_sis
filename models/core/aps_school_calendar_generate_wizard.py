@@ -91,6 +91,7 @@ class ApsSchoolCalendarGenerateWizard(models.TransientModel):
                     for previous_entry in previous_entries:
                         repeated_vals = dict(vals)
                         repeated_vals['date_type_id'] = previous_entry.date_type_id
+                        repeated_vals['timetable_day_id'] = previous_entry.timetable_day_id.id
                         repeated_vals['description'] = previous_entry.description or ''
                         repeated_vals['notes'] = previous_entry.notes or ''
                         repeated_vals['repeating'] = True

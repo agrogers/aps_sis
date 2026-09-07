@@ -789,12 +789,24 @@ class ASCTTImportWizard(models.TransientModel):
         if not date_to_cycle:
             return 0  # no school days in range – nothing to generate
 
-        # 4. Group school days by weekday for fast lookup ───────────────────────
-        # weekday_to_dates[0] = list of Monday school dates, etc.
+        # 4. Group school days by effective timetable weekday for fast lookup.
+        # A calendar override contains a Monday-first binary pattern such as
+        # ``10000``.  Without an override, retain the date's natural weekday.
         from collections import defaultdict
         weekday_to_dates = defaultdict(list)
-        for d in date_to_cycle:
-            weekday_to_dates[d.weekday()].append(d)
+        for school_day in school_days:
+            effective_weekdays = {school_day.date.weekday()}
+            if school_day.timetable_day_id and school_day.timetable_day_id.days:
+                effective_weekdays = {
+                    weekday
+                    for pattern in school_day.timetable_day_id.days.split(',')
+                    for weekday, value in enumerate(pattern.strip()[:7])
+                    if value == '1'
+                }
+                if not effective_weekdays:
+                    effective_weekdays = {school_day.date.weekday()}
+            for weekday in effective_weekdays:
+                weekday_to_dates[weekday].append(school_day.date)
 
         # 5. Timezone for local time → UTC conversion ───────────────────────────
         tz_name = self.env.company.partner_id.tz or self.env.user.tz or 'UTC'

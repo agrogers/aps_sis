@@ -13,6 +13,7 @@
                        decoration-warning="date_type_id.code == 'school_holiday'"
                        decoration-info="date_type_id.code == 'student_free'"
                        decoration-muted="date_type_id.code == 'weekend'"/>
+                  <field name="timetable_day_id" optional="show"/>
                 <field name="description"/>
                 <field name="repeating" optional="show"/>
                 <field name="applies_to_level_ids" optional="show"/>
@@ -34,6 +35,7 @@
                             <field name="date"/>
                             <field name="date_display" readonly="True"/>
                             <field name="date_type_id"/>
+                            <field name="timetable_day_id"/>
                             <field name="applies_to_level_ids"
                                 widget="many2many_tags"
                                 placeholder="Leave blank for all levels"/>
