@@ -1,0 +1,43 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.ExamSectionRegionEditor">
+        <div class="o_exam_region_editor_modal">
+            <div class="o_exam_region_editor_header">
+                <h3>Review <t t-esc="state.data?.label"/></h3>
+            </div>
+            <div class="o_exam_region_editor_content" t-if="state.data">
+                <div class="o_exam_region_cards">
+                    <t t-foreach="regions" t-as="region" t-key="region.index">
+                        <button type="button" class="o_exam_region_card" t-on-click="() => this.selectRegion(region)">
+                            <div class="o_exam_region_card_title">
+                                <span t-if="region.document_type === 'question'">Question</span>
+                                <span t-else="">Mark Scheme</span>
+                                — <t t-esc="region.label"/> — Page <t t-esc="region.page_number"/>
+                            </div>
+                            <div class="o_exam_region_card_preview" t-att-style="previewStyle(region)">
+                                <img t-att-src="region.image_url" t-att-style="previewImageStyle(region)" alt="Detected exam section"/>
+                            </div>
+                        </button>
+                    </t>
+                    <div class="text-muted" t-if="!regions.length">No detected regions for this document type.</div>
+                </div>
+                <div class="o_exam_region_editor_page" t-if="state.selected">
+                    <div class="o_exam_region_image_wrap">
+                        <img t-att-src="state.selected.image_url" alt="Full rendered exam page"/>
+                        <div class="o_exam_region_overlay" t-att-style="draftStyle()">
+                            <span class="o_exam_region_handle left" t-on-pointerdown="(event) => this.startDrag(event, 'left')"></span>
+                            <span class="o_exam_region_handle right" t-on-pointerdown="(event) => this.startDrag(event, 'right')"></span>
+                            <span class="o_exam_region_handle top" t-on-pointerdown="(event) => this.startDrag(event, 'top')"></span>
+                            <span class="o_exam_region_handle bottom" t-on-pointerdown="(event) => this.startDrag(event, 'bottom')"></span>
+                            <span class="o_exam_region_overlay_label"><t t-esc="state.selected.label"/></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="o_exam_region_editor_footer">
+                <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving || !state.selected">Save</button>
+                <button type="button" class="btn btn-secondary" t-on-click="cancel">Cancel</button>
+                <button type="button" class="btn btn-link ms-auto" t-on-click="close">Close</button>
+            </div>
+        </div>
+    </t>
+</templates>

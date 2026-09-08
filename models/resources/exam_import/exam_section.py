@@ -2,7 +2,7 @@
 import logging
 
 from odoo import _, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -58,10 +58,102 @@ class APSExamPaperSection(models.Model):
         self.ensure_one()
         self.import_id._refresh_section_images(self)
         return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Resource Updated'),
+                'message': _('The resource images were updated for %s.') % self.display_label,
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    def action_open_section_form(self):
+        self.ensure_one()
+        return {
             'type': 'ir.actions.act_window', 'name': _('Imported Section'),
             'res_model': self._name, 'res_id': self.id,
             'view_mode': 'form', 'target': 'current',
         }
+
+    def action_open_region_editor(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'aps_exam_section_region_editor',
+            'name': _('Review %s') % self.display_label,
+            'target': 'current',
+            'params': {'section_id': self.id},
+        }
+
+    def get_region_editor_data(self):
+        self.ensure_one()
+        pages = self.import_id.page_ids.filtered(
+            lambda page: page.document_type in ('question', 'mark_scheme')
+        )
+        return {
+            'id': self.id,
+            'label': self.display_label,
+            'import_name': self.import_id.name,
+            'regions': {
+                'question': self._editor_regions('question', pages),
+                'mark_scheme': self._editor_regions('mark_scheme', pages),
+            },
+        }
+
+    def _editor_regions(self, document_type, pages):
+        field_name = 'question_regions' if document_type == 'question' else 'answer_regions'
+        result = []
+        for index, region in enumerate(getattr(self, field_name) or []):
+            region = dict(region)
+            page_number = region.get('page_number')
+            page = pages.filtered(
+                lambda item: item.document_type == document_type
+                and item.page_number == page_number
+            )[:1]
+            if not page:
+                continue
+            result.append({
+                'index': index,
+                'document_type': document_type,
+                'label': region.get('detection_label') or self.display_label,
+                'page_number': page.page_number,
+                'width': page.width,
+                'height': page.height,
+                'image_url': '/web/content/%s?download=false' % page.attachment_id.id,
+                'region': region,
+            })
+        return result
+
+    def save_region_editor_region(self, document_type, index, bounds):
+        self.ensure_one()
+        if document_type not in ('question', 'mark_scheme'):
+            raise ValidationError(_('Invalid exam document type.'))
+        field_name = 'question_regions' if document_type == 'question' else 'answer_regions'
+        regions = [dict(region) for region in (getattr(self, field_name) or [])]
+        try:
+            index = int(index)
+            values = {key: int(round(float(bounds[key]))) for key in ('x1', 'y1', 'x2', 'y2')}
+        except (KeyError, TypeError, ValueError):
+            raise ValidationError(_('Region bounds must contain numeric x1, y1, x2 and y2 values.'))
+        if index < 0 or index >= len(regions):
+            raise ValidationError(_('The selected region no longer exists.'))
+        region = regions[index]
+        page = self.import_id.page_ids.filtered(
+            lambda item: item.document_type == document_type
+            and item.page_number == region.get('page_number')
+        )[:1]
+        if not page or not page.width or not page.height:
+            raise ValidationError(_('The rendered page for this region is unavailable.'))
+        if not (0 <= values['x1'] < values['x2'] <= page.width and
+                0 <= values['y1'] < values['y2'] <= page.height):
+            raise ValidationError(_('Region bounds must fit inside the rendered page.'))
+        region.update(values)
+        region['coordinate_system'] = 'pixels'
+        region['manual'] = True
+        regions[index] = region
+        self.write({field_name: regions})
+        return True
 
     def action_ocr_section(self):
         self.ensure_one()

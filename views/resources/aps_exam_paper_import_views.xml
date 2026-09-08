@@ -87,14 +87,16 @@
                                     <field name="include_resource" widget="boolean_toggle" optional="show"/>
                                     <field name="include_parent_question" widget="boolean_toggle" optional="show"/>
                                     <field name="maximum_mark" optional="show"/>
+                                    <button name="action_open_region_editor" type="object" string="Regions" icon="fa-crop" class="btn-link" optional="show"/>
                                     <field name="question_summary" optional="show"/>
-                                    <field name="match_confidence" optional="show"/>
+                                    <field name="match_confidence" optional="hide"/>
                                     <field name="ocr_state" optional="hide"/>
                                     <field name="question_pages" optional="hide"/>
                                     <field name="question_regions" optional="hide"/>
                                     <field name="answer_pages" optional="hide"/>
                                     <field name="answer_regions" optional="hide"/>
-                                    <button name="action_update_resource_images" type="object" string="Update Resource" icon="fa-picture-o" class="btn-link" invisible="not resource_id" optional="show"/>
+                                    <button name="action_open_section_form" type="object" string="Open" icon="fa-external-link" class="btn-link" optional="show"/>
+                                    <button name="action_update_resource_images" type="object" string="Update" icon="fa-picture-o" class="btn-link" invisible="not resource_id" optional="show"/>
                                     <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id" optional="show"/>
                                 </list>
                             </field>
@@ -214,6 +216,8 @@
                 <field name="ocr_model_id" optional="hide"/>
                 <field name="ocr_error" optional="hide"/>
                 <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id"/>
+                <button name="action_open_region_editor" type="object" string="Review Regions" icon="fa-crop" class="btn-link"/>
+                <button name="action_open_section_form" type="object" string="Open Section" icon="fa-external-link" class="btn-link"/>
             </list>
         </field>
     </record>

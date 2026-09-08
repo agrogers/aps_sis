@@ -302,11 +302,20 @@ class ApsSchoolCalendar(models.Model):
             events = []
             for (desc, date_type), dates in sorted(
                     events_by_key.items(), key=lambda kv: kv[1][0]):
-                # Merge consecutive runs into ranges, comma-separate the rest
+                # Merge consecutive runs into ranges, ignoring weekend gaps.
+                # Calendar weekend records are excluded from ``all_events``, so
+                # a Friday-to-Monday sequence is three days apart even though
+                # there is no meaningful break in the event.
                 parts = []
                 run_start = prev = dates[0]
                 for cur in dates[1:] + [None]:
-                    if cur is not None and (cur - prev).days == 1:
+                    gap_days = (cur - prev).days if cur is not None else None
+                    continues_run = gap_days == 1 or (
+                        gap_days == 3
+                        and prev.weekday() == 4
+                        and cur.weekday() == 0
+                    )
+                    if cur is not None and continues_run:
                         prev = cur
                         continue
                     if run_start == prev:
@@ -328,6 +337,8 @@ class ApsSchoolCalendar(models.Model):
 
             months.append({
                 'label': label,
+                'year': d.year,
+                'month': d.month,
                 'weeks': weeks,
                 'events': events,
             })

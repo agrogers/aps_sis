@@ -16,11 +16,19 @@ export class CertificatesDashboard extends Component {
         this.orm = useService("orm");
         this.actionService = useService("action");
 
-        this.state = useState({ counts: {} });
+        this.state = useState({ counts: {}, canOpenVotingDashboard: false });
 
         onWillStart(async () => {
-            await this._loadCounts();
+            await Promise.all([this._loadCounts(), this._loadVotingDashboardAccess()]);
         });
+    }
+
+    async _loadVotingDashboardAccess() {
+        this.state.canOpenVotingDashboard = await this.orm.call(
+            "res.users",
+            "has_group",
+            ["aps_sis.group_awards_user"]
+        );
     }
 
     async _loadCounts() {

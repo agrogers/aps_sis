@@ -1,0 +1,159 @@
+.o_exam_region_editor_modal {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: calc(100vh - 100px);
+    min-height: 0;
+    background: #fff;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.o_exam_region_editor_header,
+.o_exam_region_editor_footer {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex: 0 0 auto;
+}
+
+.o_exam_region_editor_footer {
+    position: relative;
+    z-index: 2;
+    background: #fff;
+    padding-top: .75rem;
+}
+
+.o_exam_region_editor_content {
+    display: grid;
+    grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+    gap: 1rem;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 1rem 0;
+}
+
+.o_exam_region_cards {
+    overflow: auto;
+    display: grid;
+    align-content: start;
+    gap: .75rem;
+}
+
+.o_exam_region_card {
+    border: 1px solid #dee2e6;
+    background: #fff;
+    padding: .5rem;
+    text-align: left;
+    cursor: pointer;
+    width: 250px;
+    max-width: 100%;
+}
+
+.o_exam_region_card:hover {
+    border-color: #714b67;
+    box-shadow: 0 0 0 2px rgba(113, 75, 103, .15);
+}
+
+.o_exam_region_card img {
+    display: block;
+    position: absolute;
+    max-width: none;
+    height: auto;
+    background: #f8f9fa;
+}
+
+.o_exam_region_card_preview {
+    position: relative;
+    overflow: hidden;
+    width: 250px;
+    max-width: 100%;
+    max-height: 250px;
+    background: #f8f9fa;
+}
+
+.o_exam_region_card_title {
+    font-weight: 600;
+    margin-bottom: .4rem;
+}
+
+.o_exam_region_editor_page {
+    position: relative;
+    overflow: auto;
+    display: block;
+    background: #343a40;
+    padding: 1rem;
+    min-width: 0;
+    min-height: 0;
+}
+
+.o_exam_region_editor_page img {
+    display: block;
+    width: 100%;
+    max-width: 1100px;
+    height: auto;
+}
+
+.o_exam_region_image_wrap {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    min-width: 600px;
+    max-width: 1100px;
+}
+
+.o_exam_region_overlay {
+    position: absolute;
+    border: 3px solid #dc3545;
+    background: rgba(220, 53, 69, .15);
+    pointer-events: none;
+}
+
+.o_exam_region_overlay_label {
+    position: absolute;
+    top: auto;
+    bottom: calc(100% + 8px);
+    left: -3px;
+    color: #fff;
+    background: #dc3545;
+    padding: 2px 6px;
+    font-weight: 600;
+}
+
+.o_exam_region_handle {
+    position: absolute;
+    display: block;
+    background: #fff;
+    border: 2px solid #dc3545;
+    pointer-events: auto;
+}
+
+.o_exam_region_handle.left,
+.o_exam_region_handle.right {
+    top: 50%;
+    width: 12px;
+    height: 28px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}
+
+.o_exam_region_handle.left { left: -8px; }
+.o_exam_region_handle.right { right: -8px; }
+
+.o_exam_region_handle.top,
+.o_exam_region_handle.bottom {
+    left: 50%;
+    width: 28px;
+    height: 12px;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+.o_exam_region_handle.top { top: -8px; }
+.o_exam_region_handle.bottom { bottom: -8px; }
+
+@media (max-width: 900px) {
+    .o_exam_region_editor_content { grid-template-columns: 1fr; overflow: auto; }
+    .o_exam_region_editor_page { min-height: 60vh; }
+}

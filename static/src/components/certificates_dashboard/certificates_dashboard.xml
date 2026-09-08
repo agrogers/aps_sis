@@ -96,7 +96,7 @@
             <i class="fa fa-wrench me-2"/>Tools
         </h5>
         <div class="row g-3">
-        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div t-if="this.state.canOpenVotingDashboard" class="col-lg-3 col-md-4 col-sm-6">
                 <div class="smd-card smd-card-tool card" t-on-click="() => this.open('aps_sis.action_aps_awards_dashboard')">
                     <div class="smd-card-icon bg-warning-subtle text-warning">
                         <i class="fa fa-check-square-o"/>

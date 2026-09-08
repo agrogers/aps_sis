@@ -36,11 +36,53 @@ class APSExamPaperImportBuild(models.Model):
     def _section_regions(self, section, document_type):
         field_name = 'question_regions' if document_type == 'question' else 'answer_regions'
         regions = [dict(region) for region in (getattr(section, field_name) or [])]
+        if document_type == 'question':
+            regions = self._filter_question_regions(section, regions)
         if document_type == 'question' and section.include_parent_question:
             parent = self._find_parent_section(section)
             if parent:
                 regions = self._section_regions(parent, document_type) + regions
         return regions
+
+    def _filter_question_regions(self, section, regions):
+        """Remove parent regions covered by a child starting at the same height."""
+        if not section.root_key or not section.hierarchy_level:
+            return regions
+        children = self.section_ids.filtered(
+            lambda candidate: candidate.sequence > section.sequence
+            and candidate.hierarchy_level > section.hierarchy_level
+            and self._normalise_key(candidate.root_key or candidate.source_key) == self._normalise_key(section.root_key)
+        )
+        filtered = []
+        for parent_region in regions:
+            try:
+                parent_y = float(parent_region['y1'])
+            except (KeyError, TypeError, ValueError):
+                filtered.append(parent_region)
+                continue
+            skipped_by = None
+            for child in children:
+                for child_region in child.question_regions or []:
+                    if child_region.get('page_number') != parent_region.get('page_number'):
+                        continue
+                    try:
+                        child_y = float(child_region['y1'])
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    if child_y <= parent_y + 10:
+                        skipped_by = (child.display_label, child_y)
+                        break
+                if skipped_by:
+                    break
+            if skipped_by:
+                self._append_image_update_log(section, 'question region %s on page %s skipped: child %s starts at y1=%s; parent y1=%s; tolerance=10.' % (
+                    parent_region.get('detection_label') or section.display_label,
+                    parent_region.get('page_number') or 'unknown',
+                    skipped_by[0], skipped_by[1], parent_y,
+                ))
+            else:
+                filtered.append(parent_region)
+        return filtered
 
     def _find_parent_section(self, section):
         """Find the nearest earlier, lower-level question section in the same root."""
@@ -55,9 +97,10 @@ class APSExamPaperImportBuild(models.Model):
         return candidates[:1]
 
     def _append_image_update_log(self, section, message):
+        local_now = fields.Datetime.context_timestamp(section, fields.Datetime.now())
         section.write({
             'image_update_log': '%s[%s] %s\n' % (
-                section.image_update_log or '', fields.Datetime.now(), message,
+                section.image_update_log or '', local_now.strftime('%Y-%m-%d %H:%M:%S'), message,
             ),
         })
 
@@ -108,6 +151,9 @@ class APSExamPaperImportBuild(models.Model):
 
     @staticmethod
     def _coordinate_scale(region):
+        coordinate_system = (region.get('ai_coordinate_system') or '').casefold()
+        if coordinate_system in ('pixels', 'pixel'):
+            return 'rendered pixels'
         values = []
         for key in ('x1', 'y1', 'x2', 'y2'):
             try:
@@ -121,6 +167,22 @@ class APSExamPaperImportBuild(models.Model):
         return 'rendered pixels'
 
     def _crop_bounds(self, region, page, label_positions, y_adjustment=0):
+        if region.get('manual'):
+            try:
+                left = int(round(float(region['x1'])))
+                top = int(round(float(region['y1'])))
+                right = int(round(float(region['x2'])))
+                bottom = int(round(float(region['y2'])))
+            except (KeyError, TypeError, ValueError):
+                raise ValidationError(_('Manually edited regions must contain pixel x1, y1, x2 and y2 bounds.'))
+            if right - left < 150:  # This is a little arbitary. Alsmost always we want full width images. This needs to be wide enough to handle when a question label eg 1(a)(i) gets long
+                left = self._CROP_LEFT
+                right = page.width - self._CROP_RIGHT
+            left = max(0, min(page.width - 1, left))
+            top = max(0, min(page.height - 1, top))
+            right = max(left + 1, min(page.width, right))
+            bottom = max(top + 1, min(page.height, bottom))
+            return left, top, right, bottom
         start_y = max(0.0, min(1.0, self._region_y_as_fraction(region, page)))
         next_y = None
         source_label = self._normalise_key(region.get('detection_label') or '')
@@ -136,7 +198,7 @@ class APSExamPaperImportBuild(models.Model):
             # vision model puts the child label a few pixels above the
             # parent's label.  Without this, Q1a's crop can run through
             # Q1a.i and become part of every later sub-question.
-            if is_descendant and candidate['y'] >= start_y - self._LABEL_Y_TOLERANCE:
+            if is_descendant and candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
                 next_y = candidate['y']
                 break
             if not is_descendant and candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
@@ -147,6 +209,10 @@ class APSExamPaperImportBuild(models.Model):
         right = max(left + 1, min(page.width, page.width - self._CROP_RIGHT))
         bottom_limit = max(top + 1, page.height - self._CROP_BOTTOM)
         bottom = bottom_limit if next_y is None else round(next_y * page.height) - y_adjustment
+        if bottom <= top:
+            # A stale or slightly out-of-order detected label must never
+            # produce an inverted Pillow crop. Fall back to the page limit.
+            bottom = bottom_limit
         bottom = max(top + 1, min(bottom_limit, bottom))
         return left, top, right, bottom
 
@@ -201,9 +267,48 @@ class APSExamPaperImportBuild(models.Model):
             ('res_model', '=', 'aps.resources'), ('res_id', '=', resource.id),
             ('description', 'ilike', marker),
         ])
+        attachment_ids = [str(attachment.id) for attachment in attachments]
         attachments.unlink()
         pattern = r'<div[^>]*data-aps-exam-import-section=["\']%s["\'][^>]*>.*?</div>' % section.id
-        return re.sub(pattern, '', resource.question or '', flags=re.S), re.sub(pattern, '', resource.answer or '', flags=re.S)
+        question = re.sub(pattern, '', resource.question or '', flags=re.S)
+        answer = re.sub(pattern, '', resource.answer or '', flags=re.S)
+        # Remove stale image HTML as well. Older generated blocks may not
+        # contain the section marker, leaving a broken-image placeholder after
+        # their attachments are deleted.
+        for attachment_id in attachment_ids:
+            image_pattern = r'<p[^>]*>\s*<img[^>]+/web/image/%s[^>]*>\s*</p>|<img[^>]+/web/image/%s[^>]*>' % (
+                attachment_id, attachment_id,
+            )
+            question = re.sub(image_pattern, '', question, flags=re.I | re.S)
+            answer = re.sub(image_pattern, '', answer, flags=re.I | re.S)
+        return question, answer
+
+    def _remove_import_images(self, resource, sections):
+        """Remove all generated exam images before rebuilding a resource."""
+        section_ids = sections.ids
+        if not section_ids:
+            return resource.question or '', resource.answer or ''
+        marker = 'aps_exam_import_section:'
+        attachments = self.env['ir.attachment'].search([
+            ('res_model', '=', 'aps.resources'),
+            ('res_id', '=', resource.id),
+            ('description', 'ilike', marker),
+        ])
+        attachment_ids = [str(attachment.id) for attachment in attachments]
+        attachments.unlink()
+        question = resource.question or ''
+        answer = resource.answer or ''
+        for section_id in section_ids:
+            pattern = r'<div[^>]*data-aps-exam-import-section=["\']%s["\'][^>]*>.*?</div>' % section_id
+            question = re.sub(pattern, '', question, flags=re.S)
+            answer = re.sub(pattern, '', answer, flags=re.S)
+        for attachment_id in attachment_ids:
+            image_pattern = r'<p[^>]*>\s*<img[^>]+/web/image/%s[^>]*>\s*</p>|<img[^>]+/web/image/%s[^>]*>' % (
+                attachment_id, attachment_id,
+            )
+            question = re.sub(image_pattern, '', question, flags=re.I | re.S)
+            answer = re.sub(image_pattern, '', answer, flags=re.I | re.S)
+        return question, answer
 
     def _replace_section_images(self, resource, section, document_type, html, log=False):
         marker_pattern = r'<div[^>]*data-aps-exam-import-section=["\']%s["\'][^>]*>.*?</div>' % section.id
@@ -217,7 +322,17 @@ class APSExamPaperImportBuild(models.Model):
             self._append_image_update_log(section, '%s: heading %s.' % (
                 document_type, 'found; inserting generated HTML' if heading in (html or '') else 'not found; generated HTML was not inserted',
             ))
-        return (html or '').replace(heading, heading + image_html, 1)
+        if heading in (html or ''):
+            return (html or '').replace(heading, heading + image_html, 1)
+        heading_pattern = r'(?P<heading><h[1-6][^>]*>\s*#?\s*%s\s*</h[1-6]>)' % re.escape(section.display_label)
+        heading_match = re.search(heading_pattern, html or '', flags=re.I)
+        if heading_match:
+            return (html or '')[:heading_match.end()] + image_html + (html or '')[heading_match.end():]
+        if image_html:
+            if log:
+                self._append_image_update_log(section, '%s: no matching heading; appending generated HTML.' % document_type)
+            return (html or '') + image_html
+        return html or ''
 
     def _build_section_image_html(self, resource, section, document_type, log=False):
         blocks = []
@@ -266,8 +381,9 @@ class APSExamPaperImportBuild(models.Model):
 
     def _refresh_section_images(self, section):
         section.ensure_one()
+        local_now = fields.Datetime.context_timestamp(section, fields.Datetime.now())
         section.write({'image_update_log': '[%s] Refresh started for %s.\n' % (
-            fields.Datetime.now(), section.display_label,
+            local_now.strftime('%Y-%m-%d %H:%M:%S'), section.display_label,
         )})
         if not section.resource_id:
             self._append_image_update_log(section, 'Stopped: section has no linked resource. Build Resources first.')
@@ -333,8 +449,8 @@ class APSExamPaperImportBuild(models.Model):
             total_marks = 0.0
             root_pages = set()
             root_regions = []
-            for section in sections:
-                self._remove_section_images(root, section)
+            question, answer = self._remove_import_images(root, self.section_ids)
+            root.write({'question': question, 'answer': answer})
             for section in sections:
                 # The root-number detection (for example Q1) identifies the
                 # second-level resource. It is not a child of itself. Only
@@ -342,7 +458,7 @@ class APSExamPaperImportBuild(models.Model):
                 # third-level resources.
                 if self._normalise_key(section.display_label) == self._normalise_key(root.name):
                     root_pages.update(filter(None, (section.question_pages or '').split(',')))
-                    root_regions.extend(section.question_regions or [])
+                    root_regions.extend(self._section_regions(section, 'question'))
                     section.write({'resource_key': str(root.id)})
                     continue
                 existing_child_ids = set(root.child_ids.ids)

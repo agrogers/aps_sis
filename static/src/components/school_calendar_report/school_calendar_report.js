@@ -76,6 +76,20 @@ export class SchoolCalendarReport extends Component {
             "get_calendar_report_data",
             [year.start_date, year.end_date]
         );
+        const today = new Date().toISOString().slice(0, 10);
+        for (const month of this.state.months) {
+            for (const week of month.weeks) {
+                for (const cell of week.days) {
+                    if (cell && cell.day) {
+                        cell.is_today =
+                            `${month.year}-${String(month.month).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}` === today;
+                    }
+                }
+                if (week.saturday) {
+                    week.saturday.is_today = false;
+                }
+            }
+        }
         this.state.semesters = await this.orm.call(
             "aps.school.calendar",
             "get_term_summary_data",

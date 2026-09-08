@@ -75,6 +75,10 @@
                                     <span t-esc="item.name"/>
                                 </span>
                             </t>
+                            <span class="scr-sem-legend-item scr-today-legend">
+                                <span class="scr-today-legend-circle"></span>
+                                <span>Today</span>
+                            </span>
                         </td>
                     </tr>
                 </table>
@@ -145,9 +149,10 @@
             <t t-foreach="month.weeks" t-as="week" t-key="week_index">
                 <tr>
                     <t t-foreach="week.days" t-as="cell" t-key="cell_index">
-                        <td t-attf-class="scr-day #{cell and cell.day ? '' : 'scr-empty'}"
+                        <td t-attf-class="scr-day #{cell and cell.day ? '' : 'scr-empty'} #{cell and cell.is_today ? 'scr-today' : ''}"
                             t-attf-style="#{(cell and cell.color and cell.color !== '#FFFFFF' ? 'background-color:' + cell.color + ';' : '') + (cell and (!cell.color || cell.color.toUpperCase() === '#FFFFFF') ? 'color:#000;' : '')} position:relative;">
-                            <t t-esc="cell ? cell.day or '' : ''"/>
+                            <span t-if="cell and cell.is_today" class="scr-today-circle"><t t-esc="cell.day"/></span>
+                            <t t-else="" t-esc="cell ? cell.day or '' : ''"/>
                             <img t-if="cell and cell.icon_url" class="scr-cell-icon"
                                  t-att-src="cell.icon_url" alt=""/>
                         </td>
