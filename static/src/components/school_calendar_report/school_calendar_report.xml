@@ -14,6 +14,12 @@
                             t-esc="year.short_name || year.name"/>
                 </t>
             </select>
+            <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+                <input class="form-check-input" type="checkbox" id="includeStaffEvent"
+                       t-att-checked="state.includeStaffEvent ? true : undefined"
+                       t-on-change="onStaffEventToggle"/>
+                <label class="form-check-label" for="includeStaffEvent">Staff Event</label>
+            </div>
         </div>
 
         <!-- Calendar sheet -->

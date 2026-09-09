@@ -112,7 +112,7 @@ class ApsSchoolCalendar(models.Model):
                 rec.display_name = f'{rec.display_name} ({rec.description})'
 
     @api.model
-    def get_term_summary_data(self, year_start, year_end):
+    def get_term_summary_data(self, year_start, year_end, include_staff_event=False):
         """Build per-semester summary rows for the printable calendar header.
 
         Returns a list of section dicts: {'name', 'weeks', 'days'} for
@@ -131,13 +131,23 @@ class ApsSchoolCalendar(models.Model):
         Calendar = self.env['aps.school.calendar']
         Week = self.env['aps.academic.week']
 
+        day_type_domain = [
+            ('date_type_id.code', 'in', ['school_day', 'event']),
+        ]
+        if include_staff_event:
+            day_type_domain = [
+                '|',
+                ('date_type_id.code', 'in', ['school_day', 'event']),
+                ('date_type_id.name', '=ilike', 'Staff Event'),
+            ]
+
         def _counts(term_ids):
             weeks = Week.search_count([('academic_term_id', 'in', term_ids.ids)])
             days = 0
             days = Calendar.search_count([
                 ('date', '>=', min(term_ids.mapped('start_date'))),
                 ('date', '<=', max(term_ids.mapped('end_date'))),
-                ('date_type_id.code', 'in', ['school_day', 'event']),
+                *day_type_domain,
             ]) if term_ids else 0
             return weeks, days
 
@@ -169,8 +179,17 @@ class ApsSchoolCalendar(models.Model):
             })
         if terms:
             weeks, days = _counts(terms)
+            legend_domain = [
+                ('active', '=', True),
+                ('code', '!=', 'weekend'),
+            ]
+            if not include_staff_event:
+                legend_domain.extend([
+                    '!',
+                    ('name', '=ilike', 'Staff Event'),
+                ])
             legend = self.env['aps.calendar.date.type'].search(
-                [('active', '=', True), ('code', '!=', 'weekend')],
+                legend_domain,
                 order='sequence, name',
             )
             sections.append({
@@ -185,7 +204,7 @@ class ApsSchoolCalendar(models.Model):
         return sections
 
     @api.model
-    def get_calendar_report_data(self, year_start, year_end):
+    def get_calendar_report_data(self, year_start, year_end, include_staff_event=False):
         """Build per-month calendar data for the printable academic calendar.
 
         Returns a list of month dicts (chronological) each containing:
@@ -221,6 +240,9 @@ class ApsSchoolCalendar(models.Model):
         by_date = {}
         all_events = []
         for rec in records:
+            if (not include_staff_event
+                    and rec.date_type_id.name.strip().casefold() == 'staff event'):
+                continue
             # Skip pure weekend noise from the printed grid
             if rec.date_type_id.code == 'weekend':
                 continue

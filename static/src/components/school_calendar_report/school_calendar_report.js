@@ -27,6 +27,7 @@ export class SchoolCalendarReport extends Component {
             semesters: [],
             schoolName: "",
             logoUrl: "",
+            includeStaffEvent: false,
         });
 
         onWillStart(async () => {
@@ -74,7 +75,7 @@ export class SchoolCalendarReport extends Component {
         this.state.months = await this.orm.call(
             "aps.school.calendar",
             "get_calendar_report_data",
-            [year.start_date, year.end_date]
+            [year.start_date, year.end_date, this.state.includeStaffEvent]
         );
         const today = new Date().toISOString().slice(0, 10);
         for (const month of this.state.months) {
@@ -93,7 +94,7 @@ export class SchoolCalendarReport extends Component {
         this.state.semesters = await this.orm.call(
             "aps.school.calendar",
             "get_term_summary_data",
-            [year.start_date, year.end_date]
+            [year.start_date, year.end_date, this.state.includeStaffEvent]
         );
     }
 
@@ -109,14 +110,26 @@ export class SchoolCalendarReport extends Component {
         await this._loadYears(yearId);
     }
 
+    async onStaffEventToggle(ev) {
+        this.state.includeStaffEvent = ev.target.checked;
+        const year = this.state.years.find((item) => item.id === this.state.yearId);
+        if (year) {
+            await this._loadCalendar(year);
+        }
+    }
+
     printPdf() {
         this.actionService.doAction({
             type: "ir.actions.report",
             report_type: "qweb-pdf",
             report_name: "aps_sis.report_school_calendar_template",
-            data: { academic_year_id: this.state.yearId },
+            data: {
+                academic_year_id: this.state.yearId,
+                include_staff_event: this.state.includeStaffEvent,
+            },
             context: {
                 academic_year_id: this.state.yearId,
+                include_staff_event: this.state.includeStaffEvent,
             },
         });
     }

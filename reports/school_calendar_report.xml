@@ -98,7 +98,7 @@
 
                     <!-- Semester summary -->
                     <t t-set="sections"
-                       t-value="env['aps.school.calendar'].get_term_summary_data(doc.start_date, doc.end_date)"/>
+                              t-value="env['aps.school.calendar'].get_term_summary_data(doc.start_date, doc.end_date, data.get('include_staff_event', False) if data else False)"/>
                     <t t-if="sections">
                         <table class="scr-sem-wrap">
                             <tr>
@@ -153,7 +153,7 @@
 
                     <!-- Month rows -->
                     <t t-set="months"
-                       t-value="env['aps.school.calendar'].get_calendar_report_data(doc.start_date, doc.end_date)"/>
+                              t-value="env['aps.school.calendar'].get_calendar_report_data(doc.start_date, doc.end_date, data.get('include_staff_event', False) if data else False)"/>
                     <t t-foreach="range(0, len(months), 2)" t-as="i">
                         <table class="scr-row">
                             <tr>
