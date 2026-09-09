@@ -14,7 +14,6 @@
                 <field name="partner_id" invisible="1"/>
                 <field name="name" string="Lesson"/>
                 <field name="subject_category_id" optional="show"/>
-                <field name="subject_category_icon" widget="image" optional="hide"/>
                 <field name="subject_category_id_value" optional="hide"/>
                 <field name="subject_name" optional="hide"/>
                 <field name="class_names" optional="show"/>
@@ -39,7 +38,6 @@
                             <field name="teacher_id"/>
                             <field name="aps_class_id"/>
                             <field name="subject_category_id"/>
-                            <field name="subject_category_icon" widget="image"/>
                             <field name="subject_category_id_value" readonly="1"/>
                             <field name="subject_name"/>
                             <field name="class_names"/>
@@ -117,7 +115,6 @@
                 <field name="teacher_id"/>
                 <field name="aps_class_id"/>
                 <field name="subject_category_id"/>
-                <field name="subject_category_icon" invisible="1"/>
                 <field name="subject_category_id_value" invisible="1"/>
                 <field name="classroom"/>
                 <field name="class_names"/>

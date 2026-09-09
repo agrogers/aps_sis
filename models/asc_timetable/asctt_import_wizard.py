@@ -197,8 +197,12 @@ class ASCTTImportWizard(models.TransientModel):
         # Save wizard settings for next run
         self._save_wizard_settings()
 
-        # Refresh teacher workload totals from the newly-updated timetable
-        self.env['aps.teacher'].search([])._recompute_timetable_loads()
+        # Refresh teacher workload totals for teachers represented in this import.
+        imported_teachers = self.env['asctt.teacher'].search([
+            ('aps_teacher_id', '!=', False),
+        ]).mapped('aps_teacher_id')
+        if imported_teachers:
+            imported_teachers._recompute_timetable_loads()
 
         # Optionally generate dated timetable entries
         if self.generate_timetable:
@@ -816,6 +820,8 @@ class ASCTTImportWizard(models.TransientModel):
         cards = self.env['asctt.card'].search([])
         to_create = []
         grade_level_cache = {}
+        class_lookup_cache = {}
+        lesson_info_cache = {}
 
         def get_class_for_asctt_class(asctt_class, subject_category):
             """Resolve the first enrolled APEX class for the import range."""
@@ -833,35 +839,50 @@ class ASCTTImportWizard(models.TransientModel):
             level = grade_level_cache[grade_number]
             if not level:
                 return self.env['aps.class']
-            return self.env['aps.class'].search([
+
+            cache_key = (subject_category.id, level.id)
+            if cache_key not in class_lookup_cache:
+                class_lookup_cache[cache_key] = self.env['aps.class'].search([
                 ('subject_id.category_id', '=', subject_category.id),
                 ('subject_id.level_id', '=', level.id),
                 ('enrollment_ids.start_date', '<=', end_date),
                 '|',
                 ('enrollment_ids.end_date', '=', False),
                 ('enrollment_ids.end_date', '>=', start_date),
-            ], order='id', limit=1)
+                ], order='id', limit=1)
+            return class_lookup_cache[cache_key]
 
         for card in cards:
             if not card.lesson_id:
                 continue
             lesson = card.lesson_id
 
-            # Teachers linked to APEX with a partner
-            teachers = [
-                at.aps_teacher_id
-                for at in lesson.teacher_ids
-                if at.aps_teacher_id and at.aps_teacher_id.partner_id
-            ]
+            lesson_info = lesson_info_cache.get(lesson.id)
+            if lesson_info is None:
+                # Resolve lesson relations once; multiple cards can reference
+                # the same lesson.
+                teachers = [
+                    at.aps_teacher_id
+                    for at in lesson.teacher_ids
+                    if at.aps_teacher_id and at.aps_teacher_id.partner_id
+                ]
+                subject_cat = (
+                    lesson.subject_id.aps_subject_category_id
+                    if lesson.subject_id else None
+                )
+                lesson_info = {
+                    'teachers': teachers,
+                    'subject_cat': subject_cat,
+                    'subject_name': lesson.subject_id.name if lesson.subject_id else '',
+                    'lesson_classes': lesson.class_ids,
+                }
+                lesson_info_cache[lesson.id] = lesson_info
+
+            teachers = lesson_info['teachers']
             if not teachers:
                 continue
-
-            # Subject category and name
-            subject_cat = (
-                lesson.subject_id.aps_subject_category_id
-                if lesson.subject_id else None
-            )
-            subject_name = lesson.subject_id.name if lesson.subject_id else ''
+            subject_cat = lesson_info['subject_cat']
+            subject_name = lesson_info['subject_name']
 
             # Period times
             if not card.period_id:
@@ -885,7 +906,7 @@ class ASCTTImportWizard(models.TransientModel):
             classroom = ', '.join(
                 cr.name for cr in card.classroom_ids if cr.name
             )
-            lesson_classes = lesson.class_ids or self.env['asctt.class']
+            lesson_classes = lesson_info['lesson_classes'] or self.env['asctt.class']
 
             # 7. Match against school days ────────────────────────────────────
             for sc_date in weekday_to_dates.get(target_weekday, []):
@@ -925,6 +946,9 @@ class ASCTTImportWizard(models.TransientModel):
                             'subject_name': subject_name or False,
                             'academic_term_id': term.id if term else False,
                             'source_card_id': card.id,
+                            # Internal merge key; remove before ORM create because
+                            # aps.timetable.entry does not define lesson_id.
+                            '_merge_lesson_id': lesson.id,
                         })
 
         # A double/triple period is represented by separate aSc cards.  Merge
@@ -942,10 +966,9 @@ class ASCTTImportWizard(models.TransientModel):
                 item['start_datetime'],
             ),
         ):
-            source_card = self.env['asctt.card'].browse(values['source_card_id'])
             merge_key = (
                 values['teacher_id'],
-                source_card.lesson_id.id,
+                values['_merge_lesson_id'],
                 values['aps_class_id'],
                 values['subject_category_id'],
                 values['classroom'],
@@ -961,5 +984,7 @@ class ASCTTImportWizard(models.TransientModel):
 
         entries_to_create = merged_entries
         if entries_to_create:
+            for values in entries_to_create:
+                values.pop('_merge_lesson_id', None)
             TimetableEntry.create(entries_to_create)
         return len(entries_to_create)

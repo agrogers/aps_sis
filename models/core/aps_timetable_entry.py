@@ -74,12 +74,6 @@ class APSTimetableEntry(models.Model):
         string='Color Index',
     )
     subject_name = fields.Char(string='Subject')
-    subject_category_icon = fields.Image(
-        related='subject_category_id.icon',
-        string='Subject Category Icon',
-        store=True,
-        readonly=True,
-    )
     subject_category_id_value = fields.Integer(
         related='subject_category_id.id',
         string='Subject Category ID',
