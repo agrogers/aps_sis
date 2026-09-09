@@ -35,7 +35,7 @@
                             <field name="enrollment_count" widget="statinfo" string="Students"/>
                         </button>
                     </div>
-                    <div class="oe_title mb-4">
+                    <div class="oe_title">
                         <label for="name" class="oe_edit_only" string="Class Name"/>
                         <h1>
                             <field name="name" placeholder="Class Name"/>
@@ -45,23 +45,23 @@
                             <field name="code" placeholder="Code"/>
                         </h2>
                     </div>
-                    <group class="p-3 mb-4 border rounded">
+                    <group>
                         <group>
                             <field name="identifier"/>
                             <field name="subject_id"/>
                             <field name="academic_year_id"/>
                         </group>
                     </group>
-                    <group class="p-3 mb-4 border rounded">
-                        <group string="Teachers" class="pe-3">
+                    <group>
+                        <group string="Teachers">
                             <field name="teacher_ids" widget="many2many_tags"
                                 options="{'no_create': True}" nolabel="1"/>
                         </group>
-                        <group string="Assistant Teachers" class="px-3">
+                        <group string="Assistant Teachers">
                             <field name="assistant_teacher_ids" widget="many2many_tags"
                                 options="{'no_create': True}" nolabel="1"/>
                         </group>
-                        <group string="Tags" class="ps-3">
+                        <group string="Tags">
                             <field name="tag_ids" widget="many2many_tags" nolabel="1"/>
                         </group>
                     </group>
