@@ -1,4 +1,5 @@
 from html.parser import HTMLParser
+from html import escape
 
 
 class ExtractHeadingContent(HTMLParser):
@@ -34,7 +35,13 @@ class ExtractHeadingContent(HTMLParser):
     def _append_tag(self, tag, attrs):
         """Helper to properly reconstruct an opening tag with all attributes."""
         if attrs:
-            attrs_str = ' '.join([f'{k}="{v}"' for k, v in attrs])
+            # Attribute values can contain JSON, such as Odoo's
+            # ``data-embedded-props``.  Escape quotes when rebuilding the
+            # HTML; otherwise the JSON becomes malformed when the HTML is
+            # parsed again (for example after inheriting a parent's notes).
+            attrs_str = ' '.join(
+                f'{k}="{escape(v or "", quote=True)}"' for k, v in attrs
+            )
             self.content_parts.append(f'<{tag} {attrs_str}>')
         else:
             self.content_parts.append(f'<{tag}>')

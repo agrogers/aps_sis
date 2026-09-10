@@ -272,6 +272,11 @@ export class CourseExplorer extends Component {
         for (const placeholder of root.querySelectorAll(
             '.ce_section_body [data-embedded="video"]'
         )) {
+            // Keep the editor's wrapper in place.  It is important for videos
+            // inside Bootstrap columns/tables because the wrapper carries the
+            // width of the column and prevents the iframe from being laid out
+            // against the full content pane.
+            if (placeholder.querySelector('iframe')) continue;
             let props;
             try {
                 props = JSON.parse(placeholder.dataset.embeddedProps || '{}');
@@ -289,7 +294,8 @@ export class CourseExplorer extends Component {
             iframe.title = 'YouTube video';
             iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
             iframe.setAttribute('allowfullscreen', '');
-            placeholder.replaceWith(iframe);
+            placeholder.classList.add('ce_embedded_video');
+            placeholder.replaceChildren(iframe);
         }
     }
 

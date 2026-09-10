@@ -427,12 +427,25 @@
 .ce_section_body iframe,
 .ce_section_body video {
     display: block;
-    width: min(100%, 800px);
+    width: 100%;
     max-width: 100%;
     aspect-ratio: 16 / 9;
     height: auto;
     margin: 12px 0;
     border: 0;
+}
+
+/* Odoo's rich-text column/table wrappers must remain part of the layout. */
+.ce_section_body [data-embedded="video"],
+.ce_section_body .ce_embedded_video {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+}
+
+.ce_section_body [data-embedded="video"] iframe,
+.ce_section_body .ce_embedded_video iframe {
+    min-width: 0;
 }
 
 .ce_section_body img:hover {
