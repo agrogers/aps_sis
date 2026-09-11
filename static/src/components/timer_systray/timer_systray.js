@@ -247,10 +247,17 @@ export class EnhancedTimerStopDialog extends Component {
     }
 
     get timelineScale() {
-        const values = this.timelineEntries.flatMap((entry) => [
-            this._dateValue(entry.start_time),
-            this._dateValue(entry.stop_time),
-        ]).filter(Boolean);
+        // Keep an empty day's scale anchored to school hours. The draft entry
+        // being edited is intentionally excluded here; otherwise opening a
+        // short entry before 8am or after 4pm would move the day's baseline
+        // even when there are no other records to provide context.
+        const values = this.state.entries
+            .filter((entry) => Number(entry.id) !== Number(this.state.id))
+            .flatMap((entry) => [
+                this._dateValue(entry.start_time),
+                this._dateValue(entry.stop_time),
+            ])
+            .filter(Boolean);
         const day = this.timelineDate;
         const fallbackStart = new Date(`${day}T08:00`).getTime();
         const fallbackStop = new Date(`${day}T16:00`).getTime();
