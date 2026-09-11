@@ -108,7 +108,7 @@ class APSWeeklySubmissionResult(models.Model):
 
         existing_domain = [("student_id", "=", student_partner_id)]
         if date_start:
-            existing_domain.append(("week_start", ">=", date_start))
+            existing_domain.append(("week_end", ">=", date_start))
         if date_end:
             existing_domain.append(("week_start", "<=", date_end))
         existing = self.search(existing_domain)
@@ -161,12 +161,126 @@ class APSWeeklySubmissionResult(models.Model):
         return True
 
     @api.model
-    def get_grid_data(self, student_partner_id=False, date_start=False, date_end=False, type_ids=None, academic_term_id=False):
+    def _weekly_class_options(self, date_start, date_end, selected_class_id=False):
+        """Return classes visible to the user that have submissions in the period."""
+        Class = self.env["aps.class"]
+        Submission = self.env["aps.resource.submission"]
+        user = self.env.user
+        if user.has_group("aps_sis.group_aps_teacher"):
+            class_domain = [
+                "|",
+                ("teacher_ids", "in", user.partner_id.id),
+                ("assistant_teacher_ids", "in", user.partner_id.id),
+            ]
+        else:
+            student = self.env["aps.student"].search(
+                [("partner_id", "=", user.partner_id.id)], limit=1
+            )
+            class_domain = [("enrollment_ids.student_id", "=", student.id)] if student else [("id", "=", 0)]
+
+        class_domain += [
+            ("academic_year_id.start_date", "=", False),
+            ("academic_year_id.end_date", "=", False),
+        ]
+        # Replace the open-ended fallback above with the proper overlap domain.
+        class_domain[-2:] = [
+            "|", ("academic_year_id.start_date", "=", False),
+            ("academic_year_id.start_date", "<=", date_end),
+            "|", ("academic_year_id.end_date", "=", False),
+            ("academic_year_id.end_date", ">=", date_start),
+        ]
+        classes = Class.search(class_domain, order="name, id")
+        submissions = Submission.search([
+            ("state", "in", ("submitted", "complete")),
+            ("is_course_explorer", "=", False),
+            ("date_submitted", ">=", date_start),
+            ("date_submitted", "<=", date_end),
+            ("student_id.is_student", "=", True),
+        ])
+        submitted_partner_ids = set(submissions.mapped("student_id").ids)
+        result = []
+        for record in classes:
+            enrolled_partner_ids = set(record.enrollment_ids.filtered(
+                lambda enrollment: enrollment.state == "enrolled"
+                and (not enrollment.start_date or enrollment.start_date <= date_end)
+                and (not enrollment.end_date or enrollment.end_date >= date_start)
+            ).mapped("partner_id").ids)
+            subject = record.subject_id
+            has_submission = any(
+                submission.student_id.id in enrolled_partner_ids
+                and (not subject or subject in (submission.subjects or submission.resource_id.subjects))
+                for submission in submissions
+            )
+            if enrolled_partner_ids & submitted_partner_ids and has_submission:
+                level = subject.level_id if subject else False
+                result.append({
+                    "id": record.id,
+                    "name": record.display_name,
+                    "subject_id": subject.id if subject else False,
+                    "subject_name": subject.display_name if subject else "",
+                    "level_name": level.display_name or level.name or "" if level else "",
+                    "level_sequence": level.sequence or 0 if level else 0,
+                    "icon_url": (
+                        f"/web/image/aps.subject/{subject.id}/icon"
+                        if subject and subject.icon else ""
+                    ),
+                })
+        result.sort(key=lambda item: (
+            item["level_sequence"],
+            item["level_name"].lower(),
+            item["name"].lower(),
+        ))
+        return result
+
+    @api.model
+    def _weekly_class_student_partner_ids(self, class_id, date_start, date_end):
+        if not class_id:
+            return False
+        record = self.env["aps.class"].browse(int(class_id)).exists()
+        if not record:
+            return set()
+        return set(record.enrollment_ids.filtered(
+            lambda enrollment: enrollment.state == "enrolled"
+            and (not enrollment.start_date or enrollment.start_date <= date_end)
+            and (not enrollment.end_date or enrollment.end_date >= date_start)
+        ).mapped("partner_id").ids)
+
+    @api.model
+    def _weekly_submission_domain(self, student_ids, date_start, date_end, subject_ids=None):
+        domain = [
+            ("student_id", "in", sorted(student_ids)),
+            ("state", "in", ("submitted", "complete")),
+            ("is_course_explorer", "=", False),
+            ("date_submitted", ">=", date_start),
+            ("date_submitted", "<=", date_end),
+        ]
+        if subject_ids:
+            domain += [
+                "|",
+                ("subjects", "in", list(subject_ids)),
+                ("resource_id.subjects", "in", list(subject_ids)),
+            ]
+        return domain
+
+    @api.model
+    def _weekly_student_domain(self, student_ids):
+        student_ids = sorted(student_ids)
+        if len(student_ids) == 1:
+            return [("student_id", "=", student_ids[0])]
+        return [("student_id", "in", student_ids)]
+
+    @api.model
+    def _weekly_effective_subjects(self, submission, subject_ids=None):
+        subjects = submission.subjects or submission.resource_id.subjects
+        if subject_ids:
+            subjects = subjects.filtered(lambda subject: subject.id in subject_ids)
+        return subjects
+
+    @api.model
+    def get_grid_data(self, student_partner_id=False, date_start=False, date_end=False, type_ids=None, academic_term_id=False, class_id=False):
         user = self.env.user
         is_teacher = user.has_group("aps_sis.group_aps_teacher")
         if not is_teacher:
-            student_partner_id = user.partner_id.id
-        elif not student_partner_id:
             student_partner_id = user.partner_id.id
 
         if date_start:
@@ -177,30 +291,69 @@ class APSWeeklySubmissionResult(models.Model):
             date_start = date.today() - timedelta(days=date.today().weekday() + 28)
         if not date_end:
             date_end = date.today()
+        class_options = self._weekly_class_options(date_start, date_end, class_id)
+        visible_class_ids = {item["id"] for item in class_options}
+        if class_id and int(class_id) not in visible_class_ids:
+            class_id = False
+        class_id = int(class_id) if class_id else False
+        class_student_partner_ids = self._weekly_class_student_partner_ids(
+            class_id, date_start, date_end
+        ) if class_id else set()
+        if class_id:
+            selected_class = next(item for item in class_options if item["id"] == class_id)
+            subject_ids = {selected_class["subject_id"]} if selected_class["subject_id"] else set()
+            scoped_partner_ids = set(class_student_partner_ids)
+        else:
+            subject_ids = {
+                item["subject_id"] for item in class_options if item["subject_id"]
+            }
+            scoped_partner_ids = set()
+            for visible_class_id in visible_class_ids:
+                scoped_partner_ids.update(self._weekly_class_student_partner_ids(
+                    visible_class_id, date_start, date_end
+                ))
+
+        if student_partner_id and not is_teacher and not class_id:
+            scoped_partner_ids = {user.partner_id.id}
+
+        if not is_teacher:
+            student_partner_id = user.partner_id.id
+            if class_id and student_partner_id not in scoped_partner_ids:
+                student_partner_id = False
+            selected_partner_ids = {student_partner_id} if student_partner_id else set()
+            group_by_student = False
+        elif student_partner_id:
+            student_partner_id = int(student_partner_id)
+            if student_partner_id not in scoped_partner_ids:
+                student_partner_id = False
+            selected_partner_ids = {student_partner_id} if student_partner_id else scoped_partner_ids
+            group_by_student = not student_partner_id
+        else:
+            selected_partner_ids = scoped_partner_ids
+            group_by_student = True
+
         # The weekly result model is a materialized cache. Students can read
         # their rows, but must not need write ACLs merely to refresh the cache
         # when opening the dashboard.
-        self.sudo().rebuild_for_student(student_partner_id, date_start, date_end)
+        for partner_id in selected_partner_ids:
+            self.sudo().rebuild_for_student(partner_id, date_start, date_end)
 
-        submissions = self.env["aps.resource.submission"].search([
-            ("student_id", "=", student_partner_id),
-            ("state", "in", ("submitted", "complete")),
-            ("date_submitted", ">=", date_start),
-            ("date_submitted", "<=", date_end),
-        ])
-        submission_subjects = {
-            submission.id: (submission.subjects or submission.resource_id.subjects)
-            for submission in submissions
-        }
+        submissions = self.env["aps.resource.submission"].search(
+            self._weekly_submission_domain(selected_partner_ids, date_start, date_end, subject_ids)
+            if selected_partner_ids else [("id", "=", 0)]
+        )
         available_types = submissions.mapped("type_id")
         requested_type_ids = type_ids
         type_ids = [int(value) for value in (type_ids or [])]
         rows = {}
-        all_results = self.search([
-            ("student_id", "=", student_partner_id),
-            ("week_start", ">=", date_start - timedelta(days=date_start.weekday())),
-            ("week_start", "<=", date_end),
-        ])
+        all_results = self.search(
+            self._weekly_student_domain(selected_partner_ids) + [
+                ("week_start", ">=", date_start - timedelta(days=date_start.weekday())),
+                ("week_start", "<=", date_end),
+            ] if selected_partner_ids else [("id", "=", 0)]
+        )
+        if subject_ids:
+            all_results = all_results.filtered(lambda result: result.subject_id.id in subject_ids)
         if not available_types and requested_type_ids is None:
             available_types = all_results.mapped("type_id")
         selected_types = (
@@ -209,14 +362,17 @@ class APSWeeklySubmissionResult(models.Model):
             else available_types.filtered(lambda record: record.id in type_ids)
         )
         for result in all_results.filtered(lambda record: record.type_id in selected_types):
-            key = (result.subject_id.id, result.type_id.id)
+            row_student_id = result.student_id.id if group_by_student else False
+            key = (row_student_id, result.subject_id.id, result.type_id.id)
             rows.setdefault(key, {
-                "key": "%s-%s" % key,
+                "key": "%s-%s-%s" % key,
+                "student_id": result.student_id.id if group_by_student else False,
+                "student_name": result.student_id.display_name if group_by_student else False,
                 "subject_id": result.subject_id.id,
-                "subject_name": result.subject_id.name,
+                "subject_name": result.subject_id.display_name,
                 "subject_icon_url": "/web/image/aps.subject/%s/icon" % result.subject_id.id if result.subject_id.icon else False,
                 "type_id": result.type_id.id,
-                "type_name": result.type_id.name,
+                "type_name": result.type_id.display_name,
                 "type_description": result.type_id.description or "",
                 "type_icon_url": "/web/image/aps.resource.types/%s/icon" % result.type_id.id if result.type_id.icon else False,
                 "cells": [],
@@ -233,14 +389,17 @@ class APSWeeklySubmissionResult(models.Model):
                 "tooltip": "%s submissions" % result.submission_count,
                 "is_non_school": not bool(result.academic_week_id),
                 "academic_week_name": result.academic_week_id.short_name if result.academic_week_id else False,
-                "submission_domain": [
-                    ("student_id", "=", student_partner_id),
+                "submission_domain": self._weekly_student_domain(
+                    {result.student_id.id} if group_by_student else selected_partner_ids
+                ) + [
+                    ("state", "in", ("submitted", "complete")),
+                    ("is_course_explorer", "=", False),
                     ("type_id", "=", result.type_id.id),
                     "|",
                     ("subjects", "in", [result.subject_id.id]),
                     ("resource_id.subjects", "in", [result.subject_id.id]),
-                    ("date_submitted", ">=", result.week_start),
-                    ("date_submitted", "<=", result.week_end),
+                    ("date_submitted", ">=", max(result.week_start, date_start)),
+                    ("date_submitted", "<=", min(result.week_end, date_end)),
                 ],
             })
         weeks = []
@@ -267,9 +426,10 @@ class APSWeeklySubmissionResult(models.Model):
                 "show_marks": False,
                 "is_non_school": week["is_non_school"],
             }) for week in weeks]
-            subject_id, type_id = row_key
+            row_student_id, subject_id, type_id = row_key
             row_submissions = submissions.filtered(lambda submission: (
-                subject_id in submission_subjects[submission.id].ids
+                (not row_student_id or submission.student_id.id == row_student_id)
+                and subject_id in self._weekly_effective_subjects(submission, subject_ids).ids
                 and submission.type_id.id == type_id
             ))
             total_count = len(row_submissions)
@@ -282,9 +442,11 @@ class APSWeeklySubmissionResult(models.Model):
                 "is_progress": mode == "progress",
                 "show_marks": bool(marks_total and mode == "marks"),
                 "marks_label": round(marks_total, 1),
-                "submission_domain": [
-                    ("student_id", "=", student_partner_id),
+                "submission_domain": self._weekly_student_domain(
+                    {row_student_id} if row_student_id else selected_partner_ids
+                ) + [
                     ("state", "in", ("submitted", "complete")),
+                    ("is_course_explorer", "=", False),
                     ("date_submitted", ">=", date_start),
                     ("date_submitted", "<=", date_end),
                     ("type_id", "=", type_id),
@@ -296,13 +458,13 @@ class APSWeeklySubmissionResult(models.Model):
             }
         students = []
         if is_teacher:
-            period_submissions = self.env["aps.resource.submission"].search([
-                ("state", "in", ("submitted", "complete")),
-                ("date_submitted", ">=", date_start),
-                ("date_submitted", "<=", date_end),
-                ("student_id.is_student", "=", True),
-            ])
-            student_partners = period_submissions.mapped("student_id").sorted(
+            # Keep the option list scoped to the class(es), not to the
+            # currently selected student. Selecting a student only narrows
+            # the grid; it must never remove the other class students from
+            # this dropdown.
+            student_partners = self.env["res.partner"].browse(
+                sorted(scoped_partner_ids)
+            ).filtered("is_student").sorted(
                 key=lambda partner: partner.display_name.lower()
             )
             students = [
@@ -311,7 +473,11 @@ class APSWeeklySubmissionResult(models.Model):
             ]
         terms = self.env["aps.academic.term"].search([], order="start_date desc")
         return {
-            "studentId": student_partner_id,
+            "studentId": student_partner_id if not group_by_student else False,
+            "classId": class_id,
+            "canSelectAllStudents": is_teacher,
+            "groupByStudent": group_by_student,
+            "classes": class_options,
             "students": students,
             "terms": [{"id": term.id, "name": term.display_name, "start": fields.Date.to_string(term.start_date), "end": fields.Date.to_string(term.end_date)} for term in terms],
             "academicTermId": int(academic_term_id) if academic_term_id else False,

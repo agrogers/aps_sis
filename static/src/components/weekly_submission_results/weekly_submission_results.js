@@ -14,12 +14,22 @@ export class WeeklySubmissionResults extends Component {
         this.toggleType = this.toggleType.bind(this);
         this.selectAllTypes = this.selectAllTypes.bind(this);
         this.selectNoTypes = this.selectNoTypes.bind(this);
+        this.toggleClassDropdown = this.toggleClassDropdown.bind(this);
+        this.selectClass = this.selectClass.bind(this);
+        this.onStudentChange = this.onStudentChange.bind(this);
+        this.onDropdownSearchKeydown = this.onDropdownSearchKeydown.bind(this);
         this.storageKey = "aps_sis_weekly_submission_results_filters";
         this.state = useState({
             loading: true,
             error: false,
+            classId: false,
+            classes: [],
+            classDropdownOpen: false,
+            classSearch: "",
             studentId: false,
             students: [],
+            canSelectAllStudents: true,
+            groupByStudent: false,
             types: [],
             selectedTypeIds: [],
             academicTermId: false,
@@ -43,6 +53,7 @@ export class WeeklySubmissionResults extends Component {
             if (typeof saved.startDate === "string") this.state.startDate = saved.startDate;
             if (typeof saved.endDate === "string") this.state.endDate = saved.endDate;
             if (saved.studentId) this.state.studentId = Number(saved.studentId);
+            if (saved.classId) this.state.classId = Number(saved.classId);
             if (saved.academicTermId) this.state.academicTermId = Number(saved.academicTermId);
             if (saved.selectedTypeIds === null) {
                 this.state.selectedTypeIds = null;
@@ -60,6 +71,7 @@ export class WeeklySubmissionResults extends Component {
                 startDate: this.state.startDate,
                 endDate: this.state.endDate,
                 studentId: this.state.studentId || false,
+                classId: this.state.classId || false,
                 academicTermId: this.state.academicTermId || false,
                 selectedTypeIds: this.state.selectedTypeIds,
             }));
@@ -78,6 +90,7 @@ export class WeeklySubmissionResults extends Component {
                 this.state.endDate || false,
                 this.state.selectedTypeIds,
                 this.state.academicTermId || false,
+                this.state.classId || false,
             ]);
             Object.assign(this.state, data, { loading: false, error: false });
             this.state.selectedTypeIds = requestedTypeIds;
@@ -93,6 +106,58 @@ export class WeeklySubmissionResults extends Component {
             this.state.studentId = Number(this.state.studentId);
         }
         await this.load();
+    }
+
+    async onStudentChange() {
+        this.state.studentId = this.state.studentId ? Number(this.state.studentId) : false;
+        await this.load();
+    }
+
+    async onClassChange() {
+        this.state.classId = this.state.classId ? Number(this.state.classId) : false;
+        this.state.studentId = false;
+        this._saveFilterState();
+        await this.load();
+    }
+
+    toggleClassDropdown() {
+        this.state.classDropdownOpen = !this.state.classDropdownOpen;
+        this.state.classSearch = "";
+    }
+
+    async selectClass(classOrEvent) {
+        const classId = classOrEvent?.currentTarget
+            ? Number(classOrEvent.currentTarget.dataset.classId) || false
+            : classOrEvent?.id || false;
+        this.state.classId = classId;
+        this.state.classDropdownOpen = false;
+        this.state.classSearch = "";
+        await this.onClassChange();
+    }
+
+    onDropdownSearchKeydown(event) {
+        event.stopPropagation();
+    }
+
+    get filteredClasses() {
+        const query = (this.state.classSearch || "").trim().toLowerCase();
+        if (!query) {
+            return this.state.classes;
+        }
+        return this.state.classes.filter((classItem) =>
+            (classItem.name || "").toLowerCase().includes(query)
+        );
+    }
+
+    get selectedClass() {
+        return this.state.classes.find((classItem) => classItem.id === this.state.classId);
+    }
+
+    get selectedStudentName() {
+        if (!this.state.studentId) {
+            return "All Students";
+        }
+        return this.state.students.find((student) => student.id === this.state.studentId)?.name || "All Students";
     }
 
     async onTermChange() {
@@ -152,9 +217,33 @@ export class WeeklySubmissionResults extends Component {
                     subjectName: row.subject_name,
                     subjectIconUrl: row.subject_icon_url,
                     rows: [],
+                    typeGroups: [],
                 });
             }
-            groups.get(row.subject_id).rows.push(row);
+            const group = groups.get(row.subject_id);
+            if (this.state.groupByStudent) {
+                let typeGroup = group.typeGroups.find((item) => item.typeId === row.type_id);
+                if (!typeGroup) {
+                    typeGroup = {
+                        key: `${row.subject_id}-${row.type_id}`,
+                        typeId: row.type_id,
+                        typeName: row.type_name,
+                        typeDescription: row.type_description,
+                        typeIconUrl: row.type_icon_url,
+                        rows: [],
+                    };
+                    group.typeGroups.push(typeGroup);
+                }
+                typeGroup.rows.push(row);
+            } else {
+                group.rows.push(row);
+            }
+        }
+        for (const group of groups.values()) {
+            group.typeGroups.sort((left, right) => left.typeName.localeCompare(right.typeName));
+            for (const typeGroup of group.typeGroups) {
+                typeGroup.rows.sort((left, right) => left.student_name.localeCompare(right.student_name));
+            }
         }
         return [...groups.values()];
     }

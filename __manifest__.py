@@ -44,6 +44,7 @@
 		'views/core/aps_school_calendar_views.xml',
 		'views/aps_time_tracking_views.xml',
 		'views/aps_time_tracking_dashboard_views.xml',
+		'wizard/aps_time_tracking_overlap_wizard_views.xml',
 		'views/aps_teacher_dashboard_views.xml',
 		'views/aps_school_mgmt_dashboard_views.xml',
 		'views/awards/aps_certificate_views.xml',

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ── Resolve Overlaps Wizard Form View ─────────────────────────────── -->
+    <record id="view_aps_time_tracking_overlap_wizard_form" model="ir.ui.view">
+        <field name="name">aps.time.tracking.overlap.wizard.form</field>
+        <field name="model">aps.time.tracking.overlap.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Time Tracking Overlaps">
+                <group>
+                    <group>
+                        <field name="overlap_count"/>
+                        <field name="overlap_minutes"/>
+                        <field name="partner_names"/>
+                    </group>
+                </group>
+                <p class="text-muted">
+                    The selected time entries overlap with other entries for the same person.
+                    Fixing them will adjust the start or stop times so that no entries overlap.
+                </p>
+                <footer>
+                    <button string="Fix Overlaps" name="action_fix" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Server action: open the overlap wizard from the list view ─────── -->
+    <record id="action_aps_time_tracking_resolve_overlaps" model="ir.actions.server">
+        <field name="name">Resolve Time Overlaps</field>
+        <field name="model_id" ref="aps_sis.model_aps_time_tracking"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_time_tracking"/>
+        <field name="binding_type">action</field>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+                'type': 'ir.actions.act_window',
+                'name': 'Resolve Time Tracking Overlaps',
+                'res_model': 'aps.time.tracking.overlap.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_record_ids': [(6, 0, records.ids)],
+                }
+            }
+        </field>
+    </record>
+
+</odoo>

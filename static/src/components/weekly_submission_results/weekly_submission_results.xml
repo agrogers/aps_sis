@@ -19,9 +19,74 @@
                     <label class="form-label small mb-1">To</label>
                     <input type="date" class="form-control form-control-sm" t-model="state.endDate" t-on-change="onChangeFilter"/>
                 </div>
-                <div t-if="state.students.length">
+                <div class="o_aps_weekly_results__class-dropdown position-relative">
+                    <label class="form-label small mb-1">Class</label>
+                    <button type="button"
+                            class="form-select form-select-sm d-flex align-items-center gap-2"
+                            t-on-click="toggleClassDropdown"
+                            aria-haspopup="listbox"
+                            t-att-aria-expanded="state.classDropdownOpen ? 'true' : 'false'">
+                        <t t-if="selectedClass">
+                                    <img t-if="selectedClass.icon_url"
+                                         t-att-src="selectedClass.icon_url"
+                                         class="object-fit-cover flex-shrink-0"
+                                         style="width:20px;height:20px;"
+                                         t-att-alt="selectedClass.name"></img>
+                                    <span t-else=""
+                                          class="rounded-circle bg-secondary flex-shrink-0"
+                                          style="width:20px;height:20px;"></span>
+                            <span class="text-truncate"><t t-esc="selectedClass.name"/></span>
+                        </t>
+                        <span t-else="" class="text-muted">All Classes</span>
+                    </button>
+                    <div t-if="state.classDropdownOpen"
+                         class="dropdown-menu show w-100 p-1"
+                         role="listbox">
+                        <input type="search"
+                               class="form-control form-control-sm mb-1"
+                               placeholder="Search classes..."
+                               t-model="state.classSearch"
+                               t-on-click.stop="onDropdownSearchKeydown"
+                               t-on-keydown="onDropdownSearchKeydown"/>
+                        <button type="button"
+                                class="dropdown-item d-flex align-items-center gap-2"
+                                t-on-click="selectClass"
+                                t-att-data-class-id="false">
+                            All Classes
+                        </button>
+                        <t t-foreach="filteredClasses" t-as="classItem" t-key="classItem.id">
+                            <t t-if="classItem.level_name !== (filteredClasses[filteredClasses.indexOf(classItem) - 1]?.level_name)">
+                                <div t-if="classItem.level_name"
+                                     class="dropdown-header small text-uppercase fw-bold text-muted border-top mt-1 pt-2">
+                                    <t t-esc="classItem.level_name"/>
+                                </div>
+                            </t>
+                            <button type="button"
+                                    class="dropdown-item d-flex align-items-center gap-2"
+                                    role="option"
+                                    t-on-click="selectClass"
+                                    t-att-data-class-id="classItem.id">
+                                <img t-if="classItem.icon_url"
+                                     t-att-src="classItem.icon_url"
+                                     class="object-fit-cover flex-shrink-0"
+                                     style="width:20px;height:20px;"
+                                     t-att-alt="classItem.name"></img>
+                                <span t-else=""
+                                      class="rounded-circle bg-secondary flex-shrink-0"
+                                      style="width:20px;height:20px;"></span>
+                                <span class="text-truncate"><t t-esc="classItem.name"/></span>
+                            </button>
+                        </t>
+                        <div t-if="!filteredClasses.length"
+                             class="dropdown-item-text text-muted small px-2 py-1">
+                            No matching classes found
+                        </div>
+                    </div>
+                </div>
+                <div t-if="state.canSelectAllStudents || state.students.length">
                     <label class="form-label small mb-1">Student</label>
-                    <select class="form-select form-select-sm" t-model="state.studentId" t-on-change="onChangeFilter">
+                    <select class="form-select form-select-sm" t-model="state.studentId" t-on-change="onStudentChange">
+                        <option t-if="state.canSelectAllStudents" value="">All Students</option>
                         <t t-foreach="state.students" t-as="student" t-key="student.id">
                             <option t-att-value="student.id"><t t-esc="student.name"/></option>
                         </t>
@@ -68,7 +133,8 @@
                     <tbody>
                         <t t-foreach="groupedRows" t-as="group" t-key="group.key">
                             <tr class="o_aps_weekly_results__subject-heading">
-                                <th class="o_aps_weekly_results__sticky-column bg-white border-0">
+                                <th class="o_aps_weekly_results__sticky-column bg-white border-0"
+                                    t-att-colspan="2 + state.weeks.length">
                                     <span t-if="group.subjectIconUrl" class="o_aps_weekly_results__subject-icon">
                                         <img t-att-src="group.subjectIconUrl" t-att-alt="group.subjectName"/>
                                     </span>
@@ -79,13 +145,21 @@
                                         t-att-style="group.subjectIconUrl &amp;&amp; (week_index % 3 === 2) ? 'background-image: url(' + group.subjectIconUrl + ');' : ''"></td>
                                 </t> -->
                             </tr>
-                            <t t-foreach="group.rows" t-as="row" t-key="row.key">
-                            <tr>
-                                <th class="o_aps_weekly_results__sticky-column bg-white o_aps_weekly_results__type-label">
-                                    <span t-if="row.type_icon_url" class="o_aps_weekly_results__type-icon">
-                                        <img t-att-src="row.type_icon_url" t-att-alt="row.type_name"/>
+                            <t t-if="state.groupByStudent">
+                            <t t-foreach="group.typeGroups" t-as="typeGroup" t-key="typeGroup.key">
+                            <tr class="o_aps_weekly_results__type-heading">
+                                <th class="o_aps_weekly_results__sticky-column bg-white">
+                                    <span t-if="typeGroup.typeIconUrl" class="o_aps_weekly_results__type-icon">
+                                        <img t-att-src="typeGroup.typeIconUrl" t-att-alt="typeGroup.typeName"></img>
                                     </span>
-                                    <span class=""><t t-esc="row.type_name"/></span>
+                                    <span><t t-esc="typeGroup.typeName"/></span>
+                                </th>
+                                <td t-att-colspan="1 + state.weeks.length" class="bg-white"></td>
+                            </tr>
+                            <t t-foreach="typeGroup.rows" t-as="row" t-key="row.key">
+                            <tr>
+                                <th class="o_aps_weekly_results__sticky-column bg-white o_aps_weekly_results__student-label">
+                                    <span><t t-esc="row.student_name"/></span>
                                 </th>
                                 <td class="o_aps_weekly_results__total-column text-center p-1">
                                     <a t-if="row.total.submission_count" href="#" class="o_aps_weekly_results__cell o_aps_weekly_results__cell--metrics d-inline-flex align-items-center" t-on-click.prevent="() => onCellClick(row.total)" t-att-title="row.total.tooltip">
@@ -110,6 +184,42 @@
                                     </td>
                                 </t>
                             </tr>
+                            </t>
+                            </t>
+                            </t>
+                            <t t-else="">
+                            <t t-foreach="group.rows" t-as="row" t-key="row.key">
+                            <tr>
+                                <th class="o_aps_weekly_results__sticky-column bg-white o_aps_weekly_results__type-label">
+                                    <span t-if="row.type_icon_url" class="o_aps_weekly_results__type-icon">
+                                        <img t-att-src="row.type_icon_url" t-att-alt="row.type_name"></img>
+                                    </span>
+                                    <span><t t-esc="row.type_name"/></span>
+                                </th>
+                                <td class="o_aps_weekly_results__total-column text-center p-1">
+                                    <a t-if="row.total.submission_count" href="#" class="o_aps_weekly_results__cell o_aps_weekly_results__cell--metrics d-inline-flex align-items-center" t-on-click.prevent="() => onCellClick(row.total)" t-att-title="row.total.tooltip">
+                                        <span class="badge o_aps_weekly_results__submission-count" t-if="!row.total.is_progress" title="Total Submissions"><t t-esc="row.total.submission_count"/></span>
+                                        <span class="o_aps_weekly_results__percent-pie-slot">
+                                            <PercentPie t-if="row.total.show_percent &amp;&amp; !row.total.is_progress" value="row.total.percent_label" string="" showValue="false" showText="false" showTooltip="true"/>
+                                        </span>
+                                        <span t-if="row.total.show_percent &amp;&amp; row.total.is_progress" class="o_aps_weekly_results__progress-percent" title="Progress Percentage"><t t-esc="Math.round(row.total.percent_label)"/>%</span>
+                                        <span class="o_aps_weekly_results__marks" title="Total Question Marks"><t t-if="row.total.show_marks">/<t t-esc="row.total.marks_label"/></t></span>
+                                    </a>
+                                </td>
+                                <t t-foreach="row.cells" t-as="cell" t-key="cell.key">
+                                    <td t-att-class="cell.is_non_school ? 'o_aps_weekly_results__non-school text-center p-1' : 'text-center p-1'">
+                                        <a t-if="cell.submission_count" href="#" class="o_aps_weekly_results__cell o_aps_weekly_results__cell--metrics d-inline-flex align-items-center" t-on-click.prevent="() => onCellClick(cell)" t-att-title="cell.tooltip">
+                                            <span class="badge o_aps_weekly_results__submission-count" t-if="!cell.is_progress" title="Total Submissions" t-att-style="submissionCountStyle(cell.submission_count)"><t t-esc="cell.submission_count"/></span>
+                                            <span class="o_aps_weekly_results__percent-pie-slot">
+                                                <PercentPie t-if="cell.show_percent &amp;&amp; !cell.is_progress" value="cell.percent_label" string="" showValue="false" showText="false" showTooltip="true"/>
+                                            </span>
+                                            <span t-if="cell.show_percent &amp;&amp; cell.is_progress" class="o_aps_weekly_results__progress-percent" title="Progress Percentage"><t t-esc="Math.round(cell.percent_label)"/>%</span>
+                                            <span class="o_aps_weekly_results__submission-marks o_aps_weekly_results__marks" title="Total Question Marks"><t t-if="cell.show_marks">/<t t-esc="cell.marks_label"/></t></span>
+                                        </a>
+                                    </td>
+                                </t>
+                            </tr>
+                            </t>
                             </t>
                         </t>
                     </tbody>

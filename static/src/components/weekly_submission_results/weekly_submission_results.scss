@@ -11,6 +11,32 @@
     box-sizing: border-box;
 }
 
+.o_aps_weekly_results__class-dropdown {
+    min-width: 240px;
+
+    .form-select-sm {
+        font-size: 0.875rem;
+        border-radius: 3px;
+        border-color: #96969699;
+        text-align: left;
+
+        &:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        }
+    }
+
+    .dropdown-menu {
+        max-height: 320px;
+        overflow-y: auto;
+    }
+}
+
+.o_aps_weekly_results__class-icon {
+    width: 20px;
+    height: 20px;
+}
+
 .o_aps_weekly_results table {
     width: max-content;
     min-width: 100%;
@@ -41,6 +67,7 @@
     border-left: 0 !important;
     border-right: 0 !important;
     border-bottom: 0 !important;
+    text-transform: uppercase;
 }
 
 .o_aps_weekly_results__subject-heading {
@@ -84,6 +111,24 @@
 }
 
 .o_aps_weekly_results__type-label {
+    padding-left: 1.5rem !important;
+}
+
+.o_aps_weekly_results__student-label {
+    padding-left: 3rem !important;
+    font-weight: 400;
+}
+
+.o_aps_weekly_results__type-heading th,
+.o_aps_weekly_results__type-heading td {
+    border-left: 0 !important;
+    border-right: 0 !important;
+    background: #fafafa !important;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.o_aps_weekly_results__type-heading th {
     padding-left: 1.5rem !important;
 }
 

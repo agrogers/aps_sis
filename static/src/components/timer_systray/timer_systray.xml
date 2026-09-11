@@ -116,4 +116,161 @@
         </Dialog>
     </t>
 
+    <!-- ── Enhanced Stop Timer Dialog ────────────────────────────────────── -->
+    <t t-name="aps_sis.EnhancedTimerStopDialog">
+        <Dialog title="state.id ? 'Edit Time Entry' : 'Save Time Entry'" size="'xl'">
+            <t t-set-slot="default">
+                <div class="aps-timer-dialog">
+                    <!-- <div class="aps-timer-dialog__intro">
+                        <div>
+                            <div class="aps-timer-dialog__eyebrow">TIME JOURNAL</div>
+                            <h3 class="mb-1"><i class="fa fa-clock-o me-2"/>Record focused time</h3>
+                            <p class="text-muted mb-0">Capture a clear, overlap-free record for <strong t-esc="props.partnerName"/>.</p>
+                        </div>
+                        <div class="aps-timer-dialog__date-pill">
+                            <i class="fa fa-calendar me-1"/>
+                            <span t-esc="timelineDate"/>
+                        </div>
+                    </div> -->
+
+                    <div class="aps-timer-dialog__body">
+                        <section class="aps-timer-form">
+                            <div class="aps-timer-card aps-timer-card--subject">
+                                <div class="aps-timer-card__heading">
+                                    <span class="aps-timer-icon"><i class="fa fa-book"/></span>
+                                    <div>
+                                        <h5 class="mb-0">What were you working on?</h5>
+                                        <small class="text-muted">Choose the subject category for this entry.</small>
+                                    </div>
+                                    <div t-if="selectedSubject" class="aps-timer-subject-chip" t-att-style="'--subject-color: ' + selectedSubjectColor">
+                                        <span class="aps-timer-subject-chip__swatch"/>
+                                        <span t-esc="selectedSubject.category_name || selectedSubject.name"/>
+                                    </div>
+                                </div>
+                                <label class="form-label mt-3" for="enhancedSubject">Subject <span class="text-danger">*</span></label>
+                                <select id="enhancedSubject" class="form-select form-select-lg" t-att-class="{'is-invalid': state.subjectError}" t-model="state.subject_id" t-on-change="onSubjectChange">
+                                    <option value="">Select a subject</option>
+                                    <t t-foreach="props.subjects" t-as="subj" t-key="subj.id">
+                                        <option t-att-value="subj.id" t-esc="subj.name"/>
+                                    </t>
+                                </select>
+                                <div t-if="state.subjectError" class="invalid-feedback d-block">Please select a subject.</div>
+                            </div>
+
+                            <div t-if="state.conflicts.length" class="aps-timer-conflict" role="alert">
+                                <div class="aps-timer-conflict__icon"><i class="fa fa-exclamation-triangle"/></div>
+                                <div class="flex-grow-1">
+                                    <strong>This time overlaps an existing record</strong>
+                                    <t t-foreach="state.conflicts" t-as="conflict" t-key="conflict.id">
+                                        <div class="small mt-1"><span t-esc="conflict.subject_name"/> · <span t-esc="conflict.start_time"/> – <span t-esc="conflict.stop_time"/></div>
+                                    </t>
+                                    <div class="small text-muted mt-1">Change either the start or finish time to continue.</div>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm" t-on-click="onFixOverlap">Fix</button>
+                            </div>
+                            <div t-if="state.validationError &amp;&amp; !state.conflicts.length" class="alert alert-danger mt-3" role="alert">
+                                <i class="fa fa-exclamation-circle me-2"/><span t-esc="state.validationError"/>
+                            </div>
+
+                            <div class="aps-timer-card">
+                                <div class="aps-timer-card__heading">
+                                    <span class="aps-timer-icon aps-timer-icon--violet"><i class="fa fa-calendar-check-o"/></span>
+                                    <div>
+                                        <h5 class="mb-0">When did it happen?</h5>
+                                        <small class="text-muted">Entries may touch, but they may not overlap.</small>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-1">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="enhancedStart">Start time</label>
+                                        <input id="enhancedStart" t-ref="startInput" type="datetime-local" class="form-control" name="start_time" step="60" t-att-class="{'is-invalid': state.conflicts.length}" t-model="state.start_time" t-on-change="onTimeChange"/>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="enhancedStop">Finish time</label>
+                                        <input id="enhancedStop" t-ref="stopInput" type="datetime-local" class="form-control" name="stop_time" step="60" t-att-class="{'is-invalid': state.conflicts.length}" t-model="state.stop_time" t-on-change="onTimeChange"/>
+                                    </div>
+                                </div>
+                                <div class="aps-timer-metrics mt-3">
+                                    <div>
+                                        <span class="aps-timer-metrics__label">Recorded</span>
+                                        <strong t-esc="_formatDuration(state.total_minutes)"/>
+                                    </div>
+                                    <div>
+                                        <span class="aps-timer-metrics__label">Pause</span>
+                                        <strong t-esc="_formatDuration(state.pause_minutes)"/>
+                                    </div>
+                                    <div class="aps-timer-metrics__input">
+                                        <label class="aps-timer-metrics__label" for="enhancedDuration">Minutes</label>
+                                        <input id="enhancedDuration" type="number" class="form-control form-control-sm" min="0" step="1" t-model="state.total_minutes" t-on-change="onDurationChange"/>
+                                    </div>
+                                    <div class="aps-timer-metrics__input">
+                                        <label class="aps-timer-metrics__label" for="enhancedPause">Break</label>
+                                        <input id="enhancedPause" type="number" class="form-control form-control-sm" min="0" step="1" t-model="state.pause_minutes" t-on-change="onPauseChange"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="aps-timer-card aps-timer-card--details">
+                                <div class="row g-3">
+                                    <div class="col-md-5">
+                                        <div class="form-check form-switch pt-2">
+                                            <input id="enhancedOutsideHours" type="checkbox" class="form-check-input" t-model="state.is_outside_school_hours"/>
+                                            <label class="form-check-label" for="enhancedOutsideHours">Outside school hours</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <label class="form-label" for="enhancedNotes">Notes</label>
+                                        <textarea id="enhancedNotes" class="form-control" rows="2" t-model="state.notes" placeholder="Add a helpful note…"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </section>
+
+                        <aside class="aps-timer-timeline" aria-label="Recorded time today">
+                            <div class="aps-timer-timeline__header">
+                                <div>
+                                    <div class="aps-timer-dialog__eyebrow">TODAY'S FLOW</div>
+                                    <h5 class="mb-0">Recorded time</h5>
+                                </div>
+                                <span class="aps-timer-timeline__total"><t t-esc="_formatDuration(timelineTotal)"/></span>
+                            </div>
+                            <div class="aps-timer-timeline__canvas">
+                                <div class="aps-timer-timeline__labels">
+                                    <t t-foreach="timelineLabels" t-as="label" t-key="label.label">
+                                        <span t-att-style="label.style" t-esc="label.label"/>
+                                    </t>
+                                </div>
+                                <div class="aps-timer-timeline__track">
+                                    <div class="aps-timer-timeline__line"></div>
+                                    <t t-if="!timelineEntries.length">
+                                        <div class="aps-timer-timeline__empty"><i class="fa fa-hourglass-o"/><span>Your day starts here</span></div>
+                                    </t>
+                                    <t t-foreach="timelineEntries" t-as="entry" t-key="entry.id">
+                                        <button type="button" class="aps-timer-segment" t-att-class="{'is-draft': entry.isDraft, 'is-conflict': state.conflicts.length &amp;&amp; entry.isDraft}" t-att-style="_timelineStyle(entry)" t-att-title="_timelineTooltip(entry)" t-on-click="onTimelineClick" t-att-data-entry-id="entry.id">
+                                            <span class="aps-timer-segment__label"><strong t-esc="entry.subject_name"/><small t-esc="_formatDuration(entry.total_minutes)"/></span>
+                                            <span t-if="entry.pause_minutes" class="aps-timer-segment__pause" t-att-style="_pauseStyle(entry)"></span>
+                                        </button>
+                                    </t>
+                                </div>
+                            </div>
+                            <div class="aps-timer-timeline__legend">
+                                <span><i class="aps-timer-legend-dot aps-timer-legend-dot--recorded"/>Recorded</span>
+                                <span><i class="aps-timer-legend-dot aps-timer-legend-dot--pause"/>Pause</span>
+                                <span><i class="aps-timer-legend-dot aps-timer-legend-dot--draft"/>This entry</span>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </t>
+            <t t-set-slot="footer">
+                <div class="aps-timer-dialog__footer-note"><i class="fa fa-info-circle me-1"/>Times are shown in your local timezone.</div>
+                <button type="button" class="btn btn-primary px-4" t-att-disabled="state.saving || state.conflicts.length" t-on-click="onSave">
+                    <i class="fa fa-save me-1"/> <t t-esc="state.id ? 'Save changes' : 'Save entry'"/>
+                </button>
+                <button type="button" class="btn btn-light ms-2" t-on-click="onDiscard">Discard</button>
+            </t>
+        </Dialog>
+    </t>
+
 </templates>

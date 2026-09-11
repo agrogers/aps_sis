@@ -19,10 +19,10 @@
     <menuitem id="menu_apex_submit_mark_teacher" name="Submit a Mark" parent="menu_apex_submissions" action="action_aps_submit_mark_wizard_teacher" sequence="50" groups="aps_sis.group_aps_teacher"/>
     <menuitem id="menu_apex_task_list" name="Tasks" parent="menu_apex_submissions" action="action_aps_resource_tasks" sequence="250" groups="aps_sis.group_aps_teacher"/>
 
-    <menuitem id="menu_apex_dashboard_overview" parent="menu_apex_root" 
+    <!-- <menuitem id="menu_apex_dashboard_overview" parent="menu_apex_root" 
               action="action_apex_dashboard" name="Dashboard" sequence="20"
               groups="aps_sis.group_aps_student_menu"/>
-
+ -->
     <menuitem id="menu_apex_teacher_dashboard" parent="menu_apex_root"
               action="action_aps_teacher_dashboard" name="Teacher Dashboard"
               sequence="25" groups="aps_sis.group_aps_teacher"/>

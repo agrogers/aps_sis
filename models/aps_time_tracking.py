@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import _, models, fields, api
 from odoo.exceptions import ValidationError
 from datetime import datetime, time, timedelta
 
@@ -13,6 +13,65 @@ class APSTimeTracking(models.Model):
     _description = 'Time Tracking Entry'
     _rec_name = 'display_name'
     _order = 'start_time desc'
+
+    def _find_interval_overlaps(self, partner_id, start_time, stop_time, exclude_id=False):
+        """Return completed entries that overlap the proposed interval.
+
+        The inequalities deliberately allow entries that touch at either end:
+        ``08:00-09:00`` and ``09:00-10:00`` are consecutive, not overlapping.
+        """
+        if not partner_id or not start_time or not stop_time or stop_time <= start_time:
+            return self.browse()
+        domain = [
+            ('partner_id', '=', partner_id),
+            ('start_time', '!=', False),
+            ('stop_time', '!=', False),
+            ('start_time', '<', stop_time),
+            ('stop_time', '>', start_time),
+        ]
+        if exclude_id:
+            domain.append(('id', '!=', exclude_id))
+        return self.search(domain, order='start_time asc')
+
+    def _check_interval_overlap(self, partner_id, start_time, stop_time, exclude_id=False):
+        overlaps = self._find_interval_overlaps(
+            partner_id, start_time, stop_time, exclude_id=exclude_id
+        )
+        if overlaps:
+            conflict = overlaps[0]
+            raise ValidationError(_(
+                'This time overlaps with %(subject)s from %(start)s to %(stop)s.'
+            ) % {
+                'subject': conflict.subject_id.display_name or _('another entry'),
+                'start': fields.Datetime.to_string(conflict.start_time),
+                'stop': fields.Datetime.to_string(conflict.stop_time),
+            })
+        return overlaps
+
+    def _check_vals_overlap(self, vals, record=False):
+        """Validate a create/write interval before it reaches the database."""
+        partner_id = vals.get('partner_id', record.partner_id.id if record else False)
+        start_time = vals.get('start_time', record.start_time if record else False)
+        stop_time = vals.get('stop_time', record.stop_time if record else False)
+        start_time = fields.Datetime.to_datetime(start_time) if start_time else False
+        stop_time = fields.Datetime.to_datetime(stop_time) if stop_time else False
+        if start_time and stop_time:
+            self._check_interval_overlap(
+                partner_id, start_time, stop_time,
+                exclude_id=record.id if record else False,
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._check_vals_overlap(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if {'partner_id', 'start_time', 'stop_time'} & set(vals):
+            for record in self:
+                self._check_vals_overlap(vals, record=record)
+        return super().write(vals)
 
     display_name = fields.Char(compute='_compute_display_name')
 
@@ -152,6 +211,195 @@ class APSTimeTracking(models.Model):
                 if (rec.stop_time - rec.start_time) > timedelta(hours=24):
                     raise ValidationError("Start and stop time cannot be more than 24 hours apart.")
 
+    # ─────────────────────────────────────────────────────────────────────────
+    # Overlap detection & resolution
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _overlap_records(self, record_ids):
+        """
+        Return the selected records and all completed records for their people.
+
+        Unselected records are included as fixed references. The detector
+        filters out pairs where neither record is selected, so unrelated
+        overlaps do not appear in the wizard.
+        """
+        selected = self.browse(record_ids).filtered(
+            lambda r: r.start_time and r.stop_time
+        )
+        partner_ids = selected.mapped('partner_id').ids
+        if not partner_ids:
+            return selected.browse()
+        return self.search([
+            ('partner_id', 'in', partner_ids),
+            ('start_time', '!=', False),
+            ('stop_time', '!=', False),
+        ])
+
+    def _detect_overlaps(self, record_ids):
+        """
+        Detect overlapping time entries for the same partner.
+
+        Only pairs containing at least one selected record are returned. Other
+        records for the same person are included as fixed references, but an
+        overlap between two unselected records must not appear in the wizard.
+
+        Returns a dict:
+            overlaps: list of dicts {earlier, later, minutes}
+            overlap_count: number of overlapping pairs
+            overlap_minutes: total overlapping minutes, counted once per person
+        """
+        records = self._overlap_records(record_ids)
+        selected_ids = set(self.browse(record_ids).ids)
+        # Group by partner, sort each group by (start_time, stop_time)
+        by_partner = {}
+        for rec in records:
+            if not rec.partner_id:
+                continue
+            by_partner.setdefault(rec.partner_id.id, []).append(rec)
+
+        overlaps = []
+        overlap_intervals_by_partner = {}
+        for partner_id, recs in by_partner.items():
+            recs.sort(key=lambda r: (r.start_time, r.stop_time))
+            for i, earlier in enumerate(recs[:-1]):
+                for later in recs[i + 1:]:
+                    # The records are sorted by start time, so no later
+                    # record can overlap once its start reaches this stop.
+                    if later.start_time >= earlier.stop_time:
+                        break
+                    earlier_selected = earlier.id in selected_ids
+                    later_selected = later.id in selected_ids
+                    if not earlier_selected and not later_selected:
+                        continue
+                    overlap_start = later.start_time
+                    overlap_end = min(earlier.stop_time, later.stop_time)
+                    if overlap_end <= overlap_start:
+                        continue
+                    overlap_minutes = (
+                        overlap_end - overlap_start
+                    ).total_seconds() / 60.0
+                    overlap_intervals_by_partner.setdefault(
+                        partner_id, []
+                    ).append((overlap_start, overlap_end))
+                    overlaps.append({
+                        'earlier': earlier,
+                        'later': later,
+                        'minutes': overlap_minutes,
+                        'earlier_selected': earlier_selected,
+                        'later_selected': later_selected,
+                    })
+
+        # A time range can overlap several records at once. Count each minute
+        # only once per person in the summary instead of adding the same time
+        # repeatedly for every overlapping pair.
+        overlap_minutes = 0.0
+        for intervals in overlap_intervals_by_partner.values():
+            intervals.sort()
+            merged_intervals = []
+            for start, stop in intervals:
+                if merged_intervals and start <= merged_intervals[-1][1]:
+                    merged_intervals[-1] = (
+                        merged_intervals[-1][0],
+                        max(merged_intervals[-1][1], stop),
+                    )
+                else:
+                    merged_intervals.append((start, stop))
+            overlap_minutes += sum(
+                (stop - start).total_seconds() / 60.0
+                for start, stop in merged_intervals
+            )
+
+        return {
+            'overlaps': overlaps,
+            'overlap_count': len(overlaps),
+            'overlap_minutes': round(overlap_minutes, 1),
+        }
+
+    def action_check_overlaps(self):
+        """
+        Analyse the selected records for time overlaps with any other record
+        for the same partner. Overlaps between two unselected records are not
+        included. Returns a summary dict for the wizard dialog.
+        """
+        active_ids = self.env.context.get('active_ids', [])
+        if not active_ids:
+            active_ids = self.ids
+        result = self._detect_overlaps(active_ids)
+
+        # Names of the people involved in at least one overlap (unique, sorted)
+        partner_names = []
+        seen = set()
+        for ov in result['overlaps']:
+            for rec in (ov['earlier'], ov['later']):
+                if rec.partner_id and rec.partner_id.id not in seen:
+                    seen.add(rec.partner_id.id)
+                    partner_names.append(rec.partner_id.display_name)
+        partner_names.sort(key=str.lower)
+
+        return {
+            'overlap_count': result['overlap_count'],
+            'overlap_minutes': result['overlap_minutes'],
+            'partner_names': partner_names,
+            'record_ids': active_ids,
+        }
+
+    def action_resolve_overlaps(self, record_ids=None):
+        """
+        Adjust selected records so that they no longer overlap another record
+        for the same partner. Unselected records are treated as fixed and are
+        never modified.
+
+        Rule: for each overlapping pair, shorten the EARLIER record's stop_time
+        to the later record's start_time.
+
+        Iterates until no overlaps remain for the affected partners.
+        """
+        if record_ids is None:
+            record_ids = self.env.context.get('active_ids', []) or self.ids
+        record_ids = list(record_ids)
+        selected_ids = set(self.browse(record_ids).ids)
+
+        adjusted_ids = set()
+
+        # Iterate until stable (handles 3+ overlapping records)
+        for _ in range(50):
+            result = self._detect_overlaps(record_ids)
+            if not result['overlaps']:
+                break
+            changed = False
+            for ov in result['overlaps']:
+                earlier = ov['earlier']
+                later = ov['later']
+                if earlier.id in selected_ids:
+                    # Shorten the selected earlier record.
+                    new_stop = min(earlier.stop_time, later.start_time)
+                    if new_stop != earlier.stop_time:
+                        earlier.write({'stop_time': new_stop})
+                        adjusted_ids.add(earlier.id)
+                        changed = True
+                        break
+                elif later.id in selected_ids:
+                    # Move the selected later record after the fixed record.
+                    # A record fully contained by the fixed record cannot be
+                    # repaired without making it zero/negative duration.
+                    new_start = max(later.start_time, earlier.stop_time)
+                    if new_start < later.stop_time and new_start != later.start_time:
+                        later.write({'start_time': new_start})
+                        adjusted_ids.add(later.id)
+                        changed = True
+                        break
+            if not changed:
+                break
+
+        # Count any overlaps that could not be resolved
+        final = self._detect_overlaps(record_ids)
+
+        return {
+            'adjusted_count': len(adjusted_ids),
+            'adjusted_ids': list(adjusted_ids),
+            'remaining_overlaps': final['overlap_count'],
+        }
+
     @api.depends('start_time', 'is_outside_school_hours')
     def _compute_is_outside_school_hours(self):
         """
@@ -212,19 +460,102 @@ class APSTimeTracking(models.Model):
         """Return current user's partner and their available subjects."""
         partner = self.env.user.partner_id
         student = self.env['aps.student'].search([('partner_id', '=', partner.id)], limit=1)
-        subjects = []
+        subject_records = self.env['aps.subject'].browse()
         if student:
             subject_records = student.enrollment_ids.filtered(
                 lambda e: e.state == 'enrolled'
             ).mapped('class_id.subject_id')
-            subjects = [{'id': s.id, 'name': s.name} for s in subject_records.sorted('name')]
-        if not subjects:
+            subject_records = subject_records.sorted('name')
+        if not subject_records:
             all_subjects = self.env['aps.subject'].search([], order='name asc')
-            subjects = [{'id': s.id, 'name': s.name} for s in all_subjects]
+            subject_records = all_subjects
+        colors = self.env['aps.subject'].get_subject_colors_map(subject_records.ids)
+        subjects = [{
+            'id': subject.id,
+            'name': subject.name,
+            'category_name': subject.category_id.name if subject.category_id else '',
+            'color': colors.get(subject.id, '#64748b'),
+        } for subject in subject_records]
         return {
             'partner_id': partner.id,
             'partner_name': partner.display_name,
             'subjects': subjects,
+        }
+
+    def _timeline_entry_payload(self, entry, user_tz):
+        import pytz
+
+        def to_local_str(dt):
+            if not dt:
+                return False
+            return dt.replace(tzinfo=pytz.utc).astimezone(user_tz).strftime('%Y-%m-%d %H:%M:%S')
+
+        subject = entry.subject_id
+        color = '#64748b'
+        if subject:
+            color = (
+                subject.category_id.color_rgb
+                if subject.category_id and subject.category_id.color_rgb
+                else self.env['aps.subject']._generate_color_from_name(subject.name)
+            )
+        return {
+            'id': entry.id,
+            'partner_id': entry.partner_id.id if entry.partner_id else False,
+            'subject_id': [subject.id, subject.name] if subject else False,
+            'subject_name': subject.name if subject else _('Unassigned'),
+            'category_name': subject.category_id.name if subject and subject.category_id else '',
+            'color': color,
+            'start_time': to_local_str(entry.start_time),
+            'stop_time': to_local_str(entry.stop_time),
+            'pause_minutes': entry.pause_minutes or 0.0,
+            'total_minutes': entry.total_minutes or 0.0,
+            'notes': entry.notes or '',
+            'is_outside_school_hours': entry.is_outside_school_hours,
+        }
+
+    @api.model
+    def get_timer_timeline(self, date_value=False, partner_id=False):
+        """Return one partner's entries intersecting a local calendar date."""
+        import pytz
+
+        user_tz = pytz.timezone(self.env.user.tz or 'UTC')
+        if date_value:
+            local_date = fields.Date.to_date(date_value)
+        else:
+            local_date = fields.Date.context_today(self)
+        local_start = user_tz.localize(datetime.combine(local_date, time.min))
+        local_stop = user_tz.localize(datetime.combine(local_date + timedelta(days=1), time.min))
+        utc_start = local_start.astimezone(pytz.utc).replace(tzinfo=None)
+        utc_stop = local_stop.astimezone(pytz.utc).replace(tzinfo=None)
+        partner_id = partner_id or self.env.user.partner_id.id
+        entries = self.search([
+            ('partner_id', '=', partner_id),
+            ('start_time', '<', utc_stop),
+            ('stop_time', '>', utc_start),
+        ], order='start_time asc')
+        return {
+            'date': fields.Date.to_string(local_date),
+            'entries': [self._timeline_entry_payload(entry, user_tz) for entry in entries],
+        }
+
+    @api.model
+    def validate_timer_interval(
+        self, partner_id, start_time, stop_time, exclude_id=False
+    ):
+        """Return frontend-friendly conflict details for a proposed interval."""
+        import pytz
+
+        start_time = fields.Datetime.to_datetime(start_time) if start_time else False
+        stop_time = fields.Datetime.to_datetime(stop_time) if stop_time else False
+        if not partner_id or not start_time or not stop_time or stop_time <= start_time:
+            return {'valid': True, 'conflicts': []}
+        user_tz = pytz.timezone(self.env.user.tz or 'UTC')
+        conflicts = self._find_interval_overlaps(
+            int(partner_id), start_time, stop_time, exclude_id=exclude_id or False
+        )
+        return {
+            'valid': not conflicts,
+            'conflicts': [self._timeline_entry_payload(entry, user_tz) for entry in conflicts],
         }
 
     @api.model

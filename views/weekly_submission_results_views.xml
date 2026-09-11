@@ -6,7 +6,7 @@
     </record>
 
     <menuitem id="menu_aps_weekly_submission_results"
-              name="Weekly Submission Results"
+              name="Weekly Results"
               parent="menu_apex_root"
               action="action_aps_weekly_submission_results"
               sequence="35"
