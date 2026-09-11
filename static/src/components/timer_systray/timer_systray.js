@@ -290,7 +290,11 @@ export class EnhancedTimerStopDialog extends Component {
     }
 
     _formatTime(date) {
-        return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        return date.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        });
     }
 
     _formatDuration(minutes) {

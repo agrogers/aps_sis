@@ -46,6 +46,7 @@
     }
 
     &__body {
+        align-items: stretch;
         display: grid;
         gap: 1rem;
         grid-template-columns: minmax(0, 1.35fr) minmax(300px, .8fr);
@@ -199,6 +200,8 @@
     border-radius: 18px;
     box-shadow: 0 12px 28px rgba(20, 27, 45, .18);
     color: #fff;
+    display: flex;
+    flex-direction: column;
     min-height: 475px;
     padding: 1rem;
 
@@ -224,8 +227,9 @@
 
     &__canvas {
         display: grid;
+        flex: 1 1 auto;
         grid-template-columns: 53px minmax(0, 1fr);
-        height: 375px;
+        min-height: 0;
     }
 
     &__labels {

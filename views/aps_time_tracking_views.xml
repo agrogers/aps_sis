@@ -36,7 +36,7 @@
         <field name="name">aps.time.tracking.list</field>
         <field name="model">aps.time.tracking</field>
         <field name="arch" type="xml">
-            <list string="Time Entries" decoration-muted="not stop_time">
+            <list string="Time Entries" js_class="aps_time_tracking_enhanced_list" decoration-muted="not stop_time">
                 <field name="subject_icon" widget="image" string=" " optional="show" options="{'size': [24, 24]}"/>
                 <field name="date" optional="show"/>
                 <field name="subject_id" optional="show"/>
