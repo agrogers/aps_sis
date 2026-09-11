@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_aps_weekly_submission_result_list" model="ir.ui.view">
+        <field name="name">aps.weekly.submission.result.list</field>
+        <field name="model">aps.weekly.submission.result</field>
+        <field name="arch" type="xml">
+            <list string="Weekly Submission Results">
+                <field name="week_start"/>
+                <field name="week_end" optional="hide"/>
+                <field name="student_id"/>
+                <field name="subject_id"/>
+                <field name="type_id"/>
+                <field name="submission_count"/>
+                <field name="weighted_percent" widget="percentage"/>
+                <field name="score_total" optional="hide"/>
+                <field name="out_of_marks_total"/>
+                <field name="display_mode" optional="hide"/>
+                <field name="academic_week_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_aps_weekly_submission_result_search" model="ir.ui.view">
+        <field name="name">aps.weekly.submission.result.search</field>
+        <field name="model">aps.weekly.submission.result</field>
+        <field name="arch" type="xml">
+            <search string="Weekly Submission Results">
+                <field name="student_id"/>
+                <field name="subject_id"/>
+                <field name="type_id"/>
+                <field name="week_start"/>
+                <field name="academic_week_id"/>
+                <filter name="marks" string="Marks" domain="[('display_mode', '=', 'marks')]"/>
+                <filter name="progress" string="Progress" domain="[('display_mode', '=', 'progress')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_student" string="Student" context="{'group_by': 'student_id'}"/>
+                    <filter name="group_subject" string="Subject" context="{'group_by': 'subject_id'}"/>
+                    <filter name="group_type" string="Resource Type" context="{'group_by': 'type_id'}"/>
+                    <filter name="group_week" string="Week" context="{'group_by': 'week_start'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_aps_weekly_submission_result_pivot" model="ir.ui.view">
+        <field name="name">aps.weekly.submission.result.pivot</field>
+        <field name="model">aps.weekly.submission.result</field>
+        <field name="arch" type="xml">
+            <pivot string="Weekly Submission Results">
+                <field name="week_start" type="row" interval="week"/>
+                <field name="subject_id" type="row"/>
+                <field name="type_id" type="col"/>
+                <field name="submission_count" type="measure"/>
+                <field name="weighted_percent" type="measure"/>
+                <field name="out_of_marks_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_aps_weekly_submission_result_graph" model="ir.ui.view">
+        <field name="name">aps.weekly.submission.result.graph</field>
+        <field name="model">aps.weekly.submission.result</field>
+        <field name="arch" type="xml">
+            <graph string="Weekly Submission Results" type="line">
+                <field name="week_start" interval="week" type="row"/>
+                <field name="weighted_percent" type="measure"/>
+                <field name="submission_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_aps_weekly_submission_result_analysis" model="ir.actions.act_window">
+        <field name="name">Weekly Results Analysis</field>
+        <field name="res_model">aps.weekly.submission.result</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="search_view_id" ref="view_aps_weekly_submission_result_search"/>
+    </record>
+
+    <record id="action_aps_weekly_submission_result_analysis_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_aps_weekly_submission_result_list"/>
+        <field name="act_window_id" ref="action_aps_weekly_submission_result_analysis"/>
+    </record>
+    <record id="action_aps_weekly_submission_result_analysis_pivot" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_aps_weekly_submission_result_pivot"/>
+        <field name="act_window_id" ref="action_aps_weekly_submission_result_analysis"/>
+    </record>
+    <record id="action_aps_weekly_submission_result_analysis_graph" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_aps_weekly_submission_result_graph"/>
+        <field name="act_window_id" ref="action_aps_weekly_submission_result_analysis"/>
+    </record>
+
+    <menuitem id="menu_aps_weekly_submission_result_analysis"
+              name="Weekly Results Analysis"
+              parent="menu_apex_submissions"
+              action="action_aps_weekly_submission_result_analysis"
+              sequence="46"
+              groups="aps_sis.group_aps_teacher"/>
+</odoo>

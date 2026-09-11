@@ -3,10 +3,12 @@
 
     <t t-name="aps_sis.PercentPie">
         <div class="o_pie_info pe-1">
-            <span class="o_pie_value" t-if="displayValue > 0" t-esc="formattedValue"
+            <span class="o_pie_value" t-if="showValue and displayValue > 0" t-esc="formattedValue"
                   t-att-style="'color: ' + color + ';'"/>
-            <span class="o_pie_text" t-esc="props.string"/>
+            <span class="o_pie_text" t-if="showText" t-esc="props.string"/>
             <figure class="o_pie mb-0 mr-5 rounded-circle"
+                  t-att-title="props.showTooltip === false ? false : tooltip"
+                  t-att-aria-label="props.showTooltip === false ? false : tooltip"
                     t-attf-style="background: conic-gradient(
                         {{color}} 0% {{displayValue}}%,
                         rgba(0, 0, 0, 0.15) 0% 100%

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_aps_weekly_submission_results" model="ir.actions.client">
+        <field name="name">Weekly Submission Results</field>
+        <field name="tag">aps_sis_weekly_submission_results</field>
+    </record>
+
+    <menuitem id="menu_aps_weekly_submission_results"
+              name="Weekly Submission Results"
+              parent="menu_apex_root"
+              action="action_aps_weekly_submission_results"
+              sequence="35"
+              groups="aps_sis.group_aps_student_menu,aps_sis.group_aps_teacher"/>
+</odoo>

@@ -15,6 +15,39 @@ class APSResourceSubmission(models.Model):
     _description = 'APEX Submission'
     _rec_name = 'display_name'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    def _refresh_weekly_submission_results(self):
+        students = self.mapped('student_id')
+        result_model = self.env['aps.weekly.submission.result'].sudo()
+        for student in students:
+            result_model.rebuild_for_student(student.id)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._refresh_weekly_submission_results()
+        return records
+
+    def write(self, vals):
+        tracked = {
+            'state', 'score', 'out_of_marks', 'date_submitted',
+            'task_id', 'subjects', 'submission_active',
+        }
+        students_before = self.mapped('student_id')
+        result = super().write(vals)
+        if tracked.intersection(vals):
+            result_model = self.env['aps.weekly.submission.result'].sudo()
+            for student in students_before | self.mapped('student_id'):
+                result_model.rebuild_for_student(student.id)
+        return result
+
+    def unlink(self):
+        students = self.mapped('student_id')
+        result = super().unlink()
+        result_model = self.env['aps.weekly.submission.result'].sudo()
+        for student in students:
+            result_model.rebuild_for_student(student.id)
+        return result
     
     display_name = fields.Char(
         compute='_compute_display_name', store=True,

@@ -1,0 +1,235 @@
+.o_aps_weekly_results__scroll {
+    position: relative;
+    min-height: 0;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    padding-bottom: 2rem;
+    scroll-padding-bottom: 2rem;
+    box-sizing: border-box;
+}
+
+.o_aps_weekly_results table {
+    width: max-content;
+    min-width: 100%;
+}
+
+.o_aps_weekly_results thead th {
+    border-bottom: 0 !important;
+}
+
+.o_aps_weekly_results__sticky-column {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 220px !important;
+    max-width: 220px;
+    font-weight: 400;
+}
+
+.o_aps_weekly_results__total-column {
+    left: 220px;
+    z-index: 2;
+    max-width: 80px !important;
+    background: #f3f4f6 !important;
+}
+
+.o_aps_weekly_results__subject-heading th,
+.o_aps_weekly_results__subject-heading td {
+    border-left: 0 !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+}
+
+.o_aps_weekly_results__subject-heading {
+    // background-color: #b8b8b8 !important;
+    box-shadow: inset 0 -5px 5px -7px rgba(0, 0, 0, 0.45);
+}
+
+.o_aps_weekly_results__subject-heading .o_aps_weekly_results__sticky-column {
+    // background-color: #b8b8b8 !important;
+    box-shadow: inset 0 -5px 5px -7px rgba(0, 0, 0, 0.1);
+}
+
+// .o_aps_weekly_results__subject-heading .o_aps_weekly_results__total-column,
+// .o_aps_weekly_results__subject-heading .o_aps_weekly_results__subject-background {
+//     background-color: #b8b8b8 !important;
+// }
+
+.o_aps_weekly_results__subject-background {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    background-blend-mode: screen;
+}
+
+.o_aps_weekly_results__type-icon img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+    filter: grayscale(100%);
+}
+
+.o_aps_weekly_results__subject-icon img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+
+.o_aps_weekly_results__type-label {
+    padding-left: 1.5rem !important;
+}
+
+.o_aps_weekly_results thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    // background-color: #f8f9fa !important;
+    box-shadow: inset 0 -8px 8px -10px rgba(0, 0, 0, 0.7);
+}
+
+.o_aps_weekly_results thead .o_aps_weekly_results__sticky-column {
+    z-index: 4;
+}
+
+.o_aps_weekly_results__non-school.text-center {
+    background-color: #fff8cc !important;
+}
+
+.o_aps_weekly_results__non-school {
+    background-color: #fff8cc88 !important;
+}
+
+// .o_aps_weekly_results thead th:not(.o_aps_weekly_results__non-school),
+// .o_aps_weekly_results tbody td:not(.o_aps_weekly_results__non-school) {
+//     background-color: #ffffff !important;
+// }
+
+.o_aps_weekly_results__cell {
+    display: flex !important;
+    justify-content: center;
+    width: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+.o_aps_weekly_results__cell-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 118px;
+    gap: 0.1rem;
+    text-align: center;
+}
+
+.o_aps_weekly_results__total-column {
+    text-align: center !important;
+}
+
+.o_aps_weekly_results .badge {
+    border: rgba(128, 128, 128, 0.555) solid 1px;
+    font-size: 0.5rem; 
+    margin-bottom:10px; 
+    margin-right:4px; 
+}
+
+.o_aps_weekly_results__submission-count {
+    min-width: 20px;
+}
+.o_aps_weekly_results__submission-marks {
+    min-width: 20px;
+}
+
+.o_aps_weekly_results__marks {
+    display: inline-flex;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    align-items: center;
+}
+
+.o_aps_weekly_results__progress-percent {
+    display: inline-flex;
+    width: 36px;
+    min-width: 36px;
+    height: 20px;
+    align-items: center;
+}
+.o_aps_weekly_results  .o_pie_info  {
+    min-width: 20px;
+}
+
+.o_aps_weekly_results__cell--metrics {
+    flex-direction: row;
+    gap: 0.1rem;
+}
+
+.o_aps_weekly_results__cell--metrics .badge {
+
+    order: 0;
+}
+
+.o_aps_weekly_results__cell--metrics .o_pie {
+    order: 1;
+}
+
+.o_aps_weekly_results__cell--metrics sup {
+    order: 1;
+}
+
+.o_aps_weekly_results__cell--metrics .o_aps_weekly_results__percent-pie {
+    order: 2;
+    display: inline-flex;
+    align-items: center;
+    min-width:50px;
+}
+
+.o_aps_weekly_results__percent-pie-slot {
+    order: 1;
+    display: inline-flex;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+}
+
+.o_aps_weekly_results__cell--metrics .o_aps_weekly_results__marks {
+    order: 2;
+    font-size: 0.6rem;
+    margin-top: 7px;
+}
+
+.o_aps_weekly_results__progress-percent {
+    order: 1;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Keep the ranged pie compact in this grid without changing other APS SIS uses. */
+.o_aps_weekly_results__cell .o_pie {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    flex-basis: 20px;
+}
+
+.o_aps_weekly_results__cell .o_percent_pie,
+.o_aps_weekly_results__cell .o_field_percent_pie {
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+}
+
+.o_aps_weekly_results__cell:hover {
+    outline: 2px solid var(--o-brand-primary);
+    border-radius: 0.25rem;
+}

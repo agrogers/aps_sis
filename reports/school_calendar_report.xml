@@ -89,7 +89,7 @@
                                      alt="Logo"/>
                             </td>
                             <td class="scr-title-cell">
-                                <t t-esc="doc.short_name or doc.name"/> ACADEMIC CALENDAR
+                                <t t-esc="doc.short_name or doc.name"/>ACADEMIC CALENDAR
                             </td>
                             <td class="scr-logo-cell"/>
                         </tr>

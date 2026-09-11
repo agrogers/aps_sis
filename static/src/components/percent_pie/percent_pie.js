@@ -13,7 +13,22 @@ export class PercentPie extends Component {
     static props = {
         value: { type: [Number, String] },
         string: { type: String, optional: true },
+        showValue: { type: Boolean, optional: true },
+        showText: { type: Boolean, optional: true },
+        showTooltip: { type: Boolean, optional: true },
     };
+
+    get showValue() {
+        return this.props.showValue !== false;
+    }
+
+    get showText() {
+        return this.props.showText !== false && Boolean(this.props.string);
+    }
+
+    get tooltip() {
+        return `${this.formattedValue}${this.props.string ? ` - ${this.props.string}` : ""}`;
+    }
 
     get displayValue() {
         const num = typeof this.props.value === "number"

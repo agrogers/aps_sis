@@ -8,3 +8,4 @@ from . import ai_feedback
 from . import aps_submission_mass_update_wizard
 from . import aps_submit_mark_wizard
 from . import gradebook_grid
+from . import weekly_submission_result
