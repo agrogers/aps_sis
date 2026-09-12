@@ -1,0 +1,8 @@
+// OCA web_dark_mode loads this file through web.assets_web_dark.
+// Keep the widget's runtime custom properties in sync with Odoo's dark palette.
+.submission-score-widget {
+    --submission-score-border: #{$o-gray-400};
+    --submission-score-background: #{$o-view-background-color};
+    --submission-score-text: #{$o-main-text-color};
+    --submission-score-muted: #{$o-form-lightsecondary};
+}

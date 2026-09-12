@@ -174,6 +174,9 @@
 			'aps_sis/static/src/js/media_wallpaper_service.js',
 			'aps_sis/static/src/css/media_wallpaper.css',
 		],
+		'web.assets_web_dark': [
+			'aps_sis/static/src/css/submission_score_widget.dark.scss',
+		],
 	},
 	'installable': True,
 	'application': False,

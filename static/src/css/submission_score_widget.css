@@ -1,10 +1,14 @@
 .submission-score-widget {
+    --submission-score-border: #adb5bd;
+    --submission-score-background: #f8f9fa;
+    --submission-score-text: #212529;
+    --submission-score-muted: #6c757d;
     position: relative;
-    border: 1px dotted gray;
-    background-color: silver;
+    border: 1px dotted var(--submission-score-border);
     border-radius: 5px;
     padding: 2px 5px;
-    background-color: #f8f9fa;
+    background-color: var(--submission-score-background);
+    color: var(--submission-score-text);
     font-size: 1rem;
     font-weight: 400;
     white-space: nowrap;
@@ -15,8 +19,8 @@
     top: -0.7em;
     left: 0.0rem;
     padding: 0 0.25rem;
-    background-color: #f8f9fa;
-    color: #6c757d;
+    background-color: var(--submission-score-background);
+    color: var(--submission-score-muted);
     font-size: 0.5rem;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -29,7 +33,7 @@
 }
 
 .submission-score-not-graded {
-    color: #6c757d;
+    color: var(--submission-score-muted);
     font-size: 0.8rem;
     font-weight: 700;
     line-height: 1.55rem;
@@ -48,6 +52,7 @@
     border: 0;
     padding: 0;
     background: transparent;
+    color: var(--submission-score-text);
     font-size: 1.55rem;
     font-weight: 700;
     text-align: right;
@@ -65,10 +70,9 @@
 }
 
 .submission-score-input:focus {
-    outline: 1px solid #6c757d;
+    outline: 1px solid var(--submission-score-muted);
 }
 
 .submission-score-out-of {
     font-size: inherit;
-    
 }
