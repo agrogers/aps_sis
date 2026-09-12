@@ -2,6 +2,33 @@ import { registry } from "@web/core/registry";
 import { Component, useState, xml } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
+async function copyTextToClipboard(text) {
+    const value = String(text ?? "");
+    if (navigator.clipboard?.writeText) {
+        try {
+            await navigator.clipboard.writeText(value);
+            return true;
+        } catch {
+            // Fall back to a DOM selection when the Clipboard API is blocked.
+        }
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    let copied = false;
+    try {
+        copied = document.execCommand("copy");
+    } finally {
+        document.body.removeChild(textarea);
+    }
+    return copied;
+}
+
 export class ShareUrlField extends Component {
     static template = xml`
         <div class="d-flex align-items-center gap-2 o_share_url_field flex-wrap">
@@ -47,7 +74,9 @@ export class ShareUrlField extends Component {
         const url = this.value;
         if (!url) return;
         try {
-            await navigator.clipboard.writeText(url);
+            if (!await copyTextToClipboard(url)) {
+                throw new Error("Clipboard copy command was rejected");
+            }
             this.state.copied = true;
             setTimeout(() => { this.state.copied = false; }, 2000);
         } catch (error) {
