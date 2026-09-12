@@ -10,13 +10,13 @@
                     </h1>
                 </div>
                 <div class="col-md-2">
-                    <select class="form-select" t-on-change="onChangeDays">
+                    <select class="form-select" t-att-value="state.dateFilter" t-on-change="onChangeDays">
                         <option value="today">Today</option>
                         <option value="yesterday">Yesterday</option>
                         <option value="this_week">This Week</option>
                         <option value="last_7_days">Last 7 Days</option>
                         <option value="14">Last 14 Days</option>
-                        <option value="30" selected="selected">Last 30 Days</option>
+                        <option value="30">Last 30 Days</option>
                         <option value="90">Last 90 Days</option>
                         <option value="180">Last 6 Months</option>
                         <option value="365">Last Year</option>
@@ -24,7 +24,7 @@
                 </div>
                 <t t-if="state.canSelectStudent">
                     <div class="col-md-2">
-                        <select class="form-select" t-on-change="onChangeStudent">
+                        <select class="form-select" t-att-value="state.partnerId" t-on-change="onChangeStudent">
                             <option value="">All Students</option>
                             <t t-foreach="state.students" t-as="student" t-key="student.id">
                                 <option t-att-value="student.id"><t t-esc="student.name"></t></option>
@@ -33,7 +33,7 @@
                     </div>
                 </t>
                 <div class="col-md-2">
-                    <select class="form-select" t-on-change="onChangeCategory">
+                    <select class="form-select" t-att-value="state.categoryId" t-on-change="onChangeCategory">
                         <option value="">All Subject Categories</option>
                         <t t-foreach="state.categories" t-as="category" t-key="category.id">
                             <option t-att-value="category.id"><t t-esc="category.name"></t></option>
@@ -56,6 +56,44 @@
             </t>
 
             <t t-else="">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="bg-white shadow-sm p-3 rounded">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-1">
+                                        <i class="fa fa-exchange me-1 text-primary"/>Daily Flow
+                                    </h5>
+                                    <small class="text-muted">
+                                        <t t-esc="state.dailyFlow.range_start || state.dailyFlowDate"/>
+                                        <t t-if="state.dailyFlow.range_end"> – <t t-esc="state.dailyFlow.range_end"/></t>
+                                    </small>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" title="Previous week" t-on-click="onDailyFlowPrevious">
+                                        <i class="fa fa-chevron-left"/>
+                                    </button>
+                                    <input type="date" class="form-control form-control-sm" t-att-value="state.dailyFlowDate" t-on-change="onDailyFlowDateChange"/>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" title="Next week" t-on-click="onDailyFlowNext">
+                                        <i class="fa fa-chevron-right"/>
+                                    </button>
+                                    <select class="form-select form-select-sm" t-att-value="state.dailyFlowMode" t-on-change="onDailyFlowModeChange">
+                                        <option value="monday">Monday week</option>
+                                        <option value="last_7_days">Last 7 days</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <DailyFlow
+                                days="state.dailyFlow.days"
+                                subjects="state.dailyFlow.subjects"
+                                scale="state.dailyFlow.scale"
+                                loading="state.dailyFlowLoading"
+                                onEntryClick="onDailyFlowEntryClick"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Row 1: Weekly comparison + Doughnut -->
                 <div class="row mb-4">
                     <div class="col-lg-6 mb-4">

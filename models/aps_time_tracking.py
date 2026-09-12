@@ -628,6 +628,369 @@ class APSTimeTracking(models.Model):
             for category in categories
         ]
 
+    def _daily_flow_period(self, today, days, date_filter):
+        """Return the date range represented by the dashboard period filter."""
+        date_filter = str(date_filter or '').strip().lower()
+        if date_filter == 'today':
+            return today, today
+        if date_filter == 'yesterday':
+            yesterday = today - timedelta(days=1)
+            return yesterday, yesterday
+        if date_filter == 'this_week':
+            return today - timedelta(days=today.weekday()), today
+        if date_filter == 'last_7_days':
+            return today - timedelta(days=6), today
+        return today - timedelta(days=max(1, int(days or 1)) - 1), today
+
+    def _daily_flow_local_bounds(self, local_date, user_tz):
+        """Convert a local calendar date into a UTC-naive interval."""
+        import pytz
+
+        local_start = user_tz.localize(datetime.combine(local_date, time.min))
+        local_stop = user_tz.localize(
+            datetime.combine(local_date + timedelta(days=1), time.min)
+        )
+        return (
+            local_start.astimezone(pytz.utc).replace(tzinfo=None),
+            local_stop.astimezone(pytz.utc).replace(tzinfo=None),
+        )
+
+    def _daily_flow_date_value(self, value, fallback):
+        try:
+            return fields.Date.to_date(value) if value else fallback
+        except (TypeError, ValueError):
+            return fallback
+
+    def _daily_flow_percent(self, value, baseline):
+        """Return a signed percentage, or false when no baseline exists."""
+        if not baseline:
+            return False
+        return round(((value - baseline) / baseline) * 100.0, 1)
+
+    def _daily_flow_entry_payload(
+        self, entry, segment_start, segment_stop, user_tz, day_domain, scale_date
+    ):
+        """Return one local-time segment for the reusable Daily Flow widget."""
+        import pytz
+
+        subject = entry.subject_id
+        color = '#64748b'
+        icon_url = False
+        if subject:
+            color = (
+                subject.category_id.color_rgb
+                if subject.category_id and subject.category_id.color_rgb
+                else self.env['aps.subject']._generate_color_from_name(subject.name)
+            )
+            if subject.icon:
+                icon_url = f'/web/image/aps.subject/{subject.id}/icon'
+            elif subject.category_id and subject.category_id.icon:
+                icon_url = f'/web/image/aps.subject.category/{subject.category_id.id}/icon'
+
+        elapsed_minutes = max(
+            0.0, (segment_stop - segment_start).total_seconds() / 60.0
+        )
+        original_elapsed = max(
+            0.0, (entry.stop_time - entry.start_time).total_seconds() / 60.0
+        )
+        pause_minutes = entry.pause_minutes or 0.0
+        proportional_pause = (
+            min(pause_minutes, elapsed_minutes * pause_minutes / original_elapsed)
+            if original_elapsed
+            else 0.0
+        )
+
+        def to_local_str(dt):
+            return dt.replace(tzinfo=pytz.utc).astimezone(user_tz).strftime(
+                '%Y-%m-%d %H:%M:%S'
+            )
+
+        local_start = segment_start.replace(tzinfo=pytz.utc).astimezone(user_tz)
+        local_stop = segment_stop.replace(tzinfo=pytz.utc).astimezone(user_tz)
+        position_start = datetime.combine(scale_date, local_start.time())
+        position_stop = datetime.combine(scale_date, local_stop.time())
+        if position_stop <= position_start:
+            position_stop = position_start + (segment_stop - segment_start)
+
+        return {
+            'id': entry.id,
+            'partner_id': entry.partner_id.id if entry.partner_id else False,
+            'subject_id': subject.id if subject else False,
+            'subject_name': subject.name if subject else _('Unassigned'),
+            'category_name': subject.category_id.name if subject and subject.category_id else '',
+            'color': color,
+            'icon_url': icon_url,
+            'start_time': to_local_str(segment_start),
+            'stop_time': to_local_str(segment_stop),
+            'position_start': position_start.isoformat(timespec='seconds'),
+            'position_stop': position_stop.isoformat(timespec='seconds'),
+            'pause_minutes': round(proportional_pause, 1),
+            'total_minutes': round(max(0.0, elapsed_minutes - proportional_pause), 1),
+            'notes': entry.notes or '',
+            'is_outside_school_hours': entry.is_outside_school_hours,
+            'domain': day_domain + ([('subject_id', '=', subject.id)] if subject else []),
+        }
+
+    @api.model
+    def get_daily_flow_data(
+        self,
+        selected_date=False,
+        week_mode='monday',
+        partner_id=False,
+        category_id=False,
+        days=30,
+        date_filter='30',
+    ):
+        """Return the seven-day data used by the reusable Daily Flow component."""
+        import pytz
+
+        user_tz = pytz.timezone(self.env.user.tz or 'UTC')
+        today = datetime.now(user_tz).date()
+        selected_date = self._daily_flow_date_value(selected_date, today)
+        if week_mode == 'last_7_days':
+            range_start = selected_date - timedelta(days=6)
+        else:
+            range_start = selected_date - timedelta(days=selected_date.weekday())
+        range_dates = [range_start + timedelta(days=index) for index in range(7)]
+        range_end = range_dates[-1]
+
+        try:
+            partner_id = int(partner_id) if partner_id else False
+        except (TypeError, ValueError):
+            partner_id = False
+        try:
+            category_id = int(category_id) if category_id else False
+        except (TypeError, ValueError):
+            category_id = False
+        try:
+            days = max(1, int(days))
+        except (TypeError, ValueError):
+            days = 30
+
+        base_domain = []
+        if partner_id:
+            base_domain.append(('partner_id', '=', partner_id))
+        if category_id:
+            base_domain.append(('subject_id.category_id', '=', category_id))
+
+        period_start, period_end = self._daily_flow_period(
+            today, days, date_filter
+        )
+        previous_start = range_start - timedelta(days=7)
+        query_start = min(range_start, previous_start, period_start)
+        query_end = max(range_end, period_end)
+        query_start_utc, query_end_utc = self._daily_flow_local_bounds(
+            query_start, user_tz
+        )[0], self._daily_flow_local_bounds(query_end, user_tz)[1]
+        records = self.search([
+            *base_domain,
+            ('start_time', '<', query_end_utc),
+            ('stop_time', '>', query_start_utc),
+        ], order='start_time asc')
+
+        def local_datetime(value):
+            return value.replace(tzinfo=pytz.utc).astimezone(user_tz)
+
+        def record_intersection(record, local_date):
+            day_start_utc, day_stop_utc = self._daily_flow_local_bounds(
+                local_date, user_tz
+            )
+            start = max(record.start_time, day_start_utc)
+            stop = min(record.stop_time, day_stop_utc)
+            return (start, stop) if start < stop else (False, False)
+
+        def totals_by_date(date_from, date_to):
+            result = {}
+            current = date_from
+            while current <= date_to:
+                total = 0.0
+                for record in records:
+                    start, stop = record_intersection(record, current)
+                    if start and stop:
+                        elapsed = (stop - start).total_seconds() / 60.0
+                        original = max(
+                            0.0,
+                            (record.stop_time - record.start_time).total_seconds() / 60.0,
+                        )
+                        pause = record.pause_minutes or 0.0
+                        total += max(
+                            0.0,
+                            elapsed - (pause * elapsed / original if original else 0.0),
+                        )
+                result[current] = round(total, 1)
+                current += timedelta(days=1)
+            return result
+
+        daily_totals = totals_by_date(range_start, range_end)
+        previous_totals = totals_by_date(previous_start, range_start - timedelta(days=1))
+        period_totals = totals_by_date(period_start, period_end)
+        period_average = (
+            round(sum(period_totals.values()) / len(period_totals), 1)
+            if period_totals else 0.0
+        )
+
+        subject_color_map = self.env['aps.subject'].get_subject_colors_map()
+        flow_subjects = {}
+        day_payloads = []
+        all_local_times = []
+        for local_date in range_dates:
+            day_start_utc, day_stop_utc = self._daily_flow_local_bounds(
+                local_date, user_tz
+            )
+            day_domain = [
+                *base_domain,
+                ('start_time', '<', fields.Datetime.to_string(day_stop_utc)),
+                ('stop_time', '>', fields.Datetime.to_string(day_start_utc)),
+            ]
+            entries = []
+            subject_ids = set()
+            for record in records:
+                segment_start, segment_stop = record_intersection(record, local_date)
+                if not segment_start:
+                    continue
+                entries.append(self._daily_flow_entry_payload(
+                    record,
+                    segment_start,
+                    segment_stop,
+                    user_tz,
+                    day_domain,
+                    range_start,
+                ))
+                local_segment_start = local_datetime(segment_start).replace(
+                    year=range_start.year,
+                    month=range_start.month,
+                    day=range_start.day,
+                    tzinfo=None,
+                )
+                local_segment_stop = local_datetime(segment_stop).replace(
+                    year=range_start.year,
+                    month=range_start.month,
+                    day=range_start.day,
+                    tzinfo=None,
+                )
+                if local_segment_stop <= local_segment_start:
+                    local_segment_stop = local_segment_start + (segment_stop - segment_start)
+                all_local_times.extend([local_segment_start, local_segment_stop])
+                subject = record.subject_id
+                if subject:
+                    subject_ids.add(subject.id)
+                    item = flow_subjects.setdefault(subject.id, {
+                        'id': subject.id,
+                        'name': subject.name,
+                        'color': subject_color_map.get(subject.id, '#64748b'),
+                        'icon_url': (
+                            f'/web/image/aps.subject/{subject.id}/icon'
+                            if subject.icon else (
+                                f'/web/image/aps.subject.category/{subject.category_id.id}/icon'
+                                if subject.category_id and subject.category_id.icon else False
+                            )
+                        ),
+                        'minutes': 0.0,
+                        'previous_minutes': 0.0,
+                    })
+                    item['minutes'] += entries[-1]['total_minutes']
+            day_total = daily_totals.get(local_date, 0.0)
+            day_payloads.append({
+                'date': fields.Date.to_string(local_date),
+                'label': local_date.strftime('%a'),
+                'short_date': local_date.strftime('%d %b'),
+                'entries': entries,
+                'total_minutes': round(day_total, 1),
+                'subject_count': len(subject_ids),
+                'previous_total_minutes': previous_totals.get(
+                    local_date - timedelta(days=7), 0.0
+                ),
+                'previous_percent': self._daily_flow_percent(
+                    day_total,
+                    previous_totals.get(local_date - timedelta(days=7), 0.0),
+                ),
+                'average_minutes': period_average,
+                'average_percent': self._daily_flow_percent(day_total, period_average),
+                'domain': day_domain,
+            })
+
+        for local_date in [
+            range_start + timedelta(days=index) for index in range(7)
+        ]:
+            for record in records:
+                segment_start, segment_stop = record_intersection(record, local_date - timedelta(days=7))
+                if not segment_start or not record.subject_id:
+                    continue
+                subject = flow_subjects.setdefault(record.subject_id.id, {
+                    'id': record.subject_id.id,
+                    'name': record.subject_id.name,
+                    'color': subject_color_map.get(record.subject_id.id, '#64748b'),
+                    'icon_url': False,
+                    'minutes': 0.0,
+                    'previous_minutes': 0.0,
+                })
+                elapsed = (segment_stop - segment_start).total_seconds() / 60.0
+                original = max(0.0, (record.stop_time - record.start_time).total_seconds() / 60.0)
+                pause = record.pause_minutes or 0.0
+                subject['previous_minutes'] += max(
+                    0.0, elapsed - (pause * elapsed / original if original else 0.0)
+                )
+
+        for subject in flow_subjects.values():
+            subject['minutes'] = round(subject['minutes'], 1)
+            subject['previous_minutes'] = round(subject['previous_minutes'], 1)
+            subject['hours'] = round(subject['minutes'] / 60.0, 2)
+            subject['previous_hours'] = round(subject['previous_minutes'] / 60.0, 2)
+            subject['delta_hours'] = round(
+                subject['hours'] - subject['previous_hours'], 2
+            )
+            subject['delta_percent'] = self._daily_flow_percent(
+                subject['minutes'], subject['previous_minutes']
+            )
+
+        scale_start = datetime.combine(range_start, time(hour=8))
+        scale_stop = datetime.combine(range_start, time(hour=16))
+        local_time_values = all_local_times
+        if local_time_values:
+            scale_start = min(scale_start, min(local_time_values))
+            scale_stop = max(scale_stop, max(local_time_values))
+        if scale_stop <= scale_start:
+            scale_stop = scale_start + timedelta(hours=8)
+
+        label_values = [scale_start, scale_stop]
+        candidate = scale_start.replace(minute=0, second=0, microsecond=0)
+        while candidate <= scale_stop:
+            if candidate.hour % 3 == 0 and all(
+                abs((candidate - endpoint).total_seconds()) >= 3600
+                for endpoint in (scale_start, scale_stop)
+            ):
+                label_values.append(candidate)
+            candidate += timedelta(hours=1)
+        label_values.sort()
+        labels = []
+        for value in label_values:
+            if labels and value == labels[-1]['value']:
+                continue
+            hour_label = value.strftime('%I%p').lstrip('0').lower()
+            labels.append({
+                'value': value.isoformat(timespec='minutes'),
+                'label': hour_label,
+                'ratio': round(
+                    (value - scale_start).total_seconds()
+                    / (scale_stop - scale_start).total_seconds(),
+                    6,
+                ),
+            })
+
+        return {
+            'selected_date': fields.Date.to_string(selected_date),
+            'week_mode': week_mode,
+            'range_start': fields.Date.to_string(range_start),
+            'range_end': fields.Date.to_string(range_end),
+            'days': day_payloads,
+            'subjects': sorted(flow_subjects.values(), key=lambda item: item['name'].lower()),
+            'scale': {
+                'start': scale_start.isoformat(timespec='minutes'),
+                'end': scale_stop.isoformat(timespec='minutes'),
+                'labels': labels,
+            },
+        }
+
     @api.model
     def get_dashboard_data(
         self, days=14, partner_id=None, category_id=None, date_filter=None

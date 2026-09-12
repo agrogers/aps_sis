@@ -1,0 +1,109 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.DailyFlow">
+        <div class="aps-daily-flow">
+            <t t-if="props.loading">
+                <div class="aps-daily-flow__loading">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                    <span>Loading recorded time…</span>
+                </div>
+            </t>
+            <t t-else="">
+                <t t-if="props.showLegend &amp;&amp; props.subjects.length">
+                    <div class="aps-daily-flow__legend">
+                        <div class="aps-daily-flow__legend-item aps-daily-flow__legend-total">
+                            <span class="aps-daily-flow__total-icon" title="Total hours">
+                                <i class="fa fa-clock-o"></i>
+                            </span>
+                            <span class="aps-daily-flow__legend-copy">
+                                <strong t-esc="_formatHours(_totalHours(props.subjects))"></strong>
+                                <span>Total hours</span>
+                            </span>
+                        </div>
+                        <t t-foreach="props.subjects" t-as="subject" t-key="subject.id">
+                            <div class="aps-daily-flow__legend-item">
+                                <span class="aps-daily-flow__subject-icon" t-att-title="_subjectTooltip(subject)" >
+                                        <img t-if="subject.icon_url" t-att-src="subject.icon_url" t-att-alt="subject.name"></img>
+                                </span>
+                                <span class="aps-daily-flow__legend-copy">
+                                        <strong t-esc="_formatHours(subject.hours)"></strong>
+                                        <span class="aps-daily-flow__legend-stats" t-att-class="_comparisonClass(subject.delta_hours)">
+                                        <t t-esc="_formatDeltaHours(subject.delta_hours)"/>
+                                        <span class="aps-daily-flow__legend-divider"> (</span>
+                                        <t t-esc="_formatPercent(subject.delta_percent)"/>
+                                        <span class="aps-daily-flow__legend-divider">)</span>
+                                    </span>
+                                </span>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+
+                <div t-if="!props.days.length" class="aps-daily-flow__empty">
+                    <i class="fa fa-hourglass-o"></i>
+                    <span t-esc="props.emptyMessage"></span>
+                </div>
+                <div t-else="" class="aps-daily-flow__days">
+                    <div class="aps-daily-flow__time-labels" t-att-class="props.showDayLabels ? 'is-with-header' : ''">
+                        <t t-foreach="props.scale.labels" t-as="label" t-key="label.value">
+                                <span t-att-style="'top: ' + (label.ratio * 100) + '%'" t-esc="label.label"></span>
+                        </t>
+                    </div>
+                    <t t-foreach="props.days" t-as="day" t-key="day.date">
+                        <article class="aps-daily-flow__day">
+                            <header t-if="props.showDayLabels" class="aps-daily-flow__day-header">
+                                <div class="aps-daily-flow__day-identity">
+                                        <strong t-esc="day.label"></strong>
+                                        <small t-esc="day.short_date"></small>
+                                </div>
+                                <div class="aps-daily-flow__day-summary">
+                                        <div class="aps-daily-flow__day-metric">
+                                            <strong t-esc="_formatDuration(day.total_minutes)"></strong>
+                                        </div>
+                                        <div class="aps-daily-flow__day-metric">
+                                            <div class="aps-daily-flow__subject-count">
+                                                <strong t-esc="day.subject_count"></strong>
+                                                <small>sub<t t-if="day.subject_count !== 1">s</t>.</small>
+                                            </div>
+                                        </div>
+                                </div>
+                                <div class="aps-daily-flow__day-comparisons">
+                                    <div class="aps-daily-flow__comparison" t-att-title="_dayTooltip(day, 'previous')">
+                                        
+                                        <span t-att-class="_comparisonClass(day.previous_percent)">
+                                        <t t-esc="_formatPercent(day.previous_percent)"/>
+                                        </span>
+                                        <img class="aps-daily-flow__comparison-icon" src="/apex_core/static/img/calendar-7.svg" alt="7-day comparison"></img>
+                                    </div>
+                                    <div class="aps-daily-flow__comparison" t-att-title="_dayTooltip(day, 'average')">
+                                        
+                                        <span t-att-class="_comparisonClass(day.average_percent)">
+                                        <t t-esc="_formatPercent(day.average_percent)"/>
+                                        </span>
+                                        <img class="aps-daily-flow__comparison-icon" src="/apex_core/static/img/customer.svg" alt="Student comparison"></img>
+                                    </div>
+                                </div>
+                            </header>
+                            <div class="aps-daily-flow__track">
+                                    <div class="aps-daily-flow__grid"></div>
+                                <t t-if="!day.entries.length">
+                                    <div class="aps-daily-flow__day-empty">No time</div>
+                                </t>
+                                <t t-foreach="day.entries" t-as="entry" t-key="entry.id + '-' + day.date">
+                                    <button type="button" class="aps-daily-flow__segment" t-att-data-entry-id="entry.id" t-att-data-day-date="day.date" t-att-style="_timelineStyle(entry)" t-att-title="_entryTitle(entry)" t-on-click="_handleEntryClick">
+                                        <span class="aps-daily-flow__segment-label">
+                                                <span t-esc="entry.subject_name"></span>
+                                                <small t-esc="_formatDuration(entry.total_minutes)"></small>
+                                        </span>
+                                            <span t-if="entry.pause_minutes" class="aps-daily-flow__pause" t-att-style="_pauseStyle(entry)"></span>
+                                    </button>
+                                </t>
+                            </div>
+                        </article>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

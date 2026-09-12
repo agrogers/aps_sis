@@ -3,9 +3,11 @@ import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { loadJS } from "@web/core/assets";
 import { user } from "@web/core/user";
+import { DailyFlow } from "@aps_sis/components/daily_flow/daily_flow";
 
 export class TimeTrackingDashboard extends Component {
     static template = "aps_sis.TimeTrackingDashboard";
+    static components = { DailyFlow };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
@@ -17,6 +19,9 @@ export class TimeTrackingDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.dailyFlowModeStorageKey = "aps_sis_time_tracking_daily_flow_mode";
+        this.dashboardFiltersStorageKey = "aps_sis_time_tracking_dashboard_filters";
+        const savedFilters = this._restoreDashboardFilters();
 
         this.weeklyChartRef = useRef("weeklyChart");
         this.doughnutChartRef = useRef("doughnutChart");
@@ -30,10 +35,14 @@ export class TimeTrackingDashboard extends Component {
 
         this.state = useState({
             loading: true,
-            days: 30,
-            dateFilter: "30",
-            partnerId: "",
-            categoryId: "",
+            dailyFlowLoading: true,
+            days: savedFilters.days,
+            dateFilter: savedFilters.dateFilter,
+            dailyFlowDate: this._localDate(new Date()),
+            dailyFlowMode: this._restoreDailyFlowMode(),
+            dailyFlow: { days: [], subjects: [], scale: { labels: [] } },
+            partnerId: savedFilters.partnerId,
+            categoryId: savedFilters.categoryId,
             canSelectStudent: false,
             students: [],
             categories: [],
@@ -76,7 +85,8 @@ export class TimeTrackingDashboard extends Component {
 
     async _fetchData() {
         this.state.loading = true;
-        const data = await this.orm.call(
+        const [data] = await Promise.all([
+            this.orm.call(
             "aps.time.tracking",
             "get_dashboard_data",
             [
@@ -86,7 +96,9 @@ export class TimeTrackingDashboard extends Component {
                 this.state.dateFilter,
             ],
             {}
-        );
+            ),
+            this._fetchDailyFlow(),
+        ]);
         this.state.weeklyComparison = data.weekly_comparison || [];
         this.state.subjectDoughnut = data.subject_doughnut || { labels: [], data: [] };
         this.state.studentBar = data.student_bar || { labels: [], datasets: [] };
@@ -95,6 +107,84 @@ export class TimeTrackingDashboard extends Component {
 
         // Destroy old charts so they get re-rendered via onPatched
         this._destroyCharts();
+    }
+
+    _localDate(date) {
+        const pad = (value) => String(value).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    _restoreDailyFlowMode() {
+        try {
+            const mode = window.localStorage.getItem(this.dailyFlowModeStorageKey);
+            return mode === "last_7_days" ? mode : "monday";
+        } catch {
+            return "monday";
+        }
+    }
+
+    _saveDailyFlowMode() {
+        try {
+            window.localStorage.setItem(
+                this.dailyFlowModeStorageKey,
+                this.state.dailyFlowMode
+            );
+        } catch {
+            // Ignore unavailable browser storage.
+        }
+    }
+
+    _restoreDashboardFilters() {
+        const defaults = { days: 30, dateFilter: "30", partnerId: "", categoryId: "" };
+        try {
+            const saved = JSON.parse(window.localStorage.getItem(this.dashboardFiltersStorageKey));
+            return {
+                ...defaults,
+                ...(saved && typeof saved === "object" ? saved : {}),
+                days: Number(saved?.days) || defaults.days,
+                dateFilter: String(saved?.dateFilter || defaults.dateFilter),
+                partnerId: saved?.partnerId ? String(saved.partnerId) : "",
+                categoryId: saved?.categoryId ? String(saved.categoryId) : "",
+            };
+        } catch {
+            return defaults;
+        }
+    }
+
+    _saveDashboardFilters() {
+        try {
+            window.localStorage.setItem(this.dashboardFiltersStorageKey, JSON.stringify({
+                days: this.state.days,
+                dateFilter: this.state.dateFilter,
+                partnerId: this.state.partnerId,
+                categoryId: this.state.categoryId,
+            }));
+        } catch {
+            // Ignore unavailable browser storage.
+        }
+    }
+
+    async _fetchDailyFlow() {
+        this.state.dailyFlowLoading = true;
+        try {
+            const data = await this.orm.call(
+                "aps.time.tracking",
+                "get_daily_flow_data",
+                [
+                    this.state.dailyFlowDate,
+                    this.state.dailyFlowMode,
+                    this.state.partnerId ? parseInt(this.state.partnerId) : false,
+                    this.state.categoryId ? parseInt(this.state.categoryId) : false,
+                    this.state.days,
+                    this.state.dateFilter,
+                ],
+                {}
+            );
+            this.state.dailyFlow = data || { days: [], subjects: [], scale: { labels: [] } };
+            return data;
+        } finally {
+            this.state.dailyFlowLoading = false;
+        }
     }
 
     _destroyCharts() {
@@ -281,17 +371,57 @@ export class TimeTrackingDashboard extends Component {
         if (/^\d+$/.test(ev.target.value)) {
             this.state.days = parseInt(ev.target.value);
         }
+        this._saveDashboardFilters();
         await this._fetchData();
     }
 
     async onChangeStudent(ev) {
         this.state.partnerId = ev.target.value;
+        this._saveDashboardFilters();
         await this._fetchData();
     }
 
     async onChangeCategory(ev) {
         this.state.categoryId = ev.target.value;
+        this._saveDashboardFilters();
         await this._fetchData();
+    }
+
+    async onDailyFlowDateChange(ev) {
+        this.state.dailyFlowDate = ev.target.value || this._localDate(new Date());
+        await this._fetchDailyFlow();
+    }
+
+    async onDailyFlowModeChange(ev) {
+        this.state.dailyFlowMode = ev.target.value;
+        this._saveDailyFlowMode();
+        await this._fetchDailyFlow();
+    }
+
+    async shiftDailyFlow(days) {
+        const date = new Date(`${this.state.dailyFlowDate}T12:00:00`);
+        date.setDate(date.getDate() + days);
+        this.state.dailyFlowDate = this._localDate(date);
+        await this._fetchDailyFlow();
+    }
+
+    async onDailyFlowPrevious() {
+        await this.shiftDailyFlow(-7);
+    }
+
+    async onDailyFlowNext() {
+        await this.shiftDailyFlow(7);
+    }
+
+    async onDailyFlowEntryClick(entry) {
+        if (!entry?.domain) return;
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Time Entries",
+            res_model: "aps.time.tracking",
+            views: [[false, "list"], [false, "form"]],
+            domain: entry.domain,
+        });
     }
 
     openTimeList() {

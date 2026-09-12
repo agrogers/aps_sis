@@ -2,6 +2,7 @@ import { Component, useState, useRef, onMounted, onWillStart, onWillUnmount } fr
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { Dialog } from "@web/core/dialog/dialog";
+import { DailyFlow } from "@aps_sis/components/daily_flow/daily_flow";
 
 // ─── Stop Timer Dialog ────────────────────────────────────────────────────────
 
@@ -164,7 +165,7 @@ export class TimerStopDialog extends Component {
 
 export class EnhancedTimerStopDialog extends Component {
     static template = "aps_sis.EnhancedTimerStopDialog";
-    static components = { Dialog };
+    static components = { Dialog, DailyFlow };
     static props = {
         entry: { type: Object },
         subjects: { type: Array },
@@ -275,6 +276,57 @@ export class EnhancedTimerStopDialog extends Component {
         }));
     }
 
+    get dailyFlowScale() {
+        const scale = this.timelineScale;
+        const start = new Date(scale.start);
+        const stop = new Date(scale.stop);
+        const labels = this.timelineLabels.map((item) => ({
+            value: item.label,
+            label: item.label,
+            ratio: parseFloat(item.style.match(/[\d.]+/)?.[0] || 0) / 100,
+        }));
+        return {
+            start: start.toISOString(),
+            end: stop.toISOString(),
+            labels: labels.map((label, index) => ({
+                ...label,
+                value: `${index}-${label.value}`,
+            })),
+        };
+    }
+
+    get dailyFlowDays() {
+        return [{
+            date: this.timelineDate,
+            label: "Today",
+            short_date: this.timelineDate,
+            total_minutes: this.timelineTotal,
+            subject_count: new Set(this.timelineEntries.map((entry) => entry.subject_id)).size,
+            entries: this.timelineEntries.map((entry) => ({
+                ...entry,
+                position_start: entry.start_time.replace(" ", "T"),
+                position_stop: entry.stop_time.replace(" ", "T"),
+            })),
+        }];
+    }
+
+    get dailyFlowSubjects() {
+        const subjects = new Map();
+        for (const entry of this.timelineEntries) {
+            if (!entry.subject_id || subjects.has(entry.subject_id)) continue;
+            subjects.set(entry.subject_id, {
+                id: entry.subject_id,
+                name: entry.subject_name,
+                color: entry.color || "#64748b",
+                icon_url: entry.icon_url || false,
+                hours: Number(entry.total_minutes || 0) / 60,
+                delta_hours: 0,
+                delta_percent: false,
+            });
+        }
+        return [...subjects.values()];
+    }
+
     get selectedSubjectColor() {
         return this.selectedSubject?.color || "#64748b";
     }
@@ -333,6 +385,10 @@ export class EnhancedTimerStopDialog extends Component {
         const top = ((start - scale.start) / scale.duration) * 100;
         const height = Math.max(1.5, ((stop - start) / scale.duration) * 100);
         return `top: ${Math.max(0, top)}%; height: ${Math.min(100 - Math.max(0, top), height)}%; --segment-color: ${entry.color || "#64748b"};`;
+    }
+
+    onDailyFlowEntryClick(entry) {
+        this.onTimelineClick({ currentTarget: { dataset: { entryId: entry.id } } });
     }
 
     _pauseStyle(entry) {

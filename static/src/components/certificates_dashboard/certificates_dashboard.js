@@ -1,6 +1,7 @@
 import { Component, useState, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { user } from "@web/core/user";
 
 export class CertificatesDashboard extends Component {
     static template = "aps_sis.CertificatesDashboard";
@@ -24,11 +25,7 @@ export class CertificatesDashboard extends Component {
     }
 
     async _loadVotingDashboardAccess() {
-        this.state.canOpenVotingDashboard = await this.orm.call(
-            "res.users",
-            "has_group",
-            ["aps_sis.group_awards_user"]
-        );
+        this.state.canOpenVotingDashboard = await user.hasGroup("aps_sis.group_awards_user");
     }
 
     async _loadCounts() {

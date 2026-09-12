@@ -78,3 +78,48 @@ class TestAPSTimeTracking(TransactionCase):
         payload = next(item for item in timeline['entries'] if item['id'] == entry.id)
         self.assertEqual(payload['subject_name'], self.subject.name)
         self.assertTrue(payload['color'])
+
+    def test_daily_flow_returns_seven_days_and_default_scale(self):
+        self.TimeTracking.create(self._vals(
+            '2026-09-07 08:00:00', '2026-09-07 09:30:00'
+        ))
+        flow = self.TimeTracking.get_daily_flow_data(
+            '2026-09-09', 'monday', self.partner.id, False, 30, '30'
+        )
+        self.assertEqual(flow['range_start'], '2026-09-07')
+        self.assertEqual(flow['range_end'], '2026-09-13')
+        self.assertEqual(len(flow['days']), 7)
+        self.assertEqual(flow['scale']['start'], '2026-09-07T08:00')
+        self.assertEqual(flow['scale']['end'], '2026-09-07T16:00')
+        self.assertEqual(flow['days'][0]['total_minutes'], 90.0)
+        self.assertEqual(flow['days'][0]['subject_count'], 1)
+
+    def test_daily_flow_last_seven_days_uses_selected_date_as_start(self):
+        flow = self.TimeTracking.get_daily_flow_data(
+            '2026-09-09', 'last_7_days', self.partner.id, False, 30, '30'
+        )
+        self.assertEqual(flow['range_start'], '2026-09-03')
+        self.assertEqual(flow['range_end'], '2026-09-09')
+
+    def test_daily_flow_expands_scale_for_outside_hours(self):
+        self.TimeTracking.create(self._vals(
+            '2026-09-07 06:30:00', '2026-09-07 18:15:00'
+        ))
+        flow = self.TimeTracking.get_daily_flow_data(
+            '2026-09-07', 'monday', self.partner.id, False, 30, '30'
+        )
+        self.assertEqual(flow['scale']['start'], '2026-09-07T06:30')
+        self.assertEqual(flow['scale']['end'], '2026-09-07T18:15')
+
+    def test_daily_flow_returns_subject_legend_and_entry_domain(self):
+        entry = self.TimeTracking.create(self._vals(
+            '2026-09-07 10:00:00', '2026-09-07 11:00:00'
+        ))
+        flow = self.TimeTracking.get_daily_flow_data(
+            '2026-09-07', 'monday', self.partner.id, False, 30, '30'
+        )
+        payload = flow['days'][0]['entries'][0]
+        self.assertEqual(payload['id'], entry.id)
+        self.assertIn(('partner_id', '=', self.partner.id), payload['domain'])
+        self.assertIn(('subject_id', '=', self.subject.id), payload['domain'])
+        self.assertEqual(flow['subjects'][0]['id'], self.subject.id)

@@ -88,7 +88,7 @@
         <template id="report_certificate_template_landscape">
             <t t-call="web.basic_layout">
                 <t t-foreach="docs" t-as="o">
-                    <div class="page o_certificate_page" t-attf-style="position: relative; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-position: center center; background-repeat: no-repeat;">
+                    <div class="page o_certificate_page" t-attf-style="#{'page-break-before: always; ' if o_index else ''}page-break-inside: avoid; #{o._get_page_dimensions_style()} box-sizing: border-box; position: relative; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-position: center center; background-repeat: no-repeat;">
                         <div style="position: relative; z-index: 1; padding: 28px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
                             <div t-out="o._render_certificate_body_html()"/>
                         </div>
@@ -99,7 +99,7 @@
         <template id="report_certificate_template_portrait">
             <t t-call="web.basic_layout">
                 <t t-foreach="docs" t-as="o">
-                    <div class="page o_certificate_page" t-attf-style="position: relative; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-position: center center; background-repeat: no-repeat;">
+                    <div class="page o_certificate_page" t-attf-style="#{'page-break-before: always; ' if o_index else ''}page-break-inside: avoid; #{o._get_page_dimensions_style()} box-sizing: border-box; position: relative; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-position: center center; background-repeat: no-repeat;">
                         <div style="position: relative; z-index: 1; padding: 28px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
                             <div t-out="o._render_certificate_body_html()"/>
                         </div>

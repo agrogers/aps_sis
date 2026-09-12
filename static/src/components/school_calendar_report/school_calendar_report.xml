@@ -2,10 +2,10 @@
 <templates xml:space="preserve">
 
 <t t-name="aps_sis.SchoolCalendarReport" owl="1">
-    <div class="scr-wrap vh-100 overflow-auto p-3 bg-100">
+    <div class="school-calendar-report scr-wrap vh-100 overflow-auto p-3 bg-100">
 
         <!-- Toolbar -->
-        <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="scr-sheet-toolbar d-flex align-items-center gap-3 mb-3">
             <label class="fw-semibold mb-0">Academic Year</label>
             <select class="form-select w-auto" t-on-change="onYearChange">
                 <t t-foreach="state.years" t-as="year" t-key="year.id">

@@ -235,25 +235,13 @@
                                 </div>
                                 <span class="aps-timer-timeline__total"><t t-esc="_formatDuration(timelineTotal)"/></span>
                             </div>
-                            <div class="aps-timer-timeline__canvas">
-                                <div class="aps-timer-timeline__labels">
-                                    <t t-foreach="timelineLabels" t-as="label" t-key="label.label">
-                                        <span t-att-style="label.style" t-esc="label.label"/>
-                                    </t>
-                                </div>
-                                <div class="aps-timer-timeline__track">
-                                    <div class="aps-timer-timeline__line"></div>
-                                    <t t-if="!timelineEntries.length">
-                                        <div class="aps-timer-timeline__empty"><i class="fa fa-hourglass-o"/><span>Your day starts here</span></div>
-                                    </t>
-                                    <t t-foreach="timelineEntries" t-as="entry" t-key="entry.id">
-                                        <button type="button" class="aps-timer-segment" t-att-class="{'is-draft': entry.isDraft, 'is-conflict': state.conflicts.length &amp;&amp; entry.isDraft}" t-att-style="_timelineStyle(entry)" t-att-title="_timelineTooltip(entry)" t-on-click="onTimelineClick" t-att-data-entry-id="entry.id">
-                                            <span class="aps-timer-segment__label"><strong t-esc="entry.subject_name"/><small t-esc="_formatDuration(entry.total_minutes)"/></span>
-                                            <span t-if="entry.pause_minutes" class="aps-timer-segment__pause" t-att-style="_pauseStyle(entry)"></span>
-                                        </button>
-                                    </t>
-                                </div>
-                            </div>
+                            <DailyFlow
+                                days="dailyFlowDays"
+                                subjects="dailyFlowSubjects"
+                                scale="dailyFlowScale"
+                                showLegend="false"
+                                onEntryClick="onDailyFlowEntryClick"
+                            />
                             <div class="aps-timer-timeline__legend">
                                 <span><i class="aps-timer-legend-dot aps-timer-legend-dot--recorded"/>Recorded</span>
                                 <span><i class="aps-timer-legend-dot aps-timer-legend-dot--pause"/>Pause</span>

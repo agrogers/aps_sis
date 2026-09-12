@@ -151,7 +151,7 @@
             'aps_sis/static/src/components/**/*.js',
             'aps_sis/static/src/components/**/*.xml',
             'aps_sis/static/src/components/**/*.scss',
-            'aps_sis/static/src/components/**/*.css',
+			'aps_sis/static/src/components/**/*.css',
             'aps_sis/static/src/js/image_result_widget.js',
             'aps_sis/static/src/xml/image_result_widget.xml',
             'aps_sis/static/src/css/image_result_widget.css',
