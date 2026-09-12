@@ -240,6 +240,7 @@
                                 subjects="dailyFlowSubjects"
                                 scale="dailyFlowScale"
                                 showLegend="false"
+                                singleColumn="true"
                                 onEntryClick="onDailyFlowEntryClick"
                             />
                             <div class="aps-timer-timeline__legend">

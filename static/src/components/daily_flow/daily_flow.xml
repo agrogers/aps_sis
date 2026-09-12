@@ -44,7 +44,7 @@
                     <i class="fa fa-hourglass-o"></i>
                     <span t-esc="props.emptyMessage"></span>
                 </div>
-                <div t-else="" class="aps-daily-flow__days">
+                <div t-else="" t-att-class="'aps-daily-flow__days' + (props.singleColumn ? ' is-single-column' : '')">
                     <div class="aps-daily-flow__time-labels" t-att-class="props.showDayLabels ? 'is-with-header' : ''">
                         <t t-foreach="props.scale.labels" t-as="label" t-key="label.value">
                                 <span t-att-style="'top: ' + (label.ratio * 100) + '%'" t-esc="label.label"></span>

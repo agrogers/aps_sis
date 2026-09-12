@@ -11,6 +11,7 @@ export class DailyFlow extends Component {
         showLegend: { type: Boolean, optional: true },
         showMetrics: { type: Boolean, optional: true },
         showDayLabels: { type: Boolean, optional: true },
+        singleColumn: { type: Boolean, optional: true },
         onEntryClick: { type: Function, optional: true },
     };
 
@@ -23,6 +24,7 @@ export class DailyFlow extends Component {
         showLegend: true,
         showMetrics: true,
         showDayLabels: true,
+        singleColumn: false,
     };
 
     setup() {

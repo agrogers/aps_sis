@@ -104,6 +104,152 @@
             box-shadow: 0 0 0 .2rem rgba(123, 108, 246, .13);
         }
     }
+
+    // Bootstrap removes the native appearance from .form-control. Restore it
+    // for datetime-local fields so the browser calendar/time picker is
+    // available again instead of rendering as a plain text-like input.
+    input[type="datetime-local"].form-control {
+        appearance: auto;
+        -webkit-appearance: auto;
+        color-scheme: light;
+        cursor: pointer;
+
+        &::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: .7;
+        }
+    }
+}
+
+// Keep the form controls readable when Odoo is using its dark theme.  The
+// dialog cards previously kept the light Bootstrap defaults, so selects and
+// inputs remained white inside an otherwise dark modal.
+:where(
+    .o_web_client.o_dark,
+    .o_web_client[data-color-scheme="dark"],
+    .o_web_client[data-theme="dark"],
+    .o_web_client[data-theme="dark-mode"],
+    .o_web_client[data-bs-theme="dark"],
+    .o_web_client.theme-dark,
+    .o_web_client.o_dark_mode,
+    body.o_dark,
+    body[data-color-scheme="dark"],
+    body[data-theme="dark"],
+    body[data-theme="dark-mode"],
+    body[data-bs-theme="dark"],
+    body.theme-dark,
+    html.o_dark,
+    html[data-color-scheme="dark"],
+    html[data-theme="dark"]
+) {
+    .aps-timer-dialog {
+        --timer-ink: #e6ebf5;
+        --timer-muted: #aeb9cc;
+        --timer-border: #3b465b;
+        --timer-panel: #202938;
+        color: var(--timer-ink);
+    }
+
+    .aps-timer-card {
+        background: #182131;
+        border-color: var(--timer-border);
+
+        h5,
+        .form-label,
+        .form-control,
+        .form-select {
+            color: var(--timer-ink);
+        }
+
+        .form-control,
+        .form-select {
+            background-color: #202a3a;
+            border-color: #46536a;
+            color-scheme: dark;
+
+            &::placeholder {
+                color: #9aa7ba;
+            }
+
+            &:focus {
+                background-color: #202a3a;
+                border-color: #9b90ff;
+                box-shadow: 0 0 0 .2rem rgba(155, 144, 255, .2);
+            }
+        }
+
+        .form-select option {
+            background-color: #202a3a;
+            color: var(--timer-ink);
+        }
+    }
+}
+
+// The active Odoo page uses the browser's dark preference without adding a
+// dark-mode class to body or .o_web_client. Keep this selector independent of
+// the modal wrapper so every card is themed consistently.
+@media (prefers-color-scheme: dark) {
+    .aps-timer-dialog {
+        --timer-ink: #e6ebf5;
+        --timer-muted: #aeb9cc;
+        --timer-border: #3b465b;
+        --timer-panel: #202938;
+        color: var(--timer-ink);
+    }
+
+    .aps-timer-dialog .aps-timer-card {
+        background-color: #182131 !important;
+        border-color: #3b465b;
+        color: #e6ebf5;
+
+        h5,
+        .form-label,
+        .form-check-label {
+            color: #e6ebf5 !important;
+        }
+
+        .text-muted {
+            color: #aeb9cc !important;
+        }
+
+        .form-control,
+        .form-select {
+            background-color: #202a3a !important;
+            border-color: #46536a !important;
+            color: #e6ebf5 !important;
+            color-scheme: dark;
+
+            &:focus {
+                background-color: #202a3a !important;
+                border-color: #9b90ff !important;
+                box-shadow: 0 0 0 .2rem rgba(155, 144, 255, .2);
+            }
+
+            &::placeholder {
+                color: #9aa7ba !important;
+                opacity: 1;
+            }
+        }
+
+        input[type="datetime-local"].form-control {
+            color-scheme: dark;
+        }
+
+        .form-select option {
+            background-color: #202a3a;
+            color: #e6ebf5;
+        }
+
+        .form-check-input {
+            background-color: #202a3a;
+            border-color: #77849a;
+
+            &:checked {
+                background-color: #7b6cf6;
+                border-color: #7b6cf6;
+            }
+        }
+    }
 }
 
 .aps-timer-icon {

@@ -111,6 +111,11 @@
         display: grid;
         grid-template-columns: 48px repeat(7, minmax(105px, 1fr));
         min-width: 840px;
+
+        &.is-single-column {
+            grid-template-columns: 48px minmax(0, 1fr);
+            min-width: 0;
+        }
     }
 
     &__time-labels {

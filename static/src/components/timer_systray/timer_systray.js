@@ -183,6 +183,9 @@ export class EnhancedTimerStopDialog extends Component {
         this.stopInput = useRef("stopInput");
         this.onFixOverlap = this.onFixOverlap.bind(this);
         this.onTimelineClick = this.onTimelineClick.bind(this);
+        // DailyFlow invokes this handler as a child callback. Bind it so the
+        // handler can delegate to onTimelineClick and open another editor.
+        this.onDailyFlowEntryClick = this.onDailyFlowEntryClick.bind(this);
         this.state = useState({
             ...this._entryState(this.props.entry),
             entries: [],

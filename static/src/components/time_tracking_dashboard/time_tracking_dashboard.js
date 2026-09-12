@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { loadJS } from "@web/core/assets";
 import { user } from "@web/core/user";
 import { DailyFlow } from "@aps_sis/components/daily_flow/daily_flow";
+import { EnhancedTimerStopDialog } from "@aps_sis/components/timer_systray/timer_systray";
 
 export class TimeTrackingDashboard extends Component {
     static template = "aps_sis.TimeTrackingDashboard";
@@ -19,6 +20,10 @@ export class TimeTrackingDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.dialog = useService("dialog");
+        // DailyFlow invokes this callback as a child prop, so bind it explicitly
+        // to preserve the dashboard instance and its action service.
+        this.onDailyFlowEntryClick = this.onDailyFlowEntryClick.bind(this);
         this.dailyFlowModeStorageKey = "aps_sis_time_tracking_daily_flow_mode";
         this.dashboardFiltersStorageKey = "aps_sis_time_tracking_dashboard_filters";
         const savedFilters = this._restoreDashboardFilters();
@@ -414,13 +419,22 @@ export class TimeTrackingDashboard extends Component {
     }
 
     async onDailyFlowEntryClick(entry) {
-        if (!entry?.domain) return;
-        await this.action.doAction({
-            type: "ir.actions.act_window",
-            name: "Time Entries",
-            res_model: "aps.time.tracking",
-            views: [[false, "list"], [false, "form"]],
-            domain: entry.domain,
+        if (!entry?.id) return;
+        const defaults = await this.orm.call(
+            "aps.time.tracking",
+            "get_timer_dialog_defaults",
+            [],
+            {}
+        );
+        this.dialog.add(EnhancedTimerStopDialog, {
+            entry,
+            subjects: defaults.subjects || [],
+            partnerId: entry.partner_id || defaults.partner_id,
+            partnerName: defaults.partner_name || "",
+            onSave: async () => {
+                await this._fetchData();
+            },
+            onDiscard: async () => {},
         });
     }
 
