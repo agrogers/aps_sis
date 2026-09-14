@@ -408,15 +408,63 @@ class APSAssignStudentsWizard(models.TransientModel):
                 line.submission_order = order
                 order += 1
 
+        students = self.student_line_ids.mapped('student_id')
+        student_ids = students.ids
+        wizard_subjects = self.class_ids.mapped('subject_id')
+        student_subjects = {}
+        if len(wizard_subjects) >= 2:
+            student_records = self.env['aps.student'].search([
+                ('partner_id', 'in', student_ids),
+            ])
+            student_subjects = {
+                student.partner_id.id: student.enrollment_ids.filtered(
+                    lambda enrollment: enrollment.state == 'enrolled'
+                ).mapped('class_id.subject_id')
+                for student in student_records
+            }
+
         # Resolve submission names for the entire tree using custom names
         top_name = self.custom_submission_name or None
         name_map = selected_resources._resolve_submission_names(
             top_level_resource, top_level_name=top_name,
         )
 
-        for index, resource in enumerate(selected_resources, start=1):
+        selected_resource_ids = selected_resources.ids
+        selected_resource_id_set = set(selected_resource_ids)
+        selected_lines = {
+            line.resource_id.id: line
+            for line in self.affected_resource_line_ids
+            if line.selected and line.resource_id.id in selected_resource_id_set
+        }
+        existing_tasks = task_model.search([
+            ('resource_id', 'in', selected_resource_ids),
+            ('student_id', 'in', student_ids),
+        ])
+        task_by_key = {
+            (task.resource_id.id, task.student_id.id): task
+            for task in existing_tasks
+        }
+        missing_task_values = []
+        for resource in selected_resources:
+            for student in students:
+                if (resource.id, student.id) not in task_by_key:
+                    missing_task_values.append({
+                        'resource_id': resource.id,
+                        'student_id': student.id,
+                        'state': 'assigned',
+                        'date_due': self.date_due,
+                    })
+        if missing_task_values:
+            created_tasks = task_model.create(missing_task_values)
+            task_by_key.update({
+                (task.resource_id.id, task.student_id.id): task
+                for task in created_tasks
+            })
+
+        submission_values = []
+        for resource in selected_resources:
             # Find the order for this resource
-            line = self.affected_resource_line_ids.filtered(lambda l: l.resource_id == resource and l.selected)
+            line = selected_lines.get(resource.id)
             submission_order = line.submission_order if line else 0
             # Submission name resolved by the tree-aware helper
             submission_name = name_map.get(resource.id, resource.name or '')
@@ -448,37 +496,18 @@ class APSAssignStudentsWizard(models.TransientModel):
             # Determine initial submission state from resource tags
             initial_state = self._get_initial_state_from_tags(resource)
 
-            for student in self.student_line_ids.mapped('student_id'):
+            for student in students:
+                task = task_by_key[(resource.id, student.id)]
                 # Derive subjects from the selected classes
-                wizard_subjects = self.class_ids.mapped('subject_id')
-                
                 if len(wizard_subjects) < 2:
                     # If there is only one subject across selected classes then assume that is what should be
                     # assigned to the student regardless of what subjects they are currently taking.
                     assigned_subjects = wizard_subjects
                 else:
-                    # Get student's assigned subjects from running courses
-                    student_record = self.env['aps.student'].search([('partner_id', '=', student.id)], limit=1)
-                    student_subjects = self.env['aps.subject']
-                    if student_record:
-                        student_subjects = student_record.enrollment_ids.filtered(
-                            lambda e: e.state == 'enrolled'
-                        ).mapped('class_id.subject_id')
                     # Intersect with wizard subjects
-                    assigned_subjects = wizard_subjects & student_subjects
-                
-                # Check if task exists
-                task = task_model.search([
-                    ('resource_id', '=', resource.id),
-                    ('student_id', '=', student.id)
-                ], limit=1)
-                if not task:
-                    task = task_model.create({
-                        'resource_id': resource.id,
-                        'student_id': student.id,
-                        'state': 'assigned',
-                        'date_due': self.date_due,
-                    })
+                    assigned_subjects = wizard_subjects & student_subjects.get(
+                        student.id, self.env['aps.subject']
+                    )
                 # The wizard's custom_submission_name always determines the
                 # top-level resource's submission name (it is pre-filled from
                 # default_get and can be edited by the teacher).  Resource-level
@@ -496,7 +525,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                 else:
                     use_default_answer = resource.default_answer if resource.has_default_answer and resource.default_answer else False
                 # Create submission. Multiple submissions allowed per task.
-                submission_model.create({
+                submission_values.append({
                     'task_id': task.id,
                     'assigned_by': self.assigned_by.id if self.assigned_by else False,
                     'submission_label': self.submission_label,
@@ -515,4 +544,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'points_scale': self.points_scale,
                     'notification_state': 'not_sent' if self.notify_student else 'skipped',
                 })
+        if submission_values:
+            submission_model.create(submission_values)
+            
         return {'type': 'ir.actions.act_window_close'}
