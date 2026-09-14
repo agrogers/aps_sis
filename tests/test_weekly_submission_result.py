@@ -51,3 +51,23 @@ class TestWeeklySubmissionResult(TransactionCase):
                 ("week_start", "<=", end),
             ],
         )
+
+    def test_weekly_academic_week_map_uses_week_starts(self):
+        start = date(2026, 1, 7)
+        end = date(2026, 1, 14)
+        week_map = self.result_model._weekly_academic_week_map(start, end)
+
+        self.assertEqual(set(week_map), {
+            date(2026, 1, 5),
+            date(2026, 1, 12),
+        })
+
+    def test_rebuild_for_student_accepts_bounded_dates(self):
+        self.assertTrue(
+            self.result_model.rebuild_for_student(
+                self.env.user.partner_id.id,
+                date(2026, 1, 7),
+                date(2026, 1, 14),
+            )
+        )
+

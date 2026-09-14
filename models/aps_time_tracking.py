@@ -3,6 +3,7 @@ from odoo.exceptions import ValidationError
 from datetime import datetime, time, timedelta
 
 
+# Used to automatically set the At Home property based on school hours.
 SCHOOL_START_HOUR = 8      # 08:00
 SCHOOL_END_HOUR = 15       # 15:00
 SCHOOL_END_MINUTE = 30     # 15:30
@@ -920,7 +921,13 @@ class APSTimeTracking(models.Model):
                     'id': record.subject_id.id,
                     'name': record.subject_id.name,
                     'color': subject_color_map.get(record.subject_id.id, '#64748b'),
-                    'icon_url': False,
+                    'icon_url': (
+                        f'/web/image/aps.subject/{record.subject_id.id}/icon'
+                        if record.subject_id.icon else (
+                            f'/web/image/aps.subject.category/{record.subject_id.category_id.id}/icon'
+                            if record.subject_id.category_id and record.subject_id.category_id.icon else False
+                        )
+                    ),
                     'minutes': 0.0,
                     'previous_minutes': 0.0,
                 })

@@ -83,8 +83,37 @@ class APSWeeklySubmissionResult(models.Model):
         return min(100.0, max(0.0, value))
 
     @api.model
+    def _weekly_academic_week_map(self, date_start, date_end):
+        """Load overlapping academic weeks once for a requested date range."""
+        weeks = self.env["aps.academic.week"].search([
+            ("date_start", "<=", date_end),
+            ("date_stop", ">=", date_start),
+        ], order="date_start, id")
+        week_map = {}
+        cursor = self._week_start(date_start)
+        last_week = self._week_start(date_end)
+        while cursor <= last_week:
+            week_end = cursor + timedelta(days=6)
+            week_map[cursor] = next(
+                (
+                    academic_week
+                    for academic_week in weeks
+                    if academic_week.date_start <= week_end
+                    and academic_week.date_stop >= cursor
+                ),
+                self.env["aps.academic.week"],
+            )
+            cursor += timedelta(days=7)
+        return week_map
+
+    @api.model
     def rebuild_for_student(self, student_partner_id, date_start=False, date_end=False):
         """Rebuild current weekly facts from submitted/finalised submissions."""
+        if date_start:
+            date_start = self._week_start(fields.Date.to_date(date_start))
+        if date_end:
+            date_end = fields.Date.to_date(date_end)
+            date_end += timedelta(days=6 - date_end.weekday())
         domain = [
             ("student_id", "=", student_partner_id),
             ("state", "in", ("submitted", "complete")),
@@ -112,7 +141,22 @@ class APSWeeklySubmissionResult(models.Model):
         if date_end:
             existing_domain.append(("week_start", "<=", date_end))
         existing = self.search(existing_domain)
+        existing_by_key = {
+            (row.subject_id.id, row.type_id.id, row.week_start): row
+            for row in existing
+        }
+        if grouped:
+            grouped_start = min(key[2] for key in grouped)
+            grouped_end = max(key[2] for key in grouped)
+        else:
+            grouped_start = grouped_end = date.today()
+        academic_week_map = self._weekly_academic_week_map(
+            date_start or grouped_start,
+            date_end or grouped_end,
+        ) if grouped or (date_start and date_end) else {}
         seen = set()
+        values_to_create = []
+        values_to_write = []
 
         for (subject_id, type_id, week_start), records in grouped.items():
             type_record = records[0].type_id
@@ -135,34 +179,52 @@ class APSWeeklySubmissionResult(models.Model):
                 "weighted_percent": percent,
                 "display_mode": mode,
             }
-            academic_week = self.env["aps.academic.week"].search([
-                ("date_start", "<=", week_start + timedelta(days=6)),
-                ("date_stop", ">=", week_start),
-            ], limit=1)
+            academic_week = academic_week_map.get(week_start)
             values["academic_week_id"] = academic_week.id or False
-            row = self.search(
-                [
-                    ("student_id", "=", student_partner_id),
-                    ("subject_id", "=", subject_id),
-                    ("type_id", "=", type_id),
-                    ("week_start", "=", week_start),
-                ],
-                limit=1,
-            )
+            row = existing_by_key.get((subject_id, type_id, week_start))
             if row:
-                row.write(values)
+                values_to_write.append((row, values))
             else:
-                self.create(values)
+                values_to_create.append(values)
 
-        for row in existing:
-            key = (row.student_id.id, row.subject_id.id, row.type_id.id, row.week_start)
-            if key not in seen:
-                row.unlink()
+        for row, values in values_to_write:
+            row.write(values)
+        if values_to_create:
+            self.create(values_to_create)
+
+        rows_to_remove = existing.filtered(
+            lambda row: (
+                row.student_id.id,
+                row.subject_id.id,
+                row.type_id.id,
+                row.week_start,
+            ) not in {
+                key for key in seen
+            }
+        )
+        if rows_to_remove:
+            rows_to_remove.unlink()
         return True
 
     @api.model
-    def _weekly_class_options(self, date_start, date_end, selected_class_id=False):
-        """Return classes visible to the user that have submissions in the period."""
+    def _weekly_class_enrollment_map(self, class_ids, date_start, date_end):
+        if not class_ids:
+            return defaultdict(set)
+        enrollments = self.env["aps.student.class"].search([
+            ("class_id", "in", list(class_ids)),
+            ("state", "=", "enrolled"),
+            "|", ("start_date", "=", False), ("start_date", "<=", date_end),
+            "|", ("end_date", "=", False), ("end_date", ">=", date_start),
+        ])
+        enrollment_map = defaultdict(set)
+        for enrollment in enrollments:
+            if enrollment.partner_id:
+                enrollment_map[enrollment.class_id.id].add(enrollment.partner_id.id)
+        return enrollment_map
+
+    @api.model
+    def _weekly_class_options_and_enrollments(self, date_start, date_end):
+        """Return visible classes and one bulk-loaded enrollment map."""
         Class = self.env["aps.class"]
         Submission = self.env["aps.resource.submission"]
         user = self.env.user
@@ -179,71 +241,81 @@ class APSWeeklySubmissionResult(models.Model):
             class_domain = [("enrollment_ids.student_id", "=", student.id)] if student else [("id", "=", 0)]
 
         class_domain += [
-            ("academic_year_id.start_date", "=", False),
-            ("academic_year_id.end_date", "=", False),
-        ]
-        # Replace the open-ended fallback above with the proper overlap domain.
-        class_domain[-2:] = [
             "|", ("academic_year_id.start_date", "=", False),
             ("academic_year_id.start_date", "<=", date_end),
             "|", ("academic_year_id.end_date", "=", False),
             ("academic_year_id.end_date", ">=", date_start),
         ]
         classes = Class.search(class_domain, order="name, id")
+        enrollment_map = self._weekly_class_enrollment_map(
+            classes.ids, date_start, date_end
+        )
+        all_partner_ids = set().union(*(enrollment_map.get(class_id, set()) for class_id in classes.ids))
         submissions = Submission.search([
+            ("student_id", "in", sorted(all_partner_ids)) if all_partner_ids else ("id", "=", 0),
             ("state", "in", ("submitted", "complete")),
             ("is_course_explorer", "=", False),
             ("date_submitted", ">=", date_start),
             ("date_submitted", "<=", date_end),
             ("student_id.is_student", "=", True),
         ])
-        submitted_partner_ids = set(submissions.mapped("student_id").ids)
+        submitted_subjects = defaultdict(set)
+        submitted_partner_ids = set()
+        for submission in submissions:
+            submitted_partner_ids.add(submission.student_id.id)
+            subjects = submission.subjects or submission.resource_id.subjects
+            for subject in subjects:
+                submitted_subjects[submission.student_id.id].add(subject.id)
+
         result = []
         for record in classes:
-            enrolled_partner_ids = set(record.enrollment_ids.filtered(
-                lambda enrollment: enrollment.state == "enrolled"
-                and (not enrollment.start_date or enrollment.start_date <= date_end)
-                and (not enrollment.end_date or enrollment.end_date >= date_start)
-            ).mapped("partner_id").ids)
+            enrolled_partner_ids = enrollment_map.get(record.id, set())
             subject = record.subject_id
-            has_submission = any(
-                submission.student_id.id in enrolled_partner_ids
-                and (not subject or subject in (submission.subjects or submission.resource_id.subjects))
-                for submission in submissions
-            )
-            if enrolled_partner_ids & submitted_partner_ids and has_submission:
-                level = subject.level_id if subject else False
-                result.append({
-                    "id": record.id,
-                    "name": record.display_name,
-                    "subject_id": subject.id if subject else False,
-                    "subject_name": subject.display_name if subject else "",
-                    "level_name": level.display_name or level.name or "" if level else "",
-                    "level_sequence": level.sequence or 0 if level else 0,
-                    "icon_url": (
-                        f"/web/image/aps.subject/{subject.id}/icon"
-                        if subject and subject.icon else ""
-                    ),
-                })
+            if subject:
+                has_submission = any(
+                    subject.id in submitted_subjects.get(partner_id, set())
+                    for partner_id in enrolled_partner_ids
+                )
+            else:
+                has_submission = bool(enrolled_partner_ids & submitted_partner_ids)
+            if not has_submission:
+                continue
+            level = subject.level_id if subject else False
+            result.append({
+                "id": record.id,
+                "name": record.display_name,
+                "subject_id": subject.id if subject else False,
+                "subject_name": subject.display_name if subject else "",
+                "level_name": level.display_name or level.name or "" if level else "",
+                "level_sequence": level.sequence or 0 if level else 0,
+                "icon_url": (
+                    f"/web/image/aps.subject/{subject.id}/icon"
+                    if subject and subject.icon else ""
+                ),
+            })
         result.sort(key=lambda item: (
             item["level_sequence"],
             item["level_name"].lower(),
             item["name"].lower(),
         ))
-        return result
+        return result, enrollment_map
+
+    @api.model
+    def _weekly_class_options(self, date_start, date_end, selected_class_id=False):
+        """Return classes visible to the user that have submissions in the period."""
+        options, _enrollment_map = self._weekly_class_options_and_enrollments(
+            date_start, date_end
+        )
+        return options
 
     @api.model
     def _weekly_class_student_partner_ids(self, class_id, date_start, date_end):
         if not class_id:
             return False
-        record = self.env["aps.class"].browse(int(class_id)).exists()
-        if not record:
-            return set()
-        return set(record.enrollment_ids.filtered(
-            lambda enrollment: enrollment.state == "enrolled"
-            and (not enrollment.start_date or enrollment.start_date <= date_end)
-            and (not enrollment.end_date or enrollment.end_date >= date_start)
-        ).mapped("partner_id").ids)
+        enrollment_map = self._weekly_class_enrollment_map(
+            [int(class_id)], date_start, date_end
+        )
+        return enrollment_map.get(int(class_id), set())
 
     @api.model
     def _weekly_submission_domain(self, student_ids, date_start, date_end, subject_ids=None):
@@ -291,14 +363,19 @@ class APSWeeklySubmissionResult(models.Model):
             date_start = date.today() - timedelta(days=date.today().weekday() + 28)
         if not date_end:
             date_end = date.today()
-        class_options = self._weekly_class_options(date_start, date_end, class_id)
+        if academic_term_id:
+            academic_term = self.env["aps.academic.term"].browse(int(academic_term_id)).exists()
+            if academic_term:
+                date_start = academic_term.start_date
+                date_end = academic_term.end_date
+        class_options, enrollment_map = self._weekly_class_options_and_enrollments(
+            date_start, date_end
+        )
         visible_class_ids = {item["id"] for item in class_options}
         if class_id and int(class_id) not in visible_class_ids:
             class_id = False
         class_id = int(class_id) if class_id else False
-        class_student_partner_ids = self._weekly_class_student_partner_ids(
-            class_id, date_start, date_end
-        ) if class_id else set()
+        class_student_partner_ids = enrollment_map.get(class_id, set()) if class_id else set()
         if class_id:
             selected_class = next(item for item in class_options if item["id"] == class_id)
             subject_ids = {selected_class["subject_id"]} if selected_class["subject_id"] else set()
@@ -309,9 +386,7 @@ class APSWeeklySubmissionResult(models.Model):
             }
             scoped_partner_ids = set()
             for visible_class_id in visible_class_ids:
-                scoped_partner_ids.update(self._weekly_class_student_partner_ids(
-                    visible_class_id, date_start, date_end
-                ))
+                scoped_partner_ids.update(enrollment_map.get(visible_class_id, set()))
 
         if student_partner_id and not is_teacher and not class_id:
             scoped_partner_ids = {user.partner_id.id}
@@ -332,28 +407,33 @@ class APSWeeklySubmissionResult(models.Model):
             selected_partner_ids = scoped_partner_ids
             group_by_student = True
 
-        # The weekly result model is a materialized cache. Students can read
-        # their rows, but must not need write ACLs merely to refresh the cache
-        # when opening the dashboard.
-        for partner_id in selected_partner_ids:
-            self.sudo().rebuild_for_student(partner_id, date_start, date_end)
-
         submissions = self.env["aps.resource.submission"].search(
             self._weekly_submission_domain(selected_partner_ids, date_start, date_end, subject_ids)
             if selected_partner_ids else [("id", "=", 0)]
         )
         available_types = submissions.mapped("type_id")
+        submissions_by_row = defaultdict(list)
+        for submission in submissions:
+            effective_subjects = self._weekly_effective_subjects(submission, subject_ids)
+            for subject in effective_subjects:
+                submissions_by_row[
+                    (submission.student_id.id, subject.id, submission.type_id.id)
+                ].append(submission)
         requested_type_ids = type_ids
         type_ids = [int(value) for value in (type_ids or [])]
         rows = {}
-        all_results = self.search(
+        result_domain = (
             self._weekly_student_domain(selected_partner_ids) + [
                 ("week_start", ">=", date_start - timedelta(days=date_start.weekday())),
                 ("week_start", "<=", date_end),
-            ] if selected_partner_ids else [("id", "=", 0)]
+            ]
+            if selected_partner_ids else [("id", "=", 0)]
         )
         if subject_ids:
-            all_results = all_results.filtered(lambda result: result.subject_id.id in subject_ids)
+            result_domain.append(("subject_id", "in", list(subject_ids)))
+        if requested_type_ids is not None:
+            result_domain.append(("type_id", "in", type_ids or [0]))
+        all_results = self.search(result_domain)
         if not available_types and requested_type_ids is None:
             available_types = all_results.mapped("type_id")
         selected_types = (
@@ -361,7 +441,10 @@ class APSWeeklySubmissionResult(models.Model):
             if requested_type_ids is None
             else available_types.filtered(lambda record: record.id in type_ids)
         )
-        for result in all_results.filtered(lambda record: record.type_id in selected_types):
+        selected_type_id_set = set(selected_types.ids)
+        for result in all_results:
+            if result.type_id.id not in selected_type_id_set:
+                continue
             row_student_id = result.student_id.id if group_by_student else False
             key = (row_student_id, result.subject_id.id, result.type_id.id)
             rows.setdefault(key, {
@@ -402,13 +485,11 @@ class APSWeeklySubmissionResult(models.Model):
                     ("date_submitted", "<=", min(result.week_end, date_end)),
                 ],
             })
+        academic_week_map = self._weekly_academic_week_map(date_start, date_end)
         weeks = []
         cursor = date_start - timedelta(days=date_start.weekday())
         while cursor <= date_end:
-            academic_week = self.env["aps.academic.week"].search([
-                ("date_start", "<=", cursor + timedelta(days=6)),
-                ("date_stop", ">=", cursor),
-            ], limit=1)
+            academic_week = academic_week_map.get(cursor)
             weeks.append({
                 "start": fields.Date.to_string(cursor),
                 "label": cursor.strftime("%d %b"),
@@ -427,11 +508,19 @@ class APSWeeklySubmissionResult(models.Model):
                 "is_non_school": week["is_non_school"],
             }) for week in weeks]
             row_student_id, subject_id, type_id = row_key
-            row_submissions = submissions.filtered(lambda submission: (
-                (not row_student_id or submission.student_id.id == row_student_id)
-                and subject_id in self._weekly_effective_subjects(submission, subject_ids).ids
-                and submission.type_id.id == type_id
-            ))
+            if row_student_id:
+                row_submissions = submissions_by_row.get(
+                    (row_student_id, subject_id, type_id), []
+                )
+            else:
+                row_submissions = [
+                    submission
+                    for (student_id, indexed_subject_id, indexed_type_id), records
+                    in submissions_by_row.items()
+                    if indexed_subject_id == subject_id
+                    and indexed_type_id == type_id
+                    for submission in records
+                ]
             total_count = len(row_submissions)
             marks_total = sum(max(record.out_of_marks, 0.0) for record in row_submissions)
             mode = self._mode_for_type_name(row["type_name"])

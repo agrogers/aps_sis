@@ -16,16 +16,37 @@ class APSResourceSubmission(models.Model):
     _rec_name = 'display_name'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    def _refresh_weekly_submission_results(self):
+    def _refresh_weekly_submission_results(self, date_ranges=None):
         students = self.mapped('student_id')
+        if date_ranges is not None:
+            students = students.filtered(lambda student: student.id in date_ranges)
         result_model = self.env['aps.weekly.submission.result'].sudo()
         for student in students:
-            result_model.rebuild_for_student(student.id)
+            date_range = (date_ranges or {}).get(student.id)
+            result_model.rebuild_for_student(
+                student.id,
+                date_range[0] if date_range else False,
+                date_range[1] if date_range else False,
+            )
+
+    def _weekly_submission_date_ranges(self):
+        ranges = {}
+        for submission in self:
+            if not submission.student_id or not submission.date_submitted:
+                continue
+            student_id = submission.student_id.id
+            current = ranges.get(student_id)
+            if not current:
+                ranges[student_id] = [submission.date_submitted, submission.date_submitted]
+            else:
+                current[0] = min(current[0], submission.date_submitted)
+                current[1] = max(current[1], submission.date_submitted)
+        return ranges
 
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        records._refresh_weekly_submission_results()
+        records._refresh_weekly_submission_results(records._weekly_submission_date_ranges())
         return records
 
     def write(self, vals):
@@ -33,20 +54,41 @@ class APSResourceSubmission(models.Model):
             'state', 'score', 'out_of_marks', 'date_submitted',
             'task_id', 'subjects', 'submission_active',
         }
+        before_ranges = self._weekly_submission_date_ranges()
         students_before = self.mapped('student_id')
         result = super().write(vals)
         if tracked.intersection(vals):
             result_model = self.env['aps.weekly.submission.result'].sudo()
+            after_ranges = self._weekly_submission_date_ranges()
+            date_ranges = dict(before_ranges)
+            for student_id, current in after_ranges.items():
+                previous = date_ranges.get(student_id)
+                if previous:
+                    previous[0] = min(previous[0], current[0])
+                    previous[1] = max(previous[1], current[1])
+                else:
+                    date_ranges[student_id] = current
             for student in students_before | self.mapped('student_id'):
-                result_model.rebuild_for_student(student.id)
+                date_range = date_ranges.get(student.id)
+                result_model.rebuild_for_student(
+                    student.id,
+                    date_range[0] if date_range else False,
+                    date_range[1] if date_range else False,
+                )
         return result
 
     def unlink(self):
         students = self.mapped('student_id')
+        date_ranges = self._weekly_submission_date_ranges()
         result = super().unlink()
         result_model = self.env['aps.weekly.submission.result'].sudo()
         for student in students:
-            result_model.rebuild_for_student(student.id)
+            date_range = date_ranges.get(student.id)
+            result_model.rebuild_for_student(
+                student.id,
+                date_range[0] if date_range else False,
+                date_range[1] if date_range else False,
+            )
         return result
     
     display_name = fields.Char(
