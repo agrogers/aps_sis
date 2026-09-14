@@ -18,11 +18,11 @@
                             </span>
                             <span class="aps-daily-flow__legend-copy">
                                 <strong t-esc="_formatHours(_totalHours(props.subjects))"></strong>
-                                <span>Total hours</span>
+                                <span class="aps-daily-flow__legend-stats">Total hours</span>
                             </span>
                         </div>
                         <t t-foreach="props.subjects" t-as="subject" t-key="subject.id">
-                            <div class="aps-daily-flow__legend-item">
+                            <div class="aps-daily-flow__legend-item" t-att-style="'border-left: 2px solid ' + (subject.color || '#64748b')">
                                 <span class="aps-daily-flow__subject-icon" t-att-title="_subjectTooltip(subject)" >
                                         <img t-if="subject.icon_url" t-att-src="subject.icon_url" t-att-alt="subject.name"></img>
                                 </span>

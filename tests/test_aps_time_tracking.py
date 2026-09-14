@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 
 from odoo.exceptions import ValidationError
@@ -123,3 +124,21 @@ class TestAPSTimeTracking(TransactionCase):
         self.assertIn(('partner_id', '=', self.partner.id), payload['domain'])
         self.assertIn(('subject_id', '=', self.subject.id), payload['domain'])
         self.assertEqual(flow['subjects'][0]['id'], self.subject.id)
+
+    def test_daily_flow_keeps_icon_for_subject_only_in_previous_week(self):
+        self.subject.write({'icon': base64.b64encode(b'test-icon')})
+        self.TimeTracking.create(self._vals(
+            '2026-09-07 10:00:00', '2026-09-07 11:00:00'
+        ))
+        flow = self.TimeTracking.get_daily_flow_data(
+            '2026-09-14', 'monday', self.partner.id, False, 30, '30'
+        )
+
+        subject = next(
+            item for item in flow['subjects'] if item['id'] == self.subject.id
+        )
+        self.assertEqual(subject['minutes'], 0.0)
+        self.assertEqual(
+            subject['icon_url'],
+            f'/web/image/aps.subject/{self.subject.id}/icon',
+        )
