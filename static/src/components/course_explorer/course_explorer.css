@@ -279,7 +279,15 @@
     margin-right: 248px;
 }
 
+.ce_right_pane .ce_quiz_box {
+    margin-right: 248px;
+}
+
 .ce_right_pane:has(.ce_resource_toc.is-collapsed) .ce_section_body {
+    margin-right: 0;
+}
+
+.ce_right_pane:has(.ce_resource_toc.is-collapsed) .ce_quiz_box {
     margin-right: 0;
 }
 
@@ -806,6 +814,10 @@
     }
 
     .ce_right_pane .ce_section_body {
+        margin-right: 0;
+    }
+
+    .ce_right_pane .ce_quiz_box {
         margin-right: 0;
     }
 

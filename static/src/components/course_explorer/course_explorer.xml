@@ -254,6 +254,9 @@
                         <div class="ce_section_body oe_calculateKioskHeight"
                              t-att-data-image-viewer-model="'aps.subject.category'"
                              t-att-data-image-viewer-id="state.selectedCategoryId"
+                                      t-att-data-image-viewer-source-model="section.highlightSourceModel"
+                                      t-att-data-image-viewer-source-id="section.highlightSourceId"
+                                      t-att-data-image-viewer-source-field="section.highlightSourceField"
                              t-out="section.html"/>
                         <!-- Quiz table -->
                         <t t-if="section.quizzes and section.quizzes.length">

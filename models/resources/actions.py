@@ -1125,6 +1125,7 @@ class APSResource(models.Model):
                 notes_html, source_id = res._resolve_notes()
                 if not notes_html:
                     continue
+                highlight_source, highlight_field = res._resolve_image_viewer_highlight_target('notes')
                 sections_map[res.id] = {
                     'id': res.id,
                     'name': res.name or '',
@@ -1132,6 +1133,9 @@ class APSResource(models.Model):
                     'visible': True,
                     'headingOnly': False,
                     'resolvedFrom': source_id if source_id != res.id else False,
+                    'highlightSourceModel': highlight_source._name,
+                    'highlightSourceId': highlight_source.id,
+                    'highlightSourceField': highlight_field,
                 }
 
         # Determine root nodes: resources whose parents are NOT in

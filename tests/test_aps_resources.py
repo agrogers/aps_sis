@@ -94,6 +94,66 @@ class TestAPSResource(TransactionCase):
         expected = 'Parent Resource 🢒 Child Resource'
         self.assertEqual(child.display_name, expected)
 
+    def test_course_explorer_data_returns_resource_notes_highlight_source(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Course Explorer Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Course Explorer Subject',
+            'category_id': category.id,
+        })
+        resource = self.env['aps.resources'].create({
+            'name': 'Course Explorer Resource',
+            'has_notes': 'yes',
+            'notes': '<p>See p123.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+
+        section = next(
+            section for section in result['contentSections']
+            if section['id'] == resource.id
+        )
+        self.assertEqual(section['highlightSourceModel'], 'aps.resources')
+        self.assertEqual(section['highlightSourceId'], resource.id)
+        self.assertEqual(section['highlightSourceField'], 'notes')
+
+    def test_course_explorer_data_returns_inherited_notes_highlight_source(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Inherited Course Explorer Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Inherited Course Explorer Subject',
+            'category_id': category.id,
+        })
+        parent = self.env['aps.resources'].create({
+            'name': 'Course Explorer Parent',
+            'has_notes': 'yes',
+            'notes': '<p>Parent notes with p123.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Course Explorer Child',
+            'has_notes': 'use_parent',
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+            'subjects': [(6, 0, [subject.id])],
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+
+        section = next(
+            section for section in result['contentSections']
+            if section['id'] == child.id
+        )
+        self.assertEqual(section['highlightSourceModel'], 'aps.resources')
+        self.assertEqual(section['highlightSourceId'], parent.id)
+        self.assertEqual(section['highlightSourceField'], 'notes')
+
     def test_breadcrumb_last_pill_has_parent_id(self):
         """The second-to-last breadcrumb entry provides the parent_id used
         to query siblings from the frontend widget."""
