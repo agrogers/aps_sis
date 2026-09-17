@@ -1340,6 +1340,111 @@ class APSResource(models.Model):
     # Course Explorer student progress tracking
     # ------------------------------------------------------------------
 
+    def _get_course_explorer_quiz_progress(self, resources, student_id):
+        """Return optional Educational Games progress for Course Explorer.
+
+        The Educational Games addon extends this hook without making
+        ``aps_sis`` depend on it.  The returned mapping is keyed by resource
+        ID and contains values such as ``quizProgress`` and question counts.
+        """
+        return None
+
+    def _course_explorer_combined_progress_for_resource(self, resource, student_id, quiz_progress=None):
+        """Return the combined progress for one resource without hierarchy aggregation."""
+        submission = self.env['aps.resource.submission'].search([
+            ('task_id.resource_id', '=', resource.id),
+            ('task_id.student_id', '=', student_id),
+            ('is_course_explorer', '=', True),
+        ], order='date_assigned desc, id desc', limit=1)
+        quiz_data = dict((quiz_progress or {}).get(resource.id, {}))
+        manual_max = 50.0 if quiz_data.get('quizQuestionCount', 0) else 100.0
+        manual_progress = manual_max if submission and submission.state == 'submitted' else 0.0
+        quiz_component = float(quiz_data.get('quizProgress', 0.0))
+        return manual_progress + quiz_component, manual_progress, quiz_component
+
+    def _get_course_explorer_progress_data(self, resources, student_id):
+        """Build combined Course Explorer progress for *resources*.
+
+        Manual completion contributes 50 percentage points and the optional
+        Educational Games question completion contributes the other 50.  The
+        resource hierarchy is then averaged from the bottom up so parent
+        progress reflects the combined child values rather than the stored
+        manual-only submission progress.
+        """
+        quiz_progress = self._get_course_explorer_quiz_progress(resources, student_id)
+        if quiz_progress is None:
+            result = {}
+            for resource in resources:
+                data = resource._compute_resource_progress(student_id)
+                result[resource.id] = data
+            return result
+
+        resource_ids = set(resources.ids)
+        progress_by_id = {}
+
+        for resource in resources:
+            submission = self.env['aps.resource.submission'].search([
+                ('task_id.resource_id', '=', resource.id),
+                ('task_id.student_id', '=', student_id),
+                ('is_course_explorer', '=', True),
+            ], order='date_assigned desc, id desc', limit=1)
+            quiz_data = dict(quiz_progress.get(resource.id, {}))
+            has_quiz_questions = bool(quiz_data.get('quizQuestionCount', 0))
+            manual_max = 50.0 if has_quiz_questions else 100.0
+            manual_progress = manual_max if submission and submission.state == 'submitted' else 0.0
+            quiz_component = float(quiz_data.get('quizProgress', 0.0))
+            progress_by_id[resource.id] = {
+                'progress': manual_progress + quiz_component,
+                'manualProgress': manual_progress,
+                'manualProgressMax': manual_max,
+                'quizProgress': quiz_component,
+                'submissionState': submission.state if submission else None,
+                'hasCheckbox': resource.has_notes != 'no',
+                **quiz_data,
+            }
+
+        computed = {}
+        active = set()
+
+        def _combined_progress(resource):
+            if resource.id in computed:
+                return computed[resource.id]
+            if resource.id in active:
+                return progress_by_id[resource.id]['progress']
+            active.add(resource.id)
+
+            child_resources = (resource.child_ids & resources).filtered(
+                lambda child: child.id in resource_ids and child.show_in_hierarchy
+            )
+            child_values = [_combined_progress(child) for child in child_resources]
+            own_progress = progress_by_id[resource.id]['progress']
+
+            if child_values:
+                values = list(child_values)
+                has_own_notes = resource.has_notes not in ('no', False)
+                child_uses_parent_notes = any(
+                    child.has_notes == 'use_parent' for child in child_resources
+                )
+                if has_own_notes and not child_uses_parent_notes:
+                    values.append(own_progress)
+                combined = round(sum(values) / len(values), 1)
+            else:
+                combined = own_progress
+
+            active.discard(resource.id)
+            computed[resource.id] = combined
+            return combined
+
+        for resource in resources:
+            _combined_progress(resource)
+
+        result = {}
+        for resource in resources:
+            data = dict(progress_by_id[resource.id])
+            data['progress'] = computed.get(resource.id, data['progress'])
+            result[resource.id] = data
+        return result
+
     def _compute_resource_progress(self, student_id):
         """Compute progress for a single resource for a given student.
 
@@ -1351,6 +1456,9 @@ class APSResource(models.Model):
         self.ensure_one()
         result = {
             'progress': 0.0,
+            'manualProgress': 0.0,
+            'manualProgressMax': 100.0,
+            'quizProgress': 0.0,
             'hasCheckbox': False,
             'submissionState': None,
         }
@@ -1363,7 +1471,9 @@ class APSResource(models.Model):
             ('is_course_explorer', '=', True),
         ], order='date_assigned desc, id desc', limit=1)
         if submission:
-            result['progress'] = submission.progress or 0.0
+            result['manualProgress'] = 100.0 if submission.state == 'submitted' else 0.0
+            result['progress'] = result['manualProgress'] + result['quizProgress']
+            result['hasCheckbox'] = self.has_notes != 'no'
             result['submissionState'] = submission.state
 
         return result
@@ -1407,12 +1517,7 @@ class APSResource(models.Model):
 
         all_resources = has_notes_res | extra_parents
 
-        result = {}
-        for res in all_resources:
-            data = res._compute_resource_progress(student_id)
-            result[res.id] = data
-
-        return result
+        return self._get_course_explorer_progress_data(all_resources, student_id)
 
     @api.model
     def toggle_resource_completion(self, resource_id):
@@ -1432,6 +1537,15 @@ class APSResource(models.Model):
         resource = self.browse(resource_id)
         if not resource.exists():
             return {'error': 'Resource not found'}
+
+        quiz_progress = self._get_course_explorer_quiz_progress(resource, student.id)
+        if quiz_progress is None:
+            manual_completion_progress = 100.0
+        else:
+            quiz_data = quiz_progress.get(resource.id, {})
+            manual_completion_progress = (
+                50.0 if quiz_data.get('quizQuestionCount', 0) else 100.0
+            )
 
         # Find or create task
         task = self.env['aps.resource.task'].search([
@@ -1471,7 +1585,7 @@ class APSResource(models.Model):
                     'state': 'submitted',
                     'date_assigned': fields.Date.today(),
                     'date_submitted': fields.Date.today(),
-                    'progress': 100.0,
+                    'progress': manual_completion_progress,
                 })
                 new_state = 'submitted'
                 new_progress = 100.0
@@ -1484,7 +1598,7 @@ class APSResource(models.Model):
                 'state': 'submitted',
                 'is_course_explorer': True,
                 'date_submitted': fields.Date.today(),
-                'progress': 100.0,
+                'progress': manual_completion_progress,
                 'subjects': [(6, 0, resource.subjects.ids)],
             })
             new_state = 'submitted'
@@ -1524,9 +1638,25 @@ class APSResource(models.Model):
                 if grandparent.id not in visited:
                     to_process.append(grandparent)
 
+        progress_data = self._get_course_explorer_progress_data(
+            self.search([]),
+            student.id,
+        )
+        resource_progress = progress_data.get(resource.id, {})
+        for parent_id, update in parent_updates.items():
+            if parent_id in progress_data:
+                update.update({
+                    'progress': progress_data[parent_id]['progress'],
+                    'manualProgress': progress_data[parent_id]['manualProgress'],
+                    'manualProgressMax': progress_data[parent_id]['manualProgressMax'],
+                    'quizProgress': progress_data[parent_id]['quizProgress'],
+                })
+
         return {
             'resourceId': resource.id,
             'newState': new_state,
-            'newProgress': new_progress,
+            'newProgress': resource_progress.get('progress', new_progress),
+            'manualProgress': resource_progress.get('manualProgress', 0.0),
+            'quizProgress': resource_progress.get('quizProgress', 0.0),
             'parentUpdates': parent_updates,
         }

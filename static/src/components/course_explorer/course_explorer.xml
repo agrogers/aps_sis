@@ -243,10 +243,15 @@
                                             t-att-checked="section.checked"
                                             t-on-change="() => this.onToggleCompletion(section.id)"/>
                                         <span class="ce_completion_text">
-                                            <t t-if="section.checked">Completed</t>
-                                            <t t-else="">Completed</t>
+                                            <t t-if="section.checked">Manual completion (<t t-esc="section.manualProgressMax || 100"/>%)</t>
+                                            <t t-else="">Manual completion (0 / <t t-esc="section.manualProgressMax || 100"/>%)</t>
                                         </span>
                                     </label>
+                                    <span class="ce_quiz_completion_text">
+                                        Educational Games:
+                                        <t t-esc="section.quizCompletionPercent || 0"/>%
+                                        (<t t-esc="section.quizAnsweredQuestionCount || 0"/> / <t t-esc="section.quizQuestionCount || 0"/> questions)
+                                    </span>
                                 </div>
                             </t>
 

@@ -472,6 +472,12 @@ export class CourseExplorer extends Component {
                     hasCheckbox: !sec.headingOnly && sec.visible && !!pd,
                     checked: pd ? pd.submissionState === "submitted" : false,
                     progress: pd ? pd.progress : 0,
+                    manualProgress: pd ? (pd.manualProgress || 0) : 0,
+                    manualProgressMax: pd ? (pd.manualProgressMax ?? 100) : 100,
+                    quizProgress: pd ? (pd.quizProgress || 0) : 0,
+                    quizQuestionCount: pd ? (pd.quizQuestionCount || 0) : 0,
+                    quizAnsweredQuestionCount: pd ? (pd.quizAnsweredQuestionCount || 0) : 0,
+                    quizCompletionPercent: pd ? (pd.quizCompletionPercent || 0) : 0,
                 };
             });
             this._forceTreeUpdate();
@@ -485,9 +491,20 @@ export class CourseExplorer extends Component {
             const pd = progressData[node.id];
             if (pd) {
                 node.progress = pd.progress || 0;
+                node.manualProgress = pd.manualProgress || 0;
+                node.manualProgressMax = pd.manualProgressMax ?? 100;
+                node.quizProgress = pd.quizProgress || 0;
+                node.quizQuestionCount = pd.quizQuestionCount || 0;
+                node.quizAnsweredQuestionCount = pd.quizAnsweredQuestionCount || 0;
+                node.quizCompletionPercent = pd.quizCompletionPercent || 0;
                 node.submissionState = pd.submissionState || null;
             } else {
                 node.progress = 0;
+                node.manualProgress = 0;
+                node.quizProgress = 0;
+                node.quizQuestionCount = 0;
+                node.quizAnsweredQuestionCount = 0;
+                node.quizCompletionPercent = 0;
                 node.submissionState = null;
             }
             if (node.children) {
@@ -514,16 +531,25 @@ export class CourseExplorer extends Component {
                         ...sec,
                         checked: result.newState === "submitted",
                         progress: result.newProgress,
+                        manualProgress: result.manualProgress || 0,
+                        manualProgressMax: result.manualProgressMax ?? 100,
+                        quizProgress: result.quizProgress || 0,
                     };
                 }
                 return sec;
             });
             // Update tree node progress
-            this._updateTreeNodeProgress(this.state.tree, resourceId, result.newProgress, result.newState);
+            this._updateTreeNodeProgress(this.state.tree, resourceId, result.newProgress, result.newState, result);
             // Update parent progress
             if (result.parentUpdates) {
                 for (const [parentId, update] of Object.entries(result.parentUpdates)) {
-                    this._updateTreeNodeProgress(this.state.tree, parseInt(parentId), update.progress, null);
+                    this._updateTreeNodeProgress(
+                        this.state.tree,
+                        parseInt(parentId),
+                        update.progress,
+                        null,
+                        update,
+                    );
                 }
             }
             this._forceTreeUpdate();
@@ -532,14 +558,29 @@ export class CourseExplorer extends Component {
         }
     }
 
-    _updateTreeNodeProgress(nodes, resourceId, progress, state) {
+    _updateTreeNodeProgress(nodes, resourceId, progress, state, details = {}) {
         for (const node of nodes) {
             if (node.id === resourceId) {
                 node.progress = progress;
+                if (details.manualProgress !== undefined) {
+                    node.manualProgress = details.manualProgress;
+                }
+                if (details.manualProgressMax !== undefined) {
+                    node.manualProgressMax = details.manualProgressMax;
+                }
+                if (details.quizProgress !== undefined) {
+                    node.quizProgress = details.quizProgress;
+                }
                 if (state !== null) node.submissionState = state;
                 return true;
             }
-            if (node.children && this._updateTreeNodeProgress(node.children, resourceId, progress, state)) {
+            if (node.children && this._updateTreeNodeProgress(
+                node.children,
+                resourceId,
+                progress,
+                state,
+                details,
+            )) {
                 return true;
             }
         }

@@ -234,7 +234,8 @@ class APSResourceSubmissionAutoScore(models.Model):
                 # hidden from the course explorer tree).
                 children_progress = []
                 hierarchy_children = parent_res.child_ids.filtered(
-                    lambda c: c.show_in_hierarchy and c.has_notes != 'no'
+                    lambda c: c.show_in_hierarchy
+                    or record.is_course_explorer
                 )
                 for child in hierarchy_children:
                     child_sub = self.search([

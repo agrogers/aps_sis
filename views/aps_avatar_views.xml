@@ -183,8 +183,14 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='avatar_128']/following-sibling::field[@name='image_1920'][1]" position="replace">
                 <div style="position:relative;display:inline-block;float:right;margin-bottom:10px;">
-                    <field name="image_1920" widget="image" class="oe_avatar"
-                           options='{"zoom": true, "preview_image":"avatar_128"}'/>
+                    <!-- Students may use Preferences, but cannot replace their profile picture. -->
+                    <field name="image_1920" readonly="1" widget="image" class="oe_avatar"
+                           options='{"preview_image":"avatar_128"}'
+                           groups="aps_sis.group_aps_student"/>
+                    <!-- Teachers / Managers may still edit their profile picture. -->
+                    <field name="image_1920" readonly="0" widget="image" class="oe_avatar"
+                           options='{"zoom": true, "preview_image":"avatar_128"}'
+                           groups="aps_sis.group_aps_teacher"/>
                     <field name="avatar_id" widget="avatar_selector"/>
                 </div>
             </xpath>
