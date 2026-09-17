@@ -1,5 +1,6 @@
 import re
 import logging
+import time
 from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from markupsafe import Markup
@@ -1013,6 +1014,7 @@ class APSResource(models.Model):
         """
         self.ensure_one()
         html = self.notes or ''
+        html = self._remove_course_explorer_table_of_contents(html)
         if any(
             (tag.name or '').strip().casefold()
             == _COURSE_EXPLORER_HIDE_CHILD_NOTES_TAG
@@ -1028,6 +1030,24 @@ class APSResource(models.Model):
         #   if changed:
         #       self.sudo().with_context(_skip_image_ratio_hook=True).write({'notes': html})
         return (Markup(html) if html else False), self.id
+
+    @staticmethod
+    def _remove_course_explorer_table_of_contents(html):
+        """Remove Odoo editor table-of-contents embeds from Course Explorer HTML.
+
+        The generated Course Explorer page has its own heading navigation, so
+        the editor's ``tableOfContent`` embed is redundant and is not rendered
+        correctly in this client action.
+        """
+        if not html:
+            return html
+        return re.sub(
+            r'<div\b[^>]*\bdata-embedded=["\']tableOfContent["\'][^>]*>'
+            r'(?:.*?</div\s*>|\s*/>)',
+            '',
+            html,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
 
     @staticmethod
     def _truncate_course_explorer_notes(html):
@@ -1064,6 +1084,12 @@ class APSResource(models.Model):
             dict with keys ``tree`` (list of root node dicts) and
             ``contentSections`` (list of section dicts).
         """
+        started_at = time.perf_counter()
+        _logger.info(
+            "Course Explorer: building data for subject category %s",
+            subject_category_id or 'all',
+        )
+
         # Base domain: hierarchy-visible resources
         base_domain = [('show_in_hierarchy', '=', True)]
         if subject_category_id:
@@ -1074,6 +1100,11 @@ class APSResource(models.Model):
         all_hier.mapped('parent_ids')
         all_hier.mapped('primary_parent_id')
         all_hier.mapped('subject_categories')
+        _logger.info(
+            "Course Explorer: loaded %d hierarchy resources in %.3fs",
+            len(all_hier),
+            time.perf_counter() - started_at,
+        )
 
         # Resources that have notes (or use_parent)
         has_notes_res = all_hier.filtered(lambda r: r.has_notes != 'no')
@@ -1089,10 +1120,18 @@ class APSResource(models.Model):
         # All resources that appear in the tree
         all_resources = has_notes_res | extra_parents
         filtered_ids = set(all_resources.ids)
+        _logger.info(
+            "Course Explorer: selected %d content/structural resources "
+            "(%d with notes, %d structural parents)",
+            len(all_resources),
+            len(has_notes_res),
+            len(extra_parents),
+        )
 
-        # Identify parents whose notes are "suppressed" because they have
-        # children that use_parent.  These parents get a heading-only
-        # section (no HTML content).
+        # Identify parents whose notes need to be truncated because they have
+        # children that use_parent.  The parent keeps the introductory content
+        # before the first child heading; the children render the sections
+        # below those headings.
         suppressed_parents = set()
         for res in all_resources:
             if res.has_notes == 'yes':
@@ -1104,39 +1143,30 @@ class APSResource(models.Model):
                     suppressed_parents.add(res.id)
 
         # Build sections_map:
-        # - Parents with has_notes='yes' that are suppressed → heading-only
+        # - Parents with has_notes='yes' that are suppressed → prefix + heading
         # - Children with has_notes='use_parent' → resolved notes + heading
         # - Other has_notes='yes' resources → own notes + heading
         # - No deduplication: each child gets unique resolved content
         sections_map = {}
 
         for res in all_resources:
-            if res.id in suppressed_parents:
-                # Parent whose notes are suppressed: heading only, no HTML
-                sections_map[res.id] = {
-                    'id': res.id,
-                    'name': res.name or '',
-                    'html': '',
-                    'visible': True,
-                    'headingOnly': True,
-                    'resolvedFrom': False,
-                }
-            else:
-                notes_html, source_id = res._resolve_notes()
-                if not notes_html:
-                    continue
-                highlight_source, highlight_field = res._resolve_image_viewer_highlight_target('notes')
-                sections_map[res.id] = {
-                    'id': res.id,
-                    'name': res.name or '',
-                    'html': notes_html,
-                    'visible': True,
-                    'headingOnly': False,
-                    'resolvedFrom': source_id if source_id != res.id else False,
-                    'highlightSourceModel': highlight_source._name,
-                    'highlightSourceId': highlight_source.id,
-                    'highlightSourceField': highlight_field,
-                }
+            notes_html, source_id = res._resolve_notes()
+            if res.id in suppressed_parents and notes_html:
+                notes_html = Markup(self._truncate_course_explorer_notes(str(notes_html)))
+            if not notes_html and res.id not in suppressed_parents:
+                continue
+            highlight_source, highlight_field = res._resolve_image_viewer_highlight_target('notes')
+            sections_map[res.id] = {
+                'id': res.id,
+                'name': res.name or '',
+                'html': notes_html or '',
+                'visible': True,
+                'headingOnly': not bool(notes_html),
+                'resolvedFrom': source_id if source_id != res.id else False,
+                'highlightSourceModel': highlight_source._name,
+                'highlightSourceId': highlight_source.id,
+                'highlightSourceField': highlight_field,
+            }
 
         # Determine root nodes: resources whose parents are NOT in
         # the filtered set (or have no parents at all).
@@ -1230,6 +1260,12 @@ class APSResource(models.Model):
 
         _assign_section_ids(tree)
 
+        _logger.info(
+            "Course Explorer: built tree and %d content sections in %.3fs",
+            len(sections_map),
+            time.perf_counter() - started_at,
+        )
+
         # Enrich each section with quiz-type child/supporting resources.
         # A quiz is any resource whose type has assessment=True.
         # Pre-fetch task data for the current student in a single query.
@@ -1251,6 +1287,13 @@ class APSResource(models.Model):
             ])
             for task in tasks:
                 task_map[task.resource_id.id] = task
+        _logger.info(
+            "Course Explorer: quiz lookup found %d quiz resources and %d "
+            "student tasks in %.3fs",
+            len(quiz_resource_ids),
+            len(task_map),
+            time.perf_counter() - started_at,
+        )
 
         for res in all_resources:
             sec = sections_map.get(res.id)
@@ -1331,6 +1374,15 @@ class APSResource(models.Model):
 
         _collect_sections(tree)
 
+        _logger.info(
+            "Course Explorer: finished category %s in %.3fs "
+            "(%d tree roots, %d sections)",
+            subject_category_id or 'all',
+            time.perf_counter() - started_at,
+            len(tree),
+            len(ordered_sections),
+        )
+
         return {
             'tree': tree,
             'contentSections': ordered_sections,
@@ -1371,7 +1423,14 @@ class APSResource(models.Model):
         progress reflects the combined child values rather than the stored
         manual-only submission progress.
         """
+        started_at = time.perf_counter()
         quiz_progress = self._get_course_explorer_quiz_progress(resources, student_id)
+        _logger.info(
+            "Course Explorer progress: quiz progress completed for %d resources "
+            "in %.3fs",
+            len(resources),
+            time.perf_counter() - started_at,
+        )
         if quiz_progress is None:
             result = {}
             for resource in resources:
@@ -1382,12 +1441,26 @@ class APSResource(models.Model):
         resource_ids = set(resources.ids)
         progress_by_id = {}
 
+        submission_started_at = time.perf_counter()
+        submissions = self.env['aps.resource.submission'].search([
+            ('task_id.resource_id', 'in', list(resource_ids)),
+            ('task_id.student_id', '=', student_id),
+            ('is_course_explorer', '=', True),
+        ], order='date_assigned desc, id desc')
+        latest_submission_by_resource = {}
+        for submission in submissions:
+            resource_id = submission.task_id.resource_id.id
+            if resource_id not in latest_submission_by_resource:
+                latest_submission_by_resource[resource_id] = submission
+        _logger.info(
+            "Course Explorer progress: batched submission query took %.3fs "
+            "(%d submissions)",
+            time.perf_counter() - submission_started_at,
+            len(submissions),
+        )
+
         for resource in resources:
-            submission = self.env['aps.resource.submission'].search([
-                ('task_id.resource_id', '=', resource.id),
-                ('task_id.student_id', '=', student_id),
-                ('is_course_explorer', '=', True),
-            ], order='date_assigned desc, id desc', limit=1)
+            submission = latest_submission_by_resource.get(resource.id)
             quiz_data = dict(quiz_progress.get(resource.id, {}))
             has_quiz_questions = bool(quiz_data.get('quizQuestionCount', 0))
             manual_max = 50.0 if has_quiz_questions else 100.0
@@ -1402,6 +1475,12 @@ class APSResource(models.Model):
                 'hasCheckbox': resource.has_notes != 'no',
                 **quiz_data,
             }
+        _logger.info(
+            "Course Explorer progress: submission lookup completed for %d "
+            "resources in %.3fs",
+            len(resources),
+            time.perf_counter() - started_at,
+        )
 
         computed = {}
         active = set()
@@ -1437,6 +1516,11 @@ class APSResource(models.Model):
 
         for resource in resources:
             _combined_progress(resource)
+
+        _logger.info(
+            "Course Explorer progress: hierarchy aggregation completed in %.3fs",
+            time.perf_counter() - started_at,
+        )
 
         result = {}
         for resource in resources:
@@ -1499,6 +1583,7 @@ class APSResource(models.Model):
         Returns:
             dict mapping resource_id -> progress data
         """
+        started_at = time.perf_counter()
         if not student_id:
             return {}
 
@@ -1516,8 +1601,18 @@ class APSResource(models.Model):
                     extra_parents |= parent
 
         all_resources = has_notes_res | extra_parents
-
-        return self._get_course_explorer_progress_data(all_resources, student_id)
+        _logger.info(
+            "Course Explorer progress: loaded %d resources in %.3fs",
+            len(all_resources),
+            time.perf_counter() - started_at,
+        )
+        result = self._get_course_explorer_progress_data(all_resources, student_id)
+        _logger.info(
+            "Course Explorer progress: finished in %.3fs (%d results)",
+            time.perf_counter() - started_at,
+            len(result),
+        )
+        return result
 
     @api.model
     def toggle_resource_completion(self, resource_id):

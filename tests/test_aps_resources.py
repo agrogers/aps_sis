@@ -154,6 +154,71 @@ class TestAPSResource(TransactionCase):
         self.assertEqual(section['highlightSourceId'], parent.id)
         self.assertEqual(section['highlightSourceField'], 'notes')
 
+    def test_course_explorer_data_keeps_parent_notes_before_child_headings(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Parent Prefix Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Parent Prefix Subject',
+            'category_id': category.id,
+        })
+        parent = self.env['aps.resources'].create({
+            'name': 'Unit 1',
+            'has_notes': 'yes',
+            'notes': (
+                '<p>Introductory image and notes.</p>'
+                '<h2>Chapter 1.1</h2><p>Chapter content.</p>'
+            ),
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+        child = self.env['aps.resources'].create({
+            'name': 'Chapter 1.1',
+            'has_notes': 'use_parent',
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [parent.id])],
+            'primary_parent_id': parent.id,
+            'subjects': [(6, 0, [subject.id])],
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        sections = {section['id']: section for section in result['contentSections']}
+
+        self.assertEqual(
+            sections[parent.id]['html'],
+            '<p>Introductory image and notes.</p>',
+        )
+        self.assertFalse(sections[parent.id]['headingOnly'])
+        self.assertIn('Chapter content.', str(sections[child.id]['html']))
+
+    def test_course_explorer_data_hides_embedded_table_of_contents(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Table of Contents Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Table of Contents Subject',
+            'category_id': category.id,
+        })
+        resource = self.env['aps.resources'].create({
+            'name': 'Resource with TOC',
+            'has_notes': 'yes',
+            'notes': (
+                '<div data-embedded="tableOfContent" data-oe-version="1.1"></div>'
+                '<p>Visible resource content.</p>'
+            ),
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        section = next(
+            section for section in result['contentSections']
+            if section['id'] == resource.id
+        )
+
+        self.assertNotIn('data-embedded="tableOfContent"', str(section['html']))
+        self.assertIn('Visible resource content.', str(section['html']))
+
     def test_breadcrumb_last_pill_has_parent_id(self):
         """The second-to-last breadcrumb entry provides the parent_id used
         to query siblings from the frontend widget."""

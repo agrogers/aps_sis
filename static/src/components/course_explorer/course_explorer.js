@@ -151,12 +151,28 @@ export class CourseExplorer extends Component {
         this._observer = null;
 
         onWillStart(async () => {
+            const startedAt = performance.now();
             this.state.isManager = await user.hasGroup("aps_sis.group_aps_manager");
+            console.info(
+                "Course Explorer: group check completed in %dms",
+                Math.round(performance.now() - startedAt),
+            );
+            const categoriesStartedAt = performance.now();
             await this._loadSubjectCategories();
+            console.info(
+                "Course Explorer: subject categories loaded in %dms (%d categories)",
+                Math.round(performance.now() - categoriesStartedAt),
+                this.state.subjectCategories.length,
+            );
             await this._loadData();
+            console.info(
+                "Course Explorer: initial load completed in %dms",
+                Math.round(performance.now() - startedAt),
+            );
         });
 
         onMounted(() => {
+            const startedAt = performance.now();
             this._restoreScroll();
             this._setupScrollObserver();
             this._setupScrollListener();
@@ -165,6 +181,10 @@ export class CourseExplorer extends Component {
             this._scanResourceToc();
             this._renderMathIfNeeded();
             this._setupTooltips();
+            console.info(
+                "Course Explorer: mounted DOM enhancements in %dms",
+                Math.round(performance.now() - startedAt),
+            );
         });
 
         onPatched(() => {
@@ -415,10 +435,15 @@ export class CourseExplorer extends Component {
         }
         this.state.loading = true;
         try {
+            const startedAt = performance.now();
             const result = await this.orm.call(
                 "aps.resources",
                 "get_course_explorer_data",
                 [this.state.selectedCategoryId],
+            );
+            console.info(
+                "Course Explorer: data RPC completed in %dms",
+                Math.round(performance.now() - startedAt),
             );
             if (requestId !== this._loadDataRequestId) {
                 return;
@@ -451,17 +476,27 @@ export class CourseExplorer extends Component {
 
     async _loadProgressData(requestId = this._loadDataRequestId) {
         try {
+            const startedAt = performance.now();
             // Current user's partner ID is available directly from the user service
             const partnerId = user.partnerId;
-            if (!partnerId) return;
+            if (!partnerId) {
+                console.info("Course Explorer: progress skipped; no partner ID");
+                return;
+            }
             const progressData = await this.orm.call(
                 "aps.resources",
                 "get_course_explorer_progress",
                 [partnerId],
             );
+            console.info(
+                "Course Explorer: progress RPC completed in %dms (%d resources)",
+                Math.round(performance.now() - startedAt),
+                Object.keys(progressData || {}).length,
+            );
             if (requestId !== this._loadDataRequestId) {
                 return;
             }
+            const applyStartedAt = performance.now();
             // Apply progress to tree nodes
             this._applyProgressToTree(this.state.tree, progressData);
             // Apply progress to content sections (hasCheckbox for visible sections)
@@ -481,6 +516,10 @@ export class CourseExplorer extends Component {
                 };
             });
             this._forceTreeUpdate();
+            console.info(
+                "Course Explorer: applied progress and updated state in %dms",
+                Math.round(performance.now() - applyStartedAt),
+            );
         } catch (err) {
             console.error("CourseExplorer: failed to load progress", err);
         }
