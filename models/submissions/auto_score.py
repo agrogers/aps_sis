@@ -36,8 +36,16 @@ class APSResourceSubmissionAutoScore(models.Model):
                 continue
 
             # Only include children that contribute to the parent score
-            contributing_children = child_resources.filtered(lambda r: r.score_contributes_to_parent)
+            contributing_children = child_resources.filtered(
+                lambda resource: resource.score_contributes_to_parent
+            )
             if not contributing_children:
+                record.with_context(skip_markbook_submission_sync=False).write({
+                    'score': sentinel_zero,
+                    'out_of_marks': 0.0,
+                    'answer': False,
+                    'auto_score': True,
+                })
                 continue
 
             base_domain = [
@@ -63,6 +71,12 @@ class APSResourceSubmissionAutoScore(models.Model):
             )
 
             if not child_submissions:
+                record.with_context(skip_markbook_submission_sync=False).write({
+                    'score': sentinel_zero,
+                    'out_of_marks': 0.0,
+                    'answer': False,
+                    'auto_score': True,
+                })
                 continue
 
             # Deduplicate: for each contributing child resource keep only the
@@ -98,7 +112,6 @@ class APSResourceSubmissionAutoScore(models.Model):
                     f"{name}) Score: {self._fmt_num(score)}/{self._fmt_num(out_of)}"
                 )
                 total_score += score
-                # # Only count out_of_marks for submitted/complete children so the
                 # # denominator reflects questions actually submitted so far.
                 # if child_sub.state in ('submitted', 'complete'):
                 total_out_of += out_of
@@ -113,7 +126,9 @@ class APSResourceSubmissionAutoScore(models.Model):
             summary_html = '<p>' + '</p><p>'.join(all_lines) + '</p>'
 
             # Pass auto_score=True explicitly so write() does not flip the flag back to False
-            record.write({
+            # Clear the suppression context inherited from a Markbook child
+            # write so this calculated parent can update its Markbook row.
+            record.with_context(skip_markbook_submission_sync=False).write({
                 'score': new_score,
                 'answer': summary_html,
                 'out_of_marks': total_out_of,
