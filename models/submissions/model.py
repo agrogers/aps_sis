@@ -177,6 +177,7 @@ class APSResourceSubmission(models.Model):
         ('late', 'Late'),
         ('on-time', 'On Time'),
         ('early', 'Early'),
+        ('not_submitted', 'Not Submitted'),
     ], string='Due Status', compute='_compute_due_status', store=True)
     days_till_due = fields.Integer(compute='_compute_days_till_due', store=True)  # creates a class used to highlight records when they are nearing their due date
     actual_duration = fields.Float(string='Actual Duration (hours)', digits=(16, 1))
@@ -513,6 +514,14 @@ class APSResourceSubmission(models.Model):
         
         now = fields.Date.today()
         for record in self:
+            if (
+                record.date_due
+                and not record.date_submitted
+                and record.state == 'complete'
+                and now > fields.Date.add(record.date_due, days=14)
+            ):
+                record.due_status = 'not_submitted'
+                continue
            
             # Use completion date if submission is complete, otherwise use current date
             # Handle case where date_submitted is not set yet during state transition
@@ -539,6 +548,23 @@ class APSResourceSubmission(models.Model):
                 else:  
                     # If due date has passed, then the submission is late regardless of State
                     record.due_status = 'late'
+
+    @api.model
+    def cron_mark_not_submitted(self):
+        """Finalize assigned submissions with no work two weeks after the due date."""
+        cutoff_date = fields.Date.add(fields.Date.today(), days=-14)
+        submissions = self.search([
+            ('state', '=', 'assigned'),
+            ('date_submitted', '=', False),
+            ('date_due', '!=', False),
+            ('date_due', '<=', cutoff_date),
+        ])
+        if submissions:
+            submissions.write({
+                'state': 'complete',
+                'date_completed': fields.Date.today(),
+            })
+        return True
 
     @api.depends()
     def _compute_is_current_user_faculty(self):

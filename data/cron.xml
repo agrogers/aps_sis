@@ -54,6 +54,17 @@
         <field name="nextcall" eval="(datetime.now() + relativedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 
+    <record id="cron_mark_submissions_not_submitted" model="ir.cron">
+        <field name="name">Mark APEX Submissions Not Submitted</field>
+        <field name="model_id" ref="model_aps_resource_submission"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_mark_not_submitted()</field>
+        <field name="active">False</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(datetime.now() + relativedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
     <record id="cron_auto_assign_resources" model="ir.cron">
         <field name="name">Auto Assign APEX Resources to Students</field>
         <field name="model_id" ref="model_aps_resources"/>

@@ -115,6 +115,14 @@ class APSResource(models.Model):
         # Ensure primary_parent_id stays consistent after any write
         self._sync_primary_parent()
 
+        if 'marks' in vals:
+            non_finalised_submissions = self.env['aps.resource.submission'].search([
+                ('resource_id', 'in', self.ids),
+                ('state', '!=', 'finalised'),
+            ])
+            if non_finalised_submissions:
+                non_finalised_submissions.write({'out_of_marks': vals['marks']})
+
         if 'score_contributes_to_parent' in vals:
             # When the contribution flag changes, re-trigger parent score recalculation
             # for every parent resource that has auto_score submissions.
