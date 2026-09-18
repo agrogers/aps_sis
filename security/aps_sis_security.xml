@@ -19,6 +19,20 @@
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
         </record>
 
+        <record id="rule_aps_submission_course_explorer_student" model="ir.rule">
+            <field name="name">Student (APEX): Own Course Explorer Submissions</field>
+            <field name="model_id" ref="model_aps_resource_submission"/>
+            <field name="domain_force">
+                [('student_id', '=', user.partner_id.id),
+                 ('is_course_explorer', '=', True)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
         <!-- Record Rules for Teachers:
              Teachers see records they created OR records linked to subjects they teach.
              "Subjects they teach" = aps.class rows (current academic year) where the

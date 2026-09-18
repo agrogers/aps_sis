@@ -183,7 +183,8 @@
             <!-- ── Right Pane (content viewer) ────────────────────── -->
             <div class="ce_right_pane" t-ref="contentPane" t-key="state.contentVersion">
 
-                <aside class="ce_resource_toc"
+                <aside t-if="resourceTocForActiveSection.length"
+                       class="ce_resource_toc"
                        t-att-class="state.resourceTocCollapsed ? 'is-collapsed' : ''">
                     <button t-if="resourceTocForActiveSection.length"
                             type="button" class="ce_resource_toc_toggle"
