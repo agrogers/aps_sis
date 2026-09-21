@@ -41,6 +41,14 @@ class APSResourceAIFeedback(models.Model):
                 'Please enter a test answer in the "Test Answer" field before running the AI mark.'
             ),
             'prompt_ids': self.ai_active_prompts,
+            'image_prompt_names': self.ai_active_prompts.mapped('prompt_name'),
+            'image_sources': {
+                'student_answer': student_answer,
+                'question': self.question or '',
+                'model_answer': self.answer or '',
+                'instructions': self.ai_instructions or '',
+                'notes': self.notes or '',
+            },
         }
 
     def _get_ai_feedback_result_write_vals(self, result):
@@ -61,8 +69,16 @@ class APSResourceAIFeedback(models.Model):
             raise UserError(_('AI Action must not be "None" to preview the prompt.'))
 
         AIModel = self.env['aps.ai.model']
-        candidates = AIModel._get_generation_candidates(resource=self)
+        context = self._build_ai_feedback_ctx(include_reasoning=False)
+        candidates = AIModel._get_generation_candidates(
+            resource=self,
+            require_vision=AIModel._feedback_context_requires_vision(context),
+        )
         if not candidates:
+            if AIModel._feedback_context_requires_vision(context):
+                raise UserError(_(
+                    'Images are present, but no enabled vision-capable AI model is configured.'
+                ))
             raise UserError(_('No enabled AI models are configured.'))
         model = candidates[0]
 
@@ -89,6 +105,14 @@ class APSResourceAIFeedback(models.Model):
         for msg in messages:
             role = (msg.get('role') or '').upper()
             content = msg.get('content') or ''
+            if isinstance(content, list):
+                preview_parts = []
+                for part in content:
+                    if (part or {}).get('type') == 'image_url':
+                        preview_parts.append('[image content redacted from preview]')
+                    else:
+                        preview_parts.append((part or {}).get('text') or '')
+                content = '\n'.join(preview_parts)
             lines.append('─' * 60)
             lines.append(f'[{role}]')
             lines.append(content)

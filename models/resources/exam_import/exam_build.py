@@ -11,6 +11,16 @@ from odoo.exceptions import UserError, ValidationError
 _logger = logging.getLogger(__name__)
 
 
+# Situation	Minimum / rule
+# -------------------------------------------------------------------
+# Editor drag width/height	8 px
+# Backend safety width/height	1 px
+# Manual crop width below which it expands	150 px
+# Minimum marker separation for detected crops	2.5% of page height
+# Gap above next marker	6 px
+# Manual crop minimum height expansion	None currently
+
+
 class APSExamPaperImportBuild(models.Model):
     _inherit = 'aps.exam.paper.import'
 
@@ -175,7 +185,7 @@ class APSExamPaperImportBuild(models.Model):
                 bottom = int(round(float(region['y2'])))
             except (KeyError, TypeError, ValueError):
                 raise ValidationError(_('Manually edited regions must contain pixel x1, y1, x2 and y2 bounds.'))
-            if right - left < 150:  # This is a little arbitary. Alsmost always we want full width images. This needs to be wide enough to handle when a question label eg 1(a)(i) gets long
+            if right - left < 250:  # This is a little arbitary. Alsmost always we want full width images. This needs to be wide enough to handle when a question label eg 1(a)(i) gets long
                 left = self._CROP_LEFT
                 right = page.width - self._CROP_RIGHT
             left = max(0, min(page.width - 1, left))
@@ -225,7 +235,15 @@ class APSExamPaperImportBuild(models.Model):
             self._append_image_update_log(section, '%s: found %s region(s), label positions on page(s): %s.' % (
                 document_type, len(regions), ', '.join(str(page) for page in sorted(label_positions)) or 'none',
             ))
-        for index, region in enumerate(regions, 1):
+        indexed_regions = list(enumerate(regions))
+        indexed_regions.sort(
+            key=lambda item: (
+                self._region_page_number(item[1]) is None,
+                self._region_page_number(item[1]) or 0,
+                item[0],
+            ),
+        )
+        for index, (_, region) in enumerate(indexed_regions, 1):
             page_number = region.get('page_number')
             if not page_number:
                 pages = [value for value in (section.question_pages if document_type == 'question' else section.answer_pages or '').split(',') if value]
@@ -260,6 +278,13 @@ class APSExamPaperImportBuild(models.Model):
             seen.add(key)
             images.append((page, bounds))
         return images
+
+    @staticmethod
+    def _region_page_number(region):
+        try:
+            return int(region.get('page_number'))
+        except (AttributeError, TypeError, ValueError):
+            return None
 
     def _remove_section_images(self, resource, section):
         marker = 'aps_exam_import_section:%s' % section.id

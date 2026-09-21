@@ -104,6 +104,14 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'include_reasoning': include_reasoning,
             'empty_answer_error': _('The submission has no student answer to mark.'),
             'prompt_ids': self.resource_id.ai_active_prompts,
+            'image_prompt_names': self.resource_id.ai_active_prompts.mapped('prompt_name'),
+            'image_sources': {
+                'student_answer': self.answer or '',
+                'question': self.question or '',
+                'model_answer': self.model_answer or '',
+                'instructions': self.ai_instructions or '',
+                'notes': self.resource_notes or '',
+            },
         }
 
     def _validate_ai_marking_request(self):

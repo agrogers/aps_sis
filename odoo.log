@@ -134,3 +134,234 @@
 2026-08-29 16:40:52,131 25908 ERROR odoov18B_20260611 odoo.modules.registry: Model ar_markbook.markbook_gradebook has no table. 
 2026-08-29 16:40:53,412 25908 ERROR odoov18B_20260611 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
 2026-08-29 16:40:53,856 25908 ERROR odoov18B_20260611 odoo.modules.registry: Model ar_markbook.markbook_gradebook has no table. 
+2026-09-21 19:14:30,658 499732 INFO ? odoo: Odoo version 18.0 
+2026-09-21 19:14:30,659 499732 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-09-21 19:14:30,659 499732 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-09-21 19:14:30,659 499732 INFO ? odoo: database: odoo@localhost:5432 
+2026-09-21 19:14:30,933 499732 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-09-21 19:14:30,973 499732 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-09-21 19:14:32,861 499732 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-09-21 19:14:32,977 499732 INFO mvis1 odoo.tests.common: Importing test framework 
+2026-09-21 19:14:33,192 499732 INFO mvis1 odoo.modules.loading: loading 1 modules... 
+2026-09-21 19:14:33,198 499732 INFO mvis1 odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-09-21 19:14:33,233 499732 INFO mvis1 odoo.modules.loading: updating modules list 
+2026-09-21 19:14:33,249 499732 INFO mvis1 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-09-21 19:14:33,769 499732 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-09-21 19:14:33,907 499732 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-09-21 19:14:34,022 499732 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-09-21 19:14:34,024 499732 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-09-21 19:14:34,045 499732 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-09-21 19:14:34,817 499732 WARNING mvis1 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-09-21 19:14:34,901 499732 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-09-21 19:14:35,389 499732 INFO mvis1 odoo.modules.loading: loading 12 modules... 
+2026-09-21 19:14:36,065 499732 INFO mvis1 odoo.modules.loading: 12 modules loaded in 0.68s, 0 queries (+0 extra) 
+2026-09-21 19:14:36,422 499732 INFO mvis1 odoo.modules.loading: Modules loaded. 
+2026-09-21 19:14:36,434 499732 INFO mvis1 odoo.modules.registry: Registry changed, signaling through the database 
+2026-09-21 19:14:36,436 499732 INFO mvis1 odoo.modules.registry: Registry loaded in 3.573s 
+2026-09-21 19:14:36,442 499732 INFO mvis1 odoo.service.server: Starting post tests 
+2026-09-21 19:14:36,443 499732 INFO mvis1 odoo.service.server: 0 post-tests in 0.00s, 0 queries 
+2026-09-21 19:14:36,443 499732 WARNING mvis1 odoo.tests.result: 0 failed, 0 error(s) of 0 tests when loading database 'mvis1' 
+2026-09-21 19:14:36,443 499732 INFO mvis1 odoo.service.server: Initiating shutdown 
+2026-09-21 19:14:36,443 499732 INFO mvis1 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-21 19:14:36,934 499732 INFO mvis1 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+2026-09-21 19:14:49,174 504760 INFO ? odoo: Odoo version 18.0 
+2026-09-21 19:14:49,174 504760 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-09-21 19:14:49,174 504760 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-09-21 19:14:49,174 504760 INFO ? odoo: database: odoo@localhost:5432 
+2026-09-21 19:14:49,333 504760 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-09-21 19:14:49,352 504760 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-09-21 19:14:50,936 504760 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-09-21 19:14:50,978 504760 INFO mvis1 odoo.tests.common: Importing test framework 
+2026-09-21 19:14:51,033 504760 INFO mvis1 odoo.modules.loading: loading 1 modules... 
+2026-09-21 19:14:51,037 504760 INFO mvis1 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-21 19:14:51,054 504760 INFO mvis1 odoo.modules.loading: updating modules list 
+2026-09-21 19:14:51,057 504760 INFO mvis1 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-09-21 19:14:51,137 504760 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-09-21 19:14:51,189 504760 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-09-21 19:14:51,239 504760 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-09-21 19:14:51,240 504760 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-09-21 19:14:51,249 504760 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-09-21 19:14:51,666 504760 WARNING mvis1 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-09-21 19:14:51,711 504760 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-09-21 19:14:51,957 504760 INFO mvis1 odoo.modules.loading: loading 12 modules... 
+2026-09-21 19:14:52,246 504760 INFO mvis1 odoo.modules.loading: 12 modules loaded in 0.29s, 0 queries (+0 extra) 
+2026-09-21 19:14:52,450 504760 INFO mvis1 odoo.modules.loading: Modules loaded. 
+2026-09-21 19:14:52,458 504760 INFO mvis1 odoo.modules.registry: Registry changed, signaling through the database 
+2026-09-21 19:14:52,459 504760 INFO mvis1 odoo.modules.registry: Registry loaded in 1.523s 
+2026-09-21 19:14:52,462 504760 INFO mvis1 odoo.service.server: Starting post tests 
+2026-09-21 19:14:52,463 504760 INFO mvis1 odoo.service.server: 0 post-tests in 0.00s, 0 queries 
+2026-09-21 19:14:52,463 504760 WARNING mvis1 odoo.tests.result: 0 failed, 0 error(s) of 0 tests when loading database 'mvis1' 
+2026-09-21 19:14:52,463 504760 INFO mvis1 odoo.service.server: Initiating shutdown 
+2026-09-21 19:14:52,463 504760 INFO mvis1 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-21 19:14:52,468 504760 INFO mvis1 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+2026-09-21 19:25:31,884 509380 INFO ? odoo: Odoo version 18.0 
+2026-09-21 19:25:31,884 509380 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-09-21 19:25:31,884 509380 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-09-21 19:25:31,885 509380 INFO ? odoo: database: odoo@localhost:5432 
+2026-09-21 19:25:32,106 509380 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-09-21 19:25:32,141 509380 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-09-21 19:25:33,982 509380 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-09-21 19:25:34,080 509380 INFO mvis1 odoo.tests.common: Importing test framework 
+2026-09-21 19:25:34,162 509380 INFO mvis1 odoo.modules.loading: loading 1 modules... 
+2026-09-21 19:25:34,167 509380 INFO mvis1 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-21 19:25:34,188 509380 INFO mvis1 odoo.modules.loading: updating modules list 
+2026-09-21 19:25:34,194 509380 INFO mvis1 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-09-21 19:25:34,338 509380 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-09-21 19:25:34,437 509380 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-09-21 19:25:34,524 509380 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-09-21 19:25:34,526 509380 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-09-21 19:25:34,552 509380 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-09-21 19:25:35,153 509380 WARNING mvis1 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-09-21 19:25:35,207 509380 WARNING mvis1 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-09-21 19:25:35,538 509380 INFO mvis1 odoo.modules.loading: loading 12 modules... 
+2026-09-21 19:25:35,979 509380 INFO mvis1 odoo.modules.loading: 12 modules loaded in 0.44s, 0 queries (+0 extra) 
+2026-09-21 19:25:36,220 509380 INFO mvis1 odoo.modules.loading: Modules loaded. 
+2026-09-21 19:25:36,245 509380 INFO mvis1 odoo.modules.registry: Registry changed, signaling through the database 
+2026-09-21 19:25:36,246 509380 INFO mvis1 odoo.modules.registry: Registry loaded in 2.262s 
+2026-09-21 19:25:36,253 509380 INFO mvis1 odoo.service.server: Starting post tests 
+2026-09-21 19:25:36,253 509380 INFO mvis1 odoo.service.server: 0 post-tests in 0.00s, 0 queries 
+2026-09-21 19:25:36,253 509380 WARNING mvis1 odoo.tests.result: 0 failed, 0 error(s) of 0 tests when loading database 'mvis1' 
+2026-09-21 19:25:36,253 509380 INFO mvis1 odoo.service.server: Initiating shutdown 
+2026-09-21 19:25:36,253 509380 INFO mvis1 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-21 19:25:36,530 509380 INFO mvis1 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
