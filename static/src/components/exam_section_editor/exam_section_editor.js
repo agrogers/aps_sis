@@ -125,6 +125,26 @@ export class ExamSectionRegionEditor extends Component {
         this.state.draft = this.state.edits[key]
             ? { ...this.state.edits[key] }
             : { ...region.region };
+        requestAnimationFrame(() => this._scrollSelectedRegionIntoView());
+    }
+
+    _scrollSelectedRegionIntoView() {
+        const overlay = document.querySelector(".o_exam_region_overlay");
+        const preview = overlay?.closest(".o_exam_region_editor_page");
+        if (!overlay || !preview) {
+            return;
+        }
+        const overlayRect = overlay.getBoundingClientRect();
+        const previewRect = preview.getBoundingClientRect();
+        const verticalOffset = overlayRect.top - previewRect.top
+            - (preview.clientHeight - overlayRect.height) / 2;
+        const horizontalOffset = overlayRect.left - previewRect.left
+            - (preview.clientWidth - overlayRect.width) / 2;
+        preview.scrollTo({
+            top: preview.scrollTop + verticalOffset,
+            left: preview.scrollLeft + horizontalOffset,
+            behavior: "smooth",
+        });
     }
 
     _regionKey(region) {
@@ -135,9 +155,16 @@ export class ExamSectionRegionEditor extends Component {
 
     _stashDraft() {
         if (this.state.selected && this.state.draft) {
-            this.state.edits[this._regionKey(this.state.selected)] = {
-                ...this.state.draft,
-            };
+            const key = this._regionKey(this.state.selected);
+            const original = this.state.selected.region;
+            const boundsChanged = ["x1", "y1", "x2", "y2"].some(
+                (bound) => this.state.draft[bound] !== original[bound]
+            );
+            if (boundsChanged) {
+                this.state.edits[key] = { ...this.state.draft };
+            } else {
+                delete this.state.edits[key];
+            }
         }
     }
 
@@ -231,8 +258,8 @@ export class ExamSectionRegionEditor extends Component {
                 "aps.exam.paper.section", "save_region_editor_changes",
                 [[this.state.data.id], edits, additions]
             );
+            await this.loadSection(this.state.data.id);
             this.notification.add("Region saved.", { type: "success" });
-            this.state.edits = {};
             if (closeAfterSave) this.close();
         } finally {
             this.state.saving = false;
