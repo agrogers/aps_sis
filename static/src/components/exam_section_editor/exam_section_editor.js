@@ -118,6 +118,14 @@ export class ExamSectionRegionEditor extends Component {
     }
 
     async save() {
+        return this._save(false);
+    }
+
+    async saveAndClose() {
+        return this._save(true);
+    }
+
+    async _save(closeAfterSave) {
         if (!this.state.selected || !this.state.draft) return;
         this._stashDraft();
         this.state.saving = true;
@@ -131,10 +139,26 @@ export class ExamSectionRegionEditor extends Component {
                 );
             }));
             this.notification.add("Region saved.", { type: "success" });
-            this.close();
+            this.state.edits = {};
+            if (closeAfterSave) this.close();
         } finally {
             this.state.saving = false;
         }
+    }
+
+    async deletePage(event, region) {
+        event.stopPropagation();
+        if (!window.confirm(`Delete Page ${region.page_number}?`)) return;
+        await this.orm.call(
+            "aps.exam.paper.section", "delete_region_editor_page",
+            [[this.state.data.id], region.page_id]
+        );
+        this.state.data = await this.orm.call(
+            "aps.exam.paper.section", "get_region_editor_data", [[this.state.data.id]]
+        );
+        this.state.selected = null;
+        this.state.draft = null;
+        this.state.edits = {};
     }
 
     cancel() {

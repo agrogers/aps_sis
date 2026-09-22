@@ -116,6 +116,7 @@ class APSExamPaperSection(models.Model):
             result.append({
                 'index': index,
                 'document_type': document_type,
+                'page_id': page.id,
                 'label': region.get('detection_label') or self.display_label,
                 'page_number': page.page_number,
                 'width': page.width,
@@ -153,6 +154,13 @@ class APSExamPaperSection(models.Model):
         region['manual'] = True
         regions[index] = region
         self.write({field_name: regions})
+
+    def delete_region_editor_page(self, page_id):
+        self.ensure_one()
+        page = self.import_id.page_ids.filtered(lambda item: item.id == int(page_id))[:1]
+        if not page:
+            raise ValidationError(_('The selected rendered page is unavailable.'))
+        page.unlink()
         return True
 
     def action_ocr_section(self):

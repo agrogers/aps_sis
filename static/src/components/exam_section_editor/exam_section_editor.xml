@@ -7,16 +7,24 @@
             <div class="o_exam_region_editor_content" t-if="state.data">
                 <div class="o_exam_region_cards">
                     <t t-foreach="regions" t-as="region" t-key="region.index">
-                        <button type="button" class="o_exam_region_card" t-on-click="() => this.selectRegion(region)">
-                            <div class="o_exam_region_card_title">
-                                <span t-if="region.document_type === 'question'">Question</span>
-                                <span t-else="">Mark Scheme</span>
-                                — <t t-esc="region.label"/> — Page <t t-esc="region.page_number"/>
+                        <div class="o_exam_region_card">
+                            <div class="o_exam_region_card_header">
+                                <button type="button" class="o_exam_region_card_select" t-on-click="() => this.selectRegion(region)">
+                                    <div class="o_exam_region_card_title">
+                                        <span t-if="region.document_type === 'question'">Question</span>
+                                        <span t-else="">Mark Scheme</span>
+                                        — Page <t t-esc="region.page_number"/>
+                                    </div>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link text-danger" title="Delete page" aria-label="Delete page" t-on-click="(event) => this.deletePage(event, region)">
+                                    <i class="fa fa-trash"/>
+                                </button>
                             </div>
-                            <div class="o_exam_region_card_preview" t-att-style="previewStyle(region)">
+                            <button type="button" class="o_exam_region_card_preview" t-on-click="() => this.selectRegion(region)" t-att-style="previewStyle(region)" aria-label="Select page">
                                 <img t-att-src="region.image_url" t-att-style="previewImageStyle(region)" alt="Detected exam section"/>
-                            </div>
-                        </button>
+                            </button>
+                            <div class="o_exam_region_card_label"><t t-esc="region.label"/></div>
+                        </div>
                     </t>
                     <div class="text-muted" t-if="!regions.length">No detected regions for this document type.</div>
                 </div>
@@ -35,6 +43,7 @@
             </div>
             <div class="o_exam_region_editor_footer">
                 <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving || !state.selected">Save</button>
+                <button type="button" class="btn btn-primary" t-on-click="saveAndClose" t-att-disabled="state.saving || !state.selected">Save &amp; Close</button>
                 <button type="button" class="btn btn-secondary" t-on-click="cancel">Cancel</button>
                 <button type="button" class="btn btn-link ms-auto" t-on-click="close">Close</button>
             </div>

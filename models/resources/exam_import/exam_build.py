@@ -268,7 +268,11 @@ class APSExamPaperImportBuild(models.Model):
             ('description', 'ilike', marker),
         ])
         attachment_ids = [str(attachment.id) for attachment in attachments]
-        attachments.unlink()
+        has_submissions = self.env['aps.resource.submission'].search_count([
+            ('resource_id', '=', resource.id),
+        ])
+        if not has_submissions:
+            attachments.unlink()
         pattern = r'<div[^>]*data-aps-exam-import-section=["\']%s["\'][^>]*>.*?</div>' % section.id
         question = re.sub(pattern, '', resource.question or '', flags=re.S)
         answer = re.sub(pattern, '', resource.answer or '', flags=re.S)
@@ -295,7 +299,11 @@ class APSExamPaperImportBuild(models.Model):
             ('description', 'ilike', marker),
         ])
         attachment_ids = [str(attachment.id) for attachment in attachments]
-        attachments.unlink()
+        has_submissions = self.env['aps.resource.submission'].search_count([
+            ('resource_id', '=', resource.id),
+        ])
+        if not has_submissions:
+            attachments.unlink()
         question = resource.question or ''
         answer = resource.answer or ''
         for section_id in section_ids:

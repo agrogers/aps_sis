@@ -45,10 +45,28 @@
     border: 1px solid #dee2e6;
     background: #fff;
     padding: .5rem;
-    text-align: left;
-    cursor: pointer;
     width: 250px;
     max-width: 100%;
+}
+
+.o_exam_region_card_header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.o_exam_region_card_select {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.o_exam_region_card_label {
+    margin-top: .4rem;
+    color: #6c757d;
+    font-size: .875rem;
 }
 
 .o_exam_region_card:hover {
@@ -71,6 +89,9 @@
     max-width: 100%;
     max-height: 250px;
     background: #f8f9fa;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
 }
 
 .o_exam_region_card_title {
