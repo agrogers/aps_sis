@@ -6,11 +6,11 @@
             <div class="row mb-4 align-items-center bg-white shadow-sm p-3 mx-0 rounded">
                 <div class="col-md-3">
                     <h1 class="text-primary fw-bold mb-0">
-                        <i class="fa fa-clock-o me-2"/>Time Tracking Dashboard
+                        <i class="fa fa-clock-o me-2"/>Time Tracking
                     </h1>
                 </div>
                 <div class="col-md-2">
-                    <select class="form-select" t-att-value="state.dateFilter" t-on-change="onChangeDays">
+                    <select class="form-select" t-ref="dateFilterSelect" t-att-value="state.dateFilter" t-on-change="onChangeDays">
                         <option value="today">Today</option>
                         <option value="yesterday">Yesterday</option>
                         <option value="this_week">This Week</option>
@@ -24,7 +24,7 @@
                 </div>
                 <t t-if="state.canSelectStudent">
                     <div class="col-md-2">
-                        <select class="form-select" t-model="state.partnerId" t-on-change="onChangeStudent">
+                        <select class="form-select" t-ref="studentSelect" t-att-value="state.partnerId || ''" t-on-change="onChangeStudent">
                             <option value="">All Students</option>
                             <t t-foreach="state.students" t-as="student" t-key="student.id">
                                 <option t-att-value="student.id"><t t-esc="student.name"></t></option>
@@ -33,7 +33,7 @@
                     </div>
                 </t>
                 <div class="col-md-2">
-                    <select class="form-select" t-att-value="state.categoryId" t-on-change="onChangeCategory">
+                    <select class="form-select" t-ref="categorySelect" t-att-value="state.categoryId" t-on-change="onChangeCategory">
                         <option value="">All Subject Categories</option>
                         <t t-foreach="state.categories" t-as="category" t-key="category.id">
                             <option t-att-value="category.id"><t t-esc="category.name"></t></option>

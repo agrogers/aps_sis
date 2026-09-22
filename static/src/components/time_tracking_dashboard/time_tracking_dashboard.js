@@ -32,6 +32,13 @@ export class TimeTrackingDashboard extends Component {
         this.doughnutChartRef = useRef("doughnutChart");
         this.historyChartRef = useRef("historyChart");
         this.studentChartRef = useRef("studentChart");
+        // Header filter selects. Their <option> children are appended after the
+        // <select> element is created, so a value assigned via t-att-value at
+        // element creation can be lost (select falls back to the first option).
+        // The DOM value is therefore re-applied after each render.
+        this.dateFilterSelectRef = useRef("dateFilterSelect");
+        this.studentSelectRef = useRef("studentSelect");
+        this.categorySelectRef = useRef("categorySelect");
 
         this._weeklyChart = null;
         this._doughnutChart = null;
@@ -46,7 +53,8 @@ export class TimeTrackingDashboard extends Component {
             dailyFlowDate: this._localDate(new Date()),
             dailyFlowMode: this._restoreDailyFlowMode(),
             dailyFlow: { days: [], subjects: [], scale: { labels: [] } },
-            partnerId: savedFilters.partnerId,
+            // Set after the student options have been loaded and validated.
+            partnerId: "",
             categoryId: savedFilters.categoryId,
             canSelectStudent: false,
             students: [],
@@ -69,6 +77,12 @@ export class TimeTrackingDashboard extends Component {
                     [],
                     {}
                 );
+
+                const savedPartnerId = savedFilters.partnerId;
+                const savedStudentExists = this.state.students.some(
+                    student => String(student.id) === savedPartnerId
+                );
+                this.state.partnerId = savedStudentExists ? savedPartnerId : "";
             }
             this.state.categories = await this.orm.call(
                 "aps.time.tracking",
@@ -80,12 +94,31 @@ export class TimeTrackingDashboard extends Component {
         });
 
         onMounted(() => {
+            this._syncSelectValues();
             this._renderCharts();
         });
 
         onPatched(() => {
+            this._syncSelectValues();
             this._renderCharts();
         });
+    }
+
+    /**
+     * Re-apply the state values to the header filter selects after render.
+     * Required because a <select>'s value assignment is dropped when it is
+     * applied before its <option> children exist in the DOM.
+     */
+    _syncSelectValues() {
+        if (this.dateFilterSelectRef.el) {
+            this.dateFilterSelectRef.el.value = this.state.dateFilter;
+        }
+        if (this.studentSelectRef.el) {
+            this.studentSelectRef.el.value = this.state.partnerId || "";
+        }
+        if (this.categorySelectRef.el) {
+            this.categorySelectRef.el.value = this.state.categoryId || "";
+        }
     }
 
     async _fetchData() {
@@ -381,7 +414,11 @@ export class TimeTrackingDashboard extends Component {
     }
 
     async onChangeStudent(ev) {
-        this.state.partnerId = ev.target.value;
+        // Keep the state value in the same string form as the option values.
+        // This select is deliberately controlled with t-att-value in the
+        // template; using t-model as well can leave the displayed option and
+        // the value sent to the server out of sync during an async reload.
+        this.state.partnerId = ev.target.value || "";
         this._saveDashboardFilters();
         await this._fetchData();
     }
