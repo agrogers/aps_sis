@@ -64,8 +64,8 @@
                                         — Page <t t-esc="region.page_number"/>
                                     </div>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-link text-danger" title="Delete page" aria-label="Delete page" t-on-click="(event) => this.deletePage(event, region)">
-                                    <i class="fa fa-trash"/>
+                                <button type="button" class="btn btn-sm btn-link text-danger" title="Remove image from section" aria-label="Remove image from section" t-on-click="(event) => this.removeRegion(event, region)">
+                                    <i class="fa fa-trash"></i>
                                 </button>
                             </div>
                             <button type="button" class="o_exam_region_card_preview" t-on-click="() => this.selectRegion(region)" t-att-style="previewStyle(region)" aria-label="Select page">

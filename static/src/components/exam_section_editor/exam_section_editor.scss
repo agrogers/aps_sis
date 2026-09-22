@@ -34,7 +34,7 @@
 
 .o_exam_region_page_grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     gap: 1rem;
     max-height: 65vh;
     overflow-y: auto;
@@ -72,7 +72,7 @@
 }
 
 .o_exam_region_page_thumbnail {
-    height: 230px;
+    height: 460px;
     overflow: hidden;
     background: #f8f9fa;
     border: 1px solid #e9ecef;
