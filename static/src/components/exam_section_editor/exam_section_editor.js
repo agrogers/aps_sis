@@ -1,30 +1,63 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { Dialog } from "@web/core/dialog/dialog";
 
 const MIN_SIZE = 8;
 
+export class ExamSectionPagePicker extends Component {
+    static template = "aps_sis.ExamSectionPagePicker";
+    static components = { Dialog };
+    static props = {
+        documentType: { type: String },
+        pages: { type: Array },
+        close: { type: Function },
+        onSelect: { type: Function },
+    };
+
+    selectPage(page) {
+        this.props.onSelect(page);
+        this.props.close();
+    }
+}
+
 export class ExamSectionRegionEditor extends Component {
     static template = "aps_sis.ExamSectionRegionEditor";
-    static props = { action: { type: Object, optional: true } };
+    static props = {
+        action: { type: Object, optional: true },
+        actionId: { type: Number, optional: true },
+        updateActionState: { type: Function, optional: true },
+        className: { type: String, optional: true },
+        globalState: { type: Object, optional: true },
+    };
 
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.action = useService("action");
+        this.dialog = useService("dialog");
         this.state = useState({
             data: null,
             selected: null,
             draft: null,
             edits: {},
+            additions: [],
             saving: false,
         });
         onWillStart(async () => {
             const sectionId = this.props.action?.params?.section_id;
-            this.state.data = await this.orm.call(
-                "aps.exam.paper.section", "get_region_editor_data", [[sectionId]]
-            );
+            await this.loadSection(sectionId);
         });
+    }
+
+    async loadSection(sectionId) {
+        this.state.data = await this.orm.call(
+            "aps.exam.paper.section", "get_region_editor_data", [[sectionId]]
+        );
+        this.state.selected = null;
+        this.state.draft = null;
+        this.state.edits = {};
+        this.state.additions = [];
     }
 
     get regions() {
@@ -34,7 +67,55 @@ export class ExamSectionRegionEditor extends Component {
         return [
             ...(this.state.data.regions.question || []),
             ...(this.state.data.regions.mark_scheme || []),
+            ...this.state.additions,
         ];
+    }
+
+    regionsFor(documentType) {
+        if (!this.state.data) {
+            return [];
+        }
+        const detected = this.state.data.regions[documentType] || [];
+        return [
+            ...detected,
+            ...this.state.additions.filter((region) => region.document_type === documentType),
+        ];
+    }
+
+    addPage(documentType) {
+        this.dialog.add(ExamSectionPagePicker, {
+            documentType,
+            pages: this.state.data?.pages?.[documentType] || [],
+            onSelect: (page) => this.stagePage(documentType, page),
+        });
+    }
+
+    async navigateTo(section) {
+        if (!section || this.state.saving) {
+            return;
+        }
+        this._stashDraft();
+        if (this.state.additions.length || Object.keys(this.state.edits).length) {
+            const confirmed = window.confirm("Discard unsaved region changes?");
+            if (!confirmed) {
+                return;
+            }
+        }
+        await this.loadSection(section.id);
+    }
+
+    stagePage(documentType, page) {
+        const addition = {
+            ...page,
+            index: null,
+            local_id: `new-${documentType}-${Date.now()}-${this.state.additions.length}`,
+            document_type: documentType,
+            label: this.state.data.label,
+            region: { ...page.default_region },
+            is_new: true,
+        };
+        this.state.additions.push(addition);
+        this.selectRegion(addition);
     }
 
     selectRegion(region) {
@@ -47,7 +128,9 @@ export class ExamSectionRegionEditor extends Component {
     }
 
     _regionKey(region) {
-        return `${region.document_type}:${region.index}`;
+        return region.is_new
+            ? `${region.document_type}:${region.local_id}`
+            : `${region.document_type}:${region.index}`;
     }
 
     _stashDraft() {
@@ -126,18 +209,28 @@ export class ExamSectionRegionEditor extends Component {
     }
 
     async _save(closeAfterSave) {
-        if (!this.state.selected || !this.state.draft) return;
+        if (!this.state.data || (!this.state.selected && !this.state.additions.length && !Object.keys(this.state.edits).length)) return;
         this._stashDraft();
         this.state.saving = true;
         try {
             const changes = Object.entries(this.state.edits);
-            await Promise.all(changes.map(([key, bounds]) => {
-                const [documentType, index] = key.split(":");
-                return this.orm.call(
-                    "aps.exam.paper.section", "save_region_editor_region",
-                    [[this.state.data.id], documentType, Number(index), bounds]
-                );
+            const edits = changes
+                .filter(([key]) => !key.includes(":new-"))
+                .map(([key, bounds]) => {
+                    const separator = key.indexOf(":");
+                    const documentType = key.slice(0, separator);
+                    const index = key.slice(separator + 1);
+                    return { document_type: documentType, index: Number(index), bounds };
+                });
+            const additions = this.state.additions.map((region) => ({
+                document_type: region.document_type,
+                page_number: region.page_number,
+                bounds: this.state.edits[this._regionKey(region)] || region.region,
             }));
+            await this.orm.call(
+                "aps.exam.paper.section", "save_region_editor_changes",
+                [[this.state.data.id], edits, additions]
+            );
             this.notification.add("Region saved.", { type: "success" });
             this.state.edits = {};
             if (closeAfterSave) this.close();

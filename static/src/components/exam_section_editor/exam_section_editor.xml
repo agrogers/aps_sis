@@ -1,12 +1,60 @@
 <templates xml:space="preserve">
+    <t t-name="aps_sis.ExamSectionPagePicker">
+        <Dialog title="props.documentType === 'question' ? 'Add Question Page' : 'Add Mark Scheme Page'" size="'xl'">
+            <div class="o_exam_region_page_picker">
+                <div class="text-muted mb-3">
+                    Choose a rendered page. The standard crop will be added and can be adjusted before saving.
+                </div>
+                <div class="o_exam_region_page_grid">
+                    <t t-foreach="props.pages || []" t-as="page" t-key="page.id">
+                        <button type="button" class="o_exam_region_page_card" t-on-click="() => this.selectPage(page)">
+                            <div class="o_exam_region_page_card_title">
+                                <strong>
+                                    <span t-if="props.documentType === 'question'">Question Paper</span>
+                                    <span t-else="">Mark Scheme</span>
+                                    — Page <t t-esc="page.page_number"/>
+                                </strong>
+                            </div>
+                            <div class="o_exam_region_page_thumbnail">
+                                <img t-att-src="page.image_url" alt="Rendered exam page"></img>
+                            </div>
+                        </button>
+                    </t>
+                    <div class="text-muted text-center p-4" t-if="!(props.pages || []).length">
+                        No rendered pages are available for this document type.
+                    </div>
+                </div>
+            </div>
+        </Dialog>
+    </t>
+
     <t t-name="aps_sis.ExamSectionRegionEditor">
         <div class="o_exam_region_editor_modal">
-            <div class="o_exam_region_editor_header">
-                <h3>Review <t t-esc="state.data?.label"/></h3>
+            <div class="o_exam_region_editor_header justify-content-between">
+                <div class="o_exam_region_editor_title">
+                    <h3>Review <t t-esc="state.data?.label"/></h3>
+                    <span class="text-muted" t-if="state.data?.navigation?.count">
+                        Section <t t-esc="state.data.navigation.position"/> of <t t-esc="state.data.navigation.count"/>
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.previous)" t-att-disabled="!state.data?.navigation?.previous || state.saving">
+                        <i class="fa fa-chevron-left me-1"></i> Previous
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.next)" t-att-disabled="!state.data?.navigation?.next || state.saving">
+                        Next <i class="fa fa-chevron-right ms-1"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" t-on-click="() => this.addPage('question')" t-att-disabled="!state.data">
+                        <i class="fa fa-plus me-1"></i> Add Question Page
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.addPage('mark_scheme')" t-att-disabled="!state.data">
+                        <i class="fa fa-plus me-1"></i> Add Mark Scheme Page
+                    </button>
+                </div>
             </div>
             <div class="o_exam_region_editor_content" t-if="state.data">
                 <div class="o_exam_region_cards">
-                    <t t-foreach="regions" t-as="region" t-key="region.index">
+                    <t t-foreach="regions" t-as="region" t-key="this._regionKey(region)">
                         <div class="o_exam_region_card">
                             <div class="o_exam_region_card_header">
                                 <button type="button" class="o_exam_region_card_select" t-on-click="() => this.selectRegion(region)">
@@ -30,7 +78,7 @@
                 </div>
                 <div class="o_exam_region_editor_page" t-if="state.selected">
                     <div class="o_exam_region_image_wrap">
-                        <img t-att-src="state.selected.image_url" alt="Full rendered exam page"/>
+                        <img t-att-src="state.selected.image_url" alt="Full rendered exam page"></img>
                         <div class="o_exam_region_overlay" t-att-style="draftStyle()">
                             <span class="o_exam_region_handle left" t-on-pointerdown="(event) => this.startDrag(event, 'left')"></span>
                             <span class="o_exam_region_handle right" t-on-pointerdown="(event) => this.startDrag(event, 'right')"></span>

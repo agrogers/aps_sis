@@ -469,6 +469,11 @@ class APSResource(models.Model):
                         'instructions': instructions_text,
                         'student_answer': True,  # Always include the student answer in the context for prompt tagging purposes, even if it's empty. This allows prompts to be tagged with "No Student Answer" or similar to handle empty answers.
                     }
+                    # Image-control prompts are selected by exact prompt name
+                    # at payload time. Keep all explicitly selected and
+                    # always-included prompts in this computed set so that
+                    # those controls are available to both resource previews
+                    # and submission marking.
                     # Exclude supplemental prompts from the candidate list so
                     # they do not suppress default prompts for the same section.
                     non_supplemental_ids = record.ai_prompt_ids.filtered(lambda p: not _is_supplemental(p))

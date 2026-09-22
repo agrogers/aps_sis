@@ -1,6 +1,6 @@
 from odoo.tests.common import TransactionCase
 
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class TestExamPaperImport(TransactionCase):
@@ -40,6 +40,182 @@ class TestExamPaperImport(TransactionCase):
         left, top, right, bottom = importer._crop_bounds({'y1': 0.1}, page, {})
 
         self.assertEqual((left, top, right, bottom), (75, 100, 925, 900))
+
+    def test_region_editor_returns_page_picker_defaults(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Region picker paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('picker-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('picker-rms.pdf').id,
+        })
+        question_attachment = self.env['ir.attachment'].create({
+            'name': 'question-page.png', 'type': 'binary', 'datas': b'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 2,
+            'render_dpi': 150, 'width': 1000, 'height': 1500,
+            'attachment_id': question_attachment.id,
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': 'picker',
+            'display_label': 'Q1',
+        })
+
+        data = section.get_region_editor_data()
+
+        self.assertEqual(data['pages']['question'][0]['page_number'], 2)
+        self.assertEqual(
+            data['pages']['question'][0]['default_region'],
+            {'x1': 75, 'y1': 85, 'x2': 925, 'y2': 1400},
+        )
+
+    def test_region_editor_returns_previous_and_next_sections(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Navigation paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('navigation-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('navigation-rms.pdf').id,
+        })
+        sections = self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': 1, 'source_key': 'one',
+                'display_label': 'Q1',
+            },
+            {
+                'import_id': job.id, 'sequence': 2, 'source_key': 'two',
+                'display_label': 'Q2',
+            },
+            {
+                'import_id': job.id, 'sequence': 3, 'source_key': 'three',
+                'display_label': 'Q3',
+            },
+        ])
+
+        data = sections[1].get_region_editor_data()
+
+        self.assertEqual(data['navigation']['position'], 2)
+        self.assertEqual(data['navigation']['count'], 3)
+        self.assertEqual(data['navigation']['previous']['id'], sections[0].id)
+        self.assertEqual(data['navigation']['previous']['label'], 'Q1')
+        self.assertEqual(data['navigation']['next']['id'], sections[2].id)
+        self.assertEqual(data['navigation']['next']['label'], 'Q3')
+
+        first_navigation = sections[0].get_region_editor_data()['navigation']
+        last_navigation = sections[2].get_region_editor_data()['navigation']
+        self.assertFalse(first_navigation['previous'])
+        self.assertFalse(last_navigation['next'])
+
+    def test_region_editor_can_add_manual_regions_and_update_page_strings(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Manual region paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('manual-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('manual-rms.pdf').id,
+        })
+        attachments = self.env['ir.attachment'].create([
+            {'name': 'question-page-1.png', 'type': 'binary', 'datas': b'aGVsbG8=', 'mimetype': 'image/png'},
+            {'name': 'mark-page-3.png', 'type': 'binary', 'datas': b'aGVsbG8=', 'mimetype': 'image/png'},
+        ])
+        self.env['aps.exam.paper.page'].create([
+            {
+                'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+                'render_dpi': 150, 'width': 1000, 'height': 1500,
+                'attachment_id': attachments[0].id,
+            },
+            {
+                'import_id': job.id, 'document_type': 'mark_scheme', 'page_number': 3,
+                'render_dpi': 150, 'width': 1000, 'height': 1500,
+                'attachment_id': attachments[1].id,
+            },
+        ])
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': 'manual',
+            'display_label': 'Q1',
+        })
+
+        section.save_region_editor_changes([], [
+            {'document_type': 'question', 'page_number': 1,
+             'bounds': {'x1': 10, 'y1': 20, 'x2': 900, 'y2': 1200}},
+            {'document_type': 'mark_scheme', 'page_number': 3,
+             'bounds': {'x1': 20, 'y1': 30, 'x2': 800, 'y2': 1100}},
+        ])
+
+        self.assertEqual(section.question_pages, '1')
+        self.assertEqual(section.answer_pages, '3')
+        self.assertTrue(section.question_regions[0]['manual_added'])
+        self.assertEqual(section.question_regions[0]['document_type'], 'question')
+        self.assertTrue(section.answer_regions[0]['manual'])
+
+    def test_section_changes_reset_ocr_and_reopen_resource_build(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Changed section paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('changed-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('changed-rms.pdf').id,
+            'state': 'completed', 'progress': 100,
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': 'changed',
+            'display_label': 'Q1', 'ocr_state': 'complete',
+            'question_html': '<p>Old question OCR</p>',
+            'answer_html': '<p>Old answer OCR</p>',
+        })
+
+        section.write({'include_parent_question': True})
+
+        self.assertEqual(section.ocr_state, 'pending')
+        self.assertFalse(section.question_html)
+        self.assertFalse(section.answer_html)
+        self.assertFalse(section.ocr_model_id)
+        self.assertFalse(section.ocr_error)
+        self.assertEqual(job.state, 'analysing')
+        self.assertEqual(job.progress, 60)
+        self.assertFalse(job.completed_at)
+
+    def test_region_editor_rejects_wrong_page_and_invalid_bounds(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Invalid region paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('invalid-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('invalid-rms.pdf').id,
+        })
+        attachment = self.env['ir.attachment'].create({
+            'name': 'invalid-page.png', 'type': 'binary', 'datas': b'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+            'render_dpi': 150, 'width': 1000, 'height': 1500,
+            'attachment_id': attachment.id,
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': 'invalid',
+            'display_label': 'Q1',
+        })
+
+        with self.assertRaises(ValidationError):
+            section.save_region_editor_changes([], [{
+                'document_type': 'question', 'page_number': 99,
+                'bounds': {'x1': 0, 'y1': 0, 'x2': 10, 'y2': 10},
+            }])
+        with self.assertRaises(ValidationError):
+            section.save_region_editor_changes([], [{
+                'document_type': 'question', 'page_number': 1,
+                'bounds': {'x1': 0, 'y1': 0, 'x2': 1001, 'y2': 10},
+            }])
+
+    def test_crop_regions_are_sorted_by_page_number(self):
+        importer = self.env['aps.exam.paper.import']
+        regions = [
+            {'page_number': 4, 'x1': 0, 'y1': 0, 'x2': 10, 'y2': 10},
+            {'page_number': 2, 'x1': 0, 'y1': 0, 'x2': 10, 'y2': 10},
+            {'page_number': 2, 'x1': 0, 'y1': 1, 'x2': 10, 'y2': 11},
+        ]
+        indexed = list(enumerate(regions))
+        indexed.sort(key=lambda item: (
+            importer._region_page_number(item[1]) is None,
+            importer._region_page_number(item[1]) or 0,
+            item[0],
+        ))
+        self.assertEqual([region['page_number'] for _, region in indexed], [2, 2, 4])
+        self.assertEqual(indexed[0][0], 1)
+        self.assertEqual(indexed[1][0], 2)
 
     def test_resource_creation_is_idempotent(self):
         importer = self.env['aps.exam.paper.import']
