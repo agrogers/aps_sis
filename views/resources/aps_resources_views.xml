@@ -198,16 +198,16 @@
                             <group>
                                 <field name="name" />
                                 <field name="parent_ids" widget="clickable_many2many_tags" options="{'no_create': True}"/>
-                                <field name="has_multiple_parents" invisible="1"/>
+                                <field name="has_multiple_parents" invisible="1"/>                                
                                 <div class="o_row" invisible="not has_multiple_parents" style="margin-left: 15px;">
                                     <label for="primary_parent_id" string="Display Parent:" style="font-size: 0.8em !important;"/>
                                     <field name="primary_parent_id" options="{'no_create': True, 'no_open': True}" style="font-size: 0.9em;" nolabel="1"/>
                                 </div>
                                 <field name="supporting_parent_ids" widget="clickable_many2many_tags" options="{'no_create': True}"/>
                             </group>
-                            <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
-                            <group>
-                                <group string="Details">
+                            <field name="thumbnail" widget="image" class="oe_avatar" options="{'size': [128, 128]}" invisible="1"/>
+                            <group col="12">
+                                <group string="DETAILS" colspan="4">
                                     <label for="type_id"/>
                                     <div class="d-flex align-items-center">
                                         <field name="type_icon" widget="image" options="{'size': [24, 24]}" class="me-2 flex-shrink-0" style="width: 24px;" nolabel="1"/>
@@ -223,22 +223,24 @@
                                      <field name="description"/>
                                     
                                 </group>
-                                <group string="Technical">
+                                <group string="CONTENT" colspan="4">
                                     <field name="has_notes"/>
                                     <field name="has_question"/>
                                     <field name="has_answer"/>
                                     <field name="has_default_answer" widget="boolean_toggle"/>
                                     <field name="has_child_resources" />
                                     <field name="has_supporting_resources" />
-                                    <field name="ai_action"/>
                                     <field name="has_lesson_plan" widget="boolean_toggle"/>
+                                    <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px', 'show_name':True}" />
+                                </group>
+                                <group string="TECHNICAL" colspan="4">
+                                    <field name="ai_action"/>
                                     <field name="points_scale"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle"  />
                                     <field name="show_in_hierarchy" widget="boolean_toggle"/>
                                     <field name="auto_assign" widget="boolean_toggle"/>
-                                    <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px', 'show_name':True}" />
                                     <field name="child_count"/>
-                            </group>
+                                </group>
                             </group>
                             <group string="Share" invisible="not id" groups="aps_sis.group_aps_teacher">
                                 <label for="share_url" string="Share URL"/>
