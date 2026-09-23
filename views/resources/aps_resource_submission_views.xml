@@ -117,6 +117,7 @@
                 <field name="has_answer" string="Answer" readonly="1" optional="hide"/>
                 <field name="has_feedback" widget="boolean" string="Feedback" readonly="1" optional="hide"/>
                 <field name="submission_label" optional="hide"/>
+                <field name="parent_submission_id" optional="hide" readonly="1"/>
                 <field name="url" optional="hide"/>
                 <field name="submission_order" optional="hide"/>
                 <field name="review_requested_by" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
@@ -307,6 +308,7 @@
                                     <field name="allow_subject_editing"  widget="boolean_toggle" />
                                     <field name="assigned_by"/>
                                     <field name="submission_label"/>
+                                    <field name="parent_submission_id" readonly="1" options="{'no_create': True}"/>
                                     <field name="url" widget="url"/>
                                 </group>
                                 <group string="Results">
@@ -453,7 +455,15 @@
         <field name="act_window_id" ref="action_aps_resource_submissions_score"/>
     </record>
 
-    
+    <!-- Server action: backfill parent_submission_id on selected submissions -->
+    <record id="action_backfill_parent_submissions" model="ir.actions.server">
+        <field name="name">Backfill Parent Submissions</field>
+        <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
+        <field name="state">code</field>
+        <field name="code">records.action_backfill_parent_submissions()</field>
+    </record>
+
 
 
 </odoo>

@@ -231,6 +231,14 @@ class APSResourceSubmissionAutoScore(models.Model):
                         'subjects': [(6, 0, parent_res.subjects.ids)]
                         if record.is_course_explorer else False,
                     })
+                    # Link the newly created parent submission to its own
+                    # nearest ancestor submission (supports deep chains).
+                    parent_submission._link_created_parent_submissions()
+
+                # Keep the submission hierarchy field in sync with the
+                # parent submission used for progress propagation.
+                if record.parent_submission_id != parent_submission:
+                    record.parent_submission_id = parent_submission.id
 
                 # Keep existing Course Explorer parent records in sync too.
                 # This covers parents created before the subject propagation

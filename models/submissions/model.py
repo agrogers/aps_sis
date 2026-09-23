@@ -305,6 +305,14 @@ class APSResourceSubmission(models.Model):
         help='Student\'s self-assessed confidence for this task on a scale of 1–3 stars. '
              '0 means not set and is excluded from averages.',
     )
+    parent_submission_id = fields.Many2one(
+        'aps.resource.submission',
+        string='Parent Submission',
+        index=True,
+        help='Submission of the parent resource within the same label group. '
+             'When the parent resource has no submission (e.g., it was not assigned), '
+             'the nearest existing ancestor submission is used instead.',
+    )
 
 # region - Computed Fields
 
@@ -648,3 +656,105 @@ class APSResourceSubmission(models.Model):
     def _get_current_faculty(self):
         """Get the faculty record for the current user"""
         return self._get_faculty_for_current_user()
+
+# region - Submission Hierarchy
+
+    def _find_ancestor_submission(self, resource_map=None):
+        """Find the nearest ancestor submission for this record.
+
+        Walks the resource hierarchy upward via ``primary_parent_id`` and, at
+        each level, looks for a submission of the same student and label for
+        that ancestor resource. Supports arbitrarily deep chains: if the
+        immediate parent resource has no submission, the walk continues to the
+        grandparent, great-grandparent, and so on, attaching to the nearest
+        existing ancestor submission. Returns False when no ancestor has a
+        submission.
+
+        :param resource_map: optional ``dict[(resource_id, student_id)] -> submission_id``
+            covering freshly created submissions that are not yet reliably
+            searchable. When provided it is consulted before a domain search.
+        """
+        self.ensure_one()
+        resource = self.resource_id
+        student_id = self.task_id.student_id.id
+        label = self.submission_label
+        seen = set()
+        while resource and resource.primary_parent_id:
+            ancestor = resource.primary_parent_id
+            if ancestor.id in seen:
+                break  # defensive: cyclic hierarchy guard
+            seen.add(ancestor.id)
+
+            candidate_id = None
+            if resource_map:
+                candidate_id = resource_map.get((ancestor.id, student_id))
+            if not candidate_id:
+                domain = [
+                    ('task_id.resource_id', '=', ancestor.id),
+                    ('task_id.student_id', '=', student_id),
+                ]
+                if label:
+                    domain.append(('submission_label', '=', label))
+                candidate = self.sudo().search(domain, order='submission_order, id', limit=1)
+                candidate_id = candidate.id or None
+            if candidate_id:
+                return candidate_id
+            resource = ancestor
+        return False
+
+    def _link_created_parent_submissions(self):
+        """Set parent_submission_id on freshly created submissions.
+
+        Builds a (resource_id, student_id) -> submission_id map from the newly
+        created records so parents created in the same batch (which did not
+        exist as searchable records when the child vals were built) can be
+        linked, then resolves each record's nearest ancestor submission.
+        """
+        if not self:
+            return
+        resource_map = {}
+        for record in self:
+            key = (record.task_id.resource_id.id, record.task_id.student_id.id)
+            resource_map.setdefault(key, record.id)
+        for record in self:
+            parent_id = record._find_ancestor_submission(resource_map=resource_map)
+            if parent_id and parent_id != record.id:
+                record.parent_submission_id = parent_id
+
+    def action_backfill_parent_submissions(self):
+        """Backfill parent_submission_id for existing submissions.
+
+        Groups the selected submissions by (student, label), builds a
+        resource -> submission map per group, then links each submission to
+        the nearest existing ancestor submission. Usable as a server action
+        on the submission list view or called programmatically.
+        """
+        groups = {}
+        for record in self:
+            key = (record.task_id.student_id.id, record.submission_label or False)
+            groups.setdefault(key, []).append(record)
+
+        writes = {}
+        for records in groups.values():
+            resource_map = {}
+            for record in records:
+                resource_map.setdefault(
+                    (record.task_id.resource_id.id, record.task_id.student_id.id),
+                    record.id,
+                )
+            for record in records:
+                parent_id = record._find_ancestor_submission(resource_map=resource_map)
+                if parent_id and parent_id != record.id:
+                    writes[record.id] = parent_id
+
+        # Batch writes grouped by target parent to minimise write() calls.
+        by_parent = {}
+        for submission_id, parent_id in writes.items():
+            by_parent.setdefault(parent_id, self.env['aps.resource.submission'])
+            by_parent[parent_id] |= self.env['aps.resource.submission'].browse(submission_id)
+        for parent_id, children in by_parent.items():
+            children.write({'parent_submission_id': parent_id})
+        _logger.info('Backfilled parent_submission_id on %s submissions', len(writes))
+        return True
+
+# endregion - Submission Hierarchy

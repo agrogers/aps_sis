@@ -545,6 +545,10 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'notification_state': 'not_sent' if self.notify_student else 'skipped',
                 })
         if submission_values:
-            submission_model.create(submission_values)
+            created_submissions = submission_model.create(submission_values)
+            # Link each submission to its parent submission (nearest existing
+            # ancestor within the same label group). Parent submissions were
+            # created in the same batch, so a post-create pass is required.
+            created_submissions._link_created_parent_submissions()
             
         return {'type': 'ir.actions.act_window_close'}
