@@ -95,12 +95,7 @@ export class ExamSectionRegionEditor extends Component {
             return;
         }
         this._stashDraft();
-        if (this.state.additions.length || Object.keys(this.state.edits).length) {
-            const confirmed = window.confirm("Discard unsaved region changes?");
-            if (!confirmed) {
-                return;
-            }
-        }
+        await this._save(false);
         await this.loadSection(section.id);
     }
 
