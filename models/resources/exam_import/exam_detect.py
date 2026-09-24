@@ -138,7 +138,7 @@ class APSExamPaperImportDetect(models.Model):
         - level 1: include resource only
         - level 3: include resource and parent content
         - level 2 with no level-3 children: include resource and parent content
-        - level 2 with level-3 children: excluded (its subparts cover it)
+        - level 2 with level-3 children: include parent content but no resource
         """
         # A root can contain both a standalone part (Q1b) and a part with
         # subparts (Q1a.i, Q1a.ii).  Checking only ``root_key`` therefore
@@ -155,10 +155,7 @@ class APSExamPaperImportDetect(models.Model):
             level = section['hierarchy_level']
             if section['ai_include_parent_question'] is not None:
                 continue
-            if level >= 3 or (
-                level == 2
-                and section['source_key'] not in level_2_parents_with_subparts
-            ):
+            if level in (2, 3):
                 section['include_parent_question'] = True
             if level == 2 and section['source_key'] in level_2_parents_with_subparts:
                 section['include_resource'] = False

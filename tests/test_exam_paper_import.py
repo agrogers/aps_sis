@@ -144,6 +144,37 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(section.question_regions[0]['document_type'], 'question')
         self.assertTrue(section.answer_regions[0]['manual'])
 
+    def test_region_editor_removes_image_region_without_deleting_rendered_page(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Remove image paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('remove-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('remove-rms.pdf').id,
+        })
+        page_attachment = self.env['ir.attachment'].create({
+            'name': 'remove-page.png', 'type': 'binary', 'datas': b'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        page = self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+            'render_dpi': 150, 'width': 1000, 'height': 1500,
+            'attachment_id': page_attachment.id,
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': 'remove',
+            'display_label': 'Q1',
+            'question_pages': '1',
+            'question_regions': [{
+                'page_number': 1, 'x1': 10, 'y1': 20, 'x2': 900, 'y2': 1200,
+            }],
+        })
+
+        section.remove_region_editor_region('question', 0)
+
+        self.assertFalse(section.question_regions)
+        self.assertFalse(section.question_pages)
+        self.assertTrue(page.exists())
+        self.assertTrue(page_attachment.exists())
+
     def test_section_changes_reset_ocr_and_reopen_resource_build(self):
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Changed section paper', 'resource_id': self.resource.id,
@@ -168,6 +199,41 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(job.state, 'analysing')
         self.assertEqual(job.progress, 60)
         self.assertFalse(job.completed_at)
+
+    def test_duplicate_section_gets_unique_key_and_fresh_generated_data(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Duplicate section paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('duplicate-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('duplicate-rms.pdf').id,
+            'state': 'completed', 'progress': 100,
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': '1a',
+            'display_label': 'Q1a', 'root_key': 'Q1',
+            'question_regions': [{'page_number': 1, 'x1': 1, 'y1': 2, 'x2': 10, 'y2': 20}],
+            'answer_regions': [{'page_number': 2, 'x1': 1, 'y1': 2, 'x2': 10, 'y2': 20}],
+            'resource_id': self.resource.id,
+            'resource_key': str(self.resource.id),
+            'question_html': '<p>Generated question</p>',
+            'answer_html': '<p>Generated answer</p>',
+            'ocr_state': 'complete',
+        })
+
+        duplicate = section.copy()
+
+        self.assertEqual(duplicate.source_key, '1a_copy')
+        self.assertEqual(duplicate.sequence, 2)
+        self.assertEqual(duplicate.display_label, section.display_label)
+        self.assertEqual(duplicate.question_regions, section.question_regions)
+        self.assertFalse(duplicate.resource_id)
+        self.assertFalse(duplicate.resource_key)
+        self.assertFalse(duplicate.question_html)
+        self.assertFalse(duplicate.answer_html)
+        self.assertEqual(duplicate.ocr_state, 'pending')
+        self.assertEqual(job.state, 'analysing')
+
+        second_duplicate = section.copy()
+        self.assertEqual(second_duplicate.source_key, '1a_copy2')
 
     def test_region_editor_rejects_wrong_page_and_invalid_bounds(self):
         job = self.env['aps.exam.paper.import'].create({

@@ -38,12 +38,6 @@
                     </span>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.previous)" t-att-disabled="!state.data?.navigation?.previous || state.saving">
-                        <i class="fa fa-chevron-left me-1"></i> Previous
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.next)" t-att-disabled="!state.data?.navigation?.next || state.saving">
-                        Next <i class="fa fa-chevron-right ms-1"></i>
-                    </button>
                     <button type="button" class="btn btn-outline-primary" t-on-click="() => this.addPage('question')" t-att-disabled="!state.data">
                         <i class="fa fa-plus me-1"></i> Add Question Page
                     </button>
@@ -64,8 +58,8 @@
                                         — Page <t t-esc="region.page_number"/>
                                     </div>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-link text-danger" title="Delete page" aria-label="Delete page" t-on-click="(event) => this.deletePage(event, region)">
-                                    <i class="fa fa-trash"/>
+                                <button type="button" class="btn btn-sm btn-link text-danger" title="Remove image from section" aria-label="Remove image from section" t-on-click="(event) => this.removeRegion(event, region)">
+                                    <i class="fa fa-trash"></i>
                                 </button>
                             </div>
                             <button type="button" class="o_exam_region_card_preview" t-on-click="() => this.selectRegion(region)" t-att-style="previewStyle(region)" aria-label="Select page">
@@ -92,6 +86,12 @@
             <div class="o_exam_region_editor_footer">
                 <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving || !state.selected">Save</button>
                 <button type="button" class="btn btn-primary" t-on-click="saveAndClose" t-att-disabled="state.saving || !state.selected">Save &amp; Close</button>
+                <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.previous)" t-att-disabled="!state.data?.navigation?.previous || state.saving">
+                    <i class="fa fa-chevron-left me-1"></i> Previous
+                </button>
+                <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.next)" t-att-disabled="!state.data?.navigation?.next || state.saving">
+                    Next <i class="fa fa-chevron-right ms-1"></i>
+                </button>
                 <button type="button" class="btn btn-secondary" t-on-click="cancel">Cancel</button>
                 <button type="button" class="btn btn-link ms-auto" t-on-click="close">Close</button>
             </div>

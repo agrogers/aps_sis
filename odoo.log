@@ -365,3 +365,659 @@
 2026-09-21 19:25:36,253 509380 INFO mvis1 odoo.service.server: Initiating shutdown 
 2026-09-21 19:25:36,253 509380 INFO mvis1 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
 2026-09-21 19:25:36,530 509380 INFO mvis1 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+2026-09-22 17:17:35,202 621292 INFO ? odoo: Odoo version 18.0 
+2026-09-22 17:17:35,202 621292 INFO ? odoo: Using configuration file at d:\Dev\Odoo\mvis1\odoo.conf 
+2026-09-22 17:17:35,202 621292 INFO ? odoo: addons paths: ['d:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-09-22 17:17:35,202 621292 INFO ? odoo: database: odoo@localhost:5432 
+2026-09-22 17:17:35,442 621292 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-09-22 17:17:35,478 621292 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-09-22 17:17:37,268 621292 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-09-22 17:17:37,349 621292 INFO odoov18_20260902 odoo.tests.common: Importing test framework 
+2026-09-22 17:17:37,530 621292 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-09-22 17:17:37,534 621292 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-22 17:17:37,562 621292 INFO odoov18_20260902 odoo.modules.loading: updating modules list 
+2026-09-22 17:17:37,605 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-09-22 17:17:37,886 621292 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-09-22 17:17:37,993 621292 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-09-22 17:17:38,098 621292 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-09-22 17:17:38,100 621292 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-09-22 17:17:38,125 621292 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-09-22 17:17:38,835 621292 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "d:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "d:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "d:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "d:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "d:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "d:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "d:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "d:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "d:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "d:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "d:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "d:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "d:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "d:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "d:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "d:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "d:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "d:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-09-22 17:17:38,897 621292 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-09-22 17:17:39,300 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['APEX - Academic Progress and Excellence'] to user __system__ #1 via n/a 
+2026-09-22 17:17:39,300 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['APEX - Academic Progress and Excellence'] to user __system__ #1 via n/a 
+2026-09-22 17:17:39,817 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-09-22 17:17:40,077 621292 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-09-22 17:17:40,095 621292 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-09-22 17:17:40,131 621292 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-09-22 17:17:42,060 621292 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x0000022B53CC1D80, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "d:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "d:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "d:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "d:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "d:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "d:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "d:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "d:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "d:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "d:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "d:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "d:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "d:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "d:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "d:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "d:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-09-22 17:17:42,227 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module aps_sis (140/208) 
+2026-09-22 17:17:42,601 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:42,603 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:42,641 621292 INFO odoov18_20260902 odoo.modules.registry: module aps_sis: creating or updating database tables 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (media_count, media_ids) of aps.media.type() have the same label: Media Items. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (media_count, media_ids) of aps.media.collection() have the same label: Media Items. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (description_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (type_id_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (category_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (marks_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (sequence_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (weight_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (points_scale_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (score_contributes_to_parent_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (url_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (subject_ids_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (has_question_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (has_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (has_notes_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (has_lesson_plan_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (has_default_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (has_child_resources_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,116 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (has_supporting_resources_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (allow_subject_editing_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (show_in_hierarchy_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_date_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_end_date_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_due_days_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_frequency_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_time_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_all_students_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_notify_student_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (auto_assign_custom_name_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_instructions_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_model_id_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_model_ids_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_prompt_ids_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_action_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_use_model_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_use_question_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_merge_responses_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_merge_response_chunks_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_use_notes_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_use_supporting_resources_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_targeted_feedback_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_toc_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_summary_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_analysis_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_table_of_results_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_test_prompt_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (ai_show_saved_responses_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (question_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (notes_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (lesson_plan_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (default_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (state_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (due_date_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (points_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (submission_active_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (date_assigned_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (time_assigned_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (date_submitted_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (date_completed_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (score_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (out_of_marks_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (submission_name_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (due_status_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (notification_state_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (subjects_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (question_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (answer_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (model_answer_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (feedback_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (display_name, resource_id) of aps.assign.students.wizard.line() have the same label: Resource. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (parent_resource_id, resource_id) of aps.assign.students.wizard.line() have the same label: Resource. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,117 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (student_line_ids, student_ids) of aps.assign.students.wizard() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (class_count, class_ids) of aps.subject() have the same label: Classes. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (class_count, class_ids) of aps.teacher() have the same label: Classes. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_categories_include_teachers, voter_levels_include_teachers) of aps.award.vote.round.mixin.voters() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_categories_include_students, voter_levels_include_students) of aps.award.vote.round.mixin.voters() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (eligible_voter_partner_ids, voter_show_staff) of aps.award.vote.round.mixin.voters() have the same label: People. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (candidate_levels_include_students, candidate_show_students) of aps.award.vote.round.mixin.candidates() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round.mixin.candidates() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_students, candidate_show_students) of aps.award.vote.round.mixin.candidates() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (candidate_levels_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_show_staff, ineligible_show_people) of aps.award.vote.round() have the same label: People. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_show_levels, candidate_show_levels) of aps.award.vote.round() have the same label: Levels. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_show_categories, candidate_show_categories) of aps.award.vote.round() have the same label: Subject Categories. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_show_departments, candidate_show_departments) of aps.award.vote.round() have the same label: Departments. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_levels_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,118 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_levels_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_categories_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voter_categories_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (eligible_voter_partner_ids, ineligible_show_people) of aps.award.vote.round() have the same label: People. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (description_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (short_description_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (color_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (datetime_start_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (datetime_end_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (status_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (recurring_days_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (award_category_id_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (award_sub_category_id_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (academic_week_id_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (tag_ids_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (voting_set_ids_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (round_manager_ids_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,120 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (supervision_id, is_supervision) of asctt.teacher.workload() have the same label: Supervision. [Modules: aps_sis and aps_sis] 
+2026-09-22 17:17:43,422 621292 INFO odoov18_20260902 odoo.schema: Table 'aps_ai_run': unable to set NOT NULL on column 'import_id' 
+2026-09-22 17:17:43,431 621292 INFO odoov18_20260902 odoo.schema: Table 'aps_school_calendar': unable to set NOT NULL on column 'date_type_id' 
+2026-09-22 17:17:43,486 621292 INFO odoov18_20260902 odoo.schema: Keep unexpected index res_partner__company_registry_index on table res_partner 
+2026-09-22 17:17:43,486 621292 INFO odoov18_20260902 odoo.schema: Keep unexpected index res_users__create_date_index on table res_users 
+2026-09-22 17:17:43,538 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:43,538 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:43,541 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:43,552 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/security/groups.xml 
+2026-09-22 17:17:43,883 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/security/ir.model.access.csv 
+2026-09-22 17:17:44,041 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/security/aps_sis_security.xml 
+2026-09-22 17:17:44,147 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/security/weekly_submission_result_security.xml 
+2026-09-22 17:17:44,159 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/data/cron.xml 
+2026-09-22 17:17:44,219 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/data/email_templates.xml 
+2026-09-22 17:17:44,239 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/data/aps_calendar_date_type_data.xml 
+2026-09-22 17:17:44,250 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/data/certificate_templates.xml 
+2026-09-22 17:17:44,278 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/data/subject_categories.xml 
+2026-09-22 17:17:44,286 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_custom_name_views.xml 
+2026-09-22 17:17:44,319 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/portal_templates.xml 
+2026-09-22 17:17:44,335 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resources_views.xml 
+2026-09-22 17:17:44,415 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_hierarchy_views.xml 
+2026-09-22 17:17:44,432 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_types_views.xml 
+2026-09-22 17:17:44,446 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_tags_views.xml 
+2026-09-22 17:17:44,458 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_location_views.xml 
+2026-09-22 17:17:44,492 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_assign_students_wizard_views.xml 
+2026-09-22 17:17:44,503 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_task_views.xml 
+2026-09-22 17:17:44,525 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_submission_views.xml 
+2026-09-22 17:17:44,550 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_ui_view: 'kanban-box' is deprecated, define a 'card' template instead 
+2026-09-22 17:17:44,564 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_submission_views_for_students.xml 
+2026-09-22 17:17:44,604 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_notes_popup_views.xml 
+2026-09-22 17:17:44,612 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_dashboard_views.xml 
+2026-09-22 17:17:44,615 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_submission_mass_update_wizard_views.xml 
+2026-09-22 17:17:44,627 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_resource_mass_update_wizard_views.xml 
+2026-09-22 17:17:44,643 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_submit_mark_wizard_views.xml 
+2026-09-22 17:17:44,653 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_subject_category_views.xml 
+2026-09-22 17:17:44,668 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_level_views.xml 
+2026-09-22 17:17:44,687 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_academic_year_views.xml 
+2026-09-22 17:17:44,704 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_academic_term_views.xml 
+2026-09-22 17:17:44,721 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_academic_week_generate_wizard_views.xml 
+2026-09-22 17:17:44,729 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_academic_week_views.xml 
+2026-09-22 17:17:44,746 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_school_calendar_views.xml 
+2026-09-22 17:17:44,785 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_time_tracking_views.xml 
+2026-09-22 17:17:44,803 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_time_tracking_dashboard_views.xml 
+2026-09-22 17:17:44,805 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_time_tracking_overlap_wizard_views.xml 
+2026-09-22 17:17:44,815 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_teacher_dashboard_views.xml 
+2026-09-22 17:17:44,817 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_school_mgmt_dashboard_views.xml 
+2026-09-22 17:17:44,819 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_certificate_views.xml 
+2026-09-22 17:17:44,862 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_certificates_dashboard_views.xml 
+2026-09-22 17:17:44,864 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_media_views.xml 
+2026-09-22 17:17:44,964 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_award_tag_views.xml 
+2026-09-22 17:17:44,974 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_award_voting_set_views.xml 
+2026-09-22 17:17:44,995 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_award_vote_round_views.xml 
+2026-09-22 17:17:45,020 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_award_vote_views.xml 
+2026-09-22 17:17:45,047 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_award_vote_round_mass_update_wizard_views.xml 
+2026-09-22 17:17:45,058 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_vote_management_dashboard_views.xml 
+2026-09-22 17:17:45,083 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/aps_vote_analysis_dashboard_views.xml 
+2026-09-22 17:17:45,085 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_gradebook_grid_views.xml 
+2026-09-22 17:17:45,087 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_student_matrix_views.xml 
+2026-09-22 17:17:45,089 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_school_calendar_report_views.xml 
+2026-09-22 17:17:45,091 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_school_calendar_generate_wizard_views.xml 
+2026-09-22 17:17:45,099 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_class_views.xml 
+2026-09-22 17:17:45,122 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_class_tag_views.xml 
+2026-09-22 17:17:45,138 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_teacher_views.xml 
+2026-09-22 17:17:45,164 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_student_views.xml 
+2026-09-22 17:17:45,198 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_student_class_views.xml 
+2026-09-22 17:17:45,220 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_subject_views.xml 
+2026-09-22 17:17:45,249 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/core/aps_timetable_entry_views.xml 
+2026-09-22 17:17:45,272 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/res_partner_views.xml 
+2026-09-22 17:17:45,339 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_partner_voting_token_wizard_views.xml 
+2026-09-22 17:17:45,349 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_avatar_views.xml 
+2026-09-22 17:17:45,410 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_ui_view: <b>Access Rights Inconsistency</b><br/>This view may not work for all users: some users may have a combination of groups where the elements <b><tt>&lt;widget&gt;</tt></b> are displayed, but they depend on the field <b><tt>calendar_mismatch</tt></b> that is not accessible. You might fix this by modifying user groups to make sure that all users who have access to those elements also have access to the field, typically via group implications. Alternatively, you could adjust the “<i>groups</i>” or “<i>invisible</i>” attributes for these fields, to make sure they are always available together.<br/>Debugging information:<br/>- field “calendar_mismatch” is accessible for groups: &#39;base.group_system&#39; | &#39;hr.group_hr_user&#39;<br/>- element “&lt;widget name=&#34;contract_warning_tooltip&#34; invisible=&#34;not calendar_mismatch&#34;/&gt;” is shown in the view for groups: &#39;base.group_system&#39; | &#39;hr.group_hr_user&#39; | &#39;83&#39; | &#39;119&#39; | &#39;170&#39;
+View error context:
+{'file': 'd:\\git\\odoo_custom_addons\\aps_sis\\views\\aps_avatar_views.xml',
+ 'line': 1,
+ 'name': 'hr.employee.inherit.mobile.label',
+ 'view': ir.ui.view(4337,),
+ 'view.model': 'hr.employee',
+ 'view.parent': ir.ui.view(924,),
+ 'xmlid': 'view_hr_employee_mobile_label'} 
+2026-09-22 17:17:45,457 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_avatar_bulk_upload_views.xml 
+2026-09-22 17:17:45,460 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/hr_employee_views.xml 
+2026-09-22 17:17:45,484 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_ui_view: <b>Access Rights Inconsistency</b><br/>This view may not work for all users: some users may have a combination of groups where the elements <b><tt>&lt;widget&gt;</tt></b> are displayed, but they depend on the field <b><tt>calendar_mismatch</tt></b> that is not accessible. You might fix this by modifying user groups to make sure that all users who have access to those elements also have access to the field, typically via group implications. Alternatively, you could adjust the “<i>groups</i>” or “<i>invisible</i>” attributes for these fields, to make sure they are always available together.<br/>Debugging information:<br/>- field “calendar_mismatch” is accessible for groups: &#39;base.group_system&#39; | &#39;hr.group_hr_user&#39;<br/>- element “&lt;widget name=&#34;contract_warning_tooltip&#34; invisible=&#34;not calendar_mismatch&#34;/&gt;” is shown in the view for groups: &#39;base.group_system&#39; | &#39;hr.group_hr_user&#39; | &#39;83&#39; | &#39;119&#39; | &#39;170&#39;
+View error context:
+{'file': 'd:\\git\\odoo_custom_addons\\aps_sis\\views\\hr_employee_views.xml',
+ 'line': 1,
+ 'name': 'hr.employee.form.access.token',
+ 'view': ir.ui.view(4366,),
+ 'view.model': 'hr.employee',
+ 'view.parent': ir.ui.view(924,),
+ 'xmlid': 'view_hr_employee_form_access_token'} 
+2026-09-22 17:17:45,485 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/awards/awards_voting_templates.xml 
+2026-09-22 17:17:45,494 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/class/aps_class_rollover_wizard_views.xml 
+2026-09-22 17:17:45,503 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_year_level_rollover_wizard_views.xml 
+2026-09-22 17:17:45,510 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/class/aps_class_tag_enrol_wizard_views.xml 
+2026-09-22 17:17:45,519 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/class/aps_student_class_bulk_wizard_views.xml 
+2026-09-22 17:17:45,527 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_partner_profile_pic_views.xml 
+2026-09-22 17:17:45,530 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/search_wizard_views.xml 
+2026-09-22 17:17:45,538 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_sis_menu.xml 
+2026-09-22 17:17:45,707 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_student_daily_mgmt_dashboard_views.xml 
+2026-09-22 17:17:45,716 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/weekly_submission_results_views.xml 
+2026-09-22 17:17:45,721 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/weekly_submission_result_views.xml 
+2026-09-22 17:17:45,745 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_course_explorer_views.xml 
+2026-09-22 17:17:45,752 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/aps_ai_views.xml 
+2026-09-22 17:17:45,784 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/ai_prompts_views.xml 
+2026-09-22 17:17:45,791 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/reports/submission_report.xml 
+2026-09-22 17:17:45,810 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/reports/weekly_submission_result_report.xml 
+2026-09-22 17:17:45,821 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/reports/school_calendar_report.xml 
+2026-09-22 17:17:45,830 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/reports/certificate_report.xml 
+2026-09-22 17:17:45,848 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/submission_report_wizard_views.xml 
+2026-09-22 17:17:45,856 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_ai_save_response_wizard_views.xml 
+2026-09-22 17:17:45,864 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/aps_prompt_preview_wizard_views.xml 
+2026-09-22 17:17:45,870 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/wizard/create_linked_resources_wizard_views.xml 
+2026-09-22 17:17:45,878 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/resources/aps_exam_paper_import_views.xml 
+2026-09-22 17:17:45,945 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_views.xml 
+2026-09-22 17:17:46,139 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_import_wizard_views.xml 
+2026-09-22 17:17:46,150 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_flat_row_views.xml 
+2026-09-22 17:17:46,171 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_workload_views.xml 
+2026-09-22 17:17:46,209 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_class_subject_minutes_views.xml 
+2026-09-22 17:17:46,225 621292 INFO odoov18_20260902 odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_dashboard_views.xml 
+2026-09-22 17:17:46,243 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module aps_sis: no translation for language en_GB 
+2026-09-22 17:17:46,377 621292 INFO odoov18_20260902 odoo.modules.loading: Module aps_sis loaded in 4.15s, 5084 queries (+5084 other) 
+2026-09-22 17:17:46,608 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module apex_core (159/208) 
+2026-09-22 17:17:46,802 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:46,806 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:47,139 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:47,141 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:47,187 621292 INFO odoov18_20260902 odoo.modules.registry: module apex_core: creating or updating database tables 
+2026-09-22 17:17:47,304 621292 INFO odoov18_20260902 odoo.schema: Keep unexpected index res_partner__company_registry_index on table res_partner 
+2026-09-22 17:17:47,304 621292 INFO odoov18_20260902 odoo.schema: Keep unexpected index res_users__create_date_index on table res_users 
+2026-09-22 17:17:47,314 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:47,314 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:47,317 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:47,379 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/security/ir.model.access.csv 
+2026-09-22 17:17:47,421 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/data/id_card_formats.xml 
+2026-09-22 17:17:47,427 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/data/attendance_data.xml 
+2026-09-22 17:17:47,433 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/data/cron.xml 
+2026-09-22 17:17:47,453 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/data/infringement_data.xml 
+2026-09-22 17:17:47,464 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/apex_dashboard_views.xml 
+2026-09-22 17:17:47,469 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/res_partner_views.xml 
+2026-09-22 17:17:47,527 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/id_card_views.xml 
+2026-09-22 17:17:47,546 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/reports/id_card_report.xml 
+2026-09-22 17:17:47,558 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/attendance_views.xml 
+2026-09-22 17:17:47,589 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/attendance_roll_views.xml 
+2026-09-22 17:17:47,592 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/timetable_views.xml 
+2026-09-22 17:17:47,594 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/infringement_views.xml 
+2026-09-22 17:17:47,616 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/teams/aps_team_views.xml 
+2026-09-22 17:17:47,633 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/teams/aps_team_points_views.xml 
+2026-09-22 17:17:47,651 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/teams/aps_team_points_filter_views.xml 
+2026-09-22 17:17:47,664 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/teams/aps_event_views.xml 
+2026-09-22 17:17:47,681 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/teams/aps_student_team_views.xml 
+2026-09-22 17:17:47,704 621292 INFO odoov18_20260902 odoo.modules.loading: loading apex_core/views/menus.xml 
+2026-09-22 17:17:47,940 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module apex_core: no translation for language en_GB 
+2026-09-22 17:17:47,971 621292 INFO odoov18_20260902 odoo.modules.loading: Module apex_core loaded in 1.36s, 1378 queries (+1378 other) 
+2026-09-22 17:17:47,971 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module ar_commentbuilder (160/208) 
+2026-09-22 17:17:48,106 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:48,107 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:48,357 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:48,359 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:48,498 621292 INFO odoov18_20260902 odoo.modules.registry: module ar_commentbuilder: creating or updating database tables 
+2026-09-22 17:17:48,551 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:48,551 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:48,554 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:48,601 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/security/ar_commentbuilder_security.xml 
+2026-09-22 17:17:48,663 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/security/ir.model.access.csv 
+2026-09-22 17:17:48,700 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/comment_builder_views.xml 
+2026-09-22 17:17:48,703 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/comment_criteria_views.xml 
+2026-09-22 17:17:48,720 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/report_cycle_views.xml 
+2026-09-22 17:17:48,730 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/student_criteria_views.xml 
+2026-09-22 17:17:48,742 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/student_comment_views.xml 
+2026-09-22 17:17:48,754 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/comment_criteria_category_views.xml 
+2026-09-22 17:17:48,766 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/comment_type_views.xml 
+2026-09-22 17:17:48,775 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/report_cycle_customisation_views.xml 
+2026-09-22 17:17:48,785 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/user_registry_views.xml 
+2026-09-22 17:17:48,795 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/ratings_views.xml 
+2026-09-22 17:17:48,806 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/ar_commentbuilder_actions.xml 
+2026-09-22 17:17:48,818 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_commentbuilder/views/ar_commentbuilder_menu.xml 
+2026-09-22 17:17:48,857 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module ar_commentbuilder: no translation for language en_GB 
+2026-09-22 17:17:48,873 621292 INFO odoov18_20260902 odoo.modules.loading: Module ar_commentbuilder loaded in 0.90s, 520 queries (+520 other) 
+2026-09-22 17:17:48,873 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module ar_scanner (161/208) 
+2026-09-22 17:17:49,003 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,004 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,181 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,183 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,225 621292 INFO odoov18_20260902 odoo.modules.registry: module ar_scanner: creating or updating database tables 
+2026-09-22 17:17:49,260 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:49,260 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:49,263 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:49,307 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/data/camera_station_sequence.xml 
+2026-09-22 17:17:49,320 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/security/groups.xml 
+2026-09-22 17:17:49,338 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/security/ir.model.access.csv 
+2026-09-22 17:17:49,351 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/views/scanner_target_config_views.xml 
+2026-09-22 17:17:49,377 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/views/scanner_scan_views.xml 
+2026-09-22 17:17:49,382 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_ui_view: <img> tag must contain an alt attribute
+View error context:
+{'file': 'd:\\git\\odoo_custom_addons\\ar_scanner\\views\\scanner_scan_views.xml',
+ 'line': 12,
+ 'name': 'ar.scanner.scan.kanban',
+ 'view': ir.ui.view(4721,),
+ 'view.model': 'ar.scanner.scan',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_ar_scanner_scan_kanban'} 
+2026-09-22 17:17:49,389 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/views/scanner_actions.xml 
+2026-09-22 17:17:49,405 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/views/camera_station_views.xml 
+2026-09-22 17:17:49,422 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_scanner/views/camera_templates.xml 
+2026-09-22 17:17:49,435 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module ar_scanner: no translation for language en_GB 
+2026-09-22 17:17:49,450 621292 INFO odoov18_20260902 odoo.modules.loading: Module ar_scanner loaded in 0.58s, 285 queries (+285 other) 
+2026-09-22 17:17:49,451 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module ar_student_interviews (162/208) 
+2026-09-22 17:17:49,671 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,673 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,847 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,848 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:49,892 621292 INFO odoov18_20260902 odoo.modules.registry: module ar_student_interviews: creating or updating database tables 
+2026-09-22 17:17:49,922 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (last_interview_date, last_interview_id) of student.progress.profile() have the same label: Last Interview. [Modules: ar_student_interviews and ar_student_interviews] 
+2026-09-22 17:17:49,922 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (barrier_comments, strength_comments) of student.progress.interview.subject() have the same label: Additional Comments. [Modules: ar_student_interviews and ar_student_interviews] 
+2026-09-22 17:17:49,922 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (improvement_comments, strength_comments) of student.progress.interview.subject() have the same label: Additional Comments. [Modules: ar_student_interviews and ar_student_interviews] 
+2026-09-22 17:17:49,956 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:49,956 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:49,960 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:50,002 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_student_interviews/security/groups.xml 
+2026-09-22 17:17:50,031 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_student_interviews/security/ir.model.access.csv 
+2026-09-22 17:17:50,048 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_student_interviews/data/student_progress_options.xml 
+2026-09-22 17:17:50,076 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_student_interviews/views/student_progress_option_views.xml 
+2026-09-22 17:17:50,103 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_student_interviews/views/student_progress_interview_views.xml 
+2026-09-22 17:17:50,141 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_student_interviews/views/student_progress_profile_views.xml 
+2026-09-22 17:17:50,161 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_student_interviews/views/menus.xml 
+2026-09-22 17:17:50,183 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module ar_student_interviews: no translation for language en_GB 
+2026-09-22 17:17:50,202 621292 INFO odoov18_20260902 odoo.modules.loading: Module ar_student_interviews loaded in 0.75s, 478 queries (+478 other) 
+2026-09-22 17:17:50,202 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module ar_teacher_toolkit (163/208) 
+2026-09-22 17:17:50,335 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:50,336 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:50,604 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:50,606 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:50,649 621292 INFO odoov18_20260902 odoo.modules.registry: module ar_teacher_toolkit: creating or updating database tables 
+2026-09-22 17:17:50,666 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:50,666 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:50,668 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:50,713 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_teacher_toolkit/security/security.xml 
+2026-09-22 17:17:50,731 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_teacher_toolkit/security/ir.model.access.csv 
+2026-09-22 17:17:50,739 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_teacher_toolkit/views/teacher_toolkit_views.xml 
+2026-09-22 17:17:50,747 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module ar_teacher_toolkit: no translation for language en_GB 
+2026-09-22 17:17:50,758 621292 INFO odoov18_20260902 odoo.modules.loading: Module ar_teacher_toolkit loaded in 0.56s, 78 queries (+78 other) 
+2026-09-22 17:17:50,772 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module educational_games (165/208) 
+2026-09-22 17:17:50,902 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:50,904 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:51,102 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:51,104 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:51,155 621292 INFO odoov18_20260902 odoo.modules.registry: module educational_games: creating or updating database tables 
+2026-09-22 17:17:51,369 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:51,370 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:51,372 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:51,385 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/security/ir.model.access.csv 
+2026-09-22 17:17:51,412 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/data/quiz_cron.xml 
+2026-09-22 17:17:51,414 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/quiz_actions.xml 
+2026-09-22 17:17:51,429 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/quiz_quiz_views.xml 
+2026-09-22 17:17:51,458 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/quiz_tag_views.xml 
+2026-09-22 17:17:51,468 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/quiz_question_views.xml 
+2026-09-22 17:17:51,485 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/quiz_question_import_wizard_views.xml 
+2026-09-22 17:17:51,494 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/quiz_question_tag_wizard_views.xml 
+2026-09-22 17:17:51,501 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/quiz_response_views.xml 
+2026-09-22 17:17:51,518 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/actions.xml 
+2026-09-22 17:17:51,554 621292 INFO odoov18_20260902 odoo.models.unlink: User #1 deleted ir.actions.act_url records with IDs: [1131] 
+2026-09-22 17:17:51,556 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/educational_games_menu.xml 
+2026-09-22 17:17:51,598 621292 INFO odoov18_20260902 odoo.modules.loading: loading educational_games/views/educational_games_views.xml 
+2026-09-22 17:17:51,611 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module educational_games: no translation for language en_GB 
+2026-09-22 17:17:51,630 621292 INFO odoov18_20260902 odoo.modules.loading: Module educational_games loaded in 0.86s, 557 queries (+557 other) 
+2026-09-22 17:17:51,828 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module ar_markbook (191/208) 
+2026-09-22 17:17:51,910 621292 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:51,958 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:51,958 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:51,967 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:51,968 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:51,972 621292 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:52,112 621292 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:52,164 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:52,164 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:52,173 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:52,174 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:52,180 621292 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:52,234 621292 INFO odoov18_20260902 odoo.modules.registry: module ar_markbook: creating or updating database tables 
+2026-09-22 17:17:52,288 621292 INFO odoov18_20260902 odoo.schema: Table 'ar_markbook_student_assessment_item': unable to add constraint 'ar_markbook_student_assessment_item_assessment_student_unique' as unique(assessment_item_id, student_id) 
+2026-09-22 17:17:52,309 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_model: Two fields (score_str, score) of ar_markbook.student_assessment_item() have the same label: Score. [Modules: ar_markbook and ar_markbook] 
+2026-09-22 17:17:52,387 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:52,387 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:52,390 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:52,514 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/security/ar_markbook_security.xml 
+2026-09-22 17:17:52,590 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/security/ir.model.access.csv 
+2026-09-22 17:17:52,623 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/data/assessment_type_data.xml 
+2026-09-22 17:17:52,631 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/data/assessment_category_data.xml 
+2026-09-22 17:17:52,650 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/data/colour_scale_data.xml 
+2026-09-22 17:17:52,697 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/data/grade_scale_data.xml 
+2026-09-22 17:17:52,767 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/data/ir_cron_sync_student_scores.xml 
+2026-09-22 17:17:52,770 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/data/ir_cron_weekly_submission_marks.xml 
+2026-09-22 17:17:52,773 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/assessment_type_views.xml 
+2026-09-22 17:17:52,794 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/assessment_category_views.xml 
+2026-09-22 17:17:52,808 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/grade_scale_views.xml 
+2026-09-22 17:17:52,828 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/grade_scale_value_views.xml 
+2026-09-22 17:17:52,842 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/colour_scale_views.xml 
+2026-09-22 17:17:52,859 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/colour_scale_value_views.xml 
+2026-09-22 17:17:52,872 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/assessment_template_views.xml 
+2026-09-22 17:17:52,887 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/assessment_item_views.xml 
+2026-09-22 17:17:52,919 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/weekly_submission_aggregation_views.xml 
+2026-09-22 17:17:52,927 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/assessment_item_wizard_views.xml 
+2026-09-22 17:17:52,938 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': 'd:\\git\\odoo_custom_addons\\ar_markbook\\views\\assessment_item_wizard_views.xml',
+ 'line': 124,
+ 'name': 'ar_markbook.assessment_item_wizard.form',
+ 'view': ir.ui.view(4492,),
+ 'view.model': 'ar_markbook.assessment_item_wizard',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_assessment_item_wizard_form'} 
+2026-09-22 17:17:52,939 621292 WARNING odoov18_20260902 odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': 'd:\\git\\odoo_custom_addons\\ar_markbook\\views\\assessment_item_wizard_views.xml',
+ 'line': 133,
+ 'name': 'ar_markbook.assessment_item_wizard.form',
+ 'view': ir.ui.view(4492,),
+ 'view.model': 'ar_markbook.assessment_item_wizard',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_assessment_item_wizard_form'} 
+2026-09-22 17:17:52,947 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/ar_markbook_gradebook_views.xml 
+2026-09-22 17:17:52,953 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/student_assessment_item_views.xml 
+2026-09-22 17:17:52,980 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/ar_markbook_actions.xml 
+2026-09-22 17:17:52,992 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_markbook/views/ar_markbook_menu.xml 
+2026-09-22 17:17:53,065 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module ar_markbook: no translation for language en_GB 
+2026-09-22 17:17:53,193 621292 INFO odoov18_20260902 odoo.modules.loading: Module ar_markbook loaded in 1.37s, 800 queries (+800 other) 
+2026-09-22 17:17:53,298 621292 INFO odoov18_20260902 odoo.modules.loading: Loading module ar_lesson_plans (202/208) 
+2026-09-22 17:17:53,432 621292 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:53,491 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,492 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,500 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,502 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,509 621292 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,698 621292 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:53,743 621292 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:53,772 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,772 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,781 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,783 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,789 621292 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,789 621292 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:53,846 621292 INFO odoov18_20260902 odoo.modules.registry: module ar_lesson_plans: creating or updating database tables 
+2026-09-22 17:17:54,135 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:54,135 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:54,139 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:54,317 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/security/ar_lesson_plans_security.xml 
+2026-09-22 17:17:54,401 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/security/ir.model.access.csv 
+2026-09-22 17:17:54,465 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/data/teaching_strategy_categories_data.xml 
+2026-09-22 17:17:54,525 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/data/teaching_strategy_data.xml 
+2026-09-22 17:17:54,791 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/data/curriculum_resource_type_data.xml 
+2026-09-22 17:17:54,820 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/course_views.xml 
+2026-09-22 17:17:54,838 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/curriculum_import_views.xml 
+2026-09-22 17:17:54,857 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/unit_views.xml 
+2026-09-22 17:17:54,870 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/topic_views.xml 
+2026-09-22 17:17:54,881 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/objective_views.xml 
+2026-09-22 17:17:54,890 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/resource_type_views.xml 
+2026-09-22 17:17:54,900 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/resource_views.xml 
+2026-09-22 17:17:54,910 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/vocabulary_views.xml 
+2026-09-22 17:17:54,919 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/prerequisite_views.xml 
+2026-09-22 17:17:54,928 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/curriculum/actions.xml 
+2026-09-22 17:17:54,938 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/lesson_plan/lesson_plan_list_views.xml 
+2026-09-22 17:17:54,954 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/lesson_plan/lesson_plan_search_views.xml 
+2026-09-22 17:17:54,959 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/lesson_plan/lesson_plan_form_views.xml 
+2026-09-22 17:17:54,980 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/lesson_plan/lesson_plan_actions.xml 
+2026-09-22 17:17:54,991 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/lesson_plan_actions.xml 
+2026-09-22 17:17:54,995 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/teaching_strategy_views.xml 
+2026-09-22 17:17:55,020 621292 INFO odoov18_20260902 odoo.modules.loading: loading ar_lesson_plans/views/lesson_plan_menu.xml 
+2026-09-22 17:17:55,118 621292 INFO odoov18_20260902 odoo.addons.base.models.ir_module: module ar_lesson_plans: no translation for language en_GB 
+2026-09-22 17:17:55,236 621292 INFO odoov18_20260902 odoo.modules.loading: Module ar_lesson_plans loaded in 1.94s, 1635 queries (+1635 other) 
+2026-09-22 17:17:55,287 621292 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 15.19s, 10815 queries (+10815 extra) 
+2026-09-22 17:17:55,288 621292 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-09-22 17:17:55,292 621292 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-09-22 17:17:55,293 621292 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-22 17:17:55,293 621292 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-09-22 17:17:55,297 621292 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-09-22 17:17:55,297 621292 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-22 17:17:55,378 621292 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:55,412 621292 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:55,434 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,434 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,441 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,443 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,447 621292 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,448 621292 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,575 621292 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:55,609 621292 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-09-22 17:17:55,629 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,630 621292 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,639 621292 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,640 621292 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,645 621292 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,646 621292 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-09-22 17:17:55,693 621292 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-09-22 17:17:55,703 621292 WARNING odoov18_20260902 odoo.schema: Table 'aps_ai_run': unable to set NOT NULL on column 'import_id' 
+2026-09-22 17:17:55,704 621292 WARNING odoov18_20260902 odoo.schema: Table 'aps_school_calendar': unable to set NOT NULL on column 'date_type_id' 
+2026-09-22 17:17:55,711 621292 WARNING odoov18_20260902 odoo.schema: Table 'ar_markbook_student_assessment_item': unable to add constraint 'ar_markbook_student_assessment_item_assessment_student_unique' as unique(assessment_item_id, student_id) 
+2026-09-22 17:17:56,152 621292 INFO odoov18_20260902 odoo.modules.registry: verifying fields for every extended model 
+2026-09-22 17:17:56,255 621292 INFO odoov18_20260902 odoo.schema: Keep unexpected index res_partner__company_registry_index on table res_partner 
+2026-09-22 17:17:56,281 621292 INFO odoov18_20260902 odoo.modules.registry: Models have no table: id.photo.history. 
+2026-09-22 17:17:56,281 621292 INFO odoov18_20260902 odoo.modules.registry: Recreate table of model id.photo.history. 
+2026-09-22 17:17:56,284 621292 ERROR odoov18_20260902 odoo.modules.registry: Model id.photo.history has no table. 
+2026-09-22 17:17:57,564 621292 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-09-22 17:17:57,679 621292 INFO odoov18_20260902 odoo.modules.registry: Registry changed, signaling through the database 
+2026-09-22 17:17:57,681 621292 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 20.410s 
+2026-09-22 17:17:57,681 621292 INFO odoov18_20260902 odoo.service.server: Starting post tests 
+2026-09-22 17:17:57,683 621292 INFO odoov18_20260902 odoo.service.server: 0 post-tests in 0.00s, 0 queries 
+2026-09-22 17:17:57,683 621292 WARNING odoov18_20260902 odoo.tests.result: 0 failed, 0 error(s) of 0 tests when loading database 'odoov18_20260902' 
+2026-09-22 17:17:57,683 621292 INFO odoov18_20260902 odoo.service.server: Initiating shutdown 
+2026-09-22 17:17:57,683 621292 INFO odoov18_20260902 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-22 17:17:57,859 621292 INFO odoov18_20260902 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  

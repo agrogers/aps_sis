@@ -95,12 +95,7 @@ export class ExamSectionRegionEditor extends Component {
             return;
         }
         this._stashDraft();
-        if (this.state.additions.length || Object.keys(this.state.edits).length) {
-            const confirmed = window.confirm("Discard unsaved region changes?");
-            if (!confirmed) {
-                return;
-            }
-        }
+        await this._save(false);
         await this.loadSection(section.id);
     }
 
@@ -266,19 +261,27 @@ export class ExamSectionRegionEditor extends Component {
         }
     }
 
-    async deletePage(event, region) {
+    async removeRegion(event, region) {
         event.stopPropagation();
-        if (!window.confirm(`Delete Page ${region.page_number}?`)) return;
+        if (!window.confirm(`Remove this image from ${this.state.data.label}?`)) return;
+        if (region.is_new) {
+            const key = this._regionKey(region);
+            const index = this.state.additions.indexOf(region);
+            if (index !== -1) {
+                this.state.additions.splice(index, 1);
+            }
+            delete this.state.edits[key];
+            if (this.state.selected === region) {
+                this.state.selected = null;
+                this.state.draft = null;
+            }
+            return;
+        }
         await this.orm.call(
-            "aps.exam.paper.section", "delete_region_editor_page",
-            [[this.state.data.id], region.page_id]
+            "aps.exam.paper.section", "remove_region_editor_region",
+            [[this.state.data.id], region.document_type, region.index]
         );
-        this.state.data = await this.orm.call(
-            "aps.exam.paper.section", "get_region_editor_data", [[this.state.data.id]]
-        );
-        this.state.selected = null;
-        this.state.draft = null;
-        this.state.edits = {};
+        await this.loadSection(this.state.data.id);
     }
 
     cancel() {

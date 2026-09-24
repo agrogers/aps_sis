@@ -83,6 +83,7 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="display_label" optional="show"/>
                                     <field name="source_key" readonly="1" optional="show"/>
+                                    <field name="root_key" optional="hide"/>
                                     <field name="hierarchy_level" optional="show"/>
                                     <field name="include_resource" widget="boolean_toggle" optional="show"/>
                                     <field name="include_parent_question" widget="boolean_toggle" optional="show"/>
@@ -234,7 +235,9 @@
                     <group>
                         <field name="import_id" readonly="1"/>
                         <field name="display_label"/>
-                        <field name="source_key" readonly="1"/>
+                           <field name="source_key" readonly="1"
+                               help="Generated unique key. Duplicating this section creates a new key automatically."/>
+                           <field name="root_key"/>
                         <field name="hierarchy_level"/>
                         <field name="resource_id" readonly="1"/>
                         <field name="maximum_mark"/>
