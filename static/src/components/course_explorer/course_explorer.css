@@ -708,6 +708,36 @@
     vertical-align: middle;
 }
 
+.ce_quiz_mastery_row_content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.ce_quiz_mastery_name {
+    flex: 0 1 40%;
+    min-width: 0;
+    font-weight: 600;
+}
+
+.ce_quiz_mastery_progress {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+    .ce_quiz_mastery_row_content {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .ce_quiz_mastery_name {
+        flex-basis: auto;
+    }
+}
+
 .ce_quiz_name {
     font-weight: 500;
     color: var(--o-text, #333);

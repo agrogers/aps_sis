@@ -3,6 +3,7 @@ import logging
 import time
 from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
+from urllib.parse import parse_qs, urlsplit
 from markupsafe import Markup
 from odoo import _, models, api, fields
 from odoo.exceptions import UserError
@@ -1296,6 +1297,18 @@ class APSResource(models.Model):
             ])
             for task in tasks:
                 task_map[task.resource_id.id] = task
+
+        def _quiz_id_from_resource(resource):
+            type_name = (resource.type_id.name or '').strip() if resource.type_id else ''
+            if type_name.casefold() != 'quiz':
+                return False
+            try:
+                values = parse_qs(urlsplit(resource.url or '').query).get('quiz_id', [])
+                quiz_id = int(values[0]) if values else 0
+            except (TypeError, ValueError):
+                return False
+            return quiz_id if quiz_id > 0 else False
+
         _logger.info(
             "Course Explorer: quiz lookup found %d quiz resources and %d "
             "student tasks in %.3fs",
@@ -1319,6 +1332,7 @@ class APSResource(models.Model):
                         'id': child.id,
                         'name': child.name or '',
                         'typeName': child.type_id.name or '',
+                        'quizId': _quiz_id_from_resource(child),
                         'weightedResult': task.weighted_result if task else 0,
                         'attempts': task.submission_count if task else 0,
                         'lastResult': task.last_result if task else 0,
@@ -1333,6 +1347,7 @@ class APSResource(models.Model):
                         'id': sup.id,
                         'name': sup.name or '',
                         'typeName': sup.type_id.name or '',
+                        'quizId': _quiz_id_from_resource(sup),
                         'weightedResult': task.weighted_result if task else 0,
                         'attempts': task.submission_count if task else 0,
                         'lastResult': task.last_result if task else 0,

@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
     <t t-name="aps_sis.PercentPieRangedField">
-        <PercentPie value="value" string="props.string"/>
+        <PercentPie value="value" string="props.string" isSentinel="isSentinel"/>
     </t>
 
 </templates>

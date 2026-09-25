@@ -120,6 +120,70 @@ class TestAPSResource(TransactionCase):
         self.assertEqual(section['highlightSourceId'], resource.id)
         self.assertEqual(section['highlightSourceField'], 'notes')
 
+    def test_course_explorer_data_extracts_quiz_id_only_for_quiz_assessments(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Quiz Link Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Quiz Link Subject',
+            'category_id': category.id,
+        })
+        parent = self.env['aps.resources'].create({
+            'name': 'Quiz Link Section',
+            'has_notes': 'yes',
+            'notes': '<p>Quiz links.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+        quiz_type = self.env['aps.resource.types'].create({
+            'name': 'Quiz',
+            'assessment': True,
+        })
+        other_type = self.env['aps.resource.types'].create({
+            'name': 'Quiz Review',
+            'assessment': True,
+        })
+        quiz_resources = self.env['aps.resources'].create([
+            {
+                'name': 'Linked Quiz',
+                'type_id': quiz_type.id,
+                'url': 'action:42?quiz_id=123&quiz_token=token',
+                'show_in_hierarchy': True,
+                'subjects': [(6, 0, [subject.id])],
+                'parent_ids': [(6, 0, [parent.id])],
+                'primary_parent_id': parent.id,
+            },
+            {
+                'name': 'Malformed Quiz Link',
+                'type_id': quiz_type.id,
+                'url': 'action:42?quiz_id=invalid',
+                'show_in_hierarchy': True,
+                'subjects': [(6, 0, [subject.id])],
+                'parent_ids': [(6, 0, [parent.id])],
+                'primary_parent_id': parent.id,
+            },
+            {
+                'name': 'Other Assessment Type',
+                'type_id': other_type.id,
+                'url': 'action:42?quiz_id=456',
+                'show_in_hierarchy': True,
+                'subjects': [(6, 0, [subject.id])],
+                'parent_ids': [(6, 0, [parent.id])],
+                'primary_parent_id': parent.id,
+            },
+        ])
+
+        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        section = next(
+            section for section in result['contentSections']
+            if section['id'] == parent.id
+        )
+        quizzes = {quiz['id']: quiz for quiz in section['quizzes']}
+
+        self.assertEqual(quizzes[quiz_resources[0].id]['quizId'], 123)
+        self.assertFalse(quizzes[quiz_resources[1].id]['quizId'])
+        self.assertFalse(quizzes[quiz_resources[2].id]['quizId'])
+
     def test_course_explorer_data_returns_inherited_notes_highlight_source(self):
         category = self.env['aps.subject.category'].create({
             'name': 'Inherited Course Explorer Category',

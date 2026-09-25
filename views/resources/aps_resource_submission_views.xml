@@ -36,6 +36,7 @@
                 <field name="date_due"/>
                 <field name="date_submitted"/>
                 <field name="date_completed"/>
+                <field name="out_of" string="Out Of"/>
                 
                 <filter string="Due Today" name="due_today" domain="[('date_due', '&gt;=', time.strftime('%Y-%m-%d')), ('date_due', '&lt;=', (datetime.datetime.now() + datetime.timedelta(days=1)).to_utc().strftime('%Y-%m-%d'))]"/>
                 <filter string="Due Tomorrow" name="due_tomorrow" domain="[('date_due', '=', (datetime.datetime.now() + datetime.timedelta(days=1)).to_utc().strftime('%Y-%m-%d'))]"/>
@@ -64,6 +65,7 @@
                     <filter string="Subject" name="groupby_subject" context="{'group_by': 'subjects'}"/>
                     <filter string="Status" name="groupby_state" context="{'group_by': 'state'}"/>
                     <filter string="Student" name="groupby_student" context="{'group_by': 'student_id'}"/>
+                    <filter string="Out Of" name="groupby_out_of" context="{'group_by': 'out_of'}"/>
                     <filter string="Due Status" name="groupby_due_status" context="{'group_by': 'due_status'}"/>
                     <filter string="Assigned By" name="groupby_assigned_by" context="{'group_by': 'assigned_by'}"/>
                     <filter string="Month" name="groupby_month" context="{'group_by': 'date_assigned'}" help="Group by month of assignment"/>

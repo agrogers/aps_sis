@@ -5,6 +5,7 @@ import { user } from "@web/core/user";
 import { ImageViewerDialog } from "@aui_enhancements/js/image_viewer_dialog";
 import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
 import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
+import { QuizProgressBar } from "@aps_sis/components/quiz_progress_bar/quiz_progress_bar";
 
 const STORAGE_KEY = "aps_course_explorer";
 
@@ -94,7 +95,7 @@ CourseExplorerTreeNode.components = { CourseExplorerTreeNode };
 
 export class CourseExplorer extends Component {
     static template = "aps_sis.CourseExplorer";
-    static components = { CourseExplorerTreeNode, PercentPie };
+    static components = { CourseExplorerTreeNode, PercentPie, QuizProgressBar };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
@@ -445,14 +446,43 @@ export class CourseExplorer extends Component {
                 "Course Explorer: data RPC completed in %dms",
                 Math.round(performance.now() - startedAt),
             );
+
+            const contentSections = result.contentSections || [];
+            const quizIds = [...new Set(
+                contentSections
+                    .flatMap((section) => section.quizzes || [])
+                    .map((quiz) => quiz.quizId)
+                    .filter((quizId) => Number.isInteger(quizId) && quizId > 0),
+            )];
+            let progressSummaries = {};
+            if (quizIds.length) {
+                try {
+                    progressSummaries = await this.orm.call(
+                        "quiz.quiz",
+                        "get_student_progress_summaries",
+                        [quizIds],
+                    ) || {};
+                } catch (err) {
+                    console.warn(
+                        "Course Explorer: quiz mastery summaries unavailable; using task statistics",
+                        err,
+                    );
+                }
+            }
             if (requestId !== this._loadDataRequestId) {
                 return;
             }
             this.state.tree = result.tree || [];
             // Wrap HTML content in Markup so t-out renders it as HTML
-            this.state.contentSections = (result.contentSections || []).map((sec) => ({
+            this.state.contentSections = contentSections.map((sec) => ({
                 ...sec,
                 html: sec.html ? markup(sec.html) : "",
+                quizzes: (sec.quizzes || []).map((quiz) => ({
+                    ...quiz,
+                    progressSummary: quiz.quizId
+                        ? progressSummaries[String(quiz.quizId)] || false
+                        : false,
+                })),
             }));
             this.state.resourceToc = [];
             this.state.activeHeadingId = "";

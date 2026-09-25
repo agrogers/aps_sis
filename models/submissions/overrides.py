@@ -110,15 +110,15 @@ class APSResourceSubmissionOverrides(models.Model):
                 if added_ids:
                     record._notify_new_faculty_reviewers(added_ids)
                     
-                    # Add the new teachers as followers
-                    teachers_to_follow = self.env['aps.teacher'].browse(added_ids)
-                    partner_ids = teachers_to_follow.mapped('partner_id.id')
+                    # Add the new faculty members as followers
+                    faculty_to_follow = self.env['aps.teacher'].browse(added_ids)
+                    partner_ids = faculty_to_follow.mapped('partner_id.id')
                     if partner_ids:
                         record.message_subscribe(partner_ids=partner_ids)
                 
                 if removed_ids:
-                    # Remove teachers as followers when they're no longer requested to review
-                    teachers_to_unfollow = self.env['aps.teacher'].browse(removed_ids)
+                    # Remove faculty members as followers when they're no longer requested to review
+                    faculty_to_unfollow = self.env['aps.teacher'].browse(removed_ids)
                     partner_ids = faculty_to_unfollow.mapped('partner_id.id')
                     if partner_ids:
                         record.message_unsubscribe(partner_ids=partner_ids)

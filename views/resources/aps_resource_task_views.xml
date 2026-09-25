@@ -111,10 +111,10 @@
                         </group>
                         <group string="Scoring">
                             <field name="submission_count"/>
-                            <field name="last_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
-                            <field name="avg_result" widget="percentpie_ranged" options="{'sentinel': 0.00}" invisible="submission_count &lt;= 1"/>
-                            <field name="weighted_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
-                            <field name="best_result" widget="percentpie_ranged" options="{'sentinel': 0.00}"/>
+                            <field name="last_result" widget="percentpie_ranged" options="{'sentinel': -0.01}"/>
+                            <field name="avg_result" widget="percentpie_ranged" options="{'sentinel': -0.01}" invisible="submission_count &lt;= 1"/>
+                            <field name="weighted_result" widget="percentpie_ranged" options="{'sentinel': -0.01}"/>
+                            <field name="best_result" widget="percentpie_ranged" options="{'sentinel': -0.01}"/>
                             <field name="avg_confidence_rating" readonly="1" invisible="not avg_confidence_rating"/>
                         </group>
                     </group>

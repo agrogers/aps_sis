@@ -5,7 +5,7 @@
  * @returns {string} - Hex color code
  */
 export function getColorForPercent(p) {
-    if (p < 10) return "#343a40"; // dark gray
+    if (p < 10) return "#555555"; // dark gray
     if (p < 50) return "#ff8800"; // orange
     if (p < 60) return "#ffc400"; // light orange
     if (p < 70) return "#ffe600"; // yellow

@@ -9,7 +9,10 @@ import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { Component } from "@odoo/owl";
-import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
+import {
+    PercentPie,
+    PERCENT_PIE_SENTINEL,
+} from "@aps_sis/components/percent_pie/percent_pie";
 
 export class PercentPieRangedField extends Component {
     static template = "aps_sis.PercentPieRangedField";
@@ -17,7 +20,27 @@ export class PercentPieRangedField extends Component {
     static props = {
         ...standardFieldProps,
         string: { type: String, optional: true },
+        sentinel: { type: Number, optional: true },
     };
+
+    get sentinel() {
+        return this.props.sentinel ?? PERCENT_PIE_SENTINEL;
+    }
+
+    get isSentinel() {
+        const rawValue = this.props.record.data[this.props.name];
+        const rawScore = this.props.record.data.score;
+        return rawValue === false
+            || rawValue === null
+            || rawValue === undefined
+            || this.isSentinelValue(rawValue)
+            || this.isSentinelValue(rawScore);
+    }
+
+    isSentinelValue(value) {
+        const numericValue = typeof value === "number" ? value : parseFloat(value);
+        return Number.isFinite(numericValue) && Math.abs(numericValue - this.sentinel) < 0.000001;
+    }
 
     get value() {
         const raw = this.props.record.data[this.props.name];
@@ -32,7 +55,10 @@ export const percentPieRangedField = {
     displayName: _t("PercentPie Ranged"),
     supportedTypes: ["float", "integer"],
     additionalClasses: ["o_field_percent_pie"],
-    extractProps: ({ string }) => ({ string }),
+    extractProps: ({ string, options }) => ({
+        string,
+        sentinel: options?.sentinel ?? PERCENT_PIE_SENTINEL,
+    }),
 };
 
 registry.category("fields").add("percentpie_ranged", percentPieRangedField);

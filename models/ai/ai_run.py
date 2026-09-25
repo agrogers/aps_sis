@@ -81,15 +81,11 @@ class APSAIRun(models.Model):
         except Exception as exc:
             from .utils import _exception_to_text
             duration_ms = int((time.perf_counter() - started_perf) * 1000)
-            self._write_progress({
-                'state': 'failed',
-                'status_message': _('Failed.'),
-                'error_message': _exception_to_text(exc),
-                'finished_at': fields.Datetime.now(),
-                'duration_ms': duration_ms,
-            })
+            error_text = _exception_to_text(exc)
+            self._recover_background_failure(exc, started_perf)
             if self.request_origin == 'automatic' and self.submission_id.exists():
-                self.submission_id.sudo()._handle_auto_ai_run_failure(self, _exception_to_text(exc))
+                self.submission_id.sudo()._handle_auto_ai_run_failure(self, error_text)
+                self._commit_background_work()
 
     def _process_specialised_background(self, started_perf):
         raise UserError(_('No processor is registered for AI run type %s.') % self.processor_key)
@@ -109,6 +105,13 @@ class APSAIRun(models.Model):
         )
         self._write_progress({'status_message': _('Writing AI feedback to the submission...')})
         submission._apply_ai_feedback_result(result)
+        self._commit_background_work()
+        submission.sudo()._finalize_ai_marking_success(
+            result,
+            request_origin=self.request_origin,
+            run=self,
+        )
+        self._commit_background_work()
         duration_ms = int((time.perf_counter() - started_perf) * 1000)
         self._write_progress({
             'state': 'completed',
@@ -124,11 +127,6 @@ class APSAIRun(models.Model):
             'estimated_cost': result.get('estimated_cost') or 0.0,
             'response_preview': result.get('raw_content') or self.response_preview or False,
         })
-        submission.sudo()._finalize_ai_marking_success(
-            result,
-            request_origin=self.request_origin,
-            run=self,
-        )
 
     def _process_background_resource(self, started_perf):
         self.ensure_one()
@@ -140,6 +138,7 @@ class APSAIRun(models.Model):
         )
         self._write_progress({'status_message': _('Writing AI feedback to the resource...')})
         resource._apply_ai_feedback_result(result)
+        self._commit_background_work()
         duration_ms = int((time.perf_counter() - started_perf) * 1000)
         self._write_progress({
             'state': 'completed',

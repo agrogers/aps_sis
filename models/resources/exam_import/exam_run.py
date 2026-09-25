@@ -71,6 +71,7 @@ class APSExamPaperImportRun(models.Model):
             except Exception:
                 failed += 1
                 _logger.exception('OCR failed for exam paper section %s', section.display_label)
+            self._commit_background_work()
             self._write_progress({'status_message': _('Completed OCR section %s.') % section.display_label})
         self._write_progress({
             'state': 'completed', 'status_message': _('Completed.'),
@@ -124,11 +125,13 @@ class APSExamPaperImportRun(models.Model):
                     'Vision analysis failed for rendered page %s', page.display_name,
                     exc_info=(type(last_error), last_error, last_error.__traceback__),
                 )
+            self._commit_background_work()
             self._write_progress({'status_message': _('Completed page %s of %s.') % (index, total)})
         importer._build_sections_from_page_analysis()
         # Move the import to "Analysed" once no pages remain to analyse.
         if not importer.page_ids.filtered(lambda item: item.ai_state != 'complete'):
             importer.write({'state': 'analysing', 'progress': 60})
+        self._commit_background_work()
         self._write_progress({
             'state': 'completed',
             'status_message': _('Completed.'),

@@ -172,6 +172,11 @@ class APSResourceSubmission(models.Model):
     date_due = fields.Date(string='Due Date', tracking=True)
     score = fields.Float(string='Score', digits=(16, 2), tracking=True, default=sentinel_zero)
     out_of_marks = fields.Float(string='Out of Marks', digits=(16, 1), store=True, tracking=True)
+    out_of = fields.Integer(
+        string='Out Of',
+        compute='_compute_out_of',
+        store=True,
+    )
     result_percent = fields.Integer(string='Result %', compute='_compute_result_percent', store=True, tracking=True)
     due_status = fields.Selection([
         ('late', 'Late'),
@@ -606,6 +611,11 @@ class APSResourceSubmission(models.Model):
                     or (resource.has_answer == 'use_parent' and resource.primary_parent_id and resource.primary_parent_id.has_answer == 'yes_notes')
                 )
             )
+
+    @api.depends('out_of_marks')
+    def _compute_out_of(self):
+        for record in self:
+            record.out_of = int(round(record.out_of_marks or 0.0))
 
     @api.depends('score', 'out_of_marks')  # Needed to trigger recompute when related model fields change fields change
     def _compute_result_percent(self):

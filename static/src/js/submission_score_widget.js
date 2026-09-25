@@ -4,7 +4,10 @@ import { Component } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { _t } from "@web/core/l10n/translation";
-import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
+import {
+    PercentPie,
+    PERCENT_PIE_SENTINEL,
+} from "@aps_sis/components/percent_pie/percent_pie";
 
 export class SubmissionScoreField extends Component {
     static template = "aps_sis.SubmissionScoreField";
@@ -22,6 +25,11 @@ export class SubmissionScoreField extends Component {
     get percent() {
         const value = Number(this.props.record.data.result_percent || 0);
         return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+    }
+
+    get isSentinel() {
+        const value = Number(this.props.record.data.score);
+        return Number.isFinite(value) && Math.abs(value - PERCENT_PIE_SENTINEL) < 0.000001;
     }
 
     get isGraded() {

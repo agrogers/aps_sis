@@ -286,7 +286,22 @@
                                     </thead>
                                     <tbody>
                                         <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
-                                            <tr class="ce_quiz_row"
+                                            <tr t-if="quiz.progressSummary and quiz.progressSummary.progress_text"
+                                                class="ce_quiz_row ce_quiz_mastery_row"
+                                                t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
+                                                <td colspan="5">
+                                                    <div class="ce_quiz_mastery_row_content">
+                                                        <span class="ce_quiz_mastery_name">
+                                                            <i class="fa fa-file-text-o me-1"/>
+                                                            <t t-esc="quiz.name"/>
+                                                        </span>
+                                                        <div class="ce_quiz_mastery_progress">
+                                                            <QuizProgressBar summary="quiz.progressSummary"/>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr t-else="" class="ce_quiz_row"
                                                 t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
                                                 <td class="ce_quiz_name">
                                                     <i class="fa fa-file-text-o me-1"/>
