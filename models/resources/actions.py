@@ -654,6 +654,9 @@ class APSResource(models.Model):
         name_map = resources_to_assign._resolve_submission_names(top_level, top_level_name=submission_name)
 
         assigned_count = 0
+        # Map (resource_id, student_id) -> created submission id so children can
+        # link to the parent submission created moments earlier.
+        created_submission_map = {}
         for resource in resources_to_assign:
             # Compute submission name for this resource
             res_submission_name = name_map.get(resource.id, submission_name)
@@ -696,7 +699,7 @@ class APSResource(models.Model):
                         'date_due': date_due,
                     })
 
-                submission_model.create({
+                submission = submission_model.create({
                     'task_id': task.id,
                     'submission_label': submission_label,
                     'submission_name': res_submission_name,
@@ -711,7 +714,13 @@ class APSResource(models.Model):
                     'points_scale': self.points_scale,
                     'notification_state': 'not_sent' if self.auto_assign_notify_student else 'skipped',
                 })
+                created_submission_map[(resource.id, student.id)] = submission.id
                 assigned_count += 1
+
+        # Link each created submission to its nearest existing ancestor
+        # submission (supports arbitrarily deep chains with missing levels).
+        created_submissions = submission_model.browse(created_submission_map.values())
+        created_submissions._link_created_parent_submissions()
 
         # Advance next assign date
         frequency = self.auto_assign_frequency or 7
