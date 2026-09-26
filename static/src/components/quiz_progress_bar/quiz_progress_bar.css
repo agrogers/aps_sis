@@ -1,49 +1,47 @@
-.ce_quiz_mastery_progress .quiz-progress-summary {
+.quiz-progress-summary {
     max-width: none;
     padding: 0;
     background: transparent;
 }
 
-.ce_quiz_mastery_progress .quiz-progress-text,
-.ce_quiz_mastery_progress .quiz-progress-legend {
-    display: none;
-}
-
-.ce_quiz_mastery_progress .quiz-progress-bar {
+.quiz-progress-bar {
     display: flex;
     width: 100%;
-    min-width: 10rem;
-    height: 0.5rem;
+    min-width: 0;
+    height: 1rem;
     overflow: hidden;
     border-radius: 999px;
     background: #e5e7eb;
 }
 
-.ce_quiz_mastery_progress .quiz-progress-segment {
+.quiz-progress-segment {
     min-width: 0.35rem;
+    border-left: solid 1px #d8d8daf5;
 }
 
-.ce_quiz_mastery_progress .quiz-progress-known,
-.ce_quiz_mastery_progress .quiz-progress-key.quiz-progress-known {
+.quiz-progress-known,
+.quiz-progress-key.quiz-progress-known {
     background: #22c55e;
 }
 
-.ce_quiz_mastery_progress .quiz-progress-not-known,
-.ce_quiz_mastery_progress .quiz-progress-key.quiz-progress-not-known {
+.quiz-progress-not-known,
+.quiz-progress-key.quiz-progress-not-known {
     background: #f59e0b;
 }
 
-.ce_quiz_mastery_progress .quiz-progress-new-above,
-.ce_quiz_mastery_progress .quiz-progress-key.quiz-progress-new-above {
+.quiz-progress-new-above,
+.quiz-progress-key.quiz-progress-new-above {
     background: #3b82f6;
 }
 
-.ce_quiz_mastery_progress .quiz-progress-new-below,
-.ce_quiz_mastery_progress .quiz-progress-key.quiz-progress-new-below {
+.quiz-progress-new-below,
+.quiz-progress-key.quiz-progress-new-below {
     background: #93c5fd;
 }
 
-.ce_quiz_mastery_progress .quiz-progress-not-tried,
-.ce_quiz_mastery_progress .quiz-progress-key.quiz-progress-not-tried {
+.quiz-progress-not-tried,
+.quiz-progress-key.quiz-progress-not-tried {
     background: #b4b4b4;
 }
+
+

@@ -332,7 +332,7 @@ export class CourseExplorer extends Component {
             )) {
                 const text = heading.textContent.trim();
                 const tocText = text.replace(
-                    /\s*(?:\(\s*p\d+(?:\s*,\s*p\d+)*\s*\)|\[\s*p\d+(?:\s*,\s*p\d+)*\s*\])\s*$/i,
+                    /\s*(?:\(\s*p\d+(?:(?:\s*,\s*p|\s*[-\u2013\u2014]\s*p)\d+)*\s*\)|\[\s*p\d+(?:(?:\s*,\s*p|\s*[-\u2013\u2014]\s*p)\d+)*\s*\])\s*$/i,
                     "",
                 ).trim();
                 if (!text) continue;
@@ -474,16 +474,30 @@ export class CourseExplorer extends Component {
             }
             this.state.tree = result.tree || [];
             // Wrap HTML content in Markup so t-out renders it as HTML
-            this.state.contentSections = contentSections.map((sec) => ({
-                ...sec,
-                html: sec.html ? markup(sec.html) : "",
-                quizzes: (sec.quizzes || []).map((quiz) => ({
+            this.state.contentSections = contentSections.map((sec) => {
+                const quizzes = (sec.quizzes || []).map((quiz) => ({
                     ...quiz,
                     progressSummary: quiz.quizId
                         ? progressSummaries[String(quiz.quizId)] || false
                         : false,
-                })),
-            }));
+                }));
+                const quizMasteryRows = quizzes.filter(
+                    (quiz) => quiz.progressSummary?.progress_text,
+                );
+
+                return {
+                    ...sec,
+                    html: sec.html ? markup(sec.html) : "",
+                    quizzes,
+                    quizMasteryRows,
+                    assessmentRows: quizzes.filter(
+                        (quiz) => !quiz.progressSummary?.progress_text,
+                    ),
+                    hasNewQuizCategories: quizMasteryRows.some(
+                        (quiz) => quiz.progressSummary.student_attempt_threshold !== 1,
+                    ),
+                };
+            });
             this.state.resourceToc = [];
             this.state.activeHeadingId = "";
             this.state.contentVersion++;

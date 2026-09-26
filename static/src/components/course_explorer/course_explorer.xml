@@ -267,12 +267,74 @@
                                       t-att-data-image-viewer-source-id="section.highlightSourceId"
                                       t-att-data-image-viewer-source-field="section.highlightSourceField"
                              t-out="section.html"/>
-                        <!-- Quiz table -->
-                        <t t-if="section.quizzes and section.quizzes.length">
+                        <!-- Quiz mastery table -->
+                        <t t-if="section.quizMasteryRows.length">
                             <div class="ce_quiz_box" t-att-id="'ce-quiz-' + section.id">
                                 <div class="ce_quiz_box_header">
                                     <i class="fa fa-question-circle me-1"/>
-                                    <span>Quizzes</span>
+                                    <span>Quiz Progress</span>
+                                </div>
+                                <div class="ce_quiz_table_scroll">
+                                    <table class="ce_quiz_table ce_quiz_mastery_table">
+                                        <thead>
+                                            <tr>
+                                                <th class="ce_quiz_th_name">Name</th>
+                                                <th class="ce_quiz_th_attempted" title="Counts distinct questions with correct or incorrect attempts">Attempted</th>
+                                                <th class="ce_quiz_th_total">Questions</th>
+                                                <th class="ce_quiz_th_base_progress">
+                                                    <span>Progress%</span>
+                                                </th>
+                                                <th class="ce_quiz_th_progress">
+                                                    <div class="ce_quiz_mastery_progress">
+                                                        <div class="quiz-progress-legend ce_quiz_mastery_header_legend">
+                                                            <span><span class="quiz-progress-key quiz-progress-known"></span>Known</span>
+                                                            <span><span class="quiz-progress-key quiz-progress-not-known"></span>Learning</span>
+                                                            <t t-if="section.hasNewQuizCategories">
+                                                                <span><span class="quiz-progress-key quiz-progress-new-above"></span>&#10003; New</span>
+                                                                <span><span class="quiz-progress-key quiz-progress-new-below"></span>&#10007; New</span>
+                                                            </t>
+                                                            <span><span class="quiz-progress-key quiz-progress-not-tried"></span>Not tried</span>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="section.quizMasteryRows" t-as="quiz" t-key="quiz.id">
+                                                <tr class="ce_quiz_row ce_quiz_mastery_row"
+                                                    t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
+                                                    <td class="ce_quiz_name">
+                                                        <i class="fa fa-file-text-o me-1"/>
+                                                        <t t-esc="quiz.name"/>
+                                                    </td>
+                                                    <td class="ce_quiz_num">
+                                                        <t t-esc="quiz.progressSummary.questions_with_results_data"/>
+                                                    </td>
+                                                    <td class="ce_quiz_num">
+                                                        <t t-esc="quiz.progressSummary.total_possible_questions"/>
+                                                    </td>
+                                                    <td class="ce_quiz_num">
+                                                        <t t-esc="Math.round(quiz.progressSummary.questions_with_results_data / quiz.progressSummary.total_possible_questions * 100)"/>%
+                                                    </td>
+                                                    <td>
+                                                        <div class="ce_quiz_mastery_progress">
+                                                            <QuizProgressBar summary="quiz.progressSummary"/>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </t>
+                        <!-- Existing assessment result table -->
+                        <t t-if="section.assessmentRows.length">
+                            <div class="ce_quiz_box"
+                                 t-att-id="!section.quizMasteryRows.length ? 'ce-quiz-' + section.id : false">
+                                <div class="ce_quiz_box_header">
+                                    <i class="fa fa-question-circle me-1"/>
+                                    <span>Assessment Results</span>
                                 </div>
                                 <table class="ce_quiz_table">
                                     <thead>
@@ -285,23 +347,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <t t-foreach="section.quizzes" t-as="quiz" t-key="quiz.id">
-                                            <tr t-if="quiz.progressSummary and quiz.progressSummary.progress_text"
-                                                class="ce_quiz_row ce_quiz_mastery_row"
-                                                t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
-                                                <td colspan="5">
-                                                    <div class="ce_quiz_mastery_row_content">
-                                                        <span class="ce_quiz_mastery_name">
-                                                            <i class="fa fa-file-text-o me-1"/>
-                                                            <t t-esc="quiz.name"/>
-                                                        </span>
-                                                        <div class="ce_quiz_mastery_progress">
-                                                            <QuizProgressBar summary="quiz.progressSummary"/>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr t-else="" class="ce_quiz_row"
+                                        <t t-foreach="section.assessmentRows" t-as="quiz" t-key="quiz.id">
+                                            <tr class="ce_quiz_row"
                                                 t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
                                                 <td class="ce_quiz_name">
                                                     <i class="fa fa-file-text-o me-1"/>
