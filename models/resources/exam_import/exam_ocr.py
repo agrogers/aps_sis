@@ -1,6 +1,7 @@
 """OCR of section images into question/answer text."""
 import base64
 import logging
+import mimetypes
 import re
 from html import escape
 
@@ -109,10 +110,11 @@ class APSExamPaperImportOcr(models.Model):
             image_bytes = self._attachment_bytes(attachment)
             if not image_bytes:
                 continue
+            mime_type = attachment.mimetype or mimetypes.guess_type(attachment.name or '')[0] or 'image/png'
             content.append({
                 'type': 'image_url',
-                'image_url': {'url': 'data:image/png;base64,%s' % base64.b64encode(
-                    image_bytes,).decode('ascii')},
+                'image_url': {'url': 'data:%s;base64,%s' % (mime_type, base64.b64encode(
+                    image_bytes).decode('ascii'))},
             })
         result = model._execute_logged_router_call({
             'model': model.model_key,

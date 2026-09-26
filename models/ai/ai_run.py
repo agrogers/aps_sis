@@ -1,6 +1,7 @@
 import time
 
 from odoo import _, api, fields, models
+from odoo.tools import html2plaintext
 
 
 class APSAIRun(models.Model):
@@ -10,6 +11,7 @@ class APSAIRun(models.Model):
     _inherit = ['aps.ai.run.mixin']
     _order = 'create_date desc, id desc'
 
+    import_id = fields.Many2one('aps.exam.paper.import', ondelete='cascade', readonly=True)
     submission_id = fields.Many2one('aps.resource.submission', ondelete='cascade', readonly=True)
     resource_id = fields.Many2one('aps.resources', ondelete='cascade', readonly=True)
     request_origin = fields.Selection(
@@ -20,12 +22,46 @@ class APSAIRun(models.Model):
         readonly=True,
     )
     attempt_number = fields.Integer(readonly=True)
+    queued_for_dispatch = fields.Boolean(default=False, readonly=True, copy=False, index=True)
     override_model_id = fields.Many2one('aps.ai.model', string='Override Model', readonly=True, ondelete='set null')
     processor_key = fields.Selection(
         [('standard', 'Standard AI Marking')],
         default='standard', required=True, readonly=True,
     )
     display_name = fields.Char(compute='_compute_display_name', store=True)
+    related_record_id = fields.Integer(compute='_compute_related_record_id')
+
+    @api.depends('import_id', 'submission_id', 'resource_id')
+    def _compute_related_record_id(self):
+        for record in self:
+            target = record.import_id or record.submission_id or record.resource_id
+            record.related_record_id = target.id if target else False
+
+    def action_view_related_runs(self):
+        self.ensure_one()
+        if self.import_id:
+            target_field = 'import_id'
+            target_record = self.import_id
+        elif self.submission_id:
+            target_field = 'submission_id'
+            target_record = self.submission_id
+        elif self.resource_id:
+            target_field = 'resource_id'
+            target_record = self.resource_id
+        else:
+            return False
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Other AI Runs for %s') % target_record.display_name,
+            'res_model': 'aps.ai.run',
+            'views': [[False, 'list'], [False, 'form']],
+            'domain': [
+                (target_field, '=', target_record.id),
+                ('id', '!=', self.id),
+            ],
+            'target': 'current',
+        }
 
     @api.depends('submission_id.display_name', 'resource_id.display_name', 'state', 'create_date', 'processor_key')
     def _compute_display_name(self):
@@ -44,6 +80,90 @@ class APSAIRun(models.Model):
                 state_label,
                 (' - %s' % created) if created else '',
             )
+
+    @api.model
+    def cron_dispatch_automatic_runs(self, limit=20):
+        limit = max(0, int(limit or 0))
+        if not limit:
+            return 0
+
+        self.env.cr.execute(
+            f"""
+                SELECT id
+                  FROM {self._table}
+                 WHERE state = 'queued'
+                   AND queued_for_dispatch IS TRUE
+                 ORDER BY create_date, id
+                 LIMIT %s
+                 FOR UPDATE SKIP LOCKED
+            """,
+            [limit],
+        )
+        run_ids = [row[0] for row in self.env.cr.fetchall()]
+        runs = self.sudo().browse(run_ids)
+        dispatched = 0
+
+        for run in runs:
+            submission = run.submission_id.sudo()
+            if not submission.exists():
+                run.write({
+                    'state': 'failed',
+                    'status_message': _('Skipped before processing.'),
+                    'error_message': _('The linked submission no longer exists.'),
+                    'finished_at': fields.Datetime.now(),
+                })
+                continue
+
+            if submission.ai_last_model_id:
+                run.write({
+                    'state': 'failed',
+                    'status_message': _('Skipped before processing.'),
+                    'error_message': _('The submission was already marked before this run started.'),
+                    'finished_at': fields.Datetime.now(),
+                })
+                submission.write({'ai_auto_mark_state': 'completed'})
+                continue
+
+            if not submission._is_auto_ai_marking_enabled():
+                run.write({
+                    'state': 'failed',
+                    'status_message': _('Skipped before processing.'),
+                    'error_message': _('Automatic AI marking is no longer enabled for this submission.'),
+                    'finished_at': fields.Datetime.now(),
+                })
+                submission._reset_auto_ai_marking_state()
+                continue
+
+            if not html2plaintext(submission.answer or '').strip():
+                run.write({
+                    'state': 'failed',
+                    'status_message': _('Skipped before processing.'),
+                    'error_message': _('The submission no longer has an answer to mark.'),
+                    'finished_at': fields.Datetime.now(),
+                })
+                submission.write({
+                    'ai_auto_mark_state': 'pending',
+                    'ai_auto_mark_attempt_count': max(0, submission.ai_auto_mark_attempt_count - 1),
+                })
+                continue
+
+            submission.write({
+                'ai_auto_mark_state': 'running',
+                'ai_auto_mark_run_id': run.id,
+                'feedback': submission._build_auto_ai_progress_feedback(run.attempt_number),
+            })
+            submission._post_auto_ai_note(
+                _('Automatic AI marking attempt %s has started.') % run.attempt_number
+            )
+            run.write({
+                'state': 'running',
+                'status_message': _('Preparing AI marking...'),
+                'started_at': fields.Datetime.now(),
+            })
+            run._queue_background_processing()
+            dispatched += 1
+
+        return dispatched
 
     def _get_processor_display_name(self):
         return _('AI Job')

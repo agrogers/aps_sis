@@ -11,6 +11,9 @@ from . import aps_level
 from . import aps_class_tag
 from . import aps_class
 from . import aps_student
+from . import aps_student_enrolment_status
+from . import aps_student_leaving_reason
+from . import aps_student_entry_source
 from . import aps_student_class
 from . import aps_subject_category_tag
 from . import aps_subject_category

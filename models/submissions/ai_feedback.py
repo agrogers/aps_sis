@@ -304,7 +304,9 @@ class APSResourceSubmissionAIFeedback(models.Model):
             ('state', 'in', ('queued', 'running')),
         ], limit=1, order='create_date desc, id desc')
 
-    def _start_ai_marking_background_run(self, request_origin='manual', attempt_number=0):
+    def _start_ai_marking_background_run(
+        self, request_origin='manual', attempt_number=0, queued_for_dispatch=False,
+    ):
         self.ensure_one()
         active_run = self._get_active_ai_run()
         if active_run:
@@ -317,11 +319,13 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'status_message': _('Queued and waiting to start...'),
             'request_origin': request_origin,
             'attempt_number': attempt_number or 0,
+            'queued_for_dispatch': queued_for_dispatch,
             'override_model_id': self.ai_override_model_id.id if self.ai_override_model_id else False,
         })
         if request_origin == 'automatic':
             self.sudo().write({'ai_auto_mark_run_id': run.id})
-        run._queue_background_processing()
+        if not queued_for_dispatch:
+            run._queue_background_processing()
         return run, True
 
     def _start_automatic_ai_marking(self):
@@ -334,19 +338,18 @@ class APSResourceSubmissionAIFeedback(models.Model):
             return False
 
         attempt_number = (self.ai_auto_mark_attempt_count or 0) + 1
-        self.sudo().write({
-            'ai_auto_mark_state': 'running',
-            'ai_auto_mark_attempt_count': attempt_number,
-            'ai_auto_mark_last_error': False,
-            'feedback': self._build_auto_ai_progress_feedback(attempt_number),
-        })
-        self._post_auto_ai_note(
-            _('Automatic AI marking attempt %s of %s has started.') % (attempt_number, _AUTO_MARK_MAX_ATTEMPTS)
-        )
-        run, _created = self._start_ai_marking_background_run(
+        run, created = self._start_ai_marking_background_run(
             request_origin='automatic',
             attempt_number=attempt_number,
+            queued_for_dispatch=True,
         )
+        if not created:
+            return run
+        self.sudo().write({
+            'ai_auto_mark_state': 'pending',
+            'ai_auto_mark_attempt_count': attempt_number,
+            'ai_auto_mark_last_error': False,
+        })
         return run
 
     def action_requeue_auto_ai_marking(self):
@@ -396,12 +399,16 @@ class APSResourceSubmissionAIFeedback(models.Model):
         submissions = self.search([
             ('state', '=', 'submitted'),
             ('ai_auto_mark_state', 'in', ('pending', 'retry', 'running')),
-        ], order='write_date asc, id asc', limit=20)
+            '|',
+            ('ai_auto_mark_run_id', '=', False),
+            ('ai_auto_mark_run_id.state', 'not in', ('queued', 'running')),
+        ], order='write_date asc, id asc')
         for submission in submissions:
             try:
                 submission._cron_process_one_auto_ai_marking()
             except Exception:
                 _logger.exception('Automatic AI marking cron failed for submission %s', submission.id)
+        self.env['aps.ai.run'].sudo().cron_dispatch_automatic_runs(limit=20)
 
     def _cron_process_one_auto_ai_marking(self):
         self.ensure_one()
@@ -417,9 +424,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
         active_run = self._get_active_ai_run()
         if active_run:
-            if self.ai_auto_mark_state != 'running' or self.ai_auto_mark_run_id != active_run:
+            expected_state = 'running' if active_run.state == 'running' else 'pending'
+            if self.ai_auto_mark_state != expected_state or self.ai_auto_mark_run_id != active_run:
                 self.sudo().write({
-                    'ai_auto_mark_state': 'running',
+                    'ai_auto_mark_state': expected_state,
                     'ai_auto_mark_run_id': active_run.id,
                 })
             return active_run

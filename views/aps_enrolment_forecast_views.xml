@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_aps_enrolment_forecast" model="ir.actions.client">
+        <field name="name">Enrolment Forecast</field>
+        <field name="tag">aps_enrolment_forecast</field>
+    </record>
+
+    <record id="aps_enrolment_forecast_detail_list" model="ir.ui.view">
+        <field name="name">aps.enrolment.forecast.detail.list</field>
+        <field name="model">aps.enrolment.forecast.detail</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0">
+                <field name="student_id"/>
+                <field name="roll" optional="show"/>
+                <field name="academic_year_name"/>
+                <field name="current_level_id"/>
+                <field name="forecast_level_id"/>
+                <field name="start_date" optional="show"/>
+                <field name="end_date" optional="show"/>
+                <field name="enrolment_status_id"/>
+            </list>
+        </field>
+    </record>
+</odoo>

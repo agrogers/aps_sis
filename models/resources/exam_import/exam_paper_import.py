@@ -10,6 +10,7 @@ Workflow logic lives in sibling modules that extend this model:
 """
 import logging
 import re
+from io import BytesIO
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -68,7 +69,7 @@ class APSExamPaperImport(models.Model):
         ('pending', 'Not Completed (Pending or Failed)'),
     ], default='all', required=True, string='Pages Scope',
         help='Controls which rendered pages the "Analyse Pages" and "OCR" buttons process.')
-    render_dpi = fields.Integer(default=150, required=True)
+    render_dpi = fields.Integer(default=300, required=True)
     page_ids = fields.One2many('aps.exam.paper.page', 'import_id', string='Rendered Pages')
     page_count = fields.Integer(compute='_compute_counts')
     section_ids = fields.One2many('aps.exam.paper.section', 'import_id', string='Detected Sections')
@@ -82,7 +83,9 @@ class APSExamPaperImport(models.Model):
     _CROP_RIGHT = 75
     _CROP_BOTTOM = 100
     _CROP_Y_ADJUSTMENT = 6
-    _RENDER_HEIGHT_PIXELS = 1500
+    _CROP_REFERENCE_HEIGHT_PIXELS = 1500
+    _WEBP_QUALITY = 80
+    _WEBP_METHOD = 6
     _LABEL_Y_TOLERANCE = 0.025
     _CONTINUATION_TOP_LIMIT = 0.20
 
@@ -213,6 +216,19 @@ class APSExamPaperImport(models.Model):
     @staticmethod
     def _attachment_bytes(attachment):
         return attachment.raw or b''
+
+    def _scaled_crop_margin(self, pixels, page):
+        if not page.height:
+            return pixels
+        return round(pixels * page.height / self._CROP_REFERENCE_HEIGHT_PIXELS)
+
+    def _encode_webp(self, image):
+        output = BytesIO()
+        try:
+            image.save(output, format='WEBP', quality=self._WEBP_QUALITY, method=self._WEBP_METHOD)
+        except (OSError, ValueError) as exc:
+            raise UserError(_('WebP encoding requires Pillow with WebP support.')) from exc
+        return output.getvalue()
 
     def _open_form(self):
         return {

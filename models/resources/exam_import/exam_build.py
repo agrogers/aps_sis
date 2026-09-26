@@ -185,9 +185,9 @@ class APSExamPaperImportBuild(models.Model):
                 bottom = int(round(float(region['y2'])))
             except (KeyError, TypeError, ValueError):
                 raise ValidationError(_('Manually edited regions must contain pixel x1, y1, x2 and y2 bounds.'))
-            if right - left < 250:  # This is a little arbitary. Alsmost always we want full width images. This needs to be wide enough to handle when a question label eg 1(a)(i) gets long
-                left = self._CROP_LEFT
-                right = page.width - self._CROP_RIGHT
+            if right - left < self._scaled_crop_margin(250, page):
+                left = self._scaled_crop_margin(self._CROP_LEFT, page)
+                right = page.width - self._scaled_crop_margin(self._CROP_RIGHT, page)
             left = max(0, min(page.width - 1, left))
             top = max(0, min(page.height - 1, top))
             right = max(left + 1, min(page.width, right))
@@ -214,11 +214,16 @@ class APSExamPaperImportBuild(models.Model):
             if not is_descendant and candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
                 next_y = candidate['y']
                 break
-        left = max(0, min(page.width, self._CROP_LEFT))
-        top = max(0, min(page.height, max(self._CROP_TOP, round(start_y * page.height) - y_adjustment)))
-        right = max(left + 1, min(page.width, page.width - self._CROP_RIGHT))
-        bottom_limit = max(top + 1, page.height - self._CROP_BOTTOM)
-        bottom = bottom_limit if next_y is None else round(next_y * page.height) - y_adjustment
+        crop_left = self._scaled_crop_margin(self._CROP_LEFT, page)
+        crop_top = self._scaled_crop_margin(self._CROP_TOP, page)
+        crop_right = self._scaled_crop_margin(self._CROP_RIGHT, page)
+        crop_bottom = self._scaled_crop_margin(self._CROP_BOTTOM, page)
+        scaled_y_adjustment = self._scaled_crop_margin(y_adjustment, page)
+        left = max(0, min(page.width, crop_left))
+        top = max(0, min(page.height, max(crop_top, round(start_y * page.height) - scaled_y_adjustment)))
+        right = max(left + 1, min(page.width, page.width - crop_right))
+        bottom_limit = max(top + 1, page.height - crop_bottom)
+        bottom = bottom_limit if next_y is None else round(next_y * page.height) - scaled_y_adjustment
         if bottom <= top:
             # A stale or slightly out-of-order detected label must never
             # produce an inverted Pillow crop. Fall back to the page limit.
@@ -382,15 +387,18 @@ class APSExamPaperImportBuild(models.Model):
                 from PIL import Image
                 with Image.open(BytesIO(image_bytes)) as source:
                     crop = source.crop(bounds)
-                    output = BytesIO()
-                    crop.save(output, format='PNG', optimize=True)
-                    crop_bytes = output.getvalue()
+                    try:
+                        crop_bytes = self._encode_webp(crop)
+                    finally:
+                        crop.close()
             except ImportError as exc:
                 raise UserError(_('Image insertion requires the Pillow package in the Odoo environment.')) from exc
+            except (OSError, ValueError) as exc:
+                raise UserError(_('Image insertion requires Pillow with WebP support.')) from exc
             attachment = self.env['ir.attachment'].create({
-                'name': 'exam-import-%s-%s-%s.png' % (section.source_key, document_type, index),
+                'name': 'exam-import-%s-%s-%s.webp' % (section.source_key, document_type, index),
                 'type': 'binary', 'datas': base64.b64encode(crop_bytes),
-                'mimetype': 'image/png', 'res_model': 'aps.resources', 'res_id': resource.id,
+                'mimetype': 'image/webp', 'res_model': 'aps.resources', 'res_id': resource.id,
                 'description': 'aps_exam_import_section:%s document:%s page:%s' % (
                     section.id, document_type, page.page_number,
                 ),
@@ -484,6 +492,10 @@ class APSExamPaperImportBuild(models.Model):
             root_regions = []
             question, answer = self._remove_import_images(root, self.section_ids)
             root.write({'question': question, 'answer': answer})
+            root_only = len(sections) == 1 and (
+                self._normalise_key(sections[0].display_label)
+                == self._normalise_key(root.name)
+            )
             for section in sections:
                 # The root-number detection (for example Q1) identifies the
                 # second-level resource. It is not a child of itself. Only
@@ -492,6 +504,10 @@ class APSExamPaperImportBuild(models.Model):
                 if self._normalise_key(section.display_label) == self._normalise_key(root.name):
                     root_pages.update(filter(None, (section.question_pages or '').split(',')))
                     root_regions.extend(self._section_regions(section, 'question'))
+                    if root_only:
+                        total_marks += section.maximum_mark or 0.0
+                        self._append_section_content(root, section, headings, answers)
+                        section.resource_id = root.id
                     section.write({'resource_key': str(root.id)})
                     continue
                 existing_child_ids = set(root.child_ids.ids)
@@ -521,7 +537,7 @@ class APSExamPaperImportBuild(models.Model):
                 section.write({'resource_key': str(child.id)})
 
             root.write({
-                'has_child_resources': 'yes',
+                'has_child_resources': 'no' if root_only else 'yes',
                 'has_question': 'yes',
                 'has_answer': 'yes',
                 'question': ''.join(headings),

@@ -37,6 +37,18 @@ access_aps_class_tag_user,aps.class.tag.user,model_aps_class_tag,base.group_user
 access_aps_student_teacher,aps.student.teacher,model_aps_student,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_student_student,aps.student.student,model_aps_student,aps_sis.group_aps_student,1,0,0,0
 access_aps_student_user,aps.student.user,model_aps_student,base.group_user,1,0,0,0
+access_aps_student_enrolment_status_student,aps.student.enrolment.status.student,model_aps_student_enrolment_status,aps_sis.group_aps_student,1,0,0,0
+access_aps_student_enrolment_status_teacher,aps.student.enrolment.status.teacher,model_aps_student_enrolment_status,aps_sis.group_aps_teacher,1,0,0,0
+access_aps_student_enrolment_status_user,aps.student.enrolment.status.user,model_aps_student_enrolment_status,base.group_user,1,0,0,0
+access_aps_student_enrolment_status_manager,aps.student.enrolment.status.manager,model_aps_student_enrolment_status,aps_sis.group_aps_manager,1,1,1,1
+access_aps_student_leaving_reason_student,aps.student.leaving.reason.student,model_aps_student_leaving_reason,aps_sis.group_aps_student,1,0,0,0
+access_aps_student_leaving_reason_teacher,aps.student.leaving.reason.teacher,model_aps_student_leaving_reason,aps_sis.group_aps_teacher,1,0,0,0
+access_aps_student_leaving_reason_user,aps.student.leaving.reason.user,model_aps_student_leaving_reason,base.group_user,1,0,0,0
+access_aps_student_leaving_reason_manager,aps.student.leaving.reason.manager,model_aps_student_leaving_reason,aps_sis.group_aps_manager,1,1,1,1
+access_aps_student_entry_source_student,aps.student.entry.source.student,model_aps_student_entry_source,aps_sis.group_aps_student,1,0,0,0
+access_aps_student_entry_source_teacher,aps.student.entry.source.teacher,model_aps_student_entry_source,aps_sis.group_aps_teacher,1,0,0,0
+access_aps_student_entry_source_user,aps.student.entry.source.user,model_aps_student_entry_source,base.group_user,1,0,0,0
+access_aps_student_entry_source_manager,aps.student.entry.source.manager,model_aps_student_entry_source,aps_sis.group_aps_manager,1,1,1,1
 access_aps_student_class_teacher,aps.student.class.teacher,model_aps_student_class,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_student_class_student,aps.student.class.student,model_aps_student_class,aps_sis.group_aps_student,1,0,0,0
 access_aps_student_class_user,aps.student.class.user,model_aps_student_class,base.group_user,1,0,0,0
@@ -73,6 +85,8 @@ access_aps_user_media_teacher,aps.user.media.teacher,model_aps_user_media,aps_si
 access_aps_user_media_student,aps.user.media.student,model_aps_user_media,aps_sis.group_aps_student,1,1,1,1
 access_aps_user_media_settings_teacher,aps.user.media.settings.teacher,model_aps_user_media_settings,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_level_teacher,aps.level.teacher,model_aps_level,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_enrolment_forecast_manager,aps.enrolment.forecast.manager,model_aps_enrolment_forecast,aps_sis.group_aps_manager,1,1,1,1
+access_aps_enrolment_forecast_detail_manager,aps.enrolment.forecast.detail.manager,model_aps_enrolment_forecast_detail,aps_sis.group_aps_manager,1,0,1,0
 access_aps_create_linked_resources_wizard_teacher,aps.create.linked.resources.wizard.teacher,model_aps_create_linked_resources,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_exam_paper_import_teacher,aps.exam.paper.import.teacher,model_aps_exam_paper_import,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_exam_paper_section_teacher,aps.exam.paper.section.teacher,model_aps_exam_paper_section,aps_sis.group_aps_teacher,1,1,1,1

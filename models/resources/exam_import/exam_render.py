@@ -31,6 +31,10 @@ class APSExamPaperImportRender(models.Model):
             import fitz
         except ImportError as exc:
             raise UserError(_('Page rendering requires the pymupdf package in the Odoo environment.')) from exc
+        try:
+            from PIL import Image
+        except ImportError as exc:
+            raise UserError(_('Page rendering requires the Pillow package in the Odoo environment.')) from exc
         content = self._attachment_bytes(pdf_attachment)
         if not content:
             raise ValidationError(_('The %s PDF attachment is empty.') % document_type.replace('_', ' '))
@@ -40,13 +44,17 @@ class APSExamPaperImportRender(models.Model):
         if existing_pages:
             existing_pages.unlink()
         for page_number, page in enumerate(document, 1):
-            zoom = self._RENDER_HEIGHT_PIXELS / page.rect.height if page.rect.height else 1.0
+            zoom = self.render_dpi / 72.0
             pixmap = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
-            image_data = pixmap.tobytes('png')
+            image = Image.frombytes('RGB', (pixmap.width, pixmap.height), pixmap.samples)
+            try:
+                image_data = self._encode_webp(image)
+            finally:
+                image.close()
             attachment = self.env['ir.attachment'].create({
-                'name': '%s-page-%03d.png' % (document_type, page_number),
+                'name': '%s-page-%03d.webp' % (document_type, page_number),
                 'type': 'binary', 'datas': base64.b64encode(image_data),
-                'mimetype': 'image/png', 'res_model': self._name, 'res_id': self.id,
+                'mimetype': 'image/webp', 'res_model': self._name, 'res_id': self.id,
                 'description': 'Rendered %s page %s at %s DPI' % (document_type, page_number, self.render_dpi),
             })
             page_model.create({

@@ -1,0 +1,243 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.EnrolmentForecast">
+        <div class="o_enrolment_forecast">
+            <header class="o_enrolment_forecast__header">
+                <div>
+                    <h1>Enrolment Forecast</h1>
+                    <p>School-wide student projections by grade</p>
+                </div>
+                <div class="o_enrolment_forecast__controls">
+                    <label>
+                        <span>Academic year</span>
+                        <select t-if="state.options" t-on-change="onAcademicYearChange">
+                            <option
+                                t-foreach="state.options.academic_years"
+                                t-as="year"
+                                t-key="year.id"
+                                t-att-value="year.id"
+                                t-att-selected="year.id === state.academicYearId"
+                            >
+                                <t t-esc="year.name"/>
+                            </option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Years to show</span>
+                        <select t-on-change="onYearsChange">
+                            <option
+                                t-foreach="state.options ? state.options.year_choices : [3, 4, 5, 6, 7, 10]"
+                                t-as="count"
+                                t-key="count"
+                                t-att-value="count"
+                                t-att-selected="count === state.numberOfYears"
+                            >
+                                <t t-esc="count"/>
+                            </option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Forecast basis</span>
+                        <select t-if="state.options" t-on-change="onBasisChange">
+                            <option
+                                t-foreach="state.options.basis_choices"
+                                t-as="basis"
+                                t-key="basis.value"
+                                t-att-value="basis.value"
+                                t-att-selected="basis.value === state.basis"
+                            >
+                                <t t-esc="basis.label"/>
+                            </option>
+                        </select>
+                    </label>
+                </div>
+            </header>
+
+            <div t-if="state.error" class="alert alert-danger" role="alert">
+                <t t-esc="state.error"/>
+            </div>
+
+            <section t-if="state.forecast" class="o_enrolment_forecast__summary" aria-label="Forecast summary">
+                <div>
+                    <span>Current students</span>
+                    <strong t-esc="state.forecast.summary.current_students"/>
+                </div>
+                <div>
+                    <span>First forecast year</span>
+                    <strong t-esc="state.forecast.summary.next_year"/>
+                </div>
+                <div>
+                    <span>New students</span>
+                    <strong t-esc="state.forecast.summary.new_students"/>
+                </div>
+                <div>
+                    <span>Expected leavers</span>
+                    <strong t-esc="state.forecast.summary.expected_leavers"/>
+                </div>
+                <div>
+                    <span>Net change</span>
+                    <strong
+                        t-esc="state.forecast.summary.net_change > 0 ? '+' + state.forecast.summary.net_change : state.forecast.summary.net_change"
+                        t-att-class="state.forecast.summary.net_change > 0 ? 'text-success' : state.forecast.summary.net_change &lt; 0 ? 'text-danger' : ''"
+                    />
+                </div>
+            </section>
+
+            <div t-if="state.loading" class="o_enrolment_forecast__loading" role="status">
+                <span class="fa fa-circle-o-notch fa-spin" aria-hidden="true"/>
+                <span>Calculating forecast</span>
+            </div>
+
+            <div t-if="state.forecast" class="o_enrolment_forecast__table_scroll">
+                <table class="o_enrolment_forecast__table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="o_enrolment_forecast__grade_heading">Grade</th>
+                            <th scope="col" class="o_enrolment_forecast__now_heading">Now</th>
+                            <th
+                                t-foreach="state.forecast.periods"
+                                t-as="period"
+                                t-key="period.index"
+                                scope="col"
+                                class="o_enrolment_forecast__year_heading"
+                            >
+                                <span t-esc="period.name"/>
+                                <small>Forecast</small>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.forecast.rows" t-as="row" t-key="row.level_id">
+                            <th scope="row" class="o_enrolment_forecast__grade_name" t-esc="row.name"/>
+                            <td class="o_enrolment_forecast__now_cell">
+                                <button
+                                    type="button"
+                                    class="o_enrolment_forecast__count"
+                                    data-year-index="0"
+                                    t-att-data-level-id="row.level_id"
+                                    data-movement="current"
+                                    t-att-title="'Current students in ' + row.name"
+                                    t-on-click="onDetailClick"
+                                >
+                                    <t t-esc="row.now"/>
+                                </button>
+                            </td>
+                            <td t-foreach="row.cells" t-as="cell" t-key="cell.index" class="o_enrolment_forecast__future_cell">
+                                <button
+                                    type="button"
+                                    class="o_enrolment_forecast__count"
+                                    t-att-data-year-index="cell.index"
+                                    t-att-data-level-id="row.level_id"
+                                    data-movement="projected"
+                                    t-att-title="'Projected students in ' + cell.year_name + ' / ' + row.name"
+                                    t-on-click="onDetailClick"
+                                >
+                                    <t t-esc="cell.count"/>
+                                </button>
+                                <div class="o_enrolment_forecast__movement">
+                                    <button
+                                        t-if="cell.incoming"
+                                        type="button"
+                                        class="o_enrolment_forecast__movement_in"
+                                        t-att-data-year-index="cell.index"
+                                        t-att-data-level-id="row.level_id"
+                                        data-movement="incoming"
+                                        t-att-title="cell.incoming + ' entering in ' + cell.year_name"
+                                        t-on-click="onDetailClick"
+                                    >
+                                        <t t-esc="'+' + cell.incoming"/>
+                                    </button>
+                                    <button
+                                        t-if="cell.leaving"
+                                        type="button"
+                                        class="o_enrolment_forecast__movement_out"
+                                        t-att-data-year-index="cell.index"
+                                        t-att-data-level-id="row.level_id"
+                                        data-movement="leaving"
+                                        t-att-title="cell.leaving + ' leaving in ' + cell.year_name"
+                                        t-on-click="onDetailClick"
+                                    >
+                                        <t t-esc="'-' + cell.leaving"/>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="o_enrolment_forecast__total">
+                            <th scope="row">Total</th>
+                            <td class="o_enrolment_forecast__now_cell">
+                                <button
+                                    type="button"
+                                    class="o_enrolment_forecast__count"
+                                    data-year-index="0"
+                                    data-level-id=""
+                                    data-movement="current"
+                                    title="Current students across all grades"
+                                    t-on-click="onDetailClick"
+                                >
+                                    <t t-esc="state.forecast.now_total"/>
+                                </button>
+                            </td>
+                            <td
+                                t-foreach="state.forecast.periods"
+                                t-as="period"
+                                t-key="period.index"
+                                class="o_enrolment_forecast__future_cell"
+                            >
+                                <button
+                                    type="button"
+                                    class="o_enrolment_forecast__count"
+                                    t-att-data-year-index="period.index"
+                                    data-level-id=""
+                                    data-movement="projected"
+                                    t-att-title="'Projected students in ' + period.name"
+                                    t-on-click="onDetailClick"
+                                >
+                                    <t t-esc="state.forecast.period_totals[period.index]"/>
+                                </button>
+                                <div class="o_enrolment_forecast__movement">
+                                    <button
+                                        t-if="state.forecast.incoming_totals[period.index]"
+                                        type="button"
+                                        class="o_enrolment_forecast__movement_in"
+                                        t-att-data-year-index="period.index"
+                                        data-level-id=""
+                                        data-movement="incoming"
+                                        t-att-title="state.forecast.incoming_totals[period.index] + ' students entering in ' + period.name"
+                                        t-on-click="onDetailClick"
+                                    >
+                                        <t t-esc="'+' + state.forecast.incoming_totals[period.index]"/>
+                                    </button>
+                                    <button
+                                        t-if="state.forecast.leaving_totals[period.index]"
+                                        type="button"
+                                        class="o_enrolment_forecast__movement_out"
+                                        t-att-data-year-index="period.index"
+                                        data-level-id=""
+                                        data-movement="leaving"
+                                        t-att-title="state.forecast.leaving_totals[period.index] + ' students leaving in ' + period.name"
+                                        t-on-click="onDetailClick"
+                                    >
+                                        <t t-esc="'-' + state.forecast.leaving_totals[period.index]"/>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <details class="o_enrolment_forecast__information">
+                <summary>Forecast information</summary>
+                <p>
+                    A student is counted when their enrolment dates overlap any part of an academic year.
+                    Students progress one grade per academic year; students beyond the highest active grade
+                    complete the programme and are not shown as unexpected leavers.
+                </p>
+                <p>
+                    Future admissions without a start date are assumed to enter in the first displayed year.
+                    Confirmed includes enrolled and accepted students; the other bases add waiting and inquiry records.
+                </p>
+                <p>Click a projected number, + entrant, or - leaver to inspect the students behind it.</p>
+            </details>
+        </div>
+    </t>
+</templates>

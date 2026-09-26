@@ -37,7 +37,8 @@
                 <field name="state" widget="badge"
                        decoration-success="state == 'completed'"
                        decoration-danger="state == 'failed'"
-                       decoration-info="state in ('queued', 'running')"/>
+                      decoration-warning="state == 'queued'"
+                      decoration-info="state == 'running'"/>
                   <field name="processor_key" optional="show"/>
                 <field name="request_origin" optional="hide"/>
                 <field name="requested_by_id" optional="hide"/>
@@ -58,6 +59,17 @@
         <field name="arch" type="xml">
             <form create="false" edit="false">
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_related_runs"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-history"
+                                invisible="not submission_id and not resource_id and not import_id">
+                            <field name="related_record_id"
+                                   widget="statinfo"
+                                   string="Runs for Record"/>
+                        </button>
+                    </div>
                     <group>
                         <group string="Run">
                             <field name="create_date"/>

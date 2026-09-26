@@ -224,11 +224,19 @@ This document describes every database model defined or extended by the `aps_sis
 | `roll` | Char | | size=20 |
 | `level_id` | Many2one → `aps.level` | | ondelete=set null |
 | `home_class_id` | Many2one → `aps.class` | | ondelete=set null, auto-computed (event-driven) |
+| `enrolment_status` | Many2one → `aps.student.enrolment.status` | ✅ | default=`enrolled`, ondelete=restrict |
+| `start_date` | Date | | Required in the student form only |
+| `end_date` | Date | | Must be on or after `start_date` |
+| `entry_grade_id` | Many2one → `aps.level` | | ondelete=set null |
+| `leaving_reason_id` | Many2one → `aps.student.leaving.reason` | | ondelete=set null |
+| `entry_source_id` | Many2one → `aps.student.entry.source` | | ondelete=set null |
+| `notes` | Text | | Optional management notes |
 | `active` | Boolean | | default=True |
 | `enrollment_ids` | One2many → `aps.student.class` | | inverse=`student_id` |
 | `display_name` | Char | | computed: "Name (Roll)" |
 
 **SQL Constraints:** `unique(partner_id)`
+**Enrolment statuses:** Configured in `aps.student.enrolment.status` with a unique code, icon, description, color, and display sequence. Existing Selection values are mapped during migration `18.0.1.0.66`.
 **Bidirectional Sync:** create/write/unlink sync `is_student` flag on the linked `res.partner` (uses `skip_student_sync` context flag to prevent infinite loops).
 **`_recompute_home_class()`:** Iterates enrolled enrollments; finds the first class whose subject category has a tag named "Home Class" or "Pastoral Care Subject" and sets that as `home_class_id`.
 **`action_populate_from_contacts()`:** Batch creates/reactivates student records from all partners with `is_student=True`, syncing level from partner tags.

@@ -262,7 +262,12 @@ class APSResource(models.Model):
             'res_model': 'aps.resources',
             'view_mode': 'list,form',
             'domain': [('id', 'in', self.child_ids.ids)],
-            'context': {'default_parent_ids': [(6, 0, [self.id])], 'default_primary_parent_id': self.id, 'default_subjects': self.subjects.ids},
+            'context': {
+                'default_parent_ids': [(6, 0, [self.id])],
+                'default_primary_parent_id': self.id,
+                'default_subjects': self.subjects.ids,
+                'default_order': 'sequence, name',
+            },
             'target': 'current',
         }
 

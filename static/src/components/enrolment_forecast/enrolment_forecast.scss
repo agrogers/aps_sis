@@ -1,0 +1,270 @@
+.o_enrolment_forecast {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+    min-height: 0;
+    padding: 1.25rem 1.5rem;
+    color: var(--body-color, #212529);
+}
+
+.o_enrolment_forecast__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+
+    h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    p {
+        margin: 0.25rem 0 0;
+        color: var(--body-color, #495057);
+    }
+}
+
+.o_enrolment_forecast__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    label {
+        display: grid;
+        gap: 0.25rem;
+        min-width: 9rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    select {
+        min-height: 2.25rem;
+        padding: 0.25rem 2rem 0.25rem 0.5rem;
+        border: 1px solid var(--border-color, #ced4da);
+        border-radius: 4px;
+        background: var(--o-view-background-color, #fff);
+        color: inherit;
+    }
+}
+
+.o_enrolment_forecast__summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(8rem, 1fr));
+    border-top: 1px solid var(--border-color, #dee2e6);
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+
+    > div {
+        display: grid;
+        gap: 0.2rem;
+        padding: 0.75rem 1rem;
+        border-right: 1px solid var(--border-color, #dee2e6);
+    }
+
+    > div:first-child {
+        padding-left: 0;
+    }
+
+    > div:last-child {
+        border-right: 0;
+    }
+
+    span {
+        color: var(--body-color, #495057);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+    }
+
+    strong {
+        font-size: 1.35rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.o_enrolment_forecast__loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--body-color, #495057);
+}
+
+.o_enrolment_forecast__table_scroll {
+    min-height: 0;
+    overflow: auto;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+}
+
+.o_enrolment_forecast__table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-variant-numeric: tabular-nums;
+
+    th,
+    td {
+        min-width: 5.5rem;
+        padding: 0.45rem 0.65rem;
+        border-bottom: 1px solid var(--border-color, #e9ecef);
+        text-align: center;
+    }
+
+    thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--o-view-background-color, #fff);
+        font-weight: 600;
+    }
+
+    tbody tr:hover {
+        background: rgba(108, 117, 125, 0.055);
+    }
+}
+
+.o_enrolment_forecast__grade_heading,
+.o_enrolment_forecast__grade_name,
+.o_enrolment_forecast__total th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    width: 12rem;
+    min-width: 12rem !important;
+    background: var(--o-view-background-color, #fff);
+    text-align: left !important;
+}
+
+.o_enrolment_forecast__grade_heading {
+    z-index: 3 !important;
+}
+
+.o_enrolment_forecast__now_heading,
+.o_enrolment_forecast__now_cell {
+    background: rgba(13, 110, 253, 0.055) !important;
+}
+
+.o_enrolment_forecast__year_heading {
+    min-width: 7rem !important;
+
+    small {
+        display: block;
+        color: var(--body-color, #6c757d);
+        font-size: 0.65rem;
+        font-weight: 400;
+        text-transform: uppercase;
+    }
+}
+
+.o_enrolment_forecast__grade_name {
+    font-weight: 500;
+}
+
+.o_enrolment_forecast__now_cell {
+    font-weight: 600;
+}
+
+.o_enrolment_forecast__future_cell {
+    min-width: 7rem;
+}
+
+.o_enrolment_forecast__count {
+    display: block;
+    width: 100%;
+    min-height: 2rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    &:hover {
+        color: var(--o-brand-primary, #714b67);
+        text-decoration: underline;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--o-brand-primary, #714b67);
+        outline-offset: 2px;
+    }
+}
+
+.o_enrolment_forecast__movement {
+    display: flex;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 1rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+}
+
+.o_enrolment_forecast__movement_in,
+.o_enrolment_forecast__movement_out {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-weight: 500;
+}
+
+.o_enrolment_forecast__movement_in {
+    color: #157347;
+}
+
+.o_enrolment_forecast__movement_out {
+    color: #b02a37;
+}
+
+button.o_enrolment_forecast__movement_in:hover,
+button.o_enrolment_forecast__movement_out:hover {
+    text-decoration: underline;
+}
+
+.o_enrolment_forecast__total {
+    font-weight: 700;
+
+    th,
+    td {
+        border-top: 2px solid var(--border-color, #adb5bd);
+        border-bottom: 0;
+    }
+}
+
+.o_enrolment_forecast__information {
+    color: var(--body-color, #495057);
+    font-size: 0.85rem;
+
+    summary {
+        width: fit-content;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    p {
+        max-width: 70rem;
+        margin: 0.5rem 0;
+    }
+}
+
+@media (max-width: 900px) {
+    .o_enrolment_forecast__header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .o_enrolment_forecast__summary {
+        grid-template-columns: repeat(2, minmax(8rem, 1fr));
+
+        > div {
+            padding: 0.65rem;
+            border-bottom: 1px solid var(--border-color, #dee2e6);
+        }
+
+        > div:first-child {
+            padding-left: 0.65rem;
+        }
+    }
+}

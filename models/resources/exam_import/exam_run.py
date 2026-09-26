@@ -11,7 +11,6 @@ class APSExamPaperImportRun(models.Model):
     _inherit = 'aps.ai.run'
     _order = 'create_date desc, id desc'
 
-    import_id = fields.Many2one('aps.exam.paper.import', required=True, ondelete='cascade', readonly=True)
     page_ids = fields.Many2many(
         'aps.exam.paper.page', 'aps_exam_import_run_page_rel',
         'run_id', 'page_id', string='Pages', readonly=True,

@@ -1,4 +1,5 @@
 from odoo import fields, models, api
+from odoo.exceptions import ValidationError
 
 
 class APSStudent(models.Model):
@@ -39,6 +40,38 @@ class APSStudent(models.Model):
         tracking=True,
         help='Automatically set from enrollments whose subject category is tagged as a Home Class.',
     )
+    enrolment_status = fields.Many2one(
+        'aps.student.enrolment.status',
+        string='Enrolment Status',
+        default=lambda self: self.env.ref(
+            'aps_sis.student_enrolment_status_enrolled',
+            raise_if_not_found=False,
+        ),
+        required=True,
+        ondelete='restrict',
+        tracking=True,
+    )
+    start_date = fields.Date(string='Start Date', tracking=True)
+    end_date = fields.Date(string='End Date', tracking=True)
+    entry_grade_id = fields.Many2one(
+        'aps.level',
+        string='Entry Grade',
+        ondelete='set null',
+        tracking=True,
+    )
+    leaving_reason_id = fields.Many2one(
+        'aps.student.leaving.reason',
+        string='Leaving Reason',
+        ondelete='set null',
+        tracking=True,
+    )
+    entry_source_id = fields.Many2one(
+        'aps.student.entry.source',
+        string='Entry Source',
+        ondelete='set null',
+        tracking=True,
+    )
+    notes = fields.Text(string='Management Notes')
     # @api.model
     # def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
     #     """Search by partner name or roll number so that the Many2one dropdown filters correctly."""
@@ -82,6 +115,12 @@ class APSStudent(models.Model):
     )
     enrollment_ids = fields.One2many('aps.student.class', 'student_id', string='Class Enrollments')
     enrollment_count = fields.Integer(string='Classes', compute='_compute_enrollment_count')
+
+    @api.constrains('start_date', 'end_date')
+    def _check_enrolment_dates(self):
+        for student in self:
+            if student.start_date and student.end_date and student.end_date < student.start_date:
+                raise ValidationError('End date must be on or after start date.')
 
     @api.depends('partner_id')
     def _compute_guardian_partner(self):

@@ -1,3 +1,7 @@
+import base64
+from io import BytesIO
+from unittest.mock import MagicMock, patch
+
 from odoo.tests.common import TransactionCase
 
 from odoo.exceptions import UserError, ValidationError
@@ -34,12 +38,12 @@ class TestExamPaperImport(TransactionCase):
     def test_crop_bounds_remove_right_and_bottom_margins(self):
         importer = self.env['aps.exam.paper.import']
         page = self.env['aps.exam.paper.page'].new({
-            'page_number': 1, 'width': 1000, 'height': 1000,
+            'page_number': 1, 'width': 1000, 'height': 1500,
         })
 
         left, top, right, bottom = importer._crop_bounds({'y1': 0.1}, page, {})
 
-        self.assertEqual((left, top, right, bottom), (75, 100, 925, 900))
+        self.assertEqual((left, top, right, bottom), (75, 150, 925, 1400))
 
     def test_region_editor_returns_page_picker_defaults(self):
         job = self.env['aps.exam.paper.import'].create({
@@ -485,6 +489,41 @@ class TestExamPaperImport(TransactionCase):
         self.assertFalse(q1.description)
         self.assertIn('<h1>Q1a</h1>', q1.question)
 
+    def test_resource_builder_adds_content_for_root_only_question(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Standalone question paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('rms.pdf').id,
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id,
+            'sequence': 1,
+            'source_key': '7',
+            'display_label': 'Q7',
+            'root_key': 'Q7',
+            'hierarchy_level': 1,
+            'maximum_mark': 5,
+            'question_regions': [{'page_number': 1}],
+            'answer_regions': [{'page_number': 1}],
+        })
+
+        def image_html(_import, _resource, _section, document_type, log=False):
+            return '<img data-document="%s"></img>' % document_type
+
+        with patch.object(
+            type(job), '_build_section_image_html', autospec=True,
+            side_effect=image_html,
+        ):
+            job.action_build_resources()
+
+        resource = self.resource.child_ids.filtered(lambda item: item.name == 'Q7')
+        self.assertEqual(len(resource), 1)
+        self.assertIn('data-document="question"', resource.question)
+        self.assertIn('data-document="mark_scheme"', resource.answer)
+        self.assertEqual(resource.marks, 5)
+        self.assertEqual(section.resource_id, resource)
+        self.assertEqual(resource.has_child_resources, 'no')
+
     def test_image_sections_do_not_have_text_fields(self):
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Image paper', 'resource_id': self.resource.id,
@@ -504,9 +543,89 @@ class TestExamPaperImport(TransactionCase):
         })
         self.assertEqual(job.render_dpi, 200)
 
-    def test_render_height_is_fixed(self):
+    def test_render_dpi_defaults_to_300(self):
         importer = self.env['aps.exam.paper.import']
-        self.assertEqual(importer._RENDER_HEIGHT_PIXELS, 1500)
+        job = importer.new({'name': 'Default DPI paper', 'resource_id': self.resource.id})
+        self.assertEqual(job.render_dpi, 300)
+
+    def test_render_and_crop_webp_with_ocr_mime_compatibility(self):
+        try:
+            import fitz
+        except ImportError:
+            self.skipTest('PyMuPDF is required for PDF rendering.')
+        from PIL import Image
+
+        pdf = fitz.open()
+        pdf_page = pdf.new_page(width=72, height=144)
+        pdf_page.insert_text((10, 24), 'Q1')
+        pdf_content = pdf.tobytes()
+        pdf.close()
+        pdf_attachment = self.env['ir.attachment'].create({
+            'name': 'question.pdf', 'type': 'binary',
+            'datas': base64.b64encode(pdf_content).decode('ascii'),
+            'mimetype': 'application/pdf',
+        })
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'WebP paper', 'resource_id': self.resource.id,
+            'question_attachment_id': pdf_attachment.id,
+            'mark_scheme_attachment_id': pdf_attachment.id,
+            'render_dpi': 300,
+        })
+
+        job._render_pdf_pages(pdf_attachment, 'question')
+
+        page = job.page_ids.filtered(lambda item: item.document_type == 'question')
+        self.assertEqual((page.width, page.height), (300, 600))
+        self.assertEqual(page.attachment_id.mimetype, 'image/webp')
+        self.assertTrue(page.attachment_id.name.endswith('.webp'))
+        with Image.open(BytesIO(page.attachment_id.raw)) as rendered_image:
+            self.assertEqual(rendered_image.format, 'WEBP')
+            self.assertEqual(rendered_image.size, (300, 600))
+        page_data_uri = job._image_data_uri(page.attachment_id)
+        self.assertTrue(page_data_uri.startswith('data:image/webp;base64,'))
+        self.assertEqual(base64.b64decode(page_data_uri.split(',', 1)[1]), page.attachment_id.raw)
+
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': '1',
+            'display_label': 'Q1', 'resource_id': self.resource.id,
+            'question_regions': [{
+                'page_number': 1, 'x1': 0.1, 'y1': 0.1, 'x2': 0.9, 'y2': 0.9,
+            }],
+        })
+        self.assertEqual(
+            section._default_editor_region(page),
+            {'x1': 30, 'y1': 34, 'x2': 270, 'y2': 560},
+        )
+        image_html = job._build_section_image_html(self.resource, section, 'question')
+        crop_attachment_id = int(image_html.split('/web/image/', 1)[1].split('"', 1)[0])
+        crop_attachment = self.env['ir.attachment'].browse(crop_attachment_id)
+        self.assertEqual(crop_attachment.mimetype, 'image/webp')
+        self.assertTrue(crop_attachment.name.endswith('.webp'))
+        with Image.open(BytesIO(crop_attachment.raw)) as crop_image:
+            self.assertEqual(crop_image.format, 'WEBP')
+            self.assertEqual(crop_image.size, (240, 502))
+
+        png_buffer = BytesIO()
+        Image.new('RGB', (40, 40), 'white').save(png_buffer, format='PNG')
+        legacy_png = self.env['ir.attachment'].create({
+            'name': 'legacy-crop.png', 'type': 'binary',
+            'datas': base64.b64encode(png_buffer.getvalue()).decode('ascii'),
+            'mimetype': 'image/png',
+        })
+        model = MagicMock()
+        model.model_key = 'test-model'
+        model.max_completion_tokens = 2400
+        model._execute_logged_router_call.return_value = {'response_json': {}}
+        model._extract_message_content.return_value = 'OCR result'
+
+        self.assertEqual(job._ocr_images(model, [crop_attachment, legacy_png], 'question'), 'OCR result')
+        payload = model._execute_logged_router_call.call_args.args[0]
+        image_items = [item for item in payload['messages'][1]['content'] if item['type'] == 'image_url']
+        webp_uri, png_uri = [item['image_url']['url'] for item in image_items]
+        self.assertTrue(webp_uri.startswith('data:image/webp;base64,'))
+        self.assertEqual(base64.b64decode(webp_uri.split(',', 1)[1]), crop_attachment.raw)
+        self.assertTrue(png_uri.startswith('data:image/png;base64,'))
+        self.assertEqual(base64.b64decode(png_uri.split(',', 1)[1]), legacy_png.raw)
 
     def test_ai_1000_scale_coordinates_are_not_pixels(self):
         importer = self.env['aps.exam.paper.import']
