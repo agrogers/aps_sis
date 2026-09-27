@@ -647,7 +647,12 @@ class APSResourceSubmission(models.Model):
     @api.depends('date_assigned', 'submission_name')
     def _compute_display_name(self):
         for record in self:
-            record.display_name = f"{record.submission_name} ({record.date_assigned})"
+            name = record.submission_name or ''
+            assigned_date = fields.Date.to_string(record.date_assigned) if record.date_assigned else ''
+            if name and assigned_date:
+                record.display_name = f"{name} ({assigned_date})"
+            else:
+                record.display_name = name or assigned_date
 
 # endregion - Computed Fields
 
