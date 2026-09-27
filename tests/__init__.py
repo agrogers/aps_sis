@@ -8,4 +8,3 @@ from . import test_class_tag_enrol_wizard
 from . import test_weekly_submission_result
 from . import test_aps_time_tracking
 from . import test_aps_student_lifecycle
-from . import test_aps_enrolment_forecast
