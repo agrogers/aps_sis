@@ -225,6 +225,8 @@ class APSExamPaperImport(models.Model):
     def _encode_webp(self, image):
         output = BytesIO()
         try:
+            from PIL import Image, WebPImagePlugin
+            Image.init()
             image.save(output, format='WEBP', quality=self._WEBP_QUALITY, method=self._WEBP_METHOD)
         except (OSError, ValueError) as exc:
             raise UserError(_('WebP encoding requires Pillow with WebP support.')) from exc
