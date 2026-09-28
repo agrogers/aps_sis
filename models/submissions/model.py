@@ -295,7 +295,7 @@ class APSResourceSubmission(models.Model):
         string='Auto Score',
         default=True,
         help='If True, the score and answer summary are automatically calculated from child '
-             'resource scores. Set to False when the score has been manually entered by a user.',
+             'resource scores. Set to False when the score has been manually entered by a user. It does not apply to AI marking.',
         tracking=True,
     )
     confidence_rating = fields.Selection(
