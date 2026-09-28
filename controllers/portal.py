@@ -229,7 +229,7 @@ class APSPortal(CustomerPortal):
                 result['count'] += 1
         subject_chart = [{
             'name': result['name'],
-            'average': round(result['total'] / result['count']),
+            'average': min(100, max(0, round(result['total'] / result['count']))),
             'count': result['count'],
         } for result in subject_results.values()]
 
@@ -245,9 +245,9 @@ class APSPortal(CustomerPortal):
             'submitted': len(submissions.filtered(lambda submission: submission.state == 'submitted')),
             'completed': len(completed),
             'overdue': len(overdue),
-            'average_score': round(
+            'average_score': min(100, max(0, round(
                 sum(scored_submissions.mapped('result_percent')) / len(scored_submissions)
-            ) if scored_submissions else False,
+            ))) if scored_submissions else False,
             'subject_chart': subject_chart,
             'recent_submissions': submissions[:10],
         }
