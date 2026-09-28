@@ -1,11 +1,28 @@
 import re
 import uuid
-from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo import _, models, fields, api
+from odoo.exceptions import UserError, ValidationError
 
 
 class APSResource(models.Model):
     _inherit = 'aps.resources'
+
+    def action_open_delete_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Delete Resource'),
+            'res_model': 'aps.resource.delete.wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('aps_sis.view_aps_resource_delete_wizard_form').id,
+            'target': 'new',
+            'context': {'default_resource_id': self.id},
+        }
+
+    def unlink(self):
+        if not self.env.context.get('_aps_resource_delete_wizard'):
+            raise UserError(_('Use "Delete Resource" to review related tasks and submissions before deleting this resource.'))
+        return super().unlink()
 
     def action_generate_share_token(self):
         """(Re)generate the share token, invalidating any previously shared links."""

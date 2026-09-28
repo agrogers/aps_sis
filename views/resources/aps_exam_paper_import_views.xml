@@ -79,7 +79,7 @@
                     <notebook>
                         <page string="Detected Sections">
                             <field name="section_ids">
-                                <list editable="bottom" default_order="import_id,sequence,source_key" limit="999">
+                                <list editable="bottom" default_order="sequence" limit="999">
                                     <field name="sequence" widget="handle"/>
                                     <field name="display_label" optional="show"/>
                                     <field name="source_key" readonly="1" optional="show"/>
@@ -173,6 +173,7 @@
                         <field name="ai_state" readonly="1"/>
                         <field name="ai_call_log_id" readonly="1"/>
                     </group>
+                    <field name="detected_labels" readonly="1"/>
                     <field name="error_message" readonly="1" invisible="not error_message"/>
                     <field name="ai_response" readonly="1" widget="json"/>
                 </sheet>
@@ -190,7 +191,7 @@
         <field name="name">aps.exam.paper.section.list</field>
         <field name="model">aps.exam.paper.section</field>
         <field name="arch" type="xml">
-            <list editable="bottom" default_order="import_id,sequence,source_key" limit="999">
+            <list editable="bottom" default_order="sequence" limit="999">
                 <field name="sequence" widget="handle"/>
                 <field name="display_label"/>
                 <field name="source_key" readonly="1" optional="hide"/>

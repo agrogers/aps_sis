@@ -653,7 +653,7 @@ class APSResource(models.Model):
         import io
         import re
         try:
-            from PIL import Image
+            from PIL import Image, WebPImagePlugin
         except ImportError:
             return html, False
 

@@ -1,7 +1,7 @@
 """Rendered exam paper page model."""
 import logging
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 
 _logger = logging.getLogger(__name__)
 
@@ -25,12 +25,30 @@ class APSExamPaperPage(models.Model):
     ai_state = fields.Selection([
         ('pending', 'Pending'), ('complete', 'Complete'), ('failed', 'Failed'),
     ], default='pending', required=True)
+    detected_labels = fields.Text(compute='_compute_detected_labels', string='AI Detected Labels')
     error_message = fields.Text(readonly=True)
 
     _sql_constraints = [
         ('page_render_unique', 'unique(import_id, document_type, page_number, render_dpi)',
          'A page can only be rendered once at the same DPI for an import.'),
     ]
+
+    @api.depends('ai_response', 'ai_state')
+    def _compute_detected_labels(self):
+        for page in self:
+            labels = []
+            detections = (page.ai_response or {}).get('detections') or []
+            for detection in detections:
+                if not isinstance(detection, dict):
+                    continue
+                label = (detection.get('raw_label') or detection.get('display_label') or '').strip()
+                if not label:
+                    continue
+                kind = (detection.get('label_kind') or '').strip()
+                labels.append('%s [%s]' % (label, kind) if kind else label)
+            page.detected_labels = '\n'.join(labels) or (
+                _('No labels returned') if page.ai_state == 'complete' else False
+            )
 
     def action_view_page(self):
         self.ensure_one()

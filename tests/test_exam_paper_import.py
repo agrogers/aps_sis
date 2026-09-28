@@ -351,6 +351,20 @@ class TestExamPaperImport(TransactionCase):
         self.assertIsInstance(response, dict)
         self.assertIsInstance(response.get('detections'), list)
 
+    def test_page_analysis_shows_returned_labels(self):
+        page_model = self.env['aps.exam.paper.page']
+        page = page_model.new({
+            'ai_state': 'complete',
+            'ai_response': {'detections': [
+                {'raw_label': '5(a)', 'label_kind': 'part'},
+                {'raw_label': '5(c)', 'label_kind': 'part'},
+            ]},
+        })
+        self.assertEqual(page.detected_labels, '5(a) [part]\n5(c) [part]')
+
+        empty_page = page_model.new({'ai_state': 'complete', 'ai_response': {'detections': []}})
+        self.assertEqual(empty_page.detected_labels, 'No labels returned')
+
     def test_section_inclusion_defaults(self):
         section = self.env['aps.exam.paper.section'].new({
             'source_key': '1ai', 'display_label': 'Q1a.i',

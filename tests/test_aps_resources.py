@@ -2,6 +2,104 @@ from odoo.tests.common import TransactionCase
 
 class TestAPSResource(TransactionCase):
 
+    def test_delete_wizard_preview_and_confirmation_scope(self):
+        student = self.env['res.partner'].create({
+            'name': 'Deletion Preview Student',
+            'is_student': True,
+        })
+        parent = self.env['aps.resources'].create({'name': 'Parent Resource'})
+        parent_task = self.env['aps.resource.task'].create({
+            'resource_id': parent.id,
+            'student_id': student.id,
+        })
+        parent_submission = self.env['aps.resource.submission'].create({
+            'task_id': parent_task.id,
+            'auto_score': True,
+        })
+        resource = self.env['aps.resources'].create({
+            'name': 'Resource to Delete',
+            'parent_ids': [(4, parent.id)],
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submissions = self.env['aps.resource.submission'].create([
+            {
+                'task_id': task.id,
+                'submission_name': 'Assigned Work',
+                'state': 'assigned',
+            },
+            {
+                'task_id': task.id,
+                'submission_name': 'Submitted Work',
+                'state': 'submitted',
+            },
+            {
+                'task_id': task.id,
+                'submission_name': 'Finalised Work',
+                'state': 'complete',
+            },
+        ])
+        child = self.env['aps.resources'].create({
+            'name': 'Linked Child to Keep',
+            'parent_ids': [(4, resource.id)],
+        })
+        child_task = self.env['aps.resource.task'].create({
+            'resource_id': child.id,
+            'student_id': student.id,
+        })
+        child_submission = self.env['aps.resource.submission'].create({
+            'task_id': child_task.id,
+            'submission_name': 'Child Work',
+        })
+
+        wizard = self.env['aps.resource.delete.wizard'].create({
+            'resource_id': resource.id,
+        })
+        self.assertEqual(wizard.task_count, 1)
+        self.assertIn('Deletion Preview Student', wizard.task_preview)
+        self.assertEqual(wizard.assigned_submission_count, 1)
+        self.assertIn('Assigned Work', wizard.assigned_submission_preview)
+        self.assertEqual(wizard.submitted_submission_count, 1)
+        self.assertIn('Submitted Work', wizard.submitted_submission_preview)
+        self.assertEqual(wizard.finalised_submission_count, 1)
+        self.assertIn('Finalised Work', wizard.finalised_submission_preview)
+
+        wizard.action_confirm_delete()
+
+        self.assertFalse(resource.exists())
+        self.assertFalse(task.exists())
+        self.assertFalse(submissions.exists())
+        self.assertTrue(child.exists())
+        self.assertTrue(child_task.exists())
+        self.assertTrue(child_submission.exists())
+        self.assertFalse(child.parent_ids)
+        self.assertTrue(parent.exists())
+        self.assertTrue(parent_task.exists())
+        self.assertTrue(parent_submission.exists())
+        self.assertEqual(parent_submission.score, -0.01)
+
+    def test_resource_cannot_be_deleted_without_wizard(self):
+        from odoo.exceptions import UserError
+
+        resource = self.env['aps.resources'].create({'name': 'Protected Resource'})
+        with self.assertRaises(UserError):
+            resource.unlink()
+        self.assertTrue(resource.exists())
+
+    def test_delete_wizard_preview_handles_resource_without_tasks(self):
+        resource = self.env['aps.resources'].create({'name': 'Empty Resource'})
+        wizard = self.env['aps.resource.delete.wizard'].create({
+            'resource_id': resource.id,
+        })
+
+        self.assertEqual(wizard.task_count, 0)
+        self.assertEqual(wizard.task_preview, 'No tasks.')
+        self.assertEqual(wizard.assigned_submission_count, 0)
+        self.assertEqual(wizard.submitted_submission_count, 0)
+        self.assertEqual(wizard.finalised_submission_count, 0)
+
     def _make_auto_assign_fixture(self):
         year = self.env['aps.academic.year'].create({
             'name': 'Auto Assign Year',

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_aps_resource_delete_wizard_form" model="ir.ui.view">
+        <field name="name">aps.resource.delete.wizard.form</field>
+        <field name="model">aps.resource.delete.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Delete Resource">
+                <sheet>
+                    <div class="alert alert-danger" role="alert">
+                        Deleting this resource permanently removes its tasks and all assigned, submitted, and finalised submissions, including student work and feedback. Linked child resources are kept.
+                    </div>
+                    <group>
+                        <field name="resource_id"/>
+                        <field name="task_count" readonly="1"/>
+                    </group>
+                    <group string="Tasks to Delete">
+                        <field name="task_preview" nolabel="1" readonly="1"/>
+                    </group>
+                    <group col="3">
+                        <group string="Assigned Submissions">
+                            <field name="assigned_submission_count" readonly="1"/>
+                            <field name="assigned_submission_preview" nolabel="1" readonly="1"/>
+                        </group>
+                        <group string="Submitted Submissions">
+                            <field name="submitted_submission_count" readonly="1"/>
+                            <field name="submitted_submission_preview" nolabel="1" readonly="1"/>
+                        </group>
+                        <group string="Finalised Submissions">
+                            <field name="finalised_submission_count" readonly="1"/>
+                            <field name="finalised_submission_preview" nolabel="1" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_delete" string="Delete Resource, Tasks, and Submissions"
+                            type="object" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
