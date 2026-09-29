@@ -195,6 +195,15 @@ class APSExamPaperImport(models.Model):
             'domain': [('import_id', '=', self.id)],
         }
 
+    def action_open_question_identifiers(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Question Identifiers'),
+            'res_model': 'aps.exam.paper.question.identifier',
+            'view_mode': 'list,form',
+            'target': 'current',
+        }
+
     def action_retry(self):
         self.ensure_one()
         if self.state != 'failed':

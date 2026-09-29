@@ -312,6 +312,76 @@ class TestExamPaperImport(TransactionCase):
         subpart, _, _ = resolver._resolve_page_label('(i)', 'subpart', root_context, part_context)
         self.assertEqual(subpart, 'Q1a.i')
 
+    def test_configured_identifiers_match_filename_rules_before_universal_rules(self):
+        importer = self.env['aps.exam.paper.import']
+        paper_attachment = self._attachment('Task_Paper_que.pdf')
+        mark_attachment = self._attachment('Task_Paper_rms.pdf')
+        job = importer.create({
+            'name': 'Task Paper', 'resource_id': self.resource.id,
+            'question_attachment_id': paper_attachment.id,
+            'mark_scheme_attachment_id': mark_attachment.id,
+        })
+        other_attachment = self._attachment('Other_Paper_que.pdf')
+        other_mark_attachment = self._attachment('Other_Paper_rms.pdf')
+        other_job = importer.create({
+            'name': 'Other Paper', 'resource_id': self.env['aps.resources'].create({
+                'name': 'Other exam',
+            }).id,
+            'question_attachment_id': other_attachment.id,
+            'mark_scheme_attachment_id': other_mark_attachment.id,
+        })
+        identifiers = self.env['aps.exam.paper.question.identifier']
+        root_rule = identifiers.create({
+            'sequence': 1, 'identifier_example': 'Task 1', 'hierarchy_level': '1',
+        })
+        paper_rule = identifiers.create({
+            'sequence': 2, 'identifier_example': 'Task 1A',
+            'filename_contains': 'Task_Paper', 'hierarchy_level': '2',
+        })
+        universal_rule = identifiers.create({
+            'sequence': 3, 'identifier_example': 'Task 1A', 'hierarchy_level': '3',
+        })
+        identifiers.create({
+            'sequence': 4, 'identifier_example': '(i)',
+            'filename_contains': 'Task_Paper', 'hierarchy_level': '3',
+        })
+        page_image = self.env['ir.attachment'].create({
+            'name': 'task-page.png', 'type': 'binary', 'datas': 'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+            'render_dpi': 150, 'attachment_id': page_image.id, 'ai_state': 'complete',
+            'ai_response': {'detections': [
+                {'raw_label': 'Task 1', 'label_kind': 'root'},
+                {'raw_label': 'Task 1A', 'label_kind': 'part'},
+                {'raw_label': '(i)', 'label_kind': 'subpart'},
+            ]},
+        })
+
+        root = job._resolve_configured_identifier('Task 1', False, False)
+        paper_part = job._resolve_configured_identifier('Task 1A', root[1], root[2])
+        other_part = other_job._resolve_configured_identifier('Task 1A', 'Task 1', False)
+        detected = job._collect_page_detections('question')
+
+        self.assertEqual(root, ('Task 1', 'Task 1', False, 1))
+        self.assertEqual(paper_part, ('Task 1A', 'Task 1', ('configured', 'Task 1A'), 2))
+        self.assertEqual(other_part, ('Task 1A', 'Task 1', False, 3))
+        self.assertEqual(root_rule.regex_pattern, r'Task\ \d+')
+        self.assertEqual(paper_rule.regex_pattern, r'Task\ \d+[A-Za-z]+')
+        self.assertTrue(universal_rule.regex_pattern)
+        self.assertEqual(identifiers._pattern_from_example('q1a'), r'q\d+[A-Za-z]+')
+        self.assertEqual([item['label'] for item in detected], ['Task 1', 'Task 1A', 'Task 1A.i'])
+        self.assertEqual([item['hierarchy_level'] for item in detected], [1, 2, 3])
+
+    def test_configured_part_supports_contextual_subparts(self):
+        label, root, part = self.env['aps.exam.paper.import']._resolve_page_label(
+            '(i)', 'subpart', 'Task 1', ('configured', 'Task 1A'),
+        )
+
+        self.assertEqual((label, root), ('Task 1A.i', 'Task 1'))
+        self.assertEqual(part, ('configured', 'Task 1A'))
+
     def test_roman_subparts_are_not_resolved_as_alphabetic_parts(self):
         resolver = self.env['aps.exam.paper.import']
         root, root_context, part_context = resolver._resolve_page_label('6', 'root', False, False)
