@@ -477,6 +477,7 @@ class TestExamPaperImport(TransactionCase):
             {
                 'import_id': job.id, 'sequence': 1, 'source_key': '1',
                 'display_label': 'Q1', 'root_key': 'Q1',
+                'question_summary': 'Solve the equations and show your working.',
                 'question_regions': [{'x1': 0.1, 'y1': 0.1, 'x2': 0.9, 'y2': 0.2}],
                 'answer_regions': [{'x1': 0.1, 'y1': 0.1, 'x2': 0.9, 'y2': 0.2}],
             },
@@ -500,8 +501,14 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(child.description, 'Calculate the missing angle.')
         self.assertNotIn('Imported from', child.description)
         self.assertNotIn('Question pages', child.description)
-        self.assertFalse(q1.description)
+        self.assertEqual(q1.description, 'Solve the equations and show your working.')
         self.assertIn('<h1>Q1a</h1>', q1.question)
+
+        q1.write({'description': 'Teacher root description.'})
+        child.write({'description': 'Teacher part description.'})
+        job.action_build_resources()
+        self.assertEqual(q1.description, 'Teacher root description.')
+        self.assertEqual(child.description, 'Teacher part description.')
 
     def test_resource_builder_adds_content_for_root_only_question(self):
         job = self.env['aps.exam.paper.import'].create({
@@ -516,6 +523,7 @@ class TestExamPaperImport(TransactionCase):
             'display_label': 'Q7',
             'root_key': 'Q7',
             'hierarchy_level': 1,
+            'question_summary': 'Determine the value of the unknown.',
             'maximum_mark': 5,
             'question_regions': [{'page_number': 1}],
             'answer_regions': [{'page_number': 1}],
@@ -535,6 +543,7 @@ class TestExamPaperImport(TransactionCase):
         self.assertIn('data-document="question"', resource.question)
         self.assertIn('data-document="mark_scheme"', resource.answer)
         self.assertEqual(resource.marks, 5)
+        self.assertEqual(resource.description, 'Determine the value of the unknown.')
         self.assertEqual(section.resource_id, resource)
         self.assertEqual(resource.has_child_resources, 'no')
 

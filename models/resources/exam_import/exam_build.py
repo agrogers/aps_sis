@@ -485,6 +485,10 @@ class APSExamPaperImportBuild(models.Model):
 
         for root_key, sections in sections_by_root.items():
             root = roots[root_key]
+            root_section = self.section_ids.filtered(
+                lambda section: (section.root_key or section.source_key) == root_key
+                and self._normalise_key(section.display_label) == self._normalise_key(root.name)
+            )[:1]
             headings = []
             answers = []
             total_marks = 0.0
@@ -527,24 +531,28 @@ class APSExamPaperImportBuild(models.Model):
                 total_marks += section.maximum_mark or 0.0
                 root_regions.extend(question_regions)
                 self._append_section_content(root, section, headings, answers)
-                child.write({
+                child_values = {
                     'has_question': 'use_parent',
                     'has_answer': 'use_parent',
                     'marks': section.maximum_mark,
-                    'description': section.question_summary or False,
-                })
+                }
+                if not child.description and section.question_summary:
+                    child_values['description'] = section.question_summary
+                child.write(child_values)
                 section.resource_id = child.id
                 section.write({'resource_key': str(child.id)})
 
-            root.write({
+            root_values = {
                 'has_child_resources': 'no' if root_only else 'yes',
                 'has_question': 'yes',
                 'has_answer': 'yes',
                 'question': ''.join(headings),
                 'answer': ''.join(answers),
                 'marks': total_marks,
-                'description': False,
-            })
+            }
+            if not root.description and root_section.question_summary:
+                root_values['description'] = root_section.question_summary
+            root.write(root_values)
         self.write({'state': 'completed', 'progress': 100, 'completed_at': fields.Datetime.now()})
         # Show the completion toast and then re-open the form so the refreshed
         # state, progress and section resource links are shown without a
