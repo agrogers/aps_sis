@@ -239,6 +239,16 @@ class APSResource(models.Model):
         action['context'] = {}
         return action
 
+    def action_open_all_submissions_with_children(self):
+        """Open submissions for this resource and all of its linked descendants."""
+        self.ensure_one()
+        resources = self | self._get_all_descendant_resources()
+        action = self.env['ir.actions.act_window']._for_xml_id('aps_sis.action_aps_resource_submissions')
+        action['name'] = f'All Submissions: {self.name}'
+        action['domain'] = [('resource_id', 'in', resources.ids)]
+        action['context'] = {}
+        return action
+
     def action_open_recent_submissions(self):
         """Open submissions for this resource that are in 'submitted' state and submitted in the last 7 days."""
         self.ensure_one()
@@ -274,14 +284,7 @@ class APSResource(models.Model):
     def action_open_all_child_resources_list(self):
         """Open all descendants of this resource in a standard list/form view."""
         self.ensure_one()
-        descendants = self.env['aps.resources'].browse()
-        frontier = self.child_ids
-        while frontier:
-            frontier -= descendants
-            if not frontier:
-                break
-            descendants |= frontier
-            frontier = self.env['aps.resources'].search([('parent_ids', 'in', frontier.ids)])
+        descendants = self._get_all_descendant_resources()
         return {
             'type': 'ir.actions.act_window',
             'name': f'All Child Resources: {self.name}',
@@ -291,6 +294,18 @@ class APSResource(models.Model):
             'context': {'default_subjects': self.subjects.ids},
             'target': 'current',
         }
+
+    def _get_all_descendant_resources(self):
+        self.ensure_one()
+        descendants = self.env['aps.resources'].browse()
+        frontier = self.child_ids
+        while frontier:
+            frontier -= descendants
+            if not frontier:
+                break
+            descendants |= frontier
+            frontier = self.env['aps.resources'].search([('parent_ids', 'in', frontier.ids)])
+        return descendants
 
     def action_open_supporting_resources_list(self):
         """Open supporting resources in a standard list/form view with navigation."""

@@ -154,6 +154,11 @@
                                 invisible="total_submissions == 0">
                             <field name="total_submissions" widget="statinfo" string="Submissions"/>
                         </button>
+                        <button name="action_open_all_submissions_with_children" type="object"
+                                class="oe_stat_button" icon="fa-inbox"
+                                invisible="all_submissions_count == 0">
+                            <field name="all_submissions_count" widget="statinfo" string="All Submissions"/>
+                        </button>
                         <button name="action_open_recent_submissions" type="object"
                                 class="oe_stat_button" icon="fa-clock-o"
                                 invisible="recent_submission_count == 0">

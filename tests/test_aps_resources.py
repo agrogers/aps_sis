@@ -2,6 +2,43 @@ from odoo.tests.common import TransactionCase
 
 class TestAPSResource(TransactionCase):
 
+    def test_action_open_all_submissions_with_children(self):
+        student = self.env['res.partner'].create({
+            'name': 'Submission Action Student',
+            'is_student': True,
+        })
+        root = self.env['aps.resources'].create({'name': 'Submission Root'})
+        child = self.env['aps.resources'].create({
+            'name': 'Submission Child',
+            'parent_ids': [(4, root.id)],
+        })
+        grandchild = self.env['aps.resources'].create({
+            'name': 'Submission Grandchild',
+            'parent_ids': [(4, child.id)],
+        })
+        unrelated = self.env['aps.resources'].create({'name': 'Unrelated Submission Resource'})
+
+        submissions = self.env['aps.resource.submission']
+        for resource in (root, child, grandchild, unrelated):
+            task = self.env['aps.resource.task'].create({
+                'resource_id': resource.id,
+                'student_id': student.id,
+            })
+            submissions |= self.env['aps.resource.submission'].create({
+                'task_id': task.id,
+            })
+
+        action = root.action_open_all_submissions_with_children()
+        matching_submissions = self.env['aps.resource.submission'].search(action['domain'])
+        included_resources = root | child | grandchild
+
+        self.assertEqual(
+            set(matching_submissions.ids),
+            set(submissions.filtered(lambda submission: submission.resource_id in included_resources).ids),
+        )
+        self.assertEqual(root.all_submissions_count, 3)
+        self.assertEqual(action['context'], {})
+
     def test_delete_wizard_preview_and_confirmation_scope(self):
         student = self.env['res.partner'].create({
             'name': 'Deletion Preview Student',
@@ -913,4 +950,3 @@ class TestAPSResource(TransactionCase):
         })
         self.assertFalse(child.subjects)
         self.assertFalse(child.tag_ids)
-

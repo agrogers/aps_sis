@@ -146,6 +146,15 @@ class APSResource(models.Model):
             rec.completed_submissions = len(submissions.filtered(lambda s: s.state == 'complete'))
             rec.overdue_tasks = len(rec.task_ids.filtered(lambda t: t.date_due and t.date_due < fields.Date.today() and t.state != 'complete'))
 
+    @api.depends('task_ids.submission_ids', 'child_ids')
+    def _compute_all_submissions_count(self):
+        Submission = self.env['aps.resource.submission']
+        for rec in self:
+            resources = rec | rec._get_all_descendant_resources()
+            rec.all_submissions_count = Submission.search_count([
+                ('resource_id', 'in', resources.ids),
+            ])
+
     @api.depends('primary_parent_id.display_name', 'primary_parent_id.name', 'name', 'parent_ids', 'supporting_parent_ids.display_name')
     def _compute_display_name(self):
         """Build display name from ancestor chain, removing redundant overlapping characters."""

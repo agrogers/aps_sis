@@ -266,6 +266,7 @@ class APSResource(models.Model):
 
     # Dashboard computed fields
     total_submissions = fields.Integer(string='Total Submissions', compute='_compute_dashboard_stats', store=False)
+    all_submissions_count = fields.Integer(string='All Submissions', compute='_compute_all_submissions_count')
     completed_submissions = fields.Integer(string='Completed Submissions', compute='_compute_dashboard_stats', store=False)
     overdue_tasks = fields.Integer(string='Overdue Tasks', compute='_compute_dashboard_stats', store=False)
     primary_parent_id = fields.Many2one(
