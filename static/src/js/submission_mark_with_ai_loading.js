@@ -1,8 +1,23 @@
 import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
+import { registry } from "@web/core/registry";
 import { FormController } from "@web/views/form/form_controller";
 import { AiRunProgressDialog } from "@aps_ai/js/ai_run_progress_dialog";
 
+registry.category("actions").add("aps_exam_page_analysis_progress", (env, action) => {
+    const params = action.params || {};
+    env.services.dialog.add(AiRunProgressDialog, {
+        runModel: params.run_model || "aps.ai.run",
+        runId: params.run_id,
+        title: params.title || "Exam Paper Page Analysis",
+        onCompleted: async () => {
+            await env.services.action.doAction({
+                type: "ir.actions.client",
+                tag: "reload",
+            });
+        },
+    });
+});
 
 function getMarkWithAIButton() {
     return document.activeElement?.closest?.("button[name='action_start_mark_with_ai']") || null;

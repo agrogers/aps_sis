@@ -85,4 +85,12 @@ class APSExamPaperPage(models.Model):
         run = self.import_id._create_page_analysis_run(
             self, model=self.import_id.single_page_ai_model_id or self.import_id.ai_model_id,
         )
-        return self.import_id._build_analysis_run_notification(run)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'aps_exam_page_analysis_progress',
+            'params': {
+                'run_id': run.id,
+                'run_model': 'aps.ai.run',
+                'title': _('Exam Paper Page Analysis'),
+            },
+        }

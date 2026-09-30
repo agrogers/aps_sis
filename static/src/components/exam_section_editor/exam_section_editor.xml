@@ -32,16 +32,19 @@
         <div class="o_exam_region_editor_modal">
             <div class="o_exam_region_editor_header justify-content-between">
                 <div class="o_exam_region_editor_title">
-                    <h3>Review <t t-esc="state.data?.label"/></h3>
+                    <label class="visually-hidden" for="o_exam_region_editor_name">Section name</label>
+                    <input id="o_exam_region_editor_name" class="form-control o_exam_region_editor_name"
+                           type="text" t-att-value="state.data?.label || ''"
+                           t-on-input="onLabelInput" t-att-disabled="!state.data || state.saving"/>
                     <span class="text-muted" t-if="state.data?.navigation?.count">
                         Section <t t-esc="state.data.navigation.position"/> of <t t-esc="state.data.navigation.count"/>
                     </span>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-outline-primary" t-on-click="() => this.addPage('question')" t-att-disabled="!state.data">
+                    <button type="button" class="btn btn-outline-primary" t-on-click="() => this.addPage('question')" t-att-disabled="!state.data || state.saving">
                         <i class="fa fa-plus me-1"></i> Add Question Page
                     </button>
-                    <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.addPage('mark_scheme')" t-att-disabled="!state.data">
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.addPage('mark_scheme')" t-att-disabled="!state.data || state.saving">
                         <i class="fa fa-plus me-1"></i> Add Mark Scheme Page
                     </button>
                 </div>
@@ -51,14 +54,14 @@
                     <t t-foreach="regions" t-as="region" t-key="this._regionKey(region)">
                         <div class="o_exam_region_card">
                             <div class="o_exam_region_card_header">
-                                <button type="button" class="o_exam_region_card_select" t-on-click="() => this.selectRegion(region)">
+                                <button type="button" class="o_exam_region_card_select" t-on-click="() => this.selectRegion(region)" t-att-disabled="state.saving">
                                     <div class="o_exam_region_card_title">
                                         <span t-if="region.document_type === 'question'">Question</span>
                                         <span t-else="">Mark Scheme</span>
                                         — Page <t t-esc="region.page_number"/>
                                     </div>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-link text-danger" title="Remove image from section" aria-label="Remove image from section" t-on-click="(event) => this.removeRegion(event, region)">
+                                <button type="button" class="btn btn-sm btn-link text-danger" title="Remove image from section" aria-label="Remove image from section" t-on-click="(event) => this.removeRegion(event, region)" t-att-disabled="state.saving">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             </div>
@@ -84,16 +87,14 @@
                 </div>
             </div>
             <div class="o_exam_region_editor_footer">
-                <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving || !state.selected">Save</button>
-                <button type="button" class="btn btn-primary" t-on-click="saveAndClose" t-att-disabled="state.saving || !state.selected">Save &amp; Close</button>
+                <span class="text-muted" t-if="state.saving || state.savingLabel">Saving…</span>
                 <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.previous)" t-att-disabled="!state.data?.navigation?.previous || state.saving">
                     <i class="fa fa-chevron-left me-1"></i> Previous
                 </button>
                 <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.navigateTo(state.data.navigation.next)" t-att-disabled="!state.data?.navigation?.next || state.saving">
                     Next <i class="fa fa-chevron-right ms-1"></i>
                 </button>
-                <button type="button" class="btn btn-secondary" t-on-click="cancel">Cancel</button>
-                <button type="button" class="btn btn-link ms-auto" t-on-click="close">Close</button>
+                <button type="button" class="btn btn-secondary ms-auto" t-on-click="close" t-att-disabled="state.saving">Close</button>
             </div>
         </div>
     </t>

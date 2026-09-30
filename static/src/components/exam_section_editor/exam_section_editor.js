@@ -1,4 +1,4 @@
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { Dialog } from "@web/core/dialog/dialog";
@@ -43,17 +43,22 @@ export class ExamSectionRegionEditor extends Component {
             edits: {},
             additions: [],
             saving: false,
+            savingLabel: false,
         });
+        this.savedLabel = "";
+        this.labelSaveTimer = null;
         onWillStart(async () => {
             const sectionId = this.props.action?.params?.section_id;
             await this.loadSection(sectionId);
         });
+        onWillUnmount(() => window.clearTimeout(this.labelSaveTimer));
     }
 
     async loadSection(sectionId) {
         this.state.data = await this.orm.call(
             "aps.exam.paper.section", "get_region_editor_data", [[sectionId]]
         );
+        this.savedLabel = this.state.data.label || "";
         this.state.selected = null;
         this.state.draft = null;
         this.state.edits = {};
@@ -95,11 +100,16 @@ export class ExamSectionRegionEditor extends Component {
             return;
         }
         this._stashDraft();
-        await this._save(false);
+        if (!(await this._save()) || !(await this._saveLabel())) {
+            return;
+        }
         await this.loadSection(section.id);
     }
 
-    stagePage(documentType, page) {
+    async stagePage(documentType, page) {
+        if (!(await this._saveLabel())) {
+            return;
+        }
         const addition = {
             ...page,
             index: null,
@@ -111,9 +121,13 @@ export class ExamSectionRegionEditor extends Component {
         };
         this.state.additions.push(addition);
         this.selectRegion(addition);
+        await this._save();
     }
 
     selectRegion(region) {
+        if (this.state.saving) {
+            return;
+        }
         this._stashDraft();
         this.state.selected = region;
         const key = this._regionKey(region);
@@ -220,42 +234,146 @@ export class ExamSectionRegionEditor extends Component {
     stopDrag() {
         if (this._move) window.removeEventListener("pointermove", this._move);
         this.dragging = null;
-    }
-
-    async save() {
-        return this._save(false);
-    }
-
-    async saveAndClose() {
-        return this._save(true);
-    }
-
-    async _save(closeAfterSave) {
-        if (!this.state.data || (!this.state.selected && !this.state.additions.length && !Object.keys(this.state.edits).length)) return;
         this._stashDraft();
+        this._save();
+    }
+
+    onLabelInput(event) {
+        this.state.data.label = event.target.value;
+        window.clearTimeout(this.labelSaveTimer);
+        this.labelSaveTimer = window.setTimeout(() => this._saveLabel(), 400);
+    }
+
+    async _saveLabel() {
+        window.clearTimeout(this.labelSaveTimer);
+        this.labelSaveTimer = null;
+        if (!this.state.data) {
+            return true;
+        }
+        const label = (this.state.data.label || "").trim();
+        if (!label) {
+            this.state.data.label = this.savedLabel;
+            this.notification.add("Section name cannot be empty.", { type: "warning" });
+            return false;
+        }
+        if (label === this.savedLabel) {
+            this.state.data.label = label;
+            return true;
+        }
+        if (this.labelSavePromise) {
+            await this.labelSavePromise;
+            if ((this.state.data?.label || "").trim() !== this.savedLabel) {
+                return this._saveLabel();
+            }
+            return true;
+        }
+
+        this.state.savingLabel = true;
+        const previousLabel = this.savedLabel;
+        this.labelSavePromise = this.orm.call(
+            "aps.exam.paper.section", "write",
+            [[this.state.data.id], { display_label: label }]
+        );
+        try {
+            await this.labelSavePromise;
+            this.savedLabel = label;
+            if ((this.state.data.label || "").trim() === label) {
+                this.state.data.label = label;
+            }
+        } catch {
+            if ((this.state.data?.label || "").trim() === label) {
+                this.state.data.label = previousLabel;
+            }
+            this.notification.add("Unable to save the section name.", { type: "danger" });
+            return false;
+        } finally {
+            this.labelSavePromise = null;
+            this.state.savingLabel = false;
+        }
+        if ((this.state.data?.label || "").trim() !== this.savedLabel) {
+            return this._saveLabel();
+        }
+        return true;
+    }
+
+    async _save() {
+        if (!this.state.data) {
+            return true;
+        }
+        this._stashDraft();
+        const changes = Object.entries(this.state.edits);
+        const additions = this.state.additions.map((region) => ({
+            region,
+            document_type: region.document_type,
+            page_number: region.page_number,
+            bounds: this.state.edits[this._regionKey(region)] || region.region,
+        }));
+        if (!changes.length && !additions.length) {
+            return true;
+        }
+
+        const selectedLocalId = this.state.selected?.is_new
+            ? this.state.selected.local_id
+            : false;
+        const edits = changes
+            .filter(([key]) => !key.includes(":new-"))
+            .map(([key, bounds]) => {
+                const separator = key.indexOf(":");
+                const documentType = key.slice(0, separator);
+                const index = key.slice(separator + 1);
+                return { document_type: documentType, index: Number(index), bounds };
+            });
+        const addedRegions = additions.map(({ document_type, page_number, bounds }) => ({
+            document_type,
+            page_number,
+            bounds,
+        }));
+
         this.state.saving = true;
         try {
-            const changes = Object.entries(this.state.edits);
-            const edits = changes
-                .filter(([key]) => !key.includes(":new-"))
-                .map(([key, bounds]) => {
-                    const separator = key.indexOf(":");
-                    const documentType = key.slice(0, separator);
-                    const index = key.slice(separator + 1);
-                    return { document_type: documentType, index: Number(index), bounds };
-                });
-            const additions = this.state.additions.map((region) => ({
-                document_type: region.document_type,
-                page_number: region.page_number,
-                bounds: this.state.edits[this._regionKey(region)] || region.region,
-            }));
             await this.orm.call(
                 "aps.exam.paper.section", "save_region_editor_changes",
-                [[this.state.data.id], edits, additions]
+                [[this.state.data.id], edits, addedRegions]
             );
-            await this.loadSection(this.state.data.id);
-            this.notification.add("Region saved.", { type: "success" });
-            if (closeAfterSave) this.close();
+
+            for (const [key, bounds] of changes) {
+                if (key.includes(":new-")) {
+                    continue;
+                }
+                const separator = key.indexOf(":");
+                const documentType = key.slice(0, separator);
+                const index = Number(key.slice(separator + 1));
+                const region = this.state.data.regions[documentType].find(
+                    (item) => item.index === index
+                );
+                if (region) {
+                    region.region = { ...bounds };
+                }
+            }
+
+            for (const addition of additions) {
+                const regions = this.state.data.regions[addition.document_type];
+                const savedRegion = {
+                    ...addition.region,
+                    index: regions.length,
+                    is_new: false,
+                    region: { ...addition.bounds },
+                };
+                delete savedRegion.local_id;
+                regions.push(savedRegion);
+                if (selectedLocalId === addition.region.local_id) {
+                    this.state.selected = savedRegion;
+                }
+            }
+            this.state.edits = {};
+            this.state.additions = [];
+            if (this.state.selected) {
+                this.state.draft = { ...this.state.selected.region };
+            }
+            return true;
+        } catch {
+            this.notification.add("Unable to save crop changes.", { type: "danger" });
+            return false;
         } finally {
             this.state.saving = false;
         }
@@ -263,6 +381,9 @@ export class ExamSectionRegionEditor extends Component {
 
     async removeRegion(event, region) {
         event.stopPropagation();
+        if (this.state.saving || !(await this._saveLabel())) {
+            return;
+        }
         if (!window.confirm(`Remove this image from ${this.state.data.label}?`)) return;
         if (region.is_new) {
             const key = this._regionKey(region);
@@ -284,11 +405,11 @@ export class ExamSectionRegionEditor extends Component {
         await this.loadSection(this.state.data.id);
     }
 
-    cancel() {
-        this.close();
-    }
-
-    close() {
+    async close() {
+        this._stashDraft();
+        if (!(await this._save()) || !(await this._saveLabel())) {
+            return;
+        }
         const controller = this.action.currentController;
         if (controller?.config?.historyBack) {
             controller.config.historyBack();

@@ -15,6 +15,11 @@ class APSExamPaperQuestionIdentifier(models.Model):
         help='Rules are tried in this order; move specific overrides before universal rules.',
     )
     identifier_example = fields.Char(required=True, string='Identifier Example')
+    document_type = fields.Selection([
+        ('all', 'Any Document'),
+        ('question', 'Question Paper'),
+        ('mark_scheme', 'Mark Scheme'),
+    ], required=True, default='all', string='Document Type')
     filename_contains = fields.Char(
         string='Filename Contains',
         help='Leave empty to use this rule for every exam paper.',
@@ -28,6 +33,11 @@ class APSExamPaperQuestionIdentifier(models.Model):
         required=True,
         string='Regular Expression',
         help='Matched against the complete label. The example generates a starting pattern that can be edited.',
+    )
+    canonical_key_regex = fields.Char(
+        string='Canonical Key Regex',
+           help='Optional regex searched in the matched label. Its matched text is used to link equivalent '
+               'labels across documents.',
     )
 
     @api.model
@@ -68,4 +78,16 @@ class APSExamPaperQuestionIdentifier(models.Model):
             except re.error as error:
                 raise ValidationError(
                     _('The question identifier regular expression is invalid: %s') % error
+                ) from error
+
+    @api.constrains('canonical_key_regex')
+    def _check_canonical_key_regex(self):
+        for record in self:
+            if not record.canonical_key_regex:
+                continue
+            try:
+                pattern = re.compile(record.canonical_key_regex)
+            except re.error as error:
+                raise ValidationError(
+                    _('The canonical key regular expression is invalid: %s') % error
                 ) from error

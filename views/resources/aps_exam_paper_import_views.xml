@@ -167,9 +167,11 @@
             <list editable="bottom" default_order="sequence,id">
                 <field name="sequence" widget="handle"/>
                 <field name="identifier_example"/>
+                <field name="document_type"/>
                 <field name="filename_contains"/>
                 <field name="hierarchy_level"/>
                 <field name="regex_pattern"/>
+                <field name="canonical_key_regex" optional="hide"/>
             </list>
         </field>
     </record>
@@ -183,9 +185,11 @@
                     <group>
                         <field name="sequence"/>
                         <field name="identifier_example"/>
+                        <field name="document_type"/>
                         <field name="filename_contains"/>
                         <field name="hierarchy_level"/>
                         <field name="regex_pattern"/>
+                        <field name="canonical_key_regex"/>
                     </group>
                 </sheet>
             </form>
@@ -227,7 +231,7 @@
             <list editable="bottom" default_order="sequence" limit="999">
                 <field name="sequence" widget="handle"/>
                 <field name="display_label"/>
-                <field name="source_key" readonly="1" optional="hide"/>
+                <field name="source_key" optional="show"/>
                 <field name="import_id" optional="hide"/>
                 <field name="root_key" optional="hide"/>
                 <field name="hierarchy_level" optional="show"/>
@@ -269,9 +273,8 @@
                     <group>
                         <field name="import_id" readonly="1"/>
                         <field name="display_label"/>
-                           <field name="source_key" readonly="1"
-                               help="Generated unique key. Duplicating this section creates a new key automatically."/>
-                           <field name="root_key"/>
+                        <field name="source_key"/>
+                        <field name="root_key"/>
                         <field name="hierarchy_level"/>
                         <field name="resource_id" readonly="1"/>
                         <field name="maximum_mark"/>

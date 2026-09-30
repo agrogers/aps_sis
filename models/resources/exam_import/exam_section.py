@@ -14,7 +14,11 @@ class APSExamPaperSection(models.Model):
 
     import_id = fields.Many2one('aps.exam.paper.import', required=True, ondelete='cascade', index=True)
     sequence = fields.Integer(default=10)
-    source_key = fields.Char(required=True, index=True)
+    source_key = fields.Char(
+        required=True,
+        index=True,
+        help='Unique key used to track and link this section within the import. You may set it manually.',
+    )
     display_label = fields.Char(required=True)
     root_key = fields.Char()
     hierarchy_level = fields.Integer(
@@ -55,7 +59,7 @@ class APSExamPaperSection(models.Model):
     ]
 
     _REBUILD_FIELDS = frozenset({
-        'sequence', 'display_label', 'root_key', 'hierarchy_level',
+        'sequence', 'source_key', 'display_label', 'root_key', 'hierarchy_level',
         'maximum_mark', 'question_summary', 'include_resource',
         'include_parent_question', 'question_pages', 'question_regions',
         'answer_pages', 'answer_regions', 'match_confidence', 'review_notes',
