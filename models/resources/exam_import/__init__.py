@@ -1,4 +1,5 @@
 from . import exam_paper_import
+from . import exam_question_identifier
 from . import exam_render
 from . import exam_analyse
 from . import exam_detect

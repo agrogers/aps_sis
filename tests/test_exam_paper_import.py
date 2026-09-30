@@ -73,6 +73,31 @@ class TestExamPaperImport(TransactionCase):
             {'x1': 75, 'y1': 85, 'x2': 925, 'y2': 1400},
         )
 
+    def test_individual_page_analysis_returns_progress_dialog_action(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Single page analysis paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('single-page-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('single-page-rms.pdf').id,
+        })
+        page = self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+            'render_dpi': 150, 'attachment_id': self._attachment('single-page.png').id,
+        })
+        run = MagicMock()
+        run.id = 731
+
+        with patch.object(type(job), '_create_page_analysis_run', return_value=run) as create_run:
+            action = page.action_analyse_page_with_ai()
+
+        create_run.assert_called_once_with(
+            page,
+            model=job.single_page_ai_model_id or job.ai_model_id,
+        )
+        self.assertEqual(action['type'], 'ir.actions.client')
+        self.assertEqual(action['tag'], 'aps_exam_page_analysis_progress')
+        self.assertEqual(action['params']['run_id'], run.id)
+        self.assertEqual(action['params']['run_model'], 'aps.ai.run')
+
     def test_region_editor_returns_previous_and_next_sections(self):
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Navigation paper', 'resource_id': self.resource.id,
@@ -193,8 +218,9 @@ class TestExamPaperImport(TransactionCase):
             'answer_html': '<p>Old answer OCR</p>',
         })
 
-        section.write({'include_parent_question': True})
+        section.write({'source_key': 'manual-q1'})
 
+        self.assertEqual(section.source_key, 'manual-q1')
         self.assertEqual(section.ocr_state, 'pending')
         self.assertFalse(section.question_html)
         self.assertFalse(section.answer_html)
@@ -302,6 +328,8 @@ class TestExamPaperImport(TransactionCase):
         self.assertIn('second pass', prompt)
         self.assertIn('question_summary', prompt)
         self.assertIn('no more than 20 words', prompt)
+        self.assertIn('including labels printed in table headings', prompt)
+        self.assertNotIn('exclude headers, footers', prompt)
 
     def test_resolve_page_labels_across_pages(self):
         resolver = self.env['aps.exam.paper.import']
@@ -311,6 +339,165 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(part, 'Q1a')
         subpart, _, _ = resolver._resolve_page_label('(i)', 'subpart', root_context, part_context)
         self.assertEqual(subpart, 'Q1a.i')
+
+    def test_configured_identifiers_match_filename_rules_before_universal_rules(self):
+        importer = self.env['aps.exam.paper.import']
+        paper_attachment = self._attachment('Task_Paper_que.pdf')
+        mark_attachment = self._attachment('Task_Paper_rms.pdf')
+        job = importer.create({
+            'name': 'Task Paper', 'resource_id': self.resource.id,
+            'question_attachment_id': paper_attachment.id,
+            'mark_scheme_attachment_id': mark_attachment.id,
+        })
+        other_attachment = self._attachment('Other_Paper_que.pdf')
+        other_mark_attachment = self._attachment('Other_Paper_rms.pdf')
+        other_job = importer.create({
+            'name': 'Other Paper', 'resource_id': self.env['aps.resources'].create({
+                'name': 'Other exam',
+            }).id,
+            'question_attachment_id': other_attachment.id,
+            'mark_scheme_attachment_id': other_mark_attachment.id,
+        })
+        identifiers = self.env['aps.exam.paper.question.identifier']
+        root_rule = identifiers.create({
+            'sequence': 1, 'identifier_example': 'Task 1', 'hierarchy_level': '1',
+        })
+        paper_rule = identifiers.create({
+            'sequence': 2, 'identifier_example': 'Task 1A',
+            'filename_contains': 'Task_Paper', 'hierarchy_level': '2',
+        })
+        universal_rule = identifiers.create({
+            'sequence': 3, 'identifier_example': 'Task 1A', 'hierarchy_level': '3',
+        })
+        identifiers.create({
+            'sequence': 4, 'identifier_example': '(i)',
+            'filename_contains': 'Task_Paper', 'hierarchy_level': '3',
+        })
+        page_image = self.env['ir.attachment'].create({
+            'name': 'task-page.png', 'type': 'binary', 'datas': 'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+            'render_dpi': 150, 'attachment_id': page_image.id, 'ai_state': 'complete',
+            'ai_response': {'detections': [
+                {'raw_label': 'Task 1', 'label_kind': 'root'},
+                {'raw_label': 'Task 1A', 'label_kind': 'part'},
+                {'raw_label': '(i)', 'label_kind': 'subpart'},
+            ]},
+        })
+
+        root = job._resolve_configured_identifier('Task 1', False, False)
+        paper_part = job._resolve_configured_identifier('Task 1A', root[1], root[2])
+        other_part = other_job._resolve_configured_identifier('Task 1A', 'Task 1', False)
+        detected = job._collect_page_detections('question')
+
+        self.assertEqual(root, ('Task 1', 'Task 1', False, 1))
+        self.assertEqual(paper_part, ('Task 1A', 'Task 1', ('configured', 'Task 1A'), 2))
+        self.assertEqual(other_part, ('Task 1A', 'Task 1', False, 3))
+        self.assertEqual(root_rule.regex_pattern, r'Task\ \d+')
+        self.assertEqual(paper_rule.regex_pattern, r'Task\ \d+[A-Za-z]+')
+        self.assertTrue(universal_rule.regex_pattern)
+        self.assertEqual(identifiers._pattern_from_example('q1a'), r'q\d+[A-Za-z]+')
+        self.assertEqual([item['label'] for item in detected], ['Task 1', 'Task 1A', 'Task 1A.i'])
+        self.assertEqual([item['hierarchy_level'] for item in detected], [1, 2, 3])
+
+    def test_detect_sections_distinguishes_empty_completed_analysis(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Empty analysis paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('empty-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('empty-rms.pdf').id,
+        })
+        page_image = self.env['ir.attachment'].create({
+            'name': 'empty-question-page.png', 'type': 'binary', 'datas': 'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+            'render_dpi': 150, 'attachment_id': page_image.id, 'ai_state': 'complete',
+            'ai_response': {'detections': []},
+        })
+
+        with self.assertRaisesRegex(UserError, 'no question labels could be resolved into sections'):
+            job._build_sections_from_page_analysis()
+
+    def test_question_and_mark_scheme_labels_share_canonical_keys(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Canonical Map Paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('Canonical_Map_que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('Canonical_Map_rms.pdf').id,
+        })
+        identifier_model = self.env['aps.exam.paper.question.identifier']
+        identifier_model.create([
+            {
+                'sequence': 1, 'identifier_example': 'Task A1',
+                'filename_contains': 'Canonical_Map', 'document_type': 'question',
+                'hierarchy_level': '1', 'canonical_key_regex': r'A\d+',
+            },
+            {
+                'sequence': 2, 'identifier_example': 'Task A1a',
+                'filename_contains': 'Canonical_Map', 'document_type': 'question',
+                'hierarchy_level': '2', 'canonical_key_regex': r'A\d+[A-Za-z]+',
+            },
+            {
+                'sequence': 3, 'identifier_example': 'A1',
+                'filename_contains': 'Canonical_Map', 'document_type': 'mark_scheme',
+                'hierarchy_level': '1', 'canonical_key_regex': r'A\d+',
+            },
+            {
+                'sequence': 4, 'identifier_example': 'A1a',
+                'filename_contains': 'Canonical_Map', 'document_type': 'mark_scheme',
+                'hierarchy_level': '2', 'canonical_key_regex': r'A\d+[A-Za-z]+',
+            },
+        ])
+        question_image = self.env['ir.attachment'].create({
+            'name': 'canonical-question.png', 'type': 'binary', 'datas': 'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        mark_scheme_image = self.env['ir.attachment'].create({
+            'name': 'canonical-mark-scheme.png', 'type': 'binary', 'datas': 'aGVsbG8=',
+            'mimetype': 'image/png',
+        })
+        page_model = self.env['aps.exam.paper.page']
+        page_model.create([
+            {
+                'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+                'render_dpi': 150, 'attachment_id': question_image.id, 'ai_state': 'complete',
+                'ai_response': {'detections': [
+                    {'raw_label': 'Task A1', 'label_kind': 'root'},
+                    {'raw_label': 'Task A1a', 'label_kind': 'part'},
+                    {'raw_label': 'Task A1b', 'label_kind': 'part'},
+                ]},
+            },
+            {
+                'import_id': job.id, 'document_type': 'mark_scheme', 'page_number': 1,
+                'render_dpi': 150, 'attachment_id': mark_scheme_image.id, 'ai_state': 'complete',
+                'ai_response': {'detections': [
+                    {'raw_label': 'A1', 'label_kind': 'root'},
+                    {'raw_label': 'A1a', 'label_kind': 'part'},
+                    {'raw_label': 'A1b', 'label_kind': 'part'},
+                ]},
+            },
+        ])
+
+        job._build_sections_from_page_analysis()
+
+        sections = {section.source_key: section for section in job.section_ids}
+        self.assertEqual(set(sections), {'a1', 'a1a', 'a1b'})
+        self.assertEqual(sections['a1'].display_label, 'Task A1')
+        self.assertEqual(sections['a1'].answer_pages, '1')
+        self.assertEqual(sections['a1a'].display_label, 'Task A1a')
+        self.assertEqual(sections['a1a'].answer_pages, '1')
+        self.assertEqual(sections['a1b'].display_label, 'Task A1b')
+        self.assertEqual(sections['a1b'].answer_pages, '1')
+
+    def test_configured_part_supports_contextual_subparts(self):
+        label, root, part = self.env['aps.exam.paper.import']._resolve_page_label(
+            '(i)', 'subpart', 'Task 1', ('configured', 'Task 1A'),
+        )
+
+        self.assertEqual((label, root), ('Task 1A.i', 'Task 1'))
+        self.assertEqual(part, ('configured', 'Task 1A'))
 
     def test_roman_subparts_are_not_resolved_as_alphabetic_parts(self):
         resolver = self.env['aps.exam.paper.import']

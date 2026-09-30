@@ -25,9 +25,19 @@ class APSExamPaperImportDetect(models.Model):
     def _build_sections_from_page_analysis(self):
         """Resolve raw labels detected on question pages into sections."""
         self.ensure_one()
+        question_pages = self.page_ids.filtered(
+            lambda page: page.document_type == 'question' and page.ai_state == 'complete'
+        )
+        if not question_pages:
+            raise UserError(_('No completed question-paper page analyses are available.'))
+
         question_detections = self._collect_page_detections('question')
         if not question_detections:
-            raise UserError(_('No completed question-paper page analyses are available.'))
+            raise UserError(_(
+                'Completed question-paper page analyses are present, but no question labels could be resolved '
+                'into sections. Review the AI Detected Labels and ensure the Question Identifiers rules match '
+                'the complete labels.'
+            ))
 
         resolved = {}
         for item in question_detections:
@@ -38,9 +48,9 @@ class APSExamPaperImportDetect(models.Model):
                 'import_id': self.id,
                 'sequence': len(resolved) + 1,
                 'source_key': key,
-                'display_label': item['label'],
+                'display_label': item['raw_label'],
                 'root_key': item['root_label'],
-                'hierarchy_level': self._label_hierarchy_level(item['label']),
+                'hierarchy_level': item['hierarchy_level'],
                 'maximum_mark': False,
                 'question_summary': '',
                 'include_resource': True,
@@ -54,7 +64,7 @@ class APSExamPaperImportDetect(models.Model):
             })
             section['question_pages'].append(page.page_number)
             section['question_regions'].extend(self._regions_with_page_data(
-                detection.get('regions') or [], page, item['label'], len(section['question_regions']),
+                detection.get('regions') or [], page, item['raw_label'], len(section['question_regions']),
                 item.get('analysis') or {},
             ))
             if detection.get('include_parent_question') is not None:
@@ -76,7 +86,7 @@ class APSExamPaperImportDetect(models.Model):
             detection = item['detection']
             section['answer_pages'].append(page.page_number)
             section['answer_regions'].extend(self._regions_with_page_data(
-                detection.get('regions') or [], page, item['label'], len(section['answer_regions']),
+                detection.get('regions') or [], page, item['raw_label'], len(section['answer_regions']),
                 item.get('analysis') or {},
             ))
             # The mark scheme is authoritative when it reports a mark.
@@ -144,13 +154,18 @@ class APSExamPaperImportDetect(models.Model):
         # subparts (Q1a.i, Q1a.ii).  Checking only ``root_key`` therefore
         # incorrectly excludes every level-2 section below Q1.  Match each
         # level-3 section to its immediate level-2 parent instead.
-        level_2_parents_with_subparts = {
-            re.sub(
-                r'[^a-z0-9]', '', section['display_label'].split('.', 1)[0].casefold()
-            ).removeprefix('q')
-            for section in resolved.values()
-            if section['hierarchy_level'] >= 3 and '.' in section['display_label']
-        }
+        ordered_sections = list(resolved.values())
+        level_2_parents_with_subparts = set()
+        for index, section in enumerate(ordered_sections):
+            if section['hierarchy_level'] < 3:
+                continue
+            parents = [
+                candidate for candidate in ordered_sections[:index]
+                if candidate['hierarchy_level'] == 2
+                and candidate['root_key'] == section['root_key']
+            ]
+            if parents:
+                level_2_parents_with_subparts.add(parents[-1]['source_key'])
         for section in resolved.values():
             level = section['hierarchy_level']
             if section['ai_include_parent_question'] is not None:
@@ -235,6 +250,9 @@ class APSExamPaperImportDetect(models.Model):
             r'^\s*\(([A-Za-z])\)\s*(?:\(([ivxIVX]+)\))?', value,
         )
         subpart_match = re.match(r'^\s*\(([ivxIVX]+)\)', value)
+        if subpart_match and isinstance(part_label, tuple):
+            subpart = subpart_match.group(1).casefold()
+            return '%s.%s' % (part_label[1], subpart), root_label, part_label
         compact = re.sub(r'[^A-Za-z0-9]', '', value).casefold()
         if compact.startswith('q') and compact[1:].isdigit():
             compact = compact[1:]
@@ -258,11 +276,57 @@ class APSExamPaperImportDetect(models.Model):
             return '%s%s' % (root_label, part_label), root_label, part_label
         return False, root_label, part_label
 
+    def _resolve_configured_identifier(
+        self, raw_label, root_label, part_label, rules=None, document_type=None,
+    ):
+        filename = ' '.join((
+            self.name or '',
+            self.question_attachment_id.name or '',
+        )).casefold()
+        if rules is None:
+            rules = self.env['aps.exam.paper.question.identifier'].search([], order='sequence, id')
+        for rule in rules:
+            if document_type and rule.document_type not in ('all', document_type):
+                continue
+            if rule.filename_contains and rule.filename_contains.casefold() not in filename:
+                continue
+            if not re.fullmatch(rule.regex_pattern, raw_label, flags=re.IGNORECASE):
+                continue
+            canonical_key = raw_label
+            if rule.canonical_key_regex:
+                key_match = re.search(rule.canonical_key_regex, raw_label, flags=re.IGNORECASE)
+                if not key_match or not key_match.group(0):
+                    continue
+                canonical_key = key_match.group(0)
+            level = int(rule.hierarchy_level)
+            if level == 1:
+                return canonical_key, canonical_key, False, level
+            if not root_label:
+                continue
+            if level == 2:
+                contextual_part = re.fullmatch(r'\(([A-Za-z])\)', canonical_key)
+                if contextual_part:
+                    label = '%s%s' % (root_label, contextual_part.group(1).casefold())
+                    return label, root_label, ('configured', label), level
+                return canonical_key, root_label, ('configured', canonical_key), level
+            contextual_subpart = re.fullmatch(r'\(([ivxIVX]+)\)', canonical_key)
+            if contextual_subpart:
+                if isinstance(part_label, tuple):
+                    part = part_label[1]
+                elif part_label:
+                    part = '%s%s' % (root_label, part_label)
+                else:
+                    continue
+                return '%s.%s' % (part, contextual_subpart.group(1).casefold()), root_label, part_label, level
+            return canonical_key, root_label, part_label, level
+        return False, root_label, part_label, 0
+
     def _collect_page_detections(self, document_type):
         """Return raw AI detections resolved in page order for one document."""
         result = []
         root_label = False
         part_label = False
+        identifier_rules = self.env['aps.exam.paper.question.identifier'].search([], order='sequence, id')
         pages = self.page_ids.filtered(
             lambda page: page.document_type == document_type and page.ai_state == 'complete'
         ).sorted('page_number')
@@ -279,13 +343,20 @@ class APSExamPaperImportDetect(models.Model):
                     continue
                 if self._is_answer_space_number(detection, raw_label, page):
                     continue
-                label, root_label, part_label = self._resolve_page_label(
-                    raw_label, detection.get('label_kind', ''), root_label, part_label,
+                label, root_label, part_label, hierarchy_level = self._resolve_configured_identifier(
+                    raw_label, root_label, part_label, identifier_rules, document_type,
                 )
+                if not label:
+                    label, root_label, part_label = self._resolve_page_label(
+                        raw_label, detection.get('label_kind', ''), root_label, part_label,
+                    )
+                    hierarchy_level = self._label_hierarchy_level(label) if label else 0
                 if label:
                     result.append({
                         'page': page, 'detection': detection,
                         'label': label, 'root_label': root_label,
+                        'raw_label': raw_label,
+                        'hierarchy_level': hierarchy_level,
                         'analysis': page.ai_response or {},
                     })
         return result

@@ -132,7 +132,7 @@ class APSExamPaperImportBuild(models.Model):
             positions.setdefault(item['page'].page_number, []).append({
                 'label': item['label'],
                 'normalised_label': self._normalise_key(item['label']),
-                'hierarchy_level': self._label_hierarchy_level(item['label']),
+                'hierarchy_level': item['hierarchy_level'],
                 'y': y_value,
             })
         for values in positions.values():

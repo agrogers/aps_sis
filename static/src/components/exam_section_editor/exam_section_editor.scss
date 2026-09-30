@@ -24,8 +24,24 @@
     min-width: 0;
 }
 
-.o_exam_region_editor_title h3 {
-    margin-bottom: 0;
+.o_exam_region_editor_name {
+    width: 40vw;
+    max-width: 24rem;
+    min-width: 12rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+    .o_exam_region_editor_header {
+        flex-wrap: wrap;
+    }
+
+    .o_exam_region_editor_name {
+        width: 75vw;
+        max-width: 20rem;
+        min-width: 0;
+    }
 }
 
 .o_exam_region_page_picker {
