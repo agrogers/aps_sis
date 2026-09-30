@@ -25,7 +25,8 @@
 }
 
 .o_exam_region_editor_name {
-    width: min(24rem, 40vw);
+    width: 40vw;
+    max-width: 24rem;
     min-width: 12rem;
     font-size: 1.25rem;
     font-weight: 600;
@@ -37,7 +38,8 @@
     }
 
     .o_exam_region_editor_name {
-        width: min(20rem, 75vw);
+        width: 75vw;
+        max-width: 20rem;
         min-width: 0;
     }
 }
