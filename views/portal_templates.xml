@@ -1,5 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <template id="portal_my_home_parent_children" inherit_id="portal.portal_my_home" name="My Children Portal Entry">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-if="parent_child_count">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">My Children</t>
+                    <t t-set="url" t-value="'/my/children'"/>
+                    <t t-set="text">View your children's learning progress.</t>
+                    <t t-set="placeholder_count" t-value="'parent_child_count'"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_my_children" name="My Children">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title">My Children</t>
+            <div class="o_portal_wrap">
+                <div class="container py-4">
+                    <h1 class="mb-4">My Children</h1>
+                    <t t-if="not students">
+                        <div class="alert alert-info">No linked student profiles were found.</div>
+                    </t>
+                    <div t-else="" class="row g-3">
+                        <div t-foreach="students" t-as="student" class="col-md-6 col-lg-4">
+                            <a class="card h-100 text-decoration-none" t-att-href="'/my/children/%s' % student.id">
+                                <div class="card-body">
+                                    <h2 class="h5 card-title text-dark mb-0" t-esc="student.partner_id.name"/>
+                                    <p class="card-text text-muted mt-2 mb-0">View progress and recent work</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_child_progress" name="Child Progress">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title" t-value="student.partner_id.name"/>
+            <div class="o_portal_wrap">
+                <div class="container py-4">
+                    <a href="/my/children" class="btn btn-link px-0 mb-2">← My Children</a>
+                    <h1 class="mb-4" t-esc="student.partner_id.name"/>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-lg">
+                            <div class="card h-100"><div class="card-body">
+                                <div class="text-muted small">Assigned</div>
+                                <div class="fs-3 fw-bold" t-esc="to_submit"/>
+                            </div></div>
+                        </div>
+                        <div class="col-6 col-lg">
+                            <div class="card h-100"><div class="card-body">
+                                <div class="text-muted small">Submitted</div>
+                                <div class="fs-3 fw-bold" t-esc="submitted"/>
+                            </div></div>
+                        </div>
+                        <div class="col-6 col-lg">
+                            <div class="card h-100"><div class="card-body">
+                                <div class="text-muted small">Completed</div>
+                                <div class="fs-3 fw-bold" t-esc="completed"/>
+                            </div></div>
+                        </div>
+                        <div class="col-6 col-lg">
+                            <div class="card h-100"><div class="card-body">
+                                <div class="text-muted small">Overdue</div>
+                                <div class="fs-3 fw-bold text-danger" t-esc="overdue"/>
+                            </div></div>
+                        </div>
+                        <div class="col-6 col-lg">
+                            <div class="card h-100"><div class="card-body">
+                                <div class="text-muted small">Average score</div>
+                                <div class="fs-3 fw-bold">
+                                    <t t-if="average_score is not False"><t t-esc="average_score"/>%</t>
+                                    <t t-else="">—</t>
+                                </div>
+                            </div></div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header"><h2 class="h5 mb-0">Progress by subject</h2></div>
+                        <div class="card-body">
+                            <t t-if="not subject_chart">
+                                <p class="text-muted mb-0">There are no scored submissions yet.</p>
+                            </t>
+                            <div t-else="">
+                                <div t-foreach="subject_chart" t-as="result" class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span t-esc="result['name']"/>
+                                        <span><t t-esc="result['average']"/>% <small class="text-muted">(<t t-esc="result['count']"/> scored)</small></span>
+                                    </div>
+                                    <div class="progress" role="progressbar"
+                                         t-att-aria-valuenow="result['average']" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" t-att-style="'width: %s%%' % result['average']"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2 class="h5 mb-0">Recent work</h2></div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead><tr>
+                                    <th>Work</th><th>Status</th><th>Due date</th><th>Score</th>
+                                </tr></thead>
+                                <tbody>
+                                    <tr t-if="not recent_submissions">
+                                        <td colspan="4" class="text-muted text-center py-4">No work to show.</td>
+                                    </tr>
+                                    <tr t-foreach="recent_submissions" t-as="submission">
+                                        <td t-esc="submission.resource_id.display_name"/>
+                                        <td t-esc="submission.state.title()"/>
+                                        <td t-esc="submission.date_due and submission.date_due.strftime('%d/%m/%Y') or '—'"/>
+                                        <td>
+                                            <t t-if="submission.score != -0.01 and submission.out_of_marks > 0">
+                                                <t t-esc="submission.score"/>/<t t-esc="submission.out_of_marks"/>
+                                            </t>
+                                            <t t-else="">—</t>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
     <template id="portal_my_submissions" name="My Submissions">
         <t t-call="web.layout">
             <div class="container o_my_submissions mt-5">

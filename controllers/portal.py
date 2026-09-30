@@ -3,7 +3,7 @@
 
 import re
 from markupsafe import Markup
-from odoo import http
+from odoo import fields, http
 from odoo.addons.portal.controllers.portal import CustomerPortal
 
 
@@ -175,12 +175,103 @@ def _process_notes_html(html):
 class APSPortal(CustomerPortal):
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
+        if 'parent_child_count' in counters:
+            values['parent_child_count'] = len(self._get_parent_students())
         if 'submission_count' in counters:
             submission_count = http.request.env['aps.resource.submission'].search_count([
                 ('task_id.student_id.user_id', '=', http.request.env.user.id)
             ])
             values['submission_count'] = submission_count
         return values
+
+    def _get_parent_students(self, partner=None, env=None):
+        env = env or http.request.env
+        partner = partner or env.user.partner_id
+        relations = env['res.partner.relation.all'].sudo().search([
+            ('this_partner_id', '=', partner.id),
+            ('active', '=', True),
+            ('other_partner_id.is_student', '=', True),
+        ])
+        guardian_types = {'is guardian of', 'pays for', 'is parent of'}
+        child_partner_ids = relations.filtered(
+            lambda relation: (relation.type_selection_id.name or '').casefold() in guardian_types
+        ).mapped('other_partner_id').ids
+        if not child_partner_ids:
+            return env['aps.student']
+        return env['aps.student'].sudo().search([
+            ('partner_id', 'in', child_partner_ids),
+            ('active', '=', True),
+        ], order='partner_id')
+
+    def _get_child_progress(self, student, env=None):
+        env = env or http.request.env
+        submissions = env['aps.resource.submission'].sudo().search([
+            ('student_id', '=', student.partner_id.id),
+            ('submission_active', '=', True),
+        ], order='date_assigned desc, id desc')
+        today = fields.Date.today()
+        scored_submissions = submissions.filtered(
+            lambda submission: submission.state in ('submitted', 'complete')
+            and submission.score != -0.01
+            and submission.out_of_marks > 0
+        )
+
+        subject_results = {}
+        for submission in scored_submissions:
+            subjects = submission.subjects or submission.resource_id.subjects
+            for subject in subjects:
+                result = subject_results.setdefault(subject.id, {
+                    'name': subject.display_name,
+                    'total': 0,
+                    'count': 0,
+                })
+                result['total'] += submission.result_percent
+                result['count'] += 1
+        subject_chart = [{
+            'name': result['name'],
+            'average': min(100, max(0, round(result['total'] / result['count']))),
+            'count': result['count'],
+        } for result in subject_results.values()]
+
+        completed = submissions.filtered(lambda submission: submission.state == 'complete')
+        overdue = submissions.filtered(
+            lambda submission: submission.state == 'assigned'
+            and submission.date_due
+            and submission.date_due < today
+        )
+        return {
+            'total_tasks': len(submissions),
+            'to_submit': len(submissions.filtered(lambda submission: submission.state == 'assigned')),
+            'submitted': len(submissions.filtered(lambda submission: submission.state == 'submitted')),
+            'completed': len(completed),
+            'overdue': len(overdue),
+            'average_score': min(100, max(0, round(
+                sum(scored_submissions.mapped('result_percent')) / len(scored_submissions)
+            ))) if scored_submissions else False,
+            'subject_chart': subject_chart,
+            'recent_submissions': submissions[:10],
+        }
+
+    @http.route('/my/children', type='http', auth='user', website=True)
+    def portal_my_children(self, **kw):
+        students = self._get_parent_students()
+        return http.request.render('aps_sis.portal_my_children', {
+            'students': students,
+            'page_name': 'children',
+        })
+
+    @http.route('/my/children/<int:student_id>', type='http', auth='user', website=True)
+    def portal_child_progress(self, student_id, **kw):
+        student = self._get_parent_students().filtered(lambda child: child.id == student_id)
+        if not student:
+            return http.request.not_found()
+        student = student[0]
+        values = self._get_child_progress(student)
+        values.update({
+            'student': student,
+            'page_name': 'child_progress',
+        })
+        return http.request.render('aps_sis.portal_child_progress', values)
 
     @http.route(['/my/submissions', '/my/submissions/page/<int:page>'], type='http', auth='user', website=True)
     def portal_my_submissions(self, page=1, **kw):
@@ -216,4 +307,3 @@ class APSPortal(CustomerPortal):
             'resource': resource,
             'notes_html': notes_html,
         })
-
