@@ -10,11 +10,13 @@ class APSExamPaperQuestionIdentifier(models.Model):
     _description = 'Exam Paper Question Identifier'
     _order = 'sequence, id'
 
+    active = fields.Boolean(default=True)
     sequence = fields.Integer(
         default=10,
         help='Rules are tried in this order; move specific overrides before universal rules.',
     )
     identifier_example = fields.Char(required=True, string='Identifier Example')
+    description = fields.Text(string='Description')
     document_type = fields.Selection([
         ('all', 'Any Document'),
         ('question', 'Question Paper'),
@@ -32,11 +34,11 @@ class APSExamPaperQuestionIdentifier(models.Model):
     regex_pattern = fields.Char(
         required=True,
         string='Regular Expression',
-        help='Matched against the complete label. The example generates a starting pattern that can be edited.',
+        help='Matched against an identifier component at the current position in the label.',
     )
     canonical_key_regex = fields.Char(
         string='Canonical Key Regex',
-           help='Optional regex searched in the matched label. Its matched text is used to link equivalent '
+           help='Optional regex searched in the matched identifier component. Its matched text links equivalent '
                'labels across documents.',
     )
 
@@ -91,3 +93,5 @@ class APSExamPaperQuestionIdentifier(models.Model):
                 raise ValidationError(
                     _('The canonical key regular expression is invalid: %s') % error
                 ) from error
+
+

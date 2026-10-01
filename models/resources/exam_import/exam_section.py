@@ -17,7 +17,7 @@ class APSExamPaperSection(models.Model):
     source_key = fields.Char(
         required=True,
         index=True,
-        help='Unique key used to track and link this section within the import. You may set it manually.',
+        help='Hierarchical identifier path used to track and link this section within the import.',
     )
     display_label = fields.Char(required=True)
     root_key = fields.Char()

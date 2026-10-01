@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="exam_question_identifier_rule_explicit" model="aps.exam.paper.question.identifier">
+            <field name="active" eval="False"/>
+            <field name="sequence">1000</field>
+            <field name="identifier_example">6(a)(i)</field>
+            <field name="description">Legacy fallback format for complete labels with an optional question part and Roman subpart.</field>
+            <field name="document_type">all</field>
+            <field name="hierarchy_level">1</field>
+            <field name="regex_pattern">(?:Q)?\d+\s*(?:\([A-Za-z]\)|[A-Za-z])?\s*(?:\((?:i|ii|iii|iv|v|vi|vii|viii|ix|x)\)|\.(?:i|ii|iii|iv|v|vi|vii|viii|ix|x))?</field>
+        </record>
+        <record id="exam_question_identifier_rule_part" model="aps.exam.paper.question.identifier">
+            <field name="active" eval="False"/>
+            <field name="sequence">1010</field>
+            <field name="identifier_example">(a)</field>
+            <field name="description">Legacy fallback format for a contextual alphabetic question part, optionally followed by a Roman subpart.</field>
+            <field name="document_type">all</field>
+            <field name="hierarchy_level">2</field>
+            <field name="regex_pattern">^\s*\([A-Za-z]\)\s*(?:\((?:i|ii|iii|iv|v|vi|vii|viii|ix|x)\))?</field>
+        </record>
+        <record id="exam_question_identifier_rule_subpart" model="aps.exam.paper.question.identifier">
+            <field name="active" eval="False"/>
+            <field name="sequence">1020</field>
+            <field name="identifier_example">(i)</field>
+            <field name="description">Legacy fallback format for a contextual Roman-numeral subpart.</field>
+            <field name="document_type">all</field>
+            <field name="hierarchy_level">3</field>
+            <field name="regex_pattern">^\s*\((?:i|ii|iii|iv|v|vi|vii|viii|ix|x)\)</field>
+        </record>
+        <record id="exam_question_identifier_root_component" model="aps.exam.paper.question.identifier">
+            <field name="active" eval="True"/>
+            <field name="sequence">100</field>
+            <field name="identifier_example">1</field>
+            <field name="description">Recognizes a numeric root identifier, optionally prefixed with Q.</field>
+            <field name="document_type">all</field>
+            <field name="hierarchy_level">1</field>
+            <field name="regex_pattern">^\s*(?:Q\s*)?\d+</field>
+        </record>
+        <record id="exam_question_identifier_part_component" model="aps.exam.paper.question.identifier">
+            <field name="active" eval="True"/>
+            <field name="sequence">110</field>
+            <field name="identifier_example">(a)</field>
+            <field name="description">Recognizes a single alphabetic part identifier, parenthesized or compact.</field>
+            <field name="document_type">all</field>
+            <field name="hierarchy_level">2</field>
+            <field name="regex_pattern">^\s*(?:\((?![ivx]\))[a-z]\)|(?![ivx])[a-z])</field>
+        </record>
+        <record id="exam_question_identifier_subpart_component" model="aps.exam.paper.question.identifier">
+            <field name="active" eval="True"/>
+            <field name="sequence">120</field>
+            <field name="identifier_example">(i)</field>
+            <field name="description">Recognizes a Roman-numeral subpart from i to x, parenthesized or dot-prefixed.</field>
+            <field name="document_type">all</field>
+            <field name="hierarchy_level">3</field>
+            <field name="regex_pattern">^\s*(?:\((?:viii|vii|iii|vi|iv|ii|ix|v|x|i)\)|\.(?:viii|vii|iii|vi|iv|ii|ix|v|x|i))</field>
+        </record>
+        <record id="exam_question_identifier_bare_subpart_component" model="aps.exam.paper.question.identifier">
+            <field name="active" eval="True"/>
+            <field name="sequence">121</field>
+            <field name="identifier_example">i</field>
+            <field name="description">Recognizes a bare Roman-numeral subpart from i to x, as in 1hi.</field>
+            <field name="document_type">all</field>
+            <field name="hierarchy_level">3</field>
+            <field name="regex_pattern">^\s*(?:viii|vii|iii|vi|iv|ii|ix|v|x|i)</field>
+        </record>
+    </data>
+</odoo>

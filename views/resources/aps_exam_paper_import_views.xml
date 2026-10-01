@@ -166,12 +166,14 @@
         <field name="arch" type="xml">
             <list editable="bottom" default_order="sequence,id">
                 <field name="sequence" widget="handle"/>
-                <field name="identifier_example"/>
-                <field name="document_type"/>
-                <field name="filename_contains"/>
-                <field name="hierarchy_level"/>
-                <field name="regex_pattern"/>
-                <field name="canonical_key_regex" optional="hide"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="identifier_example"  optional="show"/>
+                <field name="description" optional="hide"/>
+                <field name="document_type" optional="hide"/>
+                <field name="filename_contains" optional="hide"/>
+                <field name="hierarchy_level" optional="show"/>
+                <field name="regex_pattern" optional="show"/>
+                <field name="canonical_key_regex" optional="show"/>
             </list>
         </field>
     </record>
@@ -182,9 +184,19 @@
         <field name="arch" type="xml">
             <form string="Question Identifier">
                 <sheet>
+                    <div class="alert alert-info" role="note">
+                        <strong>How identifier rules work</strong>
+                        <p>Rules recognize one component at a time as the detected label is read from left to right. Hierarchy Level determines which component the rule can match: root question, question part, or subpart. The parser carries the current root and part forward, so a label such as <code>1hi</code> can be resolved as root <code>1</code>, part <code>h</code>, and subpart <code>i</code>.</p>
+                        <p>Active rules are considered in Sequence order; lower numbers are tried first. Put specific patterns before broader patterns at the same hierarchy level. Document Type and Filename Contains restrict when a rule can be used.</p>
+                        <p>Identifier Example is a convenient starting point: changing it suggests a Regular Expression, but Regular Expression is what the parser actually applies. It matches the next component in the remaining label, not necessarily the entire label.</p>
+                        <p>Canonical Key Regex is optional. It extracts a shared component from the matched text so question-paper and mark-scheme labels can link to the same section. For example, the question rule can extract <code>A1</code> from <code>Task A1</code>, while the mark-scheme rule keeps <code>A1</code>. Configure both sides to produce the same key.</p>
+                        <p>Display labels are built from the recognized hierarchy (for example, <code>Q1a.i</code>). The slash-separated Source Key (for example, <code>1/a/i</code>) is the stable section identity and is not the display label. Disabling a rule prevents it from matching; unmatched components are not handled by the old hardcoded parser.</p>
+                    </div>
                     <group>
+                        <field name="active"/>
                         <field name="sequence"/>
                         <field name="identifier_example"/>
+                        <field name="description"/>
                         <field name="document_type"/>
                         <field name="filename_contains"/>
                         <field name="hierarchy_level"/>

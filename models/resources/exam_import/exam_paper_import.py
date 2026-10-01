@@ -214,6 +214,13 @@ class APSExamPaperImport(models.Model):
         return re.sub(r'[^a-z0-9]', '', value.casefold()).removeprefix('q')
 
     @staticmethod
+    def _normalise_identifier_component(value, hierarchy_level):
+        component = re.sub(r'[^a-z0-9]', '', (value or '').casefold())
+        if hierarchy_level == 1 and component.startswith('q') and component[1:].isdigit():
+            component = component[1:]
+        return component
+
+    @staticmethod
     def _label_hierarchy_level(label):
         value = (label or '').casefold()
         if '.' in value:

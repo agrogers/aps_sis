@@ -95,7 +95,12 @@ class APSExamPaperImportBuild(models.Model):
         return filtered
 
     def _find_parent_section(self, section):
-        """Find the nearest earlier, lower-level question section in the same root."""
+        """Find the direct parent encoded by the section's identifier path."""
+        if '/' in (section.source_key or ''):
+            parent_key = section.source_key.rsplit('/', 1)[0]
+            return self.section_ids.filtered(
+                lambda candidate: candidate.source_key == parent_key
+            )[:1]
         if not section.root_key or not section.hierarchy_level:
             return self.env['aps.exam.paper.section']
         root_key = self._normalise_key(section.root_key)
@@ -132,6 +137,7 @@ class APSExamPaperImportBuild(models.Model):
             positions.setdefault(item['page'].page_number, []).append({
                 'label': item['label'],
                 'normalised_label': self._normalise_key(item['label']),
+                'source_key': item['source_key'],
                 'hierarchy_level': item['hierarchy_level'],
                 'y': y_value,
             })
@@ -195,11 +201,15 @@ class APSExamPaperImportBuild(models.Model):
             return left, top, right, bottom
         start_y = max(0.0, min(1.0, self._region_y_as_fraction(region, page)))
         next_y = None
+        source_key = region.get('source_key')
         source_label = self._normalise_key(region.get('detection_label') or '')
         for candidate in label_positions.get(page.page_number, []):
             candidate_label = candidate.get('normalised_label', '')
+            candidate_key = candidate.get('source_key')
             is_descendant = (
-                source_label
+                candidate_key.startswith(source_key + '/')
+                if source_key and candidate_key
+                else source_label
                 and candidate_label.startswith(source_label)
                 and candidate_label != source_label
                 and len(candidate_label) > len(source_label)
@@ -396,7 +406,9 @@ class APSExamPaperImportBuild(models.Model):
             except (OSError, ValueError) as exc:
                 raise UserError(_('Image insertion requires Pillow with WebP support.')) from exc
             attachment = self.env['ir.attachment'].create({
-                'name': 'exam-import-%s-%s-%s.webp' % (section.source_key, document_type, index),
+                'name': 'exam-import-%s-%s-%s.webp' % (
+                    section.source_key.replace('/', '_'), document_type, index,
+                ),
                 'type': 'binary', 'datas': base64.b64encode(crop_bytes),
                 'mimetype': 'image/webp', 'res_model': 'aps.resources', 'res_id': resource.id,
                 'description': 'aps_exam_import_section:%s document:%s page:%s' % (
@@ -515,7 +527,17 @@ class APSExamPaperImportBuild(models.Model):
                     section.write({'resource_key': str(root.id)})
                     continue
                 existing_child_ids = set(root.child_ids.ids)
-                child = self._find_or_create_resource(section.display_label, root)
+                child = section.resource_id
+                if child and child.primary_parent_id == root:
+                    raw_labels = {
+                        region.get('detection_label')
+                        for region in section.question_regions or []
+                        if region.get('detection_label')
+                    }
+                    if child.name in raw_labels and child.name != section.display_label:
+                        child.write({'name': section.display_label})
+                else:
+                    child = self._find_or_create_resource(section.display_label, root)
                 if child.id in existing_child_ids:
                     reused_resource_count += 1
                 else:
