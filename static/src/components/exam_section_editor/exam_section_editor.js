@@ -40,6 +40,9 @@ export class ExamSectionRegionEditor extends Component {
             data: null,
             selected: null,
             draft: null,
+            exclusionRegions: [],
+            zoneDraft: null,
+            addingExclusionZone: false,
             edits: {},
             additions: [],
             saving: false,
@@ -61,6 +64,9 @@ export class ExamSectionRegionEditor extends Component {
         this.savedLabel = this.state.data.label || "";
         this.state.selected = null;
         this.state.draft = null;
+        this.state.exclusionRegions = [];
+        this.state.zoneDraft = null;
+        this.state.addingExclusionZone = false;
         this.state.edits = {};
         this.state.additions = [];
     }
@@ -112,11 +118,13 @@ export class ExamSectionRegionEditor extends Component {
         }
         const addition = {
             ...page,
+            page_id: page.id,
             index: null,
             local_id: `new-${documentType}-${Date.now()}-${this.state.additions.length}`,
             document_type: documentType,
             label: this.state.data.label,
             region: { ...page.default_region },
+            exclusion_regions: (page.exclusion_regions || []).map((zone) => ({ ...zone })),
             is_new: true,
         };
         this.state.additions.push(addition);
@@ -134,6 +142,9 @@ export class ExamSectionRegionEditor extends Component {
         this.state.draft = this.state.edits[key]
             ? { ...this.state.edits[key] }
             : { ...region.region };
+        this.state.exclusionRegions = (region.exclusion_regions || []).map((zone) => ({ ...zone }));
+        this.state.zoneDraft = null;
+        this.state.addingExclusionZone = false;
         requestAnimationFrame(() => this._scrollSelectedRegionIntoView());
     }
 
@@ -203,11 +214,28 @@ export class ExamSectionRegionEditor extends Component {
         return `left:${(bounds.x1 / region.width) * 100}%;top:${(bounds.y1 / region.height) * 100}%;width:${((bounds.x2 - bounds.x1) / region.width) * 100}%;height:${((bounds.y2 - bounds.y1) / region.height) * 100}%;`;
     }
 
+    exclusionStyle(zone) {
+        const bounds = this.state.zoneDraft?.id === zone.id ? this.state.zoneDraft : zone;
+        const region = this.state.selected;
+        if (!region || !bounds) return "";
+        return `left:${(bounds.x1 / region.width) * 100}%;top:${(bounds.y1 / region.height) * 100}%;width:${((bounds.x2 - bounds.x1) / region.width) * 100}%;height:${((bounds.y2 - bounds.y1) / region.height) * 100}%;`;
+    }
+
+    zoneDraftStyle() {
+        return this.exclusionStyle(this.state.zoneDraft || {});
+    }
+
+    toggleAddExclusionZone() {
+        if (this.state.saving || !this.state.selected) return;
+        this.state.addingExclusionZone = !this.state.addingExclusionZone;
+        this.state.zoneDraft = null;
+    }
+
     startDrag(event, side) {
         event.preventDefault();
         event.stopPropagation();
         const image = event.currentTarget.closest(".o_exam_region_image_wrap").querySelector("img");
-        this.dragging = { side, image, pointerId: event.pointerId };
+        this.dragging = { kind: "section", side, image, pointerId: event.pointerId };
         event.currentTarget.setPointerCapture?.(event.pointerId);
         this._move = (moveEvent) => this.resize(moveEvent);
         this._up = () => this.stopDrag();
@@ -215,27 +243,173 @@ export class ExamSectionRegionEditor extends Component {
         window.addEventListener("pointerup", this._up, { once: true });
     }
 
+    startZoneDrag(event, zone, side) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.state.saving) return;
+        const image = event.currentTarget.closest(".o_exam_region_image_wrap").querySelector("img");
+        const point = this._pagePoint(event, image, this.state.selected);
+        this.state.zoneDraft = { ...zone };
+        this.dragging = {
+            kind: "zone",
+            zoneId: zone.id,
+            side,
+            image,
+            origin: { ...zone },
+            startPoint: point,
+        };
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        this._move = (moveEvent) => this.resize(moveEvent);
+        this._up = () => this.stopDrag();
+        window.addEventListener("pointermove", this._move);
+        window.addEventListener("pointerup", this._up, { once: true });
+    }
+
+    startExclusionDraw(event) {
+        if (!this.state.addingExclusionZone || this.state.saving) return;
+        event.preventDefault();
+        const image = event.currentTarget.querySelector("img");
+        const point = this._pagePoint(event, image, this.state.selected);
+        this.state.zoneDraft = {
+            id: "draft-zone",
+            x1: point.x,
+            y1: point.y,
+            x2: point.x,
+            y2: point.y,
+        };
+        this.dragging = {
+            kind: "new-zone",
+            image,
+            startPoint: point,
+        };
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        this._move = (moveEvent) => this.resize(moveEvent);
+        this._up = () => this.stopDrag();
+        window.addEventListener("pointermove", this._move);
+        window.addEventListener("pointerup", this._up, { once: true });
+    }
+
+    _pagePoint(event, image, page) {
+        const rect = image.getBoundingClientRect();
+        return {
+            x: Math.round(Math.max(0, Math.min(page.width, (event.clientX - rect.left) * page.width / rect.width))),
+            y: Math.round(Math.max(0, Math.min(page.height, (event.clientY - rect.top) * page.height / rect.height))),
+        };
+    }
+
     resize(event) {
         const dragging = this.dragging;
-        const draft = this.state.draft;
-        if (!dragging || !draft) return;
-        const rect = dragging.image.getBoundingClientRect();
         const region = this.state.selected;
-        const scaleX = region.width / rect.width;
-        const scaleY = region.height / rect.height;
-        const x = Math.round(Math.max(0, Math.min(region.width, (event.clientX - rect.left) * scaleX)));
-        const y = Math.round(Math.max(0, Math.min(region.height, (event.clientY - rect.top) * scaleY)));
+        if (!dragging || !region) return;
+        const point = this._pagePoint(event, dragging.image, region);
+        if (dragging.kind === "new-zone") {
+            const start = dragging.startPoint;
+            this.state.zoneDraft.x1 = Math.min(start.x, point.x);
+            this.state.zoneDraft.y1 = Math.min(start.y, point.y);
+            this.state.zoneDraft.x2 = Math.max(start.x, point.x);
+            this.state.zoneDraft.y2 = Math.max(start.y, point.y);
+            return;
+        }
+        if (dragging.kind === "zone") {
+            const draft = this.state.zoneDraft;
+            if (dragging.side === "move") {
+                const width = dragging.origin.x2 - dragging.origin.x1;
+                const height = dragging.origin.y2 - dragging.origin.y1;
+                draft.x1 = Math.max(0, Math.min(region.width - width, dragging.origin.x1 + point.x - dragging.startPoint.x));
+                draft.y1 = Math.max(0, Math.min(region.height - height, dragging.origin.y1 + point.y - dragging.startPoint.y));
+                draft.x2 = draft.x1 + width;
+                draft.y2 = draft.y1 + height;
+                return;
+            }
+            if (dragging.side === "left") draft.x1 = Math.min(point.x, draft.x2 - MIN_SIZE);
+            if (dragging.side === "right") draft.x2 = Math.max(point.x, draft.x1 + MIN_SIZE);
+            if (dragging.side === "top") draft.y1 = Math.min(point.y, draft.y2 - MIN_SIZE);
+            if (dragging.side === "bottom") draft.y2 = Math.max(point.y, draft.y1 + MIN_SIZE);
+            return;
+        }
+        const draft = this.state.draft;
+        if (!draft) return;
+        const { x, y } = point;
         if (dragging.side === "left") draft.x1 = Math.min(x, draft.x2 - MIN_SIZE);
         if (dragging.side === "right") draft.x2 = Math.max(x, draft.x1 + MIN_SIZE);
         if (dragging.side === "top") draft.y1 = Math.min(y, draft.y2 - MIN_SIZE);
         if (dragging.side === "bottom") draft.y2 = Math.max(y, draft.y1 + MIN_SIZE);
     }
 
-    stopDrag() {
+    async stopDrag() {
         if (this._move) window.removeEventListener("pointermove", this._move);
+        const dragging = this.dragging;
         this.dragging = null;
+        if (dragging?.kind === "zone") {
+            const edited = { ...this.state.zoneDraft, source: "manual", coordinate_system: "pixels" };
+            const zones = this.state.exclusionRegions.map((zone) => (
+                zone.id === dragging.zoneId ? edited : zone
+            ));
+            this.state.zoneDraft = null;
+            await this._saveExclusionZones(zones);
+            return;
+        }
+        if (dragging?.kind === "new-zone") {
+            const draft = this.state.zoneDraft;
+            this.state.zoneDraft = null;
+            this.state.addingExclusionZone = false;
+            if (draft.x2 - draft.x1 < MIN_SIZE || draft.y2 - draft.y1 < MIN_SIZE) {
+                this.notification.add("Draw a larger exclusion zone.", { type: "warning" });
+                return;
+            }
+            const zone = {
+                ...draft,
+                id: `manual-${Date.now()}-${this.state.exclusionRegions.length}`,
+                source: "manual",
+                coordinate_system: "pixels",
+            };
+            await this._saveExclusionZones([...this.state.exclusionRegions, zone]);
+            return;
+        }
         this._stashDraft();
-        this._save();
+        await this._save();
+    }
+
+    async removeExclusionZone(event, zone) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.state.saving) return;
+        await this._saveExclusionZones(
+            this.state.exclusionRegions.filter((item) => item.id !== zone.id)
+        );
+    }
+
+    async _saveExclusionZones(zones) {
+        const selected = this.state.selected;
+        if (!selected || this.state.saving) return false;
+        this.state.saving = true;
+        try {
+            const saved = await this.orm.call(
+                "aps.exam.paper.section", "save_region_editor_exclusion_zones",
+                [[this.state.data.id], selected.page_id, zones]
+            );
+            const savedZones = saved.map((zone) => ({ ...zone }));
+            this.state.exclusionRegions = savedZones;
+            selected.exclusion_regions = savedZones;
+            for (const documentType of ["question", "mark_scheme"]) {
+                for (const region of this.state.data.regions[documentType] || []) {
+                    if (region.page_id === selected.page_id) {
+                        region.exclusion_regions = savedZones;
+                    }
+                }
+                for (const page of this.state.data.pages[documentType] || []) {
+                    if (page.id === selected.page_id) {
+                        page.exclusion_regions = savedZones;
+                    }
+                }
+            }
+            return true;
+        } catch {
+            this.notification.add("Unable to save exclusion zones.", { type: "danger" });
+            return false;
+        } finally {
+            this.state.saving = false;
+        }
     }
 
     onLabelInput(event) {

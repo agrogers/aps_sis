@@ -96,6 +96,7 @@ class APSExamPaperImportRun(models.Model):
                     response, log_record = importer._analyse_page_image(model, page)
                     page.write({
                         'ai_response': response,
+                        'exclusion_regions': importer._merge_page_exclusion_regions(page, response),
                         'ai_state': 'complete',
                         'error_message': False,
                         'ai_call_log_id': log_record.id if log_record else False,

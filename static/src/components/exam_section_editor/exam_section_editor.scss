@@ -213,6 +213,7 @@
     border: 3px solid #dc3545;
     background: rgba(220, 53, 69, .15);
     pointer-events: none;
+    z-index: 1;
 }
 
 .o_exam_region_overlay_label {
@@ -257,6 +258,61 @@
 
 .o_exam_region_handle.top { top: -8px; }
 .o_exam_region_handle.bottom { bottom: -8px; }
+
+.o_exam_region_image_wrap.is-adding-exclusion {
+    cursor: crosshair;
+}
+
+.o_exam_exclusion_overlay {
+    position: absolute;
+    border: 2px dashed #f0ad00;
+    background: rgba(240, 173, 0, .16);
+    pointer-events: auto;
+    z-index: 2;
+}
+
+.o_exam_exclusion_body {
+    position: absolute;
+    inset: 0;
+    cursor: move;
+}
+
+.o_exam_exclusion_handle {
+    z-index: 2;
+    border-color: #d49500;
+}
+
+.o_exam_exclusion_label {
+    position: absolute;
+    top: -1.5rem;
+    left: -2px;
+    color: #212529;
+    background: #ffc107;
+    padding: 1px 5px;
+    font-size: .75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.o_exam_exclusion_delete {
+    position: absolute;
+    top: -1.5rem;
+    right: -2px;
+    z-index: 3;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid #d49500;
+    background: #fff;
+    color: #b02a37;
+    line-height: 1;
+    pointer-events: auto;
+}
+
+.o_exam_exclusion_draft {
+    z-index: 3;
+    pointer-events: none;
+}
 
 @media (max-width: 900px) {
     .o_exam_region_editor_content { grid-template-columns: 1fr; overflow: auto; }

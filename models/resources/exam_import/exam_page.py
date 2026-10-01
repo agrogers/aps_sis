@@ -21,6 +21,7 @@ class APSExamPaperPage(models.Model):
     height = fields.Integer(readonly=True)
     attachment_id = fields.Many2one('ir.attachment', required=True, ondelete='cascade', readonly=True)
     ai_response = fields.Json(readonly=True)
+    exclusion_regions = fields.Json(default=list, string='Exclusion Zones')
     ai_call_log_id = fields.Many2one('aps.ai.call.log', string='AI Call Log', readonly=True, ondelete='set null')
     ai_state = fields.Selection([
         ('pending', 'Pending'), ('complete', 'Complete'), ('failed', 'Failed'),

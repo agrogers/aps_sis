@@ -222,6 +222,7 @@ class APSExamPaperSection(models.Model):
                 'height': page.height,
                 'image_url': '/web/content/%s?download=false' % page.attachment_id.id,
                 'default_region': self._default_editor_region(page),
+                'exclusion_regions': [dict(region) for region in (page.exclusion_regions or [])],
             }
             for page in pages.filtered(lambda item: item.document_type == document_type).sorted(
                 key=lambda item: item.page_number
@@ -264,6 +265,7 @@ class APSExamPaperSection(models.Model):
                 'height': page.height,
                 'image_url': '/web/content/%s?download=false' % page.attachment_id.id,
                 'region': region,
+                'exclusion_regions': [dict(item) for item in (page.exclusion_regions or [])],
             })
         return result
 
@@ -374,6 +376,53 @@ class APSExamPaperSection(models.Model):
         )[:1]
         if not page or not page.width or not page.height or not page.attachment_id:
             raise ValidationError(_('The rendered page for this region is unavailable.'))
+        return page
+
+    def save_region_editor_exclusion_zones(self, page_id, regions):
+        """Save page-level exclusions, preserving untouched AI suggestions."""
+        self.ensure_one()
+        page = self._editor_page_by_id(page_id)
+        if not isinstance(regions, list) or len(regions) > 100:
+            raise ValidationError(_('Exclusion zones must be a list of at most 100 regions.'))
+        existing = {
+            str(region.get('id')): region
+            for region in (page.exclusion_regions or [])
+            if isinstance(region, dict) and region.get('id')
+        }
+        saved_regions = []
+        seen_ids = set()
+        for region in regions:
+            if not isinstance(region, dict):
+                raise ValidationError(_('Each exclusion zone must contain region bounds.'))
+            region_id = str(region.get('id') or '').strip()
+            if not region_id or region_id in seen_ids:
+                raise ValidationError(_('Each exclusion zone must have a unique identifier.'))
+            seen_ids.add(region_id)
+            bounds = self._validated_editor_bounds(region, page)
+            previous = existing.get(region_id)
+            unchanged_ai = previous and previous.get('source') == 'ai' and all(
+                previous.get(key) == value for key, value in bounds.items()
+            )
+            saved = {
+                **bounds,
+                'id': region_id,
+                'source': 'ai' if unchanged_ai else 'manual',
+                'coordinate_system': 'pixels',
+            }
+            if unchanged_ai and previous.get('confidence') is not None:
+                saved['confidence'] = previous['confidence']
+            saved_regions.append(saved)
+        page.write({'exclusion_regions': saved_regions})
+        return saved_regions
+
+    def _editor_page_by_id(self, page_id):
+        try:
+            page_id = int(page_id)
+        except (TypeError, ValueError):
+            page_id = False
+        page = self.import_id.page_ids.filtered(lambda item: item.id == page_id)[:1]
+        if not page or not page.width or not page.height or not page.attachment_id:
+            raise ValidationError(_('The rendered page for this exclusion zone is unavailable.'))
         return page
 
     @staticmethod
