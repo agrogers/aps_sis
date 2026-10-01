@@ -1,0 +1,164 @@
+2026-10-01 10:01:41,127 8280 INFO ? odoo: Odoo version 18.0 
+2026-10-01 10:01:41,127 8280 INFO ? odoo: Using configuration file at C:\Dev\Odoo\mvis\odoo.conf 
+2026-10-01 10:01:41,127 8280 INFO ? odoo: addons paths: ['C:\\Dev\\Odoo\\mvis\\odoo\\addons', 'c:\\dev\\odoo\\mvis\\odoo\\addons', 'c:\\dev\\odoo\\mvis\\addons\\18.0', 'c:\\git\\odoo_custom_addons', 'c:\\git\\odoo_oca_addons\\account-reconcile', 'c:\\git\\odoo_oca_addons\\web', 'c:\\dev\\odoo\\mvis\\addons', 'c:\\git\\odoo_3rd_party_addons'] 
+2026-10-01 10:01:41,127 8280 INFO ? odoo: database: odoo@127.0.0.1:5432 
+2026-10-01 10:01:41,445 8280 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-01 10:01:41,508 8280 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-01 10:01:41,983 8280 INFO ? odoo.service.server: HTTP service (werkzeug) running on local.odoo1:8069 
+2026-10-01 10:01:42,026 8280 INFO mvis1B odoo.tests.common: Importing test framework 
+2026-10-01 10:01:42,231 8280 INFO mvis1B odoo.modules.loading: loading 1 modules... 
+2026-10-01 10:01:42,241 8280 INFO mvis1B odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-01 10:01:42,267 8280 INFO mvis1B odoo.modules.loading: updating modules list 
+2026-10-01 10:01:42,277 8280 INFO mvis1B odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-10-01 10:01:42,392 8280 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for '___hr_contract_print', defaulting to LGPL-3 
+2026-10-01 10:01:42,669 8280 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-01 10:01:42,862 8280 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-01 10:01:42,917 8280 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-01 10:01:42,978 8280 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-01 10:01:43,060 8280 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'html_editor_extensions', defaulting to LGPL-3 
+2026-10-01 10:01:44,299 8280 WARNING mvis1B py.warnings: <unknown>:42: DeprecationWarning: invalid escape sequence '\p'
+  File "C:\Dev\Odoo\mvis\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "C:\Dev\Odoo\mvis\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "C:\Dev\Odoo\mvis\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "C:\Dev\Odoo\mvis\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "<decorator-gen-13>", line 2, in new
+  File "C:\Dev\Odoo\mvis\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "C:\Dev\Odoo\mvis\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "C:\Dev\Odoo\mvis\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "<decorator-gen-89>", line 2, in update_list
+  File "C:\Dev\Odoo\mvis\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "C:\Dev\Odoo\mvis\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "C:\Dev\Odoo\mvis\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "C:\Dev\Odoo\mvis\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Python\Python310\lib\ast.py", line 64, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Python\Python310\lib\ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Python\Python310\lib\warnings.py", line 109, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "C:\Dev\Odoo\mvis\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-01 10:01:44,413 8280 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-01 10:01:45,486 8280 INFO mvis1B odoo.modules.loading: loading 72 modules... 
+2026-10-01 10:01:47,883 8280 INFO mvis1B odoo.modules.loading: 72 modules loaded in 2.40s, 0 queries (+0 extra) 
+2026-10-01 10:01:48,031 8280 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:01:48,034 8280 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:01:48,036 8280 WARNING mvis1B odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:01:48,173 8280 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:01:48,175 8280 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:01:48,177 8280 WARNING mvis1B odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:01:49,564 8280 INFO mvis1B odoo.modules.loading: Modules loaded. 
+2026-10-01 10:01:49,578 8280 INFO mvis1B odoo.modules.registry: Registry changed, signaling through the database 
+2026-10-01 10:01:49,581 8280 INFO mvis1B odoo.modules.registry: Registry loaded in 7.596s 
+2026-10-01 10:01:49,586 8280 INFO mvis1B odoo.service.server: Starting post tests 
+2026-10-01 10:01:49,586 8280 INFO mvis1B odoo.service.server: 0 post-tests in 0.00s, 0 queries 
+2026-10-01 10:01:49,586 8280 WARNING mvis1B odoo.tests.result: 0 failed, 0 error(s) of 0 tests when loading database 'mvis1B' 
+2026-10-01 10:01:49,586 8280 INFO mvis1B odoo.service.server: Initiating shutdown 
+2026-10-01 10:01:49,586 8280 INFO mvis1B odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-01 10:01:49,605 8280 INFO mvis1B odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+2026-10-01 10:02:24,591 32584 INFO ? odoo: Odoo version 18.0 
+2026-10-01 10:02:24,592 32584 INFO ? odoo: Using configuration file at C:\Dev\Odoo\mvis\odoo.conf 
+2026-10-01 10:02:24,592 32584 INFO ? odoo: addons paths: ['C:\\Dev\\Odoo\\mvis\\odoo\\addons', 'c:\\dev\\odoo\\mvis\\odoo\\addons', 'c:\\dev\\odoo\\mvis\\addons\\18.0', 'c:\\git\\odoo_custom_addons', 'c:\\git\\odoo_oca_addons\\account-reconcile', 'c:\\git\\odoo_oca_addons\\web', 'c:\\dev\\odoo\\mvis\\addons', 'c:\\git\\odoo_3rd_party_addons'] 
+2026-10-01 10:02:24,592 32584 INFO ? odoo: database: odoo@127.0.0.1:5432 
+2026-10-01 10:02:24,944 32584 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-01 10:02:24,987 32584 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-01 10:02:25,370 32584 INFO ? odoo.service.server: HTTP service (werkzeug) running on local.odoo1:8069 
+2026-10-01 10:02:25,412 32584 INFO mvis1B odoo.tests.common: Importing test framework 
+2026-10-01 10:02:25,555 32584 INFO mvis1B odoo.modules.loading: loading 1 modules... 
+2026-10-01 10:02:25,561 32584 INFO mvis1B odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-10-01 10:02:25,593 32584 INFO mvis1B odoo.modules.loading: updating modules list 
+2026-10-01 10:02:25,604 32584 INFO mvis1B odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-10-01 10:02:25,730 32584 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for '___hr_contract_print', defaulting to LGPL-3 
+2026-10-01 10:02:26,050 32584 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-01 10:02:26,211 32584 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-01 10:02:26,216 32584 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-01 10:02:26,243 32584 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-01 10:02:26,284 32584 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'html_editor_extensions', defaulting to LGPL-3 
+2026-10-01 10:02:27,273 32584 WARNING mvis1B py.warnings: <unknown>:42: DeprecationWarning: invalid escape sequence '\p'
+  File "C:\Dev\Odoo\mvis\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "C:\Dev\Odoo\mvis\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "C:\Dev\Odoo\mvis\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "C:\Dev\Odoo\mvis\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "<decorator-gen-13>", line 2, in new
+  File "C:\Dev\Odoo\mvis\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "C:\Dev\Odoo\mvis\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "C:\Dev\Odoo\mvis\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "<decorator-gen-89>", line 2, in update_list
+  File "C:\Dev\Odoo\mvis\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "C:\Dev\Odoo\mvis\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "C:\Dev\Odoo\mvis\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "C:\Dev\Odoo\mvis\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Python\Python310\lib\ast.py", line 64, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Python\Python310\lib\ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Python\Python310\lib\warnings.py", line 109, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "C:\Dev\Odoo\mvis\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-01 10:02:27,393 32584 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-01 10:02:28,328 32584 INFO mvis1B odoo.modules.loading: loading 72 modules... 
+2026-10-01 10:02:30,688 32584 INFO mvis1B odoo.modules.loading: 72 modules loaded in 2.36s, 0 queries (+0 extra) 
+2026-10-01 10:02:30,927 32584 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:02:30,930 32584 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:02:30,934 32584 WARNING mvis1B odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:02:31,145 32584 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:02:31,148 32584 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:02:31,151 32584 WARNING mvis1B odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-01 10:02:32,646 32584 INFO mvis1B odoo.modules.loading: Modules loaded. 
+2026-10-01 10:02:32,666 32584 INFO mvis1B odoo.modules.registry: Registry changed, signaling through the database 
+2026-10-01 10:02:32,669 32584 INFO mvis1B odoo.modules.registry: Registry loaded in 7.298s 
+2026-10-01 10:02:32,673 32584 INFO mvis1B odoo.service.server: Starting post tests 
+2026-10-01 10:02:32,674 32584 INFO mvis1B odoo.service.server: 0 post-tests in 0.00s, 0 queries 
+2026-10-01 10:02:32,674 32584 WARNING mvis1B odoo.tests.result: 0 failed, 0 error(s) of 0 tests when loading database 'mvis1B' 
+2026-10-01 10:02:32,674 32584 INFO mvis1B odoo.service.server: Initiating shutdown 
+2026-10-01 10:02:32,674 32584 INFO mvis1B odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-01 10:02:33,074 32584 INFO mvis1B odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
