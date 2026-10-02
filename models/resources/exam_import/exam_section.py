@@ -1,7 +1,7 @@
 """Detected exam paper section model."""
 import logging
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -10,7 +10,10 @@ _logger = logging.getLogger(__name__)
 class APSExamPaperSection(models.Model):
     _name = 'aps.exam.paper.section'
     _description = 'IGCSE Exam Paper Section'
+    _rec_name = 'display_name'
     _order = 'sequence, id'
+
+    display_name = fields.Char(compute='_compute_display_name', store=True)
 
     import_id = fields.Many2one('aps.exam.paper.import', required=True, ondelete='cascade', index=True)
     sequence = fields.Integer(default=10)
@@ -57,6 +60,13 @@ class APSExamPaperSection(models.Model):
     _sql_constraints = [
         ('import_source_key_unique', 'unique(import_id, source_key)', 'Each detected section must have a unique source key.'),
     ]
+
+    @api.depends('display_label', 'import_id.name')
+    def _compute_display_name(self):
+        for section in self:
+            label = section.display_label or section.source_key or _('Section')
+            import_name = section.import_id.name
+            section.display_name = '%s - %s' % (import_name, label) if import_name else label
 
     _REBUILD_FIELDS = frozenset({
         'sequence', 'source_key', 'display_label', 'root_key', 'hierarchy_level',
@@ -175,6 +185,7 @@ class APSExamPaperSection(models.Model):
         navigation = self._editor_navigation()
         return {
             'id': self.id,
+            'import_id': self.import_id.id,
             'label': self.display_label,
             'import_name': self.import_id.name,
             'navigation': navigation,

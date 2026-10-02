@@ -45,6 +45,7 @@ export class ExamSectionRegionEditor extends Component {
             addingExclusionZone: false,
             edits: {},
             additions: [],
+            pageClipboard: [],
             saving: false,
             savingLabel: false,
         });
@@ -69,6 +70,10 @@ export class ExamSectionRegionEditor extends Component {
         this.state.addingExclusionZone = false;
         this.state.edits = {};
         this.state.additions = [];
+        const firstRegion = this.regions[0];
+        if (firstRegion) {
+            this.selectRegion(firstRegion);
+        }
     }
 
     get regions() {
@@ -129,6 +134,63 @@ export class ExamSectionRegionEditor extends Component {
         };
         this.state.additions.push(addition);
         this.selectRegion(addition);
+        await this._save();
+    }
+
+    copyRegion(region) {
+        this._stashDraft();
+        this.state.pageClipboard = [{
+            import_id: this.state.data.import_id,
+            document_type: region.document_type,
+            page_number: region.page_number,
+            region: { ...(this.state.edits[this._regionKey(region)] || region.region) },
+            exclusion_regions: (region.exclusion_regions || []).map((zone) => ({ ...zone })),
+        }];
+        this.notification.add("Page copied. Navigate to a section and paste it there.", { type: "success" });
+    }
+
+    copyPages() {
+        this._stashDraft();
+        this.state.pageClipboard = this.regions.map((region) => ({
+            import_id: this.state.data.import_id,
+            document_type: region.document_type,
+            page_number: region.page_number,
+            region: { ...(this.state.edits[this._regionKey(region)] || region.region) },
+            exclusion_regions: (region.exclusion_regions || []).map((zone) => ({ ...zone })),
+        }));
+        this.notification.add(`${this.state.pageClipboard.length} page region(s) copied.`, { type: "success" });
+    }
+
+    async pastePages() {
+        if (!this.state.pageClipboard.length || this.state.saving || !(await this._saveLabel())) {
+            return;
+        }
+        this._stashDraft();
+        const staged = [];
+        for (const copied of this.state.pageClipboard) {
+            if (copied.import_id !== this.state.data.import_id) continue;
+            const page = (this.state.data.pages[copied.document_type] || []).find(
+                (candidate) => candidate.page_number === copied.page_number
+            );
+            if (!page) continue;
+            staged.push({
+                ...page,
+                page_id: page.id,
+                index: null,
+                local_id: `new-${copied.document_type}-${Date.now()}-${this.state.additions.length + staged.length}`,
+                document_type: copied.document_type,
+                label: this.state.data.label,
+                region: { ...copied.region },
+                exclusion_regions: copied.exclusion_regions.map((zone) => ({ ...zone })),
+                is_new: true,
+            });
+        }
+        if (!staged.length) {
+            this.notification.add("No matching rendered pages are available in this import.", { type: "warning" });
+            return;
+        }
+        this.state.additions.push(...staged);
+        this.selectRegion(staged[0]);
         await this._save();
     }
 

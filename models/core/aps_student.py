@@ -113,6 +113,12 @@ class APSStudent(models.Model):
         readonly=True,
         help='Date of birth inherited from the linked partner.',
     )
+    gender = fields.Selection(
+        related='partner_id.gender',
+        string='Gender',
+        store=True,
+        readonly=True,
+    )
     enrollment_ids = fields.One2many('aps.student.class', 'student_id', string='Class Enrollments')
     enrollment_count = fields.Integer(string='Classes', compute='_compute_enrollment_count')
 

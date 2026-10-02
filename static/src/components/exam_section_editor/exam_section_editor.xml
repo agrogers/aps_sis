@@ -41,6 +41,12 @@
                     </span>
                 </div>
                 <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="copyPages" t-att-disabled="!regions.length || state.saving" title="Copy all pages and regions">
+                        <i class="fa fa-copy me-1"></i> Copy Pages
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="pastePages" t-att-disabled="!state.pageClipboard.length || state.saving" title="Paste copied pages into this section">
+                        <i class="fa fa-paste me-1"></i> Paste
+                    </button>
                     <button type="button" class="btn btn-outline-primary" t-on-click="() => this.addPage('question')" t-att-disabled="!state.data || state.saving">
                         <i class="fa fa-plus me-1"></i> Add Question Page
                     </button>
@@ -71,6 +77,9 @@
                                 </button>
                                 <button type="button" class="btn btn-sm btn-link text-danger" title="Remove image from section" aria-label="Remove image from section" t-on-click="(event) => this.removeRegion(event, region)" t-att-disabled="state.saving">
                                     <i class="fa fa-trash"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link" title="Copy page" aria-label="Copy page" t-on-click="() => this.copyRegion(region)" t-att-disabled="state.saving">
+                                    <i class="fa fa-copy"></i>
                                 </button>
                             </div>
                             <button type="button" class="o_exam_region_card_preview" t-on-click="() => this.selectRegion(region)" t-att-style="previewStyle(region)" aria-label="Select page">
