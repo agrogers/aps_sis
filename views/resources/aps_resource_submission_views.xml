@@ -41,6 +41,7 @@
                 <filter string="Due Today" name="due_today" domain="[('date_due', '&gt;=', time.strftime('%Y-%m-%d')), ('date_due', '&lt;=', (datetime.datetime.now() + datetime.timedelta(days=1)).to_utc().strftime('%Y-%m-%d'))]"/>
                 <filter string="Due Tomorrow" name="due_tomorrow" domain="[('date_due', '=', (datetime.datetime.now() + datetime.timedelta(days=1)).to_utc().strftime('%Y-%m-%d'))]"/>
                 <filter string="Due in Next 7 Days" name="due_next_7_days" domain="[('date_due', '&gt;=', time.strftime('%Y-%m-%d')), ('date_due', '&lt;=', (datetime.datetime.now() + datetime.timedelta(days=7)).to_utc().strftime('%Y-%m-%d'))]"/>
+                <filter string="Assigned in Last 14 Days" name="assigned_last_14_days" domain="[('date_assigned', '&gt;=', (context_today() - datetime.timedelta(days=14)).strftime('%Y-%m-%d')), ('date_assigned', '&lt;=', context_today().strftime('%Y-%m-%d'))]"/>
                 <filter string="Overdue" name="overdue" domain="[('state', '=', 'assigned'), ('date_due', '&lt;', time.strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <separator/>
                 <filter string="Has Answer" name="has_answer" domain="[('has_answer', '=', True)]"/>

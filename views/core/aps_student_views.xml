@@ -191,11 +191,34 @@
         </field>
     </record>
 
+    <!-- Student count grid -->
+    <record id="aps_student_view_pivot" model="ir.ui.view">
+        <field name="name">aps.student.pivot</field>
+        <field name="model">aps.student</field>
+        <field name="arch" type="xml">
+            <pivot string="Student Grid" display_quantity="1" sample="1">
+                <field name="level_id" type="row"/>
+                <field name="enrolment_status" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Student count chart -->
+    <record id="aps_student_view_graph" model="ir.ui.view">
+        <field name="name">aps.student.graph</field>
+        <field name="model">aps.student</field>
+        <field name="arch" type="xml">
+            <graph string="Students by Enrolment Status" type="bar" sample="1">
+                <field name="enrolment_status"/>
+            </graph>
+        </field>
+    </record>
+
     <!-- Window Action -->
     <record id="aps_student_action" model="ir.actions.act_window">
         <field name="name">Students</field>
         <field name="res_model">aps.student</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">list,kanban,form,pivot,graph</field>
         <field name="search_view_id" ref="aps_student_view_search"/>
         <field name="path">apex-students</field>
         <field name="help" type="html">
