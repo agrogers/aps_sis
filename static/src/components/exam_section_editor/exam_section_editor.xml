@@ -47,6 +47,14 @@
                     <button type="button" class="btn btn-outline-secondary" t-on-click="() => this.addPage('mark_scheme')" t-att-disabled="!state.data || state.saving">
                         <i class="fa fa-plus me-1"></i> Add Mark Scheme Page
                     </button>
+                    <button type="button" class="btn btn-outline-danger" t-if="state.selected"
+                            t-on-click="() => this.toggleAddExclusionZone()"
+                            t-att-disabled="state.saving"
+                            t-att-title="state.addingExclusionZone ? 'Cancel drawing an exclusion zone' : 'Draw an exclusion zone on this page'">
+                        <i t-att-class="state.addingExclusionZone ? 'fa fa-times me-1' : 'fa fa-plus me-1'"></i>
+                        <t t-if="state.addingExclusionZone">Cancel Zone</t>
+                        <t t-else="">Add Exclusion Zone</t>
+                    </button>
                 </div>
             </div>
             <div class="o_exam_region_editor_content" t-if="state.data">
@@ -74,7 +82,9 @@
                     <div class="text-muted" t-if="!regions.length">No detected regions for this document type.</div>
                 </div>
                 <div class="o_exam_region_editor_page" t-if="state.selected">
-                    <div class="o_exam_region_image_wrap">
+                    <div class="o_exam_region_image_wrap"
+                         t-att-class="state.addingExclusionZone ? 'is-adding-exclusion' : ''"
+                         t-on-pointerdown="(event) => this.startExclusionDraw(event)">
                         <img t-att-src="state.selected.image_url" alt="Full rendered exam page"></img>
                         <div class="o_exam_region_overlay" t-att-style="draftStyle()">
                             <span class="o_exam_region_handle left" t-on-pointerdown="(event) => this.startDrag(event, 'left')"></span>
@@ -83,6 +93,32 @@
                             <span class="o_exam_region_handle bottom" t-on-pointerdown="(event) => this.startDrag(event, 'bottom')"></span>
                             <span class="o_exam_region_overlay_label"><t t-esc="state.selected.label"/></span>
                         </div>
+                        <t t-foreach="state.exclusionRegions" t-as="zone" t-key="zone.id">
+                            <div class="o_exam_exclusion_overlay" t-att-style="exclusionStyle(zone)">
+                                <div class="o_exam_exclusion_body"
+                                     t-on-pointerdown="(event) => this.startZoneDrag(event, zone, 'move')"></div>
+                                <span class="o_exam_region_handle left o_exam_exclusion_handle"
+                                      t-on-pointerdown="(event) => this.startZoneDrag(event, zone, 'left')"></span>
+                                <span class="o_exam_region_handle right o_exam_exclusion_handle"
+                                      t-on-pointerdown="(event) => this.startZoneDrag(event, zone, 'right')"></span>
+                                <span class="o_exam_region_handle top o_exam_exclusion_handle"
+                                      t-on-pointerdown="(event) => this.startZoneDrag(event, zone, 'top')"></span>
+                                <span class="o_exam_region_handle bottom o_exam_exclusion_handle"
+                                      t-on-pointerdown="(event) => this.startZoneDrag(event, zone, 'bottom')"></span>
+                                <span class="o_exam_exclusion_label">
+                                    Exclusion - <t t-esc="zone.source === 'ai' ? 'AI' : 'Manual'"/>
+                                </span>
+                                <button type="button" class="o_exam_exclusion_delete"
+                                        title="Delete exclusion zone" aria-label="Delete exclusion zone"
+                                        t-on-pointerdown="(event) => event.stopPropagation()"
+                                        t-on-click="(event) => this.removeExclusionZone(event, zone)">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </t>
+                        <div class="o_exam_exclusion_overlay o_exam_exclusion_draft"
+                             t-if="state.zoneDraft?.id === 'draft-zone'"
+                             t-att-style="zoneDraftStyle()"></div>
                     </div>
                 </div>
             </div>

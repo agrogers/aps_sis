@@ -166,6 +166,19 @@ class APSExamPaperImportBuild(models.Model):
         return value / dimension if dimension else 0.0
 
     @staticmethod
+    def _exclusion_region_y_as_fraction(region, page):
+        try:
+            y_value = float(region.get('y1', 0))
+        except (AttributeError, TypeError, ValueError):
+            return 0.0
+        coordinate_system = (
+            region.get('coordinate_system') or region.get('ai_coordinate_system') or ''
+        ).casefold()
+        if coordinate_system in ('pixels', 'pixel'):
+            return y_value / page.height if page.height else 0.0
+        return APSExamPaperImportBuild._coordinate_as_fraction(y_value, page.height)
+
+    @staticmethod
     def _coordinate_scale(region):
         coordinate_system = (region.get('ai_coordinate_system') or '').casefold()
         if coordinate_system in ('pixels', 'pixel'):
@@ -182,7 +195,7 @@ class APSExamPaperImportBuild(models.Model):
             return 'normalized 0..1000'
         return 'rendered pixels'
 
-    def _crop_bounds(self, region, page, label_positions, y_adjustment=0):
+    def _crop_bounds(self, region, page, label_positions, y_adjustment=0, exclusion_regions=None):
         if region.get('manual'):
             try:
                 left = int(round(float(region['x1'])))
@@ -198,6 +211,10 @@ class APSExamPaperImportBuild(models.Model):
             top = max(0, min(page.height - 1, top))
             right = max(left + 1, min(page.width, right))
             bottom = max(top + 1, min(page.height, bottom))
+            for exclusion_region in exclusion_regions or []:
+                exclusion_y = round(self._exclusion_region_y_as_fraction(exclusion_region, page) * page.height)
+                if exclusion_y > top:
+                    bottom = min(bottom, exclusion_y)
             return left, top, right, bottom
         start_y = max(0.0, min(1.0, self._region_y_as_fraction(region, page)))
         next_y = None
@@ -224,6 +241,10 @@ class APSExamPaperImportBuild(models.Model):
             if not is_descendant and candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
                 next_y = candidate['y']
                 break
+        for exclusion_region in exclusion_regions or []:
+            exclusion_y = self._exclusion_region_y_as_fraction(exclusion_region, page)
+            if exclusion_y > start_y + self._LABEL_Y_TOLERANCE:
+                next_y = exclusion_y if next_y is None else min(next_y, exclusion_y)
         crop_left = self._scaled_crop_margin(self._CROP_LEFT, page)
         crop_top = self._scaled_crop_margin(self._CROP_TOP, page)
         crop_right = self._scaled_crop_margin(self._CROP_RIGHT, page)
@@ -279,7 +300,10 @@ class APSExamPaperImportBuild(models.Model):
             # The Y adjustment trims the label edge on both question and
             # mark-scheme crops.
             y_adjustment = self._CROP_Y_ADJUSTMENT
-            bounds = self._crop_bounds(region, page, label_positions, y_adjustment)
+            bounds = self._crop_bounds(
+                region, page, label_positions, y_adjustment,
+                exclusion_regions=page.exclusion_regions or [],
+            )
             if log:
                 self._append_image_update_log(section, '%s region %s: raw coordinates=%s (%s), page %s image %sx%s, crop x=%s..%s y=%s..%s.' % (
                     document_type, index, region, self._coordinate_scale(region), page_number,

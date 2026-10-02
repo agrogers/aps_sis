@@ -223,6 +223,7 @@
                         <field name="ai_call_log_id" readonly="1"/>
                     </group>
                     <field name="detected_labels" readonly="1"/>
+                    <field name="exclusion_regions" readonly="1" widget="json"/>
                     <field name="error_message" readonly="1" invisible="not error_message"/>
                     <field name="ai_response" readonly="1" widget="json"/>
                 </sheet>

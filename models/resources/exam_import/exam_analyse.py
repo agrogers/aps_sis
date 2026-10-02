@@ -116,6 +116,35 @@ class APSExamPaperImportAnalyse(models.Model):
             raise ValidationError(_('Vision analysis for %s did not return the required detections JSON.') % page_image.name)
         return response_json, result.get('log_record')
 
+    def _merge_page_exclusion_regions(self, page, response):
+        """Replace AI zones from this analysis while retaining manual zones."""
+        manual_regions = [
+            dict(region)
+            for region in (page.exclusion_regions or [])
+            if isinstance(region, dict) and region.get('source') == 'manual'
+        ]
+        ai_regions = []
+        for index, region in enumerate(response.get('exclusion_zones') or []):
+            if not isinstance(region, dict):
+                continue
+            try:
+                bounds = self._scale_region_to_page(region, page, response)
+            except (TypeError, ValueError):
+                continue
+            if not (
+                0 <= bounds['x1'] < bounds['x2'] <= page.width
+                and 0 <= bounds['y1'] < bounds['y2'] <= page.height
+            ):
+                continue
+            ai_regions.append({
+                **bounds,
+                'id': 'ai-%s' % (index + 1),
+                'source': 'ai',
+                'coordinate_system': 'pixels',
+                'confidence': region.get('confidence'),
+            })
+        return manual_regions + ai_regions
+
     @staticmethod
     def _vision_system_prompt():
         return (
@@ -128,7 +157,9 @@ class APSExamPaperImportAnalyse(models.Model):
             'do not provide an answer. Report the label exactly as '
             'printed on the current page in raw_label; return it exactly as visible. '
             'Return only JSON with this shape: {"image_width": number, "image_height": number, '
-            '"coordinate_system": "pixels", "detections": [{"raw_label": string, '
+            '"coordinate_system": "pixels", "exclusion_zones": [{"x1": number, '
+            '"y1": number, "x2": number, "y2": number, "confidence": number}], '
+            '"detections": [{"raw_label": string, '
             '"question_summary": string, '
             '"label_kind": "root"|"part"|"subpart"|"continuation", "regions": [{"x1": number, '
             '"y1": number, "x2": number, "y2": number}], "visible_mark": number|null, '
@@ -140,8 +171,15 @@ class APSExamPaperImportAnalyse(models.Model):
             'and punctuation that are part of the identifier, but exclude surrounding whitespace, question text, marks, the rest '
             'of the line, and the full question section. Keep the box close to the outer edges of the identifier glyphs, with '
             'no intentional padding. The question_summary is separate and must not affect region size. Include visible '
-            'question and mark-scheme section labels, including labels printed in table headings. Exclude running page '
+            'question and mark-scheme section labels, including identifiers printed inside tables. Do not treat column '
+            'headings such as "Question Number", "Answer", "Additional Guidance", or "Mark" as identifiers; return '
+            'their header band as an exclusion zone when it separates sections. Exclude running page '
             'headers and footers, general instructions, and blank answer spaces. Do not detect standalone numbers printed beside answer lines or boxes; set '
+            'exclusion_zones for structural header bands within the question flow that should not be included in a section, '
+            'such as a mark-scheme table heading between answers and the next question identifier. Detect these on both '
+            'question-paper and mark-scheme pages. The top edge of each zone ends the preceding section; the next '
+            'question identifier starts the following section. Do not use exclusion_zones for running page headers, '
+            'footers, or general instructions. Return an empty list when no such zones are present. '
             'is_answer_space_number=true for those markers. A bare number starts a root question only when '
             'it begins actual question text. On later pages, resolve (a), (b), '
             '(i), and (ii) as raw labels only. The application will resolve them against the most likely '
