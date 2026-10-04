@@ -88,8 +88,8 @@
 
                 <!-- Outside school hours -->
                 <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="outsideHoursCheck"
-                           t-model="state.is_outside_school_hours"/>
+                          <input type="checkbox" class="form-check-input" id="outsideHoursCheck"
+                              t-model="state.is_outside_school_hours" t-on-change="onOutsideHoursChange"/>
                     <label class="form-check-label" for="outsideHoursCheck">
                         Outside School Hours
                     </label>
@@ -214,7 +214,7 @@
                                 <div class="row g-3">
                                     <div class="col-md-5">
                                         <div class="form-check form-switch pt-2">
-                                            <input id="enhancedOutsideHours" type="checkbox" class="form-check-input" t-model="state.is_outside_school_hours"/>
+                                            <input id="enhancedOutsideHours" type="checkbox" class="form-check-input" t-model="state.is_outside_school_hours" t-on-change="onOutsideHoursChange"/>
                                             <label class="form-check-label" for="enhancedOutsideHours">Outside school hours</label>
                                         </div>
                                     </div>
@@ -240,6 +240,7 @@
                                 subjects="dailyFlowSubjects"
                                 scale="dailyFlowScale"
                                 showLegend="false"
+                                showSubmissions="false"
                                 singleColumn="true"
                                 onEntryClick="onDailyFlowEntryClick"
                             />

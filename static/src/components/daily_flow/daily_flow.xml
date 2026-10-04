@@ -10,7 +10,7 @@
                 </div>
             </t>
             <t t-else="">
-                <t t-if="props.showLegend &amp;&amp; props.subjects.length">
+                <t t-if="props.showLegend &amp;&amp; (props.subjects.length || props.homeHours)">
                     <div class="aps-daily-flow__legend">
                         <div class="aps-daily-flow__legend-item aps-daily-flow__legend-total">
                             <span class="aps-daily-flow__total-icon" title="Total hours">
@@ -19,6 +19,15 @@
                             <span class="aps-daily-flow__legend-copy">
                                 <strong t-esc="_formatHours(_totalHours(props.subjects))"></strong>
                                 <span class="aps-daily-flow__legend-stats">Total hours</span>
+                            </span>
+                        </div>
+                        <div class="aps-daily-flow__legend-item aps-daily-flow__legend-total">
+                            <span class="aps-daily-flow__total-icon" title="Home hours">
+                                <i class="fa fa-home"></i>
+                            </span>
+                            <span class="aps-daily-flow__legend-copy">
+                                <strong t-esc="_formatHours(props.homeHours)"></strong>
+                                <span class="aps-daily-flow__legend-stats">Home hours</span>
                             </span>
                         </div>
                         <t t-foreach="props.subjects" t-as="subject" t-key="subject.id">
@@ -62,9 +71,9 @@
                                             <strong t-esc="_formatDuration(day.total_minutes)"></strong>
                                         </div>
                                         <div class="aps-daily-flow__day-metric">
-                                            <div class="aps-daily-flow__subject-count">
-                                                <strong t-esc="day.subject_count"></strong>
-                                                <small>sub<t t-if="day.subject_count !== 1">s</t>.</small>
+                                            <div t-if="props.showSubmissions" class="aps-daily-flow__submission-count">
+                                                <small>Subs</small>
+                                                <strong t-esc="day.submission_count || 0"></strong>
                                             </div>
                                         </div>
                                 </div>
@@ -86,7 +95,11 @@
                                 </div>
                             </header>
                             <div class="aps-daily-flow__track">
-                                    <div class="aps-daily-flow__grid"></div>
+                                <div class="aps-daily-flow__grid">
+                                    <t t-foreach="props.scale.labels" t-as="label" t-key="label.value">
+                                        <span class="aps-daily-flow__grid-line" t-att-style="'top: ' + (label.ratio * 100) + '%'"/>
+                                    </t>
+                                </div>
                                 <t t-if="!day.entries.length">
                                     <div class="aps-daily-flow__day-empty">No time</div>
                                 </t>
@@ -97,6 +110,16 @@
                                                 <small t-esc="_formatDuration(entry.total_minutes)"></small>
                                         </span>
                                             <span t-if="entry.pause_minutes" class="aps-daily-flow__pause" t-att-style="_pauseStyle(entry)"></span>
+                                    </button>
+                                </t>
+                                <t t-if="props.showSubmissions" t-foreach="day.submission_buckets || []" t-as="bucket" t-key="bucket.key">
+                                    <t t-foreach="bucket.submissions" t-as="submission" t-key="submission.id">
+                                        <button type="button" class="aps-daily-flow__submission-marker" t-att-style="_submissionStyle(bucket, submission_index)" t-att-title="_submissionTitle(submission)" t-att-aria-label="_submissionTitle(submission)" t-on-click="() => _handleSubmissionClick(submission)">
+                                            <span class="visually-hidden" t-esc="submission.name"></span>
+                                        </button>
+                                    </t>
+                                    <button t-if="bucket.overflow_count" type="button" class="aps-daily-flow__submission-overflow" t-att-style="_submissionStyle(bucket, 5)" t-att-title="_overflowTitle(bucket)" t-att-aria-label="`${bucket.overflow_count} more submissions: ${_overflowTitle(bucket)}`" t-on-click="() => _handleSubmissionOverflowClick(bucket)">
+                                        +<t t-esc="bucket.overflow_count"/>
                                     </button>
                                 </t>
                             </div>

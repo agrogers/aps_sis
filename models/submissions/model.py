@@ -165,6 +165,12 @@ class APSResourceSubmission(models.Model):
         string='Date Submitted', 
         help='The date when the submission was made by the student.',
         tracking=True)
+    time_submitted = fields.Datetime(
+        string='Time Submitted',
+        readonly=True,
+        copy=False,
+        help='The latest time the student submitted this record.',
+    )
     date_completed = fields.Date(
         string='Date Finalised', 
         help='The date when the submission was marked as finalised by the teacher. Submissions may be rejected.',

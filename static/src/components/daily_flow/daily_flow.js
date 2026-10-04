@@ -5,30 +5,39 @@ export class DailyFlow extends Component {
     static props = {
         days: { type: Array, optional: true },
         subjects: { type: Array, optional: true },
+        totalHours: { type: Number, optional: true },
+        homeHours: { type: Number, optional: true },
         scale: { type: Object, optional: true },
         loading: { type: Boolean, optional: true },
         emptyMessage: { type: String, optional: true },
         showLegend: { type: Boolean, optional: true },
         showMetrics: { type: Boolean, optional: true },
         showDayLabels: { type: Boolean, optional: true },
+        showSubmissions: { type: Boolean, optional: true },
         singleColumn: { type: Boolean, optional: true },
         onEntryClick: { type: Function, optional: true },
+        onSubmissionClick: { type: Function, optional: true },
+        onSubmissionOverflowClick: { type: Function, optional: true },
     };
 
     static defaultProps = {
         days: [],
         subjects: [],
+        homeHours: 0,
         scale: { start: "", end: "", labels: [] },
         loading: false,
         emptyMessage: "No recorded time for this period.",
         showLegend: true,
         showMetrics: true,
         showDayLabels: true,
+        showSubmissions: true,
         singleColumn: false,
     };
 
     setup() {
         this._handleEntryClick = this._handleEntryClick.bind(this);
+        this._handleSubmissionClick = this._handleSubmissionClick.bind(this);
+        this._handleSubmissionOverflowClick = this._handleSubmissionOverflowClick.bind(this);
     }
 
     _dateValue(value) {
@@ -48,6 +57,9 @@ export class DailyFlow extends Component {
     }
 
     _totalHours(subjects) {
+        if (this.props.totalHours !== undefined && this.props.totalHours !== null) {
+            return Number(this.props.totalHours) || 0;
+        }
         return (subjects || []).reduce((total, subject) => total + (Number(subject.hours) || 0), 0);
     }
 
@@ -109,6 +121,25 @@ export class DailyFlow extends Component {
         return `top: ${safeTop}%; height: ${Math.min(100 - safeTop, height)}%; --segment-color: ${entry.color || "#64748b"};`;
     }
 
+    _submissionStyle(bucket, index) {
+        const start = this._dateValue(this.props.scale.start);
+        const end = this._dateValue(this.props.scale.end);
+        const duration = Math.max(end - start, 60 * 60000);
+        const eventTime = this._dateValue(bucket.position_time);
+        const top = Math.max(0, Math.min(100, ((eventTime - start) / duration) * 100));
+        const marker = bucket.submissions[index];
+        return `top: ${top}%; right: ${4 + index * 12}px; --marker-color: ${marker?.color || "#64748b"};`;
+    }
+
+    _submissionTitle(submission) {
+        const subject = submission.subject_name ? `\n${submission.subject_name}` : "";
+        return `${submission.name}\n${this._formatTime(submission.time_submitted)}${subject}`;
+    }
+
+    _overflowTitle(bucket) {
+        return (bucket.overflow_names || []).join("\n");
+    }
+
     _pauseStyle(entry) {
         const elapsed = Math.max(
             1,
@@ -131,6 +162,18 @@ export class DailyFlow extends Component {
         const entry = day?.entries.find((item) => String(item.id) === entryId);
         if (this.props.onEntryClick) {
             return this.props.onEntryClick(entry);
+        }
+    }
+
+    _handleSubmissionClick(submission) {
+        if (this.props.onSubmissionClick) {
+            return this.props.onSubmissionClick(submission);
+        }
+    }
+
+    _handleSubmissionOverflowClick(bucket) {
+        if (this.props.onSubmissionOverflowClick) {
+            return this.props.onSubmissionOverflowClick(bucket);
         }
     }
 }

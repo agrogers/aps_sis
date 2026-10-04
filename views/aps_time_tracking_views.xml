@@ -90,6 +90,16 @@
         <field name="path">apex-time-entries</field>
     </record>
 
+    <record id="action_recompute_time_tracking_school_hours" model="ir.actions.server">
+        <field name="name">Recompute Outside School Hours (All Entries)</field>
+        <field name="model_id" ref="model_aps_time_tracking"/>
+        <field name="binding_model_id" ref="model_aps_time_tracking"/>
+        <field name="binding_type">action</field>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_manager'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_recompute_outside_school_hours()</field>
+    </record>
+
     <!-- Bind specific views to the action -->
     <record id="action_aps_time_tracking_view_list" model="ir.actions.act_window.view">
         <field name="sequence">1</field>

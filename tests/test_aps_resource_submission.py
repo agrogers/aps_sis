@@ -1,5 +1,6 @@
 import json
 import re
+from unittest.mock import patch
 
 from odoo import fields
 from odoo.tests.common import TransactionCase
@@ -94,6 +95,75 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
             'submission_name': 'New',
         })
         self.assertTrue(sub.auto_score)
+
+    def _create_student_user(self):
+        return self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': self.student.name,
+            'login': f'test_submission_student_{self.student.id}',
+            'partner_id': self.student.id,
+            'groups_id': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('aps_sis.group_aps_student').id,
+            ])],
+        })
+
+    def test_time_submitted_requires_student_actor(self):
+        student_user = self._create_student_user()
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': self.child_task_a.id,
+            'date_submitted': '2026-09-01',
+        })
+
+        submission.with_user(student_user).write({'state': 'submitted'})
+        first_timestamp = submission.time_submitted
+        self.assertTrue(first_timestamp)
+        self.assertEqual(str(submission.date_submitted), '2026-09-01')
+
+        submission.with_user(student_user).write({'submission_name': 'Student edit'})
+        self.assertEqual(submission.time_submitted, first_timestamp)
+
+        submission.with_user(student_user).write({'state': 'assigned'})
+        self.assertEqual(submission.time_submitted, first_timestamp)
+        with patch('odoo.addons.aps_sis.models.submissions.overrides.fields.Datetime.now',
+                   return_value='2026-09-02 10:15:00'):
+            submission.with_user(student_user).write({'state': 'submitted'})
+        self.assertEqual(str(submission.time_submitted), '2026-09-02 10:15:00')
+
+        manager_user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Submission Manager',
+            'login': f'test_submission_manager_{self.student.id}',
+            'groups_id': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('aps_sis.group_aps_manager').id,
+            ])],
+        })
+        manager_submission = self.env['aps.resource.submission'].create({
+            'task_id': self.child_task_b.id,
+        })
+        manager_submission.with_user(manager_user).write({'state': 'submitted'})
+        self.assertFalse(manager_submission.time_submitted)
+
+        sudo_submission = self.env['aps.resource.submission'].create({
+            'task_id': self.child_task_c.id,
+        })
+        sudo_submission.with_user(student_user).sudo().write({'state': 'submitted'})
+        self.assertFalse(sudo_submission.time_submitted)
+
+    def test_time_submitted_on_student_create_only(self):
+        student_user = self._create_student_user()
+        submission = self.env['aps.resource.submission'].with_user(student_user).create({
+            'task_id': self.child_task_a.id,
+            'state': 'submitted',
+        })
+        self.assertTrue(submission.time_submitted)
+        self.assertFalse(submission.date_submitted)
+
+        teacher_submission = self.env['aps.resource.submission'].create({
+            'task_id': self.child_task_b.id,
+            'state': 'submitted',
+            'time_submitted': '2026-09-01 10:00:00',
+        })
+        self.assertFalse(teacher_submission.time_submitted)
 
     def test_setting_score_sets_auto_score_false(self):
         """Writing a score without explicitly passing auto_score should set auto_score=False."""

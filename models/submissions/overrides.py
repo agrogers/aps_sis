@@ -15,6 +15,17 @@ class APSResourceSubmissionOverrides(models.Model):
 # region - Overrides and records methods
 
     def write(self, vals):
+        vals = dict(vals)
+        vals.pop('time_submitted', None)
+        student_submissions = self.env['aps.resource.submission']
+        if vals.get('state') == 'submitted' and not self.env.su:
+            student_partner = self.env.user.partner_id
+            student_submissions = self.filtered(
+                lambda record: (
+                    record.state != 'submitted'
+                    and record.student_id == student_partner
+                )
+            )
         
         # Mark score and answer as manually set when either is changed without explicitly
         # passing auto_score=True. Our auto-calculation code always passes auto_score=True
@@ -59,6 +70,11 @@ class APSResourceSubmissionOverrides(models.Model):
         old_faculty_map = {rec.id: set(rec.review_requested_by.ids) for rec in self}
 
         result = super().write(vals)
+
+        if student_submissions:
+            super(APSResourceSubmissionOverrides, student_submissions).write({
+                'time_submitted': fields.Datetime.now(),
+            })
 
         # Auto-transition 'assigned' → 'submitted' when a score is entered
         if records_to_auto_submit:
@@ -129,6 +145,13 @@ class APSResourceSubmissionOverrides(models.Model):
         for vals in vals_list:
             if 'state' not in vals:
                 vals['state'] = 'assigned'
+            vals.pop('time_submitted', None)
+            if vals['state'] == 'submitted' and not self.env.su:
+                task = self.env['aps.resource.task'].sudo().browse(
+                    vals.get('task_id')
+                )
+                if task.student_id == self.env.user.partner_id:
+                    vals['time_submitted'] = fields.Datetime.now()
         
         # Copy question from resource if not explicitly provided
         for vals in vals_list:

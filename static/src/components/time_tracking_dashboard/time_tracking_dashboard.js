@@ -24,6 +24,8 @@ export class TimeTrackingDashboard extends Component {
         // DailyFlow invokes this callback as a child prop, so bind it explicitly
         // to preserve the dashboard instance and its action service.
         this.onDailyFlowEntryClick = this.onDailyFlowEntryClick.bind(this);
+        this.onDailyFlowSubmissionClick = this.onDailyFlowSubmissionClick.bind(this);
+        this.onDailyFlowSubmissionOverflowClick = this.onDailyFlowSubmissionOverflowClick.bind(this);
         this.dailyFlowModeStorageKey = "aps_sis_time_tracking_daily_flow_mode";
         this.dashboardFiltersStorageKey = "aps_sis_time_tracking_dashboard_filters";
         const savedFilters = this._restoreDashboardFilters();
@@ -52,7 +54,8 @@ export class TimeTrackingDashboard extends Component {
             dateFilter: savedFilters.dateFilter,
             dailyFlowDate: this._localDate(new Date()),
             dailyFlowMode: this._restoreDailyFlowMode(),
-            dailyFlow: { days: [], subjects: [], scale: { labels: [] } },
+            homeHoursOnly: false,
+            dailyFlow: { days: [], subjects: [], total_hours: 0, scale: { labels: [] } },
             // Set after the student options have been loaded and validated.
             partnerId: "",
             categoryId: savedFilters.categoryId,
@@ -215,10 +218,16 @@ export class TimeTrackingDashboard extends Component {
                     this.state.categoryId ? parseInt(this.state.categoryId) : false,
                     this.state.days,
                     this.state.dateFilter,
+                    this.state.homeHoursOnly,
                 ],
                 {}
             );
-            this.state.dailyFlow = data || { days: [], subjects: [], scale: { labels: [] } };
+            this.state.dailyFlow = data || {
+                days: [],
+                subjects: [],
+                total_hours: 0,
+                scale: { labels: [] },
+            };
             return data;
         } finally {
             this.state.dailyFlowLoading = false;
@@ -440,6 +449,11 @@ export class TimeTrackingDashboard extends Component {
         await this._fetchDailyFlow();
     }
 
+    async onDailyFlowHomeHoursOnlyChange(ev) {
+        this.state.homeHoursOnly = ev.target.checked;
+        await this._fetchDailyFlow();
+    }
+
     async shiftDailyFlow(days) {
         const date = new Date(`${this.state.dailyFlowDate}T12:00:00`);
         date.setDate(date.getDate() + days);
@@ -472,6 +486,30 @@ export class TimeTrackingDashboard extends Component {
                 await this._fetchData();
             },
             onDiscard: async () => {},
+        });
+    }
+
+    onDailyFlowSubmissionClick(submission) {
+        if (!submission?.id) return;
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: submission.name || "Submission",
+            res_model: "aps.resource.submission",
+            res_id: submission.id,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    onDailyFlowSubmissionOverflowClick(bucket) {
+        const submissionIds = bucket?.overflow_ids || [];
+        if (!submissionIds.length) return;
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Additional Submissions",
+            res_model: "aps.resource.submission",
+            views: [[false, "list"], [false, "form"]],
+            domain: [["id", "in", submissionIds]],
         });
     }
 

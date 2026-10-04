@@ -34,6 +34,7 @@ export class TimerStopDialog extends Component {
             notes: this.props.entry.notes || "",
             pause_minutes: this.props.entry.pause_minutes || 0,
             is_outside_school_hours: this.props.entry.is_outside_school_hours || false,
+            outsideHoursChanged: false,
             total_minutes: this.props.entry.total_minutes || 0,
             subjectError: false,
             validationError: "",
@@ -107,6 +108,10 @@ export class TimerStopDialog extends Component {
         }
     }
 
+    onOutsideHoursChange() {
+        this.state.outsideHoursChanged = true;
+    }
+
     _validate() {
         if (!this.state.subject_id) {
             this.state.subjectError = true;
@@ -148,8 +153,10 @@ export class TimerStopDialog extends Component {
             date: this.state.start_time ? new Date(this.state.start_time).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
             notes: this.state.notes,
             pause_minutes: parseFloat(this.state.pause_minutes) || 0,
-            is_outside_school_hours: this.state.is_outside_school_hours,
         };
+        if (this.props.entry.id || this.state.outsideHoursChanged) {
+            vals.is_outside_school_hours = this.state.is_outside_school_hours;
+        }
         await this.orm.create("aps.time.tracking", [vals]);
         this.props.onSave();
         this.props.close();
@@ -222,6 +229,7 @@ export class EnhancedTimerStopDialog extends Component {
             notes: entry.notes || "",
             pause_minutes: entry.pause_minutes || 0,
             is_outside_school_hours: entry.is_outside_school_hours || false,
+            outsideHoursChanged: false,
             total_minutes: entry.total_minutes || 0,
         };
     }
@@ -504,6 +512,10 @@ export class EnhancedTimerStopDialog extends Component {
         await this._refreshTimeline();
     }
 
+    onOutsideHoursChange() {
+        this.state.outsideHoursChanged = true;
+    }
+
     async onSubjectChange() {
         this.state.subjectError = !this.state.subject_id;
         await this._refreshTimeline();
@@ -609,8 +621,10 @@ export class EnhancedTimerStopDialog extends Component {
                 date: this.timelineDate,
                 notes: this.state.notes,
                 pause_minutes: Number(this.state.pause_minutes) || 0,
-                is_outside_school_hours: this.state.is_outside_school_hours,
             };
+            if (this.state.id || this.state.outsideHoursChanged) {
+                vals.is_outside_school_hours = this.state.is_outside_school_hours;
+            }
             if (this.state.id) {
                 await this.orm.write("aps.time.tracking", [this.state.id], vals);
             } else {

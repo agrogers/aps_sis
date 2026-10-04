@@ -70,6 +70,10 @@
                                     </small>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
+                                    <div class="form-check form-switch mb-0 text-nowrap">
+                                        <input id="dailyFlowHomeHoursOnly" class="form-check-input" type="checkbox" t-att-checked="state.homeHoursOnly" t-on-change="onDailyFlowHomeHoursOnlyChange"/>
+                                        <label class="form-check-label small" for="dailyFlowHomeHoursOnly">Home hours only</label>
+                                    </div>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" title="Previous week" t-on-click="onDailyFlowPrevious">
                                         <i class="fa fa-chevron-left"/>
                                     </button>
@@ -86,9 +90,13 @@
                             <DailyFlow
                                 days="state.dailyFlow.days"
                                 subjects="state.dailyFlow.subjects"
+                                totalHours="state.dailyFlow.total_hours"
+                                homeHours="state.dailyFlow.home_hours || 0"
                                 scale="state.dailyFlow.scale"
                                 loading="state.dailyFlowLoading"
                                 onEntryClick="onDailyFlowEntryClick"
+                                onSubmissionClick="onDailyFlowSubmissionClick"
+                                onSubmissionOverflowClick="onDailyFlowSubmissionOverflowClick"
                             />
                         </div>
                     </div>

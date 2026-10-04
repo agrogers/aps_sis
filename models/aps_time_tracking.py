@@ -1,12 +1,11 @@
 from odoo import _, models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from datetime import datetime, time, timedelta
 
 
-# Used to automatically set the At Home property based on school hours.
-SCHOOL_START_HOUR = 8      # 08:00
-SCHOOL_END_HOUR = 15       # 15:00
-SCHOOL_END_MINUTE = 30     # 15:30
+# School hours used when classifying time entries on calendar school days.
+SCHOOL_START_TIME = time(8, 50)
+SCHOOL_END_TIME = time(15, 20)
 
 
 class APSTimeTracking(models.Model):
@@ -138,11 +137,8 @@ class APSTimeTracking(models.Model):
         store=True,
         readonly=False,
         help=(
-            'Automatically set when the entry starts before 08:00, '
-            'after 15:30, or on a weekend.  You can override this manually. '
-            'If a weekday entry is manually set to outside school hours it '
-            'is treated as a holiday and subsequent entries on that day will '
-            'also default to outside school hours.'
+            'Automatically set when the entry starts outside 08:50 to 15:20 '
+            'on a school day, or on a non-school day. You can override this manually.'
         ),
     )
 
@@ -159,13 +155,27 @@ class APSTimeTracking(models.Model):
 
     @api.depends('start_time')
     def _compute_date(self):
+        import pytz
+
         for rec in self:
             if rec.start_time:
-                # start_time is stored as UTC in Odoo; convert to local date using
-                # the company's timezone if available, otherwise use UTC date.
-                rec.date = fields.Date.context_today(rec, rec.start_time)
+                timezone = rec._get_school_timezone()
+                local_dt = rec.start_time.replace(tzinfo=pytz.utc).astimezone(timezone)
+                rec.date = local_dt.date()
             else:
                 rec.date = False
+
+    def _get_school_timezone(self):
+        import pytz
+
+        self.ensure_one()
+        company_calendar = self.env.company.resource_calendar_id
+        timezone_name = (
+            (company_calendar.tz if company_calendar else False)
+            or self.env.user.tz
+            or 'UTC'
+        )
+        return pytz.timezone(timezone_name)
 
     @api.depends('start_time', 'stop_time', 'pause_minutes')
     def _compute_total_minutes(self):
@@ -401,16 +411,11 @@ class APSTimeTracking(models.Model):
             'remaining_overlaps': final['overlap_count'],
         }
 
-    @api.depends('start_time', 'is_outside_school_hours')
+    @api.depends('start_time', 'partner_id')
     def _compute_is_outside_school_hours(self):
         """
         Auto-detect outside-school-hours based on start_time (converted to the
-        user's local timezone).
-        Weekends are always outside school hours.
-        Before SCHOOL_START_HOUR or after SCHOOL_END_HOUR:SCHOOL_END_MINUTE
-        on weekdays is outside school hours.
-        If a weekday entry already exists for the same date that was manually
-        marked as outside_school_hours, treat the whole day as a holiday.
+        user's local timezone), the configured school calendar, and school hours.
         """
         import pytz
 
@@ -419,38 +424,67 @@ class APSTimeTracking(models.Model):
                 rec.is_outside_school_hours = False
                 continue
 
-            # Convert UTC start_time to user's local time
-            user_tz = pytz.timezone(rec.env.user.tz or 'UTC')
+            user_tz = rec._get_school_timezone()
             local_dt = rec.start_time.replace(tzinfo=pytz.utc).astimezone(user_tz)
             local_date = local_dt.date()
-            weekday = local_date.weekday()  # 0=Mon … 6=Sun
 
-            # Weekends → always outside
-            if weekday >= 5:
-                rec.is_outside_school_hours = True
-                continue
-
-            # Check if another entry for the same date is marked as holiday
-            # (weekday + outside school hours = treat as holiday)
-            domain = [
-                ('date', '=', local_date),
-                ('is_outside_school_hours', '=', True),
-            ]
-            if rec.id:
-                domain.append(('id', '!=', rec.id))
-            if self.search_count(domain):
-                rec.is_outside_school_hours = True
-                continue
-
-            # Check local start hour/minute (already converted to user tz)
-            local_hour = local_dt.hour
-            local_minute = local_dt.minute
-            before_school = (local_hour < SCHOOL_START_HOUR)
-            after_school = (
-                local_hour > SCHOOL_END_HOUR or
-                (local_hour == SCHOOL_END_HOUR and local_minute >= SCHOOL_END_MINUTE)
+            student = self.env['aps.student'].search(
+                [('partner_id', '=', rec.partner_id.id)], limit=1
             )
-            rec.is_outside_school_hours = before_school or after_school
+            calendar_domain = [('date', '=', local_date)]
+            if student and student.level_id:
+                calendar_domain += [
+                    '|',
+                    ('applies_to_level_ids', '=', False),
+                    ('applies_to_level_ids', 'in', student.level_id.ids),
+                ]
+            else:
+                calendar_domain.append(('applies_to_level_ids', '=', False))
+            calendar_entries = self.env['aps.school.calendar'].search(calendar_domain)
+            level_entries = calendar_entries.filtered(
+                lambda entry: student.level_id
+                and student.level_id in entry.applies_to_level_ids
+            )
+            applicable_entries = level_entries or calendar_entries.filtered(
+                lambda entry: not entry.applies_to_level_ids
+            )
+            is_school_day = any(
+                entry.date_type_id.code in ('school_day', 'event')
+                for entry in applicable_entries
+            )
+            if not is_school_day:
+                rec.is_outside_school_hours = True
+                continue
+
+            local_time = local_dt.time().replace(tzinfo=None)
+            rec.is_outside_school_hours = not (
+                SCHOOL_START_TIME <= local_time <= SCHOOL_END_TIME
+            )
+
+    @api.model
+    def action_recompute_outside_school_hours(self):
+        """Recompute the outside-school-hours flag for every time entry."""
+        if not (
+            self.env.user.has_group('aps_sis.group_aps_manager')
+            or self.env.user.has_group('base.group_system')
+        ):
+            raise AccessError(_('Only APEX managers can recompute school-hours flags.'))
+
+        records = self.sudo().search([])
+        records._compute_date()
+        records.flush_recordset(['date'])
+        records._compute_is_outside_school_hours()
+        records.flush_recordset(['is_outside_school_hours'])
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Time Entries Updated'),
+                'message': _('%s time entries were recomputed.') % len(records),
+                'type': 'success',
+                'sticky': False,
+            },
+        }
 
     # ─────────────────────────────────────────────────────────────────────────
     # API methods for the frontend timer
@@ -741,6 +775,7 @@ class APSTimeTracking(models.Model):
         category_id=False,
         days=30,
         date_filter='30',
+        home_hours_only=False,
     ):
         """Return the seven-day data used by the reusable Daily Flow component."""
         import pytz
@@ -767,6 +802,7 @@ class APSTimeTracking(models.Model):
             days = max(1, int(days))
         except (TypeError, ValueError):
             days = 30
+        home_hours_only = bool(home_hours_only)
 
         base_domain = []
         if partner_id:
@@ -783,11 +819,45 @@ class APSTimeTracking(models.Model):
         query_start_utc, query_end_utc = self._daily_flow_local_bounds(
             query_start, user_tz
         )[0], self._daily_flow_local_bounds(query_end, user_tz)[1]
-        records = self.search([
+        all_records = self.search([
             *base_domain,
             ('start_time', '<', query_end_utc),
             ('stop_time', '>', query_start_utc),
         ], order='start_time asc')
+        records = (
+            all_records.filtered('is_outside_school_hours')
+            if home_hours_only else all_records
+        )
+
+        submission_start_utc = self._daily_flow_local_bounds(
+            range_start, user_tz
+        )[0]
+        submission_end_utc = self._daily_flow_local_bounds(
+            range_end + timedelta(days=1), user_tz
+        )[0]
+        submission_domain = [
+            ('time_submitted', '>=', fields.Datetime.to_string(submission_start_utc)),
+            ('time_submitted', '<', fields.Datetime.to_string(submission_end_utc)),
+        ]
+        if partner_id:
+            submission_domain.append(('student_id', '=', partner_id))
+        if category_id:
+            submission_domain.extend([
+                '|',
+                ('subjects.category_id', '=', category_id),
+                ('resource_id.subjects.category_id', '=', category_id),
+            ])
+        excluded_tag_ids = self.env['aps.resource.tags'].search([
+            ('name', '=', 'Exclude from Daily Flow'),
+        ]).ids
+        if excluded_tag_ids:
+            submission_domain.append((
+                'resource_id.tag_ids', 'not in', excluded_tag_ids
+            ))
+        submitted_records = self.env['aps.resource.submission'].search(
+            submission_domain,
+            order='time_submitted, id',
+        )
 
         def local_datetime(value):
             return value.replace(tzinfo=pytz.utc).astimezone(user_tz)
@@ -800,12 +870,12 @@ class APSTimeTracking(models.Model):
             stop = min(record.stop_time, day_stop_utc)
             return (start, stop) if start < stop else (False, False)
 
-        def totals_by_date(date_from, date_to):
+        def totals_by_date(source_records, date_from, date_to):
             result = {}
             current = date_from
             while current <= date_to:
                 total = 0.0
-                for record in records:
+                for record in source_records:
                     start, stop = record_intersection(record, current)
                     if start and stop:
                         elapsed = (stop - start).total_seconds() / 60.0
@@ -822,9 +892,13 @@ class APSTimeTracking(models.Model):
                 current += timedelta(days=1)
             return result
 
-        daily_totals = totals_by_date(range_start, range_end)
-        previous_totals = totals_by_date(previous_start, range_start - timedelta(days=1))
-        period_totals = totals_by_date(period_start, period_end)
+        daily_totals = totals_by_date(records, range_start, range_end)
+        actual_daily_totals = totals_by_date(all_records, range_start, range_end)
+        previous_totals = totals_by_date(
+            records, previous_start, range_start - timedelta(days=1)
+        )
+        period_totals = totals_by_date(records, period_start, period_end)
+        total_hours = round(sum(actual_daily_totals.values()) / 60.0, 2)
         period_average = (
             round(sum(period_totals.values()) / len(period_totals), 1)
             if period_totals else 0.0
@@ -834,6 +908,89 @@ class APSTimeTracking(models.Model):
         flow_subjects = {}
         day_payloads = []
         all_local_times = []
+        home_minutes = 0.0
+        submission_buckets_by_date = {local_date: {} for local_date in range_dates}
+        for submission in submitted_records:
+            local_submission_time = local_datetime(submission.time_submitted)
+            local_date = local_submission_time.date()
+            if local_date not in submission_buckets_by_date:
+                continue
+
+            bucket_minute = (local_submission_time.minute // 15) * 15
+            bucket_start = local_submission_time.replace(
+                minute=bucket_minute, second=0, microsecond=0
+            )
+            position_start = datetime.combine(range_start, bucket_start.time())
+            position_end = position_start + timedelta(minutes=15)
+            position_time = position_start + timedelta(minutes=7, seconds=30)
+            all_local_times.extend([position_start, position_end])
+
+            matching_subjects = submission.subjects
+            if category_id:
+                matching_subjects = matching_subjects.filtered(
+                    lambda subject: subject.category_id.id == category_id
+                )
+            subject = matching_subjects[:1]
+            if not subject:
+                resource_subjects = submission.resource_id.subjects
+                if category_id:
+                    resource_subjects = resource_subjects.filtered(
+                        lambda item: item.category_id.id == category_id
+                    )
+                subject = resource_subjects[:1]
+
+            if subject:
+                color = subject_color_map.get(subject.id, '#64748b')
+                subject_name = subject.name
+                flow_subjects.setdefault(subject.id, {
+                    'id': subject.id,
+                    'name': subject.name,
+                    'color': color,
+                    'icon_url': (
+                        f'/web/image/aps.subject/{subject.id}/icon'
+                        if subject.icon else (
+                            f'/web/image/aps.subject.category/{subject.category_id.id}/icon'
+                            if subject.category_id and subject.category_id.icon else False
+                        )
+                    ),
+                    'minutes': 0.0,
+                    'previous_minutes': 0.0,
+                })
+            else:
+                color = '#64748b'
+                subject_name = ''
+
+            bucket_key = bucket_start.strftime('%H:%M')
+            buckets = submission_buckets_by_date[local_date]
+            bucket = buckets.setdefault(bucket_key, {
+                'key': bucket_key,
+                'position_time': position_time.isoformat(timespec='seconds'),
+                'submissions': [],
+            })
+            bucket['submissions'].append({
+                'id': submission.id,
+                'name': submission.display_name or submission.submission_name or _('Submission'),
+                'time_submitted': local_submission_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'subject_name': subject_name,
+                'color': color,
+            })
+
+        def daily_submission_buckets(local_date):
+            result = []
+            for bucket in submission_buckets_by_date[local_date].values():
+                submissions = bucket['submissions']
+                visible = submissions[:5]
+                overflow = submissions[5:]
+                result.append({
+                    'key': bucket['key'],
+                    'position_time': bucket['position_time'],
+                    'submissions': visible,
+                    'overflow_count': len(overflow),
+                    'overflow_ids': [item['id'] for item in overflow],
+                    'overflow_names': [item['name'] for item in overflow],
+                })
+            return sorted(result, key=lambda item: item['key'])
+
         for local_date in range_dates:
             day_start_utc, day_stop_utc = self._daily_flow_local_bounds(
                 local_date, user_tz
@@ -849,14 +1006,17 @@ class APSTimeTracking(models.Model):
                 segment_start, segment_stop = record_intersection(record, local_date)
                 if not segment_start:
                     continue
-                entries.append(self._daily_flow_entry_payload(
+                entry_payload = self._daily_flow_entry_payload(
                     record,
                     segment_start,
                     segment_stop,
                     user_tz,
                     day_domain,
                     range_start,
-                ))
+                )
+                entries.append(entry_payload)
+                if record.is_outside_school_hours:
+                    home_minutes += entry_payload['total_minutes']
                 local_segment_start = local_datetime(segment_start).replace(
                     year=range_start.year,
                     month=range_start.month,
@@ -891,11 +1051,18 @@ class APSTimeTracking(models.Model):
                     })
                     item['minutes'] += entries[-1]['total_minutes']
             day_total = daily_totals.get(local_date, 0.0)
+            submission_buckets = daily_submission_buckets(local_date)
+            submission_count = sum(
+                len(bucket['submissions'])
+                for bucket in submission_buckets_by_date[local_date].values()
+            )
             day_payloads.append({
                 'date': fields.Date.to_string(local_date),
                 'label': local_date.strftime('%a'),
                 'short_date': local_date.strftime('%d %b'),
                 'entries': entries,
+                'submission_buckets': submission_buckets,
+                'submission_count': submission_count,
                 'total_minutes': round(day_total, 1),
                 'subject_count': len(subject_ids),
                 'previous_total_minutes': previous_totals.get(
@@ -991,6 +1158,8 @@ class APSTimeTracking(models.Model):
             'range_end': fields.Date.to_string(range_end),
             'days': day_payloads,
             'subjects': sorted(flow_subjects.values(), key=lambda item: item['name'].lower()),
+            'total_hours': total_hours,
+            'home_hours': round(home_minutes / 60.0, 2),
             'scale': {
                 'start': scale_start.isoformat(timespec='minutes'),
                 'end': scale_stop.isoformat(timespec='minutes'),

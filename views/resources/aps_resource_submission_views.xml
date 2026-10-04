@@ -35,6 +35,7 @@
                 <field name="date_assigned"/>
                 <field name="date_due"/>
                 <field name="date_submitted"/>
+                <field name="time_submitted"/>
                 <field name="date_completed"/>
                 <field name="out_of" string="Out Of"/>
                 
@@ -94,6 +95,7 @@
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY'}" optional="hide"/>
                 <field name="time_assigned" widget="float_time" optional="hide"/>
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="time_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="state" widget="badge" decoration-muted="state == 'complete'" decoration-info="state == 'submitted'" decoration-warning="state == 'assigned'" optional="show"/>
                 <field name="score" widget="float_sentinel" optional="hide"/>
                 <field name="out_of_marks" widget="float_sentinel" optional="hide" readonly="1"/>
@@ -151,6 +153,7 @@
                 <field name="date_assigned" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide" readonly="1"/>
                 <field name="time_assigned" widget="float_time" nolabel="1" optional="hide" />
                 <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
+                <field name="time_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}" optional="hide"/>
                 <field name="display_name" optional="hide" readonly="1"/>
                 <field name="submission_name" optional="show" readonly="1"/>
                 <field name="score" widget="float_sentinel" optional="show" sum="Total Score" readonly="state == 'complete'"/>
@@ -341,6 +344,7 @@
                                         </div>
                                         <field name="date_due" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                         <field name="date_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
+                                        <field name="time_submitted" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                         <field name="date_completed" widget="datetime" options="{'format': 'D/MMM/YY HH:mm'}"/>
                                         <field name="due_status" readonly="not is_current_user_faculty"/>
 
