@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 import re
 
 import pytz
-from odoo import models, fields, api, _
+from odoo import SUPERUSER_ID, models, fields, api, _
 from ..resources.model import HAS_QUESTION_SELECTION
 from odoo.exceptions import UserError
 import logging
@@ -382,12 +382,21 @@ class APSResourceSubmission(models.Model):
 
     @api.depends('subjects', 'subjects.icon')
     def _compute_subject_icons(self):
+        # Create a clean Environment executing strictly under SUPERUSER
+        # Without the SUPERUSER environment, non-admin users might face SVG sanitization issues when accessing subject icons.
+        sudo_env = self.env(user=SUPERUSER_ID)
+        
         for record in self:
+            # Re-bind the record to the SUPERUSER environment
+            sudo_record = record.with_env(sudo_env)
+            
             if record.subjects:
                 first = record.subjects[:1]
-                record.subject_icons = first.icon if first else False
+                # Writing as SUPERUSER bypasses non-admin SVG sanitization
+                sudo_record.subject_icons = first.icon if first else False
             else:
-                record.subject_icons = False
+                sudo_record.subject_icons = False
+    
 
     @api.depends('date_due','state')
     def _compute_days_till_due(self):

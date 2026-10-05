@@ -2,6 +2,8 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { ResourceHierarchyTable } from "../resource_hierarchy_table/resource_hierarchy_table";
+import { PercentPie } from "../percent_pie/percent_pie";
+import { BadgeDecoratorDisplay } from "../../js/badge_decorator_widget";
 
 const STORAGE_KEY = "aps_teacher_dashboard_state";
 
@@ -24,7 +26,7 @@ function _normalizeResourceId(value) {
 
 export class TeacherDashboard extends Component {
     static template = "aps_sis.TeacherDashboard";
-    static components = { ResourceHierarchyTable };
+    static components = { ResourceHierarchyTable, PercentPie, BadgeDecoratorDisplay };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
@@ -37,6 +39,7 @@ export class TeacherDashboard extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this._submissionFormViewId = null;
+        this._submissionGroupIndex = new Map();
 
         const storedState = _loadStoredState();
         const actionState = this.props.globalState || {};
@@ -49,9 +52,16 @@ export class TeacherDashboard extends Component {
             loading: true,
             categoryId: gs.categoryId ?? false,
             days: gs.days ?? 30,
+            studentId: gs.studentId ?? false,
             categories: [],
+            students: [],
             subjectResources: [],
+            favouriteResources: [],
             taskResources: [],
+            submissionGroups: [],
+            dashboardMetrics: {},
+            expandedSubmissionGroups: gs.expandedSubmissionGroups ?? {},
+            hiddenSubmissionTypes: gs.hiddenSubmissionTypes ?? {},
             selectedResourceId: restoredResourceId,
             selectedResourceName: gs.selectedResourceName ?? "",
             submissions: [],
@@ -86,8 +96,15 @@ export class TeacherDashboard extends Component {
         const snapshot = {
             categoryId: this.state.categoryId,
             days: this.state.days,
+            studentId: this.state.studentId,
             selectedResourceId: this.state.selectedResourceId,
             selectedResourceName: this.state.selectedResourceName,
+            expandedSubmissionGroups: Object.fromEntries(
+                Object.entries(this.state.expandedSubmissionGroups)
+            ),
+            hiddenSubmissionTypes: Object.fromEntries(
+                Object.entries(this.state.hiddenSubmissionTypes)
+            ),
         };
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -109,11 +126,23 @@ export class TeacherDashboard extends Component {
             "aps.resources",
             "get_teacher_dashboard_data",
             [],
-            { category_id: this.state.categoryId, days: this.state.days }
+            {
+                category_id: this.state.categoryId,
+                days: this.state.days,
+                student_id: this.state.studentId,
+            }
         );
         this.state.categories = data.categories || [];
+        this.state.students = data.students || [];
+        this.state.studentId = data.selected_student_id || false;
         this.state.subjectResources = data.subject_resources || [];
+        this.state.favouriteResources = data.favourite_resources || [];
         this.state.taskResources = data.task_resources || [];
+        this.state.submissionGroups = data.submission_groups || [];
+        this.state.dashboardMetrics = data.dashboard_metrics || {};
+        this._submissionGroupIndex = new Map(
+            this.state.submissionGroups.map((group) => [group.key, group])
+        );
 
         if (this.state.selectedResourceId) {
             const restored = this.state.taskResources.find(
@@ -141,6 +170,7 @@ export class TeacherDashboard extends Component {
             {
                 resource_id: resourceId,
                 days: this.state.days,
+                student_id: this.state.studentId,
             }
         );
         this.state.submissions = subs || [];
@@ -158,6 +188,11 @@ export class TeacherDashboard extends Component {
 
     async onChangeDays(ev) {
         this.state.days = parseInt(ev.target.value);
+        await this._fetchData();
+    }
+
+    async onChangeStudent(ev) {
+        this.state.studentId = ev.target.value ? parseInt(ev.target.value, 10) : false;
         await this._fetchData();
     }
 
@@ -230,13 +265,199 @@ export class TeacherDashboard extends Component {
     }
 
     async openAllSubmissions() {
+        const domain = [["resource_id", "=", this.state.selectedResourceId]];
+        if (this.state.studentId) {
+            domain.push(["task_id.student_id", "=", this.state.studentId]);
+        }
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "aps.resource.submission",
-            views: [[false, "list"]],
-            domain: [["resource_id", "=", this.state.selectedResourceId]],
+            views: [[false, "list"], [false, "form"]],
+            domain,
             target: "current",
         });
+    }
+
+    toggleSubmissionGroup(key) {
+        this.state.expandedSubmissionGroups[key] = !this.state.expandedSubmissionGroups[key];
+        this._saveState();
+    }
+
+    toggleSubmissionType(typeId) {
+        this.state.hiddenSubmissionTypes[typeId] = !this.state.hiddenSubmissionTypes[typeId];
+        this._saveState();
+    }
+
+    get submissionGroupTypes() {
+        const types = new Map();
+        for (const group of this.state.submissionGroups) {
+            if (!group.type_id) {
+                continue;
+            }
+            const [id, name] = group.type_id;
+            if (!types.has(id)) {
+                types.set(id, {
+                    id,
+                    name,
+                    type_icon: group.type_icon,
+                    total: 0,
+                    overdue: 0,
+                    assigned: 0,
+                    submitted: 0,
+                    finalised: 0,
+                });
+            }
+            const type = types.get(id);
+            type.total += group.total;
+            type.overdue += group.overdue;
+            type.assigned += group.assigned;
+            type.submitted += group.submitted;
+            type.finalised += group.finalised;
+        }
+        return [...types.values()]
+            .map((type) => ({
+                ...type,
+                badgeColor: type.overdue
+                    ? "overdue"
+                    : type.assigned
+                      ? "assigned"
+                      : type.submitted
+                        ? "submitted"
+                        : "finalised",
+            }))
+            .sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    get visibleSubmissionGroups() {
+        const childrenByParent = new Map();
+        for (const group of this.state.submissionGroups) {
+            const key = group.parent_key || "";
+            if (!childrenByParent.has(key)) {
+                childrenByParent.set(key, []);
+            }
+            childrenByParent.get(key).push(group);
+        }
+        for (const [parentKey, groups] of childrenByParent) {
+            if (parentKey) {
+                groups.sort(
+                    (left, right) =>
+                        (left.resource_sequence || 0) - (right.resource_sequence || 0) ||
+                        left.resource_id - right.resource_id ||
+                        left.label.localeCompare(right.label)
+                );
+            }
+        }
+        const hasVisibleTypeInSubtree = (group, ancestors = new Set()) => {
+            if (ancestors.has(group.key)) {
+                return false;
+            }
+            ancestors.add(group.key);
+            const typeId = group.type_id ? group.type_id[0] : false;
+            const hasVisibleType =
+                typeId === false || !this.state.hiddenSubmissionTypes[typeId] ||
+                (childrenByParent.get(group.key) || []).some(
+                    (child) => hasVisibleTypeInSubtree(child, ancestors)
+                );
+            ancestors.delete(group.key);
+            return hasVisibleType;
+        };
+        const visible = [];
+        const appendChildren = (parentKey, depth, isRoot = false) => {
+            for (const group of childrenByParent.get(parentKey) || []) {
+                if (isRoot && !hasVisibleTypeInSubtree(group)) {
+                    continue;
+                }
+                visible.push({ ...group, depth });
+                if (this.state.expandedSubmissionGroups[group.key]) {
+                    appendChildren(group.key, depth + 1);
+                }
+            }
+        };
+        appendChildren("", 0, true);
+        return visible;
+    }
+
+    get visibleTaskResources() {
+        return this.state.taskResources.filter((resource) => {
+            const typeId = resource.type_id ? resource.type_id[0] : 0;
+            return !this.state.hiddenSubmissionTypes[typeId];
+        });
+    }
+
+    submissionGroupAncestors(group) {
+        const ancestors = [];
+        const visited = new Set([group.key]);
+        let current = this._submissionGroupIndex.get(group.parent_key);
+        while (current && !visited.has(current.key)) {
+            visited.add(current.key);
+            ancestors.push(current);
+            current = this._submissionGroupIndex.get(current.parent_key);
+        }
+        ancestors.reverse();
+        return ancestors.map((ancestor, index) => {
+            return {
+                key: ancestor.key,
+                name: ancestor.title,
+                indent: "- ".repeat(index),
+            };
+        });
+    }
+
+    openGroupSubmissions(submissionIds, groupTitle, filterLabel) {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: `${filterLabel} — ${groupTitle}`,
+            res_model: "aps.resource.submission",
+            views: [[false, "list"], [false, "form"]],
+            domain: [["id", "in", submissionIds]],
+            target: "current",
+        });
+    }
+
+    openMetricSubmissions(domain, title) {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: title,
+            res_model: "aps.resource.submission",
+            views: [[false, "list"], [false, "form"]],
+            domain,
+            target: "current",
+        });
+    }
+
+    relativeDate(dateValue) {
+        if (!dateValue) {
+            return "—";
+        }
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateValue);
+        if (!match) {
+            return dateValue;
+        }
+        const assigned = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        if (Number.isNaN(assigned.getTime())) {
+            return dateValue;
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const days = Math.round((today - assigned) / 86400000);
+        if (!days) {
+            return "Today";
+        }
+        const count = Math.abs(days);
+        let amount;
+        let unit;
+        if (count < 7) {
+            amount = count;
+            unit = "day";
+        } else if (count < 30) {
+            amount = Math.floor(count / 7);
+            unit = "week";
+        } else {
+            amount = Math.floor(count / 30);
+            unit = "mth";
+        }
+        const phrase = `${amount} ${unit}${amount === 1 ? "" : "s"}`;
+        return days > 0 ? `${phrase} ago` : `in ${phrase}`;
     }
 
     // ------------------------------------------------------------------ //

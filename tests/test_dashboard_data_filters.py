@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from odoo import fields
 from odoo.tests.common import TransactionCase
 
@@ -23,6 +25,7 @@ class TestDashboardDataFilters(TransactionCase):
         })
 
         category = self.env['aps.subject.category'].create({'name': 'Math'})
+        self.category = category
         subject = self.env['aps.subject'].create({
             'name': 'Algebra',
             'category_id': category.id,
@@ -145,3 +148,42 @@ class TestDashboardDataFilters(TransactionCase):
         self.assertEqual({item['id'] for item in students_a}, {self.partner_a.id})
         self.assertEqual({item['id'] for item in students_b}, {self.partner_b.id})
         self.assertEqual(students_none, [])
+
+    def test_teacher_dashboard_students_match_category_and_period(self):
+        partner_e = self.env['res.partner'].create({
+            'name': 'Student E',
+            'is_student': True,
+        })
+        student_e = self.env['aps.student'].create({'partner_id': partner_e.id})
+        self.env['aps.student.class'].create({
+            'student_id': student_e.id,
+            'class_id': self.class_a.id,
+            'state': 'enrolled',
+        })
+        resource = self.env['aps.resources'].search(
+            [('name', '=', 'Dashboard Filter Resource')], limit=1
+        )
+        old_task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': partner_e.id,
+        })
+        self.env['aps.resource.submission'].create({
+            'task_id': old_task.id,
+            'submission_name': 'Old Submission',
+            'date_assigned': fields.Date.today() - timedelta(days=60),
+        })
+
+        recent_students = self.env['aps.resources'].get_teacher_dashboard_students(
+            category_id=self.category.id,
+            days=1,
+        )
+        all_time_students = self.env['aps.resources'].get_teacher_dashboard_students(
+            category_id=self.category.id,
+            days=-1,
+        )
+
+        self.assertEqual(
+            {student['id'] for student in recent_students},
+            {self.partner_a.id, self.partner_b.id},
+        )
+        self.assertIn(partner_e.id, {student['id'] for student in all_time_students})

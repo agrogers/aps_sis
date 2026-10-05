@@ -1,19 +1,18 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.TeacherDashboard" owl="1">
-        <div class="aps-teacher-dashboard vh-100 overflow-auto bg-light p-2">
+        <div class="aps-teacher-dashboard vh-100 overflow-auto p-2">
 
             <!-- ==================== FILTERS ==================== -->
-            <div class="row mb-3 align-items-center bg-white shadow-sm p-2 mx-0 rounded">
-                <div class="col-md-6 mt-2">
+            <div class="row mb-3 align-items-center aps-dashboard-filters shadow-sm p-2 mx-0 rounded">
+                <div class="col-md-5 mt-2">
                     <h1 class="text-primary fw-bold mb-0">
-                        <img src="/aps_sis/static/src/img/dashboard.svg"
+                        <img src="/apex_core/static/img/layout.svg"
                              class="aps-dashboard-title-icon me-2"
                              alt="Dashboard"/>
                         <i class="fa fa-chalkboard-teacher me-2"/>Teacher Dashboard
                     </h1>
                 </div>
-                <div class="col-md-3 mt-2">
-                    <label class="form-label fw-semibold mb-1">Subject Category</label>
+                <div class="col-md-2 mt-2">
                     <select class="form-select" t-on-change="onChangeCategory">
                         <option value="">All Categories</option>
                         <t t-foreach="state.categories" t-as="cat" t-key="cat.id">
@@ -24,13 +23,23 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-3 mt-2">
-                    <label class="form-label fw-semibold mb-1">Date Range</label>
+                <div class="col-md-2 mt-2">
                     <select class="form-select" t-on-change="onChangeDays">
                         <t t-foreach="dateRangeOptions" t-as="opt" t-key="opt.value">
                             <option t-att-value="opt.value"
                                     t-att-selected="state.days === opt.value">
                                 <t t-esc="opt.label"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3 mt-2">
+                    <select class="form-select" t-on-change="onChangeStudent">
+                        <option value="">All Students</option>
+                        <t t-foreach="state.students" t-as="student" t-key="student.id">
+                            <option t-att-value="student.id"
+                                    t-att-selected="state.studentId === student.id">
+                                <t t-esc="student.name"/>
                             </option>
                         </t>
                     </select>
@@ -48,6 +57,230 @@
 
             <t t-else="">
 
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 mb-3 aps-dashboard-metrics">
+                    <div class="col">
+                        <a href="#" class="card h-100 aps-dashboard-metric-card aps-dashboard-metric-review"
+                           t-att-aria-label="state.dashboardMetrics.review_requested.count + ' submissions have requested your review'"
+                           t-on-click.prevent="() => this.openMetricSubmissions(state.dashboardMetrics.review_requested.domain, 'Submissions requesting your review')">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="aps-dashboard-metric-value">
+                                        <t t-esc="state.dashboardMetrics.review_requested.count"/>
+                                    </div>
+                                    <div class="aps-dashboard-metric-label">Review Requested</div>
+                                </div>
+                                <i class="fa fa-commenting-o aps-dashboard-metric-icon"/>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="#" class="card h-100 aps-dashboard-metric-card aps-dashboard-metric-labels"
+                           t-att-aria-label="state.dashboardMetrics.unique_labels.count + ' unique submission labels'"
+                           t-on-click.prevent="() => this.openMetricSubmissions(state.dashboardMetrics.unique_labels.domain, 'Submissions with labels')">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="aps-dashboard-metric-value">
+                                        <t t-esc="state.dashboardMetrics.unique_labels.count"/>
+                                    </div>
+                                    <div class="aps-dashboard-metric-label">Submission Groups</div>
+                                </div>
+                                <i class="fa fa-tags aps-dashboard-metric-icon"/>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="#" class="card h-100 aps-dashboard-metric-card aps-dashboard-metric-overdue"
+                           t-att-aria-label="state.dashboardMetrics.overdue.count + ' overdue submissions'"
+                           t-on-click.prevent="() => this.openMetricSubmissions(state.dashboardMetrics.overdue.domain, 'Overdue submissions')">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="aps-dashboard-metric-value">
+                                        <t t-esc="state.dashboardMetrics.overdue.count"/>
+                                    </div>
+                                    <div class="aps-dashboard-metric-label">Overdue Submissions</div>
+                                </div>
+                                <i class="fa fa-exclamation-triangle aps-dashboard-metric-icon"/>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="#" class="card h-100 aps-dashboard-metric-card aps-dashboard-metric-due"
+                           t-att-aria-label="state.dashboardMetrics.due_today.count + ' submissions due today'"
+                           t-on-click.prevent="() => this.openMetricSubmissions(state.dashboardMetrics.due_today.domain, 'Submissions due today')">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="aps-dashboard-metric-value">
+                                        <t t-esc="state.dashboardMetrics.due_today.count"/>
+                                    </div>
+                                    <div class="aps-dashboard-metric-label">Due Today</div>
+                                </div>
+                                <i class="fa fa-calendar-check-o aps-dashboard-metric-icon"/>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div t-if="state.favouriteResources.length" class="aps-favourite-resources mb-3"
+                     aria-label="Favourite resources">
+                    <a t-foreach="state.favouriteResources" t-as="res" t-key="res.id"
+                       t-att-href="getResourceUrl(res.id)"
+                       t-att-title="res.display_name"
+                       t-att-aria-label="'Open ' + res.display_name"
+                       t-on-click.prevent="() => this.openResource(res.id)"
+                       class="card aps-favourite-resource-card">
+                        <div class="card-body">
+                            <img t-if="res.subject_icons"
+                                 t-att-src="binaryIconUrl(res.subject_icons)"
+                                 class="aps-favourite-resource-icon"
+                                 alt=""/>
+                            <i t-else="" class="fa fa-book aps-favourite-resource-icon-placeholder"/>
+                            <span class="aps-favourite-resource-name">
+                                <t t-esc="res.display_name"/>
+                            </span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- ==================== SUBMISSION GROUPS ==================== -->
+                <div class="card shadow-sm mb-3 aps-submission-groups">
+                    <div class="card-header aps-dashboard-card-header">
+                        <div class="fw-bold mb-2">
+                            <i class="fa fa-layer-group me-2 text-primary"/>
+                            Resource Type Filter
+                        </div>
+                        <div class="aps-submission-type-filters" role="group" aria-label="Filter cards by resource type">
+                            <t t-foreach="submissionGroupTypes" t-as="type" t-key="type.id">
+                                <button type="button"
+                                        t-att-class="state.hiddenSubmissionTypes[type.id] ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-primary'"
+                                        t-att-aria-pressed="!state.hiddenSubmissionTypes[type.id]"
+                                        t-att-title="type.name + ': ' + type.total + ' submissions'"
+                                        t-att-aria-label="(state.hiddenSubmissionTypes[type.id] ? 'Show ' : 'Hide ') + type.name + ' (' + type.total + ' submissions)'"
+                                        t-on-click="() => this.toggleSubmissionType(type.id)">
+                                    <img t-if="type.type_icon"
+                                         t-att-src="binaryIconUrl(type.type_icon)"
+                                         class="aps-type-filter-icon"
+                                         alt=""/>
+                                    <i t-else="" class="fa fa-file-o"/>
+                                    <span t-att-class="'aps-type-filter-count aps-type-filter-count-' + type.badgeColor">
+                                        <t t-esc="type.total"/>
+                                    </span>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+                    <t t-if="state.submissionGroups.length === 0">
+                        <div class="card-body text-muted">No submission groups found for the selected filters.</div>
+                    </t>
+                    <t t-else="">
+                        <t t-if="visibleSubmissionGroups.length === 0">
+                            <div class="card-body text-muted">All resource types are hidden. Select a type icon to show its cards.</div>
+                        </t>
+                        <div t-else="" class="row g-3 p-3">
+                            <t t-foreach="visibleSubmissionGroups" t-as="group" t-key="group.key">
+                                <div t-att-class="'col-12 col-sm-6 col-md-4 col-lg-3 col-xxl-2 aps-submission-group-column ' + (group.depth ? 'aps-child-submission-group aps-submission-depth-' + Math.min(group.depth, 4) : '') + (!group.depth &amp;&amp; group.child_resource_count ? ' aps-root-submission-group-has-children' : '')">
+                                    <div t-if="submissionGroupAncestors(group).length"
+                                         class="aps-submission-group-ancestors">
+                                        <t t-foreach="submissionGroupAncestors(group)" t-as="ancestor" t-key="ancestor.key">
+                                             <span class="aps-ancestor-segment">
+                                                 <t t-esc="ancestor.indent"/>
+                                                 <t t-esc="ancestor.name"/>
+                                             </span>
+                                        </t>
+                                    </div>
+                                    <div class="card aps-submission-group-card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center gap-2 mb-0 aps-submission-group-heading">
+                                                <a t-att-href="getResourceUrl(group.resource_id)"
+                                                   t-on-click.prevent="() => this.openResource(group.resource_id)"
+                                                   class="aps-submission-resource-link"
+                                                t-att-title="'Open ' + group.title">
+                                                    <img t-if="group.type_icon"
+                                                         t-att-src="binaryIconUrl(group.type_icon)"
+                                                         class="aps-type-icon"
+                                                         alt=""/>
+                                                    <i t-else="" class="fa fa-file-o aps-type-icon-placeholder"/>
+                                                </a>
+                                                <strong class="aps-submission-group-label" t-att-title="group.title">
+                                                    <t t-esc="group.title"/>
+                                                </strong>
+                                            </div>
+                                            <div class="aps-submission-group-date small text-muted">
+                                                <i class="fa fa-calendar" title="Date assigned" aria-label="Date assigned"/>
+                                                <span><t t-esc="relativeDate(group.date_assigned)"/></span>
+                                                <span class="ms-2">
+                                                    <BadgeDecoratorDisplay t-if="group.date_due"
+                                                        value="group.date_due"
+                                                        daysTillDue="group.days_till_due"
+                                                        dateFormat="'D-MMM-YY'"
+                                                        />
+                                                </span>
+                                                <a href="#" class="aps-submission-group-average" t-att-title="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-att-aria-label="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-on-click.prevent="() => this.openGroupSubmissions(group.scored_ids, group.title, 'Scored submissions')">
+                                                    <PercentPie t-if="group.avg_score !== false" value="group.avg_score" string="" showText="false" showTooltip="true"/>
+                                                    <span t-else="">—</span>
+                                                </a>
+                                            </div>
+                                            <div class="aps-submission-group-metrics">
+                                                <div t-if="group.total > 0 || group.child_count > 0" class="aps-metric-badge-wrapper">
+                                                    <a href="#" class="aps-metric-badge aps-total-badge" t-att-title="'Total submissions: ' + group.total" t-att-aria-label="'Total submissions: ' + group.total" t-on-click.prevent="() => this.openGroupSubmissions(group.submission_ids, group.title, 'All submissions')">
+                                                        <span><t t-esc="group.total"/></span>
+                                                    </a>
+                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child submissions: ' + group.child_count" t-att-aria-label="'Child submissions: ' + group.child_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submission_ids, group.title, 'Child submissions')">
+                                                        <sup><t t-esc="group.child_count"/></sup>
+                                                    </a>
+                                                </div>
+                                                <div t-if="group.assigned > 0 || (group.child_resource_count &amp;&amp; group.child_assigned_count > 0)" class="aps-metric-badge-wrapper">
+                                                    <a href="#" class="aps-metric-badge aps-assigned-badge" t-att-title="'Assigned: ' + group.assigned" t-att-aria-label="'Assigned: ' + group.assigned" t-on-click.prevent="() => this.openGroupSubmissions(group.assigned_ids, group.title, 'Assigned submissions')">
+                                                        <span><t t-esc="group.assigned"/></span>
+                                                    </a>
+                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child assigned submissions: ' + group.child_assigned_count" t-att-aria-label="'Child assigned submissions: ' + group.child_assigned_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_assigned_ids, group.title, 'Child assigned submissions')">
+                                                        <sup><t t-esc="group.child_assigned_count"/></sup>
+                                                    </a>
+                                                </div>
+                                                <div t-if="group.submitted > 0 || (group.child_resource_count &amp;&amp; group.child_submitted_count > 0)" class="aps-metric-badge-wrapper">
+                                                    <a href="#" class="aps-metric-badge aps-submitted-badge" t-att-title="'Submitted: ' + group.submitted" t-att-aria-label="'Submitted: ' + group.submitted" t-on-click.prevent="() => this.openGroupSubmissions(group.submitted_ids, group.title, 'Submitted work')">
+                                                        <span><t t-esc="group.submitted"/></span>
+                                                    </a>
+                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child submitted: ' + group.child_submitted_count" t-att-aria-label="'Child submitted: ' + group.child_submitted_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submitted_ids, group.title, 'Child submitted work')">
+                                                        <sup><t t-esc="group.child_submitted_count"/></sup>
+                                                    </a>
+                                                </div>
+                                                <div t-if="group.finalised > 0 || (group.child_resource_count &amp;&amp; group.child_finalised_count > 0)" class="aps-metric-badge-wrapper">
+                                                    <a href="#" class="aps-metric-badge aps-finalised-badge" t-att-title="'Finalised: ' + group.finalised" t-att-aria-label="'Finalised: ' + group.finalised" t-on-click.prevent="() => this.openGroupSubmissions(group.finalised_ids, group.title, 'Finalised submissions')">
+                                                        <span><t t-esc="group.finalised"/></span>
+                                                    </a>
+                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child finalised submissions: ' + group.child_finalised_count" t-att-aria-label="'Child finalised submissions: ' + group.child_finalised_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_finalised_ids, group.title, 'Child finalised submissions')">
+                                                        <sup><t t-esc="group.child_finalised_count"/></sup>
+                                                    </a>
+                                                </div>
+                                                <div t-if="group.overdue > 0 || (group.child_resource_count &amp;&amp; group.child_overdue_count > 0)" class="aps-metric-badge-wrapper aps-overdue-badge-wrapper">
+                                                    <a href="#" class="badge bg-danger aps-overdue-badge" t-att-title="'Overdue: ' + group.overdue" t-att-aria-label="'Overdue: ' + group.overdue" t-on-click.prevent="() => this.openGroupSubmissions(group.overdue_ids, group.title, 'Overdue submissions')">
+                                                        <span><t t-esc="group.overdue"/></span>
+                                                    </a>
+                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child overdue submissions: ' + group.child_overdue_count" t-att-aria-label="'Child overdue submissions: ' + group.child_overdue_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_overdue_ids, group.title, 'Child overdue submissions')">
+                                                        <sup><t t-esc="group.child_overdue_count"/></sup>
+                                                    </a>
+                                                </div>
+                                                <a t-if="group.child_count > 0" href="#" class="aps-child-submission-count" t-att-title="'Child submissions: ' + group.child_count" t-att-aria-label="'Child submissions: ' + group.child_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submission_ids, group.title, 'Child submissions')">
+                                                    <i class="fa fa-sitemap"/><span><t t-esc="group.child_count"/></span>
+                                                </a>
+                                            </div>
+                                            <div t-if="group.child_resource_count" class="aps-submission-group-footer">
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-secondary aps-group-toggle"
+                                                        t-on-click="() => this.toggleSubmissionGroup(group.key)"
+                                                        t-att-aria-expanded="!!state.expandedSubmissionGroups[group.key]"
+                                                        t-att-aria-label="state.expandedSubmissionGroups[group.key] ? 'Collapse child resources' : 'Expand child resources'">
+                                                    <i t-att-class="state.expandedSubmissionGroups[group.key] ? 'fa fa-minus' : 'fa fa-plus'"/>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+
                 <!-- ==================== RESOURCE HIERARCHY (when category selected) ==================== -->
                 <t t-if="state.categoryId">
                     <ResourceHierarchyTable
@@ -64,21 +297,24 @@
                     <!-- COLUMN 2: Assigned Resources -->
                     <div class="col-md-6">
                         <div class="card shadow-sm h-100">
-                            <div class="card-header bg-white fw-bold">
+                            <div class="card-header aps-dashboard-card-header fw-bold">
                                 <i class="fa fa-tasks me-2 text-success"/>
                                 Assigned Resources
                                 <span class="badge bg-secondary ms-2">
-                                    <t t-esc="state.taskResources.length"/>
+                                    <t t-esc="visibleTaskResources.length"/>
                                 </span>
                                 <span class="text-muted small fw-normal ms-2">(click row for submissions)</span>
                             </div>
-                            <t t-if="state.taskResources.length === 0">
-                                <div class="card-body text-muted">No assigned resources found for the selected filters.</div>
+                            <t t-if="visibleTaskResources.length === 0">
+                                <div class="card-body text-muted">
+                                    <t t-if="state.taskResources.length === 0">No assigned resources found for the selected filters.</t>
+                                    <t t-else="">All resource types are hidden. Select a type icon to show assigned resources.</t>
+                                </div>
                             </t>
                             <t t-else="">
                                 <div class="aps-dashboard-scroll-list">
                                     <table class="table table-sm table-hover mb-0">
-                                        <thead class="table-light">
+                                        <thead class="aps-dashboard-table-header">
                                             <tr>
                                                 <th></th>
                                                 <th>Name</th>
@@ -89,7 +325,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <t t-foreach="state.taskResources" t-as="tr_" t-key="tr_.id">
+                                            <t t-foreach="visibleTaskResources" t-as="tr_" t-key="tr_.id">
                                                 <tr t-att-class="state.selectedResourceId === tr_.id ? 'table-primary selected-row' : ''"
                                                     class="aps-resource-row">
                                                     <td class="aps-icon-cell">
@@ -137,7 +373,7 @@
                     <!-- COLUMN 1: Subject Resources -->
                     <div class="col-md-6">
                         <div class="card shadow-sm h-100">
-                            <div class="card-header bg-white fw-bold">
+                            <div class="card-header aps-dashboard-card-header fw-bold">
                                 <i class="fa fa-book me-2 text-primary"/>
                                 Subject &amp; Recently Edited Resources
                                 <span class="badge bg-secondary ms-2">
@@ -185,7 +421,7 @@
                 <!-- ==================== SUBMISSIONS FOR SELECTED RESOURCE ==================== -->
                 <t t-if="state.selectedResourceId">
                     <div class="card shadow-sm mb-3">
-                        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                        <div class="card-header aps-dashboard-card-header fw-bold d-flex justify-content-between align-items-center">
                             <div>
                                 <i class="fa fa-list-alt me-2 text-warning"/>
                                 Submissions — <t t-esc="state.selectedResourceName or 'Selected Resource'"/>
@@ -210,7 +446,7 @@
                         <t t-else="">
                             <div class="table-responsive">
                                 <table class="table table-sm table-hover mb-0">
-                                    <thead class="table-light">
+                                    <thead class="aps-dashboard-table-header">
                                         <tr>
                                             <th></th>
                                             <th>Student</th>

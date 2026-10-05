@@ -2,56 +2,100 @@
 import { registry } from "@web/core/registry";
 import { CharField, charField } from "@web/views/fields/char/char_field";
 import { evaluateExpr } from "@web/core/py_js/py";
+import { Component } from "@odoo/owl";
+
+const DEFAULT_DUE_DATE_CLASSES = {
+    "red-pulsing": "days_till_due < 0",
+    red1: "days_till_due == 0",
+    red2: "days_till_due == 1",
+    red4: "days_till_due == 2",
+    red6: "days_till_due == 3",
+    grey: "days_till_due > 3",
+};
+
+function formatBadgeDate(value, format = "DD-MMM-YY") {
+    if (!value) {
+        return "";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    const day = date.getDate();
+    const day2 = String(day).padStart(2, "0");
+    const monthShort = date.toLocaleString("en-US", { month: "short" });
+    const monthNum = String(date.getMonth() + 1).padStart(2, "0");
+    const yearFull = date.getFullYear();
+    const yearShort = String(yearFull).slice(-2);
+
+    return format
+        .replace("DD", day2)
+        .replace("D", day)
+        .replace("MMM", monthShort)
+        .replace("MM", monthNum)
+        .replace("YYYY", yearFull)
+        .replace("YY", yearShort);
+}
+
+function getBadgeClasses(defaultClasses, expressionClasses, context) {
+    let classes = `badge ${defaultClasses || ""}`;
+    for (const [className, expression] of Object.entries(expressionClasses || {})) {
+        if (!expression || typeof expression !== "string") {
+            continue;
+        }
+
+        try {
+            if (evaluateExpr(expression, context)) {
+                classes += ` text-bg-${className}`;
+            }
+        } catch (error) {
+            console.warn(`BadgeDecorator: Evaluation failed for "${expression}"`, error);
+        }
+    }
+    return classes;
+}
+
+export class BadgeDecoratorDisplay extends Component {
+    static template = "aps_sis.BadgeDecorator";
+    static props = {
+        value: { type: [String, Boolean], optional: true },
+        daysTillDue: { type: Number, optional: true },
+        defaultClasses: { type: String, optional: true },
+        expressionClasses: { type: Object, optional: true },
+        dateFormat: { type: String, optional: true },
+    };
+
+    get formattedValue() {
+        return formatBadgeDate(this.props.value, this.props.dateFormat || "D-MMM-YY");
+    }
+
+    get activeDecorations() {
+        return getBadgeClasses(
+            this.props.defaultClasses || "rounded-pill",
+            this.props.expressionClasses || DEFAULT_DUE_DATE_CLASSES,
+            { days_till_due: this.props.daysTillDue }
+        );
+    }
+}
 
 export class BadgeDecorator extends CharField {
     static template = "aps_sis.BadgeDecorator";
 
     get formattedValue() {
-        const value = this.props.record.data[this.props.name];
-        if (!value) return "";
-        
-        // Simple date check
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-            const format = this.props.date_format 
-            const day = date.getDate();
-            const day2 = String(date.getDate()).padStart(2, '0');
-            const monthShort = date.toLocaleString('en-US', { month: 'short' });
-            const monthNum = String(date.getMonth() + 1).padStart(2, '0');
-            const yearFull = date.getFullYear();
-            const yearShort = String(yearFull).slice(-2);
-
-            // Simple replacement logic for common patterns
-            return format
-                .replace("DD", day2)
-                .replace("D", day)
-                .replace("MMM", monthShort)
-                .replace("MM", monthNum)
-                .replace("YYYY", yearFull)
-                .replace("YY", yearShort);            
-        }
-        return value;
+        return formatBadgeDate(
+            this.props.record.data[this.props.name],
+            this.props.date_format
+        );
     }
 
     get activeDecorations() {
-            const expression_classes = this.props.expression_classes || {};
-            const default_classes = this.props.default_classes || "";
-            let classes = "badge " + default_classes; 
-            const context = this.props.record.evalContext;
-
-            for (const [className, expression] of Object.entries(expression_classes)) {
-                if (!expression || typeof expression !== "string") continue;
-
-                try {
-                    if (evaluateExpr(expression || "[]", context)) {
-                        classes += ` text-bg-${className}`;
-                    }
-                } catch (e) {
-                    // If days_till_due isn't in the view, this will catch it
-                    console.warn(`BadgeDecorator: Evaluation failed for "${expression}"`, e);
-                }
-            }
-            return classes;
+        return getBadgeClasses(
+            this.props.default_classes,
+            this.props.expression_classes,
+            this.props.record.evalContext
+        );
     }
 }
 

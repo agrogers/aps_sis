@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import timedelta
 from unittest.mock import patch
 
 from odoo import fields
@@ -95,6 +96,142 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
             'submission_name': 'New',
         })
         self.assertTrue(sub.auto_score)
+
+    def test_teacher_dashboard_returns_submission_groups(self):
+        due_date = fields.Date.today() + timedelta(days=2)
+        self.parent_submission.write({'date_due': due_date})
+        self.child_sub_c.write({
+            'date_due': fields.Date.today() - timedelta(days=1),
+        })
+        self.child_sub_a.write({'state': 'submitted'})
+        self.child_sub_a.write({'submission_name': 'Q1 🢒 Q1a'})
+        self.child_sub_b.write({'state': 'complete'})
+        paper_type = self.env['aps.resource.types'].create({'name': 'Paper'})
+        question_type = self.env['aps.resource.types'].create({'name': 'Question'})
+        part_type = self.env['aps.resource.types'].create({'name': 'Part'})
+        self.parent_resource.write({'type_id': paper_type.id})
+        (self.child_resource_a | self.child_resource_b | self.child_resource_c).write({
+            'type_id': question_type.id,
+        })
+        alternate_parent = self.env['aps.resources'].create({
+            'name': 'Alternate Parent',
+        })
+        self.child_resource_b.write({
+            'parent_ids': [(6, 0, [self.parent_resource.id, alternate_parent.id])],
+            'primary_parent_id': alternate_parent.id,
+        })
+        grandchild_resource = self.env['aps.resources'].create({
+            'name': 'Q1a-i',
+            'parent_ids': [(6, 0, [self.child_resource_a.id])],
+            'primary_parent_id': self.child_resource_a.id,
+            'type_id': part_type.id,
+        })
+        grandchild_task = self.env['aps.resource.task'].create({
+            'resource_id': grandchild_resource.id,
+            'student_id': self.student.id,
+        })
+        grandchild_submission = self.env['aps.resource.submission'].create({
+            'task_id': grandchild_task.id,
+            'submission_name': 'Q1 🢒 Q1a 🢒 Part i',
+            'submission_label': 'Exam2025',
+        })
+        other_label_submission = self.env['aps.resource.submission'].create({
+            'task_id': grandchild_task.id,
+            'submission_name': 'Q1 🢒 Q1a 🢒 Part ii',
+            'submission_label': 'Exam2025 extension',
+        })
+
+        data = self.env['aps.resources'].get_teacher_dashboard_data(days=-1)
+        groups = {
+            (group['resource_id'], group['label']): group
+            for group in data['submission_groups']
+        }
+        parent = groups[(self.parent_resource.id, 'Exam2025')]
+        child = groups[(self.child_resource_a.id, 'Exam2025')]
+
+        self.assertEqual(parent['total'], 1)
+        self.assertEqual(parent['date_due'], str(due_date))
+        self.assertEqual(parent['days_till_due'], 2)
+        self.assertEqual(parent['title'], self.parent_submission.submission_name)
+        self.assertNotIn(str(self.parent_submission.date_assigned), parent['title'])
+        self.assertEqual(parent['child_count'], 5)
+        self.assertEqual(parent['child_assigned_count'], 2)
+        self.assertEqual(parent['child_overdue_count'], 1)
+        self.assertEqual(
+            groups[(self.child_resource_c.id, 'Exam2025')]['assigned_ids'],
+            [],
+        )
+        self.assertEqual(
+            groups[(self.child_resource_c.id, 'Exam2025')]['overdue_ids'],
+            [self.child_sub_c.id],
+        )
+        self.assertEqual(parent['child_submitted_count'], 1)
+        self.assertEqual(parent['child_finalised_count'], 1)
+        self.assertEqual(parent['child_resource_count'], 3)
+        self.assertEqual(set(parent['child_submission_ids']), {
+            self.child_sub_a.id, self.child_sub_b.id, self.child_sub_c.id,
+            grandchild_submission.id, other_label_submission.id,
+        })
+        self.assertEqual(parent['parent_key'], False)
+        self.assertEqual(child['parent_key'], parent['key'])
+        self.assertEqual(child['total'], 1)
+        self.assertEqual(child['title'], 'Q1a')
+        self.assertEqual(child['child_count'], 2)
+        self.assertEqual(
+            set(child['child_submission_ids']),
+            {grandchild_submission.id, other_label_submission.id},
+        )
+        self.assertEqual(child['submitted'], 1)
+        self.assertEqual(
+            groups[(self.child_resource_b.id, 'Exam2025')]['parent_key'],
+            parent['key'],
+        )
+        grandchild = groups[(grandchild_resource.id, 'Exam2025')]
+        self.assertEqual(grandchild['title'], 'Part i')
+        other_label_group = groups[(grandchild_resource.id, 'Exam2025 extension')]
+        self.assertEqual(other_label_group['parent_key'], child['key'])
+        self.assertNotEqual(
+            groups[(self.parent_resource.id, 'Exam2025')]['type_id'],
+            child['type_id'],
+        )
+        self.assertTrue({
+                self.parent_resource.id,
+                self.child_resource_a.id,
+                self.child_resource_b.id,
+                self.child_resource_c.id,
+            }.issubset({group['resource_id'] for group in data['submission_groups']}))
+
+    def test_teacher_dashboard_returns_category_favourites(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Favourite Resource Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Favourite Resource Subject',
+            'category_id': category.id,
+        })
+        resource = self.env['aps.resources'].create({
+            'name': 'Favourite Category Resource',
+            'subjects': [(6, 0, [subject.id])],
+            'favourite_user_ids': [(4, self.env.uid)],
+        })
+
+        data = self.env['aps.resources'].get_teacher_dashboard_data(
+            category_id=category.id,
+            days=-1,
+        )
+
+        favourites = data['favourite_resources']
+        self.assertEqual([item['id'] for item in favourites], [resource.id])
+        self.assertEqual(favourites[0]['display_name'], resource.display_name)
+
+        all_categories_data = self.env['aps.resources'].get_teacher_dashboard_data(
+            category_id=False,
+            days=-1,
+        )
+        self.assertIn(
+            resource.id,
+            {item['id'] for item in all_categories_data['favourite_resources']},
+        )
 
     def _create_student_user(self):
         return self.env['res.users'].with_context(no_reset_password=True).create({
