@@ -4,7 +4,7 @@
 
             <!-- ==================== FILTERS ==================== -->
             <div class="row mb-3 align-items-center aps-dashboard-filters shadow-sm p-2 mx-0 rounded">
-                <div class="col-md-5 mt-2">
+                <div class="col-md-4 mt-2">
                     <h1 class="text-primary fw-bold mb-0">
                         <img src="/apex_core/static/img/layout.svg"
                              class="aps-dashboard-title-icon me-2"
@@ -23,7 +23,18 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-2 mt-2">
+                <div class="col-md-3 mt-2">
+                    <select class="form-select" t-on-change="onChangeClass">
+                        <option value="">All Classes</option>
+                        <t t-foreach="state.classes" t-as="classRecord" t-key="classRecord.id">
+                            <option t-att-value="classRecord.id"
+                                    t-att-selected="state.classId === classRecord.id">
+                                <t t-esc="classRecord.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3 mt-2">
                     <select class="form-select" t-on-change="onChangeDays">
                         <t t-foreach="dateRangeOptions" t-as="opt" t-key="opt.value">
                             <option t-att-value="opt.value"
@@ -57,7 +68,7 @@
 
             <t t-else="">
 
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 mb-3 aps-dashboard-metrics">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-2 mb-3 aps-dashboard-metrics">
                     <div class="col">
                         <a href="#" class="card h-100 aps-dashboard-metric-card aps-dashboard-metric-review"
                            t-att-aria-label="state.dashboardMetrics.review_requested.count + ' submissions have requested your review'"
@@ -175,8 +186,9 @@
                         <t t-if="visibleSubmissionGroups.length === 0">
                             <div class="card-body text-muted">All resource types are hidden. Select a type icon to show its cards.</div>
                         </t>
-                        <div t-else="" class="row g-3 p-3">
+                        <div t-else="" class="row g-2 p-3">
                             <t t-foreach="visibleSubmissionGroups" t-as="group" t-key="group.key">
+                                <div t-if="group.break_before" class="w-100"></div>
                                 <div t-att-class="'col-12 col-sm-6 col-md-4 col-lg-3 col-xxl-2 aps-submission-group-column ' + (group.depth ? 'aps-child-submission-group aps-submission-depth-' + Math.min(group.depth, 4) : '') + (!group.depth &amp;&amp; group.child_resource_count ? ' aps-root-submission-group-has-children' : '')">
                                     <div t-if="submissionGroupAncestors(group).length"
                                          class="aps-submission-group-ancestors">
@@ -187,7 +199,7 @@
                                              </span>
                                         </t>
                                     </div>
-                                    <div class="card aps-submission-group-card">
+                                    <div t-att-class="'card aps-submission-group-card ' + (state.expandedSubmissionGroups[group.key] ? 'aps-expanded' : '')">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center gap-2 mb-0 aps-submission-group-heading">
                                                 <a t-att-href="getResourceUrl(group.resource_id)"
@@ -200,9 +212,14 @@
                                                          alt=""/>
                                                     <i t-else="" class="fa fa-file-o aps-type-icon-placeholder"/>
                                                 </a>
-                                                <strong class="aps-submission-group-label" t-att-title="group.title">
-                                                    <t t-esc="group.title"/>
-                                                </strong>
+                                                <div class="aps-submission-group-title">
+                                                    <strong class="aps-submission-group-label" t-att-title="group.title">
+                                                        <t t-esc="group.title"/>
+                                                    </strong>
+                                                    <div t-if="group.description" class="aps-submission-group-description" t-att-title="group.description">
+                                                        <t t-esc="group.description"/>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="aps-submission-group-date small text-muted">
                                                 <i class="fa fa-calendar" title="Date assigned" aria-label="Date assigned"/>
@@ -217,10 +234,11 @@
                                                 <a href="#" class="aps-submission-group-average" t-att-title="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-att-aria-label="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-on-click.prevent="() => this.openGroupSubmissions(group.scored_ids, group.title, 'Scored submissions')">
                                                     <PercentPie t-if="group.avg_score !== false" value="group.avg_score" string="" showText="false" showTooltip="true"/>
                                                     <span t-else="">—</span>
+                                                    <span t-if="group.out_of &gt; 0" class="aps-submission-out-of">/<t t-esc="group.out_of"/></span>
                                                 </a>
                                             </div>
                                             <div class="aps-submission-group-metrics">
-                                                <div t-if="group.total > 0 || group.child_count > 0" class="aps-metric-badge-wrapper">
+                                                <div t-if="(group.total > 0 || group.child_count > 0) &amp;&amp; this.showTotalSubmissionBadge(group)" class="aps-metric-badge-wrapper">
                                                     <a href="#" class="aps-metric-badge aps-total-badge" t-att-title="'Total submissions: ' + group.total" t-att-aria-label="'Total submissions: ' + group.total" t-on-click.prevent="() => this.openGroupSubmissions(group.submission_ids, group.title, 'All submissions')">
                                                         <span><t t-esc="group.total"/></span>
                                                     </a>
@@ -481,9 +499,9 @@
                                                 <td class="small"><t t-esc="sub.date_due or '—'"/></td>
                                                 <td class="small"><t t-esc="sub.date_submitted or '—'"/></td>
                                                 <td>
-                                                    <t t-if="sub.result_percent">
+                                                    <t t-if="sub.result_percent || sub.out_of &gt; 0">
                                                         <span t-att-class="'aps-score-pill ' + scoreColorClass(sub.result_percent)">
-                                                            <t t-esc="sub.result_percent"/>%
+                                                            <t t-if="sub.result_percent"><t t-esc="sub.result_percent"/>%</t><span t-if="sub.out_of &gt; 0" class="aps-submission-out-of">/<t t-esc="sub.out_of"/></span>
                                                         </span>
                                                     </t>
                                                     <t t-else="">—</t>

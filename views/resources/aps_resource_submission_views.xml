@@ -85,7 +85,6 @@
             <list default_order="create_date desc,student_id,submission_label,submission_order">
                 <field name="task_id"  optional="hide"/>
                 <field name="subject_icons" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Icon"/>
-                <field name="subject_icons" widget="image" string="Iconss"/>
                 <field name="subjects" widget="many2many_tags" optional="show"/>
                 <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" optional="show" string="Type"/>
                 <field name="display_name" optional="show"/>

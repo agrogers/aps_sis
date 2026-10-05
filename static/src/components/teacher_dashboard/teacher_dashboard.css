@@ -238,22 +238,22 @@
 }
 
 .aps-teacher-dashboard .aps-submission-depth-1 > .aps-submission-group-card {
-    border-left: 3px solid var(--bs-info, #0dcaf0);
+    border-top: 3px solid var(--bs-info, #0dcaf0);
     background-color: var(--card-bg, var(--body-bg));
 }
 
 .aps-teacher-dashboard .aps-submission-depth-2 > .aps-submission-group-card {
-    border-left: 3px solid var(--bs-success, #198754);
+    border-top: 2px solid var(--bs-success, #198754);
     background-color: var(--card-bg, var(--body-bg));
 }
 
 .aps-teacher-dashboard .aps-submission-depth-3 > .aps-submission-group-card {
-    border-left: 3px solid var(--bs-warning, #ffc107);
+    border-top: 2px solid var(--bs-warning, #ffc107);
     background-color: var(--card-bg, var(--body-bg));
 }
 
 .aps-teacher-dashboard .aps-submission-depth-4 > .aps-submission-group-card {
-    border-left: 3px solid #6f42c1;
+    border-top: 1px solid #6f42c1;
     background-color: var(--card-bg, var(--body-bg));
 }
 
@@ -324,6 +324,10 @@
     overflow: hidden;
 }
 
+.aps-teacher-dashboard .aps-submission-group-card.aps-expanded {
+    border-right: 10px solid gray;
+}
+
 .aps-teacher-dashboard .aps-submission-group-card .card-body {
     display: flex;
     flex-direction: column;
@@ -333,7 +337,7 @@
 }
 
 .aps-teacher-dashboard .aps-child-submission-group .aps-submission-group-card {
-    min-height: 116px;
+    min-height: 70px;
 }
 
 .aps-teacher-dashboard .aps-submission-group-ancestors {
@@ -370,6 +374,24 @@
     white-space: normal;
 }
 
+.aps-teacher-dashboard .aps-submission-group-title {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.aps-teacher-dashboard .aps-submission-group-description {
+    overflow: hidden;
+    font-size: 0.6rem;
+    padding-bottom: 0.2rem;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aps-teacher-dashboard .aps-submission-out-of {
+    padding-left: 5px;
+}
+
 .aps-teacher-dashboard .aps-submission-group-heading .aps-type-icon {
     width: 18px;
     height: 18px;
@@ -385,7 +407,7 @@
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.3rem;
     font-size: 0.75rem;
 }
 

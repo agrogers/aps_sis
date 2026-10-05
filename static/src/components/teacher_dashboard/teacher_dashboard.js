@@ -52,8 +52,10 @@ export class TeacherDashboard extends Component {
             loading: true,
             categoryId: gs.categoryId ?? false,
             days: gs.days ?? 30,
+            classId: _normalizeResourceId(gs.classId),
             studentId: gs.studentId ?? false,
             categories: [],
+            classes: [],
             students: [],
             subjectResources: [],
             favouriteResources: [],
@@ -96,6 +98,7 @@ export class TeacherDashboard extends Component {
         const snapshot = {
             categoryId: this.state.categoryId,
             days: this.state.days,
+            classId: this.state.classId,
             studentId: this.state.studentId,
             selectedResourceId: this.state.selectedResourceId,
             selectedResourceName: this.state.selectedResourceName,
@@ -129,10 +132,13 @@ export class TeacherDashboard extends Component {
             {
                 category_id: this.state.categoryId,
                 days: this.state.days,
+                class_id: this.state.classId,
                 student_id: this.state.studentId,
             }
         );
         this.state.categories = data.categories || [];
+        this.state.classes = data.classes || [];
+        this.state.classId = data.selected_class_id || false;
         this.state.students = data.students || [];
         this.state.studentId = data.selected_student_id || false;
         this.state.subjectResources = data.subject_resources || [];
@@ -170,6 +176,7 @@ export class TeacherDashboard extends Component {
             {
                 resource_id: resourceId,
                 days: this.state.days,
+                class_id: this.state.classId,
                 student_id: this.state.studentId,
             }
         );
@@ -193,6 +200,12 @@ export class TeacherDashboard extends Component {
 
     async onChangeStudent(ev) {
         this.state.studentId = ev.target.value ? parseInt(ev.target.value, 10) : false;
+        await this._fetchData();
+    }
+
+    async onChangeClass(ev) {
+        this.state.classId = ev.target.value ? parseInt(ev.target.value, 10) : false;
+        this.state.studentId = false;
         await this._fetchData();
     }
 
@@ -288,6 +301,26 @@ export class TeacherDashboard extends Component {
         this._saveState();
     }
 
+    showTotalSubmissionBadge(group) {
+        if (!group.total) {
+            return true;
+        }
+        const visibleStatusCounts = [];
+        if (group.assigned > 0 || (group.child_resource_count && group.child_assigned_count > 0)) {
+            visibleStatusCounts.push(group.assigned);
+        }
+        if (group.submitted > 0 || (group.child_resource_count && group.child_submitted_count > 0)) {
+            visibleStatusCounts.push(group.submitted);
+        }
+        if (group.finalised > 0 || (group.child_resource_count && group.child_finalised_count > 0)) {
+            visibleStatusCounts.push(group.finalised);
+        }
+        if (group.overdue > 0 || (group.child_resource_count && group.child_overdue_count > 0)) {
+            visibleStatusCounts.push(group.overdue);
+        }
+        return visibleStatusCounts.length !== 1 || visibleStatusCounts[0] !== group.total;
+    }
+
     get submissionGroupTypes() {
         const types = new Map();
         for (const group of this.state.submissionGroups) {
@@ -367,7 +400,12 @@ export class TeacherDashboard extends Component {
                 if (isRoot && !hasVisibleTypeInSubtree(group)) {
                     continue;
                 }
-                visible.push({ ...group, depth });
+                const previousDepth = visible.length > 0 ? visible[visible.length - 1].depth : depth;
+                visible.push({
+                    ...group,
+                    depth,
+                    break_before: visible.length > 0 && depth !== previousDepth,
+                });
                 if (this.state.expandedSubmissionGroups[group.key]) {
                     appendChildren(group.key, depth + 1);
                 }
