@@ -305,6 +305,18 @@ export class ExamSectionRegionEditor extends Component {
         window.addEventListener("pointerup", this._up, { once: true });
     }
 
+    async extendToDefaultBoundary(event, side) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.state.saving || !this.state.selected || !this.state.draft) return;
+        const bound = { left: "x1", right: "x2", top: "y1", bottom: "y2" }[side];
+        const value = this.state.selected.default_region?.[bound];
+        if (value === undefined) return;
+        this.state.draft[bound] = value;
+        this._stashDraft();
+        await this._save();
+    }
+
     startZoneDrag(event, zone, side) {
         event.preventDefault();
         event.stopPropagation();

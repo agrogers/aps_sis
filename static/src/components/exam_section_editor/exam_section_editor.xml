@@ -96,10 +96,10 @@
                          t-on-pointerdown="(event) => this.startExclusionDraw(event)">
                         <img t-att-src="state.selected.image_url" alt="Full rendered exam page"></img>
                         <div class="o_exam_region_overlay" t-att-style="draftStyle()">
-                            <span class="o_exam_region_handle left" t-on-pointerdown="(event) => this.startDrag(event, 'left')"></span>
-                            <span class="o_exam_region_handle right" t-on-pointerdown="(event) => this.startDrag(event, 'right')"></span>
-                            <span class="o_exam_region_handle top" t-on-pointerdown="(event) => this.startDrag(event, 'top')"></span>
-                            <span class="o_exam_region_handle bottom" t-on-pointerdown="(event) => this.startDrag(event, 'bottom')"></span>
+                            <span class="o_exam_region_handle left" t-on-pointerdown="(event) => this.startDrag(event, 'left')" t-on-dblclick="(event) => this.extendToDefaultBoundary(event, 'left')"></span>
+                            <span class="o_exam_region_handle right" t-on-pointerdown="(event) => this.startDrag(event, 'right')" t-on-dblclick="(event) => this.extendToDefaultBoundary(event, 'right')"></span>
+                            <span class="o_exam_region_handle top" t-on-pointerdown="(event) => this.startDrag(event, 'top')" t-on-dblclick="(event) => this.extendToDefaultBoundary(event, 'top')"></span>
+                            <span class="o_exam_region_handle bottom" t-on-pointerdown="(event) => this.startDrag(event, 'bottom')" t-on-dblclick="(event) => this.extendToDefaultBoundary(event, 'bottom')"></span>
                             <span class="o_exam_region_overlay_label"><t t-esc="state.selected.label"/></span>
                         </div>
                         <t t-foreach="state.exclusionRegions" t-as="zone" t-key="zone.id">

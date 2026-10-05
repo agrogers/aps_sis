@@ -275,6 +275,7 @@ class APSExamPaperSection(models.Model):
                 'width': page.width,
                 'height': page.height,
                 'image_url': '/web/content/%s?download=false' % page.attachment_id.id,
+                'default_region': self._default_editor_region(page),
                 'region': region,
                 'exclusion_regions': [dict(item) for item in (page.exclusion_regions or [])],
             })

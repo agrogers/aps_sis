@@ -18,7 +18,7 @@ _logger = logging.getLogger(__name__)
 # Manual crop width below which it expands	150 px
 # Minimum marker separation for detected crops	2.5% of page height
 # Gap above next marker	6 px
-# Manual crop minimum height expansion	None currently
+# Manual crop minimum height before extending to the next section	150 px
 
 
 class APSExamPaperImportBuild(models.Model):
@@ -195,7 +195,51 @@ class APSExamPaperImportBuild(models.Model):
             return 'normalized 0..1000'
         return 'rendered pixels'
 
-    def _crop_bounds(self, region, page, label_positions, y_adjustment=0, exclusion_regions=None):
+    def _next_section_region_y(self, section, document_type, page, region):
+        """Find the next section after this region's owner on the same page."""
+        field_name = 'question_regions' if document_type == 'question' else 'answer_regions'
+        try:
+            current_y = float(region['y1'])
+        except (KeyError, TypeError, ValueError):
+            return None
+        ordered_sections = section.import_id.section_ids.sorted(
+            key=lambda candidate: (candidate.sequence, candidate.source_key, candidate.id)
+        )
+        region_source_key = region.get('source_key')
+        region_owner = next(
+            (candidate for candidate in ordered_sections if candidate.source_key == region_source_key),
+            section,
+        )
+        section_index = next(
+            (index for index, candidate in enumerate(ordered_sections) if candidate.id == region_owner.id),
+            None,
+        )
+        if section_index is None:
+            return None
+        following_positions = []
+        for candidate in ordered_sections[section_index + 1:]:
+            for candidate_region in getattr(candidate, field_name) or []:
+                if self._region_page_number(candidate_region) != page.page_number:
+                    continue
+                try:
+                    candidate_y = float(candidate_region['y1'])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                coordinate_system = (
+                    candidate_region.get('coordinate_system')
+                    or candidate_region.get('ai_coordinate_system')
+                    or ''
+                ).casefold()
+                if coordinate_system in ('pixels', 'pixel'):
+                    candidate_y_pixels = candidate_y
+                else:
+                    candidate_y_pixels = self._coordinate_as_fraction(candidate_y, page.height) * page.height
+                if candidate_y_pixels > current_y:
+                    following_positions.append(candidate_y_pixels)
+        return round(min(following_positions)) if following_positions else None
+
+    def _crop_bounds(self, region, page, label_positions, y_adjustment=0, exclusion_regions=None,
+                     next_section_y=None):
         if region.get('manual'):
             try:
                 left = int(round(float(region['x1'])))
@@ -211,6 +255,8 @@ class APSExamPaperImportBuild(models.Model):
             top = max(0, min(page.height - 1, top))
             right = max(left + 1, min(page.width, right))
             bottom = max(top + 1, min(page.height, bottom))
+            if bottom - top < self._MANUAL_CROP_MIN_HEIGHT and next_section_y is not None:
+                bottom = min(page.height, max(bottom, next_section_y))
             for exclusion_region in exclusion_regions or []:
                 exclusion_y = round(self._exclusion_region_y_as_fraction(exclusion_region, page) * page.height)
                 if exclusion_y > top:
@@ -235,10 +281,10 @@ class APSExamPaperImportBuild(models.Model):
             # vision model puts the child label a few pixels above the
             # parent's label.  Without this, Q1a's crop can run through
             # Q1a.i and become part of every later sub-question.
-            if is_descendant and candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
+            if is_descendant and candidate['y'] > start_y:
                 next_y = candidate['y']
                 break
-            if not is_descendant and candidate['y'] > start_y + self._LABEL_Y_TOLERANCE:
+            if not is_descendant and candidate['y'] > start_y:
                 next_y = candidate['y']
                 break
         for exclusion_region in exclusion_regions or []:
@@ -303,6 +349,8 @@ class APSExamPaperImportBuild(models.Model):
             bounds = self._crop_bounds(
                 region, page, label_positions, y_adjustment,
                 exclusion_regions=page.exclusion_regions or [],
+                next_section_y=self._next_section_region_y(section, document_type, page, region)
+                if region.get('manual') else None,
             )
             if log:
                 self._append_image_update_log(section, '%s region %s: raw coordinates=%s (%s), page %s image %sx%s, crop x=%s..%s y=%s..%s.' % (

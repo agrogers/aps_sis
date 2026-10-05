@@ -78,11 +78,18 @@ class TestExamExclusionZones(TransactionCase):
         identifier_bounds = importer._crop_bounds(
             region, page, label_positions, 6, exclusion_regions=later_zone,
         )
+        nearby_identifier_bounds = importer._crop_bounds(
+            region, page, {1: [
+                {'y': 0.09, 'normalised_label': 'q0', 'source_key': 'Q0'},
+                {'y': 0.11, 'normalised_label': 'qa', 'source_key': 'QA'},
+            ]}, 6, exclusion_regions=later_zone,
+        )
         exclusion_bounds = importer._crop_bounds(
             region, page, label_positions, 6, exclusion_regions=earlier_zone,
         )
 
         self.assertEqual(identifier_bounds[3], 444)
+        self.assertEqual(nearby_identifier_bounds[3], 159)
         self.assertEqual(exclusion_bounds[3], 294)
 
     def test_ai_analysis_refreshes_zones_and_preserves_manual_edits(self):

@@ -45,6 +45,103 @@ class TestExamPaperImport(TransactionCase):
 
         self.assertEqual((left, top, right, bottom), (75, 150, 925, 1400))
 
+    def test_short_manual_crop_extends_to_next_section_start(self):
+        importer = self.env['aps.exam.paper.import']
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Short manual crop paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('short-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('short-crop-rms.pdf').id,
+        })
+        sections = self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': 1, 'source_key': 'Q1a',
+                'display_label': 'Q1a',
+                'question_regions': [{
+                    'page_number': 1, 'x1': 75, 'y1': 100, 'x2': 925, 'y2': 190,
+                    'coordinate_system': 'pixels', 'manual': True,
+                }],
+            },
+            {
+                'import_id': job.id, 'sequence': 2, 'source_key': 'Q1b',
+                'display_label': 'Q1b',
+                'question_regions': [{
+                    'page_number': 1, 'x1': 75, 'y1': 350, 'x2': 925, 'y2': 500,
+                    'coordinate_system': 'pixels', 'manual': True,
+                }],
+            },
+        ])
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 1000, 'height': 1500,
+        })
+
+        next_y = importer._next_section_region_y(sections[0], 'question', page, sections[0].question_regions[0])
+        bounds = importer._crop_bounds(
+            sections[0].question_regions[0], page, {}, next_section_y=next_y,
+        )
+
+        self.assertEqual(next_y, 350)
+        self.assertEqual(bounds, (75, 100, 925, 350))
+
+    def test_inherited_manual_crop_uses_next_section_after_region_owner(self):
+        importer = self.env['aps.exam.paper.import']
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Inherited crop boundaries', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('inherited-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('inherited-crop-rms.pdf').id,
+        })
+        sections = self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': 1, 'source_key': '1',
+                'display_label': 'Q1',
+                'question_regions': [{
+                    'page_number': 2, 'x1': 176, 'y1': 1220, 'x2': 223, 'y2': 1280,
+                    'coordinate_system': 'pixels', 'manual': True,
+                }],
+            },
+            {
+                'import_id': job.id, 'sequence': 2, 'source_key': '1/a',
+                'display_label': 'Q1a',
+                'question_regions': [{
+                    'page_number': 2, 'x1': 250, 'y1': 1318, 'x2': 323, 'y2': 1383,
+                    'coordinate_system': 'pixels', 'manual': True,
+                }],
+            },
+            {
+                'import_id': job.id, 'sequence': 3, 'source_key': '1/b',
+                'display_label': 'Q1b',
+                'question_regions': [{
+                    'page_number': 2, 'x1': 250, 'y1': 1895, 'x2': 314, 'y2': 1969,
+                    'coordinate_system': 'pixels', 'manual': True,
+                }],
+            },
+        ])
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 2, 'width': 2481, 'height': 3508,
+        })
+
+        parent_boundary = importer._next_section_region_y(
+            sections[1], 'question', page, sections[0].question_regions[0],
+        )
+        child_boundary = importer._next_section_region_y(
+            sections[2], 'question', page, sections[1].question_regions[0],
+        )
+
+        self.assertEqual(parent_boundary, 1318)
+        self.assertEqual(child_boundary, 1895)
+
+    def test_manual_crop_at_minimum_height_keeps_its_saved_bottom(self):
+        importer = self.env['aps.exam.paper.import']
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 1000, 'height': 1500,
+        })
+
+        bounds = importer._crop_bounds(
+            {'manual': True, 'x1': 75, 'y1': 100, 'x2': 925, 'y2': 250},
+            page, {}, next_section_y=350,
+        )
+
+        self.assertEqual(bounds, (75, 100, 925, 250))
+
     def test_region_editor_returns_page_picker_defaults(self):
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Region picker paper', 'resource_id': self.resource.id,
@@ -63,6 +160,9 @@ class TestExamPaperImport(TransactionCase):
         section = self.env['aps.exam.paper.section'].create({
             'import_id': job.id, 'sequence': 1, 'source_key': 'picker',
             'display_label': 'Q1',
+            'question_regions': [{
+                'page_number': 2, 'x1': 100, 'y1': 120, 'x2': 900, 'y2': 500,
+            }],
         })
 
         data = section.get_region_editor_data()
@@ -70,6 +170,10 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(data['pages']['question'][0]['page_number'], 2)
         self.assertEqual(
             data['pages']['question'][0]['default_region'],
+            {'x1': 75, 'y1': 85, 'x2': 925, 'y2': 1400},
+        )
+        self.assertEqual(
+            data['regions']['question'][0]['default_region'],
             {'x1': 75, 'y1': 85, 'x2': 925, 'y2': 1400},
         )
 
