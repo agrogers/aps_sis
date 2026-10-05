@@ -239,6 +239,33 @@ class APSResource(models.Model):
         action['context'] = {}
         return action
 
+    def action_refresh_submissions(self):
+        self.ensure_one()
+        resources = self
+        if self.refresh_submissions_scope == 'children':
+            resources |= self._get_all_descendant_resources()
+        submissions = self.env['aps.resource.submission']
+        for resource in resources:
+            resource_submissions = self.env['aps.resource.submission'].search([
+                ('resource_id', '=', resource.id),
+                ('state', '=', 'assigned'),
+            ])
+            resource_submissions.write({
+                'has_question': resource.has_question,
+                'question': resource.question,
+            })
+            submissions |= resource_submissions
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Submissions Refreshed'),
+                'message': _('Updated the question on %s assigned submissions.', len(submissions)),
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
     def action_open_all_submissions_with_children(self):
         """Open submissions for this resource and all of its linked descendants."""
         self.ensure_one()

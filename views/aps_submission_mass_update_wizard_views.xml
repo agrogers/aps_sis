@@ -116,12 +116,33 @@
                             </group>
                         </page>
                         <page string="Question" invisible="not update_question">
+                            <group col="2">
+                                <field name="set_question_to_resource_value"
+                                       nolabel="1"
+                                       widget="boolean_toggle"
+                                       options="{'autosave': False}"/>
+                                <label for="set_question_to_resource_value"/>
+                            </group>
                             <field name="question_value" widget="html" nolabel="1" placeholder="Enter question here"/>
                         </page>
                         <page string="Answer" invisible="not update_answer">
+                            <group col="2">
+                                <field name="set_answer_to_resource_value"
+                                       nolabel="1"
+                                       widget="boolean_toggle"
+                                       options="{'autosave': False}"/>
+                                <label for="set_answer_to_resource_value"/>
+                            </group>
                             <field name="answer_value" widget="html" nolabel="1" placeholder="Enter answer here"/>
                         </page>
                         <page string="Model Answer" invisible="not update_model_answer">
+                            <group col="2">
+                                <field name="set_model_answer_to_resource_value"
+                                       nolabel="1"
+                                       widget="boolean_toggle"
+                                       options="{'autosave': False}"/>
+                                <label for="set_model_answer_to_resource_value"/>
+                            </group>
                             <field name="model_answer_value" widget="html" nolabel="1" placeholder="Enter model answer here"/>
                         </page>
                         <page string="Feedback" invisible="not update_feedback">
@@ -138,7 +159,7 @@
     </record>
  
     <record id="action_aps_submission_mass_update" model="ir.actions.server">
-        <field name="name">Mass Update Submissions</field>
+        <field name="name">Mass Update Submissions...</field>
         <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
         <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>
         <field name="binding_type">action</field>

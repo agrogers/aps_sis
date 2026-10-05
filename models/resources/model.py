@@ -83,6 +83,10 @@ class APSResource(models.Model):
         required=True,
         tracking=True)
     question = fields.Html(string='Question')
+    refresh_submissions_scope = fields.Selection([
+        ('resource', 'Refresh Submissions'),
+        ('children', 'Refresh Submission and Child Submissions'),
+    ], string='Refresh Submissions', default='resource')
 
     has_answer = fields.Selection(HAS_ANSWER_SELECTION, string='Has Answer',
         default='no',

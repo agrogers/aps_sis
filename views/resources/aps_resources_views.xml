@@ -359,6 +359,28 @@
                                     <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>                                  
                                 </list>
                             </field>
+                            <div class="accordion mt-3" id="submission_actions_accordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <a class="accordion-button collapsed" role="button"
+                                           data-bs-toggle="collapse" href="#submission_actions_content"
+                                           aria-expanded="false" aria-controls="submission_actions_content">
+                                            Submission Actions
+                                        </a>
+                                    </h2>
+                                    <div id="submission_actions_content" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <field name="refresh_submissions_scope" widget="radio" nolabel="1"/>
+                                            <div class="mb-2">
+                                                <button name="action_refresh_submissions" type="object" string="Refresh Submissions" class="btn-primary"/>
+                                            </div>
+                                            <div class="text-muted">
+                                                This action will copy the current Question to all submissions in the Assigned state.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </page>
                         <page string="Lesson Plan" invisible="not has_lesson_plan" groups="aps_sis.group_aps_teacher">
                             <field name="lesson_plan" nolabel="1" readonly="0"/>

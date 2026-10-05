@@ -232,7 +232,7 @@
     </record>
 
     <record id="action_aps_resource_mass_update" model="ir.actions.server">
-        <field name="name">Mass Update Resources</field>
+        <field name="name">Mass Update Resources...</field>
         <field name="model_id" ref="aps_sis.model_aps_resources"/>
         <field name="binding_model_id" ref="aps_sis.model_aps_resources"/>
         <field name="binding_type">action</field>

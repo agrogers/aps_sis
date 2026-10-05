@@ -62,10 +62,22 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     update_subjects = fields.Boolean(string='Subjects')
     subjects_value = fields.Many2many('aps.subject', 'submission_mass_update_wizard_subject_rel', 'wizard_id', 'subject_id', string='Value')
     update_question = fields.Boolean(string='Question')
+    set_question_to_resource_value = fields.Boolean(
+        string='Set to Resource Value',
+        default=False,
+    )
     question_value = fields.Html(string='Value')
     update_answer = fields.Boolean(string='Answer')
+    set_answer_to_resource_value = fields.Boolean(
+        string='Set to Resource Value',
+        default=False,
+    )
     answer_value = fields.Html(string='Value')
     update_model_answer = fields.Boolean(string='Model Answer')
+    set_model_answer_to_resource_value = fields.Boolean(
+        string='Set to Resource Value',
+        default=False,
+    )
     model_answer_value = fields.Html(string='Value')
     update_feedback = fields.Boolean(string='Feedback')
     feedback_value = fields.Html(string='Value')
@@ -107,6 +119,24 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
                 if 'feedback_value' in fields_list:
                     defaults['feedback_value'] = first.feedback
         return defaults
+
+    @api.onchange('set_question_to_resource_value', 'submission_ids')
+    def _onchange_set_question_to_resource_value(self):
+        if self.set_question_to_resource_value:
+            resource = self.submission_ids[:1].resource_id
+            self.question_value = resource.question if resource else False
+
+    @api.onchange('set_answer_to_resource_value', 'submission_ids')
+    def _onchange_set_answer_to_resource_value(self):
+        if self.set_answer_to_resource_value:
+            resource = self.submission_ids[:1].resource_id
+            self.answer_value = resource.answer if resource else False
+
+    @api.onchange('set_model_answer_to_resource_value', 'submission_ids')
+    def _onchange_set_model_answer_to_resource_value(self):
+        if self.set_model_answer_to_resource_value:
+            resource = self.submission_ids[:1].resource_id
+            self.model_answer_value = resource.answer if resource else False
 
     def action_update(self):
         self.ensure_one()
