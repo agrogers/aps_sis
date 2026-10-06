@@ -191,6 +191,11 @@ class APSResource(models.Model):
     ai_answer = fields.Html(string='Test Answer', help='Sample answer to test the AI prompt against.')
     ai_feedback = fields.Html(string='AI Feedback', readonly=True, help='Feedback returned by the AI for the test answer.')
     ai_score = fields.Float(string='AI Score', digits=(16, 2), readonly=True, help='Score returned by the AI for the test answer, if applicable.')
+    ai_score_percent = fields.Float(
+        string='AI Score %',
+        compute='_compute_ai_score_percent',
+        digits=(16, 2),
+    )
     ai_score_comment = fields.Char(string='AI Score Comment', readonly=True, help='Comment about the score returned by the AI for the test answer, if applicable. This is used when a score is not returned to provide feedback on why.')
 
     ai_saved_responses = fields.Json(
@@ -207,6 +212,17 @@ class APSResource(models.Model):
         string='Selected Saved Response',
         help='Key of the currently selected saved AI response.',
     )
+
+    @api.depends('ai_score', 'marks')
+    def _compute_ai_score_percent(self):
+        for resource in self:
+            if resource.marks and resource.marks > 0:
+                resource.ai_score_percent = min(
+                    100.0,
+                    max(0.0, (resource.ai_score or 0.0) / resource.marks * 100),
+                )
+            else:
+                resource.ai_score_percent = False
     
     ai_action = fields.Selection([
         ('none', 'None'),

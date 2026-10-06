@@ -503,6 +503,7 @@
                                 <div class="col-12 col-md-3">
                                     <div class="fw-bold mb-1">AI Score</div>
                                     <field name="ai_score" nolabel="1" readonly="1"/>
+                                    <field name="ai_score_percent" widget="percentpie_ranged" nolabel="1" readonly="1"/>
                                 </div>
                                 <div class="col-12 col-md-9">
                                     <div class="fw-bold mb-1">Score Comment</div>
