@@ -251,15 +251,16 @@ class APSResourceSubmissionAIFeedback(models.Model):
         )
         body = Markup('<p>%s</p>') % (Markup(_('Your %s task has been marked automatically and feedback is now available.')) % (link_html,))
         try:
-            channel = self.env['discuss.channel'].channel_get(
-                partners_to=[author_partner.id, student_partner.id],
-                pin=False,
-            )
-            channel.with_context(**{_AUI_SKIP_CHANNEL_FORWARD_CTX: True}).message_post(
-                body=body,
-                message_type='comment',
-                subtype_xmlid='mail.mt_comment',
-            )
+            with self.env.cr.savepoint():
+                channel = self.env['discuss.channel'].channel_get(
+                    partners_to=[author_partner.id, student_partner.id],
+                    pin=False,
+                )
+                channel.with_context(**{_AUI_SKIP_CHANNEL_FORWARD_CTX: True}).message_post(
+                    body=body,
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                )
         except Exception:
             _logger.exception('Failed to send automatic AI completion DM for submission %s', self.id)
 

@@ -1,4 +1,5 @@
 from odoo import models, api, fields
+from odoo.tools import float_compare
 from .model import sentinel_zero
 import logging
 
@@ -40,12 +41,19 @@ class APSResourceSubmissionAutoScore(models.Model):
                 lambda resource: resource.score_contributes_to_parent
             )
             if not contributing_children:
-                record.with_context(skip_markbook_submission_sync=False).write({
+                vals = {
                     'score': sentinel_zero,
                     'out_of_marks': 0.0,
                     'answer': False,
                     'auto_score': True,
-                })
+                }
+                if (
+                    float_compare(record.score, sentinel_zero, precision_digits=2)
+                    or float_compare(record.out_of_marks, 0.0, precision_digits=1)
+                    or record.answer not in (False, '')
+                    or not record.auto_score
+                ):
+                    record.with_context(skip_markbook_submission_sync=False).write(vals)
                 continue
 
             base_domain = [
@@ -71,12 +79,19 @@ class APSResourceSubmissionAutoScore(models.Model):
             )
 
             if not child_submissions:
-                record.with_context(skip_markbook_submission_sync=False).write({
+                vals = {
                     'score': sentinel_zero,
                     'out_of_marks': 0.0,
                     'answer': False,
                     'auto_score': True,
-                })
+                }
+                if (
+                    float_compare(record.score, sentinel_zero, precision_digits=2)
+                    or float_compare(record.out_of_marks, 0.0, precision_digits=1)
+                    or record.answer not in (False, '')
+                    or not record.auto_score
+                ):
+                    record.with_context(skip_markbook_submission_sync=False).write(vals)
                 continue
 
             # Deduplicate: for each contributing child resource keep only the
@@ -128,12 +143,19 @@ class APSResourceSubmissionAutoScore(models.Model):
             # Pass auto_score=True explicitly so write() does not flip the flag back to False
             # Clear the suppression context inherited from a Markbook child
             # write so this calculated parent can update its Markbook row.
-            record.with_context(skip_markbook_submission_sync=False).write({
+            vals = {
                 'score': new_score,
                 'answer': summary_html,
                 'out_of_marks': total_out_of,
                 'auto_score': True,
-            })
+            }
+            if (
+                float_compare(record.score, new_score, precision_digits=2)
+                or record.answer != summary_html
+                or float_compare(record.out_of_marks, total_out_of, precision_digits=1)
+                or not record.auto_score
+            ):
+                record.with_context(skip_markbook_submission_sync=False).write(vals)
 
     def _check_and_update_parent_score(self):
         """After a score update on this record, find the corresponding parent submissions

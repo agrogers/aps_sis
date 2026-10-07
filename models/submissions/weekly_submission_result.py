@@ -188,7 +188,16 @@ class APSWeeklySubmissionResult(models.Model):
                 values_to_create.append(values)
 
         for row, values in values_to_write:
-            row.write(values)
+            has_changes = False
+            for field_name, value in values.items():
+                current_value = row[field_name]
+                if self._fields[field_name].type == "many2one":
+                    current_value = current_value.id or False
+                if current_value != value:
+                    has_changes = True
+                    break
+            if has_changes:
+                row.write(values)
         if values_to_create:
             self.create(values_to_create)
 
