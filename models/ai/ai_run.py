@@ -83,90 +83,71 @@ class APSAIRun(models.Model):
 
     @api.model
     def cron_dispatch_automatic_runs(self, limit=20):
-        limit = max(0, int(limit or 0))
-        if not limit:
-            return 0
-
-        self.env.cr.execute(
-            f"""
-                SELECT id
-                  FROM {self._table}
-                 WHERE state = 'queued'
-                   AND queued_for_dispatch IS TRUE
-                 ORDER BY create_date, id
-                 LIMIT %s
-                 FOR UPDATE SKIP LOCKED
-            """,
-            [limit],
-        )
-        run_ids = [row[0] for row in self.env.cr.fetchall()]
-        runs = self.sudo().browse(run_ids)
-        dispatched = 0
-
-        for run in runs:
-            submission = run.submission_id.sudo()
-            if not submission.exists():
-                run.write({
-                    'state': 'failed',
-                    'status_message': _('Skipped before processing.'),
-                    'error_message': _('The linked submission no longer exists.'),
-                    'finished_at': fields.Datetime.now(),
-                })
-                continue
-
-            if submission.ai_last_model_id:
-                run.write({
-                    'state': 'failed',
-                    'status_message': _('Skipped before processing.'),
-                    'error_message': _('The submission was already marked before this run started.'),
-                    'finished_at': fields.Datetime.now(),
-                })
-                submission.write({'ai_auto_mark_state': 'completed'})
-                continue
-
-            if not submission._is_auto_ai_marking_enabled():
-                run.write({
-                    'state': 'failed',
-                    'status_message': _('Skipped before processing.'),
-                    'error_message': _('Automatic AI marking is no longer enabled for this submission.'),
-                    'finished_at': fields.Datetime.now(),
-                })
-                submission._reset_auto_ai_marking_state()
-                continue
-
-            if not html2plaintext(submission.answer or '').strip():
-                run.write({
-                    'state': 'failed',
-                    'status_message': _('Skipped before processing.'),
-                    'error_message': _('The submission no longer has an answer to mark.'),
-                    'finished_at': fields.Datetime.now(),
-                })
-                submission.write({
-                    'ai_auto_mark_state': 'pending',
-                    'ai_auto_mark_attempt_count': max(0, submission.ai_auto_mark_attempt_count - 1),
-                })
-                continue
-
-            submission.write({
-                'ai_auto_mark_state': 'running',
-                'ai_auto_mark_run_id': run.id,
-                'feedback': submission._build_auto_ai_progress_feedback(run.attempt_number),
-            })
-            submission._post_auto_ai_note(
-                _('Automatic AI marking attempt %s has started.') % run.attempt_number
-            )
-            run.write({
-                'state': 'running',
-                'status_message': _('Preparing AI marking...'),
-                'started_at': fields.Datetime.now(),
-            })
-            run._queue_background_processing()
-            dispatched += 1
-
-        return dispatched
+        return self.env['aps.ai.quick.run'].sudo().cron_dispatch_queued_ai_runs(limit=limit)
 
     def _get_processor_display_name(self):
         return _('AI Job')
+
+    def _get_ai_queue_key(self):
+        self.ensure_one()
+        if self.submission_id and self.submission_id.student_id:
+            return 'student:res.partner:%s' % self.submission_id.student_id.id
+        if self.import_id:
+            return 'record:aps.exam.paper.import:%s' % self.import_id.id
+        if self.resource_id:
+            return 'record:aps.resources:%s' % self.resource_id.id
+        return super()._get_ai_queue_key()
+
+    def _on_ai_queue_run_start(self):
+        super()._on_ai_queue_run_start()
+        self.ensure_one()
+        if self.request_origin != 'automatic' or not self.submission_id.exists():
+            return
+        submission = self.submission_id.sudo()
+        if submission.ai_last_model_id:
+            self.write({
+                'state': 'failed',
+                'status_message': _('Skipped before processing.'),
+                'error_message': _('The submission was already marked before this run started.'),
+                'finished_at': fields.Datetime.now(),
+            })
+            submission.write({'ai_auto_mark_state': 'completed'})
+            return
+        if not submission._is_auto_ai_marking_enabled():
+            self.write({
+                'state': 'failed',
+                'status_message': _('Skipped before processing.'),
+                'error_message': _('Automatic AI marking is no longer enabled for this submission.'),
+                'finished_at': fields.Datetime.now(),
+            })
+            submission._reset_auto_ai_marking_state()
+            return
+        if not html2plaintext(submission.answer or '').strip():
+            self.write({
+                'state': 'failed',
+                'status_message': _('Skipped before processing.'),
+                'error_message': _('The submission no longer has an answer to mark.'),
+                'finished_at': fields.Datetime.now(),
+            })
+            submission.write({
+                'ai_auto_mark_state': 'pending',
+                'ai_auto_mark_attempt_count': max(0, submission.ai_auto_mark_attempt_count - 1),
+            })
+            return
+        submission.write({
+            'ai_auto_mark_state': 'running',
+            'ai_auto_mark_run_id': self.id,
+            'feedback': submission._build_auto_ai_progress_feedback(self.attempt_number),
+        })
+        submission._post_auto_ai_note(
+            _('Automatic AI marking attempt %s has started.') % self.attempt_number
+        )
+
+    def _on_ai_queue_run_failure(self, error):
+        super()._on_ai_queue_run_failure(error)
+        self.ensure_one()
+        if self.request_origin == 'automatic' and self.submission_id.exists():
+            self.submission_id.sudo()._handle_auto_ai_run_failure(self, str(error))
 
     def _process_background(self):
         self.ensure_one()

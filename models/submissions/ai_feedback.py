@@ -323,6 +323,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'queued_for_dispatch': queued_for_dispatch,
             'override_model_id': self.ai_override_model_id.id if self.ai_override_model_id else False,
         })
+        if queued_for_dispatch:
+            run._assign_ai_queue_metadata()
         if request_origin == 'automatic':
             self.sudo().write({'ai_auto_mark_run_id': run.id})
         if not queued_for_dispatch:
@@ -409,7 +411,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 submission._cron_process_one_auto_ai_marking()
             except Exception:
                 _logger.exception('Automatic AI marking cron failed for submission %s', submission.id)
-        self.env['aps.ai.run'].sudo().cron_dispatch_automatic_runs(limit=20)
+        self.env['aps.ai.run'].sudo().cron_dispatch_automatic_runs(limit=64)
 
     def _cron_process_one_auto_ai_marking(self):
         self.ensure_one()
@@ -508,31 +510,6 @@ class APSResourceSubmissionAIFeedback(models.Model):
     def _build_ai_failure_notification(self, error_text):
         # Delegated to the shared implementation in aps.ai.feedback.storage.mixin.
         return super()._build_ai_failure_notification(error_text)
-
-    def action_mark_with_ai(self):
-        self.ensure_one()
-        self._validate_ai_marking_request()
-
-        try:
-            ai_model = self.ai_override_model_id or self.env['aps.ai.model']
-            result = ai_model.generate_submission_feedback(self)
-        except Exception as exc:
-            error_text = exc.args[0] if getattr(exc, 'args', False) else str(exc)
-            return self._build_ai_failure_notification(error_text)
-
-        self._apply_ai_feedback_result(result)
-        self._finalize_ai_marking_success(result, request_origin='manual')
-
-        message = _('AI feedback was added using %s.') % (result.get('model_name') or _('the configured AI model'))
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('AI Marking Complete'),
-                'message': message,
-                'type': 'success',
-            }
-        }
 
     def action_start_mark_with_ai(self):
         self.ensure_one()
