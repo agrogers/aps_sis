@@ -1,7 +1,6 @@
 import time
 
 from odoo import _, api, fields, models
-from odoo.tools import html2plaintext
 
 
 class APSAIRun(models.Model):
@@ -101,10 +100,10 @@ class APSAIRun(models.Model):
     def _on_ai_queue_run_start(self):
         super()._on_ai_queue_run_start()
         self.ensure_one()
-        if self.request_origin != 'automatic' or not self.submission_id.exists():
+        if not self.submission_id.exists():
             return
         submission = self.submission_id.sudo()
-        if submission.ai_last_model_id:
+        if self.request_origin == 'automatic' and submission.ai_last_model_id:
             self.write({
                 'state': 'failed',
                 'status_message': _('Skipped before processing.'),
@@ -113,7 +112,7 @@ class APSAIRun(models.Model):
             })
             submission.write({'ai_auto_mark_state': 'completed'})
             return
-        if not submission._is_auto_ai_marking_enabled():
+        if self.request_origin == 'automatic' and not submission._is_auto_ai_marking_enabled():
             self.write({
                 'state': 'failed',
                 'status_message': _('Skipped before processing.'),
@@ -122,7 +121,10 @@ class APSAIRun(models.Model):
             })
             submission._reset_auto_ai_marking_state()
             return
-        if not html2plaintext(submission.answer or '').strip():
+        if (
+            self.request_origin == 'automatic'
+            and submission._get_ai_context_content_status(submission.answer, student_answer=True) == 'absent'
+        ):
             self.write({
                 'state': 'failed',
                 'status_message': _('Skipped before processing.'),
@@ -133,6 +135,24 @@ class APSAIRun(models.Model):
                 'ai_auto_mark_state': 'pending',
                 'ai_auto_mark_attempt_count': max(0, submission.ai_auto_mark_attempt_count - 1),
             })
+            return
+        content_preflight = submission._get_ai_marking_content_preflight()
+        if content_preflight:
+            self.write({
+                'state': 'failed',
+                'status_message': _('Marking context is missing.'),
+                'error_message': content_preflight['error_text'],
+                'finished_at': fields.Datetime.now(),
+            })
+            submission.write({'feedback': content_preflight['feedback_html']})
+            if self.request_origin == 'automatic':
+                submission.write({
+                    'ai_auto_mark_state': 'failed',
+                    'ai_auto_mark_last_error': content_preflight['error_text'],
+                    'ai_auto_mark_run_id': self.id,
+                })
+            return
+        if self.request_origin != 'automatic':
             return
         submission.write({
             'ai_auto_mark_state': 'running',
@@ -200,10 +220,13 @@ class APSAIRun(models.Model):
             if self.override_model_id
             else self.env['aps.ai.model'].with_user(self.requested_by_id)
         )
-        result = ai_model.generate_multi_model_feedback(
-            submission,
-            ai_run=self,
-        )
+        if submission._uses_sample_scaling():
+            result = submission._generate_sample_scaled_feedback(ai_run=self)
+        else:
+            result = ai_model.generate_multi_model_feedback(
+                submission,
+                ai_run=self,
+            )
         self._write_progress({'status_message': _('Writing AI feedback to the submission...')})
         submission._apply_ai_feedback_result(result)
         self._commit_background_work()
@@ -233,12 +256,22 @@ class APSAIRun(models.Model):
         self.ensure_one()
         resource = self.resource_id.with_user(self.requested_by_id)
         self._write_progress({'status_message': _('Waiting for the AI provider response...')})
-        result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_multi_model_feedback(
-            resource,
-            ai_run=self,
-        )
+        if resource._uses_sample_comparison():
+            result = resource._generate_sample_comparison_feedback(ai_run=self)
+        elif resource._uses_sample_scaling():
+            result = resource._generate_sample_scaled_feedback(ai_run=self)
+        else:
+            result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_multi_model_feedback(
+                resource,
+                ai_run=self,
+            )
         self._write_progress({'status_message': _('Writing AI feedback to the resource...')})
         resource._apply_ai_feedback_result(result)
+        self._commit_background_work()
+        if result.get('sample_comparison_audit_html'):
+            resource._post_sample_comparison_audit_note(result)
+        else:
+            resource._post_sample_scaling_audit_note(result)
         self._commit_background_work()
         duration_ms = int((time.perf_counter() - started_perf) * 1000)
         self._write_progress({

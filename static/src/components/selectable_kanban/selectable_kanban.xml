@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.SelectableX2ManyField" t-inherit="web.X2ManyField" t-inherit-mode="primary">
+        <xpath expr="//KanbanRenderer" position="replace">
+            <SelectableKanbanRenderer t-if="props.viewMode === 'kanban'" t-props="this.rendererProps"/>
+            <ListRenderer t-elif="props.viewMode === 'list'" t-props="this.rendererProps"/>
+            <KanbanRenderer t-else="" t-props="this.rendererProps"/>
+        </xpath>
+    </t>
+
+    <t t-name="aps_sis.SelectableKanbanRenderer" t-inherit="web.KanbanRenderer" t-inherit-mode="primary">
+        <xpath expr="//KanbanRecord[@record='record']" position="attributes">
+            <attribute name="isSelected">this.isSelected(record)</attribute>
+            <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
+        </xpath>
+        <xpath expr="//KanbanRecord[@record='groupOrRecord.record']" position="attributes">
+            <attribute name="isSelected">this.isSelected(groupOrRecord.record)</attribute>
+            <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
+        </xpath>
+        <xpath expr="//t[@t-foreach='getGroupsOrRecords()']" position="before">
+            <div class="o_selectable_kanban_toolbar d-flex flex-wrap align-items-center gap-2 w-100 mb-3">
+                <button
+                    type="button"
+                    class="btn btn-sm btn-secondary"
+                    t-att-disabled="state.busy"
+                    t-on-click="selectAllVisible"
+                >
+                    Select All Shown
+                </button>
+                <button
+                    t-if="selectedCount"
+                    type="button"
+                    class="btn btn-sm btn-secondary"
+                    t-on-click="clearSelection"
+                    t-att-disabled="state.busy"
+                >
+                    Clear Selection
+                </button>
+                <button
+                    t-if="selectedCount"
+                    type="button"
+                    class="btn btn-sm btn-danger"
+                    t-on-click="deleteSelected"
+                    t-att-disabled="state.busy"
+                >
+                    <i class="fa fa-trash me-1"></i>
+                    Delete Selected (<t t-esc="selectedCount"/>)
+                </button>
+                <span t-if="state.busy" class="text-muted small" role="status">
+                    <i class="fa fa-spinner fa-spin me-1"></i> Deleting…
+                </span>
+            </div>
+        </xpath>
+        <xpath expr="//KanbanRecord[@record='record']" position="attributes">
+            <attribute name="isSelected">this.isSelected(record)</attribute>
+            <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
+        </xpath>
+        <xpath expr="//KanbanRecord[@record='groupOrRecord.record']" position="attributes">
+            <attribute name="isSelected">this.isSelected(groupOrRecord.record)</attribute>
+            <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="aps_sis.SelectableKanbanRecord" t-inherit="web.KanbanRecord" t-inherit-mode="primary">
+        <xpath expr="//t[@t-call]" position="before">
+            <input
+                type="checkbox"
+                class="o_selectable_kanban_checkbox form-check-input m-0 oe_kanban_action"
+                t-if="props.record.resId"
+                t-att-checked="props.isSelected"
+                t-att-aria-label="'Select record ' + props.record.resId"
+                t-on-click.stop="() => { }"
+                t-on-change="() =&gt; props.toggleSelection(props.record)"
+            ></input>
+        </xpath>
+    </t>
+</templates>

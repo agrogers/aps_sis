@@ -1,0 +1,334 @@
+2026-10-07 16:07:41,032 2127480 INFO ? odoo: Odoo version 18.0 
+2026-10-07 16:07:41,032 2127480 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-07 16:07:41,032 2127480 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-07 16:07:41,032 2127480 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-07 16:07:41,210 2127480 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-07 16:07:41,246 2127480 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-07 16:07:41,517 2127480 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-10-07 16:07:41,573 2127480 INFO odoov18_20260902 odoo.tests.common: Importing test framework 
+2026-10-07 16:07:41,626 2127480 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-07 16:07:41,720 2127480 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.09s, 0 queries (+0 extra) 
+2026-10-07 16:07:41,726 2127480 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-07 16:07:41,765 2127480 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-07 16:07:41,795 2127480 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-07 16:07:41,797 2127480 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-07 16:07:41,802 2127480 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-07 16:07:41,827 2127480 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-07 16:07:41,847 2127480 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-07 16:07:41,879 2127480 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-07 16:07:41,891 2127480 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-07 16:07:42,135 2127480 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-07 16:07:43,879 2127480 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x000001FE7B46BD30, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-07 16:07:44,426 2127480 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:44,427 2127480 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:44,587 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_feedback_engine_accepts_context_override ... 
+2026-10-07 16:07:44,677 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_full_sample_scaling_pins_main_model_and_returns_calibrated_mark ... 
+2026-10-07 16:07:44,784 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: ====================================================================== 
+2026-10-07 16:07:44,784 2127480 ERROR odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: FAIL: TestSampleScaling.test_full_sample_scaling_pins_main_model_and_returns_calibrated_mark
+Traceback (most recent call last):
+  File "d:\git\odoo_custom_addons\aps_sis\tests\test_sample_scaling.py", line 296, in test_full_sample_scaling_pins_main_model_and_returns_calibrated_mark
+    self.assertIn('ranked sample answers differently', reversed_rank_result['sample_scaling_audit']['reason'])
+AssertionError: 'ranked sample answers differently' not found in 'Fewer than two correctly ordered sample answers remain after excluding outliers.'
+ 
+2026-10-07 16:07:44,785 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_materially_different_sample_rubric_blocks_scaling ... 
+2026-10-07 16:07:44,823 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_resource_background_worker_dispatches_sample_scaling ... 
+2026-10-07 16:07:44,860 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_results_table_total_supports_marks_and_ao_columns ... 
+2026-10-07 16:07:44,862 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_sample_context_uses_notes_as_answer_and_answer_as_rubric ... 
+2026-10-07 16:07:44,911 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_sample_order_guard_uses_normalized_scores ... 
+2026-10-07 16:07:44,936 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_sample_scaling_audit_uses_one_resource_chatter_note ... 
+2026-10-07 16:07:44,964 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_selected_prompt_enables_sample_scaling ... 
+2026-10-07 16:07:45,004 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_submission_background_worker_dispatches_sample_scaling ... 
+2026-10-07 16:07:45,105 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.models.submissions.overrides: Created submission 758163 for task 108587 
+2026-10-07 16:07:45,125 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_submission_completion_note_includes_sample_scaling_audit ... 
+2026-10-07 16:07:45,188 2127480 INFO odoov18_20260902 odoo.addons.aps_sis.models.submissions.overrides: Created submission 758164 for task 108588 
+2026-10-07 16:07:45,326 2127480 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:45,328 2127480 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:45,391 2127480 INFO odoov18_20260902 odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-10-07 16:07:45,391 2127480 ERROR odoov18_20260902 odoo.modules.loading: Module aps_sis: 1 failures, 0 errors of 11 tests 
+2026-10-07 16:07:46,106 2127480 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 4.21s, 2 queries (+540 extra) 
+2026-10-07 16:07:46,252 2127480 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-07 16:07:46,294 2127480 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-07 16:07:46,323 2127480 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:46,324 2127480 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:46,333 2127480 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:46,335 2127480 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:46,339 2127480 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:46,340 2127480 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:07:46,401 2127480 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-07 16:07:46,404 2127480 ERROR odoov18_20260902 odoo.modules.loading: At least one test failed when loading the modules. 
+2026-10-07 16:07:46,435 2127480 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 4.916s 
+2026-10-07 16:07:46,435 2127480 INFO odoov18_20260902 odoo.service.server: Starting post tests 
+2026-10-07 16:07:46,516 2127480 INFO odoov18_20260902 odoo.service.server: 0 post-tests in 0.08s, 0 queries 
+2026-10-07 16:07:46,516 2127480 INFO odoov18_20260902 odoo.tests.stats: aps_sis: 13 tests 0.90s 538 queries 
+2026-10-07 16:07:46,516 2127480 ERROR odoov18_20260902 odoo.tests.result: 1 failed, 0 error(s) of 11 tests when loading database 'odoov18_20260902' 
+2026-10-07 16:07:46,516 2127480 INFO odoov18_20260902 odoo.service.server: Initiating shutdown 
+2026-10-07 16:07:46,516 2127480 INFO odoov18_20260902 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-07 16:07:46,637 2127480 INFO odoov18_20260902 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 2 connections  
+2026-10-07 16:08:06,041 2134924 INFO ? odoo: Odoo version 18.0 
+2026-10-07 16:08:06,042 2134924 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-07 16:08:06,042 2134924 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-07 16:08:06,042 2134924 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-07 16:08:06,190 2134924 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-07 16:08:06,207 2134924 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-07 16:08:06,423 2134924 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-10-07 16:08:06,461 2134924 INFO odoov18_20260902 odoo.tests.common: Importing test framework 
+2026-10-07 16:08:06,511 2134924 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-07 16:08:06,575 2134924 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.06s, 0 queries (+0 extra) 
+2026-10-07 16:08:06,579 2134924 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-07 16:08:06,602 2134924 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-07 16:08:06,624 2134924 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-07 16:08:06,626 2134924 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-07 16:08:06,628 2134924 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-07 16:08:06,647 2134924 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-07 16:08:06,661 2134924 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-07 16:08:06,683 2134924 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-07 16:08:06,693 2134924 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-07 16:08:06,868 2134924 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-07 16:08:08,112 2134924 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x00000227C206BD30, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-07 16:08:08,597 2134924 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:08,599 2134924 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:08,708 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_feedback_engine_accepts_context_override ... 
+2026-10-07 16:08:08,801 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_full_sample_scaling_pins_main_model_and_returns_calibrated_mark ... 
+2026-10-07 16:08:08,901 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_materially_different_sample_rubric_blocks_scaling ... 
+2026-10-07 16:08:08,936 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_resource_background_worker_dispatches_sample_scaling ... 
+2026-10-07 16:08:08,965 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_results_table_total_supports_marks_and_ao_columns ... 
+2026-10-07 16:08:08,967 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_sample_context_uses_notes_as_answer_and_answer_as_rubric ... 
+2026-10-07 16:08:09,014 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_sample_order_guard_uses_normalized_scores ... 
+2026-10-07 16:08:09,037 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_sample_scaling_audit_uses_one_resource_chatter_note ... 
+2026-10-07 16:08:09,059 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_selected_prompt_enables_sample_scaling ... 
+2026-10-07 16:08:09,088 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_submission_background_worker_dispatches_sample_scaling ... 
+2026-10-07 16:08:09,194 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.models.submissions.overrides: Created submission 758165 for task 108589 
+2026-10-07 16:08:09,215 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.tests.test_sample_scaling: Starting TestSampleScaling.test_submission_completion_note_includes_sample_scaling_audit ... 
+2026-10-07 16:08:09,269 2134924 INFO odoov18_20260902 odoo.addons.aps_sis.models.submissions.overrides: Created submission 758166 for task 108590 
+2026-10-07 16:08:09,395 2134924 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:09,396 2134924 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:09,442 2134924 INFO odoov18_20260902 odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-10-07 16:08:10,073 2134924 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 3.38s, 2 queries (+540 extra) 
+2026-10-07 16:08:10,170 2134924 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-07 16:08:10,200 2134924 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-07 16:08:10,217 2134924 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:10,217 2134924 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:10,224 2134924 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:10,226 2134924 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:10,230 2134924 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:10,230 2134924 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-07 16:08:10,277 2134924 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-07 16:08:10,277 2134924 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-07 16:08:10,297 2134924 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 3.873s 
+2026-10-07 16:08:10,298 2134924 INFO odoov18_20260902 odoo.service.server: Starting post tests 
+2026-10-07 16:08:10,349 2134924 INFO odoov18_20260902 odoo.service.server: 0 post-tests in 0.05s, 0 queries 
+2026-10-07 16:08:10,349 2134924 INFO odoov18_20260902 odoo.tests.stats: aps_sis: 13 tests 0.81s 538 queries 
+2026-10-07 16:08:10,349 2134924 INFO odoov18_20260902 odoo.tests.result: 0 failed, 0 error(s) of 11 tests when loading database 'odoov18_20260902' 
+2026-10-07 16:08:10,349 2134924 INFO odoov18_20260902 odoo.service.server: Initiating shutdown 
+2026-10-07 16:08:10,349 2134924 INFO odoov18_20260902 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-07 16:08:10,557 2134924 INFO odoov18_20260902 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 2 connections  

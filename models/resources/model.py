@@ -55,6 +55,19 @@ class APSResource(models.Model):
     _description = 'APEX Resources'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        results = super().name_search(name=name, args=args, operator=operator, limit=limit)
+        resource_id = name.strip()
+        if not resource_id.isdecimal():
+            return results
+
+        resource = self.search([('id', '=', int(resource_id))] + (args or []), limit=1)
+        if not resource or any(record_id == resource.id for record_id, _label in results):
+            return results
+        results = [(resource.id, resource.display_name)] + results
+        return results[:limit] if limit is not None else results
+
     sequence = fields.Integer(string='Sequence', default=10)
     favourite_user_ids = fields.Many2many(
         'res.users',

@@ -2,6 +2,24 @@ from odoo.tests.common import TransactionCase
 
 class TestAPSResource(TransactionCase):
 
+    def test_name_search_by_id(self):
+        resource = self.env['aps.resources'].create({'name': 'A resource with a very long name'})
+
+        self.assertEqual(
+            self.env['aps.resources'].name_search(str(resource.id)),
+            [(resource.id, resource.display_name)],
+        )
+
+    def test_name_search_by_id_respects_domain(self):
+        resource = self.env['aps.resources'].create({'name': 'Resource filtered by domain'})
+
+        self.assertFalse(
+            self.env['aps.resources'].name_search(
+                str(resource.id),
+                args=[('name', '=', 'Does not match')],
+            )
+        )
+
     def test_action_open_all_submissions_with_children(self):
         student = self.env['res.partner'].create({
             'name': 'Submission Action Student',

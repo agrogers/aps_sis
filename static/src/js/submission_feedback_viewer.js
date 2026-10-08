@@ -1,4 +1,5 @@
-import { Component, markup, useState } from "@odoo/owl";
+import { Component, markup, onMounted, onPatched, onWillStart, useRef, useState } from "@odoo/owl";
+import { loadAssets } from "@web/core/assets";
 import { registry } from "@web/core/registry";
 import { escape } from "@web/core/utils/strings";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
@@ -11,9 +12,26 @@ export class SubmissionFeedbackViewer extends Component {
     };
 
     setup() {
+        this.viewerRef = useRef("viewer");
+        this.mathAssetsLoaded = false;
         this.state = useState({
             activeFeedbackId: undefined,
         });
+        onWillStart(async () => {
+            try {
+                await loadAssets({
+                    jsLibs: [
+                        "/aps_sis/static/src/lib/katex/katex.min.js",
+                        "/aps_sis/static/src/lib/katex/auto-render.min.js",
+                    ],
+                });
+                this.mathAssetsLoaded = true;
+            } catch {
+                // Feedback remains readable without math rendering if assets fail.
+            }
+        });
+        onMounted(() => this._renderMath());
+        onPatched(() => this._renderMath());
     }
 
     get isTargeted() {
@@ -191,6 +209,15 @@ export class SubmissionFeedbackViewer extends Component {
 
     get answerMarkup() {
         if (this.isTargeted && this.answerChunkedHtml) {
+            const answerField = this.props.answerField || "answer";
+            const originalAnswer = this.props.record.data[answerField] || "";
+            const originalImageCount = (originalAnswer.match(/<img\b/gi) || []).length;
+            const chunkedImageCount = (this.answerChunkedHtml.match(/<img\b/gi) || []).length;
+            // Chunk generation can turn images into the literal [image] marker.
+            // In that case, show the original HTML instead of losing the image.
+            if (originalImageCount > chunkedImageCount) {
+                return markup(originalAnswer);
+            }
             const activeChunkIds = new Set(this.activeChunkIds);
             const toneClass = this.activeFeedbackItem ? this._getToneClass(this.activeFeedbackItem) : "is-info";
             const parser = new DOMParser();
@@ -212,6 +239,28 @@ export class SubmissionFeedbackViewer extends Component {
 
     get feedbackMarkup() {
         return markup(this.props.record.data[this.props.name] || '<p class="text-muted mb-0">No feedback available.</p>');
+    }
+
+    _renderMath() {
+        const viewer = this.viewerRef.el;
+        if (!this.mathAssetsLoaded || !viewer || !window.renderMathInElement) {
+            return;
+        }
+        try {
+            window.renderMathInElement(viewer, {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false },
+                    { left: "\\(", right: "\\)", display: false },
+                    { left: "\\[", right: "\\]", display: true },
+                ],
+                throwOnError: false,
+                ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
+                ignoredClasses: ["katex", "katex-html"],
+            });
+        } catch {
+            // Preserve the original answer and feedback if math rendering fails.
+        }
     }
 
     onFeedbackClick(ev) {

@@ -1,4 +1,5 @@
 import logging
+import re
 from html import escape
 
 from markupsafe import Markup
@@ -123,6 +124,116 @@ class APSResourceSubmissionAIFeedback(models.Model):
         if self.ai_action in ('none'):
             raise UserError(_('AI marking is not enabled for this resource.'))
 
+    @staticmethod
+    def _get_ai_context_content_status(value, student_answer=False):
+        html = str(value or '')
+        has_image = bool(re.search(r'<img\b', html, flags=re.IGNORECASE))
+        text_html = re.sub(r'<img\b[^>]*>', '', html, flags=re.IGNORECASE)
+        text = ' '.join(html2plaintext(text_html).split())
+        # This generic SPaG reminder is not a rubric or question and cannot
+        # provide evidence against which an answer can be marked.
+        text = re.sub(
+            r'do not penali[sz]e the answer for spelling and grammar mistakes '
+            r'as long as the meaning can still be understood\.?',
+            '',
+            text,
+            flags=re.IGNORECASE,
+        )
+        text = text.strip(' \t\r\n*•-')
+        has_text = bool(text)
+        if student_answer:
+            return 'provided' if has_text or has_image else 'absent'
+        if has_text:
+            return 'provided'
+        if has_image:
+            return 'image_only'
+        return 'absent'
+
+    def _get_ai_marking_content_preflight(self):
+        """Describe missing textual marking context, or return False if usable."""
+        self.ensure_one()
+
+        question_status = self._get_ai_context_content_status(self.question)
+        model_answer_status = self._get_ai_context_content_status(self.model_answer)
+        active_prompt_names = {
+            re.sub(r'\s+', ' ', (name or '').strip()).casefold()
+            for name in self.resource_id.ai_active_prompts.mapped('prompt_name')
+        }
+        include_all_images = 'include images' in active_prompt_names
+        model_answer_image_enabled = (
+            include_all_images
+            or 'include model answer images' in active_prompt_names
+        )
+        question_image_enabled = (
+            include_all_images
+            or 'include question images' in active_prompt_names
+        )
+        model_answer_enabled = self.ai_use_model_answer or self.ai_action == 'mark_submission_use_answer'
+        usable_model_answer = (
+            model_answer_status == 'provided'
+            or (
+                model_answer_status == 'image_only'
+                and model_answer_enabled
+                and model_answer_image_enabled
+            )
+        )
+        usable_question = (
+            question_status == 'provided'
+            or (
+                question_status == 'image_only'
+                and self.ai_use_question
+                and question_image_enabled
+            )
+        )
+        if (
+            usable_question
+            or usable_model_answer
+        ):
+            return False
+
+        def status_label(status, inclusion_enabled):
+            if status == 'image_only' and not inclusion_enabled:
+                return _('Content absent [Image only present; image inclusion prompt inactive]')
+            return {
+                'provided': _('Content provided'),
+                'image_only': _('Content absent [Image only present]'),
+                'absent': _('Content absent'),
+            }[status]
+
+        student_answer_status = self._get_ai_context_content_status(self.answer, student_answer=True)
+        details = [
+            _('Student Answer: %(status)s') % {
+                'status': _('provided') if student_answer_status == 'provided' else _('absent'),
+            },
+            _('Model Answer: %(status)s') % {
+                'status': status_label(model_answer_status, model_answer_enabled and model_answer_image_enabled),
+            },
+            _('Question: %(status)s') % {
+                'status': status_label(question_status, self.ai_use_question and question_image_enabled),
+            },
+        ]
+        error_text = _(
+            'AI marking was not sent because neither the question nor model answer contains readable text. '
+            'Add textual marking context and try again.\n%(details)s'
+        ) % {'details': '\n'.join(details)}
+        feedback_html = (
+            '<p><strong>%s</strong></p><p>%s</p><ul>'
+            '<li><strong>%s</strong> %s</li>'
+            '<li><strong>%s</strong> %s</li>'
+            '<li><strong>%s</strong> %s</li>'
+            '</ul>' % (
+                escape(_('AI marking was not sent.')),
+                escape(_('There is no readable question or model-answer content to mark against.')),
+                escape(_('Student Answer:')),
+                escape(_('provided') if student_answer_status == 'provided' else _('absent')),
+                escape(_('Model Answer:')),
+                escape(status_label(model_answer_status, model_answer_enabled and model_answer_image_enabled)),
+                escape(_('Question:')),
+                escape(status_label(question_status, self.ai_use_question and question_image_enabled)),
+            )
+        )
+        return {'error_text': error_text, 'feedback_html': feedback_html}
+
     def _is_auto_ai_marking_enabled(self):
         self.ensure_one()
         return self.state == 'submitted' and self.ai_action in _AUTO_MARK_ENABLED_ACTIONS
@@ -149,7 +260,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 continue
             if record.ai_last_model_id or record.ai_auto_mark_state in ('pending', 'running', 'retry', 'completed'):
                 continue
-            if not html2plaintext(record.answer or '').strip():
+            if record._get_ai_context_content_status(record.answer, student_answer=True) == 'absent':
                 continue
             record.sudo().write({
                 'ai_auto_mark_state': 'pending',
@@ -195,6 +306,12 @@ class APSResourceSubmissionAIFeedback(models.Model):
         parts.append('<li><strong>%s</strong> %s</li>' % (escape(_('Model:')), model_label))
         parts.append('<li><strong>%s</strong> %.6f</li>' % (escape(_('Estimated cost:')), estimated_cost))
         parts.append('</ul>')
+        sample_scaling_audit = result.get('sample_scaling_audit_html')
+        if sample_scaling_audit:
+            parts.append(str(sample_scaling_audit))
+        sample_comparison_audit = result.get('sample_comparison_audit_html')
+        if sample_comparison_audit:
+            parts.append(str(sample_comparison_audit))
         return ''.join(parts)
 
     def _get_ai_completion_prefix_text(self, request_origin):
@@ -222,7 +339,6 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 prefix_text=actor_record._get_ai_completion_prefix_text(request_origin),
             )
         )
-
         if request_origin == 'automatic':
             actor_record._send_auto_ai_success_dm()
 
@@ -337,7 +453,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
             return False
         if self.ai_auto_mark_attempt_count >= _AUTO_MARK_MAX_ATTEMPTS:
             return False
-        if not html2plaintext(self.answer or '').strip():
+        if self._get_ai_context_content_status(self.answer, student_answer=True) == 'absent':
             return False
 
         attempt_number = (self.ai_auto_mark_attempt_count or 0) + 1

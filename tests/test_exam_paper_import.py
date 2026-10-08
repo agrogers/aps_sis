@@ -22,6 +22,43 @@ class TestExamPaperImport(TransactionCase):
             'res_id': self.resource.id,
         })
 
+    def test_multi_record_unlink_deletes_rendered_page_attachments(self):
+        import_job = self.env['aps.exam.paper.import'].create({
+            'name': 'Multi-page unlink',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('multi-unlink-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('multi-unlink-rms.pdf').id,
+        })
+        attachments = self.env['ir.attachment'].create([
+            {
+                'name': 'multi-unlink-page-one.png',
+                'type': 'binary',
+                'datas': 'aGVsbG8=',
+                'mimetype': 'image/png',
+            },
+            {
+                'name': 'multi-unlink-page-two.png',
+                'type': 'binary',
+                'datas': 'aGVsbG8=',
+                'mimetype': 'image/png',
+            },
+        ])
+        pages = self.env['aps.exam.paper.page'].create([
+            {
+                'import_id': import_job.id,
+                'document_type': 'question',
+                'page_number': page_number,
+                'render_dpi': 150,
+                'attachment_id': attachment.id,
+            }
+            for page_number, attachment in enumerate(attachments, start=1)
+        ])
+
+        pages.unlink()
+
+        self.assertFalse(pages.exists())
+        self.assertFalse(attachments.exists())
+
     def test_attachment_tokens_are_case_insensitive(self):
         self._attachment('Paper_QUE.pdf')
         self._attachment('Paper_RMS.pdf')

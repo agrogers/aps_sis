@@ -110,6 +110,7 @@
 	'assets': {
 		'web.assets_backend': [
             'aps_sis/static/src/lib/chart.js',
+			'aps_sis/static/src/lib/katex/katex.min.css',
 			'aps_sis/static/src/lib/lottie/lottie.min.js',
 			'aps_sis/static/src/js/utils/color_utils.js',
 			'aps_sis/static/src/js/utils/svg_progress_utils.js',

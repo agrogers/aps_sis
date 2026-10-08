@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="aps_sis.SubmissionFeedbackViewer">
-        <div class="aps-ai-feedback-viewer row g-3">
+        <div class="aps-ai-feedback-viewer row g-3" t-ref="viewer">
             <div t-att-class="hasFeedback ? 'col-12 col-lg-6' : 'col-12'">
                 <div class="aps-ai-feedback-panel">
                     <div class="aps-ai-feedback-panel-title">Student Answer</div>

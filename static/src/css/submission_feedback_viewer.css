@@ -30,6 +30,18 @@
     line-height: 1.7;
 }
 
+.aps-ai-feedback-answer img,
+.aps-ai-feedback-body img {
+    max-width: 100%;
+    height: auto;
+}
+
+.aps-ai-feedback-viewer .katex-display {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
 .aps-ai-answer-chunk {
     --aps-ai-feedback-accent: #d6992e;
     --aps-ai-feedback-border-width: 2px;

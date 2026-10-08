@@ -28,7 +28,7 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     update_points = fields.Boolean(string='Points')
     points_value = fields.Integer(string='Value')
     update_submission_active = fields.Boolean(string='Submission Active')
-    submission_active_value = fields.Boolean(string='Value')
+    submission_active_value = fields.Boolean(string='Value', default=True)
     update_date_assigned = fields.Boolean(string='Date Assigned')
     date_assigned_value = fields.Date(string='Value')
     update_time_assigned = fields.Boolean(string='Time Assigned')
