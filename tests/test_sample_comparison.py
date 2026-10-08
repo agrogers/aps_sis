@@ -124,10 +124,12 @@ class TestSampleComparison(TransactionCase):
             resource._build_ai_feedback_ctx(),
             prompt,
             '<p>Benchmark response text.</p>',
+            'Identified benchmark resource',
         )
         self.assertFalse(context['out_of_marks'])
         self.assertEqual(context['note_section_key'], 'answer_2')
         self.assertTrue(context['comparison_pair'])
+        self.assertEqual(context['answer_2_resource_name'], 'Identified benchmark resource')
         self.assertEqual(html2plaintext(context['notes']).strip(), 'Benchmark response text.')
         self.assertNotIn('official score', str(context['notes']).casefold())
         self.assertIn('"result"', context['output_schema_override'])
@@ -162,6 +164,38 @@ class TestSampleComparison(TransactionCase):
         benchmarks = resource._get_sample_comparison_benchmarks()
 
         self.assertEqual(benchmarks.ids, [tagged_sample.id])
+
+    def test_sample_comparison_benchmarks_are_ordered_by_ascending_weight(self):
+        resource = self._create_resource(self._create_prompt())
+        sample_tag = self._get_sample_answer_tag()
+        samples = self.env['aps.resources'].create([
+            {
+                'name': 'Stronger benchmark',
+                'marks': 30,
+                'weight': 26,
+                'notes': '<p>Stronger sample answer.</p>',
+                'tag_ids': [(6, 0, [sample_tag.id])],
+            },
+            {
+                'name': 'Weakest benchmark',
+                'marks': 30,
+                'weight': 12,
+                'notes': '<p>Weakest sample answer.</p>',
+                'tag_ids': [(6, 0, [sample_tag.id])],
+            },
+            {
+                'name': 'Middle benchmark',
+                'marks': 30,
+                'weight': 19,
+                'notes': '<p>Middle sample answer.</p>',
+                'tag_ids': [(6, 0, [sample_tag.id])],
+            },
+        ])
+        resource.write({'supporting_resource_ids': [(6, 0, samples.ids)]})
+
+        benchmarks = resource._get_sample_comparison_benchmarks()
+
+        self.assertEqual(benchmarks.mapped('weight'), [12, 19, 26])
 
     def test_full_workflow_calls_all_samples_then_final_score(self):
         comparison_prompt = self._create_prompt()
@@ -276,6 +310,23 @@ class TestSampleComparison(TransactionCase):
         self.assertEqual(apply_result.call_args.args[1], result)
         post_audit.assert_called_once_with(resource.with_user(run.requested_by_id), result)
 
+    def test_comparison_audit_does_not_repeat_score_already_in_benchmark_name(self):
+        resource = self.env['aps.resources']
+        audit_html = resource._build_sample_comparison_audit_html({
+            'summary': 'Compared against one benchmark.',
+            'comparisons': [{
+                'benchmark_name': 'English Language B 🢒 Exam Papers 🢒 Q11 🢒 Sample Answer (26/30)',
+                'official_score': 26,
+                'maximum': 30,
+                'result': 'WORSE',
+            }],
+            'target_maximum': 30,
+        })
+
+        text = html2plaintext(str(audit_html))
+        self.assertIn('Sample Answer (26/30): WORSE', text)
+        self.assertNotIn('(26/30) (26/30)', text)
+
     def test_submission_completion_note_combines_comparison_audit_and_final_mark(self):
         submission = self.env['aps.resource.submission'].new({})
         resource = self.env['aps.resources']
@@ -303,6 +354,7 @@ class TestSampleComparison(TransactionCase):
         self.assertIn('AI MARKING COMPARISON', body)
         self.assertIn('AI FINAL MARK', body)
         self.assertEqual(body.count('AI FINAL MARK'), 1)
+        self.assertNotIn('Clear feedback.', body)
 
     def test_invalid_final_scores_use_estimate_and_schedule_review(self):
         prompt = self._create_prompt()

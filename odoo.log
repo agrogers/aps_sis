@@ -22962,3 +22962,1735 @@ psycopg2.errors.SerializationFailure: could not serialize access due to concurre
 2026-10-08 07:10:48,286 1324504 INFO odoov18_20260902 odoo.service.server: Initiating shutdown 
 2026-10-08 07:10:48,286 1324504 INFO odoov18_20260902 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
 2026-10-08 07:10:48,403 1324504 INFO odoov18_20260902 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 3 connections  
+2026-10-08 13:29:13,841 991344 INFO ? odoo: Odoo version 18.0 
+2026-10-08 13:29:13,842 991344 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-08 13:29:13,842 991344 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-08 13:29:13,842 991344 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-08 13:29:14,127 991344 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-08 13:29:14,273 991344 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-08 13:29:14,697 991344 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 13:29:14,698 991344 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 13:29:14,816 991344 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-08 13:29:14,820 991344 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-10-08 13:29:14,827 991344 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:29:14,940 991344 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:29:14,988 991344 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:29:14,991 991344 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:29:14,998 991344 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:29:15,059 991344 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-08 13:29:15,095 991344 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:29:15,136 991344 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:29:15,158 991344 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-08 13:29:15,191 991344 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-08 13:29:16,996 991344 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x0000022FC0633370, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-08 13:29:17,907 991344 ERROR odoov18_20260902 odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\__init__.py", line 2, in <module>
+    from . import tests
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\__init__.py", line 1, in <module>
+    from . import test_employee_loan
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\test_employee_loan.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-10-08 13:29:18,117 991344 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 2.96s, 0 queries (+0 extra) 
+2026-10-08 13:29:18,385 991344 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-08 13:29:18,425 991344 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-08 13:29:18,453 991344 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:18,453 991344 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:18,462 991344 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:18,464 991344 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:18,470 991344 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:18,471 991344 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:18,526 991344 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-08 13:29:18,527 991344 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-08 13:29:18,563 991344 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 3.864s 
+2026-10-08 13:29:45,647 1024960 INFO ? odoo: Odoo version 18.0 
+2026-10-08 13:29:45,647 1024960 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-08 13:29:45,647 1024960 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-08 13:29:45,648 1024960 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-08 13:29:46,122 1024960 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-08 13:29:47,284 1024960 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-08 13:29:48,233 1024960 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 13:29:48,233 1024960 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 13:29:48,304 1024960 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-08 13:29:48,309 1024960 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-10-08 13:29:48,314 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:29:48,355 1024960 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:29:48,387 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:29:48,389 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:29:48,393 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:29:48,420 1024960 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-08 13:29:48,444 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:29:48,472 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:29:48,492 1024960 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-08 13:29:48,518 1024960 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-08 13:29:50,077 1024960 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x000001DC552DB1D0, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-08 13:29:50,801 1024960 ERROR odoov18_20260902 odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\__init__.py", line 2, in <module>
+    from . import tests
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\__init__.py", line 1, in <module>
+    from . import test_employee_loan
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\test_employee_loan.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-10-08 13:29:50,974 1024960 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 2.48s, 0 queries (+0 extra) 
+2026-10-08 13:29:51,221 1024960 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-08 13:29:51,276 1024960 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-08 13:29:51,303 1024960 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:51,304 1024960 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:51,312 1024960 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:51,313 1024960 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:51,322 1024960 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:51,325 1024960 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:29:51,388 1024960 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-08 13:29:51,390 1024960 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-08 13:29:51,434 1024960 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 3.201s 
+2026-10-08 13:29:51,582 1024960 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 119, in shell
+    self.console(local_vars)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 2, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1091, in _render_qweb_html
+    return self._render_template(report.report_name, data), 'html'
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 769, in _render_template
+    return view_obj._render_template(template, values).encode()
+  File "d:\dev\odoo\mvis1\addons\website\models\ir_ui_view.py", line 449, in _render_template
+    return super()._render_template(template, values=values)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_ui_view.py", line 2199, in _render_template
+    return self.env['ir.qweb']._render(template, values)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\profiler.py", line 306, in _tracked_method_render
+    return method_render(self, template, values, **options)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 606, in _render
+    result = ''.join(rendering)
+  File "<4796>", line 292, in template_4796
+  File "<4796>", line 281, in template_4796_content
+  File "<216>", line 59, in template_216
+  File "<216>", line 48, in template_216_content
+  File "<202>", line 43, in template_202
+  File "<202>", line 32, in template_202_content
+  File "<200>", line 121, in template_200
+  File "<200>", line 34, in template_200_content
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2489, in _get_asset_nodes
+    links = self._get_asset_links(bundle, css=css, js=js, debug=debug)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2504, in _get_asset_links
+    return self._generate_asset_links_cache(bundle, css=css, js=js, assets_params=assets_params, rtl=rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2558, in _generate_asset_links_cache
+    return self._generate_asset_links(bundle, css, js, False, assets_params, rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2634, in _generate_asset_links
+    asset_bundle = self._get_asset_bundle(bundle, css=css, js=js, debug_assets=debug_assets, rtl=rtl, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2581, in _get_asset_bundle
+    files, external_assets = self._get_asset_content(bundle_name, assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2563, in _get_asset_content
+    asset_paths = self.env['ir.asset']._get_asset_paths(bundle=bundle, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 153, in _get_asset_paths
+    addons = self._topological_sort(tuple(addons))
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\cache.py", line 110, in lookup
+    value = d[key] = self.method(*args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 299, in _topological_sort
+    manifs = sorted(manifs, key=sort_key)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 288, in mapper
+    manif = odoo.modules.module._get_manifest_cached(addon)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:29:51,588 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:29:51,600 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:29:51,614 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:29:51,618 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:29:51,645 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:29:51,655 1024960 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:30:02,195 1018928 INFO ? odoo: Odoo version 18.0 
+2026-10-08 13:30:02,195 1018928 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-08 13:30:02,195 1018928 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-08 13:30:02,195 1018928 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-08 13:30:02,337 1018928 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-08 13:30:02,366 1018928 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-08 13:30:02,608 1018928 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 13:30:02,608 1018928 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 13:30:02,671 1018928 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-08 13:30:02,676 1018928 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-10-08 13:30:02,679 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:30:02,706 1018928 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:30:02,730 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:30:02,732 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:30:02,734 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:30:02,758 1018928 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-08 13:30:02,775 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:30:02,793 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:30:02,806 1018928 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-08 13:30:02,825 1018928 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-08 13:30:04,199 1018928 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x000002016BD4F1D0, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-08 13:30:04,984 1018928 ERROR odoov18_20260902 odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\__init__.py", line 2, in <module>
+    from . import tests
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\__init__.py", line 1, in <module>
+    from . import test_employee_loan
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\test_employee_loan.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-10-08 13:30:05,131 1018928 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 2.33s, 0 queries (+0 extra) 
+2026-10-08 13:30:05,395 1018928 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-08 13:30:05,430 1018928 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-08 13:30:05,455 1018928 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:05,455 1018928 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:05,465 1018928 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:05,466 1018928 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:05,473 1018928 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:05,474 1018928 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:05,549 1018928 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-08 13:30:05,552 1018928 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-08 13:30:05,590 1018928 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 2.981s 
+2026-10-08 13:30:05,734 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:30:05,767 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:30:05,780 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:30:05,791 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:30:05,800 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:30:05,853 1018928 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:30:05,868 1018928 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 119, in shell
+    self.console(local_vars)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 2, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1091, in _render_qweb_html
+    return self._render_template(report.report_name, data), 'html'
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 769, in _render_template
+    return view_obj._render_template(template, values).encode()
+  File "d:\dev\odoo\mvis1\addons\website\models\ir_ui_view.py", line 449, in _render_template
+    return super()._render_template(template, values=values)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_ui_view.py", line 2199, in _render_template
+    return self.env['ir.qweb']._render(template, values)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\profiler.py", line 306, in _tracked_method_render
+    return method_render(self, template, values, **options)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 606, in _render
+    result = ''.join(rendering)
+  File "<4796>", line 292, in template_4796
+  File "<4796>", line 281, in template_4796_content
+  File "<216>", line 59, in template_216
+  File "<216>", line 48, in template_216_content
+  File "<202>", line 43, in template_202
+  File "<202>", line 32, in template_202_content
+  File "<200>", line 121, in template_200
+  File "<200>", line 34, in template_200_content
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2489, in _get_asset_nodes
+    links = self._get_asset_links(bundle, css=css, js=js, debug=debug)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2504, in _get_asset_links
+    return self._generate_asset_links_cache(bundle, css=css, js=js, assets_params=assets_params, rtl=rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2558, in _generate_asset_links_cache
+    return self._generate_asset_links(bundle, css, js, False, assets_params, rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2634, in _generate_asset_links
+    asset_bundle = self._get_asset_bundle(bundle, css=css, js=js, debug_assets=debug_assets, rtl=rtl, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2581, in _get_asset_bundle
+    files, external_assets = self._get_asset_content(bundle_name, assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2563, in _get_asset_content
+    asset_paths = self.env['ir.asset']._get_asset_paths(bundle=bundle, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 153, in _get_asset_paths
+    addons = self._topological_sort(tuple(addons))
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\cache.py", line 110, in lookup
+    value = d[key] = self.method(*args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 299, in _topological_sort
+    manifs = sorted(manifs, key=sort_key)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 288, in mapper
+    manif = odoo.modules.module._get_manifest_cached(addon)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:30:20,269 1009660 INFO ? odoo: Odoo version 18.0 
+2026-10-08 13:30:20,269 1009660 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-08 13:30:20,269 1009660 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-08 13:30:20,269 1009660 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-08 13:30:20,413 1009660 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-08 13:30:20,448 1009660 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-08 13:30:20,781 1009660 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 13:30:20,781 1009660 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 13:30:20,844 1009660 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-08 13:30:20,849 1009660 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-10-08 13:30:20,853 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:30:20,888 1009660 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:30:20,911 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:30:20,913 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:30:20,917 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:30:20,945 1009660 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-08 13:30:20,964 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:30:20,987 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:30:21,006 1009660 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-08 13:30:21,030 1009660 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-08 13:30:22,443 1009660 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x0000020FA847F1D0, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-08 13:30:23,077 1009660 ERROR odoov18_20260902 odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\__init__.py", line 2, in <module>
+    from . import tests
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\__init__.py", line 1, in <module>
+    from . import test_employee_loan
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\test_employee_loan.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-10-08 13:30:23,225 1009660 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 2.22s, 0 queries (+0 extra) 
+2026-10-08 13:30:23,485 1009660 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-08 13:30:23,521 1009660 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-08 13:30:23,547 1009660 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:23,547 1009660 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:23,558 1009660 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:23,560 1009660 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:23,567 1009660 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:23,568 1009660 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:23,628 1009660 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-08 13:30:23,629 1009660 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-08 13:30:23,652 1009660 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 2.871s 
+2026-10-08 13:30:23,804 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:30:23,819 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:30:23,821 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:30:23,835 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:30:23,845 1009660 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 119, in shell
+    self.console(local_vars)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 4, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1012, in _render_qweb_pdf
+    collected_streams, report_type = self._pre_render_qweb_pdf(report_ref, res_ids=res_ids, data=data)
+  File "d:\dev\odoo\mvis1\addons\account\models\ir_actions_report.py", line 75, in _pre_render_qweb_pdf
+    return super()._pre_render_qweb_pdf(report_ref, res_ids=res_ids, data=data)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1003, in _pre_render_qweb_pdf
+    return self._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids), 'pdf'
+  File "d:\dev\odoo\mvis1\addons\purchase\models\ir_actions_report.py", line 12, in _render_qweb_pdf_prepare_streams
+    collected_streams = super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids)
+  File "d:\dev\odoo\mvis1\addons\hr_expense\models\ir_actions_report.py", line 12, in _render_qweb_pdf_prepare_streams
+    res = super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids)
+  File "d:\dev\odoo\mvis1\addons\account\models\ir_actions_report.py", line 22, in _render_qweb_pdf_prepare_streams
+    return super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 853, in _render_qweb_pdf_prepare_streams
+    html = self.with_context(**additional_context)._render_qweb_html(report_ref, all_res_ids_wo_stream, data=data)[0]
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1091, in _render_qweb_html
+    return self._render_template(report.report_name, data), 'html'
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 769, in _render_template
+    return view_obj._render_template(template, values).encode()
+  File "d:\dev\odoo\mvis1\addons\website\models\ir_ui_view.py", line 449, in _render_template
+    return super()._render_template(template, values=values)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_ui_view.py", line 2199, in _render_template
+    return self.env['ir.qweb']._render(template, values)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\profiler.py", line 306, in _tracked_method_render
+    return method_render(self, template, values, **options)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 606, in _render
+    result = ''.join(rendering)
+  File "<4796>", line 292, in template_4796
+  File "<4796>", line 281, in template_4796_content
+  File "<216>", line 59, in template_216
+  File "<216>", line 48, in template_216_content
+  File "<202>", line 43, in template_202
+  File "<202>", line 32, in template_202_content
+  File "<200>", line 121, in template_200
+  File "<200>", line 34, in template_200_content
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2489, in _get_asset_nodes
+    links = self._get_asset_links(bundle, css=css, js=js, debug=debug)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2504, in _get_asset_links
+    return self._generate_asset_links_cache(bundle, css=css, js=js, assets_params=assets_params, rtl=rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2558, in _generate_asset_links_cache
+    return self._generate_asset_links(bundle, css, js, False, assets_params, rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2634, in _generate_asset_links
+    asset_bundle = self._get_asset_bundle(bundle, css=css, js=js, debug_assets=debug_assets, rtl=rtl, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2581, in _get_asset_bundle
+    files, external_assets = self._get_asset_content(bundle_name, assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2563, in _get_asset_content
+    asset_paths = self.env['ir.asset']._get_asset_paths(bundle=bundle, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 153, in _get_asset_paths
+    addons = self._topological_sort(tuple(addons))
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\cache.py", line 110, in lookup
+    value = d[key] = self.method(*args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 299, in _topological_sort
+    manifs = sorted(manifs, key=sort_key)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 288, in mapper
+    manif = odoo.modules.module._get_manifest_cached(addon)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:30:23,877 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:30:23,917 1009660 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:30:24,236 1009660 INFO odoov18_20260902 odoo.addons.base.models.ir_actions_report: Generating PDF on Windows platform require DPI >= 96. Using 96 instead. 
+2026-10-08 13:30:39,271 1009660 INFO odoov18_20260902 odoo.addons.base.models.ir_actions_report: The PDF report has been generated for model: aps.resources, records [137]. 
+2026-10-08 13:30:50,452 998064 INFO ? odoo: Odoo version 18.0 
+2026-10-08 13:30:50,452 998064 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-08 13:30:50,453 998064 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-08 13:30:50,453 998064 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-08 13:30:50,588 998064 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-08 13:30:50,618 998064 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-08 13:30:50,936 998064 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 13:30:50,936 998064 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 13:30:51,006 998064 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-08 13:30:51,011 998064 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-10-08 13:30:51,019 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:30:51,057 998064 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:30:51,089 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:30:51,091 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:30:51,096 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:30:51,126 998064 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-08 13:30:51,151 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:30:51,176 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:30:51,192 998064 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-08 13:30:51,214 998064 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-08 13:30:53,313 998064 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x000001CAFC7EF1D0, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-08 13:30:54,144 998064 ERROR odoov18_20260902 odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\__init__.py", line 2, in <module>
+    from . import tests
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\__init__.py", line 1, in <module>
+    from . import test_employee_loan
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\test_employee_loan.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-10-08 13:30:54,297 998064 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 3.10s, 0 queries (+0 extra) 
+2026-10-08 13:30:54,582 998064 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-08 13:30:54,625 998064 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-08 13:30:54,654 998064 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:54,654 998064 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:54,668 998064 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:54,670 998064 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:54,679 998064 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:54,680 998064 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:30:54,740 998064 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-08 13:30:54,741 998064 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-08 13:30:54,765 998064 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 3.829s 
+2026-10-08 13:30:54,961 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:30:54,984 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:30:55,029 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:30:55,036 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:30:55,052 998064 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 119, in shell
+    self.console(local_vars)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 5, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1012, in _render_qweb_pdf
+    collected_streams, report_type = self._pre_render_qweb_pdf(report_ref, res_ids=res_ids, data=data)
+  File "d:\dev\odoo\mvis1\addons\account\models\ir_actions_report.py", line 75, in _pre_render_qweb_pdf
+    return super()._pre_render_qweb_pdf(report_ref, res_ids=res_ids, data=data)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1003, in _pre_render_qweb_pdf
+    return self._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids), 'pdf'
+  File "d:\dev\odoo\mvis1\addons\purchase\models\ir_actions_report.py", line 12, in _render_qweb_pdf_prepare_streams
+    collected_streams = super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids)
+  File "d:\dev\odoo\mvis1\addons\hr_expense\models\ir_actions_report.py", line 12, in _render_qweb_pdf_prepare_streams
+    res = super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids)
+  File "d:\dev\odoo\mvis1\addons\account\models\ir_actions_report.py", line 22, in _render_qweb_pdf_prepare_streams
+    return super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 853, in _render_qweb_pdf_prepare_streams
+    html = self.with_context(**additional_context)._render_qweb_html(report_ref, all_res_ids_wo_stream, data=data)[0]
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 1091, in _render_qweb_html
+    return self._render_template(report.report_name, data), 'html'
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_actions_report.py", line 769, in _render_template
+    return view_obj._render_template(template, values).encode()
+  File "d:\dev\odoo\mvis1\addons\website\models\ir_ui_view.py", line 449, in _render_template
+    return super()._render_template(template, values=values)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_ui_view.py", line 2199, in _render_template
+    return self.env['ir.qweb']._render(template, values)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\profiler.py", line 306, in _tracked_method_render
+    return method_render(self, template, values, **options)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 606, in _render
+    result = ''.join(rendering)
+  File "<4796>", line 292, in template_4796
+  File "<4796>", line 281, in template_4796_content
+  File "<216>", line 59, in template_216
+  File "<216>", line 48, in template_216_content
+  File "<202>", line 43, in template_202
+  File "<202>", line 32, in template_202_content
+  File "<200>", line 121, in template_200
+  File "<200>", line 34, in template_200_content
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2489, in _get_asset_nodes
+    links = self._get_asset_links(bundle, css=css, js=js, debug=debug)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2504, in _get_asset_links
+    return self._generate_asset_links_cache(bundle, css=css, js=js, assets_params=assets_params, rtl=rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2558, in _generate_asset_links_cache
+    return self._generate_asset_links(bundle, css, js, False, assets_params, rtl)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2634, in _generate_asset_links
+    asset_bundle = self._get_asset_bundle(bundle, css=css, js=js, debug_assets=debug_assets, rtl=rtl, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2581, in _get_asset_bundle
+    files, external_assets = self._get_asset_content(bundle_name, assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_qweb.py", line 2563, in _get_asset_content
+    asset_paths = self.env['ir.asset']._get_asset_paths(bundle=bundle, assets_params=assets_params)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 153, in _get_asset_paths
+    addons = self._topological_sort(tuple(addons))
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\cache.py", line 110, in lookup
+    value = d[key] = self.method(*args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 299, in _topological_sort
+    manifs = sorted(manifs, key=sort_key)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_asset.py", line 288, in mapper
+    manif = odoo.modules.module._get_manifest_cached(addon)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:30:55,071 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:30:55,107 998064 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:30:55,397 998064 INFO odoov18_20260902 odoo.addons.base.models.ir_actions_report: Generating PDF on Windows platform require DPI >= 96. Using 96 instead. 
+2026-10-08 13:31:21,196 998064 INFO odoov18_20260902 odoo.addons.base.models.ir_actions_report: The PDF report has been generated for model: aps.resources, records [137, 324, 328, 344, 352, 423, 758, 928, 980, 1043, 1048, 1087, 1088, 1119, 1146, 1160, 1161, 1277, 1325, 1340]. 
+2026-10-08 13:50:59,192 1048408 INFO ? odoo: Odoo version 18.0 
+2026-10-08 13:50:59,193 1048408 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-08 13:50:59,193 1048408 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-08 13:50:59,193 1048408 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-08 13:50:59,376 1048408 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-08 13:50:59,412 1048408 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-08 13:50:59,900 1048408 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 13:50:59,900 1048408 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 13:50:59,975 1048408 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-08 13:50:59,980 1048408 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-10-08 13:50:59,985 1048408 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:51:00,037 1048408 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:51:00,079 1048408 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:51:00,082 1048408 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:51:00,088 1048408 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:51:00,122 1048408 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-08 13:51:00,151 1048408 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:51:00,189 1048408 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:51:00,209 1048408 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-08 13:51:00,241 1048408 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-08 13:51:02,128 1048408 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x0000016A35C13370, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-08 13:51:03,019 1048408 ERROR odoov18_20260902 odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\__init__.py", line 2, in <module>
+    from . import tests
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\__init__.py", line 1, in <module>
+    from . import test_employee_loan
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\test_employee_loan.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-10-08 13:51:03,241 1048408 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 3.03s, 0 queries (+0 extra) 
+2026-10-08 13:51:03,504 1048408 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-08 13:51:03,540 1048408 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-08 13:51:03,567 1048408 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:03,568 1048408 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:03,578 1048408 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:03,580 1048408 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:03,586 1048408 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:03,588 1048408 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:03,650 1048408 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-08 13:51:03,652 1048408 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-08 13:51:03,677 1048408 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 3.777s 
+2026-10-08 13:51:24,351 1138796 INFO ? odoo: Odoo version 18.0 
+2026-10-08 13:51:24,351 1138796 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-10-08 13:51:24,351 1138796 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-10-08 13:51:24,351 1138796 INFO ? odoo: database: odoo@localhost:5432 
+2026-10-08 13:51:24,478 1138796 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-08 13:51:24,504 1138796 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-08 13:51:24,753 1138796 INFO ? odoo.service.server: Initiating shutdown 
+2026-10-08 13:51:24,753 1138796 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-08 13:51:24,825 1138796 INFO odoov18_20260902 odoo.modules.loading: loading 1 modules... 
+2026-10-08 13:51:24,831 1138796 INFO odoov18_20260902 odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-08 13:51:24,837 1138796 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-10-08 13:51:24,869 1138796 WARNING odoov18_20260902 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-08 13:51:24,896 1138796 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-08 13:51:24,898 1138796 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-08 13:51:24,901 1138796 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-08 13:51:24,925 1138796 WARNING odoov18_20260902 odoo.modules.graph: module smile_odoo_editor_align: not installable, skipped 
+2026-10-08 13:51:24,946 1138796 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-08 13:51:24,969 1138796 WARNING odoov18_20260902 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-08 13:51:24,983 1138796 INFO odoov18_20260902 odoo.modules.loading: loading 208 modules... 
+2026-10-08 13:51:25,007 1138796 WARNING odoov18_20260902 odoo.addons.attachment_indexation.models.ir_attachment: Attachment indexation of PDF documents is unavailable because the 'pdfminer' Python library cannot be found on the system. You may install it from https://pypi.org/project/pdfminer.six/ (e.g. `pip3 install pdfminer.six`) 
+2026-10-08 13:51:26,204 1138796 WARNING odoov18_20260902 odoo.tools.translate: no translation language detected, skipping translation <frame at 0x0000019C57293370, file 'd:\\dev\\odoo\\mvis1\\addons\\om_account_followup\\wizard\\followup_print.py', line 34, code FollowupPrint> 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\__init__.py", line 1, in <module>
+    from . import wizard
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\__init__.py", line 1, in <module>
+    from . import followup_print
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 7, in <module>
+    class FollowupPrint(models.TransientModel):
+  File "d:\dev\odoo\mvis1\addons\om_account_followup\wizard\followup_print.py", line 34, in FollowupPrint
+    default=_('Invoices Reminder'))
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 607, in get_text_alias
+    module, lang = _get_translation_source(1)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 596, in _get_translation_source
+    lang = lang or _get_lang(frame, default_lang)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\translate.py", line 587, in _get_lang
+    _logger.log(log_level, 'no translation language detected, skipping translation %s', frame, stack_info=True)
+2026-10-08 13:51:26,821 1138796 ERROR odoov18_20260902 odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 126, in run
+    self.shell(config['db_name'])
+  File "D:\Dev\Odoo\mvis1\odoo\cli\shell.py", line 112, in shell
+    registry = Registry(dbname)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 364, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 185, in load_module_graph
+    load_openerp_module(package.name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 384, in load_openerp_module
+    __import__(qualname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\__init__.py", line 2, in <module>
+    from . import tests
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\__init__.py", line 1, in <module>
+    from . import test_employee_loan
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\ar_employee_loans\tests\test_employee_loan.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-10-08 13:51:26,947 1138796 INFO odoov18_20260902 odoo.modules.loading: 208 modules loaded in 1.96s, 0 queries (+0 extra) 
+2026-10-08 13:51:27,221 1138796 WARNING odoov18_20260902 odoo.fields: hr.contract.state: selection=[('draft', 'New'), ('pending', 'Pending'), ('open', 'Running'), ('close', 'Expired'), ('cancel', 'Cancelled')] overrides existing selection; use selection_add instead 
+2026-10-08 13:51:27,264 1138796 WARNING odoov18_20260902 odoo.fields: lesson.curriculum.import.state: selection=[('draft', 'Draft'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')] overrides existing selection; use selection_add instead 
+2026-10-08 13:51:27,290 1138796 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile_brief: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:27,290 1138796 WARNING odoov18_20260902 odoo.fields: Field hr.job.job_profile: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:27,305 1138796 WARNING odoov18_20260902 odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:27,307 1138796 WARNING odoov18_20260902 odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:27,313 1138796 WARNING odoov18_20260902 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:27,314 1138796 WARNING odoov18_20260902 odoo.fields: Field lesson.plan.status: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-08 13:51:27,386 1138796 ERROR odoov18_20260902 odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-10-08 13:51:27,387 1138796 INFO odoov18_20260902 odoo.modules.loading: Modules loaded. 
+2026-10-08 13:51:27,414 1138796 INFO odoov18_20260902 odoo.modules.registry: Registry loaded in 2.662s 

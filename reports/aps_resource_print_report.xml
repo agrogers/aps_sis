@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_aps_resource_print" model="report.paperformat">
+        <field name="name">APEX Resource Print</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">12</field>
+        <field name="margin_right">12</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+    </record>
+
+    <record id="action_report_aps_resources_print" model="ir.actions.report">
+        <field name="name">Resources Print</field>
+        <field name="model">aps.resources</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">aps_sis.report_aps_resources_print</field>
+        <field name="paperformat_id" ref="aps_sis.paperformat_aps_resource_print"/>
+    </record>
+
+    <template id="report_aps_resources_print">
+        <t t-call="web.basic_layout">
+            <style>
+                .resource-title { border-bottom: 2px solid #444; margin-bottom: 16px; padding-bottom: 6px; }
+                .resource-section { margin-bottom: 18px; }
+                .resource-section h3 { border-bottom: 1px solid #bbb; font-size: 16px; margin-bottom: 8px; padding-bottom: 4px; }
+                .resource-basic { border-collapse: collapse; width: 100%; }
+                .resource-basic td { border-bottom: 1px solid #ddd; padding: 5px 7px; vertical-align: top; }
+                .resource-basic td:first-child { font-weight: bold; width: 24%; }
+                .resource-html { overflow-wrap: anywhere; }
+                .resource-html img { max-width: 100%; height: auto; }
+                .resource-html table { max-width: 100%; }
+                .resource-students { columns: 2; margin: 0; padding-left: 20px; }
+            </style>
+            <div class="page">
+                <t t-foreach="prepared_resources" t-as="prepared">
+                    <t t-if="data.get('page_breaks') == 'resource' and prepared_index &gt; 0">
+                        <div style="page-break-before: always;"></div>
+                    </t>
+                    <t t-if="data.get('title_mode') != 'none'">
+                        <h2 class="resource-title">
+                            <t t-if="data.get('title_mode') == 'numbered'">
+                                Resource <t t-esc="prepared['record'].id"/>
+                            </t>
+                            <t t-else="">
+                                <t t-esc="prepared['record'].display_name"/>
+                            </t>
+                        </h2>
+                    </t>
+                    <t t-foreach="prepared['sections']" t-as="section">
+                        <t t-if="data.get('page_breaks') == 'field' and section_index &gt; 0">
+                            <div style="page-break-before: always;"></div>
+                        </t>
+                        <div class="resource-section">
+                            <h3 t-esc="section['title']"/>
+                            <t t-if="section['kind'] == 'basic'">
+                                <table class="resource-basic">
+                                    <tbody>
+                                        <tr t-foreach="section['fields']" t-as="item">
+                                            <td t-esc="item[0]"/>
+                                            <td t-esc="item[1]"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-if="section['kind'] == 'html'">
+                                <div class="resource-html" t-out="section['body']"/>
+                            </t>
+                            <t t-if="section['kind'] == 'students'">
+                                <ul class="resource-students">
+                                    <li t-foreach="section['students']" t-as="student" t-esc="student.display_name"/>
+                                </ul>
+                                <p t-if="not section['students']" class="text-muted">No students are currently assigned.</p>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+            </div>
+        </t>
+    </template>
+</odoo>

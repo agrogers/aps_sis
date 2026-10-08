@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_aps_resource_print_wizard_form" model="ir.ui.view">
+        <field name="name">aps.resource.print.wizard.form</field>
+        <field name="model">aps.resource.print.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Print Resources" js_class="aps_resource_print_wizard_form">
+                <field name="resource_ids" invisible="1"/>
+                <group>
+                    <field name="resource_count" readonly="1"/>
+                </group>
+                <group col="2">
+                    <group string="Sections">
+                        <field name="include_basic" widget="boolean_toggle"/>
+                        <field name="include_notes" widget="boolean_toggle"/>
+                        <field name="include_question" widget="boolean_toggle"/>
+                        <field name="include_model_answer" widget="boolean_toggle"/>
+                        <field name="include_lesson_plan" widget="boolean_toggle"/>
+                        <field name="include_assigned_students" widget="boolean_toggle"/>
+                    </group>
+                    <group string="Formatting">
+                        <field name="title_mode" widget="radio"/>
+                        <field name="include_images" widget="boolean_toggle"/>
+                        <field name="page_breaks" widget="radio"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_report" string="Print" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_aps_resource_print_wizard" model="ir.actions.act_window">
+        <field name="name">Print Resources</field>
+        <field name="res_model">aps.resource.print.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_resource_ids': active_ids}</field>
+        <field name="binding_model_id" ref="aps_sis.model_aps_resources"/>
+        <field name="binding_view_types">list</field>
+        <field name="binding_type">action</field>
+    </record>
+</odoo>

@@ -295,11 +295,18 @@
                             invisible="due_status != 'on-time'"/> 
                     <widget name="web_ribbon" title="Early" bg_color="bg-success" 
                             invisible="due_status != 'early'"/> 
-                    <group>
-                        <div class="d-flex align-items-left gap-1">
-                            <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px"/>
-                            <field name="submission_name" nolabel="1" class="fs-3 fw-bold" />
-                        </div>
+                    <group col="1">
+                        <group col="12">
+                            <group colspan="9">
+                                <div class="d-flex align-items-left gap-1">
+                                    <field name="type_icon" widget="image" options="{'size': [32, 32]}" nolabel="1" style="width:32px"/>
+                                    <field name="submission_name" nolabel="1" class="fs-3 fw-bold" />
+                                </div>
+                            </group>
+                            <group colspan="3">
+                                <field name="score" widget="submission_score"  style="margin-bottom:7px" nolabel="1" readonly="state == 'complete' or (state == 'submitted' and not is_current_user_faculty)"/>
+                            </group>
+                        </group>
                         <field name="student_id"/>
                     </group>
 
@@ -365,16 +372,48 @@
                             </group>
                         </page>
                         <page string="Student Answer+Feedback" class="tab-with-icon student-answer-tab" name="student_answer_page">
-                                <div class="mb-2">
-                                    <field name="confidence_rating" widget="priority" readonly="not is_current_user_faculty" invisible="state == 'complete' and not confidence_rating"/>
+
+                            <div class="row align-items-start">
+                                <div class="col-lg-11">
+                                    <field name="ai_targeted_feedback" invisible="1"/>
+                                    <field name="ai_answer_chunks" invisible="1"/>
+                                    <field name="ai_answer_chunked_html" invisible="1"/>
+                                    <field name="ai_feedback_items" invisible="1"/>
+                                    <field name="ai_feedback_links" invisible="1"/>
+                                    <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1" invisible="not has_feedback"/>
                                 </div>
-                                <field name="ai_targeted_feedback" invisible="1"/>
-                                <field name="ai_answer_chunks" invisible="1"/>
-                                <field name="ai_answer_chunked_html" invisible="1"/>
-                                <field name="ai_feedback_items" invisible="1"/>
-                                <field name="ai_feedback_links" invisible="1"/>
-                                <field name="feedback" widget="submission_feedback_viewer" nolabel="1" readonly="1" invisible="not has_feedback"/>
+                                <div class="col-lg-1 d-flex flex-column gap-2">
+                                    <button name="action_start_mark_with_ai"
+                                            string="Mark AI"
+                                            type="object"
+                                            class="btn-primary"
+                                            groups="aps_sis.group_aps_teacher"
+                                            invisible="not is_current_user_faculty or ai_action in ['none']"/>
+                                    <field name="ai_override_model_id"
+                                           options="{'no_create': True, 'no_open': True}"
+                                           placeholder="Default model"
+                                           groups="aps_sis.group_aps_teacher"
+                                           invisible="not is_current_user_faculty or ai_action in ['none']"/>
+                                    <button name="action_requeue_auto_ai_marking"
+                                            string="Requeue AI"
+                                            type="object"
+                                            class="btn-secondary"
+                                            groups="aps_sis.group_aps_teacher"
+                                            invisible="not is_current_user_faculty or state != 'submitted' or ai_action in ['none','manual']"/>
+                                </div>
+                            </div>
+
+
+                            <div class="mt-4">
+                                <group>
+                                    <field name="confidence_rating" widget="priority" readonly="not is_current_user_faculty" invisible="state == 'complete' and not confidence_rating"/>
+                                </group>
+                            </div>
+                            
+                            <details class="pt-4">
+                                <summary>Student Answer (Editable)</summary>
                                 <field name="answer" nolabel="1"/>
+                            </details>
                         </page>
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" name="feedback_page">
                             <div class="row align-items-start">

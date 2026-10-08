@@ -72,6 +72,7 @@ access_aps_time_tracking_student,aps.time.tracking.student,model_aps_time_tracki
 access_aps_time_tracking_overlap_wizard_teacher,aps.time.tracking.overlap.wizard.teacher,model_aps_time_tracking_overlap_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_time_tracking_overlap_wizard_student,aps.time.tracking.overlap.wizard.student,model_aps_time_tracking_overlap_wizard,aps_sis.group_aps_student,1,1,1,1
 access_aps_submission_report_wizard_teacher,aps.submission.report.wizard.teacher,model_aps_submission_report_wizard,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_resource_print_wizard_teacher,aps.resource.print.wizard.teacher,model_aps_resource_print_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_ai_save_response_wizard_teacher,aps.ai.save.response.wizard.teacher,model_aps_ai_save_response_wizard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_dashboard_teacher,aps.dashboard.teacher,model_aps_dashboard,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_media_type_teacher,aps.media.type.teacher,model_aps_media_type,aps_sis.group_aps_teacher,1,1,1,1

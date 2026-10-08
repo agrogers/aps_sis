@@ -66,7 +66,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 (tag.name or '').strip().casefold() == SAMPLE_COMPARISON_RESOURCE_TAG
                 for tag in sample.tag_ids
             )
-        )
+        ).sorted(key=lambda sample: (sample.weight, sample.id))
 
     @staticmethod
     def calculate_score_range(comparisons, target_maximum, same_tolerance=SAMPLE_COMPARISON_SAME_TOLERANCE):
@@ -259,7 +259,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         )
         return strategy_prompt | image_prompts
 
-    def _build_sample_comparison_context(self, target_context, strategy_prompt, benchmark_answer):
+    def _build_sample_comparison_context(self, target_context, strategy_prompt, benchmark_answer, benchmark_name):
         resource = self._get_ai_feedback_resource()
         prompts = self._get_sample_comparison_prompts(resource, strategy_prompt)
         rubric = target_context.get('model_answer') or ''
@@ -269,13 +269,22 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             'answer from the order in which text appears. Use the supplied marking rubric to judge '
             'both answers against the same task. Focus only on the criteria stated '
             'in the supplied rubric. Do not introduce, assume, or substitute a topic or criteria not stated in the '
-            'rubric. Additional information about either answer is intentionally withheld. '
+            'rubric. \n'
+            'Do not evaluate the topic or subject matter. Do not consider whether either answer stays on topic or is relevant to a particular subject '
+            'unless the supplied rubric explicitly includes that criterion.'
+            'Additional information about either answer is intentionally withheld. '
             'Do not assign or infer a numerical mark. Return exactly one valid JSON object '
-            'with keys "result" and "reason". The result must be exactly BETTER, SAME, or WORSE. BETTER means '
-            'the Answer 1 is clearly better than the Answer 2; SAME means essentially equivalent; '
-            'differences of about %(tolerance)s marks should normally be treated as SAME. WORSE means the Student '
-            'Answer 1 is clearly worse than the Answer 2. In the reason, call the answers "Answer 1" '
-            'and "Answer 2" and explain the comparison only against the supplied question and rubric.'
+            'with keys "result" and "reason". \n'
+            'Classify Answer 1 relative to Answer 2 (not the other way around): '
+            '"BETTER" means Answer 1 is clearly stronger than Answer 2; '
+            '"SAME" means they are essentially equivalent; '
+            '"WORSE" means Answer 1 is clearly weaker than Answer 2. Differences of about '
+            '%(tolerance)s marks should normally be treated as SAME. '
+            'In "reason", explain which answer is stronger using the exact labels "Answer 1" and "Answer 2".'
+            'Before returning, verify that the result '
+            'agrees with the reason: if the reason says Answer 2 is stronger or Answer 1 is weaker, the result '
+            'must be "WORSE"; if it says Answer 1 is stronger, the result must be "BETTER"; if neither is '
+            'clearly stronger, use "SAME". Explain the comparison only against the supplied question and rubric.'
         ) % {'tolerance': self._format_sample_scaling_score(SAMPLE_COMPARISON_SAME_TOLERANCE)}
         return {
             **target_context,
@@ -287,6 +296,8 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             'output_schema_override': (
                 'Return ONLY valid JSON with exactly these keys: '
                 '{"result":"BETTER|SAME|WORSE","reason":"brief explanation"}. '
+                'The result describes Answer 1 relative to Answer 2. Check that its direction agrees with the '
+                'reason: Answer 2 stronger means WORSE; Answer 1 stronger means BETTER. '
                 'Do not return a score or any additional keys.'
             ),
             'use_model_answer': bool(rubric),
@@ -295,6 +306,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             'note_section_key': 'answer_2',
             'comparison_pair': True,
             'notes': benchmark_answer or '',
+            'answer_2_resource_name': benchmark_name,
             'ai_targeted_feedback': False,
             'prompt_ids': prompts,
             'image_prompt_names': prompts.mapped('prompt_name'),
@@ -316,72 +328,19 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 SAMPLE_COMPARISON_PROMPT_NAME,
             )
         )
-        sorted_samples = sorted(
-            scored_samples,
-            key=lambda spec: abs(spec['target_score'] - calibration['score_estimate']),
-        )
-        local_samples = sorted_samples[:2] if len(sorted_samples) > 2 else sorted_samples
-        evidence_lines = []
-        for item in calibration['comparisons']:
-            evidence_lines.append(
-                '%s (%s/%s): %s%s. Reason: %s' % (
-                    item.get('benchmark_name') or _('Sample'),
-                    self._format_sample_scaling_score(item['benchmark_score']),
-                    self._format_sample_scaling_score(target_context.get('out_of_marks') or 0),
-                    item['result'],
-                    ' [ANOMALY]' if item.get('anomaly') else '',
-                    item.get('reason') or _('No explanation returned.'),
-                )
-            )
-        for spec in local_samples:
-            evidence_lines.append(
-                'Relevant benchmark answer (%(name)s; official %(score)s/%(maximum)s): %(answer)s' % {
-                    'name': spec['name'],
-                    'score': self._format_sample_scaling_score(spec['official_score']),
-                    'maximum': self._format_sample_scaling_score(spec['maximum']),
-                    'answer': spec['answer_text'],
-                }
-            )
-        final_instructions = _(
+        score_guidance = _(
             'Use the calibrated comparison evidence; do not independently rescore from scratch. '
-            'Choose the final mark within the range %(lower)s-%(upper)s out of %(maximum)s, normally. '
-            'The estimated mark is %(estimate)s and confidence is %(confidence)s. There are %(anomalies)s '
-            'comparison anomalies (severity %(severity)s). Use the rubric and the nearby benchmark answers '
-            'to position the answer within the range. Feedback must explain what the student did well, what '
-            'specifically prevents the next higher mark, and what to improve next; align it to the final score. '
-            'Return JSON containing an integer score, confidence (HIGH/MEDIUM/LOW), feedback, and reason.'
+            'Choose the final mark within the range %(lower)s-%(upper)s out of %(maximum)s, normally.'
         ) % {
             'lower': calibration['score_lower'],
             'upper': calibration['score_upper'],
             'maximum': self._format_sample_scaling_score(target_context.get('out_of_marks') or 0),
-            'estimate': calibration['score_estimate'],
-            'confidence': calibration['confidence'],
-            'anomalies': calibration['anomaly_count'],
-            'severity': self._format_sample_scaling_score(calibration['anomaly_severity']),
         }
         return {
             **target_context,
-            'instructions': '%s\n\n%s' % (
-                target_context.get('instructions') or '',
-                final_instructions,
-            ),
-            'use_question': bool(target_context.get('question')),
-            'use_model_answer': bool(target_context.get('model_answer')),
-            'use_note': True,
-            'notes': '%s\n\n%s' % (target_context.get('notes') or '', '\n'.join(evidence_lines)),
-            'ai_targeted_feedback': False,
-            'output_schema_override': (
-                'Return ONLY valid JSON with these keys: '
-                '{"score": integer, "confidence":"HIGH|MEDIUM|LOW", '
-                '"feedback":"specific student-facing feedback", "reason":"brief rationale"}. '
-                'The score must be inside the supplied inclusive range.'
-            ),
+            'score_guidance': score_guidance,
             'prompt_ids': marking_prompts,
             'image_prompt_names': marking_prompts.mapped('prompt_name'),
-            'image_sources': {
-                **(target_context.get('image_sources') or {}),
-                'notes': '\n'.join(evidence_lines),
-            },
         }
 
     def _build_sample_comparison_audit_html(self, audit):
@@ -393,12 +352,21 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         parts.append('<p>%s</p>' % escape(audit.get('summary') or ''))
         parts.append('<ul>')
         for item in audit.get('comparisons') or []:
-            label = '%s (%s/%s): %s' % (
-                item.get('benchmark_name') or _('Sample'),
-                self._format_sample_scaling_score(item.get('official_score') or 0),
-                self._format_sample_scaling_score(item.get('maximum') or 0),
-                item.get('result') or item.get('status') or _('Unavailable'),
-            )
+            benchmark_name = item.get('benchmark_name') or _('Sample')
+            official_score = self._format_sample_scaling_score(item.get('official_score') or 0)
+            maximum = self._format_sample_scaling_score(item.get('maximum') or 0)
+            score_label = '(%s/%s)' % (official_score, maximum)
+            if score_label in benchmark_name:
+                label = '%s: %s' % (
+                    benchmark_name,
+                    item.get('result') or item.get('status') or _('Unavailable'),
+                )
+            else:
+                label = '%s %s: %s' % (
+                    benchmark_name,
+                    score_label,
+                    item.get('result') or item.get('status') or _('Unavailable'),
+                )
             if item.get('anomaly'):
                 label += ' [ANOMALY; severity %s]' % self._format_sample_scaling_score(
                     item.get('anomaly_severity') or 0
@@ -544,6 +512,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                     target_context,
                     strategy_prompt,
                     answer_text,
+                    sample.display_name or sample.name or _('Sample'),
                 )
                 sample_specs.append({
                     'resource': sample,
@@ -667,7 +636,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         for attempt in range(2):
             if attempt:
                 final_context = dict(final_context)
-                final_context['instructions'] += '\n\n' + (_(
+                final_context['score_guidance'] += '\n' + (_(
                     'CORRECTION REQUIRED: your previous score was outside the allowed range. Return a score '
                     'within %(lower)s-%(upper)s, inclusive. Do not return a score outside these bounds.'
                 ) % {'lower': lower, 'upper': upper})
@@ -677,47 +646,27 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 feedback_context=final_context,
             )
             calls.append(final_result)
-            parsed = model._parse_structured_response(final_result.get('raw_content') or '')
-            score = parsed.get('score') if isinstance(parsed, dict) else final_result.get('score')
+            score = final_result.get('score')
             try:
                 numeric_score = float(score)
             except (TypeError, ValueError):
                 numeric_score = None
-            feedback = parsed.get('feedback') if isinstance(parsed, dict) else False
             if (
                 numeric_score is not None
                 and numeric_score.is_integer()
                 and lower <= numeric_score <= upper
-                and isinstance(feedback, str)
-                and feedback.strip()
+                and final_result.get('feedback_html')
             ):
                 final_result['score'] = numeric_score
-                final_result['feedback_html'] = '<p>%s</p>' % escape(feedback.strip()).replace('\n', '<br/>')
-                final_result['score_comment'] = (
-                    (parsed.get('reason') if isinstance(parsed, dict) else False)
-                    or final_result.get('score_comment')
-                )
                 audit['final_reason'] = final_result['score_comment'] or ''
-                audit['final_feedback'] = (
-                    '<p>%s</p>' % escape(feedback.strip()).replace('\n', '<br/>')
-                    if isinstance(feedback, str) and feedback.strip()
-                    else final_result.get('feedback_html') or ''
-                )
-                audit['final_confidence'] = (
-                    parsed.get('confidence') if isinstance(parsed, dict) else False
-                ) or calibration['confidence']
-                if audit['final_confidence'] not in ('HIGH', 'MEDIUM', 'LOW'):
-                    audit['final_confidence'] = calibration['confidence']
+                audit['final_feedback'] = final_result.get('feedback_html') or ''
+                audit['final_confidence'] = calibration['confidence']
                 break
             numeric_score = None
         else:
             review_required = True
             final_result = dict(final_result or {})
             final_result['score'] = calibration['score_estimate']
-            parsed = model._parse_structured_response(final_result.get('raw_content') or '')
-            rejected_feedback = parsed.get('feedback') if isinstance(parsed, dict) else False
-            if isinstance(rejected_feedback, str) and rejected_feedback.strip():
-                final_result['feedback_html'] = '<p>%s</p>' % escape(rejected_feedback.strip()).replace('\n', '<br/>')
             if not final_result.get('feedback_html'):
                 final_result['feedback_html'] = '<p>%s</p>' % escape(_(
                     'The AI score did not remain within the comparison range after correction. Please review the comparison evidence and final mark.'
@@ -728,7 +677,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             audit['final_confidence'] = 'LOW'
 
         audit['review_required'] = review_required
-        audit['summary'] = _('Student answer compared against %(count)s benchmark answers.') % {
+        audit['summary'] = _('Student answer (Answer 1) compared against %(count)s benchmark answers (Answer 2).') % {
             'count': sum(1 for item in evidence if item.get('status') == 'complete'),
         }
         audit['comparisons'] = evidence
@@ -811,7 +760,6 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             _('Not calibrated') if audit.get('fallback_reason') else audit.get('confidence') or 'LOW'
         )
         reason = audit.get('final_reason') or result.get('score_comment') or ''
-        feedback = audit.get('final_feedback') or result.get('feedback_html') or ''
         parts = ['<p><strong>%s</strong></p>' % escape(_('AI FINAL MARK'))]
         parts.append('<p>%s</p>' % escape(_('Score: %s/%s') % (
             self._format_sample_scaling_score(score or 0),
@@ -830,8 +778,6 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         parts.append('<p>%s %s</p>' % (escape(_('Confidence:')), escape(confidence)))
         if reason:
             parts.append('<p><strong>%s</strong><br/>%s</p>' % (escape(_('Reason:')), escape(reason)))
-        if feedback:
-            parts.append('<p><strong>%s</strong></p>%s' % (escape(_('Feedback:')), feedback))
         if audit.get('review_required'):
             parts.append('<p><strong>%s</strong></p>' % escape(_('Human review required; the estimate was used after an invalid final score.')))
         return Markup(''.join(parts))

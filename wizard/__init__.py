@@ -1,4 +1,5 @@
 from . import submission_report_wizard
+from . import aps_resource_print_wizard
 from importlib import import_module
 
 import_module('.class', __package__)

@@ -609,6 +609,15 @@ class APSResource(models.Model):
     def _onchange_ai_prompt_preview_fields(self):
         self._compute_ai_active_prompts()
 
+    @api.onchange('ai_table_of_results')
+    def _onchange_ai_table_of_results(self):
+        for record in self:
+            if not record.ai_table_of_results:
+                format_prompts = record.ai_prompt_ids.filtered(
+                    lambda prompt: prompt.message_section == 'results_table_format'
+                )
+                record.ai_prompt_ids = [(3, prompt_id) for prompt_id in format_prompts.ids]
+
     @api.depends('subjects', 'subjects.category_id')
     def _compute_subject_categories(self):
         for record in self:

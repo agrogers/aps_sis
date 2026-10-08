@@ -177,7 +177,33 @@
 
 
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" invisible="state=='assigned' or not has_feedback or not is_current_user_faculty"  name="feedback_page" >
-                            <field name="feedback" nolabel="1" readonly="True if is_current_user_faculty else True" placeholder="Feedback on this submission."/>
+
+
+                            <div class="row align-items-start">
+                                <div class="col-lg-11">
+                                    <field name="feedback" nolabel="1" placeholder="Feedback on this submission." invisible="not answer"/>
+                                </div>
+                                <div class="col-lg-1 d-flex flex-column gap-2" invisible="not is_current_user_faculty or ai_action in ['none']">
+                                    <button name="action_start_mark_with_ai"
+                                            string="Mark AI"
+                                            type="object"
+                                            class="btn-primary"
+                                            groups="aps_sis.group_aps_teacher"
+                                            invisible="not is_current_user_faculty or ai_action in ['none']"/>
+                                    <field name="ai_override_model_id"
+                                           options="{'no_create': True, 'no_open': True}"
+                                           placeholder="Default model"
+                                           groups="aps_sis.group_aps_teacher"
+                                           invisible="not is_current_user_faculty or ai_action in ['none']"/>
+                                    <button name="action_requeue_auto_ai_marking"
+                                            string="Requeue AI"
+                                            type="object"
+                                            class="btn-secondary"
+                                            groups="aps_sis.group_aps_teacher"
+                                            invisible="not is_current_user_faculty or state != 'submitted' or ai_action in ['none','manual']"/>
+                                </div>
+                            </div>
+
                         </page>
                         <page string="Model Answer" class=" tab-with-icon model-answer-tab" invisible="not model_answer or state=='assigned' or model_answer_is_notes or has_answer == 'hidden'" name="model_answer_page">
                             <field name="model_answer" nolabel="1" placeholder="Model answer for this submission."/>

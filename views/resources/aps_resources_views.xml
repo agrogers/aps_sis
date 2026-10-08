@@ -321,8 +321,13 @@
                             </field>
                         </page>
                         <page string="Supporting Resources" invisible="not has_supporting_resources=='yes'">
-                            <group>
-                                <div><i>Supporting resources usually include videos or related quizzes that do not contribute to the total marks.</i></div>
+                            <group col="12">
+                                <group colspan="8">
+                                    <div><i>Supporting resources usually include videos or related quizzes that do not contribute to the total marks.</i></div>
+                                </group>
+                                <group colspan="4">
+                                    <field name="supporting_resources_buttons" widget="resource_links" options="{'size': '32px', 'show_name':True}" nolabel="1"/>
+                                </group>
                             </group>
                             <button name="action_open_supporting_resources_list" type="object" string="Open in List View" class="btn-link mb-2" icon="fa-external-link" invisible="not supporting_resource_ids"/>
                             <field name="supporting_resource_ids" widget="many2many" 
@@ -460,6 +465,33 @@
                                 <field name="ai_instructions" nolabel="1"
                                     placeholder="Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student's submission."
                                     readonly="not is_aps_manager"/>
+                            </group>
+                            <group string="Help: Sample Comparison and Scaling">
+                                <div class="alert alert-info" role="alert">
+                                    <p>
+                                        Attach one of the special prompts below to enable its sample-based marking workflow.
+                                        These prompts are identified by their exact names.
+                                    </p>
+                                    <ul>
+                                        <li>
+                                            <strong>Use Sample Comparison</strong> compares the student answer with linked
+                                            resources tagged <em>Sample Answer</em>. The comparison evidence is used to
+                                            estimate a mark range, then the normal marking prompts generate the final
+                                            feedback and mark within that range.
+                                        </li>
+                                        <li>
+                                            <strong>Use Sample Scaling</strong> marks the linked sample answers using the
+                                            normal marking prompts, then uses their official marks to calibrate the
+                                            student's final mark.
+                                        </li>
+                                    </ul>
+                                    <p>
+                                        For either workflow, make sure the linked sample resources have a valid maximum
+                                        mark and an official mark. Comparison samples must also have the
+                                        <em>Sample Answer</em> tag and their answer text in the Notes field.
+                                        If both special prompts are attached, Sample Comparison takes precedence.
+                                    </p>
+                                </div>
                             </group>
                         </page>
 
