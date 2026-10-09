@@ -1,0 +1,25 @@
+.o_selectable_kanban_checkbox {
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-top: 2px !important;
+    margin-left: 2px !important;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.o_selectable_kanban_checkbox:hover {
+    outline: 2px solid #f4a0a0;
+    outline-offset: 2px;
+}
+
+.o_kanban_record:has(.o_selectable_kanban_checkbox:hover) .card {
+    border-color: #f4a0a0 !important;
+}
+
+.o_kanban_record:has(.o_selectable_kanban_checkbox:checked) .card {
+    border: 2px solid #ff0000 !important;
+}
+
+.o_field_selectable_kanban .o_x2m_control_panel {
+    margin-bottom: 0rem !important;
+}

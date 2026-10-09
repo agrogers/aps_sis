@@ -119,6 +119,19 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(next_y, 350)
         self.assertEqual(bounds, (75, 100, 925, 350))
 
+    def test_short_last_manual_crop_extends_to_page_bottom(self):
+        importer = self.env['aps.exam.paper.import']
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 1000, 'height': 1500,
+        })
+
+        bounds = importer._crop_bounds(
+            {'manual': True, 'x1': 75, 'y1': 100, 'x2': 925, 'y2': 190},
+            page, {}, next_section_y=None,
+        )
+
+        self.assertEqual(bounds, (75, 100, 925, 1500))
+
     def test_inherited_manual_crop_uses_next_section_after_region_owner(self):
         importer = self.env['aps.exam.paper.import']
         job = self.env['aps.exam.paper.import'].create({
@@ -805,6 +818,7 @@ class TestExamPaperImport(TransactionCase):
             {
                 'import_id': job.id, 'sequence': 1, 'source_key': '1',
                 'display_label': 'Q1', 'root_key': 'Q1',
+                'question_pages': '', 'answer_pages': '',
                 'question_summary': 'Solve the equations and show your working.',
                 'question_regions': [{'x1': 0.1, 'y1': 0.1, 'x2': 0.9, 'y2': 0.2}],
                 'answer_regions': [{'x1': 0.1, 'y1': 0.1, 'x2': 0.9, 'y2': 0.2}],
@@ -812,6 +826,7 @@ class TestExamPaperImport(TransactionCase):
             {
                 'import_id': job.id, 'sequence': 2, 'source_key': '1a',
                 'display_label': 'Q1a', 'root_key': 'Q1', 'maximum_mark': 2,
+                'question_pages': '', 'answer_pages': '',
                 'question_summary': 'Calculate the missing angle.',
                 'question_regions': [{'x1': 0.1, 'y1': 0.2, 'x2': 0.9, 'y2': 0.4}],
                 'answer_regions': [{'x1': 0.1, 'y1': 0.2, 'x2': 0.9, 'y2': 0.4}],
@@ -831,12 +846,22 @@ class TestExamPaperImport(TransactionCase):
         self.assertNotIn('Question pages', child.description)
         self.assertEqual(q1.description, 'Solve the equations and show your working.')
         self.assertIn('<h1>Q1a</h1>', q1.question)
+        for html in (q1.question, q1.answer):
+            self.assertEqual(html.count('data-embedded="tableOfContent"'), 1)
+            self.assertLess(
+                html.index('data-embedded="tableOfContent"'),
+                html.index('<h1>Q1a</h1>'),
+            )
+        self.assertNotIn('data-embedded="tableOfContent"', child._question_from_parent())
+        self.assertNotIn('data-embedded="tableOfContent"', child._answer_from_parent())
 
         q1.write({'description': 'Teacher root description.'})
         child.write({'description': 'Teacher part description.'})
         job.action_build_resources()
         self.assertEqual(q1.description, 'Teacher root description.')
         self.assertEqual(child.description, 'Teacher part description.')
+        self.assertEqual(q1.question.count('data-embedded="tableOfContent"'), 1)
+        self.assertEqual(q1.answer.count('data-embedded="tableOfContent"'), 1)
 
     def test_resource_builder_adds_content_for_root_only_question(self):
         job = self.env['aps.exam.paper.import'].create({
@@ -850,6 +875,8 @@ class TestExamPaperImport(TransactionCase):
             'source_key': '7',
             'display_label': 'Q7',
             'root_key': 'Q7',
+            'question_pages': '',
+            'answer_pages': '',
             'hierarchy_level': 1,
             'question_summary': 'Determine the value of the unknown.',
             'maximum_mark': 5,
@@ -858,7 +885,7 @@ class TestExamPaperImport(TransactionCase):
         })
 
         def image_html(_import, _resource, _section, document_type, log=False):
-            return '<img data-document="%s"></img>' % document_type
+            return '<img alt="%s"></img>' % document_type
 
         with patch.object(
             type(job), '_build_section_image_html', autospec=True,
@@ -868,8 +895,18 @@ class TestExamPaperImport(TransactionCase):
 
         resource = self.resource.child_ids.filtered(lambda item: item.name == 'Q7')
         self.assertEqual(len(resource), 1)
-        self.assertIn('data-document="question"', resource.question)
-        self.assertIn('data-document="mark_scheme"', resource.answer)
+        self.assertIn('alt="question"', resource.question)
+        self.assertIn('alt="mark_scheme"', resource.answer)
+        self.assertEqual(resource.question.count('data-embedded="tableOfContent"'), 1)
+        self.assertEqual(resource.answer.count('data-embedded="tableOfContent"'), 1)
+        self.assertLess(
+            resource.question.index('data-embedded="tableOfContent"'),
+            resource.question.index('<h1>Q7</h1>'),
+        )
+        self.assertLess(
+            resource.answer.index('data-embedded="tableOfContent"'),
+            resource.answer.index('<h1>Q7</h1>'),
+        )
         self.assertEqual(resource.marks, 5)
         self.assertEqual(resource.description, 'Determine the value of the unknown.')
         self.assertEqual(section.resource_id, resource)

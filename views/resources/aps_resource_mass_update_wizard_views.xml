@@ -144,10 +144,28 @@
                                     <group colspan="8"><field name="has_child_resources_value" invisible="not update_has_child_resources"/></group>
 
                                     <group colspan="4">
+                                        <field name="update_linked_resources" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_linked_resources" class="mb-0">Update Linked Resources</label>
+                                    </group>
+                                    <group colspan="8">
+                                        <field name="linked_resources_add_ids" widget="many2many_tags" invisible="not update_linked_resources" domain="[('id', 'not in', resource_ids)]" placeholder="Resources to add..."/>
+                                        <field name="linked_resources_remove_ids" widget="many2many_tags" invisible="not update_linked_resources" domain="[('id', 'not in', resource_ids)]" placeholder="Resources to remove..."/>
+                                    </group>
+
+                                    <group colspan="4">
                                         <field name="update_has_supporting_resources" nolabel="1" widget="boolean_toggle"/>
                                         <label for="update_has_supporting_resources" class="mb-0">Has Supporting Resources</label>
                                     </group>
                                     <group colspan="8"><field name="has_supporting_resources_value" invisible="not update_has_supporting_resources"/></group>
+
+                                    <group colspan="4">
+                                        <field name="update_supporting_resources" nolabel="1" widget="boolean_toggle"/>
+                                        <label for="update_supporting_resources" class="mb-0">Update Supporting Resources</label>
+                                    </group>
+                                    <group colspan="8">
+                                        <field name="supporting_resources_add_ids" widget="many2many_tags" invisible="not update_supporting_resources" domain="[('id', 'not in', resource_ids)]" placeholder="Resources to add..."/>
+                                        <field name="supporting_resources_remove_ids" widget="many2many_tags" invisible="not update_supporting_resources" domain="[('id', 'not in', resource_ids)]" placeholder="Resources to remove..."/>
+                                    </group>
 
                                     <group colspan="4"><span class="o_form_label fw-bold">TECHNICAL</span></group><group colspan="8"/>
 

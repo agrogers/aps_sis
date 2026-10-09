@@ -95,6 +95,25 @@ class APSResourceMassUpdateWizard(models.TransientModel):
         ('yes', 'Yes'),
     ], string='Value')
 
+    update_linked_resources = fields.Boolean(string='Linked Resources')
+    linked_resources_add_ids = fields.Many2many(
+        'aps.resources', 'aps_mass_update_linked_add_rel', 'wizard_id', 'resource_id',
+        string='Linked Resources to Add',
+    )
+    linked_resources_remove_ids = fields.Many2many(
+        'aps.resources', 'aps_mass_update_linked_remove_rel', 'wizard_id', 'resource_id',
+        string='Linked Resources to Remove',
+    )
+    update_supporting_resources = fields.Boolean(string='Supporting Resources')
+    supporting_resources_add_ids = fields.Many2many(
+        'aps.resources', 'aps_mass_update_supporting_add_rel', 'wizard_id', 'resource_id',
+        string='Supporting Resources to Add',
+    )
+    supporting_resources_remove_ids = fields.Many2many(
+        'aps.resources', 'aps_mass_update_supporting_remove_rel', 'wizard_id', 'resource_id',
+        string='Supporting Resources to Remove',
+    )
+
     update_allow_subject_editing = fields.Boolean(string='Allow Subject Editing')
     allow_subject_editing_value = fields.Boolean(string='Value', default=True)
 
@@ -337,7 +356,9 @@ class APSResourceMassUpdateWizard(models.TransientModel):
         if self.update_default_answer:
             updates['default_answer'] = self.default_answer_value
 
-        if not updates and not self.update_tags:
+        if not updates and not (
+            self.update_tags or self.update_linked_resources or self.update_supporting_resources
+        ):
             raise UserError(_("No updates selected. Please enable at least one update option."))
 
         if updates:
@@ -351,6 +372,42 @@ class APSResourceMassUpdateWizard(models.TransientModel):
                 tag_commands.append((4, tag.id))
             if tag_commands:
                 self.resource_ids.write({'tag_ids': tag_commands})
+
+        target_ids = set(self.resource_ids.ids)
+        if self.update_linked_resources:
+            added_ids = set(self.linked_resources_add_ids.ids)
+            if target_ids & added_ids:
+                raise UserError(_('A resource cannot be linked to itself.'))
+
+            descendants = self.env['aps.resources'].browse()
+            frontier = self.linked_resources_add_ids
+            while frontier:
+                frontier = (
+                    self.env['aps.resources'].search([('parent_ids', 'in', frontier.ids)])
+                    - descendants
+                    - self.linked_resources_add_ids
+                )
+                descendants |= frontier
+            if target_ids & set(descendants.ids):
+                raise UserError(_('Adding these linked resources would create a resource hierarchy cycle.'))
+
+            commands = [(3, resource.id) for resource in self.linked_resources_remove_ids]
+            commands.extend((4, resource.id) for resource in self.linked_resources_add_ids)
+            if commands:
+                self.resource_ids.write({'child_ids': commands})
+                for resource in self.resource_ids:
+                    resource.has_child_resources = 'yes' if resource.child_ids else 'no'
+
+        if self.update_supporting_resources:
+            if target_ids & set(self.supporting_resources_add_ids.ids):
+                raise UserError(_('A resource cannot be added as its own supporting resource.'))
+
+            commands = [(3, resource.id) for resource in self.supporting_resources_remove_ids]
+            commands.extend((4, resource.id) for resource in self.supporting_resources_add_ids)
+            if commands:
+                self.resource_ids.write({'supporting_resource_ids': commands})
+                for resource in self.resource_ids:
+                    resource.has_supporting_resources = 'yes' if resource.supporting_resource_ids else 'no'
 
         return {
             'type': 'ir.actions.client',

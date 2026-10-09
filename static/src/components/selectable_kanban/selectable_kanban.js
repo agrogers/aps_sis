@@ -26,7 +26,6 @@ export class SelectableKanbanRenderer extends KanbanRenderer {
 
     setup() {
         super.setup();
-        this.orm = useService("orm");
         this.dialog = useService("dialog");
         this.notification = useService("notification");
         this.state.selectedIds = [];
@@ -39,7 +38,7 @@ export class SelectableKanbanRenderer extends KanbanRenderer {
     }
 
     get selectedCount() {
-        return this.state.selectedIds.length;
+        return this.getSelectedRecords().length;
     }
 
     get visibleRecords() {
@@ -130,14 +129,19 @@ export class SelectableKanbanRenderer extends KanbanRenderer {
             );
             return false;
         }
-        const ids = records.map((record) => record.resId);
         this.state.busy = true;
         try {
-            await this.orm.unlink(this.props.list.resModel, ids, {
-                context: this.props.parentRecord.context,
-            });
-            await this.props.parentRecord.load();
+            for (const record of records) {
+                await this.props.deleteRecord(record);
+            }
+            const saved = await this.props.parentRecord.save();
             this.clearSelection();
+            if (!saved) {
+                this.notification.add(
+                    _t("The selected records were removed from this form but could not be saved."),
+                    { type: "warning" }
+                );
+            }
         } catch (error) {
             this.notification.add(error.message || _t("The selected records could not be deleted."), {
                 type: "danger",

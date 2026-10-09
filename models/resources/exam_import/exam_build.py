@@ -255,8 +255,9 @@ class APSExamPaperImportBuild(models.Model):
             top = max(0, min(page.height - 1, top))
             right = max(left + 1, min(page.width, right))
             bottom = max(top + 1, min(page.height, bottom))
-            if bottom - top < self._MANUAL_CROP_MIN_HEIGHT and next_section_y is not None:
-                bottom = min(page.height, max(bottom, next_section_y))
+            if bottom - top < self._MANUAL_CROP_MIN_HEIGHT:
+                extension_y = next_section_y if next_section_y is not None else page.height
+                bottom = min(page.height, max(bottom, extension_y))
             for exclusion_region in exclusion_regions or []:
                 exclusion_y = round(self._exclusion_region_y_as_fraction(exclusion_region, page) * page.height)
                 if exclusion_y > top:
@@ -573,8 +574,12 @@ class APSExamPaperImportBuild(models.Model):
                 lambda section: (section.root_key or section.source_key) == root_key
                 and self._normalise_key(section.display_label) == self._normalise_key(root.name)
             )[:1]
-            headings = []
-            answers = []
+            toc_placeholder = (
+                '<div data-embedded="tableOfContent" '
+                'data-oe-protected="true" contenteditable="false"></div>'
+            )
+            headings = [toc_placeholder]
+            answers = [toc_placeholder]
             total_marks = 0.0
             root_pages = set()
             root_regions = []

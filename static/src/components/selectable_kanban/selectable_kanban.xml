@@ -20,6 +20,7 @@
         <xpath expr="//t[@t-foreach='getGroupsOrRecords()']" position="before">
             <div class="o_selectable_kanban_toolbar d-flex flex-wrap align-items-center gap-2 w-100 mb-3">
                 <button
+                    t-if="selectedCount"
                     type="button"
                     class="btn btn-sm btn-secondary"
                     t-att-disabled="state.busy"
@@ -51,21 +52,13 @@
                 </span>
             </div>
         </xpath>
-        <xpath expr="//KanbanRecord[@record='record']" position="attributes">
-            <attribute name="isSelected">this.isSelected(record)</attribute>
-            <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
-        </xpath>
-        <xpath expr="//KanbanRecord[@record='groupOrRecord.record']" position="attributes">
-            <attribute name="isSelected">this.isSelected(groupOrRecord.record)</attribute>
-            <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
-        </xpath>
     </t>
 
     <t t-name="aps_sis.SelectableKanbanRecord" t-inherit="web.KanbanRecord" t-inherit-mode="primary">
         <xpath expr="//t[@t-call]" position="before">
             <input
                 type="checkbox"
-                class="o_selectable_kanban_checkbox form-check-input m-0 oe_kanban_action"
+                class="o_selectable_kanban_checkbox form-check-input oe_kanban_action position-absolute top-0 start-0 m-2 z-1"
                 t-if="props.record.resId"
                 t-att-checked="props.isSelected"
                 t-att-aria-label="'Select record ' + props.record.resId"
