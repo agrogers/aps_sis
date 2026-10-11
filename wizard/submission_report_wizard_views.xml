@@ -15,8 +15,11 @@
                             <field name="show_metadata" widget="boolean_toggle"/>
                             <field name="show_answer" widget="boolean_toggle"/>
                             <field name="show_feedback" widget="boolean_toggle"/>
+                            <field name="show_submission_title"/>
+                            <field name="include_images" widget="boolean_toggle"/>
                         </group>
                         <group string="Layout Options">
+                            <field name="report_order"/>
                             <field name="show_model_answer" widget="boolean_toggle"/>
                             <field name="page_break_before_resource" widget="boolean_toggle"/>
                             <field name="page_break_before_student" widget="boolean_toggle"/>

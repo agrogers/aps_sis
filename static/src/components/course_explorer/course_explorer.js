@@ -120,20 +120,30 @@ export class CourseExplorer extends Component {
         this._lastTooltipVersion = -1;
         this._programmaticSectionId = 0;
         this._programmaticSectionTimer = null;
+        this._urlStateTimer = null;
+        this._urlStateUpdateDelay = 180;
+        this._pendingUrlTarget = this._readUrlTarget();
+        this._hasUrlSectionTarget = Boolean(this._pendingUrlTarget.sectionId);
 
         const saved = this._loadStorage();
+        const savedCategoryId = this._toPositiveId(saved.selectedCategoryId);
+        const urlCategoryId = this._pendingUrlTarget.categoryId;
+        const categoryChanged = Boolean(
+            urlCategoryId && urlCategoryId !== savedCategoryId,
+        );
 
         this.state = useState({
             loading: false,
             subjectCategories: [],
-            selectedCategoryId: saved.selectedCategoryId || false,
+            selectedCategoryId: urlCategoryId || savedCategoryId || false,
             tree: [],
             contentSections: [],
             resourceToc: [],
             activeHeadingId: "",
             resourceTocCollapsed: saved.resourceTocCollapsed === true,
             contentVersion: 0,
-            activeSectionId: saved.activeSectionId || 0,
+            activeSectionId: this._pendingUrlTarget.sectionId
+                || (categoryChanged ? 0 : saved.activeSectionId || 0),
             sidebarCollapsed: saved.sidebarCollapsed || false,
             isManager: false,
         });
@@ -174,7 +184,9 @@ export class CourseExplorer extends Component {
 
         onMounted(() => {
             const startedAt = performance.now();
-            this._restoreScroll();
+            if (!this._hasUrlSectionTarget) {
+                this._restoreScroll();
+            }
             this._setupScrollObserver();
             this._setupScrollListener();
             this._setupImageClickHandler();
@@ -205,6 +217,9 @@ export class CourseExplorer extends Component {
             if (this._scrollTimer) {
                 clearTimeout(this._scrollTimer);
             }
+            if (this._urlStateTimer) {
+                clearTimeout(this._urlStateTimer);
+            }
             if (this._renderMathRaf) {
                 cancelAnimationFrame(this._renderMathRaf);
                 this._renderMathRaf = 0;
@@ -227,6 +242,94 @@ export class CourseExplorer extends Component {
         } catch {
             return {};
         }
+    }
+
+    _toPositiveId(value) {
+        const id = Number(value);
+        return Number.isSafeInteger(id) && id > 0 ? id : 0;
+    }
+
+    _readUrlTarget() {
+        const params = this.props.action?.params || {};
+        return {
+            categoryId: this._toPositiveId(params.ce_category),
+            sectionId: this._toPositiveId(params.ce_section),
+            headingId: typeof params.ce_heading === "string"
+                ? params.ce_heading.trim()
+                : "",
+        };
+    }
+
+    _updateUrlState({ immediate = false } = {}) {
+        if (
+            !this.props.updateActionState
+            || this._pendingUrlTarget?.sectionId
+            || this._programmaticSectionId
+        ) {
+            return;
+        }
+        if (this._urlStateTimer) {
+            clearTimeout(this._urlStateTimer);
+            this._urlStateTimer = null;
+        }
+        const update = () => {
+            this._urlStateTimer = null;
+            if (this._pendingUrlTarget?.sectionId || this._programmaticSectionId) return;
+            const state = {
+                ce_category: this.state.selectedCategoryId || false,
+                ce_section: this.state.activeSectionId || false,
+                ce_heading: this.state.resourceToc.some(
+                    (entry) => entry.id === this.state.activeHeadingId
+                        && entry.sectionId === this.state.activeSectionId,
+                ) ? this.state.activeHeadingId : false,
+            };
+            const previous = this._lastUrlState || {};
+            if (Object.keys(state).every((key) => state[key] === previous[key])) {
+                return;
+            }
+            this._lastUrlState = state;
+            this.props.updateActionState(state);
+        };
+        if (immediate) {
+            update();
+        } else {
+            this._urlStateTimer = setTimeout(update, this._urlStateUpdateDelay);
+        }
+    }
+
+    _restorePendingUrlTarget() {
+        const requested = this._pendingUrlTarget;
+        if (!requested || !requested.sectionId || this.state.loading) return;
+        if (!this.state.contentVersion) return;
+        const section = this.visibleContentSections.find(
+            (candidate) => candidate.id === requested.sectionId,
+        );
+        if (!section) {
+            this._pendingUrlTarget = null;
+            this._updateUrlState({ immediate: true });
+            return;
+        }
+
+        const root = this.contentRef.el;
+        const tocEntry = requested.headingId
+            ? this.state.resourceToc.find(
+                (entry) => entry.id === requested.headingId
+                    && entry.sectionId === requested.sectionId,
+            )
+            : null;
+        const target = tocEntry
+            ? root?.querySelector(`#${CSS.escape(tocEntry.id)}`)
+            : root?.querySelector(`#ce-section-${requested.sectionId}`);
+        const sectionTarget = root?.querySelector(`#ce-section-${requested.sectionId}`);
+        if (!target && !sectionTarget) return;
+
+        this._pendingUrlTarget = null;
+        this.state.activeSectionId = requested.sectionId;
+        this.state.activeHeadingId = tocEntry && target ? tocEntry.id : "";
+        this._updateUrlState({ immediate: true });
+        this._holdProgrammaticSection(requested.sectionId);
+        this._scrollToTarget(target || sectionTarget);
+        this._saveStorage();
     }
 
     _saveStorage() {
@@ -324,9 +427,12 @@ export class CourseExplorer extends Component {
         const root = this.contentRef.el;
         if (!root) return;
         const entries = [];
-        let headingIndex = 0;
+        const usedIds = new Set(
+            Array.from(root.querySelectorAll("[id]"), (element) => element.id),
+        );
         for (const section of root.querySelectorAll('.ce_content_section')) {
             const sectionId = Number(section.dataset.resourceId);
+            const duplicateCounts = new Map();
             for (const heading of section.querySelectorAll(
                 '.ce_section_body h1, .ce_section_body h2, .ce_section_body h3, .ce_section_body h4, .ce_section_body h5, .ce_section_body h6'
             )) {
@@ -337,7 +443,22 @@ export class CourseExplorer extends Component {
                 ).trim();
                 if (!text) continue;
                 if (!heading.id) {
-                    heading.id = `ce-heading-${sectionId}-${headingIndex}`;
+                    const slug = text.normalize("NFKD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/^-|-$/g, "") || "heading";
+                    const count = (duplicateCounts.get(slug) || 0) + 1;
+                    duplicateCounts.set(slug, count);
+                    const baseId = `ce-heading-${sectionId}-${slug}`;
+                    let generatedId = count === 1 ? baseId : `${baseId}-${count}`;
+                    let collisionIndex = count;
+                    while (usedIds.has(generatedId)) {
+                        collisionIndex++;
+                        generatedId = `${baseId}-${collisionIndex}`;
+                    }
+                    heading.id = generatedId;
+                    usedIds.add(generatedId);
                 }
                 entries.push({
                     id: heading.id,
@@ -345,7 +466,6 @@ export class CourseExplorer extends Component {
                     level: Number(heading.tagName.substring(1)),
                     sectionId,
                 });
-                headingIndex++;
             }
         }
         const unchanged = entries.length === this.state.resourceToc.length
@@ -361,11 +481,12 @@ export class CourseExplorer extends Component {
             this.state.resourceToc = entries;
         }
         this._updateActiveHeading();
+        this._restorePendingUrlTarget();
     }
 
     _updateActiveHeading() {
         const root = this.contentRef.el;
-        if (!root || !this.state.resourceToc.length) return;
+        if (!root || !this.state.resourceToc.length || this._programmaticSectionId) return;
         const threshold = root.getBoundingClientRect().top + 48;
         let active = this.state.resourceToc[0].id;
         for (const entry of this.state.resourceToc) {
@@ -376,6 +497,7 @@ export class CourseExplorer extends Component {
         }
         if (active !== this.state.activeHeadingId) {
             this.state.activeHeadingId = active;
+            this._updateUrlState();
         }
     }
 
@@ -384,8 +506,11 @@ export class CourseExplorer extends Component {
         const root = this.contentRef.el;
         const heading = root?.querySelector(`#${CSS.escape(entry.id)}`);
         if (!heading) return;
-        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
         this.state.activeHeadingId = entry.id;
+        this.state.activeSectionId = entry.sectionId;
+        this._updateUrlState({ immediate: true });
+        this._holdProgrammaticSection(entry.sectionId);
+        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     toggleResourceToc() {
@@ -420,6 +545,17 @@ export class CourseExplorer extends Component {
             "get_course_explorer_subject_categories",
             [],
         );
+        if (this._pendingUrlTarget?.categoryId) {
+            const isAvailable = this.state.subjectCategories.some(
+                (category) => category.id === this._pendingUrlTarget.categoryId,
+            );
+            if (!isAvailable) {
+                this._pendingUrlTarget.categoryId = 0;
+                this.state.selectedCategoryId = this._toPositiveId(
+                    this._loadStorage().selectedCategoryId,
+                ) || false;
+            }
+        }
     }
 
     async _loadData() {
@@ -689,6 +825,7 @@ export class CourseExplorer extends Component {
         this._saveStorage();
         await this._loadData();
         this._restoreScroll();
+        this._updateUrlState({ immediate: true });
     }
 
     toggleSidebar() {
@@ -739,10 +876,13 @@ export class CourseExplorer extends Component {
         if (!el) return;
         const target = el.querySelector(`#ce-section-${sectionId}`);
         if (!target) return;
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-        this._holdProgrammaticSection(sectionId);
         this.state.activeSectionId = sectionId;
+        this.state.activeHeadingId = "";
+        this._updateUrlState({ immediate: true });
+        this._holdProgrammaticSection(sectionId);
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
         this._saveStorage();
+        this._updateUrlState({ immediate: true });
     }
 
     scrollToQuiz(ev, sectionId) {
@@ -766,6 +906,7 @@ export class CourseExplorer extends Component {
         this._programmaticSectionTimer = setTimeout(() => {
             this._programmaticSectionId = 0;
             this._programmaticSectionTimer = null;
+            this._onScrollDetect();
         }, 1200);
     }
 
@@ -864,8 +1005,8 @@ export class CourseExplorer extends Component {
     _onScrollDetect() {
         const el = this.contentRef.el;
         if (!el) return;
-        this._updateActiveHeading();
         if (this._programmaticSectionId) return;
+        this._updateActiveHeading();
         const sections = el.querySelectorAll(".ce_content_section");
         if (!sections.length) return;
 
@@ -887,6 +1028,7 @@ export class CourseExplorer extends Component {
         if (bestId && bestId !== this.state.activeSectionId) {
             this.state.activeSectionId = bestId;
             this._saveStorage();
+            this._updateUrlState();
         }
     }
 

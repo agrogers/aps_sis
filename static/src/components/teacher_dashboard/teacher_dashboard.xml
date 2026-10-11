@@ -4,7 +4,7 @@
 
             <!-- ==================== FILTERS ==================== -->
             <div class="row mb-3 align-items-center aps-dashboard-filters shadow-sm p-2 mx-0 rounded">
-                <div class="col-md-4 mt-2">
+                <div class="col-md-3 mt-2">
                     <h1 class="text-primary fw-bold mb-0">
                         <img src="/apex_core/static/img/layout.svg"
                              class="aps-dashboard-title-icon me-2"
@@ -23,7 +23,7 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-3 mt-2">
+                <div class="col-md-2 mt-2">
                     <select class="form-select" t-on-change="onChangeClass">
                         <option value="">All Classes</option>
                         <t t-foreach="state.classes" t-as="classRecord" t-key="classRecord.id">
@@ -34,7 +34,7 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-3 mt-2">
+                <div class="col-md-2 mt-2">
                     <select class="form-select" t-on-change="onChangeDays">
                         <t t-foreach="dateRangeOptions" t-as="opt" t-key="opt.value">
                             <option t-att-value="opt.value"
@@ -44,7 +44,7 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-3 mt-2">
+                <div class="col-md-2 mt-2">
                     <select class="form-select" t-on-change="onChangeStudent">
                         <option value="">All Students</option>
                         <t t-foreach="state.students" t-as="student" t-key="student.id">

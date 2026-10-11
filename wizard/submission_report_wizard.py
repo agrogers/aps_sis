@@ -21,6 +21,16 @@ class SubmissionReportWizard(models.TransientModel):
     show_answer = fields.Boolean(string='Show Student Answer', default=True)
     show_feedback = fields.Boolean(string='Show Teacher Feedback', default=True)
     show_model_answer = fields.Boolean(string='Show Model Answer', default=True)
+    show_submission_title = fields.Selection([
+        ('no', 'No'),
+        ('short', 'Short Name'),
+        ('long', 'Long Name'),
+    ], string='Show Submission Title', default='long', required=True)
+    include_images = fields.Boolean(string='Include Images', default=True)
+    report_order = fields.Selection([
+        ('student_resource', 'Student > Resource'),
+        ('resource_student', 'Resource > Student'),
+    ], string='Order', default='resource_student', required=True)
     page_break_before_resource = fields.Boolean(string='Page Break Before Each Resource', default=False)
     page_break_before_student = fields.Boolean(string='Page Break Before Each Student', default=False)
     page_break_after_model_answer = fields.Boolean(string='Page Break After Model Answer', default=False)
@@ -51,6 +61,9 @@ class SubmissionReportWizard(models.TransientModel):
             'show_answer': self.show_answer,
             'show_feedback': self.show_feedback,
             'show_model_answer': self.show_model_answer,
+            'show_submission_title': self.show_submission_title,
+            'include_images': self.include_images,
+            'report_order': self.report_order,
             'page_break_before_resource': self.page_break_before_resource,
             'page_break_before_student': self.page_break_before_student,
             'page_break_after_model_answer': self.page_break_after_model_answer,
@@ -59,7 +72,12 @@ class SubmissionReportWizard(models.TransientModel):
         _logger.info("data: %s", data)
         
         # Save user preferences
-        preference_fields = ['show_score', 'show_metadata', 'show_answer', 'show_feedback', 'show_model_answer', 'page_break_before_resource', 'page_break_before_student', 'page_break_after_model_answer']
+        preference_fields = [
+            'show_score', 'show_metadata', 'show_answer', 'show_feedback',
+            'show_model_answer', 'show_submission_title', 'include_images',
+            'report_order', 'page_break_before_resource',
+            'page_break_before_student', 'page_break_after_model_answer',
+        ]
         for field_name in preference_fields:
             self.env['ir.default'].set('aps.submission.report.wizard', field_name, getattr(self, field_name), user_id=self.env.user.id)
         
