@@ -81,6 +81,9 @@ export class CourseExplorerTreeNode extends Component {
     }
 
     onQuizClick(ev) {
+        if (!this.props.node.hasQuizzes) {
+            return;
+        }
         ev.preventDefault();
         ev.stopPropagation();
         const sectionId = this.props.node.sectionId || this.props.node.id;

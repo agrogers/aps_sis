@@ -58,7 +58,7 @@
                                 t-att-fill="props.node.hasQuizzes ? (allQuizzesSubmitted ? avgColor : 'url(#' + gradientId + ')') : 'transparent'"
                             stroke="none"
                             t-att-class="props.node.hasQuizzes ? 'ce_quiz_score_circle' : ''"
-                            t-on-click="props.node.hasQuizzes ? onQuizClick : undefined"/>
+                            t-on-click="onQuizClick"/>
                     </svg>
                     <span class="ce_progress_text"
                           t-att-style="props.node.hasQuizzes ? '' : 'display:none'">
