@@ -6,6 +6,8 @@ import { FilterPresetManager } from "../../js/filter_preset_service";
 import { cookie } from "@web/core/browser/cookie";
 
 const COMPONENT_KEY = "vote_analysis_dashboard";
+const ACTIVE_TAB_STORAGE_KEY = "aps_sis.vote_analysis_dashboard.active_tab";
+const DASHBOARD_TABS = ["chart", "data", "details", "certs"];
 
 export class VoteAnalysisDashboard extends Component {
     static template = "aps_sis.VoteAnalysisDashboard";
@@ -32,6 +34,7 @@ export class VoteAnalysisDashboard extends Component {
         this._voteDetailsDataView = null;
         this._isDarkMode = cookie.get("color_scheme") === "dark";
         this.filterPresets = new FilterPresetManager(this.orm, COMPONENT_KEY);
+        const savedActiveTab = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
 
         this.state = useState({
             loading: true,
@@ -66,7 +69,7 @@ export class VoteAnalysisDashboard extends Component {
             detailHeader: "",
             detailVotes: [],
             detailLoading: false,
-            activeTab: "chart",
+            activeTab: DASHBOARD_TABS.includes(savedActiveTab) ? savedActiveTab : "chart",
             certDetailRecipient: null,
             certDetailHeader: "",
             certDetailList: [],
@@ -324,6 +327,7 @@ export class VoteAnalysisDashboard extends Component {
                     return;
                 }
             }
+
         };
         this.chartRef.el.addEventListener('click', this._chartClickHandler);
 
@@ -366,13 +370,21 @@ export class VoteAnalysisDashboard extends Component {
 
     toggleFilters() { this.state.filtersOpen = !this.state.filtersOpen; }
     onTabChange(tab) {
-        this.state.activeTab = tab;
+        this._setActiveTab(tab);
         if (tab === "chart") {
             Promise.resolve().then(() => this._renderChart());
         }
         if (tab === "details" && this.state.detailRecipient && this.state.detailVotes.length > 0) {
             setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
         }
+    }
+
+    _setActiveTab(tab) {
+        if (!DASHBOARD_TABS.includes(tab)) {
+            return;
+        }
+        this.state.activeTab = tab;
+        window.localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
     }
 
     async onDateFromChange(ev) { this.state.dateFrom = ev.target.value; await this._loadData(); }
@@ -532,7 +544,7 @@ export class VoteAnalysisDashboard extends Component {
         this.state.selectedCertsLoading = false;
         this.state.detailVotes = (await this.orm.call("aps.award.vote", "get_vote_details", [], { vote_ids: voteIds })) || [];
         this.state.detailLoading = false;
-        this.state.activeTab = "details";
+        this._setActiveTab("details");
         this._destroyDetailGrid();
         setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
     }
@@ -749,7 +761,7 @@ export class VoteAnalysisDashboard extends Component {
         }
         this.state.certDetailList = (await this.orm.call("aps.award.vote", "get_certificate_details", [], { filters })) || [];
         this.state.certDetailLoading = false;
-        this.state.activeTab = "certs";
+        this._setActiveTab("certs");
     }
 
     clearCertDetail() {
