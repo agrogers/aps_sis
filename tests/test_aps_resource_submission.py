@@ -97,6 +97,22 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         })
         self.assertTrue(sub.auto_score)
 
+    def test_permit_resubmission_defaults_to_true(self):
+        """Resubmission is permitted by default on submissions and in the Assign wizard."""
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': self.parent_task.id,
+            'submission_name': 'Resubmission setting',
+        })
+        self.assertTrue(submission.permit_resubmission)
+
+        wizard_defaults = self.env['aps.assign.students.wizard'].default_get(
+            ['permit_resubmission']
+        )
+        self.assertTrue(wizard_defaults['permit_resubmission'])
+
+        submission.permit_resubmission = False
+        self.assertFalse(submission.permit_resubmission)
+
     def test_teacher_dashboard_returns_submission_groups(self):
         due_date = fields.Date.today() + timedelta(days=2)
         self.parent_submission.write({'date_due': due_date})
