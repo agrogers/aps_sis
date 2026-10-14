@@ -57,6 +57,37 @@ class TestAPSResource(TransactionCase):
         self.assertEqual(root.all_submissions_count, 3)
         self.assertEqual(action['context'], {})
 
+    def test_all_child_resource_counts_and_actions(self):
+        root = self.env['aps.resources'].create({'name': 'Resource Root'})
+        child = self.env['aps.resources'].create({
+            'name': 'Linked Child',
+            'parent_ids': [(4, root.id)],
+        })
+        grandchild = self.env['aps.resources'].create({
+            'name': 'Linked Grandchild',
+            'parent_ids': [(4, child.id)],
+        })
+        root_support = self.env['aps.resources'].create({'name': 'Root Support'})
+        child_support = self.env['aps.resources'].create({
+            'name': 'Child Support',
+            'parent_ids': [(4, root.id)],
+        })
+        nested_support = self.env['aps.resources'].create({'name': 'Nested Support'})
+        root.write({'supporting_resource_ids': [(4, root_support.id)]})
+        child.write({'supporting_resource_ids': [(4, child_support.id)]})
+        root_support.write({'supporting_resource_ids': [(4, nested_support.id)]})
+
+        self.assertEqual(root.all_linked_child_count, 3)
+        self.assertEqual(root.all_child_count, 4)
+        self.assertEqual(
+            set(self.env['aps.resources'].search(root.action_open_all_linked_child_resources_list()['domain']).ids),
+            {child.id, grandchild.id, child_support.id},
+        )
+        self.assertEqual(
+            set(self.env['aps.resources'].search(root.action_open_all_child_resources_list()['domain']).ids),
+            {child.id, grandchild.id, root_support.id, child_support.id},
+        )
+
     def test_delete_wizard_preview_and_confirmation_scope(self):
         student = self.env['res.partner'].create({
             'name': 'Deletion Preview Student',

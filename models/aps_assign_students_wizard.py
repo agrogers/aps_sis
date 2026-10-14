@@ -179,6 +179,11 @@ class APSAssignStudentsWizard(models.TransientModel):
     class_ids = fields.Many2many('aps.class', string='Classes')
     points_scale = fields.Integer(string='Points Scale', default=1, help='Scales the points allocated to the submission. This is useful for resources that are used in different contexts with different grading schemes.')
     notify_student = fields.Boolean(string='Notify Student', default=True, help='If enabled, students will receive a notification when they are assigned to the resource.')
+    permit_resubmission = fields.Boolean(
+        string='Permit Resubmission',
+        default=True,
+        help='Allow students to unsubmit or resubmit their submissions.',
+    )
 
     can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False) # Helper field to enable/disable assign button based on whether any students and any resources are selected
 
@@ -536,6 +541,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'time_assigned': self.time_assigned,
                     'date_due': self.date_due,
                     'allow_subject_editing': self.allow_subject_editing,
+                    'permit_resubmission': self.permit_resubmission,
                     'state': initial_state,
                     'question': use_question,
                     'has_question': has_question,

@@ -88,17 +88,14 @@ class APSResource(models.Model):
             rec.child_count = self.search_count([('parent_ids', 'in', rec.id)])
 
     @api.depends('child_ids')
+    def _compute_all_linked_child_count(self):
+        for rec in self:
+            rec.all_linked_child_count = len(rec._get_all_descendant_resources())
+
+    @api.depends('child_ids', 'supporting_resource_ids')
     def _compute_all_child_count(self):
         for rec in self:
-            descendants = self.browse()
-            frontier = rec.child_ids
-            while frontier:
-                frontier -= descendants
-                if not frontier:
-                    break
-                descendants |= frontier
-                frontier = self.search([('parent_ids', 'in', frontier.ids)])
-            rec.all_child_count = len(descendants)
+            rec.all_child_count = len(rec._get_all_child_resources())
 
     @api.depends('supporting_resource_ids')
     def _compute_supporting_resource_count(self):

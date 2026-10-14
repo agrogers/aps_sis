@@ -220,7 +220,9 @@ class APSAIRun(models.Model):
             if self.override_model_id
             else self.env['aps.ai.model'].with_user(self.requested_by_id)
         )
-        if submission._uses_sample_scaling():
+        if submission._uses_sample_comparison():
+            result = submission._generate_sample_comparison_feedback(ai_run=self)
+        elif submission._uses_sample_scaling():
             result = submission._generate_sample_scaled_feedback(ai_run=self)
         else:
             result = ai_model.generate_multi_model_feedback(
@@ -288,5 +290,4 @@ class APSAIRun(models.Model):
             'estimated_cost': result.get('estimated_cost') or 0.0,
             'response_preview': result.get('raw_content') or self.response_preview or False,
         })
-
 

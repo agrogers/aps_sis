@@ -143,6 +143,11 @@ class APSResourceSubmission(models.Model):
         ], string='State', default='assigned', 
         tracking=True,
         required=True)
+    permit_resubmission = fields.Boolean(
+        string='Permit Resubmission',
+        default=True,
+        help='Allow students to unsubmit or resubmit this submission.',
+    )
     progress = fields.Float(
         string='Progress %',
         default=0.0,
