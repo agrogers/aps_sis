@@ -25,7 +25,7 @@ class TestExamExclusionZones(TransactionCase):
         })
 
     def test_automatic_crop_ends_at_exclusion_zone(self):
-        importer = self.env['aps.exam.paper.import']
+        importer = self._import('automatic-exclusion-crop')
         page = self.env['aps.exam.paper.page'].new({
             'page_number': 1, 'width': 1000, 'height': 1500,
         })
@@ -41,7 +41,7 @@ class TestExamExclusionZones(TransactionCase):
         self.assertEqual(bounds, (75, 150, 925, 600))
 
     def test_manual_crop_ends_at_exclusion_zone(self):
-        importer = self.env['aps.exam.paper.import']
+        importer = self._import('manual-exclusion-crop')
         page = self.env['aps.exam.paper.page'].new({
             'page_number': 1, 'width': 1000, 'height': 1500,
         })
@@ -58,7 +58,7 @@ class TestExamExclusionZones(TransactionCase):
         self.assertEqual(bounds, (75, 100, 925, 600))
 
     def test_automatic_crop_uses_first_identifier_or_exclusion_boundary(self):
-        importer = self.env['aps.exam.paper.import']
+        importer = self._import('crop-boundary-priority')
         page = self.env['aps.exam.paper.page'].new({
             'page_number': 1, 'width': 1000, 'height': 1500,
         })

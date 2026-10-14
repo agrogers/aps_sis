@@ -13,3 +13,4 @@ from . import test_aps_student_lifecycle
 from . import test_exam_question_identifier_data
 from . import test_exam_exclusion_zones
 from . import test_exam_paper_import
+from . import test_aps_student_matrix

@@ -73,7 +73,18 @@ class TestExamPaperImport(TransactionCase):
             self.env['aps.exam.paper.import'].create_from_resource(self.resource)
 
     def test_crop_bounds_remove_right_and_bottom_margins(self):
-        importer = self.env['aps.exam.paper.import']
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Default crop margins', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('default-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('default-crop-rms.pdf').id,
+        })
+        self.assertEqual(
+            (
+                importer.crop_margin_left, importer.crop_margin_right,
+                importer.crop_margin_top, importer.crop_margin_bottom,
+            ),
+            (75, 75, 85, 100),
+        )
         page = self.env['aps.exam.paper.page'].new({
             'page_number': 1, 'width': 1000, 'height': 1500,
         })
@@ -82,8 +93,34 @@ class TestExamPaperImport(TransactionCase):
 
         self.assertEqual((left, top, right, bottom), (75, 150, 925, 1400))
 
+    def test_custom_crop_margins_apply_to_crops_and_region_editor(self):
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Custom crop margins', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('custom-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('custom-crop-rms.pdf').id,
+            'crop_margin_left': 120,
+            'crop_margin_right': 90,
+            'crop_margin_top': 150,
+            'crop_margin_bottom': 110,
+        })
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 1000, 'height': 1500,
+        })
+        section = self.env['aps.exam.paper.section'].new({
+            'import_id': importer.id, 'display_label': 'Q1',
+        })
+
+        bounds = importer._crop_bounds({'y1': 0.1}, page, {})
+        editor_region = section._default_editor_region(page)
+
+        self.assertEqual(bounds, (120, 150, 910, 1390))
+        self.assertEqual(editor_region, {
+            'x1': 120, 'y1': 150, 'x2': 910, 'y2': 1390,
+        })
+        with self.assertRaisesRegex(ValidationError, 'Crop margins must be zero or greater'):
+            importer.write({'crop_margin_left': -1})
+
     def test_short_manual_crop_extends_to_next_section_start(self):
-        importer = self.env['aps.exam.paper.import']
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Short manual crop paper', 'resource_id': self.resource.id,
             'question_attachment_id': self._attachment('short-crop-que.pdf').id,
@@ -111,8 +148,8 @@ class TestExamPaperImport(TransactionCase):
             'page_number': 1, 'width': 1000, 'height': 1500,
         })
 
-        next_y = importer._next_section_region_y(sections[0], 'question', page, sections[0].question_regions[0])
-        bounds = importer._crop_bounds(
+        next_y = job._next_section_region_y(sections[0], 'question', page, sections[0].question_regions[0])
+        bounds = job._crop_bounds(
             sections[0].question_regions[0], page, {}, next_section_y=next_y,
         )
 
@@ -120,7 +157,11 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(bounds, (75, 100, 925, 350))
 
     def test_short_last_manual_crop_extends_to_page_bottom(self):
-        importer = self.env['aps.exam.paper.import']
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Last manual crop', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('last-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('last-crop-rms.pdf').id,
+        })
         page = self.env['aps.exam.paper.page'].new({
             'page_number': 1, 'width': 1000, 'height': 1500,
         })
@@ -180,7 +221,11 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(child_boundary, 1895)
 
     def test_manual_crop_at_minimum_height_keeps_its_saved_bottom(self):
-        importer = self.env['aps.exam.paper.import']
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Minimum height manual crop', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('minimum-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('minimum-crop-rms.pdf').id,
+        })
         page = self.env['aps.exam.paper.page'].new({
             'page_number': 1, 'width': 1000, 'height': 1500,
         })
@@ -555,6 +600,48 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(identifiers._pattern_from_example('q1a'), r'q\d+[A-Za-z]+')
         self.assertEqual([item['label'] for item in detected], ['Task 1', 'Task 1A', 'Task 1A.i'])
         self.assertEqual([item['hierarchy_level'] for item in detected], [1, 2, 3])
+
+    def test_detect_sections_orders_near_aligned_root_and_part_labels(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Near-aligned question labels', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('near-aligned-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('near-aligned-rms.pdf').id,
+        })
+        page_image = self.env['ir.attachment'].create({
+            'name': 'near-aligned-question-page.png', 'type': 'binary',
+            'datas': 'aGVsbG8=', 'mimetype': 'image/png',
+        })
+
+        def detection(raw_label, kind, region):
+            return {
+                'raw_label': raw_label,
+                'label_kind': kind,
+                'regions': [region],
+                'question_summary': 'Question content',
+                'is_answer_space_number': False,
+            }
+
+        self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 18,
+            'render_dpi': 150, 'attachment_id': page_image.id, 'ai_state': 'complete',
+            'width': 2717, 'height': 3745,
+            'ai_response': {'detections': [
+                detection('7', 'root', {'x1': 295, 'y1': 381, 'x2': 323, 'y2': 418}),
+                detection('(a)', 'part', {'x1': 372, 'y1': 379, 'x2': 421, 'y2': 418}),
+                detection('(i)', 'subpart', {'x1': 449, 'y1': 1844, 'x2': 486, 'y2': 1882}),
+                detection('(ii)', 'subpart', {'x1': 449, 'y1': 2280, 'x2': 499, 'y2': 2318}),
+                detection('(b)', 'part', {'x1': 372, 'y1': 2500, 'x2': 421, 'y2': 2538}),
+                detection('(i)', 'subpart', {'x1': 449, 'y1': 2700, 'x2': 486, 'y2': 2738}),
+                detection('(ii)', 'subpart', {'x1': 449, 'y1': 3100, 'x2': 499, 'y2': 3138}),
+            ]},
+        })
+
+        job._build_sections_from_page_analysis()
+
+        self.assertEqual(
+            set(job.section_ids.mapped('source_key')),
+            {'7', '7/a', '7/a/i', '7/a/ii', '7/b', '7/b/i', '7/b/ii'},
+        )
 
     def test_detect_sections_distinguishes_empty_completed_analysis(self):
         job = self.env['aps.exam.paper.import'].create({

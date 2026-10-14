@@ -243,10 +243,10 @@ class APSExamPaperSection(models.Model):
 
     def _default_editor_region(self, page):
         """Return the standard crop as pixel bounds for a rendered page."""
-        left_inset = min(self.import_id._scaled_crop_margin(self.import_id._CROP_LEFT, page), max(0, (page.width - 1) // 2))
-        right_inset = min(self.import_id._scaled_crop_margin(self.import_id._CROP_RIGHT, page), max(0, page.width - left_inset - 1))
-        top_inset = min(self.import_id._scaled_crop_margin(self.import_id._CROP_TOP, page), max(0, (page.height - 1) // 2))
-        bottom_inset = min(self.import_id._scaled_crop_margin(self.import_id._CROP_BOTTOM, page), max(0, page.height - top_inset - 1))
+        left_inset = min(self.import_id._scaled_crop_margin(self.import_id.crop_margin_left, page), max(0, (page.width - 1) // 2))
+        right_inset = min(self.import_id._scaled_crop_margin(self.import_id.crop_margin_right, page), max(0, page.width - left_inset - 1))
+        top_inset = min(self.import_id._scaled_crop_margin(self.import_id.crop_margin_top, page), max(0, (page.height - 1) // 2))
+        bottom_inset = min(self.import_id._scaled_crop_margin(self.import_id.crop_margin_bottom, page), max(0, page.height - top_inset - 1))
         return {
             'x1': left_inset,
             'y1': top_inset,

@@ -24,6 +24,11 @@ class APSExamPaperImport(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'create_date desc'
 
+    _CROP_LEFT = 75
+    _CROP_TOP = 85
+    _CROP_RIGHT = 75
+    _CROP_BOTTOM = 100
+
     name = fields.Char(required=True, tracking=True)
     resource_id = fields.Many2one(
         'aps.resources', string='Exam Resource', required=True,
@@ -70,6 +75,22 @@ class APSExamPaperImport(models.Model):
     ], default='all', required=True, string='Pages Scope',
         help='Controls which rendered pages the "Analyse Pages" and "OCR" buttons process.')
     render_dpi = fields.Integer(default=300, required=True)
+    crop_margin_left = fields.Integer(
+        string='Left', default=_CROP_LEFT, required=True,
+        help='Reference pixels at a 1500 px page height; scaled to the rendered page size.',
+    )
+    crop_margin_right = fields.Integer(
+        string='Right', default=_CROP_RIGHT, required=True,
+        help='Reference pixels at a 1500 px page height; scaled to the rendered page size.',
+    )
+    crop_margin_top = fields.Integer(
+        string='Top', default=_CROP_TOP, required=True,
+        help='Reference pixels at a 1500 px page height; scaled to the rendered page size.',
+    )
+    crop_margin_bottom = fields.Integer(
+        string='Bottom', default=_CROP_BOTTOM, required=True,
+        help='Reference pixels at a 1500 px page height; scaled to the rendered page size.',
+    )
     page_ids = fields.One2many('aps.exam.paper.page', 'import_id', string='Rendered Pages')
     page_count = fields.Integer(compute='_compute_counts')
     section_ids = fields.One2many('aps.exam.paper.section', 'import_id', string='Detected Sections')
@@ -78,10 +99,6 @@ class APSExamPaperImport(models.Model):
     started_at = fields.Datetime(readonly=True)
     completed_at = fields.Datetime(readonly=True)
 
-    _CROP_LEFT = 75
-    _CROP_TOP = 85
-    _CROP_RIGHT = 75
-    _CROP_BOTTOM = 100
     _CROP_Y_ADJUSTMENT = 6
     _CROP_REFERENCE_HEIGHT_PIXELS = 1500
     _MANUAL_CROP_MIN_HEIGHT = 150
@@ -94,6 +111,17 @@ class APSExamPaperImport(models.Model):
         ('resource_import_unique', 'unique(resource_id, question_attachment_id, mark_scheme_attachment_id)',
          'This pair of PDFs has already been imported for the resource.'),
     ]
+
+    @api.constrains(
+        'crop_margin_left', 'crop_margin_right', 'crop_margin_top', 'crop_margin_bottom',
+    )
+    def _check_crop_margins(self):
+        for record in self:
+            if any(record[field_name] < 0 for field_name in (
+                'crop_margin_left', 'crop_margin_right',
+                'crop_margin_top', 'crop_margin_bottom',
+            )):
+                raise ValidationError(_('Crop margins must be zero or greater.'))
 
     @api.depends('section_ids', 'page_ids')
     def _compute_counts(self):

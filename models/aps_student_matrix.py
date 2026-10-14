@@ -7,6 +7,12 @@ class APSStudentMatrix(models.TransientModel):
     _rec_name = 'id'
 
     @api.model
+    def _get_enrollment_states(self, year):
+        if year and year.end_date and year.end_date < fields.Date.today():
+            return ['enrolled', 'finished']
+        return ['enrolled']
+
+    @api.model
     def get_academic_years(self):
         """Return all active academic years for the dropdown."""
         years = self.env['aps.academic.year'].search(
@@ -33,7 +39,7 @@ class APSStudentMatrix(models.TransientModel):
                 [('is_current', '=', True)], limit=1
             )
         domain = [
-            ('state', '=', 'enrolled'),
+            ('state', 'in', self._get_enrollment_states(year)),
         ]
         if year:
             domain.append(('class_id.academic_year_id', '=', year.id))
@@ -74,10 +80,17 @@ class APSStudentMatrix(models.TransientModel):
                 'subject_totals': {},
             }
 
+        year = (
+            self.env['aps.academic.year'].browse(academic_year_id)
+            if academic_year_id
+            else self.env['aps.academic.year']
+        )
+        enrollment_states = self._get_enrollment_states(year)
+
         # Find students enrolled in the selected classes
         enroll_domain = [
             ('class_id', 'in', class_ids),
-            ('state', '=', 'enrolled'),
+            ('state', 'in', enrollment_states),
         ]
         enrollments = self.env['aps.student.class'].search(enroll_domain)
         student_ids = enrollments.mapped('student_id')
@@ -95,7 +108,7 @@ class APSStudentMatrix(models.TransientModel):
         # Find ALL enrollments for these students (optionally filtered by academic year)
         all_enroll_domain = [
             ('student_id', 'in', student_ids.ids),
-            ('state', '=', 'enrolled'),
+            ('state', 'in', enrollment_states),
         ]
         if academic_year_id:
             all_enroll_domain.append(

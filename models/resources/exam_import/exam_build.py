@@ -249,8 +249,8 @@ class APSExamPaperImportBuild(models.Model):
             except (KeyError, TypeError, ValueError):
                 raise ValidationError(_('Manually edited regions must contain pixel x1, y1, x2 and y2 bounds.'))
             if right - left < self._scaled_crop_margin(250, page):
-                left = self._scaled_crop_margin(self._CROP_LEFT, page)
-                right = page.width - self._scaled_crop_margin(self._CROP_RIGHT, page)
+                left = self._scaled_crop_margin(self.crop_margin_left, page)
+                right = page.width - self._scaled_crop_margin(self.crop_margin_right, page)
             left = max(0, min(page.width - 1, left))
             top = max(0, min(page.height - 1, top))
             right = max(left + 1, min(page.width, right))
@@ -292,10 +292,10 @@ class APSExamPaperImportBuild(models.Model):
             exclusion_y = self._exclusion_region_y_as_fraction(exclusion_region, page)
             if exclusion_y > start_y + self._LABEL_Y_TOLERANCE:
                 next_y = exclusion_y if next_y is None else min(next_y, exclusion_y)
-        crop_left = self._scaled_crop_margin(self._CROP_LEFT, page)
-        crop_top = self._scaled_crop_margin(self._CROP_TOP, page)
-        crop_right = self._scaled_crop_margin(self._CROP_RIGHT, page)
-        crop_bottom = self._scaled_crop_margin(self._CROP_BOTTOM, page)
+        crop_left = self._scaled_crop_margin(self.crop_margin_left, page)
+        crop_top = self._scaled_crop_margin(self.crop_margin_top, page)
+        crop_right = self._scaled_crop_margin(self.crop_margin_right, page)
+        crop_bottom = self._scaled_crop_margin(self.crop_margin_bottom, page)
         scaled_y_adjustment = self._scaled_crop_margin(y_adjustment, page)
         left = max(0, min(page.width, crop_left))
         top = max(0, min(page.height, max(crop_top, round(start_y * page.height) - scaled_y_adjustment)))

@@ -76,6 +76,16 @@
                             <field name="render_dpi"/>
                         </group>
                     </group>
+                    <group string="Crop Margins (reference pixels at 1500 px page height)">
+                        <group>
+                            <field name="crop_margin_left"/>
+                            <field name="crop_margin_right"/>
+                        </group>
+                        <group>
+                            <field name="crop_margin_top"/>
+                            <field name="crop_margin_bottom"/>
+                        </group>
+                    </group>
                     <field name="error_message" readonly="1" invisible="not error_message"/>
                     <notebook>
                         <page string="Detected Sections">

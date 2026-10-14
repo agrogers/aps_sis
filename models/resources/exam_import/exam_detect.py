@@ -460,11 +460,46 @@ class APSExamPaperImportDetect(models.Model):
         ).sorted('page_number')
         for page in pages:
             detections = list(enumerate((page.ai_response or {}).get('detections', [])))
-            detections.sort(key=lambda item: (
-                min((float(region.get('y1', 0) or 0) for region in item[1].get('regions', [])
-                     if isinstance(region, dict)), default=float('inf')),
-                item[0],
-            ))
+            positioned = []
+            unpositioned = []
+            for index, detection in detections:
+                regions = [
+                    region for region in detection.get('regions', [])
+                    if isinstance(region, dict)
+                ]
+                try:
+                    region = min(
+                        regions,
+                        key=lambda item: float(item.get('y1', 0) or 0),
+                    )
+                    top = float(region.get('y1', 0) or 0)
+                    bottom = float(region.get('y2', top) or top)
+                    left = float(region.get('x1', 0) or 0)
+                except (TypeError, ValueError):
+                    unpositioned.append((index, detection))
+                    continue
+                height = max(bottom - top, 1)
+                positioned.append((
+                    (top + bottom) / 2, height, left, index, detection,
+                ))
+
+            positioned.sort(key=lambda item: (item[0], item[3]))
+            rows = []
+            for item in positioned:
+                center, height = item[0], item[1]
+                same_row = False
+                if rows:
+                    row_center, row_height = rows[-1][0][:2]
+                    same_row = abs(center - row_center) <= min(height, row_height) / 2
+                if not same_row:
+                    rows.append([item])
+                else:
+                    rows[-1].append(item)
+            detections = [
+                (item[3], item[4])
+                for row in rows
+                for item in sorted(row, key=lambda item: (item[2], item[3]))
+            ] + unpositioned
             for _, detection in detections:
                 raw_label = (detection.get('raw_label') or detection.get('display_label') or '').strip()
                 if not raw_label:
