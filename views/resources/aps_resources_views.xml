@@ -466,7 +466,7 @@
                                     placeholder="Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student's submission."
                                     readonly="not is_aps_manager"/>
                             </group>
-                            <group string="Help: Sample Comparison and Scaling">
+                            <group string="Help: Sample Marking and Word Count">
                                 <div class="alert alert-info" role="alert">
                                     <p>
                                         Attach one of the special prompts below to enable its sample-based marking workflow.
@@ -483,6 +483,13 @@
                                             <strong>Use Sample Scaling</strong> marks the linked sample answers using the
                                             normal marking prompts, then uses their official marks to calibrate the
                                             student's final mark.
+                                        </li>
+                                        <li>
+                                            <strong>Show Word Count</strong> adds a final line to the main feedback with
+                                            the student's word and paragraph counts. Add a prompt with this exact name to
+                                            the resource's prompt list. The system counts the answer text itself after
+                                            marking; if the answer includes uploaded images, it first OCR-transcribes
+                                            them, so configure an enabled vision-capable AI model for image answers.
                                         </li>
                                     </ul>
                                     <p>
