@@ -87,6 +87,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
         code is needed there.
         """
         self.ensure_one()
+        marking_prompts = self._get_ai_feedback_marking_prompts()
         return {
             'instructions': self.ai_instructions or '',
             'out_of_marks': (
@@ -104,8 +105,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'ai_targeted_feedback': bool(self.ai_targeted_feedback),
             'include_reasoning': include_reasoning,
             'empty_answer_error': _('The submission has no student answer to mark.'),
-            'prompt_ids': self.resource_id.ai_active_prompts,
-            'image_prompt_names': self.resource_id.ai_active_prompts.mapped('prompt_name'),
+            'prompt_ids': marking_prompts,
+            'image_prompt_names': marking_prompts.mapped('prompt_name'),
             'image_sources': {
                 'student_answer': self.answer or '',
                 'question': self.question or '',
@@ -640,8 +641,11 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 '<details><summary>%s</summary><pre>%s</pre></details>'
                 % (escape(_('Reasoning')), escape(reasoning_text))
             )
-        if audit_html or reasoning_text:
-            vals['feedback'] = final_feedback or False
+
+        vals['feedback'] = self._append_ai_word_count(
+            final_feedback or '',
+            model_id=result.get('model_id'),
+        ) or False
 
         self.write(vals)
 

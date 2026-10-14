@@ -1,9 +1,12 @@
 from difflib import SequenceMatcher
+import base64
 from html import escape
 from itertools import combinations
 import json
 import math
+import mimetypes
 import re
+from urllib.parse import urlparse
 
 from markupsafe import Markup
 from odoo import _, fields, models
@@ -13,6 +16,7 @@ from odoo.tools import html2plaintext
 NO_DETAILED_FEEDBACK_HTML = '<p><em>No detailed feedback was returned by the AI model.</em></p>'
 SAMPLE_SCALING_PROMPT_NAME = 'use sample scaling'
 SAMPLE_COMPARISON_PROMPT_NAME = 'use sample comparison'
+SHOW_WORD_COUNT_PROMPT_NAME = 'show word count'
 SAMPLE_COMPARISON_RESOURCE_TAG = 'sample answer'
 SAMPLE_COMPARISON_SAME_TOLERANCE = 1.0
 SAMPLE_RUBRIC_SIMILARITY_THRESHOLD = 0.8
@@ -35,6 +39,118 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
     def _get_ai_feedback_resource(self):
         self.ensure_one()
         return self if self._name == 'aps.resources' else self.resource_id
+
+    def _get_ai_feedback_marking_prompts(self, resource=None):
+        self.ensure_one()
+        resource = resource or self._get_ai_feedback_resource()
+        return resource.ai_active_prompts.filtered(
+            lambda prompt: (prompt.prompt_name or '').strip().casefold() != SHOW_WORD_COUNT_PROMPT_NAME
+        )
+
+    def _ocr_ai_answer_images(self, image_tags, model_id=None):
+        resource = self._get_ai_feedback_resource()
+        content = [{
+            'type': 'text',
+            'text': (
+                'Transcribe all visible words from these student-answer images accurately and in order. '
+                'Preserve paragraph breaks. Do not summarize, correct, or add commentary. Return only the '
+                'transcribed text as Markdown.'
+            ),
+        }]
+        for image_tag in image_tags:
+            src_match = re.search(r'\bsrc=["\']([^"\']+)["\']', image_tag, re.IGNORECASE)
+            if not src_match:
+                raise UserError(_('A submitted image could not be read for word counting.'))
+            src = src_match.group(1)
+            if not src.casefold().startswith(('data:image/', '/web/image/')):
+                raise UserError(_('Only uploaded images can be OCR-transcribed for word counting.'))
+            attachment_match = re.match(r'^/web/image/(\d+)(?:[-/].*)?$', src)
+            model_match = re.match(r'^/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src)
+            if attachment_match:
+                image_record = self.env['ir.attachment'].browse(int(attachment_match.group(1)))
+            elif model_match:
+                model_name, record_id, field_name = model_match.groups()
+                if model_name not in self.env.registry.models:
+                    raise UserError(_('A submitted image could not be read for word counting.'))
+                image_record = self.env[model_name].browse(int(record_id))
+                if field_name not in image_record.fields_get([field_name]):
+                    raise UserError(_('A submitted image could not be read for word counting.'))
+            elif not src.casefold().startswith('data:image/'):
+                raise UserError(_('A submitted image could not be read for word counting.'))
+            else:
+                image_record = self.env['ir.attachment']
+            if image_record:
+                if not image_record.exists():
+                    raise UserError(_('A submitted image could not be read for word counting.'))
+                image_record.check_access_rights('read')
+                image_record.check_access_rule('read')
+            image_bytes = resource._get_image_bytes_from_url(src)
+            if not image_bytes:
+                raise UserError(_('A submitted image could not be read for word counting.'))
+            mime_type = (
+                src[5:].split(';', 1)[0]
+                if src.casefold().startswith('data:')
+                else mimetypes.guess_type(urlparse(src).path)[0]
+            ) or 'image/png'
+            content.append({
+                'type': 'image_url',
+                'image_url': {
+                    'url': 'data:%s;base64,%s' % (
+                        mime_type,
+                        base64.b64encode(image_bytes).decode('ascii'),
+                    ),
+                },
+            })
+
+        model_service = self.env['aps.ai.model']
+        model = model_service.browse(model_id).exists() if model_id else model_service.browse()
+        if not model or not model.supports_vision or not model.enabled or not model.provider_id.enabled:
+            candidates = model_service._get_generation_candidates(
+                resource=resource,
+                require_vision=True,
+            )
+            model = candidates[:1]
+        if not model:
+            raise UserError(_('Select an enabled vision-capable AI model to count words in submitted images.'))
+
+        result = model._execute_logged_router_call({
+            'model': model.model_key,
+            'messages': [
+                {'role': 'system', 'content': 'You are an accurate OCR transcription assistant.'},
+                {'role': 'user', 'content': content},
+            ],
+            'temperature': 0,
+            'max_completion_tokens': min(model.max_completion_tokens or 2400, 6000),
+        }, request_type='ocr', related_record=self)
+        return model._extract_message_content(result['response_json'])
+
+    def _build_ai_word_count_html(self, model_id=None):
+        self.ensure_one()
+        resource = self._get_ai_feedback_resource()
+        if not resource.ai_active_prompts.filtered(
+            lambda prompt: (prompt.prompt_name or '').strip().casefold() == SHOW_WORD_COUNT_PROMPT_NAME
+        ):
+            return ''
+
+        answer_html = self._build_ai_feedback_ctx().get('student_answer_html') or ''
+        image_tags = re.findall(r'<img\b[^>]*>', answer_html, re.IGNORECASE)
+        text_html = re.sub(r'<img\b[^>]*>', ' ', answer_html, flags=re.IGNORECASE)
+        answer_text = html2plaintext(text_html)
+        if image_tags:
+            ocr_text = self._ocr_ai_answer_images(image_tags, model_id=model_id)
+            answer_text = '%s\n%s' % (answer_text, html2plaintext(ocr_text or ''))
+        word_count = len(re.findall(r"\b[\w]+(?:['’][\w]+)*\b", answer_text))
+        paragraph_count = sum(bool(paragraph.strip()) for paragraph in answer_text.splitlines())
+        return '<p>%s</p>' % escape(_('Word Count: %(words)s \\ Paragraph Count: %(paragraphs)s') % {
+            'words': word_count,
+            'paragraphs': paragraph_count,
+        })
+
+    def _append_ai_word_count(self, feedback_html, model_id=None):
+        word_count_html = self._build_ai_word_count_html(model_id=model_id)
+        if not word_count_html:
+            return feedback_html or ''
+        return '%s%s' % (feedback_html or '', word_count_html)
 
     def _get_sample_scaling_prompt(self):
         self.ensure_one()
@@ -322,7 +438,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
 
     def _build_sample_comparison_final_context(self, target_context, strategy_prompt, scored_samples, calibration):
         resource = self._get_ai_feedback_resource()
-        marking_prompts = resource.ai_active_prompts.filtered(
+        marking_prompts = self._get_ai_feedback_marking_prompts(resource).filtered(
             lambda prompt: (prompt.prompt_name or '').strip().casefold() not in (
                 SAMPLE_SCALING_PROMPT_NAME,
                 SAMPLE_COMPARISON_PROMPT_NAME,
@@ -716,7 +832,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         resource = self._get_ai_feedback_resource()
         fallback_context = dict(target_context)
         fallback_context.update({
-            'prompt_ids': resource.ai_active_prompts.filtered(
+            'prompt_ids': self._get_ai_feedback_marking_prompts(resource).filtered(
                 lambda prompt: (prompt.prompt_name or '').strip().casefold() not in (
                     SAMPLE_SCALING_PROMPT_NAME,
                     SAMPLE_COMPARISON_PROMPT_NAME,
@@ -1051,7 +1167,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
 
         ai_model_service = self.env['aps.ai.model']
         target_context = self._build_ai_feedback_ctx(include_reasoning=bool(ai_run))
-        marking_prompts = resource.ai_active_prompts.filtered(
+        marking_prompts = self._get_ai_feedback_marking_prompts(resource).filtered(
             lambda prompt: (prompt.prompt_name or '').strip().casefold() != SAMPLE_SCALING_PROMPT_NAME
         )
         target_context.update({

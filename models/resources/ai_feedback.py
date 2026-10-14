@@ -25,6 +25,7 @@ class APSResourceAIFeedback(models.Model):
         student_answer = self.ai_answer or ''
         if not student_answer and self.env.context.get('ai_preview_prompt'):
             student_answer = '<p>[Sample student answer — preview only]</p>'
+        marking_prompts = self._get_ai_feedback_marking_prompts()
         return {
             'instructions': self.ai_instructions or '',
             'out_of_marks': self.marks if self.marks and self.marks > 0 else False,
@@ -40,8 +41,8 @@ class APSResourceAIFeedback(models.Model):
             'empty_answer_error': _(
                 'Please enter a test answer in the "Test Answer" field before running the AI mark.'
             ),
-            'prompt_ids': self.ai_active_prompts,
-            'image_prompt_names': self.ai_active_prompts.mapped('prompt_name'),
+            'prompt_ids': marking_prompts,
+            'image_prompt_names': marking_prompts.mapped('prompt_name'),
             'image_sources': {
                 'student_answer': student_answer,
                 'question': self.question or '',
@@ -60,7 +61,12 @@ class APSResourceAIFeedback(models.Model):
 
     def _apply_ai_feedback_result(self, result):
         self.ensure_one()
-        self.sudo().write(self._get_ai_feedback_result_write_vals(result))
+        vals = self._get_ai_feedback_result_write_vals(result)
+        vals['ai_feedback'] = self._append_ai_word_count(
+            vals.get('ai_feedback') or '',
+            model_id=result.get('model_id'),
+        ) or False
+        self.sudo().write(vals)
 
     def action_preview_prompt(self):
         """Open a popup showing the fully compiled prompt that would be sent to the AI."""
