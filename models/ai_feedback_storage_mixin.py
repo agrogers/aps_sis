@@ -13,6 +13,7 @@ from odoo.tools import html2plaintext
 NO_DETAILED_FEEDBACK_HTML = '<p><em>No detailed feedback was returned by the AI model.</em></p>'
 SAMPLE_SCALING_PROMPT_NAME = 'use sample scaling'
 SAMPLE_COMPARISON_PROMPT_NAME = 'use sample comparison'
+SHOW_WORD_COUNT_PROMPT_NAME = 'show word count'
 SAMPLE_COMPARISON_RESOURCE_TAG = 'sample answer'
 SAMPLE_COMPARISON_SAME_TOLERANCE = 1.0
 SAMPLE_RUBRIC_SIMILARITY_THRESHOLD = 0.8
@@ -35,6 +36,36 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
     def _get_ai_feedback_resource(self):
         self.ensure_one()
         return self if self._name == 'aps.resources' else self.resource_id
+
+    def _get_ai_feedback_marking_prompts(self, resource=None):
+        self.ensure_one()
+        resource = resource or self._get_ai_feedback_resource()
+        return resource.ai_active_prompts.filtered(
+            lambda prompt: (prompt.prompt_name or '').strip().casefold() != SHOW_WORD_COUNT_PROMPT_NAME
+        )
+
+    def _build_ai_word_count_html(self):
+        self.ensure_one()
+        resource = self._get_ai_feedback_resource()
+        if not resource.ai_active_prompts.filtered(
+            lambda prompt: (prompt.prompt_name or '').strip().casefold() == SHOW_WORD_COUNT_PROMPT_NAME
+        ):
+            return ''
+
+        answer_html = self._build_ai_feedback_ctx().get('student_answer_html') or ''
+        answer_text = html2plaintext(answer_html)
+        word_count = len(re.findall(r"\b[\w]+(?:['’][\w]+)*\b", answer_text))
+        paragraph_count = sum(bool(paragraph.strip()) for paragraph in answer_text.splitlines())
+        return '<p>%s</p>' % escape(_('Word Count: %(words)s \\ Paragraph Count: %(paragraphs)s') % {
+            'words': word_count,
+            'paragraphs': paragraph_count,
+        })
+
+    def _append_ai_word_count(self, feedback_html):
+        word_count_html = self._build_ai_word_count_html()
+        if not word_count_html:
+            return feedback_html or ''
+        return '%s%s' % (feedback_html or '', word_count_html)
 
     def _get_sample_scaling_prompt(self):
         self.ensure_one()
@@ -322,7 +353,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
 
     def _build_sample_comparison_final_context(self, target_context, strategy_prompt, scored_samples, calibration):
         resource = self._get_ai_feedback_resource()
-        marking_prompts = resource.ai_active_prompts.filtered(
+        marking_prompts = self._get_ai_feedback_marking_prompts(resource).filtered(
             lambda prompt: (prompt.prompt_name or '').strip().casefold() not in (
                 SAMPLE_SCALING_PROMPT_NAME,
                 SAMPLE_COMPARISON_PROMPT_NAME,
@@ -704,7 +735,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         resource = self._get_ai_feedback_resource()
         fallback_context = dict(target_context)
         fallback_context.update({
-            'prompt_ids': resource.ai_active_prompts.filtered(
+            'prompt_ids': self._get_ai_feedback_marking_prompts(resource).filtered(
                 lambda prompt: (prompt.prompt_name or '').strip().casefold() not in (
                     SAMPLE_SCALING_PROMPT_NAME,
                     SAMPLE_COMPARISON_PROMPT_NAME,
@@ -1025,7 +1056,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
 
         ai_model_service = self.env['aps.ai.model']
         target_context = self._build_ai_feedback_ctx(include_reasoning=bool(ai_run))
-        marking_prompts = resource.ai_active_prompts.filtered(
+        marking_prompts = self._get_ai_feedback_marking_prompts(resource).filtered(
             lambda prompt: (prompt.prompt_name or '').strip().casefold() != SAMPLE_SCALING_PROMPT_NAME
         )
         target_context.update({

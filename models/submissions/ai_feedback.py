@@ -87,6 +87,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
         code is needed there.
         """
         self.ensure_one()
+        marking_prompts = self._get_ai_feedback_marking_prompts()
         return {
             'instructions': self.ai_instructions or '',
             'out_of_marks': (
@@ -104,8 +105,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
             'ai_targeted_feedback': bool(self.ai_targeted_feedback),
             'include_reasoning': include_reasoning,
             'empty_answer_error': _('The submission has no student answer to mark.'),
-            'prompt_ids': self.resource_id.ai_active_prompts,
-            'image_prompt_names': self.resource_id.ai_active_prompts.mapped('prompt_name'),
+            'prompt_ids': marking_prompts,
+            'image_prompt_names': marking_prompts.mapped('prompt_name'),
             'image_sources': {
                 'student_answer': self.answer or '',
                 'question': self.question or '',
@@ -621,6 +622,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
             else:
                 vals['score'] = max(0.0, min(round(float(score), 2), self.out_of_marks))
 
+        vals['feedback'] = self._append_ai_word_count(vals.get('feedback') or '') or False
         self.write(vals)
 
     def _build_ai_failure_notification(self, error_text):
