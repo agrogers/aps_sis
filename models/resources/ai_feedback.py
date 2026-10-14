@@ -13,34 +13,38 @@ class APSResourceAIFeedback(models.Model):
         self.ensure_one()
         return 'ai_feedback'
 
-    def _build_ai_feedback_ctx(self, include_reasoning=False):
+    def _build_ai_feedback_ctx(self, include_reasoning=False, student_answer_html=None, out_of_marks=None):
         """Return the standardised AI feedback context dict for this resource.
 
         Used by the generic engine (``aps.ai.model.generate_feedback``).
-        ``student_answer_html`` is taken from the test-answer field ``ai_answer``.
-        When the context flag ``ai_preview_prompt`` is set and ``ai_answer`` is
-        empty, a dummy answer is substituted so the prompt can be assembled.
+        ``student_answer_html`` defaults to the test-answer field ``ai_answer``;
+        submissions pass their answer to use the same marking configuration.
         """
         self.ensure_one()
-        student_answer = self.ai_answer or ''
+        student_answer = (
+            self.ai_answer or ''
+            if student_answer_html is None
+            else student_answer_html or ''
+        )
         if not student_answer and self.env.context.get('ai_preview_prompt'):
             student_answer = '<p>[Sample student answer — preview only]</p>'
         marking_prompts = self._get_ai_feedback_marking_prompts()
+        maximum = self.marks if out_of_marks is None else out_of_marks
         return {
             'instructions': self.ai_instructions or '',
-            'out_of_marks': self.marks if self.marks and self.marks > 0 else False,
+            'out_of_marks': maximum if maximum and maximum > 0 else False,
             'use_question': bool(self.ai_use_question),
             'question': self.question or '',
-            'use_model_answer': bool(self.ai_use_model_answer),
+            'use_model_answer': bool(
+                self.ai_use_model_answer or self.ai_action == 'mark_submission_use_answer'
+            ),
             'model_answer': self.answer or '',
-            'use_note': False,
-            'notes': '',
+            'use_note': bool(self.ai_use_notes),
+            'notes': self.notes or '',
             'student_answer_html': student_answer,
             'ai_targeted_feedback': bool(self.ai_targeted_feedback),
             'include_reasoning': include_reasoning,
-            'empty_answer_error': _(
-                'Please enter a test answer in the "Test Answer" field before running the AI mark.'
-            ),
+            'empty_answer_error': _('The marking request has no student answer to mark.'),
             'prompt_ids': marking_prompts,
             'image_prompt_names': marking_prompts.mapped('prompt_name'),
             'image_sources': {
@@ -55,18 +59,20 @@ class APSResourceAIFeedback(models.Model):
     def _get_ai_feedback_result_write_vals(self, result):
         vals = super()._get_ai_feedback_result_write_vals(result)
         score = result.get('score')
-        vals['ai_score'] = float(score) if score is not None else 0.0
+        vals['ai_score'] = self._normalize_ai_feedback_score(score) if score is not None else 0.0
         vals['ai_score_comment'] = result.get('score_comment') or False
         return vals
 
-    def _apply_ai_feedback_result(self, result):
+    def _write_ai_feedback_result(self, vals):
         self.ensure_one()
-        vals = self._get_ai_feedback_result_write_vals(result)
-        vals['ai_feedback'] = self._append_ai_word_count(
-            vals.get('ai_feedback') or '',
-            model_id=result.get('model_id'),
-        ) or False
         self.sudo().write(vals)
+
+    def _on_ai_feedback_run_success(self, result, request_origin, run):
+        self.ensure_one()
+        if result.get('sample_comparison_audit_html'):
+            self._post_sample_comparison_audit_note(result)
+        else:
+            self._post_sample_scaling_audit_note(result)
 
     def action_preview_prompt(self):
         """Open a popup showing the fully compiled prompt that would be sent to the AI."""

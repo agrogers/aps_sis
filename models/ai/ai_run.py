@@ -1,6 +1,7 @@
 import time
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class APSAIRun(models.Model):
@@ -195,10 +196,10 @@ class APSAIRun(models.Model):
         try:
             if self.processor_key != 'standard':
                 self._process_specialised_background(started_perf)
-            elif self.resource_id:
-                self._process_background_resource(started_perf)
+            elif self.resource_id or self.submission_id:
+                self._process_background_record(started_perf)
             else:
-                self._process_background_submission(started_perf)
+                raise UserError(_('This standard AI run is not linked to a resource or submission.'))
         except Exception as exc:
             from .utils import _exception_to_text
             duration_ms = int((time.perf_counter() - started_perf) * 1000)
@@ -211,69 +212,24 @@ class APSAIRun(models.Model):
     def _process_specialised_background(self, started_perf):
         raise UserError(_('No processor is registered for AI run type %s.') % self.processor_key)
 
-    def _process_background_submission(self, started_perf):
+    def _process_background_record(self, started_perf):
         self.ensure_one()
-        submission = self.submission_id.with_user(self.requested_by_id)
+        record = (self.resource_id or self.submission_id).with_user(self.requested_by_id)
+        is_resource = record._name == 'aps.resources'
+        target_label = _('resource') if is_resource else _('submission')
         self._write_progress({'status_message': _('Waiting for the AI provider response...')})
-        ai_model = (
-            self.override_model_id.with_user(self.requested_by_id)
-            if self.override_model_id
-            else self.env['aps.ai.model'].with_user(self.requested_by_id)
-        )
-        if submission._uses_sample_scaling():
-            result = submission._generate_sample_scaled_feedback(ai_run=self)
-        else:
-            result = ai_model.generate_multi_model_feedback(
-                submission,
-                ai_run=self,
-            )
+        result = record._generate_ai_feedback_result(ai_run=self)
         result['reasoning_text'] = result.get('reasoning_text') or self.thinking_text or ''
-        self._write_progress({'status_message': _('Writing AI feedback to the submission...')})
-        submission._apply_ai_feedback_result(result)
+        self._write_progress({
+            'status_message': _('Writing AI feedback to the %s...') % target_label,
+        })
+        record._apply_ai_feedback_result(result)
         self._commit_background_work()
-        submission.sudo()._finalize_ai_marking_success(
+        record._on_ai_feedback_run_success(
             result,
             request_origin=self.request_origin,
             run=self,
         )
-        self._commit_background_work()
-        duration_ms = int((time.perf_counter() - started_perf) * 1000)
-        self._write_progress({
-            'state': 'completed',
-            'status_message': _('Completed.'),
-            'result_message': _('AI feedback was added using %s.') % (
-                result.get('model_name') or _('the configured AI model')
-            ),
-            'finished_at': fields.Datetime.now(),
-            'duration_ms': duration_ms,
-            'ai_model_id': result.get('model_id') or False,
-            'prompt_tokens': result.get('prompt_tokens') or 0,
-            'completion_tokens': result.get('completion_tokens') or 0,
-            'estimated_cost': result.get('estimated_cost') or 0.0,
-            'thinking_text': result.get('reasoning_text') or self.thinking_text or False,
-            'response_preview': result.get('raw_content') or self.response_preview or False,
-        })
-
-    def _process_background_resource(self, started_perf):
-        self.ensure_one()
-        resource = self.resource_id.with_user(self.requested_by_id)
-        self._write_progress({'status_message': _('Waiting for the AI provider response...')})
-        if resource._uses_sample_comparison():
-            result = resource._generate_sample_comparison_feedback(ai_run=self)
-        elif resource._uses_sample_scaling():
-            result = resource._generate_sample_scaled_feedback(ai_run=self)
-        else:
-            result = self.env['aps.ai.model'].with_user(self.requested_by_id).generate_multi_model_feedback(
-                resource,
-                ai_run=self,
-            )
-        self._write_progress({'status_message': _('Writing AI feedback to the resource...')})
-        resource._apply_ai_feedback_result(result)
-        self._commit_background_work()
-        if result.get('sample_comparison_audit_html'):
-            resource._post_sample_comparison_audit_note(result)
-        else:
-            resource._post_sample_scaling_audit_note(result)
         self._commit_background_work()
         duration_ms = int((time.perf_counter() - started_perf) * 1000)
         self._write_progress({

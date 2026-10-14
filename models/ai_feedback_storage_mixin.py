@@ -135,16 +135,21 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         answer_html = self._build_ai_feedback_ctx().get('student_answer_html') or ''
         image_tags = re.findall(r'<img\b[^>]*>', answer_html, re.IGNORECASE)
         text_html = re.sub(r'<img\b[^>]*>', ' ', answer_html, flags=re.IGNORECASE)
-        answer_text = html2plaintext(text_html)
+        answer_text = self._html_to_ai_answer_text(text_html)
         if image_tags:
             ocr_text = self._ocr_ai_answer_images(image_tags, model_id=model_id)
             answer_text = '%s\n%s' % (answer_text, html2plaintext(ocr_text or ''))
         word_count = len(re.findall(r"\b[\w]+(?:['’][\w]+)*\b", answer_text))
         paragraph_count = sum(bool(paragraph.strip()) for paragraph in answer_text.splitlines())
-        return '<p>%s</p>' % escape(_('Word Count: %(words)s \\ Paragraph Count: %(paragraphs)s') % {
-            'words': word_count,
-            'paragraphs': paragraph_count,
-        })
+        return '<p>%s<br>%s</p>' % (
+            escape(_('Word Count: %(words)s') % {'words': word_count}),
+            escape(_('Paragraph Count: %(paragraphs)s') % {'paragraphs': paragraph_count}),
+        )
+
+    @staticmethod
+    def _html_to_ai_answer_text(answer_html):
+        answer_html = re.sub(r'</div\s*>', '\n', answer_html or '', flags=re.IGNORECASE)
+        return html2plaintext(answer_html)
 
     def _append_ai_word_count(self, feedback_html, model_id=None):
         word_count_html = self._build_ai_word_count_html(model_id=model_id)
@@ -460,7 +465,13 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         }
 
     def _build_sample_comparison_audit_html(self, audit, collapsible=False):
-        parts = []
+        final_mark = self._build_sample_comparison_final_note_html({
+            'score': audit.get('final_score'),
+            'sample_comparison_audit': audit,
+            'score_comment': audit.get('final_reason'),
+            'feedback_html': audit.get('final_feedback'),
+        })
+        parts = [str(final_mark)] if final_mark else []
         if not collapsible:
             parts.append('<p><strong>%s</strong></p>' % escape(_('AI MARKING COMPARISON')))
         if audit.get('prompt_conflict'):
@@ -518,14 +529,6 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 escape(_('Sample comparison fallback:')),
                 escape(audit['fallback_reason']),
             ))
-        final_mark = self._build_sample_comparison_final_note_html({
-            'score': audit.get('final_score'),
-            'sample_comparison_audit': audit,
-            'score_comment': audit.get('final_reason'),
-            'feedback_html': audit.get('final_feedback'),
-        })
-        if final_mark:
-            parts.append(str(final_mark))
         body = ''.join(parts)
         if collapsible:
             return Markup('<details><summary>%s</summary>%s</details>' % (
@@ -1413,6 +1416,67 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         )
         return result
 
+    def _generate_ai_feedback_result(self, ai_run=None):
+        self.ensure_one()
+        if self._uses_sample_comparison():
+            return self._generate_sample_comparison_feedback(ai_run=ai_run)
+        if self._uses_sample_scaling():
+            return self._generate_sample_scaled_feedback(ai_run=ai_run)
+
+        ai_model = self.env['aps.ai.model']
+        if ai_run and ai_run.override_model_id:
+            ai_model = ai_run.override_model_id.with_user(self.env.uid)
+        return ai_model.generate_multi_model_feedback(self, ai_run=ai_run)
+
+    def _get_ai_feedback_out_of_marks(self):
+        self.ensure_one()
+        return self._build_ai_feedback_ctx().get('out_of_marks') or False
+
+    def _normalize_ai_feedback_score(self, score):
+        self.ensure_one()
+        score = round(float(score), 2)
+        maximum = self._get_ai_feedback_out_of_marks()
+        if maximum:
+            return max(0.0, min(score, maximum))
+        return score
+
+    def _build_ai_feedback_html(self, result):
+        self.ensure_one()
+        feedback_html = result.get('feedback_html') or ''
+        score_comment = result.get('score_comment') or ''
+        comment_is_feedback = bool(score_comment) and self._is_no_detailed_feedback_html(feedback_html)
+        if comment_is_feedback:
+            feedback_html = '<p><em>%s</em></p>' % escape(score_comment)
+
+        if self._get_ai_feedback_out_of_marks() and result.get('score') is None and not comment_is_feedback:
+            no_score_note = score_comment or _('No mark was returned by the AI model.')
+            feedback_html += '<p><em>%s</em></p>' % escape(no_score_note)
+
+        feedback_html = self._append_ai_word_count(
+            feedback_html,
+            model_id=result.get('model_id'),
+        )
+
+        audit = result.get('sample_comparison_audit')
+        audit_html = result.get('sample_comparison_audit_html')
+        if audit:
+            audit_html = self._build_sample_comparison_audit_html(audit, collapsible=True)
+        elif audit_html:
+            audit_html = Markup('<details><summary>%s</summary>%s</details>' % (
+                escape(_('AI Marking Comparison')),
+                str(audit_html),
+            ))
+        if audit_html:
+            feedback_html += str(audit_html)
+
+        reasoning_text = result.get('reasoning_text') or result.get('thinking_text') or ''
+        if reasoning_text:
+            feedback_html += (
+                '<details><summary>%s</summary><pre>%s</pre></details>'
+                % (escape(_('Reasoning')), escape(reasoning_text))
+            )
+        return feedback_html
+
     def _get_ai_feedback_result_write_vals(self, result):
         self.ensure_one()
         return {
@@ -1422,6 +1486,21 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             'ai_feedback_items': result.get('feedback_items') or False,
             'ai_feedback_links': result.get('feedback_links') or False,
         }
+
+    def _write_ai_feedback_result(self, vals):
+        self.ensure_one()
+        self.write(vals)
+
+    def _apply_ai_feedback_result(self, result):
+        self.ensure_one()
+        vals = self._get_ai_feedback_result_write_vals(result)
+        vals[self._get_ai_feedback_storage_field_name()] = (
+            self._build_ai_feedback_html(result) or False
+        )
+        self._write_ai_feedback_result(vals)
+
+    def _on_ai_feedback_run_success(self, result, request_origin, run):
+        self.ensure_one()
 
     def _is_no_detailed_feedback_html(self, feedback_html):
         """Return True when *feedback_html* is empty or the standard placeholder.

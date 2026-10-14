@@ -86,6 +86,19 @@ class TestAIWordCount(TransactionCase):
             )
         )
 
+    def test_div_blocks_are_counted_as_separate_paragraphs(self):
+        answer = (
+            '<div><span>First paragraph has two chunks.</span> '
+            '<span>They still count as one paragraph.</span></div>'
+            '<div><span>Second paragraph.</span></div>'
+        )
+        answer_text = self.env['aps.resources']._html_to_ai_answer_text(answer)
+
+        self.assertEqual(
+            sum(bool(paragraph.strip()) for paragraph in answer_text.splitlines()),
+            2,
+        )
+
     def test_image_text_is_ocrd_before_counting(self):
         resource = self._create_resource(
             '<p>Typed answer.</p><p><img src="/web/image/101/answer.png"></p>'
@@ -108,7 +121,10 @@ class TestAIWordCount(TransactionCase):
         resource = self._create_resource('<p>One two three.</p>', with_word_count=False)
 
         with patch.object(type(resource), 'write', autospec=True) as write:
-            resource._apply_ai_feedback_result({'feedback_html': '<p>AI feedback.</p>'})
+            resource._apply_ai_feedback_result({
+                'feedback_html': '<p>AI feedback.</p>',
+                'score': 5,
+            })
 
         self.assertEqual(
             write.call_args.args[1]['ai_feedback'],

@@ -348,7 +348,7 @@ class TestSampleScaling(TransactionCase):
                 patch.object(type(resource), '_generate_sample_scaled_feedback', autospec=True, return_value=result) as generate, \
                 patch.object(type(resource), '_apply_ai_feedback_result', autospec=True) as apply_result, \
                 patch.object(type(resource), '_post_sample_scaling_audit_note', autospec=True) as post_audit:
-            run._process_background_resource(time.perf_counter())
+            run._process_background_record(time.perf_counter())
 
         generate.assert_called_once_with(resource.with_user(run.requested_by_id), ai_run=run)
         self.assertEqual(apply_result.call_args.args[1], result)
@@ -375,7 +375,7 @@ class TestSampleScaling(TransactionCase):
                 patch.object(type(submission), '_generate_sample_scaled_feedback', autospec=True, return_value=result) as generate, \
                 patch.object(type(submission), '_apply_ai_feedback_result', autospec=True) as apply_result, \
                 patch.object(type(submission), '_finalize_ai_marking_success', autospec=True) as finalize:
-            run._process_background_submission(time.perf_counter())
+            run._process_background_record(time.perf_counter())
 
         generate.assert_called_once_with(submission.with_user(run.requested_by_id), ai_run=run)
         self.assertEqual(apply_result.call_args.args[1], result)

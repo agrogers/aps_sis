@@ -7,7 +7,6 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import html2plaintext
 
-from .model import sentinel_zero
 
 
 _logger = logging.getLogger(__name__)
@@ -81,40 +80,15 @@ class APSResourceSubmissionAIFeedback(models.Model):
     def _build_ai_feedback_ctx(self, include_reasoning=False):
         """Return the standardised AI feedback context dict for this submission.
 
-        This is the single method to implement when adding AI feedback support
-        to a new model.  The generic engine (``aps.ai.model.generate_feedback``)
-        reads this dict to build the prompt payload — no other record-specific
-        code is needed there.
+        The resource owns the marking configuration; only the student answer
+        differs from the resource-level AI test context.
         """
         self.ensure_one()
-        marking_prompts = self._get_ai_feedback_marking_prompts()
-        return {
-            'instructions': self.ai_instructions or '',
-            'out_of_marks': (
-                self.out_of_marks
-                if self.out_of_marks and self.out_of_marks > 0 and self.out_of_marks != sentinel_zero
-                else False
-            ),
-            'use_question': bool(self.ai_use_question),
-            'question': self.question or '',
-            'use_model_answer': bool(self.ai_use_model_answer or self.ai_action == 'mark_submission_use_answer'),
-            'model_answer': self.model_answer or '',
-            'use_note': bool(self.ai_use_notes),
-            'notes': self.resource_notes or '',
-            'student_answer_html': self.answer or '',
-            'ai_targeted_feedback': bool(self.ai_targeted_feedback),
-            'include_reasoning': include_reasoning,
-            'empty_answer_error': _('The submission has no student answer to mark.'),
-            'prompt_ids': marking_prompts,
-            'image_prompt_names': marking_prompts.mapped('prompt_name'),
-            'image_sources': {
-                'student_answer': self.answer or '',
-                'question': self.question or '',
-                'model_answer': self.model_answer or '',
-                'instructions': self.ai_instructions or '',
-                'notes': self.resource_notes or '',
-            },
-        }
+        return self.resource_id._build_ai_feedback_ctx(
+            include_reasoning=include_reasoning,
+            student_answer_html=self.answer or '',
+            out_of_marks=self.out_of_marks if self.out_of_marks and self.out_of_marks > 0 else False,
+        )
 
     def _validate_ai_marking_request(self):
         self.ensure_one()
@@ -300,6 +274,9 @@ class APSResourceSubmissionAIFeedback(models.Model):
         model_label = escape(result.get('model_name') or _('the configured AI model'))
         estimated_cost = float(result.get('estimated_cost') or 0.0)
         parts = []
+        sample_comparison_audit = result.get('sample_comparison_audit_html')
+        if sample_comparison_audit:
+            parts.append(str(sample_comparison_audit))
         if prefix_text:
             parts.append('<p>%s</p>' % escape(prefix_text))
         parts.append('<p>%s</p>' % escape(_('This submission was marked by AI.')))
@@ -310,9 +287,6 @@ class APSResourceSubmissionAIFeedback(models.Model):
         sample_scaling_audit = result.get('sample_scaling_audit_html')
         if sample_scaling_audit:
             parts.append(str(sample_scaling_audit))
-        sample_comparison_audit = result.get('sample_comparison_audit_html')
-        if sample_comparison_audit:
-            parts.append(str(sample_comparison_audit))
         return ''.join(parts)
 
     def _get_ai_completion_prefix_text(self, request_origin):
@@ -589,65 +563,31 @@ class APSResourceSubmissionAIFeedback(models.Model):
             % (self.ai_auto_mark_attempt_count, _AUTO_MARK_MAX_ATTEMPTS, escape(error_text))
         )
 
-    def _apply_ai_feedback_result(self, result):
+    def _get_ai_feedback_result_write_vals(self, result):
         self.ensure_one()
-        feedback_html = result.get('feedback_html') or ''
+        vals = super()._get_ai_feedback_result_write_vals(result)
         score = result.get('score')
-        score_comment = result.get('score_comment')
-
-        # When the AI returned no detailed feedback sections but did return a
-        # score comment, use the comment as the feedback body instead of the
-        # "no detailed feedback" placeholder.
-        comment_is_feedback = bool(score_comment) and self._is_no_detailed_feedback_html(feedback_html)
-        if comment_is_feedback:
-            feedback_html = '<p><em>%s</em></p>' % escape(score_comment)
-
-        vals = {
-            **self._get_ai_feedback_result_write_vals(result),
+        vals.update({
             'ai_last_model_id': result.get('model_id'),
             'ai_last_prompt_tokens': result.get('prompt_tokens') or 0,
             'ai_last_completion_tokens': result.get('completion_tokens') or 0,
             'ai_last_estimated_cost': result.get('estimated_cost') or 0.0,
-        }
-        if comment_is_feedback:
-            vals['feedback'] = feedback_html
+        })
+        if score is not None:
+            vals['score'] = self._normalize_ai_feedback_score(score)
+        return vals
 
-        if self.out_of_marks and self.out_of_marks > 0 and self.out_of_marks != sentinel_zero:
-            if score is None:
-                if not comment_is_feedback:
-                    no_score_note = score_comment or _('No mark was returned by the AI model.')
-                    vals['feedback'] = '%s<p><em>%s</em></p>' % (feedback_html, no_score_note)
-                # When the comment already forms the feedback body there is
-                # nothing to append — adding it again would duplicate it.
-            else:
-                vals['score'] = max(0.0, min(round(float(score), 2), self.out_of_marks))
+    def _get_ai_feedback_out_of_marks(self):
+        self.ensure_one()
+        return self.out_of_marks if self.out_of_marks and self.out_of_marks > 0 else False
 
-        final_feedback = vals.get('feedback') or feedback_html
-        audit = result.get('sample_comparison_audit')
-        audit_html = result.get('sample_comparison_audit_html')
-        if audit:
-            audit_html = self._build_sample_comparison_audit_html(audit, collapsible=True)
-        elif audit_html:
-            audit_html = Markup('<details><summary>%s</summary>%s</details>' % (
-                escape(_('AI Marking Comparison')),
-                str(audit_html),
-            ))
-        if audit_html:
-            final_feedback += str(audit_html)
-
-        reasoning_text = result.get('reasoning_text') or result.get('thinking_text') or ''
-        if reasoning_text:
-            final_feedback += (
-                '<details><summary>%s</summary><pre>%s</pre></details>'
-                % (escape(_('Reasoning')), escape(reasoning_text))
-            )
-
-        vals['feedback'] = self._append_ai_word_count(
-            final_feedback or '',
-            model_id=result.get('model_id'),
-        ) or False
-
-        self.write(vals)
+    def _on_ai_feedback_run_success(self, result, request_origin, run):
+        self.ensure_one()
+        self.sudo()._finalize_ai_marking_success(
+            result,
+            request_origin=request_origin,
+            run=run,
+        )
 
     def _build_ai_failure_notification(self, error_text):
         # Delegated to the shared implementation in aps.ai.feedback.storage.mixin.

@@ -138,6 +138,132 @@ class TestSampleComparison(TransactionCase):
         self.assertNotIn('sample answer', context['instructions'].casefold())
         self.assertIn('Do not introduce, assume, or substitute a topic', context['instructions'])
 
+    def test_resource_and_submission_contexts_only_differ_by_student_answer(self):
+        prompt = self._create_prompt()
+        resource = self._create_resource(prompt)
+        test_answer = '<p>Test response <img src="/web/image/101/test.png"/></p>'
+        submission_answer = '<p>Submitted response <img src="/web/image/102/answer.png"/></p>'
+        resource.write({
+            'ai_answer': test_answer,
+            'ai_use_notes': True,
+            'notes': '<p>Shared marking note.</p>',
+        })
+        student = self.env['res.partner'].create({
+            'name': 'Marking context parity student',
+            'is_student': True,
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'answer': submission_answer,
+            'out_of_marks': resource.marks,
+        })
+
+        test_context = resource._build_ai_feedback_ctx(include_reasoning=True)
+        submission_context = submission._build_ai_feedback_ctx(include_reasoning=True)
+        expected_submission_context = dict(test_context)
+        expected_submission_context['student_answer_html'] = submission.answer
+        expected_sources = dict(test_context['image_sources'])
+        expected_sources['student_answer'] = submission.answer
+        expected_submission_context['image_sources'] = expected_sources
+
+        self.assertEqual(submission_context, expected_submission_context)
+
+    def test_resource_and_submission_feedback_share_comparison_and_reasoning_html(self):
+        prompt = self._create_prompt()
+        resource = self._create_resource(prompt)
+        student = self.env['res.partner'].create({
+            'name': 'Marking result parity student',
+            'is_student': True,
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'answer': '<p>Real submission answer.</p>',
+        })
+        audit = {
+            'summary': 'Compared against the benchmark.',
+            'comparisons': [],
+            'target_maximum': 30,
+            'score_lower': 20,
+            'score_upper': 20,
+            'score_estimate': 20,
+            'confidence': 'MEDIUM',
+            'anomaly_count': 1,
+            'anomaly_severity': 0.0,
+        }
+        result = {
+            'feedback_html': '<p>Teacher feedback.</p>',
+            'score': 20,
+            'sample_comparison_audit': audit,
+            'reasoning_text': 'Reasoning from multiple calls.',
+        }
+
+        with patch.object(type(resource), 'write', autospec=True) as resource_write:
+            resource._apply_ai_feedback_result(result)
+        with patch.object(type(submission), 'write', autospec=True) as submission_write:
+            submission._apply_ai_feedback_result(result)
+
+        resource_vals = resource_write.call_args.args[1]
+        submission_vals = submission_write.call_args.args[1]
+        self.assertEqual(resource_vals['ai_feedback'], submission_vals['feedback'])
+        self.assertEqual(resource_vals['ai_score'], submission_vals['score'])
+        self.assertIn('Estimated score: 20/30; range: 20-20/30; confidence: MEDIUM;', resource_vals['ai_feedback'])
+        self.assertIn('<details><summary>Reasoning</summary>', resource_vals['ai_feedback'])
+        self.assertTrue(resource_vals['ai_feedback'].endswith('</details>'))
+
+    def test_resource_and_submission_use_the_same_model_override_route(self):
+        resource = self.env['aps.resources'].create({
+            'name': 'Ordinary marking route',
+            'marks': 30,
+            'ai_model_ids': [(6, 0, [self.model.id])],
+            'ai_answer': '<p>Test answer.</p>',
+        })
+        student = self.env['res.partner'].create({
+            'name': 'Model route parity student',
+            'is_student': True,
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'answer': '<p>Submission answer.</p>',
+            'out_of_marks': resource.marks,
+        })
+        resource_run = self.env['aps.ai.run'].create({
+            'resource_id': resource.id,
+            'requested_by_id': self.env.user.id,
+            'override_model_id': self.model.id,
+        })
+        submission_run = self.env['aps.ai.run'].create({
+            'submission_id': submission.id,
+            'requested_by_id': self.env.user.id,
+            'override_model_id': self.model.id,
+        })
+
+        with patch.object(
+            type(self.model),
+            'generate_multi_model_feedback',
+            autospec=True,
+            return_value={'feedback_html': '<p>Generated.</p>'},
+        ) as generate:
+            resource._generate_ai_feedback_result(ai_run=resource_run)
+            submission._generate_ai_feedback_result(ai_run=submission_run)
+
+        self.assertEqual(generate.call_count, 2)
+        self.assertEqual(generate.call_args_list[0].args[1], resource)
+        self.assertEqual(generate.call_args_list[1].args[1], submission)
+        self.assertEqual(generate.call_args_list[0].kwargs['ai_run'], resource_run)
+        self.assertEqual(generate.call_args_list[1].kwargs['ai_run'], submission_run)
+
     def test_only_linked_sample_answer_tagged_resources_are_benchmarks(self):
         prompt = self._create_prompt()
         resource = self._create_resource(prompt)
@@ -240,7 +366,7 @@ class TestSampleComparison(TransactionCase):
         with patch.object(type(self.model), 'generate_feedback', autospec=True, side_effect=fake_generate):
             result = resource._generate_sample_comparison_feedback()
 
-        self.assertEqual(len(calls), 6)
+        self.assertEqual(len(calls), 5)
         self.assertTrue(all(not context['out_of_marks'] for context in calls[:4]))
         self.assertEqual(result['score'], 23)
         self.assertTrue(result['sample_comparison_audit']['prompt_conflict'])
@@ -249,6 +375,10 @@ class TestSampleComparison(TransactionCase):
         self.assertIn('AI FINAL MARK', str(result['sample_comparison_audit_html']))
         self.assertIn('Score: 23/30', str(result['sample_comparison_audit_html']))
         self.assertIn('Range: 20-25/30', str(result['sample_comparison_audit_html']))
+        self.assertLess(
+            str(result['sample_comparison_audit_html']).index('AI FINAL MARK'),
+            str(result['sample_comparison_audit_html']).index('AI MARKING COMPARISON'),
+        )
 
     def test_malformed_comparison_falls_back_to_ordinary_marking(self):
         prompt = self._create_prompt()
@@ -306,7 +436,7 @@ class TestSampleComparison(TransactionCase):
                 patch.object(type(resource), '_generate_sample_comparison_feedback', autospec=True, return_value=result) as generate, \
                 patch.object(type(resource), '_apply_ai_feedback_result', autospec=True) as apply_result, \
                 patch.object(type(resource), '_post_sample_comparison_audit_note', autospec=True) as post_audit:
-            run._process_background_resource(time.perf_counter())
+            run._process_background_record(time.perf_counter())
         generate.assert_called_once_with(resource.with_user(run.requested_by_id), ai_run=run)
         self.assertEqual(apply_result.call_args.args[1], result)
         self.assertEqual(
@@ -347,7 +477,7 @@ class TestSampleComparison(TransactionCase):
                 patch.object(type(submission), '_generate_sample_comparison_feedback', autospec=True, return_value=result) as generate, \
                 patch.object(type(submission), '_apply_ai_feedback_result', autospec=True) as apply_result, \
                 patch.object(type(submission), '_finalize_ai_marking_success', autospec=True) as finalize:
-            run._process_background_submission(time.perf_counter())
+            run._process_background_record(time.perf_counter())
         generate.assert_called_once_with(submission.with_user(run.requested_by_id), ai_run=run)
         self.assertEqual(apply_result.call_args.args[1], result)
         self.assertEqual(
@@ -399,11 +529,13 @@ class TestSampleComparison(TransactionCase):
             'model_name': self.model.display_name,
             'estimated_cost': 0.01,
             'sample_comparison_audit_html': audit_html,
-        })
+        }, prefix_text='Manual AI marking completed successfully.')
 
+        self.assertTrue(body.startswith('<p><strong>AI FINAL MARK</strong></p>'))
         self.assertIn('AI MARKING COMPARISON', body)
         self.assertIn('AI FINAL MARK', body)
         self.assertEqual(body.count('AI FINAL MARK'), 1)
+        self.assertLess(body.index('AI FINAL MARK'), body.index('Manual AI marking completed successfully.'))
         self.assertNotIn('Clear feedback.', body)
 
     def test_invalid_final_scores_use_estimate_and_schedule_review(self):
@@ -473,6 +605,10 @@ class TestSampleComparison(TransactionCase):
 
         feedback_html = write.call_args.args[1]['feedback']
         self.assertIn('<details><summary>AI Marking Comparison</summary>', feedback_html)
+        self.assertLess(
+            feedback_html.index('AI FINAL MARK'),
+            feedback_html.index('Estimated score:'),
+        )
         self.assertIn(
             'Estimated score: 20/30; range: 20-20/30; confidence: MEDIUM; anomalies: 1 (severity 0).',
             feedback_html,

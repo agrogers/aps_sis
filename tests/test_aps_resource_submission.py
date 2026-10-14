@@ -773,6 +773,23 @@ class TestAPSAITargetedFeedback(TransactionCase):
         ])
         self.assertIn('<div><span class="aps-ai-answer-chunk" data-chunk-id="c1">Cat is an animal.</span> <span class="aps-ai-answer-chunk" data-chunk-id="c2">Dog is also an animal.</span></div>', chunk_data['chunked_html'])
 
+    def test_build_submission_answer_chunks_preserves_paragraph_breaks(self):
+        ai_model = self.env['aps.ai.model']
+        answer_html = (
+            '<div class="o-paragraph">The first paragraph explains the first idea. '
+            'It continues with additional details.</div>'
+            '<div class="o-paragraph">The second paragraph introduces another idea. '
+            'It also includes additional details.</div>'
+        )
+
+        chunk_data = ai_model._build_submission_answer_chunks(answer_html)
+
+        self.assertEqual(len(chunk_data['chunks']), 4)
+        self.assertEqual(
+            [chunk['text'].endswith('\n') for chunk in chunk_data['chunks']],
+            [False, True, False, True],
+        )
+
     def test_build_submission_answer_chunks_preserves_full_text(self):
         ai_model = self.env['aps.ai.model']
         answer_html = '<p>Photosynthesis occurs in leaves, not in roots. Water is absorbed by root hairs.</p>'
