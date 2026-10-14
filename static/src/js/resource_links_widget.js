@@ -13,6 +13,7 @@ export class ResourceLinksField extends Component {
         size: { type: String, optional: true },
         showName: { type: Boolean, optional: true },
         showResults: { type: Boolean, optional: true },
+        alignRight: { type: Boolean, optional: true },
      };
 
     setup() {
@@ -166,6 +167,7 @@ export const resourceLinksField = {
             size: options.size || "24px",
             showName: options.show_name || false,
             showResults: options.show_results || false,
+            alignRight: options.align_right || false,
         };
     },
 };

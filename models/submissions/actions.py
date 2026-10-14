@@ -413,4 +413,18 @@ class APSResourceSubmissionActions(models.Model):
             'target': 'current',
         }
 
+    def action_open_resource(self):
+        """Open the linked resource's form view."""
+        self.ensure_one()
+        if not self.resource_id:
+            return False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.resource_id.display_name,
+            'res_model': 'aps.resources',
+            'view_mode': 'form',
+            'res_id': self.resource_id.id,
+            'target': 'current',
+        }
+
 # endregion - Action Methods

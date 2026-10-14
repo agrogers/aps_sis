@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="aps_sis.ResourceLinksField">
-        <div class="o_resource_links d-flex flex-wrap gap-2 align-items-start" t-ref="linksContainer" t-on-click.stop="">
+        <div t-att-class="'o_resource_links d-flex flex-wrap gap-2 align-items-start' + (this.props.alignRight ? ' justify-content-end' : '')" t-ref="linksContainer" t-on-click.stop="">
             <t t-foreach="links" t-as="link" t-key="link.id">
                 <div 
                     class="resource-link-cell d-flex flex-column align-items-center"
