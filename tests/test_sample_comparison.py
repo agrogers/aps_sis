@@ -310,6 +310,47 @@ class TestSampleComparison(TransactionCase):
         self.assertEqual(apply_result.call_args.args[1], result)
         post_audit.assert_called_once_with(resource.with_user(run.requested_by_id), result)
 
+    def test_background_submission_worker_dispatches_comparison(self):
+        prompt = self._create_prompt()
+        resource = self._create_resource(prompt)
+        student = self.env['res.partner'].create({
+            'name': 'Sample comparison student',
+            'is_student': True,
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'submission_name': 'Sample comparison submission',
+        })
+        run = self.env['aps.ai.run'].create({
+            'submission_id': submission.id,
+            'requested_by_id': self.env.user.id,
+        })
+        result = {
+            'score': 18,
+            'model_id': self.model.id,
+            'model_name': self.model.display_name,
+            'sample_comparison_audit_html': '<p>comparison evidence</p>',
+        }
+        with patch.object(type(run), '_write_progress', autospec=True), \
+                patch.object(type(run), '_commit_background_work', autospec=True), \
+                patch.object(type(submission), '_uses_sample_comparison', autospec=True, return_value=True), \
+                patch.object(type(submission), '_generate_sample_comparison_feedback', autospec=True, return_value=result) as generate, \
+                patch.object(type(submission), '_apply_ai_feedback_result', autospec=True) as apply_result, \
+                patch.object(type(submission), '_finalize_ai_marking_success', autospec=True) as finalize:
+            run._process_background_submission(time.perf_counter())
+        generate.assert_called_once_with(submission.with_user(run.requested_by_id), ai_run=run)
+        self.assertEqual(apply_result.call_args.args[1], result)
+        finalize.assert_called_once_with(
+            submission.with_user(run.requested_by_id),
+            result,
+            request_origin=run.request_origin,
+            run=run,
+        )
+
     def test_comparison_audit_does_not_repeat_score_already_in_benchmark_name(self):
         resource = self.env['aps.resources']
         audit_html = resource._build_sample_comparison_audit_html({

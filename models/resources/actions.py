@@ -308,10 +308,24 @@ class APSResource(models.Model):
             'target': 'current',
         }
 
-    def action_open_all_child_resources_list(self):
-        """Open all descendants of this resource in a standard list/form view."""
+    def action_open_all_linked_child_resources_list(self):
+        """Open all linked descendants of this resource in a standard list/form view."""
         self.ensure_one()
         descendants = self._get_all_descendant_resources()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'All Linked Child Resources: {self.name}',
+            'res_model': 'aps.resources',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', descendants.ids)],
+            'context': {'default_subjects': self.subjects.ids},
+            'target': 'current',
+        }
+
+    def action_open_all_child_resources_list(self):
+        """Open all linked descendants and their direct supporting resources."""
+        self.ensure_one()
+        descendants = self._get_all_child_resources()
         return {
             'type': 'ir.actions.act_window',
             'name': f'All Child Resources: {self.name}',
@@ -325,14 +339,21 @@ class APSResource(models.Model):
     def _get_all_descendant_resources(self):
         self.ensure_one()
         descendants = self.env['aps.resources'].browse()
-        frontier = self.child_ids
+        frontier = self.child_ids - self
         while frontier:
-            frontier -= descendants
+            frontier -= descendants | self
             if not frontier:
                 break
             descendants |= frontier
             frontier = self.env['aps.resources'].search([('parent_ids', 'in', frontier.ids)])
-        return descendants
+        return descendants - self
+
+    def _get_all_child_resources(self):
+        self.ensure_one()
+        linked_descendants = self._get_all_descendant_resources()
+        linked_resources = self | linked_descendants
+        supporting_resources = linked_resources.mapped('supporting_resource_ids')
+        return (linked_descendants | supporting_resources) - self
 
     def action_open_supporting_resources_list(self):
         """Open supporting resources in a standard list/form view with navigation."""
