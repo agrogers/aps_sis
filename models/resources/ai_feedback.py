@@ -62,7 +62,10 @@ class APSResourceAIFeedback(models.Model):
     def _apply_ai_feedback_result(self, result):
         self.ensure_one()
         vals = self._get_ai_feedback_result_write_vals(result)
-        vals['ai_feedback'] = self._append_ai_word_count(vals.get('ai_feedback') or '') or False
+        vals['ai_feedback'] = self._append_ai_word_count(
+            vals.get('ai_feedback') or '',
+            model_id=result.get('model_id'),
+        ) or False
         self.sudo().write(vals)
 
     def action_preview_prompt(self):

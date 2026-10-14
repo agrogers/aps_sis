@@ -622,7 +622,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
             else:
                 vals['score'] = max(0.0, min(round(float(score), 2), self.out_of_marks))
 
-        vals['feedback'] = self._append_ai_word_count(vals.get('feedback') or '') or False
+        vals['feedback'] = self._append_ai_word_count(
+            vals.get('feedback') or '',
+            model_id=result.get('model_id'),
+        ) or False
         self.write(vals)
 
     def _build_ai_failure_notification(self, error_text):

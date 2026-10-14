@@ -86,6 +86,24 @@ class TestAIWordCount(TransactionCase):
             )
         )
 
+    def test_image_text_is_ocrd_before_counting(self):
+        resource = self._create_resource(
+            '<p>Typed answer.</p><p><img src="/web/image/101/answer.png"></p>'
+        )
+        with patch.object(
+            type(resource),
+            '_ocr_ai_answer_images',
+            autospec=True,
+            return_value='Scanned three words.',
+        ) as ocr:
+            feedback = resource._append_ai_word_count('<p>AI feedback.</p>')
+
+        ocr.assert_called_once()
+        self.assertIn(
+            'Word Count: 5 \\ Paragraph Count: 2',
+            html2plaintext(feedback),
+        )
+
     def test_unselected_prompt_does_not_append_a_count(self):
         resource = self._create_resource('<p>One two three.</p>', with_word_count=False)
 
