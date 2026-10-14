@@ -96,6 +96,20 @@ class TestSampleComparison(TransactionCase):
         self.assertEqual((result['score_lower'], result['score_upper']), (20, 25))
         self.assertIn(result['confidence'], ('MEDIUM', 'LOW'))
 
+    def test_low_severity_anomalies_do_not_expand_consistent_bracket(self):
+        resource = self.env['aps.resources']
+        result = resource.calculate_score_range(self._comparison([
+            (16, 'WORSE'), (17, 'BETTER'), (18, 'BETTER'),
+            (20, 'BETTER'), (20, 'BETTER'), (22, 'WORSE'),
+            (23, 'BETTER'), (23, 'WORSE'), (26, 'WORSE'),
+        ]), 30)
+
+        self.assertEqual((result['score_lower'], result['score_upper']), (20, 22))
+        self.assertEqual(result['anomaly_count'], 2)
+        self.assertAlmostEqual(result['anomaly_severity'], 1 / 30)
+        self.assertEqual(result['confidence'], 'LOW')
+        self.assertEqual(len(result['comparisons']), 9)
+
     def test_calibration_three_samples_and_severe_inversion(self):
         resource = self.env['aps.resources']
         three = resource.calculate_score_range(self._comparison([

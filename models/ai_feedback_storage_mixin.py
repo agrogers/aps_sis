@@ -15,6 +15,7 @@ SAMPLE_SCALING_PROMPT_NAME = 'use sample scaling'
 SAMPLE_COMPARISON_PROMPT_NAME = 'use sample comparison'
 SAMPLE_COMPARISON_RESOURCE_TAG = 'sample answer'
 SAMPLE_COMPARISON_SAME_TOLERANCE = 1.0
+SAMPLE_COMPARISON_SEVERE_CONFLICT_THRESHOLD = 0.25
 SAMPLE_RUBRIC_SIMILARITY_THRESHOLD = 0.8
 _SKIP_CHANNEL_FORWARD_CTX = 'aui_skip_channel_forward'
 
@@ -162,7 +163,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
 
         anomaly_count = sum(bool(item['anomaly']) for item in valid)
         anomaly_severity = min(1.0, sum(item['anomaly_severity'] for item in valid))
-        has_severe_conflict = anomaly_count > 1 or anomaly_severity >= 0.35
+        has_severe_conflict = anomaly_severity >= SAMPLE_COMPARISON_SEVERE_CONFLICT_THRESHOLD
 
         consistent = [item for item in valid if not item['anomaly']]
         if not consistent:
@@ -190,7 +191,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 lower, upper = same_lower, same_upper
             elif max(lower, same_lower) <= min(upper, same_upper):
                 lower, upper = max(lower, same_lower), min(upper, same_upper)
-            elif anomaly_count:
+            elif has_severe_conflict:
                 lower, upper = min(lower, same_lower), max(upper, same_upper)
 
         # Grossly contradictory evidence must not create false precision. Keep
