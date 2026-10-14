@@ -298,8 +298,9 @@ class TestSampleComparison(TransactionCase):
             'model_id': self.model.id,
             'model_name': self.model.display_name,
             'sample_comparison_audit_html': '<p>comparison evidence</p>',
+            'reasoning_text': 'Reasoning from all marking calls.',
         }
-        with patch.object(type(run), '_write_progress', autospec=True), \
+        with patch.object(type(run), '_write_progress', autospec=True) as write_progress, \
                 patch.object(type(run), '_commit_background_work', autospec=True), \
                 patch.object(type(resource), '_uses_sample_comparison', autospec=True, return_value=True), \
                 patch.object(type(resource), '_generate_sample_comparison_feedback', autospec=True, return_value=result) as generate, \
@@ -308,8 +309,57 @@ class TestSampleComparison(TransactionCase):
             run._process_background_resource(time.perf_counter())
         generate.assert_called_once_with(resource.with_user(run.requested_by_id), ai_run=run)
         self.assertEqual(apply_result.call_args.args[1], result)
+        self.assertEqual(
+            write_progress.call_args_list[-1].args[1]['thinking_text'],
+            'Reasoning from all marking calls.',
+        )
         post_audit.assert_called_once_with(resource.with_user(run.requested_by_id), result)
 
+    def test_background_submission_worker_dispatches_comparison(self):
+        prompt = self._create_prompt()
+        resource = self._create_resource(prompt)
+        student = self.env['res.partner'].create({
+            'name': 'Sample comparison student',
+            'is_student': True,
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'submission_name': 'Sample comparison submission',
+        })
+        run = self.env['aps.ai.run'].create({
+            'submission_id': submission.id,
+            'requested_by_id': self.env.user.id,
+        })
+        result = {
+            'score': 18,
+            'model_id': self.model.id,
+            'model_name': self.model.display_name,
+            'sample_comparison_audit_html': '<p>comparison evidence</p>',
+            'reasoning_text': 'Reasoning from all marking calls.',
+        }
+        with patch.object(type(run), '_write_progress', autospec=True) as write_progress, \
+                patch.object(type(run), '_commit_background_work', autospec=True), \
+                patch.object(type(submission), '_uses_sample_comparison', autospec=True, return_value=True), \
+                patch.object(type(submission), '_generate_sample_comparison_feedback', autospec=True, return_value=result) as generate, \
+                patch.object(type(submission), '_apply_ai_feedback_result', autospec=True) as apply_result, \
+                patch.object(type(submission), '_finalize_ai_marking_success', autospec=True) as finalize:
+            run._process_background_submission(time.perf_counter())
+        generate.assert_called_once_with(submission.with_user(run.requested_by_id), ai_run=run)
+        self.assertEqual(apply_result.call_args.args[1], result)
+        self.assertEqual(
+            write_progress.call_args_list[-1].args[1]['thinking_text'],
+            'Reasoning from all marking calls.',
+        )
+        finalize.assert_called_once_with(
+            submission.with_user(run.requested_by_id),
+            result,
+            request_origin=run.request_origin,
+            run=run,
+        )
     def test_comparison_audit_does_not_repeat_score_already_in_benchmark_name(self):
         resource = self.env['aps.resources']
         audit_html = resource._build_sample_comparison_audit_html({
@@ -397,3 +447,84 @@ class TestSampleComparison(TransactionCase):
         self.assertTrue(schedule.called)
         self.assertEqual(schedule.call_args.args[1], 'mail.mail_activity_data_todo')
         self.assertEqual(schedule.call_args.kwargs['summary'], 'Review AI sample-comparison mark')
+
+    def test_submission_feedback_appends_collapsible_comparison_and_reasoning(self):
+        submission = self.env['aps.resource.submission'].new({'out_of_marks': 30})
+        audit = {
+            'summary': 'Compared against the benchmark.',
+            'comparisons': [],
+            'target_maximum': 30,
+            'score_lower': 20,
+            'score_upper': 20,
+            'score_estimate': 20,
+            'confidence': 'MEDIUM',
+            'anomaly_count': 1,
+            'anomaly_severity': 0.0,
+        }
+
+        with patch.object(type(submission), 'write', autospec=True) as write:
+            submission._apply_ai_feedback_result({
+                'feedback_html': '<p>Teacher feedback.</p>',
+                'score': 20,
+                'sample_comparison_audit': audit,
+                'sample_comparison_audit_html': '<p>Unused fallback audit.</p>',
+                'reasoning_text': 'First call.\nSecond call <thinking>private text</thinking>.',
+            })
+
+        feedback_html = write.call_args.args[1]['feedback']
+        self.assertIn('<details><summary>AI Marking Comparison</summary>', feedback_html)
+        self.assertIn(
+            'Estimated score: 20/30; range: 20-20/30; confidence: MEDIUM; anomalies: 1 (severity 0).',
+            feedback_html,
+        )
+        self.assertIn('<details><summary>Reasoning</summary>', feedback_html)
+        self.assertIn('Second call &lt;thinking&gt;private text&lt;/thinking&gt;.', feedback_html)
+        self.assertEqual(feedback_html.count('<details>'), 2)
+        self.assertLess(
+            feedback_html.index('AI Marking Comparison'),
+            feedback_html.index('Reasoning'),
+        )
+
+    def test_sample_comparison_result_combines_reasoning_from_all_calls(self):
+        prompt = self._create_prompt()
+        resource = self._create_resource(prompt)
+        sample_tag = self._get_sample_answer_tag()
+        samples = self.env['aps.resources'].create([
+            {
+                'name': 'Benchmark %s' % score,
+                'marks': 30,
+                'weight': score,
+                'notes': '<p>Benchmark answer %s.</p>' % score,
+                'tag_ids': [(6, 0, [sample_tag.id])],
+            }
+            for score in (15, 25)
+        ])
+        resource.write({'child_ids': [(6, 0, samples.ids)]})
+
+        def fake_generate(model, record, ai_run=None, feedback_context=None):
+            answer = html2plaintext(feedback_context.get('notes') or '')
+            if 'Benchmark answer 15' in answer:
+                return {
+                    'raw_content': '{"result":"BETTER","reason":"Higher than the lower sample."}',
+                    'reasoning_text': 'Reasoning for benchmark 15.',
+                }
+            if 'Benchmark answer 25' in answer:
+                return {
+                    'raw_content': '{"result":"WORSE","reason":"Lower than the higher sample."}',
+                    'reasoning_text': 'Reasoning for benchmark 25.',
+                }
+            return {
+                'feedback_html': '<p>Marked feedback.</p>',
+                'score': 20,
+                'score_comment': False,
+                'raw_content': '{"score":20,"feedback":"Marked feedback."}',
+                'reasoning_text': 'Reasoning for the final mark.',
+            }
+
+        with patch.object(type(self.model), 'generate_feedback', autospec=True, side_effect=fake_generate):
+            result = resource._generate_sample_comparison_feedback()
+
+        self.assertEqual(result['reasoning_text'].count('Reasoning for benchmark'), 2)
+        self.assertIn('Reasoning for benchmark 15.', result['reasoning_text'])
+        self.assertIn('Reasoning for benchmark 25.', result['reasoning_text'])
+        self.assertIn('Reasoning for the final mark.', result['reasoning_text'])

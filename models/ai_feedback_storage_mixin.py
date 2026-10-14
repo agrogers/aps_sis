@@ -343,8 +343,10 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             'image_prompt_names': marking_prompts.mapped('prompt_name'),
         }
 
-    def _build_sample_comparison_audit_html(self, audit):
-        parts = ['<p><strong>%s</strong></p>' % escape(_('AI MARKING COMPARISON'))]
+    def _build_sample_comparison_audit_html(self, audit, collapsible=False):
+        parts = []
+        if not collapsible:
+            parts.append('<p><strong>%s</strong></p>' % escape(_('AI MARKING COMPARISON')))
         if audit.get('prompt_conflict'):
             parts.append('<p><strong>%s</strong></p>' % escape(_(
                 'Both sample comparison and sample scaling were selected; comparison took precedence.'
@@ -408,7 +410,13 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         })
         if final_mark:
             parts.append(str(final_mark))
-        return Markup(''.join(parts))
+        body = ''.join(parts)
+        if collapsible:
+            return Markup('<details><summary>%s</summary>%s</details>' % (
+                escape(_('AI Marking Comparison')),
+                body,
+            ))
+        return Markup(body)
 
     def _post_sample_comparison_audit_note(self, result):
         self.ensure_one()
@@ -562,6 +570,7 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 calls.append(call_result)
                 entry.update({
                     'raw_response': call_result.get('raw_content') or '',
+                    'reasoning_text': call_result.get('reasoning_text') or '',
                     'model_id': call_result.get('model_id') or model.id,
                     'model_name': call_result.get('model_name') or model.display_name,
                     'prompt_tokens': call_result.get('prompt_tokens') or 0,
@@ -698,6 +707,9 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         final_result['raw_content'] = '\n--- SAMPLE COMPARISON / FINAL MARK ---\n'.join(
             call.get('raw_content') or '' for call in calls
         )
+        final_result['reasoning_text'] = self._combine_ai_reasoning(
+            call.get('reasoning_text') or '' for call in calls
+        )
         return final_result
 
     def _generate_sample_comparison_fallback(self, target_context, ai_run, audit):
@@ -729,6 +741,12 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         audit['final_confidence'] = _('Not calibrated')
         result['sample_comparison_audit'] = audit
         result['sample_comparison_audit_html'] = self._build_sample_comparison_audit_html(audit)
+        reasoning_parts = [
+            item.get('reasoning_text') or ''
+            for item in audit.get('comparisons') or []
+        ]
+        reasoning_parts.append(result.get('reasoning_text') or '')
+        result['reasoning_text'] = self._combine_ai_reasoning(reasoning_parts)
         result['prompt_tokens'] = (result.get('prompt_tokens') or 0) + sum(
             item.get('prompt_tokens') or 0 for item in audit.get('comparisons') or []
         )
@@ -943,6 +961,14 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
 
     def _format_sample_scaling_score(self, value):
         return '%g' % float(value)
+
+    @staticmethod
+    def _combine_ai_reasoning(reasoning_parts):
+        return '\n\n---\n\n'.join(
+            part.strip()
+            for part in reasoning_parts
+            if isinstance(part, str) and part.strip()
+        )
 
     def _build_sample_scaling_audit_html(self, audit):
         self.ensure_one()
@@ -1266,6 +1292,9 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         result['completion_tokens'] = sum(call.get('completion_tokens') or 0 for call in calls)
         result['estimated_cost'] = sum(call.get('estimated_cost') or 0.0 for call in calls)
         result['raw_content'] = '\n---\n'.join(call.get('raw_content') or '' for call in calls)
+        result['reasoning_text'] = self._combine_ai_reasoning(
+            call.get('reasoning_text') or '' for call in calls
+        )
         return result
 
     def _get_ai_feedback_result_write_vals(self, result):

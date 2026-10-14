@@ -227,6 +227,7 @@ class APSAIRun(models.Model):
                 submission,
                 ai_run=self,
             )
+        result['reasoning_text'] = result.get('reasoning_text') or self.thinking_text or ''
         self._write_progress({'status_message': _('Writing AI feedback to the submission...')})
         submission._apply_ai_feedback_result(result)
         self._commit_background_work()
@@ -249,6 +250,7 @@ class APSAIRun(models.Model):
             'prompt_tokens': result.get('prompt_tokens') or 0,
             'completion_tokens': result.get('completion_tokens') or 0,
             'estimated_cost': result.get('estimated_cost') or 0.0,
+            'thinking_text': result.get('reasoning_text') or self.thinking_text or False,
             'response_preview': result.get('raw_content') or self.response_preview or False,
         })
 
@@ -286,7 +288,6 @@ class APSAIRun(models.Model):
             'prompt_tokens': result.get('prompt_tokens') or 0,
             'completion_tokens': result.get('completion_tokens') or 0,
             'estimated_cost': result.get('estimated_cost') or 0.0,
+            'thinking_text': result.get('reasoning_text') or self.thinking_text or False,
             'response_preview': result.get('raw_content') or self.response_preview or False,
         })
-
-

@@ -621,6 +621,28 @@ class APSResourceSubmissionAIFeedback(models.Model):
             else:
                 vals['score'] = max(0.0, min(round(float(score), 2), self.out_of_marks))
 
+        final_feedback = vals.get('feedback') or feedback_html
+        audit = result.get('sample_comparison_audit')
+        audit_html = result.get('sample_comparison_audit_html')
+        if audit:
+            audit_html = self._build_sample_comparison_audit_html(audit, collapsible=True)
+        elif audit_html:
+            audit_html = Markup('<details><summary>%s</summary>%s</details>' % (
+                escape(_('AI Marking Comparison')),
+                str(audit_html),
+            ))
+        if audit_html:
+            final_feedback += str(audit_html)
+
+        reasoning_text = result.get('reasoning_text') or result.get('thinking_text') or ''
+        if reasoning_text:
+            final_feedback += (
+                '<details><summary>%s</summary><pre>%s</pre></details>'
+                % (escape(_('Reasoning')), escape(reasoning_text))
+            )
+        if audit_html or reasoning_text:
+            vals['feedback'] = final_feedback or False
+
         self.write(vals)
 
     def _build_ai_failure_notification(self, error_text):
