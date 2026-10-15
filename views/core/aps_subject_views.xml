@@ -69,7 +69,7 @@
                                             class="btn btn-primary btn-sm"/>
                                 </div>
                             </div>
-                            <field name="class_current_year_ids" nolabel="1">
+                            <field name="class_current_year_ids" nolabel="1" readonly="False">
                                 <list>
                                     <field name="name"/>
                                     <field name="code" optional="show"/>
@@ -80,7 +80,7 @@
                             </field>
                         </page>
                         <page string="Other Years" name="classes_other">
-                            <field name="class_other_year_ids" nolabel="1">
+                            <field name="class_other_year_ids" nolabel="1" readonly="False">
                                 <list>
                                     <field name="name"/>
                                     <field name="code" optional="show"/>

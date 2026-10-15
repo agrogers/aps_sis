@@ -150,8 +150,8 @@ class APSExamPaperImportAnalyse(models.Model):
         return (
             'You analyse exactly one isolated page of an IGCSE examination paper. Detect question and sub-question '
             'labels and their visual regions. Treat labels as layout markers, including a bare root '
-            'number such as "1", a part such as "(b)", or a subpart such as "(i)" at the start of '
-            'a line or sentence. Do not require the label to be followed by question text on the same '
+            'number such as "1", a part such as "(b)", or a subpart such as "(i)", or text such as "Task A3b" at the start of '
+            'a line or sentence or the top of the page. Do not require the label to be followed by question text on the same '
             'line. Do not transcribe OCR and do not invent question text. Provide a concise '
             'question_summary of no more than 20 words describing what the student is asked to do; '
             'do not provide an answer. Report the label exactly as '
