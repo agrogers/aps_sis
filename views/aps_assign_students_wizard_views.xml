@@ -26,6 +26,7 @@
                                     <field name="has_default_answer" widget="boolean_toggle" readonly="0" invisible="0"/>
                                     <field name="points_scale" readonly="0" invisible="0"/>
                                     <field name="notify_student" widget="boolean_toggle" readonly="0" invisible="0"/>
+                                    <field name="permit_resubmission" widget="boolean_toggle"/>
 
                                 </group>
                                 <div>
