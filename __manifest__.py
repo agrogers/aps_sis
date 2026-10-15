@@ -148,6 +148,8 @@
 			'aps_sis/static/src/css/clickable_many2many_tags.css',		
             'aps_sis/static/src/js/parent_child_name_field.js',
 			'aps_sis/static/src/xml/parent_child_name_field.xml',			
+            'aps_sis/static/src/js/local_storage_boolean_field.js',
+            'aps_sis/static/src/xml/local_storage_boolean_field.xml',
             'aps_sis/static/src/img/menu_icon.png',
             'aps_sis/static/src/js/breadcrumb_widget.js',
             'aps_sis/static/src/xml/breadcrumb_widget.xml',
