@@ -13,6 +13,7 @@
     </record>
 
     <record id="action_report_aps_resources_print" model="ir.actions.report">
+        <field name="path">apex-report-aps-resources-print</field>
         <field name="name">Resources Print</field>
         <field name="model">aps.resources</field>
         <field name="report_type">qweb-pdf</field>

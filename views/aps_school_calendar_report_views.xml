@@ -3,6 +3,7 @@
 
     <!-- Academic Calendar Report: HTML preview client action -->
     <record id="action_school_calendar_report" model="ir.actions.client">
+        <field name="path">apex-school-calendar-report</field>
         <field name="name">Academic Calendar</field>
         <field name="tag">school_calendar_report</field>
     </record>

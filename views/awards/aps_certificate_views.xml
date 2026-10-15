@@ -71,6 +71,7 @@
     </record>
 
     <record id="action_aps_certificate" model="ir.actions.act_window">
+        <field name="path">apex-aps-certificate</field>
         <field name="name">Certificates</field>
         <field name="res_model">aps.certificate</field>
         <field name="view_mode">list,form</field>
@@ -200,6 +201,7 @@
     </record>
 
     <record id="action_aps_award_category" model="ir.actions.act_window">
+        <field name="path">apex-aps-award-category</field>
         <field name="name">Award Categories</field>
         <field name="res_model">aps.award.category</field>
         <field name="view_mode">list,form</field>
@@ -222,6 +224,7 @@
     <!-- Certificate Templates -->
 
     <record id="action_aps_certificate_template" model="ir.actions.act_window">
+        <field name="path">apex-aps-certificate-template</field>
         <field name="name">Certificate Templates</field>
         <field name="res_model">aps.certificate.template</field>
         <field name="view_mode">list,form</field>
@@ -243,6 +246,7 @@
 
     <!-- Voting Dashboard server action: redirects current user to their voting dashboard -->
     <record id="action_aps_awards_dashboard" model="ir.actions.server">
+        <field name="path">apex-aps-awards-dashboard</field>
         <field name="name">Voting Dashboard</field>
         <!--
             This action is launched by teachers from the Apex dashboard.  Its

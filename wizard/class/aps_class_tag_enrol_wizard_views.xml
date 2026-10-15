@@ -49,6 +49,7 @@
     </record>
 
     <record id="action_aps_class_tag_enrol_wizard" model="ir.actions.act_window">
+        <field name="path">apex-aps-class-tag-enrol-wizard</field>
         <field name="name">Auto-Enrol by Tag</field>
         <field name="res_model">aps.class.tag.enrol.wizard</field>
         <field name="view_mode">form</field>

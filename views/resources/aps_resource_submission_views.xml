@@ -458,6 +458,7 @@
     </record>
 
     <record id="action_aps_resource_submissions" model="ir.actions.act_window">
+        <field name="path">apex-aps-resource-submissions</field>
         <field name="name">Submissions</field>
         <field name="res_model">aps.resource.submission</field>
         <field name="view_mode">list,form,pivot,kanban,graph,calendar</field>
@@ -504,6 +505,7 @@
 
     <!-- Server action: backfill parent_submission_id on selected submissions -->
     <record id="action_backfill_parent_submissions" model="ir.actions.server">
+        <field name="path">apex-backfill-parent-submissions</field>
         <field name="name">Backfill Parent Submissions</field>
         <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
         <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>

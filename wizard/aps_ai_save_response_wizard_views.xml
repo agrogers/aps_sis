@@ -18,6 +18,7 @@
     </record>
 
     <record id="action_aps_ai_save_response_wizard" model="ir.actions.act_window">
+        <field name="path">apex-aps-ai-save-response-wizard</field>
         <field name="name">Save AI Response</field>
         <field name="res_model">aps.ai.save.response.wizard</field>
         <field name="view_mode">form</field>

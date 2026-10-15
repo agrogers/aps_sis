@@ -50,6 +50,7 @@
         </record>
 
         <record id="action_report_certificate_a4" model="ir.actions.report">
+            <field name="path">apex-report-certificate-a4</field>
             <field name="name">Certificate (A4 Portrait)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>
@@ -59,6 +60,7 @@
         </record>
 
         <record id="action_report_certificate_a4_landscape" model="ir.actions.report">
+            <field name="path">apex-report-certificate-a4-landscape</field>
             <field name="name">Certificate (A4 Landscape)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>
@@ -68,6 +70,7 @@
         </record>
 
         <record id="action_report_certificate_a5" model="ir.actions.report">
+            <field name="path">apex-report-certificate-a5</field>
             <field name="name">Certificate (A5 Portrait)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>
@@ -77,6 +80,7 @@
         </record>
 
         <record id="action_report_certificate_a5_landscape" model="ir.actions.report">
+            <field name="path">apex-report-certificate-a5-landscape</field>
             <field name="name">Certificate (A5 Landscape)</field>
             <field name="model">aps.certificate</field>
             <field name="report_type">qweb-pdf</field>

@@ -108,6 +108,7 @@
 
     <!-- Window Action -->
     <record id="aps_school_calendar_action" model="ir.actions.act_window">
+        <field name="path">apex-aps-school-calendar-action</field>
         <field name="name">School Calendar</field>
         <field name="res_model">aps.school.calendar</field>
         <field name="view_mode">list,calendar,form</field>
@@ -157,6 +158,7 @@
     </record>
 
     <record id="aps_calendar_date_type_action" model="ir.actions.act_window">
+        <field name="path">apex-aps-calendar-date-type-action</field>
         <field name="name">Calendar Date Types</field>
         <field name="res_model">aps.calendar.date.type</field>
         <field name="view_mode">list,form</field>

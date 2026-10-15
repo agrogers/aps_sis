@@ -33,6 +33,7 @@
     </record>
 
     <record id="action_aps_resource_print_wizard" model="ir.actions.act_window">
+        <field name="path">apex-aps-resource-print-wizard</field>
         <field name="name">Print Resources</field>
         <field name="res_model">aps.resource.print.wizard</field>
         <field name="view_mode">form</field>

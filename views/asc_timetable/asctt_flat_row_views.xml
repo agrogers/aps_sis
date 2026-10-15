@@ -73,6 +73,7 @@
 
     <!-- Action -->
     <record id="asctt_flat_row_action" model="ir.actions.act_window">
+        <field name="path">apex-asctt-flat-row-action</field>
         <field name="name">Flat Timetable</field>
         <field name="res_model">asctt.flat.row</field>
         <field name="view_mode">pivot,list</field>

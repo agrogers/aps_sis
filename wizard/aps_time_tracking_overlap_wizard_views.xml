@@ -28,6 +28,7 @@
 
     <!-- ── Server action: open the overlap wizard from the list view ─────── -->
     <record id="action_aps_time_tracking_resolve_overlaps" model="ir.actions.server">
+        <field name="path">apex-aps-time-tracking-resolve-overlaps</field>
         <field name="name">Resolve Time Overlaps</field>
         <field name="model_id" ref="aps_sis.model_aps_time_tracking"/>
         <field name="binding_model_id" ref="aps_sis.model_aps_time_tracking"/>

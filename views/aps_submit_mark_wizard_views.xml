@@ -79,6 +79,7 @@
 
     <!-- ── Action: teacher version (opens same form, target=new) ── -->
     <record id="action_aps_submit_mark_wizard_teacher" model="ir.actions.act_window">
+        <field name="path">apex-aps-submit-mark-wizard-teacher</field>
         <field name="name">Submit a Mark</field>
         <field name="res_model">aps.submit.mark.wizard</field>
         <field name="view_mode">form</field>
@@ -89,6 +90,7 @@
 
     <!-- ── Action: student version (same form; student_id pre-filled via default_get) ── -->
     <record id="action_aps_submit_mark_wizard_student" model="ir.actions.act_window">
+        <field name="path">apex-aps-submit-mark-wizard-student</field>
         <field name="name">Submit a Mark</field>
         <field name="res_model">aps.submit.mark.wizard</field>
         <field name="view_mode">form</field>

@@ -51,6 +51,7 @@
     </record>
 
     <record id="action_aps_year_level_rollover_wizard" model="ir.actions.act_window">
+        <field name="path">apex-aps-year-level-rollover-wizard</field>
         <field name="name">Roll Students to Next Level</field>
         <field name="res_model">aps.year.level.rollover.wizard</field>
         <field name="view_mode">form</field>

@@ -17,6 +17,7 @@
 
         <!-- Report action (invoked from the HTML preview Print button) -->
         <record id="school_calendar_report_action" model="ir.actions.report">
+            <field name="path">apex-school-calendar-report-action</field>
             <field name="name">Academic Calendar</field>
             <field name="model">aps.school.calendar</field>
             <field name="report_type">qweb-pdf</field>

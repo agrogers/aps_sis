@@ -43,6 +43,7 @@
     </record>
 
     <record id="action_aps_class_rollover_wizard" model="ir.actions.act_window">
+        <field name="path">apex-aps-class-rollover-wizard</field>
         <field name="name">Roll Classes to New Year</field>
         <field name="res_model">aps.class.rollover.wizard</field>
         <field name="view_mode">form</field>

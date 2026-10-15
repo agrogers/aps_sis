@@ -67,6 +67,7 @@
     </record>
 
     <record id="asctt_teacher_workload_action" model="ir.actions.act_window">
+        <field name="path">apex-asctt-teacher-workload-action</field>
         <field name="name">Teacher Workload</field>
         <field name="res_model">asctt.teacher.workload</field>
         <field name="view_mode">pivot,graph,list</field>
@@ -138,6 +139,7 @@
     </record>
 
     <record id="asctt_class_workload_action" model="ir.actions.act_window">
+        <field name="path">apex-asctt-class-workload-action</field>
         <field name="name">Class Workload</field>
         <field name="res_model">asctt.class.workload</field>
         <field name="view_mode">pivot,list</field>

@@ -230,6 +230,7 @@
 
     <!-- Populate server action (shows in Actions menu on list) -->
     <record id="aps_student_action_populate" model="ir.actions.server">
+        <field name="path">apex-aps-student-action-populate</field>
         <field name="name">Populate from Contacts</field>
         <field name="model_id" ref="model_aps_student"/>
         <field name="binding_model_id" ref="model_aps_student"/>
