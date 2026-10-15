@@ -40,6 +40,7 @@
 
     <!-- Wizard Action -->
     <record id="aps_school_calendar_generate_wizard_action" model="ir.actions.act_window">
+        <field name="path">apex-aps-school-calendar-generate-wizard-action</field>
         <field name="name">Generate School Calendar</field>
         <field name="res_model">aps.school.calendar.generate.wizard</field>
         <field name="view_mode">form</field>

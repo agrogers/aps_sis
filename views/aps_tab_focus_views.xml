@@ -58,6 +58,7 @@
              Tab Focus Forms – action
         ═══════════════════════════════════════════ -->
         <record id="action_aps_tab_focus_forms" model="ir.actions.act_window">
+            <field name="path">apex-aps-tab-focus-forms</field>
             <field name="name">Tab Focus – Form Registry</field>
             <field name="res_model">aps.tab.focus.forms</field>
             <field name="view_mode">list,form</field>
@@ -168,6 +169,7 @@
              Tab Focus Config – action
         ═══════════════════════════════════════════ -->
         <record id="action_aps_tab_focus_config" model="ir.actions.act_window">
+            <field name="path">apex-aps-tab-focus-config</field>
             <field name="name">Tab Focus Configuration</field>
             <field name="res_model">aps.tab.focus.config</field>
             <field name="view_mode">list,form</field>
@@ -218,6 +220,7 @@
              Tab Focus State – action  (admin view)
         ═══════════════════════════════════════════ -->
         <record id="action_aps_tab_focus_state" model="ir.actions.act_window">
+            <field name="path">apex-aps-tab-focus-state</field>
             <field name="name">Tab Focus State</field>
             <field name="res_model">aps.tab.focus.state</field>
             <field name="view_mode">list</field>

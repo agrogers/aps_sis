@@ -131,6 +131,7 @@
 
     <!-- Server action: assign random avatars to users without one -->
     <record id="action_assign_random_avatars" model="ir.actions.server">
+        <field name="path">apex-assign-random-avatars</field>
         <field name="name">Assign Random Avatars</field>
         <field name="model_id" ref="model_aps_avatar"/>
         <field name="binding_model_id" ref="model_aps_avatar"/>

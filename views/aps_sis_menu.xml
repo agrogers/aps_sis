@@ -2,6 +2,7 @@
 <odoo>
 
     <record id="action_aps_student_picker" model="ir.actions.client">
+        <field name="path">apex-aps-student-picker</field>
         <field name="name">Student Picker</field>
         <field name="tag">ar_teacher_toolkit.student_picker</field>
     </record>

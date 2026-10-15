@@ -525,6 +525,7 @@
     <!-- Bound server action — adds "Bulk Upload Media" button to the top
          of all list and kanban views for aps.media (Teachers only). -->
     <record id="action_aps_media_bulk_upload_server" model="ir.actions.server">
+        <field name="path">apex-aps-media-bulk-upload-server</field>
         <field name="name">Bulk Upload Media</field>
         <field name="model_id" ref="model_aps_media"/>
         <field name="binding_model_id" ref="model_aps_media"/>

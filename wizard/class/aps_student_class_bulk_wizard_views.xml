@@ -69,6 +69,7 @@
     </record>
 
     <record id="action_aps_student_class_bulk_wizard" model="ir.actions.act_window">
+        <field name="path">apex-aps-student-class-bulk-wizard</field>
         <field name="name">Bulk Class Enrollment</field>
         <field name="res_model">aps.student.class.bulk.wizard</field>
         <field name="view_mode">form</field>

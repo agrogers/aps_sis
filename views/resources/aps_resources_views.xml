@@ -709,6 +709,7 @@
 
     <!-- Action: create linked resources wizard -->
     <record id="action_create_linked_resources_wizard" model="ir.actions.act_window">
+        <field name="path">apex-create-linked-resources-wizard</field>
         <field name="name">Create Linked Resources...</field>
         <field name="res_model">aps.create.linked.resources</field>
         <field name="view_mode">form</field>
@@ -721,6 +722,7 @@
 
     <!-- Server action to force update all display names -->
     <record id="action_force_update_aps_resource_display_names" model="ir.actions.server">
+        <field name="path">apex-force-update-aps-resource-display-names</field>
         <field name="name">Update Resource Names</field>
         <field name="model_id" ref="model_aps_resources"/>
         <field name="binding_model_id" ref="model_aps_resources"/>
@@ -733,6 +735,7 @@
     <!-- Global maintenance action: discover leaf submissions and rebuild
          marked Course Explorer ancestor submissions. -->
     <record id="action_repair_course_explorer_submissions" model="ir.actions.server">
+        <field name="path">apex-repair-course-explorer-submissions</field>
         <field name="name">Repair Course Explorer Submissions</field>
         <field name="model_id" ref="model_aps_resource_submission"/>
         <field name="binding_model_id" ref="model_aps_resource_submission"/>

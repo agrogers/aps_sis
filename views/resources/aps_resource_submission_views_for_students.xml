@@ -309,6 +309,7 @@
 
     <!-- Student Dashboard Action -->
     <record id="action_student_dashboard" model="ir.actions.act_window">
+        <field name="path">apex-student-dashboard</field>
         <field name="name">Student Dashboard</field>
         <field name="res_model">aps.resource.submission</field>
         <field name="view_mode">graph,calendar,list,kanban,pivot</field>

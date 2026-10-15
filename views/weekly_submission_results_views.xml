@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="action_aps_weekly_submission_results" model="ir.actions.client">
+        <field name="path">apex-aps-weekly-submission-results</field>
         <field name="name">Weekly Submission Results</field>
         <field name="tag">aps_sis_weekly_submission_results</field>
     </record>

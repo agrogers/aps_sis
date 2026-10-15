@@ -242,6 +242,7 @@
     </record>
 
     <record id="action_aps_exam_paper_import" model="ir.actions.act_window">
+        <field name="path">apex-aps-exam-paper-import</field>
         <field name="name">Exam Paper Imports</field>
         <field name="res_model">aps.exam.paper.import</field>
         <field name="view_mode">list,form</field>

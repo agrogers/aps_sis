@@ -3,6 +3,7 @@
 
     <!-- Certificates Dashboard client action -->
     <record id="action_certificates_dashboard" model="ir.actions.client">
+        <field name="path">apex-certificates-dashboard</field>
         <field name="name">Certificates &amp; Awards</field>
         <field name="tag">certificates_dashboard</field>
     </record>

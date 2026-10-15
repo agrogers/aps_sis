@@ -114,6 +114,7 @@
     </record>
 
     <record id="action_aps_ai_runs" model="ir.actions.act_window">
+        <field name="path">apex-aps-ai-runs</field>
         <field name="name">AI Runs</field>
         <field name="res_model">aps.ai.run</field>
         <field name="view_mode">list,form</field>

@@ -13,6 +13,7 @@
     </record>
 
     <record id="weekly_submission_result_report_action" model="ir.actions.report">
+        <field name="path">apex-weekly-submission-result-report-action</field>
         <field name="name">Weekly Submission Results</field>
         <field name="model">aps.weekly.submission.result</field>
         <field name="report_type">qweb-pdf</field>

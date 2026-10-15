@@ -159,6 +159,7 @@
     </record>
  
     <record id="action_aps_submission_mass_update" model="ir.actions.server">
+        <field name="path">apex-aps-submission-mass-update</field>
         <field name="name">Mass Update Submissions...</field>
         <field name="model_id" ref="aps_sis.model_aps_resource_submission"/>
         <field name="binding_model_id" ref="aps_sis.model_aps_resource_submission"/>

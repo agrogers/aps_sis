@@ -124,6 +124,7 @@
 
     <!-- ── Action ─────────────────────────────────────────────────────────── -->
     <record id="aps_timetable_entry_action" model="ir.actions.act_window">
+        <field name="path">apex-aps-timetable-entry-action</field>
         <field name="name">School Timetable</field>
         <field name="res_model">aps.timetable.entry</field>
         <field name="view_mode">calendar,list,form</field>

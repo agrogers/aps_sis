@@ -167,6 +167,7 @@
          ACTION
     ================================================================ -->
     <record id="action_aps_award_vote" model="ir.actions.act_window">
+        <field name="path">apex-aps-award-vote</field>
         <field name="name">Award Votes</field>
         <field name="res_model">aps.award.vote</field>
         <field name="view_mode">list,pivot,graph,form</field>

@@ -29,6 +29,7 @@
     </record>
 
     <record id="aps_academic_week_generate_wizard_action" model="ir.actions.act_window">
+        <field name="path">apex-aps-academic-week-generate-wizard-action</field>
         <field name="name">Generate Academic Weeks</field>
         <field name="res_model">aps.academic.week.generate.wizard</field>
         <field name="view_mode">form</field>

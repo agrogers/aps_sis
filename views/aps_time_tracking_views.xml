@@ -91,6 +91,7 @@
     </record>
 
     <record id="action_recompute_time_tracking_school_hours" model="ir.actions.server">
+        <field name="path">apex-recompute-time-tracking-school-hours</field>
         <field name="name">Recompute Outside School Hours (All Entries)</field>
         <field name="model_id" ref="model_aps_time_tracking"/>
         <field name="binding_model_id" ref="model_aps_time_tracking"/>

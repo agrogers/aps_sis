@@ -36,6 +36,7 @@
     </record>
 
     <record id="action_submission_report_wizard" model="ir.actions.act_window">
+        <field name="path">apex-submission-report-wizard</field>
         <field name="name">Print Submissions Report</field>
         <field name="res_model">aps.submission.report.wizard</field>
         <field name="view_mode">form</field>

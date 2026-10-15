@@ -49,6 +49,7 @@
 
     <!-- Action -->
     <record id="asctt_class_subject_minutes_action" model="ir.actions.act_window">
+        <field name="path">apex-asctt-class-subject-minutes-action</field>
         <field name="name">Minutes by Class &amp; Subject</field>
         <field name="res_model">asctt.class.subject.minutes</field>
         <field name="view_mode">pivot,list</field>

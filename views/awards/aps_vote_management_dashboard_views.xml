@@ -18,6 +18,7 @@
 
     <!-- Server action to open the specific dashboard from the menu -->
     <record id="action_open_vote_management_dashboard" model="ir.actions.server">
+        <field name="path">apex-open-vote-management-dashboard</field>
         <field name="name">APEX Awards</field>
         <field name="model_id" ref="base.model_res_users"/>
         <field name="state">code</field>
