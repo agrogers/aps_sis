@@ -14,6 +14,7 @@ _logger = logging.getLogger(__name__)
 _AUTO_MARK_ENABLED_ACTIONS = ('mark_submission', 'mark_submission_use_answer')
 _AUTO_MARK_MAX_ATTEMPTS = 3
 _AUI_SKIP_CHANNEL_FORWARD_CTX = 'aui_skip_channel_forward'
+_SKIP_SUBMISSION_OCR_CTX = 'aps_skip_submission_ocr'
 
 
 class APSResourceSubmissionAIFeedback(models.Model):
@@ -75,7 +76,80 @@ class APSResourceSubmissionAIFeedback(models.Model):
         if state_changed:
             self._queue_auto_ai_marking_after_submit()
             self.filtered(lambda rec: rec.state != 'submitted')._reset_auto_ai_marking_state()
+        if 'answer' in vals and not self.env.context.get(_SKIP_SUBMISSION_OCR_CTX):
+            for submission in self:
+                submission._process_answer_image_ocr()
         return result
+
+    def _process_answer_image_ocr(self):
+        self.ensure_one()
+        resource = self.resource_id
+        if not any(
+            (tag.name or '').strip().casefold() == 'ocr required'
+            for tag in resource.tag_ids
+        ):
+            return False
+        if self._get_ai_context_content_status(self.answer) != 'image_only':
+            return False
+
+        image_tags = re.findall(r'<img\b[^>]*>', self.answer or '', re.IGNORECASE)
+        if not image_tags:
+            return False
+
+        try:
+            ocr_text = self._ocr_ai_answer_images(
+                image_tags,
+                model_id=resource.ai_model_id.id if resource.ai_model_id else None,
+            )
+        except Exception:
+            _logger.exception('Failed to OCR image answer for submission %s', self.id)
+            return False
+
+        text_version = self._build_submission_text_version_html(ocr_text)
+        if not text_version:
+            return False
+
+        answer = '%s%s' % (self.answer or '', text_version)
+        self.with_context(**{_SKIP_SUBMISSION_OCR_CTX: True}).write({'answer': answer})
+        self._send_submission_ocr_dm()
+        return True
+
+    @staticmethod
+    def _build_submission_text_version_html(ocr_text):
+        paragraphs = re.split(r'\n\s*\n+', (ocr_text or '').strip())
+        paragraphs = [' '.join(paragraph.split()) for paragraph in paragraphs]
+        paragraphs = [escape(paragraph) for paragraph in paragraphs if paragraph]
+        if not paragraphs:
+            return ''
+        return '<details><summary>Text Version</summary>%s</details>' % ''.join(
+            '<p>%s</p>' % paragraph for paragraph in paragraphs
+        )
+
+    def _send_submission_ocr_dm(self):
+        self.ensure_one()
+        if not self.student_id:
+            return
+        author_partner = self.env.user.partner_id
+        student_partner = self.student_id
+        if not author_partner:
+            return
+        try:
+            with self.env.cr.savepoint():
+                channel = self.env['discuss.channel'].channel_get(
+                    partners_to=sorted({author_partner.id, student_partner.id}),
+                    pin=False,
+                )
+                channel.with_context(**{_AUI_SKIP_CHANNEL_FORWARD_CTX: True}).message_post(
+                    body=Markup('<p>%s</p>') % _(
+                        'Your answer has been processed and a text version has been created. '
+                        'Please review it to make sure it is correct; you can correct any OCR mistakes. '
+                        'The text version is at the very bottom of your response.'
+                    ),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                )
+        except Exception:
+            _logger.exception('Failed to send OCR completion DM for submission %s', self.id)
 
     def _build_ai_feedback_ctx(self, include_reasoning=False):
         """Return the standardised AI feedback context dict for this submission.

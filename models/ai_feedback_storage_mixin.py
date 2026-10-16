@@ -52,9 +52,10 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         content = [{
             'type': 'text',
             'text': (
-                'Transcribe all visible words from these student-answer images accurately and in order. '
-                'Preserve paragraph breaks. Do not summarize, correct, or add commentary. Return only the '
-                'transcribed text as Markdown.'
+                'Transcribe the visible student writing exactly as written, preserving spelling, grammar, '
+                'wording, and paragraph breaks. Exclude any text that has been crossed out. Do not correct, '
+                'summarize, or add commentary. Keep each sentence together on one line; use a paragraph break '
+                'only where the student started a new paragraph. Return only the transcribed text.'
             ),
         }]
         for image_tag in image_tags:
