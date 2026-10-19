@@ -25,9 +25,13 @@ class APSAIRun(models.Model):
     queued_for_dispatch = fields.Boolean(default=False, readonly=True, copy=False, index=True)
     override_model_id = fields.Many2one('aps.ai.model', string='Override Model', readonly=True, ondelete='set null')
     processor_key = fields.Selection(
-        [('standard', 'Standard AI Marking')],
+        [
+            ('standard', 'Standard AI Marking'),
+            ('submission_ocr', 'Submission OCR'),
+        ],
         default='standard', required=True, readonly=True,
     )
+    fingerprint = fields.Char(readonly=True, copy=False, index=True)
     display_name = fields.Char(compute='_compute_display_name', store=True)
     related_record_id = fields.Integer(compute='_compute_related_record_id')
 
@@ -104,6 +108,31 @@ class APSAIRun(models.Model):
         if not self.submission_id.exists():
             return
         submission = self.submission_id.sudo()
+        if self.processor_key == 'submission_ocr':
+            if submission._get_submission_ocr_fingerprint() != self.fingerprint:
+                self.write({
+                    'state': 'failed',
+                    'status_message': _('Skipped because the answer changed.'),
+                    'error_message': _('A newer answer superseded this OCR run.'),
+                    'finished_at': fields.Datetime.now(),
+                })
+                submission._queue_submission_answer_ocr()
+                return
+            submission.write({'submission_ocr_state': 'running'})
+            return
+        if submission._has_pending_submission_ocr():
+            self.write({
+                'state': 'failed',
+                'status_message': _('Waiting for submission OCR.'),
+                'error_message': _('The marking run was stopped because required OCR is not complete.'),
+                'finished_at': fields.Datetime.now(),
+            })
+            if self.request_origin == 'automatic':
+                submission.write({
+                    'ai_auto_mark_state': 'pending',
+                    'ai_auto_mark_run_id': False,
+                })
+            return
         if self.request_origin == 'automatic' and submission.ai_last_model_id:
             self.write({
                 'state': 'failed',
@@ -167,12 +196,26 @@ class APSAIRun(models.Model):
     def _on_ai_queue_run_failure(self, error):
         super()._on_ai_queue_run_failure(error)
         self.ensure_one()
+        if self.processor_key == 'submission_ocr' and self.submission_id.exists():
+            submission = self.submission_id.sudo()
+            if submission.submission_ocr_fingerprint == self.fingerprint:
+                submission.write({
+                    'submission_ocr_state': 'failed',
+                    'submission_ocr_error': str(error),
+                })
+                submission._apply_deferred_submission_actions()
+                submission._queue_auto_ai_marking_after_submit()
+            return
         if self.request_origin == 'automatic' and self.submission_id.exists():
             self.submission_id.sudo()._handle_auto_ai_run_failure(self, str(error))
 
     def _process_background(self):
         self.ensure_one()
         if self.state not in ('queued', 'running'):
+            return
+
+        if self.processor_key == 'submission_ocr':
+            self._process_submission_ocr_background()
             return
 
         started_at = fields.Datetime.now()
@@ -212,6 +255,52 @@ class APSAIRun(models.Model):
     def _process_specialised_background(self, started_perf):
         raise UserError(_('No processor is registered for AI run type %s.') % self.processor_key)
 
+    def _process_submission_ocr_background(self):
+        self.ensure_one()
+        submission = self.submission_id.sudo()
+        started_perf = time.perf_counter()
+        started_at = fields.Datetime.now()
+        self._write_progress({
+            'state': 'running',
+            'status_message': _('Transcribing the submitted answer...'),
+            'started_at': started_at,
+            'finished_at': False,
+            'error_message': False,
+        })
+        outcome = 'failed'
+        error_text = False
+        try:
+            if not submission.exists():
+                raise UserError(_('The submission for this OCR run no longer exists.'))
+            if submission._get_submission_ocr_fingerprint() != self.fingerprint:
+                outcome = 'failed'
+                error_text = _('The answer changed before OCR started.')
+            else:
+                applied = submission._process_answer_image_ocr(expected_fingerprint=self.fingerprint)
+                outcome = 'succeeded' if applied else 'failed'
+                if not applied:
+                    error_text = _('OCR did not return transcription text.')
+        except Exception as exc:
+            error_text = str(exc)
+            _logger.exception('Background submission OCR failed for submission %s', submission.id)
+
+        if submission.exists() and submission.submission_ocr_fingerprint == self.fingerprint:
+            submission.write({
+                'submission_ocr_state': outcome,
+                'submission_ocr_error': error_text,
+            })
+            submission._apply_deferred_submission_actions()
+            submission._queue_auto_ai_marking_after_submit()
+
+        self._write_progress({
+            'state': 'completed' if outcome == 'succeeded' else 'failed',
+            'status_message': _('Completed.') if outcome == 'succeeded' else _('OCR attempt failed.'),
+            'result_message': _('A text version was added to the submission.') if outcome == 'succeeded' else False,
+            'error_message': error_text,
+            'finished_at': fields.Datetime.now(),
+            'duration_ms': int((time.perf_counter() - started_perf) * 1000),
+        })
+
     def _process_background_record(self, started_perf):
         self.ensure_one()
         record = (self.resource_id or self.submission_id).with_user(self.requested_by_id)
@@ -219,6 +308,28 @@ class APSAIRun(models.Model):
         target_label = _('resource') if is_resource else _('submission')
         self._write_progress({'status_message': _('Waiting for the AI provider response...')})
         result = record._generate_ai_feedback_result(ai_run=self)
+        self.invalidate_recordset(['state'])
+        if self.state not in ('queued', 'running'):
+            return
+        if (
+            not is_resource
+            and record._has_pending_submission_ocr()
+        ):
+            error_text = _('The answer requires OCR before it can be marked.')
+            self._write_progress({
+                'state': 'failed',
+                'status_message': _('Stopped because submission OCR is pending.'),
+                'error_message': error_text,
+                'finished_at': fields.Datetime.now(),
+                'duration_ms': int((time.perf_counter() - started_perf) * 1000),
+            })
+            if self.request_origin == 'automatic':
+                record.sudo().write({
+                    'ai_auto_mark_state': 'pending',
+                    'ai_auto_mark_attempt_count': max(0, record.ai_auto_mark_attempt_count - 1),
+                    'ai_auto_mark_run_id': False,
+                })
+            return
         result['reasoning_text'] = result.get('reasoning_text') or self.thinking_text or ''
         self._write_progress({
             'status_message': _('Writing AI feedback to the %s...') % target_label,

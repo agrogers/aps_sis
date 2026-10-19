@@ -352,7 +352,7 @@
                                                 t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
                                                 <td class="ce_quiz_name">
                                                     <i class="fa fa-file-text-o me-1"/>
-                                                    <t t-esc="quiz.name"/>
+                                                    <t t-esc="quiz.displayName || quiz.name"/>
                                                 </td>
                                                 <td class="ce_quiz_num">
                                                     <t t-if="quiz.weightedResult"><t t-esc="quiz.weightedResult"/>%</t>

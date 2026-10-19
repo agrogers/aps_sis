@@ -68,6 +68,7 @@
                <header>
                     <field name="has_ai_feedback" invisible="1"/>
                     <field name="permit_resubmission" invisible="1"/>
+                    <field name="submission_ocr_state" invisible="1"/>
                     <img src="/aps_sis/static/src/img/ai.png" alt="AI Feedback"
                          invisible="not has_ai_feedback"
                          style="width: 24px; height: 24px; margin-left: 8px;"
@@ -139,6 +140,13 @@
                             <div class="text-muted" style="font-size: 1.2em;" invisible="state == 'assigned' or answer">
                                 <hr/>
                                 No answer has been supplied.
+                            </div>
+
+                            <div class="alert alert-info" role="status" invisible="submission_ocr_state not in ['pending', 'running']">
+                                Your image answer is being transcribed. You can continue using the page; grading and completion will wait for the OCR attempt.
+                            </div>
+                            <div class="alert alert-warning" role="status" invisible="submission_ocr_state != 'failed'">
+                                OCR was attempted but did not produce a text version. The submission can still be graded.
                             </div>
 
                             <field name="answer" invisible="has_feedback"/>

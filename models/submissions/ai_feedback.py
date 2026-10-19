@@ -1,4 +1,5 @@
 import logging
+import hashlib
 import re
 from html import escape
 
@@ -53,6 +54,34 @@ class APSResourceSubmissionAIFeedback(models.Model):
     ai_auto_mark_attempt_count = fields.Integer(string='Automatic AI Attempts', default=0, readonly=True, copy=False)
     ai_auto_mark_last_error = fields.Text(string='Automatic AI Error', readonly=True, copy=False)
     ai_auto_mark_run_id = fields.Many2one('aps.ai.run', string='Automatic AI Run', readonly=True, copy=False)
+    submission_ocr_state = fields.Selection(
+        [
+            ('not_required', 'Not Required'),
+            ('pending', 'Pending'),
+            ('running', 'Running'),
+            ('succeeded', 'Succeeded'),
+            ('failed', 'Attempt Failed'),
+        ],
+        string='Submission OCR',
+        default='not_required',
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    submission_ocr_fingerprint = fields.Char(readonly=True, copy=False)
+    submission_ocr_run_id = fields.Many2one(
+        'aps.ai.run',
+        string='Submission OCR Run',
+        readonly=True,
+        copy=False,
+        ondelete='set null',
+    )
+    submission_ocr_error = fields.Text(string='Submission OCR Error', readonly=True, copy=False)
+    submission_ocr_deferred_actions = fields.Json(
+        string='Deferred Submission Actions',
+        readonly=True,
+        copy=False,
+    )
     ai_override_model_id = fields.Many2one(
         'aps.ai.model',
         string='AI Model',
@@ -66,22 +95,94 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        records = super().create(vals_list)
+        prepared_vals = []
+        deferred_actions = []
+        for original_vals in vals_list:
+            vals = dict(original_vals)
+            resource = self.env['aps.resources'].browse(vals.get('resource_id')).exists()
+            if not resource and vals.get('task_id'):
+                resource = self.env['aps.resource.task'].browse(vals['task_id']).resource_id
+            answer = vals.get('answer') or ''
+            needs_ocr = bool(
+                resource
+                and any((tag.name or '').strip().casefold() == 'ocr required' for tag in resource.tag_ids)
+                and self._get_ai_context_content_status(answer) == 'image_only'
+                and re.search(r'<img\b', answer, re.IGNORECASE)
+            )
+            deferred = {}
+            if needs_ocr:
+                for field_name in ('score', 'feedback', 'date_completed'):
+                    if field_name in vals:
+                        deferred[field_name] = vals.pop(field_name)
+                if vals.get('state') == 'complete':
+                    deferred['state'] = vals['state']
+                    vals['state'] = 'submitted'
+            prepared_vals.append(vals)
+            deferred_actions.append(deferred)
+
+        records = super().create(prepared_vals)
+        for record, deferred in zip(records, deferred_actions):
+            if record.answer:
+                record._queue_submission_answer_ocr()
+            if deferred:
+                record._store_deferred_submission_actions(deferred)
         records._queue_auto_ai_marking_after_submit()
         return records
 
     def write(self, vals):
+        vals = dict(vals)
+        if not self.env.context.get('aps_skip_ocr_deferred_write'):
+            pending_records = self.filtered(
+                lambda submission: (
+                    submission._answer_requires_ocr(vals['answer'])
+                    if 'answer' in vals
+                    else submission._has_pending_submission_ocr()
+                )
+            )
+            if pending_records:
+                others = self - pending_records
+                results = []
+                if others:
+                    results.append(others.write(vals))
+                for submission in pending_records:
+                    if 'answer' in vals:
+                        submission._queue_submission_answer_ocr(answer_override=vals['answer'])
+                    deferred = {
+                        key: vals[key]
+                        for key in ('score', 'feedback', 'date_completed')
+                        if key in vals
+                    }
+                    if vals.get('state') == 'complete':
+                        deferred['state'] = 'complete'
+                    if deferred:
+                        submission._store_deferred_submission_actions(deferred)
+
+                    immediate = dict(vals)
+                    for key in ('score', 'feedback', 'date_completed'):
+                        immediate.pop(key, None)
+                    if immediate.get('state') == 'complete':
+                        immediate['state'] = 'submitted'
+                    if immediate:
+                        results.append(submission.with_context(aps_skip_ocr_deferred_write=True).write(immediate))
+                    else:
+                        submission._queue_submission_answer_ocr()
+                return all(results) if results else True
         state_changed = 'state' in vals
+        answer_changed = 'answer' in vals and not self.env.context.get(_SKIP_SUBMISSION_OCR_CTX)
         result = super().write(vals)
+        if answer_changed:
+            for submission in self:
+                submission._queue_submission_answer_ocr()
         if state_changed:
             self._queue_auto_ai_marking_after_submit()
             self.filtered(lambda rec: rec.state != 'submitted')._reset_auto_ai_marking_state()
-        if 'answer' in vals and not self.env.context.get(_SKIP_SUBMISSION_OCR_CTX):
-            for submission in self:
-                submission._process_answer_image_ocr()
         return result
 
-    def _process_answer_image_ocr(self):
+    def _get_submission_ocr_fingerprint(self):
+        self.ensure_one()
+        return hashlib.sha256((self.answer or '').encode('utf-8')).hexdigest()
+
+    def _answer_requires_ocr(self, answer=None):
         self.ensure_one()
         resource = self.resource_id
         if not any(
@@ -89,24 +190,134 @@ class APSResourceSubmissionAIFeedback(models.Model):
             for tag in resource.tag_ids
         ):
             return False
-        if self._get_ai_context_content_status(self.answer) != 'image_only':
+        answer = self.answer if answer is None else answer
+        if self._get_ai_context_content_status(answer) != 'image_only':
+            return False
+        image_tags = re.findall(r'<img\b[^>]*>', answer or '', re.IGNORECASE)
+        return bool(image_tags)
+
+    def _submission_requires_ocr(self):
+        self.ensure_one()
+        return self._answer_requires_ocr()
+
+    def _queue_submission_answer_ocr(self, answer_override=None):
+        self.ensure_one()
+        answer = self.answer if answer_override is None else answer_override
+        if not self._answer_requires_ocr(answer):
+            if self.submission_ocr_state != 'not_required':
+                self.with_context(aps_skip_ocr_deferred_write=True).sudo().write({
+                    'submission_ocr_state': 'not_required',
+                    'submission_ocr_fingerprint': False,
+                    'submission_ocr_run_id': False,
+                    'submission_ocr_error': False,
+                })
+                self._apply_deferred_submission_actions()
             return False
 
-        image_tags = re.findall(r'<img\b[^>]*>', self.answer or '', re.IGNORECASE)
-        if not image_tags:
+        fingerprint = hashlib.sha256((answer or '').encode('utf-8')).hexdigest()
+        if (
+            self.submission_ocr_fingerprint == fingerprint
+            and self.submission_ocr_state in ('pending', 'running', 'succeeded', 'failed')
+        ):
+            return self.submission_ocr_run_id
+
+        active_run = self.env['aps.ai.run'].sudo().search([
+            ('submission_id', '=', self.id),
+            ('processor_key', '=', 'submission_ocr'),
+            ('fingerprint', '=', fingerprint),
+            ('state', 'in', ('queued', 'running')),
+        ], limit=1)
+        if active_run:
+            run = active_run
+        else:
+            run = self.env['aps.ai.run'].sudo().create({
+                'submission_id': self.id,
+                'requested_by_id': self.env.user.id,
+                'fingerprint': fingerprint,
+                'processor_key': 'submission_ocr',
+                'state': 'queued',
+                'status_message': _('Queued and waiting to start...'),
+            })
+            run._queue_background_processing()
+
+        self.with_context(aps_skip_ocr_deferred_write=True).sudo().write({
+            'submission_ocr_state': 'pending',
+            'submission_ocr_fingerprint': fingerprint,
+            'submission_ocr_run_id': run.id,
+            'submission_ocr_error': False,
+        })
+        return run
+
+    def _has_pending_submission_ocr(self):
+        self.ensure_one()
+        return bool(
+            self._submission_requires_ocr()
+            and self.submission_ocr_fingerprint == self._get_submission_ocr_fingerprint()
+            and self.submission_ocr_state in ('pending', 'running')
+        )
+
+    def _store_deferred_submission_actions(self, values):
+        self.ensure_one()
+        deferred = dict(self.submission_ocr_deferred_actions or {})
+        for field_name in ('score', 'feedback', 'state', 'date_completed'):
+            if field_name in values:
+                deferred[field_name] = values[field_name]
+        if deferred:
+            self.with_context(aps_skip_ocr_deferred_write=True).sudo().write({
+                'submission_ocr_deferred_actions': deferred,
+            })
+
+    def _apply_deferred_submission_actions(self):
+        for submission in self:
+            deferred = dict(submission.submission_ocr_deferred_actions or {})
+            if not deferred or submission._has_pending_submission_ocr():
+                continue
+            submission.with_context(aps_skip_ocr_deferred_write=True).sudo().write({
+                'submission_ocr_deferred_actions': False,
+            })
+            manual_grade = 'score' in deferred or 'feedback' in deferred
+            if manual_grade:
+                submission.env['aps.ai.run'].sudo().search([
+                    ('submission_id', '=', submission.id),
+                    ('request_origin', '=', 'automatic'),
+                    ('state', 'in', ('queued', 'running')),
+                ]).write({
+                    'state': 'failed',
+                    'status_message': _('Superseded by deferred manual grading.'),
+                    'error_message': _('A manual grade was saved while OCR was pending.'),
+                    'finished_at': fields.Datetime.now(),
+                })
+            submission.with_context(aps_skip_ocr_deferred_write=True).write(deferred)
+            if manual_grade:
+                submission.sudo().write({
+                    'ai_auto_mark_state': 'completed',
+                    'ai_auto_mark_run_id': False,
+                })
+
+    def _process_answer_image_ocr(self, expected_fingerprint=None):
+        self.ensure_one()
+        if not self._submission_requires_ocr():
+            return False
+        resource = self.resource_id
+        fingerprint = self._get_submission_ocr_fingerprint()
+        if expected_fingerprint and fingerprint != expected_fingerprint:
             return False
 
         try:
+            image_tags = re.findall(r'<img\b[^>]*>', self.answer or '', re.IGNORECASE)
             ocr_text = self._ocr_ai_answer_images(
                 image_tags,
                 model_id=resource.ai_model_id.id if resource.ai_model_id else None,
             )
         except Exception:
             _logger.exception('Failed to OCR image answer for submission %s', self.id)
-            return False
+            raise
 
         text_version = self._build_submission_text_version_html(ocr_text)
         if not text_version:
+            return False
+
+        if self._get_submission_ocr_fingerprint() != fingerprint:
             return False
 
         answer = '%s%s' % (self.answer or '', text_version)
@@ -150,6 +361,32 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 )
         except Exception:
             _logger.exception('Failed to send OCR completion DM for submission %s', self.id)
+
+    def action_retry_submission_ocr(self):
+        self.ensure_one()
+        if not self._get_current_faculty():
+            raise UserError(_('Only faculty members can retry submission OCR.'))
+        if not self._submission_requires_ocr():
+            raise UserError(_('This submission does not currently require OCR.'))
+        if self.submission_ocr_state in ('pending', 'running'):
+            raise UserError(_('Submission OCR is already queued or running.'))
+
+        self.with_context(aps_skip_ocr_deferred_write=True).sudo().write({
+            'submission_ocr_state': 'not_required',
+            'submission_ocr_fingerprint': False,
+            'submission_ocr_run_id': False,
+            'submission_ocr_error': False,
+        })
+        run = self._queue_submission_answer_ocr()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('OCR Retry Queued'),
+                'message': _('A new OCR attempt has been queued in the background.'),
+                'type': 'success',
+            },
+        } if run else False
 
     def _build_ai_feedback_ctx(self, include_reasoning=False):
         """Return the standardised AI feedback context dict for this submission.
@@ -306,6 +543,14 @@ class APSResourceSubmissionAIFeedback(models.Model):
     def _queue_auto_ai_marking_after_submit(self):
         for record in self:
             if not record._is_auto_ai_marking_enabled():
+                continue
+            if record._has_pending_submission_ocr():
+                record.sudo().write({'ai_auto_mark_state': 'pending'})
+                continue
+            if record.submission_ocr_deferred_actions and (
+                'score' in record.submission_ocr_deferred_actions
+                or 'feedback' in record.submission_ocr_deferred_actions
+            ):
                 continue
             if record.ai_last_model_id or record.ai_auto_mark_state in ('pending', 'running', 'retry', 'completed'):
                 continue
@@ -474,6 +719,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
         self, request_origin='manual', attempt_number=0, queued_for_dispatch=False,
     ):
         self.ensure_one()
+        if self._has_pending_submission_ocr():
+            raise UserError(_('This submission is waiting for its background OCR attempt to finish.'))
         active_run = self._get_active_ai_run()
         if active_run:
             return active_run, False
@@ -498,6 +745,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
     def _start_automatic_ai_marking(self):
         self.ensure_one()
+        if self._has_pending_submission_ocr():
+            return False
         if not self._is_auto_ai_marking_enabled() or self.ai_last_model_id:
             return False
         if self.ai_auto_mark_attempt_count >= _AUTO_MARK_MAX_ATTEMPTS:
@@ -573,6 +822,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
         ], order='write_date asc, id asc')
         for submission in submissions:
             try:
+                if submission._has_pending_submission_ocr():
+                    continue
                 submission._cron_process_one_auto_ai_marking()
             except Exception:
                 _logger.exception('Automatic AI marking cron failed for submission %s', submission.id)

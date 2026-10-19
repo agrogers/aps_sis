@@ -363,6 +363,8 @@
                                         <field name="active_datetime" readonly="1"/>
                                         <field name="notification_state"  />
                                         <field name="ai_auto_mark_state" readonly="1"/>
+                                        <field name="submission_ocr_state" widget="badge" readonly="1" invisible="submission_ocr_state == 'not_required'"/>
+                                        <field name="submission_ocr_error" readonly="1" invisible="submission_ocr_state != 'failed'"/>
                                         <field name="days_till_due" readonly="1"/>
                                         
                                         <field name="create_date" readonly="1"/>
@@ -400,7 +402,20 @@
                                             class="btn-secondary"
                                             groups="aps_sis.group_aps_teacher"
                                             invisible="not is_current_user_faculty or state != 'submitted' or ai_action in ['none','manual']"/>
+                                        <button name="action_retry_submission_ocr"
+                                            string="Retry OCR"
+                                            type="object"
+                                            class="btn-secondary"
+                                            groups="aps_sis.group_aps_teacher"
+                                            invisible="not is_current_user_faculty or submission_ocr_state != 'failed'"/>
                                 </div>
+                            </div>
+
+                            <div class="alert alert-info mt-3" role="status" invisible="submission_ocr_state not in ['pending', 'running']">
+                                OCR is processing this image answer. Grading and completion will be applied after the OCR attempt.
+                            </div>
+                            <div class="alert alert-warning mt-3" role="status" invisible="submission_ocr_state != 'failed'">
+                                OCR was attempted but did not produce text. Deferred grading and completion have been applied.
                             </div>
 
 

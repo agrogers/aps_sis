@@ -371,6 +371,86 @@ class TestAPSResource(TransactionCase):
         self.assertEqual(section['highlightSourceId'], parent.id)
         self.assertEqual(section['highlightSourceField'], 'notes')
 
+    def test_course_explorer_assessment_display_name_includes_past_paper(self):
+        paper_type = self.env['aps.resource.types'].create({
+            'name': 'Past Paper',
+        })
+        section_type = self.env['aps.resource.types'].create({
+            'name': 'Paper Section',
+        })
+        question_type = self.env['aps.resource.types'].create({
+            'name': 'Question (Past Paper)',
+            'assessment': True,
+        })
+        other_question_type = self.env['aps.resource.types'].create({
+            'name': 'Question (Practice)',
+            'assessment': True,
+        })
+        paper = self.env['aps.resources'].create({
+            'name': '4CP-02-202011',
+            'type_id': paper_type.id,
+            'show_in_hierarchy': True,
+        })
+        section = self.env['aps.resources'].create({
+            'name': 'Section 2',
+            'type_id': section_type.id,
+            'has_notes': 'yes',
+            'notes': '<p>Questions.</p>',
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [paper.id])],
+            'primary_parent_id': paper.id,
+        })
+        question = self.env['aps.resources'].create({
+            'name': 'Q2a.i',
+            'type_id': question_type.id,
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [section.id])],
+            'primary_parent_id': section.id,
+        })
+        other_question = self.env['aps.resources'].create({
+            'name': 'Practice question',
+            'type_id': other_question_type.id,
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [section.id])],
+            'primary_parent_id': section.id,
+        })
+        fallback_section = self.env['aps.resources'].create({
+            'name': 'Practice Section',
+            'type_id': section_type.id,
+            'has_notes': 'yes',
+            'notes': '<p>Practice questions.</p>',
+            'show_in_hierarchy': True,
+        })
+        question_without_paper = self.env['aps.resources'].create({
+            'name': 'Q1b',
+            'type_id': question_type.id,
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [fallback_section.id])],
+            'primary_parent_id': fallback_section.id,
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data()
+        sections = {section['id']: section for section in result['contentSections']}
+        assessments = {
+            item['id']: item
+            for result_section in (sections[section.id], sections[fallback_section.id])
+            for item in result_section['quizzes']
+        }
+
+        self.assertEqual(assessments[question.id]['name'], 'Q2a.i')
+        self.assertEqual(
+            assessments[question.id]['displayName'],
+            '4CP-02-202011 > Section 2 > Q2a.i',
+        )
+        self.assertEqual(
+            assessments[other_question.id]['displayName'],
+            'Practice question',
+        )
+        self.assertEqual(
+            assessments[question_without_paper.id]['displayName'],
+            'Q1b',
+        )
+
     def test_course_explorer_data_keeps_parent_notes_before_child_headings(self):
         category = self.env['aps.subject.category'].create({
             'name': 'Parent Prefix Category',

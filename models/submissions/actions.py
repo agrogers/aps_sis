@@ -83,6 +83,7 @@ class APSResourceSubmissionActions(models.Model):
 
     def action_mark_complete(self):
         today = fields.Date.today()
+        deferred_count = 0
 
         for record in self:
             faculty = self._get_current_faculty()
@@ -96,6 +97,8 @@ class APSResourceSubmissionActions(models.Model):
                 'state': 'complete',
                 'date_completed': today,
             })
+            if record.state != 'complete' and record.submission_ocr_deferred_actions:
+                deferred_count += 1
 
         # Optional success message
         return {
@@ -103,8 +106,11 @@ class APSResourceSubmissionActions(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': 'Done',
-                'message': f"Processed {len(self)} submission(s).",
-                'type': 'success',
+                'message': (
+                    _('%s submission(s) will be completed after the OCR attempt.') % deferred_count
+                    if deferred_count else f"Processed {len(self)} submission(s)."
+                ),
+                'type': 'info' if deferred_count else 'success',
                 'next': {'type': 'ir.actions.act_window_close'},
             }
         }
@@ -160,6 +166,17 @@ class APSResourceSubmissionActions(models.Model):
                 'state': 'complete',
                 'date_completed': fields.Date.today(),
             })
+
+        if self.state != 'complete' and self.submission_ocr_deferred_actions:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Completion Deferred'),
+                    'message': _('This submission will be completed after its OCR attempt.'),
+                    'type': 'info',
+                },
+            }
 
         if not next_id:
             return {

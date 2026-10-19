@@ -178,6 +178,74 @@ class TestAutomaticAiRunQueue(TransactionCase):
             'Model Answer: Content absent [Image only present; image inclusion prompt inactive]',
             run.error_message,
         )
+
+    def test_submission_ocr_pending_blocks_automatic_marking_queue(self):
+        ocr_tag = self.env['aps.resource.tags'].create({'name': 'OCR Required'})
+        resource = self.env['aps.resources'].create({
+            'name': 'OCR-gated automatic marking',
+            'ai_action': 'mark_submission',
+            'tag_ids': [(6, 0, [ocr_tag.id])],
+        })
+        student = self.env['res.partner'].create({
+            'name': 'OCR-gated AI Queue Student',
+            'is_student': True,
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'answer': '<p><img src="/web/image/201/answer.png"></p>',
+            'state': 'submitted',
+        })
+
+        submission.cron_process_auto_ai_marking()
+
+        ocr_runs = self.env['aps.ai.run'].search([
+            ('submission_id', '=', submission.id),
+            ('processor_key', '=', 'submission_ocr'),
+        ])
+        marking_runs = self.env['aps.ai.run'].search([
+            ('submission_id', '=', submission.id),
+            ('processor_key', '=', 'standard'),
+        ])
+        self.assertEqual(len(ocr_runs), 1)
+        self.assertFalse(marking_runs)
+        self.assertEqual(submission.submission_ocr_state, 'pending')
+
+    def test_already_queued_marking_run_stops_while_submission_ocr_pending(self):
+        ocr_tag = self.env['aps.resource.tags'].create({'name': 'OCR Required'})
+        resource = self.env['aps.resources'].create({
+            'name': 'Pending OCR marking guard',
+            'ai_action': 'mark_submission',
+            'tag_ids': [(6, 0, [ocr_tag.id])],
+        })
+        student = self.env['res.partner'].create({
+            'name': 'Pending OCR Run Student',
+            'is_student': True,
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'answer': '<p><img src="/web/image/202/answer.png"></p>',
+            'state': 'submitted',
+        })
+        run = self.env['aps.ai.run'].create({
+            'submission_id': submission.id,
+            'requested_by_id': self.env.user.id,
+            'request_origin': 'automatic',
+            'attempt_number': 1,
+            'state': 'queued',
+        })
+
+        run._on_ai_queue_run_start()
+
+        self.assertEqual(run.state, 'failed')
+        self.assertEqual(submission.ai_auto_mark_state, 'pending')
         self.assertIn(
             'Question: Content absent [Image only present; image inclusion prompt inactive]',
             run.error_message,

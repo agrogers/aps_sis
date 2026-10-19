@@ -1356,6 +1356,22 @@ class APSResource(models.Model):
                 return False
             return quiz_id if quiz_id > 0 else False
 
+        def _assessment_display_name(resource):
+            name = resource.name or ''
+            if not resource.type_id or resource.type_id.name != 'Question (Past Paper)':
+                return name
+
+            names = [name]
+            parent = resource.primary_parent_id
+            visited_ids = {resource.id}
+            while parent and parent.id not in visited_ids:
+                visited_ids.add(parent.id)
+                names.append(parent.name or '')
+                if parent.type_id and parent.type_id.name == 'Past Paper':
+                    return ' > '.join(reversed(names))
+                parent = parent.primary_parent_id
+            return name
+
         _logger.info(
             "Course Explorer: quiz lookup found %d quiz resources and %d "
             "student tasks in %.3fs",
@@ -1378,6 +1394,7 @@ class APSResource(models.Model):
                     quizzes.append({
                         'id': child.id,
                         'name': child.name or '',
+                        'displayName': _assessment_display_name(child),
                         'typeName': child.type_id.name or '',
                         'quizId': _quiz_id_from_resource(child),
                         'weightedResult': task.weighted_result if task else 0,
@@ -1393,6 +1410,7 @@ class APSResource(models.Model):
                     quizzes.append({
                         'id': sup.id,
                         'name': sup.name or '',
+                        'displayName': _assessment_display_name(sup),
                         'typeName': sup.type_id.name or '',
                         'quizId': _quiz_id_from_resource(sup),
                         'weightedResult': task.weighted_result if task else 0,
