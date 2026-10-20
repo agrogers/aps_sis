@@ -187,8 +187,10 @@
                             <div class="card-body text-muted">All resource types are hidden. Select a type icon to show its cards.</div>
                         </t>
                         <div t-else="" class="row g-2 p-3">
-                            <t t-foreach="visibleSubmissionGroups" t-as="group" t-key="group.key">
-                                <div t-if="group.break_before" class="w-100"></div>
+                            <t t-foreach="visibleSubmissionGroupRows" t-as="groupRow" t-key="groupRow.depth + '-' + groupRow.groups[0].key">
+                                <div t-att-class="'col-12 aps-submission-group-row ' + (groupRow.depth ? 'aps-submission-child-row aps-submission-depth-' + Math.min(groupRow.depth, 4) : '')">
+                                    <div class="row g-2">
+                                        <t t-foreach="groupRow.groups" t-as="group" t-key="group.key">
                                 <div t-att-class="'col-12 col-sm-6 col-md-4 col-lg-3 col-xxl-2 aps-submission-group-column ' + (group.depth ? 'aps-child-submission-group aps-submission-depth-' + Math.min(group.depth, 4) : '') + (!group.depth &amp;&amp; group.child_resource_count ? ' aps-root-submission-group-has-children' : '')">
                                     <div t-if="submissionGroupAncestors(group).length"
                                          class="aps-submission-group-ancestors">
@@ -292,6 +294,9 @@
                                                 </button>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                                        </t>
                                     </div>
                                 </div>
                             </t>

@@ -400,11 +400,9 @@ export class TeacherDashboard extends Component {
                 if (isRoot && !hasVisibleTypeInSubtree(group)) {
                     continue;
                 }
-                const previousDepth = visible.length > 0 ? visible[visible.length - 1].depth : depth;
                 visible.push({
                     ...group,
                     depth,
-                    break_before: visible.length > 0 && depth !== previousDepth,
                 });
                 if (this.state.expandedSubmissionGroups[group.key]) {
                     appendChildren(group.key, depth + 1);
@@ -413,6 +411,19 @@ export class TeacherDashboard extends Component {
         };
         appendChildren("", 0, true);
         return visible;
+    }
+
+    get visibleSubmissionGroupRows() {
+        const rows = [];
+        for (const group of this.visibleSubmissionGroups) {
+            let row = rows[rows.length - 1];
+            if (!row || row.depth !== group.depth) {
+                row = { depth: group.depth, groups: [] };
+                rows.push(row);
+            }
+            row.groups.push(group);
+        }
+        return rows;
     }
 
     get visibleTaskResources() {
