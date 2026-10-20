@@ -761,6 +761,31 @@ class TestCourseExplorerSubmissionLifecycle(TransactionCase):
 
 class TestAPSAITargetedFeedback(TransactionCase):
 
+    def test_build_submission_answer_chunks_preserves_table_rows(self):
+        ai_model = self.env['aps.ai.model']
+        answer_html = (
+            '<p>Answer in the table below:</p>'
+            '<table><tbody>'
+            '<tr><th>Change</th><th>Initial state</th><th>Final state</th></tr>'
+            '<tr><td>melting</td><td>solid</td><td>liquid</td></tr>'
+            '<tr><td>sublimation</td><td>solid</td><td>gas</td></tr>'
+            '</tbody></table>'
+        )
+
+        chunk_data = ai_model._build_submission_answer_chunks(answer_html)
+
+        self.assertEqual(
+            chunk_data['chunks'],
+            [
+                {'id': 'c1', 'text': 'Answer in the table below:\n'},
+                {'id': 'c2', 'text': 'Change | Initial state | Final state\n'},
+                {'id': 'c3', 'text': 'melting | solid | liquid\n'},
+                {'id': 'c4', 'text': 'sublimation | solid | gas\n'},
+            ],
+        )
+        self.assertIn('data-chunk-id="c2"', chunk_data['chunked_html'])
+        self.assertIn('data-chunk-id="c4"', chunk_data['chunked_html'])
+
     def test_build_submission_answer_chunks_preserves_html_block_boundaries(self):
         ai_model = self.env['aps.ai.model']
         answer_html = '<div>Dog</div><div>Cat</div><div>Milk</div>'

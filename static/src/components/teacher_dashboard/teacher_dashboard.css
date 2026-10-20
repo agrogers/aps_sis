@@ -340,6 +340,10 @@
     min-height: 70px;
 }
 
+.aps-teacher-dashboard .aps-child-submission-group {
+    padding-left: 1.5rem;
+}
+
 .aps-teacher-dashboard .aps-submission-group-ancestors {
     display: flex;
     flex-direction: column;
