@@ -429,7 +429,7 @@
                             <field name="is_aps_manager" invisible="1"/>
                             <!-- Info box explaining how the AI Instructions tab works -->
                             <group>
-                                <group>
+                                <group invisible="ai_action == 'mark_scanned_exam'">
                                     <field name="ai_use_model_answer" widget="boolean_toggle" readonly="not is_aps_manager"/>
                                     <field name="ai_use_question" widget="boolean_toggle" readonly="not is_aps_manager"/>
                                     <field name="ai_use_notes" widget="boolean_toggle" readonly="not is_aps_manager"/>
@@ -442,8 +442,8 @@
                                 <group>
                                     <field name="ai_model_ids" widget="many2many_tags" options="{'no_create': True, 'no_open': True}" readonly="not is_aps_manager"/>
                                     <field name="has_multiple_ai_models" invisible="1"/>
-                                    <field name="ai_merge_responses" widget="boolean_toggle" invisible="not has_multiple_ai_models" readonly="not is_aps_manager"/>
-                                    <field name="ai_merge_response_chunks" widget="boolean_toggle" invisible="not has_multiple_ai_models or not ai_targeted_feedback" readonly="not is_aps_manager"/>
+                                    <field name="ai_merge_responses" widget="boolean_toggle" invisible="ai_action == 'mark_scanned_exam' or not has_multiple_ai_models" readonly="not is_aps_manager"/>
+                                    <field name="ai_merge_response_chunks" widget="boolean_toggle" invisible="ai_action == 'mark_scanned_exam' or not has_multiple_ai_models or not ai_targeted_feedback" readonly="not is_aps_manager"/>
                                     <field name="ai_model_id" string="Fallback AI Model" options="{'no_create': True, 'no_open': True}" invisible="has_multiple_ai_models" readonly="not is_aps_manager"/>
                                     <field name="ai_prompt_ids" widget="clickable_many2many_tags" options="{'no_create': False, 'no_create_edit': False, 'color_field': 'color'}" readonly="not is_aps_manager"/>
                                     <field name="ai_test_prompt" widget="boolean_toggle"/>
@@ -461,12 +461,29 @@
                             <group>
                                 <field name="ai_active_prompts" widget="clickable_many2many_tags" readonly="1" options="{'no_create': True, 'no_open': False, 'color_field': 'color'}" colspan="2"/>
                             </group>
-                            <group string="Instructions Specific to this Resource">
+                            <group invisible="ai_action != 'mark_scanned_exam'">
+                                <div class="alert alert-info" role="alert">
+                                    <p>
+                                        Scanned-exam marking works without an attached prompt. Optionally attach enabled
+                                        prompts whose names contain <strong>Freeform Assessment</strong> to add
+                                        resource-specific instructions; the module includes a general guidance prompt.
+                                        Paste every scanned page into the student's answer in page order.
+                                    </p>
+                                    <p>
+                                        Pages are analyzed one at a time by a vision-capable model. If a question or its
+                                        printed mark allocation is unclear, the feedback flags it and continues with the
+                                        remaining questions and pages. Unscored items are excluded from known-mark subtotals,
+                                        and no complete paper score is saved. No model answer or official rubric is required,
+                                        so teacher review is recommended.
+                                    </p>
+                                </div>
+                            </group>
+                            <group string="Instructions Specific to this Resource" invisible="ai_action == 'mark_scanned_exam'">
                                 <field name="ai_instructions" nolabel="1"
                                     placeholder="Provide instructions for AI-assisted actions related to this resource. For example, you can ask the AI to generate a model answer based on the question, or to provide feedback on a student's submission."
                                     readonly="not is_aps_manager"/>
                             </group>
-                            <group string="Help: Sample Marking and Word Count">
+                            <group string="Help: Sample Marking and Word Count" invisible="ai_action == 'mark_scanned_exam'">
                                 <div class="alert alert-info" role="alert">
                                     <p>
                                         Attach one of the special prompts below to enable its sample-based marking workflow.

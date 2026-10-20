@@ -69,8 +69,9 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     question_value = fields.Html(string='Value')
     update_answer = fields.Boolean(string='Answer')
     set_answer_to_resource_value = fields.Boolean(
-        string='Set to Resource Value',
+        string='Set to Resource Default Answer',
         default=False,
+        help='Use the first selected submission resource\'s default answer for all selected submissions.',
     )
     answer_value = fields.Html(string='Value')
     update_model_answer = fields.Boolean(string='Model Answer')
@@ -130,7 +131,11 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     def _onchange_set_answer_to_resource_value(self):
         if self.set_answer_to_resource_value:
             resource = self.submission_ids[:1].resource_id
-            self.answer_value = resource.answer if resource else False
+            self.answer_value = (
+                resource.default_answer
+                if resource and resource.has_default_answer and resource.default_answer
+                else False
+            )
 
     @api.onchange('set_model_answer_to_resource_value', 'submission_ids')
     def _onchange_set_model_answer_to_resource_value(self):

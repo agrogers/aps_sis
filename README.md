@@ -19,6 +19,7 @@
    - [Supporting Models](#supporting-models)
 4. [Security & Access Control](#security--access-control)
 5. [Key Workflows](#key-workflows)
+   - [Freeform Scanned-Exam Marking](#freeform-scanned-exam-marking)
 6. [Dashboard & Analytics](#dashboard--analytics)
 7. [Progress Prediction Algorithm](#progress-prediction-algorithm)
 8. [Leaderboards](#leaderboards)
@@ -226,7 +227,20 @@ APSResourceSubmission (state: complete)  +  score stored
 result_percent computed → feeds analytics
 ```
 
-### 3. Progress Tracking
+### 3. Freeform Scanned-Exam Marking
+
+To mark a paper from scans without a resource-level question, model answer, rubric, or maximum mark:
+
+1. Set the resource's **AI Action** to **Mark Scanned Exam**.
+2. Optionally attach enabled AI prompts whose names contain **Freeform Assessment** to add resource-specific instructions. The module seeds **Freeform Assessment - General Guidance**; its instructions and any other matching prompts are combined in sequence.
+3. Configure an enabled vision-capable AI model for the resource.
+4. Paste every scanned page into the student's answer in page order.
+
+The system analyzes one image at a time, appends question-level feedback, and uses an Odoo table of contents with Q1/Q2 as H1, lettered parts as H2, and roman-numeral subparts as H3. A final pass summarizes performance and question-group marks. The saved score and maximum are calculated from the validated question marks and printed mark allocations. Marking starts automatically on submission; a teacher can also run it again.
+
+An unclear question or missing/unreadable maximum mark does not stop analysis of the remaining questions or pages. The answer is assessed qualitatively where possible, flagged for teacher review, and shown in the feedback. Known-mark subtotals exclude unscored items; no complete paper score is saved when any item or page remains unassessed. The OCR Required resource tag does not trigger transcription for this action. Because no official marking scheme is supplied, AI marks are indicative and should be reviewed by a teacher.
+
+### 4. Progress Tracking
 
 Resources whose `name` contains **" Progress"** (space + "Progress") are treated as **progress tracker resources**. Their submissions form the historical data series used for:
 - The progress line chart (trend over time)

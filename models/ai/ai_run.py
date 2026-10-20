@@ -174,7 +174,10 @@ class APSAIRun(models.Model):
                 'error_message': content_preflight['error_text'],
                 'finished_at': fields.Datetime.now(),
             })
-            submission.write({'feedback': content_preflight['feedback_html']})
+            feedback_html = content_preflight['feedback_html']
+            if submission.ai_action == 'mark_scanned_exam' and submission.feedback:
+                feedback_html = '%s<hr/>%s' % (submission.feedback, feedback_html)
+            submission.write({'feedback': feedback_html})
             if self.request_origin == 'automatic':
                 submission.write({
                     'ai_auto_mark_state': 'failed',
@@ -184,11 +187,13 @@ class APSAIRun(models.Model):
             return
         if self.request_origin != 'automatic':
             return
-        submission.write({
+        progress_values = {
             'ai_auto_mark_state': 'running',
             'ai_auto_mark_run_id': self.id,
-            'feedback': submission._build_auto_ai_progress_feedback(self.attempt_number),
-        })
+        }
+        if submission.ai_action != 'mark_scanned_exam' or not submission.feedback:
+            progress_values['feedback'] = submission._build_auto_ai_progress_feedback(self.attempt_number)
+        submission.write(progress_values)
         submission._post_auto_ai_note(
             _('Automatic AI marking attempt %s has started.') % self.attempt_number
         )

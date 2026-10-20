@@ -22,7 +22,7 @@ class APSResourceExamPaperImport(models.Model):
     @api.depends('type_id', 'type_id.name')
     def _compute_is_pearson_past_paper(self):
         for resource in self:
-            resource.is_pearson_past_paper = resource.type_id.name == 'Past Paper (Pearson)'
+            resource.is_pearson_past_paper = 'Past Paper' in (resource.type_id.name or '')
 
     @api.depends('exam_import_ids')
     def _compute_exam_import_count(self):

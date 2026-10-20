@@ -241,8 +241,10 @@ class APSResource(models.Model):
         ('none', 'None'),
         ('mark_submission', 'Mark Submission'),
         ('mark_submission_use_answer', '--Dont Use---'),
+        ('mark_scanned_exam', 'Mark Scanned Exam'),
         ('manual', 'Manual Action'),
-    ], string='AI Action', default='none', required=True, tracking=True)
+    ], string='AI Action', default='none', required=True, tracking=True,
+        help='Mark Scanned Exam reads ordered page images using the first available vision-capable AI model. Optional enabled prompts named Freeform Assessment add resource-specific instructions.')
 
     ai_active_prompts = fields.Many2many(
         'ai_prompts',

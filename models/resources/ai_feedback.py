@@ -13,6 +13,15 @@ class APSResourceAIFeedback(models.Model):
         self.ensure_one()
         return 'ai_feedback'
 
+    def _get_freeform_assessment_prompts(self):
+        self.ensure_one()
+        return self.ai_prompt_ids.filtered(
+            lambda prompt: (
+                prompt.enabled
+                and 'freeform assessment' in (prompt.prompt_name or '').casefold()
+            )
+        ).sorted(key=lambda prompt: (prompt.sequence or 0, prompt.id))
+
     def _build_ai_feedback_ctx(self, include_reasoning=False, student_answer_html=None, out_of_marks=None):
         """Return the standardised AI feedback context dict for this resource.
 
@@ -79,6 +88,35 @@ class APSResourceAIFeedback(models.Model):
         self.ensure_one()
         if self.ai_action == 'none':
             raise UserError(_('AI Action must not be "None" to preview the prompt.'))
+
+        if self.ai_action == 'mark_scanned_exam':
+            prompts = self._get_freeform_assessment_prompts().filtered(
+                lambda prompt: (prompt.prompt or '').strip()
+            )
+            instructions = '\n\n'.join(
+                '[%s]\n%s' % (prompt.prompt_name, prompt.prompt.strip())
+                for prompt in prompts
+            )
+            submission_model = self.env['aps.resource.submission']
+            prompt_text = '\n\n'.join([
+                'PAGE ANALYSIS SYSTEM PROMPT',
+                submission_model._build_freeform_assessment_system_prompt(instructions, 'page'),
+                'PAGE ANALYSIS USER MESSAGE',
+                'Analyze one page image at a time. The request includes prior page analyses as text context.',
+                'FINAL AGGREGATION SYSTEM PROMPT',
+                submission_model._build_freeform_assessment_system_prompt(instructions, 'final'),
+                'FINAL AGGREGATION USER MESSAGE',
+                '[The complete accumulated page-by-page feedback is inserted here.]',
+            ])
+            wizard = self.env['aps.prompt.preview.wizard'].create({'prompt_text': prompt_text})
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('AI Prompt Preview'),
+                'res_model': 'aps.prompt.preview.wizard',
+                'res_id': wizard.id,
+                'view_mode': 'form',
+                'target': 'new',
+            }
 
         AIModel = self.env['aps.ai.model']
         context = self._build_ai_feedback_ctx(include_reasoning=False)

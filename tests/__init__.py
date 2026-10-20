@@ -16,3 +16,4 @@ from . import test_exam_exclusion_zones
 from . import test_exam_paper_import
 from . import test_aps_student_matrix
 from . import test_submission_ocr
+from . import test_freeform_assessment
