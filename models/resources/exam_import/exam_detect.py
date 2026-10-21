@@ -277,13 +277,41 @@ class APSExamPaperImportDetect(models.Model):
                     position = subpart_end
         else:
             subpart_identifier = False
-            if context.get('part_segment'):
+            roman_labels = {'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'}
+            previous_part_is_roman = (
+                context.get('hierarchy_level') == 2
+                and context.get('part_segment') in roman_labels
+            )
+            current_label_is_roman = (
+                self._normalise_identifier_component(value, 2) in roman_labels
+            )
+            if previous_part_is_roman and current_label_is_roman:
+                part_identifier, part_end = self._match_identifier_component(
+                    value, position, 2, rules, document_type, filename,
+                )
+                if part_identifier:
+                    components.append((2, part_identifier))
+                    position = part_end
+            elif context.get('part_segment'):
                 subpart_identifier, subpart_end = self._match_identifier_component(
                     value, position, 3, rules, document_type, filename,
                 )
-            if subpart_identifier:
-                components.append((3, subpart_identifier))
-                position = subpart_end
+                if subpart_identifier:
+                    components.append((3, subpart_identifier))
+                    position = subpart_end
+                elif kind != 'root' and context.get('root_segment'):
+                    part_identifier, part_end = self._match_identifier_component(
+                        value, position, 2, rules, document_type, filename,
+                    )
+                    if part_identifier:
+                        components.append((2, part_identifier))
+                        position = part_end
+                        subpart_identifier, subpart_end = self._match_identifier_component(
+                            value, position, 3, rules, document_type, filename,
+                        )
+                        if subpart_identifier:
+                            components.append((3, subpart_identifier))
+                            position = subpart_end
             elif kind != 'root' and context.get('root_segment'):
                 part_identifier, part_end = self._match_identifier_component(
                     value, position, 2, rules, document_type, filename,

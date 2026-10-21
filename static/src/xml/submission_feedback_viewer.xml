@@ -4,8 +4,18 @@
         <div class="aps-ai-feedback-viewer row g-3" t-ref="viewer">
             <div t-att-class="hasFeedback ? 'col-12 col-lg-6' : 'col-12'">
                 <div class="aps-ai-feedback-panel">
-                    <div class="aps-ai-feedback-panel-title">Student Answer</div>
-                    <div class="aps-ai-feedback-answer" t-out="answerMarkup"/>
+                    <div class="aps-ai-feedback-panel-title d-flex justify-content-between align-items-center">
+                        <span>Student Answer</span>
+                        <label t-if="answerHasImages" class="aps-ai-feedback-hide-images">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   t-att-checked="hideImages"
+                                   t-on-change="onHideImagesChange"/>
+                            <span>Hide Images</span>
+                        </label>
+                    </div>
+                    <div t-att-class="'aps-ai-feedback-answer' + (hideImages ? ' is-images-hidden' : '')"
+                         t-out="answerMarkup"/>
                 </div>
             </div>
             <div class="col-12 col-lg-6" t-if="hasFeedback">

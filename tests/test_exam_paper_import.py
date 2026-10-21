@@ -643,6 +643,51 @@ class TestExamPaperImport(TransactionCase):
             {'7', '7/a', '7/a/i', '7/a/ii', '7/b', '7/b/i', '7/b/ii'},
         )
 
+    def test_roman_parts_without_letter_level_remain_siblings(self):
+        self.env['aps.exam.paper.question.identifier'].create({
+            'sequence': 105,
+            'identifier_example': '(i)',
+            'hierarchy_level': '2',
+            'regex_pattern': r'^\s*\((?:viii|vii|iii|vi|iv|ii|ix|v|x|i)\)',
+        })
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Skipped letter level labels', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('skipped-level-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('skipped-level-rms.pdf').id,
+        })
+        page_image = self.env['ir.attachment'].create({
+            'name': 'skipped-level-question-page.png', 'type': 'binary',
+            'datas': 'aGVsbG8=', 'mimetype': 'image/png',
+        })
+        self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 1,
+            'render_dpi': 150, 'attachment_id': page_image.id, 'ai_state': 'complete',
+            'ai_response': {'detections': [
+                {'raw_label': '1', 'label_kind': 'root'},
+                {'raw_label': '(i)', 'label_kind': 'part'},
+                {'raw_label': '(ii)', 'label_kind': 'part'},
+                {'raw_label': '(iii)', 'label_kind': 'part'},
+                {'raw_label': '2', 'label_kind': 'root'},
+                {'raw_label': '(a)', 'label_kind': 'part'},
+                {'raw_label': '(i)', 'label_kind': 'subpart'},
+                {'raw_label': '(ii)', 'label_kind': 'subpart'},
+            ]},
+        })
+
+        job._build_sections_from_page_analysis()
+
+        sections = {section.source_key: section for section in job.section_ids}
+        self.assertEqual(
+            set(sections),
+            {'1', '1/i', '1/ii', '1/iii', '2', '2/a', '2/a/i', '2/a/ii'},
+        )
+        self.assertEqual(
+            {key: sections[key].display_label for key in ('1/i', '1/ii', '1/iii')},
+            {'1/i': 'Q1i', '1/ii': 'Q1ii', '1/iii': 'Q1iii'},
+        )
+        self.assertEqual(sections['2/a/i'].display_label, 'Q2a.i')
+        self.assertEqual(sections['2/a/ii'].display_label, 'Q2a.ii')
+
     def test_detect_sections_distinguishes_empty_completed_analysis(self):
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Empty analysis paper', 'resource_id': self.resource.id,

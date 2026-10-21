@@ -1,8 +1,19 @@
-import { Component, markup, onMounted, onPatched, onWillStart, useRef, useState } from "@odoo/owl";
+import {
+    Component,
+    markup,
+    onMounted,
+    onPatched,
+    onWillStart,
+    onWillUpdateProps,
+    useRef,
+    useState,
+} from "@odoo/owl";
 import { loadAssets } from "@web/core/assets";
 import { registry } from "@web/core/registry";
 import { escape } from "@web/core/utils/strings";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
+
+const HIDE_IMAGES_STORAGE_PREFIX = "aps_sis.submission_feedback_viewer.hide_images";
 
 export class SubmissionFeedbackViewer extends Component {
     static template = "aps_sis.SubmissionFeedbackViewer";
@@ -14,8 +25,18 @@ export class SubmissionFeedbackViewer extends Component {
     setup() {
         this.viewerRef = useRef("viewer");
         this.mathAssetsLoaded = false;
+        this.shouldScrollActiveChunkIntoView = false;
         this.state = useState({
             activeFeedbackId: undefined,
+            hideImages: this._loadHideImagesPreference(),
+        });
+        onWillUpdateProps((nextProps) => {
+            if (
+                this._getHideImagesStorageKey(nextProps.record)
+                !== this._getHideImagesStorageKey(this.props.record)
+            ) {
+                this.state.hideImages = this._loadHideImagesPreference(nextProps.record);
+            }
         });
         onWillStart(async () => {
             try {
@@ -31,7 +52,13 @@ export class SubmissionFeedbackViewer extends Component {
             }
         });
         onMounted(() => this._renderMath());
-        onPatched(() => this._renderMath());
+        onPatched(() => {
+            this._renderMath();
+            if (this.shouldScrollActiveChunkIntoView) {
+                this.shouldScrollActiveChunkIntoView = false;
+                this._scrollActiveChunkIntoView();
+            }
+        });
     }
 
     get isTargeted() {
@@ -45,6 +72,15 @@ export class SubmissionFeedbackViewer extends Component {
 
     get answerChunkedHtml() {
         return this.props.record.data.ai_answer_chunked_html || "";
+    }
+
+    get answerHasImages() {
+        const answerField = this.props.answerField || "answer";
+        return /<img\b/i.test(this.props.record.data[answerField] || "");
+    }
+
+    get hideImages() {
+        return this.state.hideImages;
     }
 
     get feedbackItems() {
@@ -216,12 +252,16 @@ export class SubmissionFeedbackViewer extends Component {
             // Chunk generation can turn images into the literal [image] marker.
             // In that case, show the original HTML instead of losing the image.
             if (originalImageCount > chunkedImageCount) {
-                return markup(originalAnswer);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(`<div>${originalAnswer}</div>`, "text/html");
+                this._openOcrTextSections(doc.body.firstElementChild);
+                return markup(doc.body.firstElementChild?.innerHTML || originalAnswer);
             }
             const activeChunkIds = new Set(this.activeChunkIds);
             const toneClass = this.activeFeedbackItem ? this._getToneClass(this.activeFeedbackItem) : "is-info";
             const parser = new DOMParser();
             const doc = parser.parseFromString(`<div>${this.answerChunkedHtml}</div>`, "text/html");
+            this._openOcrTextSections(doc.body.firstElementChild);
             for (const node of doc.body.querySelectorAll("[data-chunk-id]")) {
                 node.classList.add("aps-ai-answer-chunk");
                 node.classList.remove("is-success", "is-error", "is-info");
@@ -237,8 +277,66 @@ export class SubmissionFeedbackViewer extends Component {
         return markup(this.props.record.data[answerField] || '<p class="text-muted mb-0">No answer supplied.</p>');
     }
 
+    _getHideImagesStorageKey(record) {
+        const recordId = record?.resId;
+        if (
+            !record?.resModel
+            || recordId === undefined
+            || recordId === null
+            || recordId === false
+        ) {
+            return null;
+        }
+        return `${HIDE_IMAGES_STORAGE_PREFIX}:${record.resModel}:${recordId}`;
+    }
+
+    _loadHideImagesPreference(record = this.props.record) {
+        const key = this._getHideImagesStorageKey(record);
+        if (!key) {
+            return false;
+        }
+        try {
+            return window.localStorage.getItem(key) === "true";
+        } catch {
+            return false;
+        }
+    }
+
+    onHideImagesChange(ev) {
+        const hideImages = ev.currentTarget.checked;
+        this.state.hideImages = hideImages;
+        const key = this._getHideImagesStorageKey(this.props.record);
+        if (!key) {
+            return;
+        }
+        try {
+            window.localStorage.setItem(key, String(hideImages));
+        } catch {
+            // Keep the current viewer state when browser storage is unavailable.
+        }
+    }
+
     get feedbackMarkup() {
         return markup(this.props.record.data[this.props.name] || '<p class="text-muted mb-0">No feedback available.</p>');
+    }
+
+    _openOcrTextSections(root) {
+        for (const details of root?.querySelectorAll("details") || []) {
+            const summary = Array.from(details.children).find((child) => child.tagName === "SUMMARY");
+            const summaryText = summary?.textContent.replace(/\s+/g, " ").trim().toLowerCase();
+            if (summaryText === "ocr text") {
+                details.open = true;
+            }
+        }
+    }
+
+    _scrollActiveChunkIntoView() {
+        const activeChunk = this.viewerRef.el?.querySelector(".aps-ai-answer-chunk.is-active");
+        activeChunk?.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "nearest",
+        });
     }
 
     _renderMath() {
@@ -265,6 +363,7 @@ export class SubmissionFeedbackViewer extends Component {
 
     onFeedbackClick(ev) {
         const feedbackId = ev.currentTarget.dataset.feedbackId;
+        this.shouldScrollActiveChunkIntoView = true;
         this.state.activeFeedbackId = feedbackId === this.currentFeedbackId ? null : feedbackId;
     }
 }
