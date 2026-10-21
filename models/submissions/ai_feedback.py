@@ -122,8 +122,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 resource
                 and resource.ai_action != _FREEFORM_ASSESSMENT_ACTION
                 and any((tag.name or '').strip().casefold() == 'ocr required' for tag in resource.tag_ids)
-                and self._get_ai_context_content_status(answer) == 'image_only'
-                and re.search(r'<img\b', answer, re.IGNORECASE)
+                and self._get_pending_submission_ocr_image_matches(answer)
             )
             deferred = {}
             if needs_ocr:
@@ -200,19 +199,19 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
     def _answer_requires_ocr(self, answer=None):
         self.ensure_one()
-        if self.ai_action == _FREEFORM_ASSESSMENT_ACTION:
-            return False
-        resource = self.resource_id
-        if not any(
-            (tag.name or '').strip().casefold() == 'ocr required'
-            for tag in resource.tag_ids
-        ):
+        if not self._submission_ocr_is_enabled():
             return False
         answer = self.answer if answer is None else answer
-        if self._get_ai_context_content_status(answer) != 'image_only':
+        return bool(self._get_pending_submission_ocr_image_matches(answer))
+
+    def _submission_ocr_is_enabled(self):
+        self.ensure_one()
+        if self.ai_action == _FREEFORM_ASSESSMENT_ACTION:
             return False
-        image_tags = re.findall(r'<img\b[^>]*>', answer or '', re.IGNORECASE)
-        return bool(image_tags)
+        return any(
+            (tag.name or '').strip().casefold() == 'ocr required'
+            for tag in self.resource_id.tag_ids
+        )
 
     def _submission_requires_ocr(self):
         self.ensure_one()
@@ -221,7 +220,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
     def _queue_submission_answer_ocr(self, answer_override=None):
         self.ensure_one()
         answer = self.answer if answer_override is None else answer_override
-        if not self._answer_requires_ocr(answer):
+        if not self._submission_ocr_is_enabled() or not re.search(r'<img\b', answer or '', re.IGNORECASE):
             if self.submission_ocr_state != 'not_required':
                 self.with_context(aps_skip_ocr_deferred_write=True).sudo().write({
                     'submission_ocr_state': 'not_required',
@@ -231,6 +230,8 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 })
                 self._apply_deferred_submission_actions()
             return False
+        if not self._get_pending_submission_ocr_image_matches(answer):
+            return self.submission_ocr_run_id
 
         fingerprint = hashlib.sha256((answer or '').encode('utf-8')).hexdigest()
         if (
@@ -314,7 +315,9 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
     def _process_answer_image_ocr(self, expected_fingerprint=None):
         self.ensure_one()
-        if not self._submission_requires_ocr():
+        answer = self.answer or ''
+        image_matches = self._get_pending_submission_ocr_image_matches(answer)
+        if not image_matches or not self._submission_ocr_is_enabled():
             return False
         resource = self.resource_id
         fingerprint = self._get_submission_ocr_fingerprint()
@@ -322,37 +325,101 @@ class APSResourceSubmissionAIFeedback(models.Model):
             return False
 
         try:
-            image_tags = re.findall(r'<img\b[^>]*>', self.answer or '', re.IGNORECASE)
-            ocr_text = self._ocr_ai_answer_images(
-                image_tags,
-                model_id=resource.ai_model_id.id if resource.ai_model_id else None,
-            )
+            text_versions = []
+            for image_match in image_matches:
+                ocr_text = self._ocr_ai_answer_images(
+                    [image_match.group(0)],
+                    model_id=resource.ai_model_id.id if resource.ai_model_id else None,
+                )
+                text_version = self._build_submission_text_version_html(ocr_text)
+                if not text_version:
+                    raise UserError(_('OCR did not return transcription text for one of the submitted images.'))
+                insertion_offset = self._get_submission_ocr_insertion_offset(answer, image_match)
+                text_versions.append((insertion_offset, text_version))
         except Exception:
             _logger.exception('Failed to OCR image answer for submission %s', self.id)
             raise
 
-        text_version = self._build_submission_text_version_html(ocr_text)
-        if not text_version:
-            return False
-
         if self._get_submission_ocr_fingerprint() != fingerprint:
             return False
 
-        answer = '%s%s' % (self.answer or '', text_version)
+        for insertion_offset, text_version in sorted(text_versions, reverse=True):
+            answer = '%s%s%s' % (
+                answer[:insertion_offset],
+                text_version,
+                answer[insertion_offset:],
+            )
         self.with_context(**{_SKIP_SUBMISSION_OCR_CTX: True}).write({'answer': answer})
         self._send_submission_ocr_dm()
         return True
 
     @staticmethod
     def _build_submission_text_version_html(ocr_text):
+        if not (ocr_text or '').strip():
+            return ''
         paragraphs = re.split(r'\n\s*\n+', (ocr_text or '').strip())
         paragraphs = [' '.join(paragraph.split()) for paragraph in paragraphs]
         paragraphs = [escape(paragraph) for paragraph in paragraphs if paragraph]
         if not paragraphs:
             return ''
-        return '<details><summary>Text Version</summary>%s</details>' % ''.join(
+        return '<details><summary>OCR Text</summary>%s</details>' % ''.join(
             '<p>%s</p>' % paragraph for paragraph in paragraphs
         )
+
+    @staticmethod
+    def _get_pending_submission_ocr_image_matches(answer):
+        answer = answer or ''
+        image_matches = list(re.finditer(r'<img\b[^>]*>', answer, re.IGNORECASE))
+        if not image_matches:
+            return []
+
+        details_matches = list(re.finditer(
+            r'<details\b[^>]*>.*?</details\s*>',
+            answer,
+            re.IGNORECASE | re.DOTALL,
+        ))
+        ocr_text_sections = []
+        legacy_processed_through = 0
+        for details_match in details_matches:
+            summary_match = re.search(
+                r'<summary\b[^>]*>(.*?)</summary\s*>',
+                details_match.group(0),
+                re.IGNORECASE | re.DOTALL,
+            )
+            if not summary_match:
+                continue
+            summary_text = ' '.join(html2plaintext(summary_match.group(1)).split()).casefold()
+            if summary_text == 'ocr text':
+                ocr_text_sections.append(details_match)
+            elif summary_text == 'text version':
+                legacy_processed_through = max(
+                    legacy_processed_through,
+                    sum(image.end() <= details_match.start() for image in image_matches),
+                )
+
+        pending_matches = []
+        for index, image_match in enumerate(image_matches):
+            next_image_start = (
+                image_matches[index + 1].start()
+                if index + 1 < len(image_matches)
+                else len(answer)
+            )
+            has_ocr_text = any(
+                image_match.end() <= details_match.start() < next_image_start
+                for details_match in ocr_text_sections
+            )
+            if index >= legacy_processed_through and not has_ocr_text:
+                pending_matches.append(image_match)
+        return pending_matches
+
+    @staticmethod
+    def _get_submission_ocr_insertion_offset(answer, image_match):
+        tail = answer[image_match.end():]
+        paragraph_end = re.search(r'</p\s*>', tail, re.IGNORECASE)
+        next_image = re.search(r'<img\b', tail, re.IGNORECASE)
+        if paragraph_end and (not next_image or paragraph_end.start() < next_image.start()):
+            return image_match.end() + paragraph_end.end()
+        return image_match.end()
 
     def _send_submission_ocr_dm(self):
         self.ensure_one()

@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
 
@@ -70,15 +71,88 @@ class TestSubmissionOcr(TransactionCase):
         self.assertEqual(self.submission.submission_ocr_state, 'succeeded')
         self.assertEqual(run.state, 'completed')
         self.assertIn(
-            '<details><summary>Text Version</summary>',
+            '<details><summary>OCR Text</summary>',
             self.submission.answer,
         )
         self.assertIn(
             '<p>A sentence continued on this line.</p><p>A new paragraph.</p>',
             self.submission.answer,
         )
+        self.assertLess(
+            self.submission.answer.index('</p>'),
+            self.submission.answer.index('<details><summary>OCR Text</summary>'),
+        )
 
-    def test_submission_text_or_missing_tag_does_not_trigger_ocr(self):
+    def test_mixed_text_and_images_processes_only_pages_without_ocr_details(self):
+        first_image = '<p><img src="/web/content/101?download=false"></p>'
+        second_image = '<p><img src="/web/content/102?download=false"></p>'
+        self.submission.write({
+            'answer': '<p>Typed instructions.</p>%s%s' % (first_image, second_image),
+        })
+        first_run = self.submission.submission_ocr_run_id
+        with (
+            patch.object(
+                type(self.submission),
+                '_ocr_ai_answer_images',
+                autospec=True,
+                side_effect=['First page text.', 'Second page text.'],
+            ) as ocr,
+            patch.object(type(self.submission), '_send_submission_ocr_dm', autospec=True),
+            patch.object(first_run, '_write_progress', side_effect=lambda values: first_run.write(values)),
+        ):
+            first_run._process_submission_ocr_background()
+
+        self.assertEqual(ocr.call_count, 2)
+        answer_after_first_run = self.submission.answer
+        first_details = self.submission._build_submission_text_version_html('First page text.')
+        second_details = self.submission._build_submission_text_version_html('Second page text.')
+        self.assertIn(first_image + first_details, answer_after_first_run)
+        self.assertIn(second_image + second_details, answer_after_first_run)
+        self.assertIn('<p>Typed instructions.</p>', answer_after_first_run)
+
+        third_image = '<p><img src="/web/content/103?download=false"></p>'
+        self.submission.write({'answer': answer_after_first_run + third_image})
+        second_run = self.submission.submission_ocr_run_id
+        with (
+            patch.object(
+                type(self.submission),
+                '_ocr_ai_answer_images',
+                autospec=True,
+                return_value='Third page text.',
+            ) as ocr,
+            patch.object(type(self.submission), '_send_submission_ocr_dm', autospec=True),
+            patch.object(second_run, '_write_progress', side_effect=lambda values: second_run.write(values)),
+        ):
+            second_run._process_submission_ocr_background()
+
+        ocr.assert_called_once()
+        self.assertEqual(ocr.call_args.args[1], ['<img src="/web/content/103?download=false">'])
+        self.assertEqual(self.submission.answer.count('<summary>OCR Text</summary>'), 3)
+
+    def test_background_ocr_error_is_recorded_without_crashing(self):
+        self.submission.write({
+            'answer': '<p><img src="/web/image/123/answer.png"></p>',
+        })
+        run = self.submission.submission_ocr_run_id
+        with (
+            patch.object(
+                type(self.submission),
+                '_ocr_ai_answer_images',
+                autospec=True,
+                side_effect=UserError('Only Odoo-hosted images can be OCR-transcribed for word counting.'),
+            ),
+            patch.object(run, '_write_progress', side_effect=lambda values: run.write(values)),
+        ):
+            run._process_submission_ocr_background()
+
+        self.assertEqual(self.submission.submission_ocr_state, 'failed')
+        self.assertEqual(
+            self.submission.submission_ocr_error,
+            'Only Odoo-hosted images can be OCR-transcribed for word counting.',
+        )
+        self.assertEqual(run.state, 'failed')
+
+    def test_mixed_text_still_queues_ocr_but_missing_tag_does_not(self):
         with patch.object(
             type(self.submission),
             '_ocr_ai_answer_images',
@@ -94,6 +168,8 @@ class TestSubmissionOcr(TransactionCase):
             })
 
         ocr.assert_not_called()
+        self.assertEqual(self.submission.submission_ocr_state, 'pending')
+        self.assertTrue(self.submission.submission_ocr_run_id)
 
     def test_completion_and_manual_grade_are_deferred_until_ocr_attempt(self):
         self.submission.write({
@@ -126,7 +202,7 @@ class TestSubmissionOcr(TransactionCase):
         })
         submission = self.env['aps.resource.submission'].create({
             'task_id': task.id,
-            'answer': '<p><img src="/web/image/123/answer.png"></p>',
+            'answer': '<p>Typed note.</p><p><img src="/web/image/123/answer.png"></p>',
             'state': 'complete',
             'score': 3,
         })
@@ -155,6 +231,25 @@ class TestSubmissionOcr(TransactionCase):
         self.assertEqual(self.submission.submission_ocr_state, 'pending')
         self.assertEqual(result['tag'], 'display_notification')
 
+    def test_legacy_text_version_marks_preceding_images_as_processed(self):
+        answer = (
+            '<p><img src="/web/image/123/first.png"></p>'
+            '<p><img src="/web/image/124/second.png"></p>'
+            '<details><summary>Text Version</summary><p>Existing OCR.</p></details>'
+        )
+
+        self.assertEqual(
+            self.submission._get_pending_submission_ocr_image_matches(answer),
+            [],
+        )
+        pending = self.submission._get_pending_submission_ocr_image_matches(
+            answer + '<p><img src="/web/image/125/third.png"></p>'
+        )
+        self.assertEqual(
+            [image.group(0) for image in pending],
+            ['<img src="/web/image/125/third.png">'],
+        )
+
     def test_text_version_is_escaped_and_keeps_paragraphs(self):
         text_version = self.submission._build_submission_text_version_html(
             'First <word>\ncontinues here.\n\nSecond paragraph.'
@@ -162,7 +257,7 @@ class TestSubmissionOcr(TransactionCase):
 
         self.assertEqual(
             text_version,
-            '<details><summary>Text Version</summary>'
+            '<details><summary>OCR Text</summary>'
             '<p>First &lt;word&gt; continues here.</p>'
             '<p>Second paragraph.</p></details>',
         )

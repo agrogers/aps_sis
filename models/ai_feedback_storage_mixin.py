@@ -63,10 +63,29 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             if not src_match:
                 raise UserError(_('A submitted image could not be read for word counting.'))
             src = src_match.group(1)
-            if not src.casefold().startswith(('data:image/', '/web/image/')):
-                raise UserError(_('Only uploaded images can be OCR-transcribed for word counting.'))
-            attachment_match = re.match(r'^/web/image/(\d+)(?:[-/].*)?$', src)
-            model_match = re.match(r'^/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src)
+            src_url = urlparse(src)
+            is_data_image = src.casefold().startswith('data:image/')
+            image_route = src_url.path.startswith(('/web/image/', '/web/content/'))
+            odoo_base_url = urlparse(
+                self.env['ir.config_parameter'].sudo().get_param('web.base.url') or ''
+            )
+            is_odoo_image = (
+                image_route
+                and not src_url.scheme
+                and not src_url.netloc
+            ) or (
+                image_route
+                and src_url.scheme in ('http', 'https')
+                and src_url.scheme == odoo_base_url.scheme
+                and src_url.netloc.casefold() == odoo_base_url.netloc.casefold()
+            )
+            if not is_data_image and not is_odoo_image:
+                raise UserError(_('Only Odoo-hosted images can be OCR-transcribed for word counting.'))
+            attachment_match = re.match(
+                r'^/web/(?:image|content)/(\d+)(?:[-/].*)?$',
+                src_url.path,
+            )
+            model_match = re.match(r'^/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src_url.path)
             if attachment_match:
                 image_record = self.env['ir.attachment'].browse(int(attachment_match.group(1)))
             elif model_match:
@@ -85,7 +104,12 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                     raise UserError(_('A submitted image could not be read for word counting.'))
                 image_record.check_access_rights('read')
                 image_record.check_access_rule('read')
-            image_bytes = resource._get_image_bytes_from_url(src)
+            image_src = src
+            if not is_data_image:
+                image_src = src_url.path
+                if src_url.query:
+                    image_src = '%s?%s' % (image_src, src_url.query)
+            image_bytes = resource._get_image_bytes_from_url(image_src)
             if not image_bytes:
                 raise UserError(_('A submitted image could not be read for word counting.'))
             mime_type = (
@@ -97,7 +121,13 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
                 'type': 'image_url',
                 'image_url': {
                     'url': 'data:%s;base64,%s' % (
-                        mime_type,
+                        (
+                            src[5:].split(';', 1)[0]
+                            if is_data_image
+                            else image_record.mimetype
+                            if image_record and image_record._name == 'ir.attachment'
+                            else mimetypes.guess_type(src_url.path)[0]
+                        ) or 'image/png',
                         base64.b64encode(image_bytes).decode('ascii'),
                     ),
                 },

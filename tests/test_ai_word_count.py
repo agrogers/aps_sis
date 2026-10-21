@@ -1,5 +1,7 @@
+import base64
 from unittest.mock import patch
 
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 from odoo.tools import html2plaintext
 
@@ -116,6 +118,52 @@ class TestAIWordCount(TransactionCase):
             'Word Count: 5 \\ Paragraph Count: 2',
             html2plaintext(feedback),
         )
+
+    def test_scanner_attachment_url_is_ocrd_without_allowing_external_urls(self):
+        image_bytes = b'scanner image bytes'
+        attachment = self.env['ir.attachment'].create({
+            'name': 'scan.jpg',
+            'type': 'binary',
+            'datas': base64.b64encode(image_bytes),
+            'mimetype': 'image/jpeg',
+        })
+        resource = self._create_resource('')
+        self.model.write({'supports_vision': True})
+        image_src = f'/web/content/{attachment.id}?download=false'
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url') or 'http://localhost:8069'
+        same_origin_src = '%s%s' % (base_url.rstrip('/'), image_src)
+
+        with (
+            patch.object(
+                type(self.model),
+                '_execute_logged_router_call',
+                return_value={'response_json': {}},
+            ) as execute,
+            patch.object(
+                type(self.model),
+                '_extract_message_content',
+                return_value='Scanned answer.',
+            ),
+        ):
+            for src in (image_src, same_origin_src):
+                text = resource._ocr_ai_answer_images(
+                    [f'<img src="{src}">'],
+                    model_id=self.model.id,
+                )
+
+        self.assertEqual(text, 'Scanned answer.')
+        image_content = execute.call_args.args[0]['messages'][1]['content'][1]
+        image_url = image_content['image_url']['url']
+        self.assertTrue(image_url.startswith('data:image/jpeg;base64,'))
+        self.assertEqual(
+            base64.b64decode(image_url.split(',', 1)[1]),
+            image_bytes,
+        )
+        with self.assertRaises(UserError):
+            resource._ocr_ai_answer_images(
+                ['<img src="https://example.invalid/web/content/1?download=false">'],
+                model_id=self.model.id,
+            )
 
     def test_unselected_prompt_does_not_append_a_count(self):
         resource = self._create_resource('<p>One two three.</p>', with_word_count=False)

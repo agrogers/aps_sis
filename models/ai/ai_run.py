@@ -1,7 +1,10 @@
+import logging
 import time
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class APSAIRun(models.Model):

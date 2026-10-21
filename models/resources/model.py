@@ -649,8 +649,9 @@ class APSResource(models.Model):
             except Exception:
                 return None
 
-        # /web/image/<id> — attachment by ID (may have name qualifier like 123-foo)
-        att_match = _re.match(r'/web/image/(\d+)(?:[-/].*)?$', src)
+        src_path = _re.split(r'[?#]', src, maxsplit=1)[0]
+        # /web/image/<id> and /web/content/<id> both resolve uploaded attachments.
+        att_match = _re.match(r'/web/(?:image|content)/(\d+)(?:[-/].*)?$', src_path)
         if att_match:
             try:
                 att = self.env['ir.attachment'].browse(int(att_match.group(1))).sudo()
@@ -661,7 +662,7 @@ class APSResource(models.Model):
                 return None
 
         # /web/image/model/id/field[/size] — read binary field via ir.binary
-        model_match = _re.match(r'/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src)
+        model_match = _re.match(r'/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src_path)
         if model_match:
             try:
                 model_name, res_id, field_name = model_match.groups()
