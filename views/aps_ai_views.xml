@@ -37,8 +37,9 @@
                 <field name="state" widget="badge"
                        decoration-success="state == 'completed'"
                        decoration-danger="state == 'failed'"
-                      decoration-warning="state == 'queued'"
-                      decoration-info="state == 'running'"/>
+                       decoration-warning="state == 'queued'"
+                       decoration-info="state == 'running'"
+                       decoration-muted="state == 'skipped'"/>
                   <field name="processor_key" optional="show"/>
                 <field name="request_origin" optional="hide"/>
                 <field name="requested_by_id" optional="hide"/>

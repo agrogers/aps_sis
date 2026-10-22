@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
@@ -46,6 +46,58 @@ class TestSubmissionOcr(TransactionCase):
         self.assertEqual(run.processor_key, 'submission_ocr')
         self.assertEqual(run.state, 'queued')
 
+    def test_changed_answer_skips_old_queued_ocr_run(self):
+        self.submission.write({
+            'answer': '<p><img src="/web/image/123/first-answer.png"></p>',
+        })
+        old_run = self.submission.submission_ocr_run_id
+        self.submission.write({
+            'answer': '<p><img src="/web/image/124/updated-answer.png"></p>',
+        })
+        current_run = self.submission.submission_ocr_run_id
+
+        old_run._on_ai_queue_run_start()
+
+        self.assertNotEqual(old_run, current_run)
+        self.assertEqual(old_run.state, 'skipped')
+        self.assertEqual(old_run.status_message, 'Skipped because the answer changed.')
+        self.assertFalse(old_run.error_message)
+        self.assertEqual(current_run.state, 'queued')
+        self.assertTrue(old_run._serialize_status()['is_terminal'])
+
+    def test_changed_answer_during_ocr_processing_skips_old_run(self):
+        self.submission.write({
+            'answer': '<p><img src="/web/image/123/first-answer.png"></p>',
+        })
+        old_run = self.submission.submission_ocr_run_id
+
+        def change_answer(submission, expected_fingerprint=None):
+            submission.write({
+                'answer': '<p><img src="/web/image/124/updated-answer.png"></p>',
+            })
+            return False
+
+        with (
+            patch.object(
+                type(self.submission),
+                '_process_answer_image_ocr',
+                autospec=True,
+                side_effect=change_answer,
+            ) as process_ocr,
+            patch.object(
+                old_run,
+                '_write_progress',
+                side_effect=lambda values: old_run.write(values),
+            ),
+        ):
+            old_run._process_submission_ocr_background()
+
+        process_ocr.assert_called_once()
+        self.assertEqual(old_run.state, 'skipped')
+        self.assertEqual(old_run.status_message, 'Skipped because the answer changed.')
+        self.assertFalse(old_run.error_message)
+        self.assertEqual(self.submission.submission_ocr_run_id.state, 'queued')
+
     def test_background_ocr_appends_text_and_notifies(self):
         answer = '<p><img src="/web/image/123/answer.png"></p>'
         self.submission.write({'answer': answer})
@@ -82,6 +134,23 @@ class TestSubmissionOcr(TransactionCase):
             self.submission.answer.index('</p>'),
             self.submission.answer.index('<details><summary>OCR Text</summary>'),
         )
+
+    def test_ocr_completion_dm_links_to_submission(self):
+        channel = MagicMock()
+        record_url = 'https://odoo.example/web#id=123&model=aps.resource.submission'
+        with (
+            patch.object(type(self.submission), '_get_submission_url', return_value=record_url),
+            patch.object(
+                type(self.env['discuss.channel']),
+                'channel_get',
+                return_value=channel,
+            ),
+        ):
+            self.submission._send_submission_ocr_dm()
+
+        body = channel.with_context.return_value.message_post.call_args.kwargs['body']
+        self.assertIn('href="https://odoo.example/web#id=123&amp;model=aps.resource.submission"', str(body))
+        self.assertIn(str(self.submission.display_name), str(body))
 
     def test_mixed_text_and_images_processes_only_pages_without_ocr_details(self):
         first_image = '<p><img src="/web/content/101?download=false"></p>'

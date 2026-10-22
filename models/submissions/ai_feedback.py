@@ -429,6 +429,20 @@ class APSResourceSubmissionAIFeedback(models.Model):
         student_partner = self.student_id
         if not author_partner:
             return
+        record_url = self._get_submission_url(student_view=True) or self._get_submission_url() or ''
+        submission_label = self.display_name or self.submission_name or _('submission')
+        record_link = (
+            Markup('<a href="%s">%s</a>') % (record_url, escape(submission_label))
+            if record_url else escape(submission_label)
+        )
+        body = Markup('<p>%s</p><p>%s</p>') % (
+            _(
+                'Your answer has been processed and a text version has been created. '
+                'Please review it to make sure it is correct; you can correct any OCR mistakes. '
+                'The text version is found under each image.'
+            ),
+            Markup(_('Open your submission: %s')) % record_link,
+        )
         try:
             with self.env.cr.savepoint():
                 channel = self.env['discuss.channel'].channel_get(
@@ -436,11 +450,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
                     pin=False,
                 )
                 channel.with_context(**{_AUI_SKIP_CHANNEL_FORWARD_CTX: True}).message_post(
-                    body=Markup('<p>%s</p>') % _(
-                        'Your answer has been processed and a text version has been created. '
-                        'Please review it to make sure it is correct; you can correct any OCR mistakes. '
-                        'The text version is at the very bottom of your response.'
-                    ),
+                    body=body,
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
                 )

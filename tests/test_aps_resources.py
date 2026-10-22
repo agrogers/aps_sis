@@ -356,6 +356,85 @@ class TestAPSResource(TransactionCase):
         self.assertFalse(quizzes[quiz_resources[1].id]['quizId'])
         self.assertFalse(quizzes[quiz_resources[2].id]['quizId'])
 
+    def test_course_explorer_data_includes_matching_chapter_tag_assessments(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Chapter Assessment Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Chapter Assessment Subject',
+            'category_id': category.id,
+        })
+        other_subject = self.env['aps.subject'].create({
+            'name': 'Other Chapter Assessment Subject',
+            'category_id': category.id,
+        })
+        chapter_tag, other_chapter_tag, finalised_tag = self.env[
+            'aps.resource.tags'
+        ].create([
+            {'name': 'Ch01'},
+            {'name': 'Ch02'},
+            {'name': 'State:Finalised'},
+        ])
+        chapter = self.env['aps.resources'].create({
+            'name': 'Chapter One',
+            'has_notes': 'yes',
+            'notes': '<p>Chapter one notes.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+            'tag_ids': [(6, 0, [chapter_tag.id])],
+        })
+        assessment_type = self.env['aps.resource.types'].create({
+            'name': 'Chapter Quiz',
+            'assessment': True,
+        })
+        non_assessment_type = self.env['aps.resource.types'].create({
+            'name': 'Chapter Resource',
+            'assessment': False,
+        })
+        assessments = self.env['aps.resources'].create([
+            {
+                'name': 'Matching Chapter Assessment',
+                'type_id': assessment_type.id,
+                'subjects': [(6, 0, [subject.id])],
+                'tag_ids': [(6, 0, [chapter_tag.id])],
+            },
+            {
+                'name': 'Finalised Chapter Assessment',
+                'type_id': assessment_type.id,
+                'subjects': [(6, 0, [subject.id])],
+                'tag_ids': [(6, 0, [chapter_tag.id, finalised_tag.id])],
+            },
+            {
+                'name': 'Different Chapter Assessment',
+                'type_id': assessment_type.id,
+                'subjects': [(6, 0, [subject.id])],
+                'tag_ids': [(6, 0, [other_chapter_tag.id])],
+            },
+            {
+                'name': 'Different Subject Assessment',
+                'type_id': assessment_type.id,
+                'subjects': [(6, 0, [other_subject.id])],
+                'tag_ids': [(6, 0, [chapter_tag.id])],
+            },
+            {
+                'name': 'Non-assessment Chapter Resource',
+                'type_id': non_assessment_type.id,
+                'subjects': [(6, 0, [subject.id])],
+                'tag_ids': [(6, 0, [chapter_tag.id])],
+            },
+        ])
+
+        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        section = next(
+            section for section in result['contentSections']
+            if section['id'] == chapter.id
+        )
+
+        self.assertEqual(
+            [quiz['id'] for quiz in section['quizzes']],
+            [assessments[0].id],
+        )
+
     def test_course_explorer_data_returns_inherited_notes_highlight_source(self):
         category = self.env['aps.subject.category'].create({
             'name': 'Inherited Course Explorer Category',

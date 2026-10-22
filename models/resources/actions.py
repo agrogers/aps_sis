@@ -1150,7 +1150,7 @@ class APSResource(models.Model):
         # Base domain: hierarchy-visible resources
         base_domain = [('show_in_hierarchy', '=', True)]
         if subject_category_id:
-            base_domain.append(('subject_categories', 'in', subject_category_id))
+            base_domain.append(('subjects.category_id', '=', subject_category_id))
 
         all_hier = self.search(base_domain)
         all_hier.mapped('child_ids')
@@ -1336,6 +1336,54 @@ class APSResource(models.Model):
                 if sup.type_id and sup.type_id.assessment:
                     quiz_resource_ids.add(sup.id)
 
+        chapter_tags_by_section = {}
+        chapter_tag_ids = set()
+        for res in all_resources:
+            chapter_tags = res.tag_ids.filtered(
+                lambda tag: tag.name and tag.name.startswith('Ch')
+            )
+            chapter_tags_by_section[res.id] = chapter_tags
+            chapter_tag_ids.update(chapter_tags.ids)
+
+        chapter_assessments_by_match = {}
+        chapter_assessments_by_section = {}
+        chapter_subjects = all_resources.mapped('subjects')
+        if chapter_tag_ids and chapter_subjects:
+            tagged_assessments = self.search([
+                ('type_id.assessment', '=', True),
+                ('tag_ids', 'in', list(chapter_tag_ids)),
+                ('subjects', 'in', chapter_subjects.ids),
+            ])
+            tagged_assessments.mapped('tag_ids')
+            tagged_assessments.mapped('subjects')
+            chapter_tag_records = self.env['aps.resource.tags'].browse(
+                list(chapter_tag_ids)
+            )
+            for assessment in tagged_assessments:
+                if any(
+                    tag.name == 'State:Finalised'
+                    for tag in assessment.tag_ids
+                ):
+                    continue
+                for tag in assessment.tag_ids & chapter_tag_records:
+                    for subject in assessment.subjects & chapter_subjects:
+                        match_key = (tag.id, subject.id)
+                        if match_key not in chapter_assessments_by_match:
+                            chapter_assessments_by_match[match_key] = self.browse()
+                        chapter_assessments_by_match[match_key] |= assessment
+
+        for res in all_resources:
+            matches = self.browse()
+            for tag in chapter_tags_by_section[res.id]:
+                for subject in res.subjects:
+                    matches |= chapter_assessments_by_match.get(
+                        (tag.id, subject.id),
+                        self.browse(),
+                    )
+            if matches:
+                chapter_assessments_by_section[res.id] = matches
+                quiz_resource_ids.update(matches.ids)
+
         task_map = {}  # resource_id -> task record
         if quiz_resource_ids and student:
             tasks = self.env['aps.resource.task'].search([
@@ -1418,6 +1466,22 @@ class APSResource(models.Model):
                         'lastResult': task.last_result if task else 0,
                         'state': task.state if task else 'unassigned',
                     })
+            for assessment in chapter_assessments_by_section.get(res.id, self.browse()):
+                if assessment.id in seen_quiz_ids:
+                    continue
+                seen_quiz_ids.add(assessment.id)
+                task = task_map.get(assessment.id)
+                quizzes.append({
+                    'id': assessment.id,
+                    'name': assessment.name or '',
+                    'displayName': _assessment_display_name(assessment),
+                    'typeName': assessment.type_id.name or '',
+                    'quizId': _quiz_id_from_resource(assessment),
+                    'weightedResult': task.weighted_result if task else 0,
+                    'attempts': task.submission_count if task else 0,
+                    'lastResult': task.last_result if task else 0,
+                    'state': task.state if task else 'unassigned',
+                })
             sec['quizzes'] = quizzes
             # Average weighted result across quizzes for this section
             wrs = [q['weightedResult'] for q in quizzes if q.get('weightedResult')]

@@ -114,9 +114,9 @@ class APSAIRun(models.Model):
         if self.processor_key == 'submission_ocr':
             if submission._get_submission_ocr_fingerprint() != self.fingerprint:
                 self.write({
-                    'state': 'failed',
+                    'state': 'skipped',
                     'status_message': _('Skipped because the answer changed.'),
-                    'error_message': _('A newer answer superseded this OCR run.'),
+                    'error_message': False,
                     'finished_at': fields.Datetime.now(),
                 })
                 submission._queue_submission_answer_ocr()
@@ -138,18 +138,18 @@ class APSAIRun(models.Model):
             return
         if self.request_origin == 'automatic' and submission.ai_last_model_id:
             self.write({
-                'state': 'failed',
-                'status_message': _('Skipped before processing.'),
-                'error_message': _('The submission was already marked before this run started.'),
+                'state': 'skipped',
+                'status_message': _('Skipped because the submission was already marked.'),
+                'error_message': False,
                 'finished_at': fields.Datetime.now(),
             })
             submission.write({'ai_auto_mark_state': 'completed'})
             return
         if self.request_origin == 'automatic' and not submission._is_auto_ai_marking_enabled():
             self.write({
-                'state': 'failed',
-                'status_message': _('Skipped before processing.'),
-                'error_message': _('Automatic AI marking is no longer enabled for this submission.'),
+                'state': 'skipped',
+                'status_message': _('Skipped because automatic AI marking is no longer enabled.'),
+                'error_message': False,
                 'finished_at': fields.Datetime.now(),
             })
             submission._reset_auto_ai_marking_state()
@@ -159,9 +159,9 @@ class APSAIRun(models.Model):
             and submission._get_ai_context_content_status(submission.answer, student_answer=True) == 'absent'
         ):
             self.write({
-                'state': 'failed',
-                'status_message': _('Skipped before processing.'),
-                'error_message': _('The submission no longer has an answer to mark.'),
+                'state': 'skipped',
+                'status_message': _('Skipped because the submission no longer has an answer to mark.'),
+                'error_message': False,
                 'finished_at': fields.Datetime.now(),
             })
             submission.write({
@@ -281,18 +281,25 @@ class APSAIRun(models.Model):
             if not submission.exists():
                 raise UserError(_('The submission for this OCR run no longer exists.'))
             if submission._get_submission_ocr_fingerprint() != self.fingerprint:
-                outcome = 'failed'
-                error_text = _('The answer changed before OCR started.')
+                outcome = 'skipped'
             else:
                 applied = submission._process_answer_image_ocr(expected_fingerprint=self.fingerprint)
-                outcome = 'succeeded' if applied else 'failed'
-                if not applied:
+                if applied:
+                    outcome = 'succeeded'
+                elif submission._get_submission_ocr_fingerprint() != self.fingerprint:
+                    outcome = 'skipped'
+                else:
+                    outcome = 'failed'
                     error_text = _('OCR did not return transcription text.')
         except Exception as exc:
             error_text = str(exc)
             _logger.exception('Background submission OCR failed for submission %s', submission.id)
 
-        if submission.exists() and submission.submission_ocr_fingerprint == self.fingerprint:
+        if (
+            outcome != 'skipped'
+            and submission.exists()
+            and submission.submission_ocr_fingerprint == self.fingerprint
+        ):
             submission.write({
                 'submission_ocr_state': outcome,
                 'submission_ocr_error': error_text,
@@ -300,9 +307,19 @@ class APSAIRun(models.Model):
             submission._apply_deferred_submission_actions()
             submission._queue_auto_ai_marking_after_submit()
 
+        if outcome == 'succeeded':
+            run_state = 'completed'
+            status_message = _('Completed.')
+        elif outcome == 'skipped':
+            run_state = 'skipped'
+            status_message = _('Skipped because the answer changed.')
+        else:
+            run_state = 'failed'
+            status_message = _('OCR attempt failed.')
+
         self._write_progress({
-            'state': 'completed' if outcome == 'succeeded' else 'failed',
-            'status_message': _('Completed.') if outcome == 'succeeded' else _('OCR attempt failed.'),
+            'state': run_state,
+            'status_message': status_message,
             'result_message': _('A text version was added to the submission.') if outcome == 'succeeded' else False,
             'error_message': error_text,
             'finished_at': fields.Datetime.now(),
