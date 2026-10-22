@@ -184,6 +184,11 @@ class APSAssignStudentsWizard(models.TransientModel):
         default=True,
         help='Allow students to unsubmit or resubmit their submissions.',
     )
+    exam_condition = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('yes_release_scores', 'Yes-Release Scores'),
+    ], string='Exam Conditions', default='no')
 
     can_assign = fields.Boolean(string='Can Assign', compute='_compute_can_assign', store=False) # Helper field to enable/disable assign button based on whether any students and any resources are selected
 
@@ -542,6 +547,7 @@ class APSAssignStudentsWizard(models.TransientModel):
                     'date_due': self.date_due,
                     'allow_subject_editing': self.allow_subject_editing,
                     'permit_resubmission': self.permit_resubmission,
+                    'exam_condition': self.exam_condition,
                     'state': initial_state,
                     'question': use_question,
                     'has_question': has_question,

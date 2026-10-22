@@ -9,6 +9,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 sentinel_zero = -0.01
+_SKIP_AUTO_MARK_REVIEWED_CTX = 'aps_skip_auto_mark_reviewed'
 
 class APSResourceSubmission(models.Model):
     _name = 'aps.resource.submission'
@@ -48,6 +49,18 @@ class APSResourceSubmission(models.Model):
         records = super().create(vals_list)
         records._refresh_weekly_submission_results(records._weekly_submission_date_ranges())
         return records
+
+    @api.returns('mail.message', lambda value: value.id)
+    def message_post(self, *args, **kwargs):
+        message = super().message_post(*args, **kwargs)
+        if (
+            kwargs.get('message_type') in ('comment', 'email')
+            and not kwargs.get('tracking_value_ids')
+            and not self.env.context.get(_SKIP_AUTO_MARK_REVIEWED_CTX)
+            and self._get_current_faculty()
+        ):
+            self.with_context(**{_SKIP_AUTO_MARK_REVIEWED_CTX: True}).action_mark_reviewed()
+        return message
 
     def write(self, vals):
         tracked = {
@@ -143,6 +156,15 @@ class APSResourceSubmission(models.Model):
         ], string='State', default='assigned', 
         tracking=True,
         required=True)
+    exam_condition = fields.Selection([
+        ('no', 'No'),
+        ('yes', 'Yes'),
+        ('yes_release_scores', 'Yes-Release Scores'),
+    ], string='Exam Conditions', default='no', tracking=True)
+    is_exam_condition_active = fields.Boolean(
+        string='Exam Conditions Active',
+        compute='_compute_is_exam_condition_active',
+    )
     permit_resubmission = fields.Boolean(
         string='Permit Resubmission',
         default=True,
@@ -362,10 +384,27 @@ class APSResourceSubmission(models.Model):
             else:
                 record.points = 0
 
-    @api.depends('resource_id.supporting_resources_buttons', 'url')
+    @api.depends(
+        'resource_id.supporting_resources_buttons',
+        'resource_id.supporting_resource_ids.tag_ids.name',
+        'url',
+        'exam_condition',
+        'state',
+        'is_exam_condition_active',
+    )
     def _compute_supporting_resources_buttons(self):
         for record in self:
             links = record.resource_id.sudo().supporting_resources_buttons or []
+            if record.is_exam_condition_active:
+                hidden_resource_ids = {
+                    resource.id
+                    for resource in record.resource_id.supporting_resource_ids
+                    if any(tag.name.strip().casefold() == 'hide in exams' for tag in resource.tag_ids)
+                }
+                links = [
+                    link for link in links
+                    if link.get('is_main') or link.get('id') not in hidden_resource_ids
+                ]
             if record.url:
                 overridden_links = []
                 for link in links:
@@ -376,6 +415,15 @@ class APSResourceSubmission(models.Model):
                 record.supporting_resources_buttons = overridden_links
             else:
                 record.supporting_resources_buttons = links
+
+    @api.depends('exam_condition', 'state')
+    def _compute_is_exam_condition_active(self):
+        for record in self:
+            record.is_exam_condition_active = (
+                record.exam_condition == 'yes'
+                and record.state != 'complete'
+                and not record.is_current_user_faculty
+            )
 
     @api.depends('type_id', 'type_id.icon')
     def _compute_type_icon(self):

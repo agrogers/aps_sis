@@ -444,7 +444,9 @@
 }
 
 .aps-teacher-dashboard .aps-submission-group-metrics a.aps-metric-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-metric-badge,
 .aps-teacher-dashboard .aps-submission-group-metrics a.aps-overdue-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-overdue-badge,
 .aps-teacher-dashboard .aps-submission-group-metrics > a.aps-child-submission-count {
     display: flex;
     align-items: center;
@@ -465,7 +467,8 @@
     background-color: rgba(var(--body-bg-rgb), 0.8);
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.aps-metric-badge {
+.aps-teacher-dashboard .aps-submission-group-metrics a.aps-metric-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-metric-badge {
     width: 100%;
     justify-self: stretch;
     gap: 0;
@@ -473,12 +476,14 @@
     border: 1px solid transparent;
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.aps-overdue-badge {
+.aps-teacher-dashboard .aps-submission-group-metrics a.aps-overdue-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-overdue-badge {
     width: 100%;
     justify-self: stretch;
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.aps-child-count-link {
+.aps-teacher-dashboard .aps-submission-group-metrics a.aps-child-count-link,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-child-count-link {
     position: absolute;
     top: -0.4rem;
     right: -0.15rem;
@@ -493,23 +498,32 @@
     text-decoration: none;
 }
 
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-child-count-link {
+    display: block;
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
 .aps-teacher-dashboard .aps-submission-group-metrics a.aps-child-count-link:hover {
     color: var(--bs-primary, #0d6efd);
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.aps-total-badge {
+.aps-teacher-dashboard .aps-submission-group-metrics a.aps-total-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-total-badge {
     color: var(--body-color, #6c757d);
     border-color: var(--border-color, #6c757d);
     background-color: transparent;
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.aps-assigned-badge {
+.aps-teacher-dashboard .aps-submission-group-metrics a.aps-assigned-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-assigned-badge {
     color: #000;
     border-color: #ffc107;
     background-color: #ffc107;
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.aps-submitted-badge {
+.aps-teacher-dashboard .aps-submission-group-metrics a.aps-submitted-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-submitted-badge {
     color: #fff;
     border-color: #17a2b8;
     background-color: #17a2b8;
@@ -519,7 +533,8 @@
     color: #000;
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.aps-finalised-badge {
+.aps-teacher-dashboard .aps-submission-group-metrics a.aps-finalised-badge,
+.aps-teacher-dashboard .aps-submission-group-metrics span.aps-finalised-badge {
     color: var(--body-color, #212529);
     border-color: #adb5bd;
     background-color: #adb5bd;
@@ -553,7 +568,8 @@
     flex-basis: 20px;
 }
 
-.aps-teacher-dashboard .aps-submission-group-metrics a.badge.bg-danger {
+.aps-teacher-dashboard .aps-submission-group-metrics a.badge.bg-danger,
+.aps-teacher-dashboard .aps-submission-group-metrics span.badge.bg-danger {
     color: #fff;
     background-color: var(--bs-danger, #dc3545);
 }

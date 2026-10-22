@@ -127,6 +127,77 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         submission.permit_resubmission = False
         self.assertFalse(submission.permit_resubmission)
 
+    def test_exam_condition_is_propagated_by_assignment_wizard(self):
+        self.assertEqual(self.parent_submission.exam_condition, 'no')
+
+        wizard = self.env['aps.assign.students.wizard'].with_context(
+            default_date_assigned=False
+        ).new({
+            'resource_id': self.parent_resource.id,
+            'custom_submission_name': 'Exam resource',
+            'submission_label': 'Exam resource',
+            'date_due': fields.Date.today(),
+            'assigned_by': False,
+            'exam_condition': 'yes_release_scores',
+            'student_line_ids': [(0, 0, {'student_id': self.student.id})],
+            'affected_resource_line_ids': [(0, 0, {
+                'resource_id': self.parent_resource.id,
+                'selected': True,
+            }), (0, 0, {
+                'resource_id': self.child_resource_a.id,
+                'selected': True,
+            })],
+        })
+
+        wizard.action_assign_students()
+
+        assigned = self.env['aps.resource.submission'].search([
+            ('task_id.resource_id', 'in', [
+                self.parent_resource.id,
+                self.child_resource_a.id,
+            ]),
+            ('exam_condition', '=', 'yes_release_scores'),
+        ])
+        self.assertEqual(len(assigned), 2)
+        self.assertEqual(set(assigned.mapped('exam_condition')), {'yes_release_scores'})
+
+    def test_exam_condition_visibility_and_hidden_supporting_resources(self):
+        hidden_tag = self.env['aps.resource.tags'].create({'name': 'Hide in Exams'})
+        visible_support = self.env['aps.resources'].create({
+            'name': 'Visible supporting resource',
+            'url': 'https://example.com/visible',
+        })
+        hidden_support = self.env['aps.resources'].create({
+            'name': 'Hidden supporting resource',
+            'url': 'https://example.com/hidden',
+            'tag_ids': [(4, hidden_tag.id)],
+        })
+        self.parent_resource.write({
+            'url': 'https://example.com/main',
+            'supporting_resource_ids': [(6, 0, [visible_support.id, hidden_support.id])],
+        })
+        self.parent_submission.write({'exam_condition': 'yes'})
+
+        self.assertTrue(self.parent_submission.is_exam_condition_active)
+        links = self.parent_submission.supporting_resources_buttons
+        self.assertIn(self.parent_resource.id, [link['id'] for link in links])
+        self.assertIn(visible_support.id, [link['id'] for link in links])
+        self.assertNotIn(hidden_support.id, [link['id'] for link in links])
+
+        self.parent_submission.write({'exam_condition': 'yes_release_scores'})
+        self.assertFalse(self.parent_submission.is_exam_condition_active)
+        self.assertIn(
+            hidden_support.id,
+            [link['id'] for link in self.parent_submission.supporting_resources_buttons],
+        )
+
+        self.parent_submission.write({'exam_condition': 'yes', 'state': 'complete'})
+        self.assertFalse(self.parent_submission.is_exam_condition_active)
+        self.assertIn(
+            hidden_support.id,
+            [link['id'] for link in self.parent_submission.supporting_resources_buttons],
+        )
+
     def test_teacher_dashboard_returns_submission_groups(self):
         due_date = fields.Date.today() + timedelta(days=2)
         self.parent_submission.write({'date_due': due_date})

@@ -241,44 +241,54 @@
                                             </div>
                                             <div class="aps-submission-group-metrics">
                                                 <div t-if="(group.total > 0 || group.child_count > 0) &amp;&amp; this.showTotalSubmissionBadge(group)" class="aps-metric-badge-wrapper">
-                                                    <a href="#" class="aps-metric-badge aps-total-badge" t-att-title="'Total submissions: ' + group.total" t-att-aria-label="'Total submissions: ' + group.total" t-on-click.prevent="() => this.openGroupSubmissions(group.submission_ids, group.title, 'All submissions')">
+                                                    <a t-if="group.total > 0" href="#" class="aps-metric-badge aps-total-badge" t-att-title="'Total submissions: ' + group.total" t-att-aria-label="'Total submissions: ' + group.total" t-on-click.prevent="() => this.openGroupSubmissions(group.submission_ids, group.title, 'All submissions')">
                                                         <span><t t-esc="group.total"/></span>
                                                     </a>
-                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child submissions: ' + group.child_count" t-att-aria-label="'Child submissions: ' + group.child_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submission_ids, group.title, 'Child submissions')">
+                                                    <span t-else="" class="aps-metric-badge aps-total-badge" aria-hidden="true"/>
+                                                    <a t-if="group.child_resource_count &amp;&amp; group.child_count > 0" href="#" class="aps-child-count-link" t-att-title="'Child submissions: ' + group.child_count" t-att-aria-label="'Child submissions: ' + group.child_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submission_ids, group.title, 'Child submissions')">
                                                         <sup><t t-esc="group.child_count"/></sup>
                                                     </a>
+                                                    <span t-elif="group.child_resource_count" class="aps-child-count-link" aria-hidden="true"/>
                                                 </div>
                                                 <div t-if="group.assigned > 0 || (group.child_resource_count &amp;&amp; group.child_assigned_count > 0)" class="aps-metric-badge-wrapper">
-                                                    <a href="#" class="aps-metric-badge aps-assigned-badge" t-att-title="'Assigned: ' + group.assigned" t-att-aria-label="'Assigned: ' + group.assigned" t-on-click.prevent="() => this.openGroupSubmissions(group.assigned_ids, group.title, 'Assigned submissions')">
+                                                    <a t-if="group.assigned > 0" href="#" class="aps-metric-badge aps-assigned-badge" t-att-title="'Assigned: ' + group.assigned" t-att-aria-label="'Assigned: ' + group.assigned" t-on-click.prevent="() => this.openGroupSubmissions(group.assigned_ids, group.title, 'Assigned submissions')">
                                                         <span><t t-esc="group.assigned"/></span>
                                                     </a>
-                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child assigned submissions: ' + group.child_assigned_count" t-att-aria-label="'Child assigned submissions: ' + group.child_assigned_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_assigned_ids, group.title, 'Child assigned submissions')">
+                                                    <span t-else="" class="aps-metric-badge aps-assigned-badge" aria-hidden="true"/>
+                                                    <a t-if="group.child_resource_count &amp;&amp; group.child_assigned_count > 0" href="#" class="aps-child-count-link" t-att-title="'Child assigned submissions: ' + group.child_assigned_count" t-att-aria-label="'Child assigned submissions: ' + group.child_assigned_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_assigned_ids, group.title, 'Child assigned submissions')">
                                                         <sup><t t-esc="group.child_assigned_count"/></sup>
                                                     </a>
+                                                    <span t-elif="group.child_resource_count" class="aps-child-count-link" aria-hidden="true"/>
                                                 </div>
                                                 <div t-if="group.submitted > 0 || (group.child_resource_count &amp;&amp; group.child_submitted_count > 0)" class="aps-metric-badge-wrapper">
-                                                    <a href="#" class="aps-metric-badge aps-submitted-badge" t-att-title="'Submitted: ' + group.submitted" t-att-aria-label="'Submitted: ' + group.submitted" t-on-click.prevent="() => this.openGroupSubmissions(group.submitted_ids, group.title, 'Submitted work')">
+                                                    <a t-if="group.submitted > 0" href="#" class="aps-metric-badge aps-submitted-badge" t-att-title="'Submitted: ' + group.submitted" t-att-aria-label="'Submitted: ' + group.submitted" t-on-click.prevent="() => this.openGroupSubmissions(group.submitted_ids, group.title, 'Submitted work')">
                                                         <span><t t-esc="group.submitted"/></span>
                                                     </a>
-                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child submitted: ' + group.child_submitted_count" t-att-aria-label="'Child submitted: ' + group.child_submitted_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submitted_ids, group.title, 'Child submitted work')">
+                                                    <span t-else="" class="aps-metric-badge aps-submitted-badge" aria-hidden="true"/>
+                                                    <a t-if="group.child_resource_count &amp;&amp; group.child_submitted_count > 0" href="#" class="aps-child-count-link" t-att-title="'Child submitted: ' + group.child_submitted_count" t-att-aria-label="'Child submitted: ' + group.child_submitted_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submitted_ids, group.title, 'Child submitted work')">
                                                         <sup><t t-esc="group.child_submitted_count"/></sup>
                                                     </a>
+                                                    <span t-elif="group.child_resource_count" class="aps-child-count-link" aria-hidden="true"/>
                                                 </div>
                                                 <div t-if="group.finalised > 0 || (group.child_resource_count &amp;&amp; group.child_finalised_count > 0)" class="aps-metric-badge-wrapper">
-                                                    <a href="#" class="aps-metric-badge aps-finalised-badge" t-att-title="'Finalised: ' + group.finalised" t-att-aria-label="'Finalised: ' + group.finalised" t-on-click.prevent="() => this.openGroupSubmissions(group.finalised_ids, group.title, 'Finalised submissions')">
+                                                    <a t-if="group.finalised > 0" href="#" class="aps-metric-badge aps-finalised-badge" t-att-title="'Finalised: ' + group.finalised" t-att-aria-label="'Finalised: ' + group.finalised" t-on-click.prevent="() => this.openGroupSubmissions(group.finalised_ids, group.title, 'Finalised submissions')">
                                                         <span><t t-esc="group.finalised"/></span>
                                                     </a>
-                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child finalised submissions: ' + group.child_finalised_count" t-att-aria-label="'Child finalised submissions: ' + group.child_finalised_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_finalised_ids, group.title, 'Child finalised submissions')">
+                                                    <span t-else="" class="aps-metric-badge aps-finalised-badge" aria-hidden="true"/>
+                                                    <a t-if="group.child_resource_count &amp;&amp; group.child_finalised_count > 0" href="#" class="aps-child-count-link" t-att-title="'Child finalised submissions: ' + group.child_finalised_count" t-att-aria-label="'Child finalised submissions: ' + group.child_finalised_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_finalised_ids, group.title, 'Child finalised submissions')">
                                                         <sup><t t-esc="group.child_finalised_count"/></sup>
                                                     </a>
+                                                    <span t-elif="group.child_resource_count" class="aps-child-count-link" aria-hidden="true"/>
                                                 </div>
                                                 <div t-if="group.overdue > 0 || (group.child_resource_count &amp;&amp; group.child_overdue_count > 0)" class="aps-metric-badge-wrapper aps-overdue-badge-wrapper">
-                                                    <a href="#" class="badge bg-danger aps-overdue-badge" t-att-title="'Overdue: ' + group.overdue" t-att-aria-label="'Overdue: ' + group.overdue" t-on-click.prevent="() => this.openGroupSubmissions(group.overdue_ids, group.title, 'Overdue submissions')">
+                                                    <a t-if="group.overdue > 0" href="#" class="badge bg-danger aps-overdue-badge" t-att-title="'Overdue: ' + group.overdue" t-att-aria-label="'Overdue: ' + group.overdue" t-on-click.prevent="() => this.openGroupSubmissions(group.overdue_ids, group.title, 'Overdue submissions')">
                                                         <span><t t-esc="group.overdue"/></span>
                                                     </a>
-                                                    <a t-if="group.child_resource_count" href="#" class="aps-child-count-link" t-att-title="'Child overdue submissions: ' + group.child_overdue_count" t-att-aria-label="'Child overdue submissions: ' + group.child_overdue_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_overdue_ids, group.title, 'Child overdue submissions')">
+                                                    <span t-else="" class="badge bg-danger aps-overdue-badge" aria-hidden="true"/>
+                                                    <a t-if="group.child_resource_count &amp;&amp; group.child_overdue_count > 0" href="#" class="aps-child-count-link" t-att-title="'Child overdue submissions: ' + group.child_overdue_count" t-att-aria-label="'Child overdue submissions: ' + group.child_overdue_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_overdue_ids, group.title, 'Child overdue submissions')">
                                                         <sup><t t-esc="group.child_overdue_count"/></sup>
                                                     </a>
+                                                    <span t-elif="group.child_resource_count" class="aps-child-count-link" aria-hidden="true"/>
                                                 </div>
                                                 <a t-if="group.child_count > 0" href="#" class="aps-child-submission-count" t-att-title="'Child submissions: ' + group.child_count" t-att-aria-label="'Child submissions: ' + group.child_count" t-on-click.prevent="() => this.openGroupSubmissions(group.child_submission_ids, group.title, 'Child submissions')">
                                                     <i class="fa fa-sitemap"/><span><t t-esc="group.child_count"/></span>

@@ -27,6 +27,7 @@
                                     <field name="points_scale" readonly="0" invisible="0"/>
                                     <field name="notify_student" widget="boolean_toggle" readonly="0" invisible="0"/>
                                     <field name="permit_resubmission" widget="boolean_toggle"/>
+                                    <field name="exam_condition"/>
 
                                 </group>
                                 <div>
