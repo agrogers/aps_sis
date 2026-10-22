@@ -8,6 +8,20 @@ from odoo.tests.common import TransactionCase
 from odoo.addons.aps_sis.models.submissions.model import sentinel_zero
 
 
+class TestAPSSubmissionMassUpdateWizard(TransactionCase):
+
+    def test_selection_options_match_submission_fields(self):
+        submissions = self.env['aps.resource.submission']
+        wizard = self.env['aps.submission.mass.update.wizard']
+
+        for field_name in ('state', 'due_status', 'notification_state'):
+            with self.subTest(field_name=field_name):
+                self.assertEqual(
+                    wizard._fields[f'{field_name}_value'].selection,
+                    submissions._fields[field_name].selection,
+                )
+
+
 class TestAPSResourceSubmissionAutoScore(TransactionCase):
     """Tests for the auto_score field and parent score calculation."""
 

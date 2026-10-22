@@ -60,6 +60,7 @@ class APSResourceMassUpdateWizard(models.TransientModel):
     has_question_value = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
+        ('hidden', 'Yes (Hidden from Students)'),
         ('use_parent', 'Use Parent'),
     ], string='Value')
 
@@ -67,6 +68,7 @@ class APSResourceMassUpdateWizard(models.TransientModel):
     has_answer_value = fields.Selection([
         ('no', 'No'),
         ('yes', 'Yes'),
+        ('hidden', 'Yes (Hidden from Students)'),
         ('use_parent', 'Use Parent'),
     ], string='Value')
 
@@ -156,7 +158,9 @@ class APSResourceMassUpdateWizard(models.TransientModel):
     update_ai_action = fields.Boolean(string='AI Action')
     ai_action_value = fields.Selection([
         ('none', 'None'), ('mark_submission', 'Mark Submission'),
-        ('mark_submission_use_answer', '--Dont Use---'), ('manual', 'Manual Action'),
+        ('mark_submission_use_answer', '--Dont Use---'),
+        ('mark_scanned_exam', 'Mark Scanned Exam'),
+        ('manual', 'Manual Action'),
     ], string='Value')
     _AI_BOOLEAN_FIELDS = (
         'ai_use_model_answer', 'ai_use_question', 'ai_merge_responses',

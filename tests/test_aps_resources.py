@@ -2,6 +2,25 @@ from odoo.tests.common import TransactionCase
 
 class TestAPSResource(TransactionCase):
 
+    def test_mass_update_selection_options_match_resource_fields(self):
+        resources = self.env['aps.resources']
+        wizard = self.env['aps.resource.mass.update.wizard']
+
+        for field_name in (
+            'category',
+            'has_question',
+            'has_answer',
+            'has_notes',
+            'has_child_resources',
+            'has_supporting_resources',
+            'ai_action',
+        ):
+            with self.subTest(field_name=field_name):
+                self.assertEqual(
+                    wizard._fields[f'{field_name}_value'].selection,
+                    resources._fields[field_name].selection,
+                )
+
     def test_name_search_by_id(self):
         resource = self.env['aps.resources'].create({'name': 'A resource with a very long name'})
 

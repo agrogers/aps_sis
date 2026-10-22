@@ -45,9 +45,10 @@ class APSSubmissionMassUpdateWizard(models.TransientModel):
     submission_name_value = fields.Char(string='Value')
     update_due_status = fields.Boolean(string='Due Status')
     due_status_value = fields.Selection([
-        ('early', 'Early'),
-        ('on-time', 'On Time'),
         ('late', 'Late'),
+        ('on-time', 'On Time'),
+        ('early', 'Early'),
+        ('not_submitted', 'Not Submitted'),
         ], string='Value',
         )
     update_notification_state = fields.Boolean(string='Notification State')

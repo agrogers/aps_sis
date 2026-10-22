@@ -651,7 +651,18 @@
                     <field name="type_id" icon="fa-tag" enable_counters="1" select="multi"/>
                     <field name="subjects" icon="fa-book" enable_counters="1" select="multi"/>
                 </searchpanel>
-                <field name="name" string="All" filter_domain="['|','|','|','|',('display_name','ilike',self),('name','ilike',self),('url','ilike',self),('description','ilike',self),('category','ilike',self)]"/>
+                <field name="name" string="All" filter_domain="[
+                    '|', '|', '|', '|', '|', '|', '|', '|',
+                    ('id', 'ilike', self),
+                    ('display_name', 'ilike', self),
+                    ('name', 'ilike', self),
+                    ('url', 'ilike', self),
+                    ('description', 'ilike', self),
+                    ('category', 'ilike', self),
+                    ('marks', 'ilike', self),
+                    ('subject_categories.name', 'ilike', self),
+                    ('subjects.name', 'ilike', self)
+                ]"/>
                 <field name="id" string="ID"/>
                 <field name="display_name"/>
                 <field name="name"/>
