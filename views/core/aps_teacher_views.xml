@@ -115,13 +115,21 @@
                             </group>
                         </page>
                         <page string="Classes">
-                            <field name="class_ids" nolabel="1">
-                                <list>
+                            <field name="show_all_classes" widget="local_storage_boolean"
+                                   string="Show all academic years" nolabel="1"/>
+                            <field name="class_ids" nolabel="1"
+                                   domain="[] if show_all_classes else [('academic_year_id.is_current', '=', True)]">
+                                <list default_order="academic_year_id desc, name asc"
+                                      create="false" delete="false">
+                                    <field name="subject_icon" widget="image"
+                                           options="{'size': [24, 24]}" string="Icon"/>
                                     <field name="name"/>
                                     <field name="code"/>
                                     <field name="subject_id"/>
                                     <field name="academic_year_id"/>
                                     <field name="enrollment_count"/>
+                                    <field name="teacher_ids" widget="many2many_tags" optional="hide"/>
+                                    <field name="assistant_teacher_ids" widget="many2many_tags" optional="hide"/>
                                 </list>
                             </field>
                         </page>
