@@ -543,9 +543,34 @@ class APSExamPaperImportBuild(models.Model):
         headings.append('<h1>%s</h1>%s' % (escape(section.display_label), question_html))
         answers.append('<h1>%s</h1>%s' % (escape(section.display_label), answer_html))
 
+    @staticmethod
+    def _leaf_question_ai_values(marks):
+        values = {
+            'ai_action': 'mark_submission',
+            'ai_use_model_answer': True,
+            'ai_use_question': True,
+            'ai_summary': True,
+        }
+        marks = marks or 0.0
+        if marks >= 3:
+            values.update({
+                'ai_table_of_results': True,
+                'ai_targeted_feedback': True,
+            })
+        if marks >= 4:
+            values['ai_analysis'] = True
+        return values
+
     def action_build_resources(self):
         self.ensure_one()
         self.write({'state': 'building', 'progress': 70})
+        finalised_tag = self.env['aps.resource.tags'].search([
+            ('name', '=', 'State:Finalised'),
+        ], limit=1)
+        if not finalised_tag:
+            finalised_tag = self.env['aps.resource.tags'].create({
+                'name': 'State:Finalised',
+            })
         roots = {}
         created_resource_count = 0
         reused_resource_count = 0
@@ -630,28 +655,42 @@ class APSExamPaperImportBuild(models.Model):
                 total_marks += section.maximum_mark or 0.0
                 root_regions.extend(question_regions)
                 self._append_section_content(root, section, headings, answers)
+                child_has_children = bool(child.child_ids)
                 child_values = {
-                    'has_question': 'use_parent',
-                    'has_answer': 'use_parent',
+                    'has_question': 'hidden' if child_has_children else 'use_parent',
+                    'has_answer': 'hidden' if child_has_children else 'use_parent',
                     'marks': section.maximum_mark,
                 }
+                if child_has_children:
+                    child_values.update({
+                        'has_child_resources': 'yes',
+                        'tag_ids': [(4, finalised_tag.id)],
+                    })
+                else:
+                    child_values.update(self._leaf_question_ai_values(section.maximum_mark))
                 if not child.description and section.question_summary:
                     child_values['description'] = section.question_summary
                 child.write(child_values)
                 section.resource_id = child.id
                 section.write({'resource_key': str(child.id)})
 
+            root_has_children = bool(root.child_ids)
             root_values = {
-                'has_child_resources': 'no' if root_only else 'yes',
-                'has_question': 'yes',
-                'has_answer': 'yes',
+                'has_child_resources': 'yes' if root_has_children else 'no',
+                'has_question': 'hidden' if root_has_children else 'yes',
+                'has_answer': 'hidden' if root_has_children else 'yes',
                 'question': ''.join(headings),
                 'answer': ''.join(answers),
                 'marks': total_marks,
             }
+            if root_has_children:
+                root_values['tag_ids'] = [(4, finalised_tag.id)]
+            else:
+                root_values.update(self._leaf_question_ai_values(total_marks))
             if not root.description and root_section.question_summary:
                 root_values['description'] = root_section.question_summary
             root.write(root_values)
+        self.resource_id.write({'tag_ids': [(4, finalised_tag.id)]})
         self.write({'state': 'completed', 'progress': 100, 'completed_at': fields.Datetime.now()})
         # Show the completion toast and then re-open the form so the refreshed
         # state, progress and section resource links are shown without a

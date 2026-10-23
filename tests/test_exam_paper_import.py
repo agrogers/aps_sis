@@ -995,6 +995,95 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(q1.question.count('data-embedded="tableOfContent"'), 1)
         self.assertEqual(q1.answer.count('data-embedded="tableOfContent"'), 1)
 
+    def test_resource_builder_sets_finalised_and_leaf_ai_settings(self):
+        existing_tag = self.env['aps.resource.tags'].create({
+            'name': 'Existing exam tag',
+        })
+        self.resource.write({'tag_ids': [(4, existing_tag.id)]})
+        q1 = self.env['aps.resources'].create({
+            'name': 'Q1',
+            'parent_ids': [(4, self.resource.id)],
+            'primary_parent_id': self.resource.id,
+        })
+        existing_leaf = self.env['aps.resources'].create({
+            'name': 'Q1a',
+            'parent_ids': [(4, q1.id)],
+            'primary_parent_id': q1.id,
+            'ai_table_of_results': True,
+            'ai_targeted_feedback': True,
+            'ai_analysis': True,
+        })
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'AI settings paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('ai-settings-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('ai-settings-rms.pdf').id,
+        })
+        self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': 1, 'source_key': '1',
+                'display_label': 'Q1', 'root_key': 'Q1',
+                'question_pages': '', 'answer_pages': '',
+                'question_regions': [{'page_number': 1}],
+                'answer_regions': [{'page_number': 1}],
+            },
+            {
+                'import_id': job.id, 'sequence': 2, 'source_key': '1a',
+                'display_label': 'Q1a', 'root_key': 'Q1', 'maximum_mark': 2,
+                'resource_id': existing_leaf.id,
+                'question_pages': '', 'answer_pages': '',
+                'question_regions': [{'page_number': 1}],
+                'answer_regions': [{'page_number': 1}],
+            },
+            {
+                'import_id': job.id, 'sequence': 3, 'source_key': '1b',
+                'display_label': 'Q1b', 'root_key': 'Q1', 'maximum_mark': 3,
+                'question_pages': '', 'answer_pages': '',
+                'question_regions': [{'page_number': 1}],
+                'answer_regions': [{'page_number': 1}],
+            },
+            {
+                'import_id': job.id, 'sequence': 4, 'source_key': '1c',
+                'display_label': 'Q1c', 'root_key': 'Q1', 'maximum_mark': 4,
+                'question_pages': '', 'answer_pages': '',
+                'question_regions': [{'page_number': 1}],
+                'answer_regions': [{'page_number': 1}],
+            },
+        ])
+
+        with patch.object(type(job), '_build_section_image_html', return_value=''):
+            job.action_build_resources()
+
+        finalised_tag = self.env['aps.resource.tags'].search([
+            ('name', '=', 'State:Finalised'),
+        ], limit=1)
+        self.assertIn(finalised_tag, self.resource.tag_ids)
+        self.assertIn(existing_tag, self.resource.tag_ids)
+        self.assertIn(finalised_tag, q1.tag_ids)
+        self.assertIn(existing_tag, q1.tag_ids)
+        self.assertEqual(q1.has_child_resources, 'yes')
+        self.assertEqual(q1.has_question, 'hidden')
+        self.assertEqual(q1.has_answer, 'hidden')
+        self.assertEqual(q1.ai_action, 'none')
+
+        leaves = {
+            child.name: child
+            for child in q1.child_ids
+        }
+        for name in ('Q1a', 'Q1b', 'Q1c'):
+            self.assertEqual(leaves[name].ai_action, 'mark_submission')
+            self.assertTrue(leaves[name].ai_use_model_answer)
+            self.assertTrue(leaves[name].ai_use_question)
+            self.assertTrue(leaves[name].ai_summary)
+        self.assertTrue(leaves['Q1a'].ai_table_of_results)
+        self.assertTrue(leaves['Q1a'].ai_targeted_feedback)
+        self.assertTrue(leaves['Q1a'].ai_analysis)
+        self.assertTrue(leaves['Q1b'].ai_table_of_results)
+        self.assertTrue(leaves['Q1b'].ai_targeted_feedback)
+        self.assertFalse(leaves['Q1b'].ai_analysis)
+        self.assertTrue(leaves['Q1c'].ai_table_of_results)
+        self.assertTrue(leaves['Q1c'].ai_targeted_feedback)
+        self.assertTrue(leaves['Q1c'].ai_analysis)
+
     def test_resource_builder_adds_content_for_root_only_question(self):
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Standalone question paper', 'resource_id': self.resource.id,
@@ -1043,6 +1132,14 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(resource.description, 'Determine the value of the unknown.')
         self.assertEqual(section.resource_id, resource)
         self.assertEqual(resource.has_child_resources, 'no')
+        self.assertEqual(resource.ai_action, 'mark_submission')
+        self.assertTrue(resource.ai_use_model_answer)
+        self.assertTrue(resource.ai_use_question)
+        self.assertTrue(resource.ai_summary)
+        self.assertTrue(resource.ai_table_of_results)
+        self.assertTrue(resource.ai_targeted_feedback)
+        self.assertTrue(resource.ai_analysis)
+        self.assertIn('State:Finalised', self.resource.tag_ids.mapped('name'))
 
     def test_image_sections_do_not_have_text_fields(self):
         job = self.env['aps.exam.paper.import'].create({
