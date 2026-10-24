@@ -1,3 +1,5 @@
+import base64
+
 from odoo import _, models
 from odoo.exceptions import UserError
 
@@ -21,6 +23,19 @@ class APSResourceAIFeedback(models.Model):
                 and 'freeform assessment' in (prompt.prompt_name or '').casefold()
             )
         ).sorted(key=lambda prompt: (prompt.sequence or 0, prompt.id))
+
+    @staticmethod
+    def _format_ai_image_preview(part):
+        image_url = ((part or {}).get('image_url') or {}).get('url') or ''
+        if image_url.startswith('data:') and 'base64,' in image_url:
+            encoded_image = image_url.split('base64,', 1)[1]
+            try:
+                image_size = len(base64.b64decode(encoded_image, validate=True))
+            except ValueError:
+                image_size = None
+            if image_size is not None:
+                return '[Image include-%s bytes]' % format(image_size, ',')
+        return '[Image included; size unavailable]'
 
     def _build_ai_feedback_ctx(self, include_reasoning=False, student_answer_html=None, out_of_marks=None):
         """Return the standardised AI feedback context dict for this resource.
@@ -159,7 +174,7 @@ class APSResourceAIFeedback(models.Model):
                 preview_parts = []
                 for part in content:
                     if (part or {}).get('type') == 'image_url':
-                        preview_parts.append('[image content redacted from preview]')
+                        preview_parts.append(self._format_ai_image_preview(part))
                     else:
                         preview_parts.append((part or {}).get('text') or '')
                 content = '\n'.join(preview_parts)

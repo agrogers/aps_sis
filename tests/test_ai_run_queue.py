@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 
 from odoo.modules.registry import Registry
@@ -315,6 +316,22 @@ class TestAutomaticAiRunQueue(TransactionCase):
             resource.ai_active_prompts,
         )
         self.assertFalse(submission._get_ai_marking_content_preflight())
+        context = submission._build_ai_feedback_ctx()
+        self.assertIn('Include Model Answer Images', context['image_prompt_names'])
+        self.assertEqual(context['image_sources']['model_answer'], resource.answer)
+        self.assertTrue(self.env['aps.ai.model']._feedback_context_requires_vision(context))
+
+    def test_prompt_preview_redacts_image_bytes_and_shows_their_size(self):
+        image_bytes = b'\x89PNG\r\nimage-content'
+        image_url = 'data:image/png;base64,%s' % base64.b64encode(image_bytes).decode('ascii')
+
+        preview = self.env['aps.resources']._format_ai_image_preview({
+            'type': 'image_url',
+            'image_url': {'url': image_url},
+        })
+
+        self.assertEqual(preview, '[Image include-%s bytes]' % format(len(image_bytes), ','))
+        self.assertNotIn(image_url, preview)
 
     def test_model_answer_image_without_image_prompt_still_fails_preflight(self):
         resource = self.env['aps.resources'].create({
