@@ -105,9 +105,13 @@ export class Leaderboard extends Component {
     // Image URL based on viewer role and available images.
     // Students see game avatars; teachers see partner photos (with avatar fallback).
     getImageUrl(entry) {
-        const avatarUrl = entry.avatar_id
+        const avatarImageUrl = entry.avatar_image_user_id
+            ? `/web/image/res.users/${entry.avatar_image_user_id}/avatar_image?unique=${encodeURIComponent(entry.avatar_image_write_date || "")}`
+            : false;
+        const legacyAvatarUrl = entry.avatar_id
             ? `/web/image/aps.avatar/${entry.avatar_id}/image/128x128`
             : false;
+        const avatarUrl = avatarImageUrl || legacyAvatarUrl;
         const partnerUrl = `/web/image/res.partner/${entry.student_id}/image_128`;
 
         if (this.props.isFaculty) {

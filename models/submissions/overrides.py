@@ -187,6 +187,7 @@ class APSResourceSubmissionOverrides(models.Model):
         if quiz_tasks:
             quiz_tasks._update_progress_from_quizzes()
         # Log creation for debugging
+        follower_submissions = {}
         for submission in submissions:
             _logger.info(f"Created submission {submission.id} for task {submission.task_id.id}")
             
@@ -208,7 +209,15 @@ class APSResourceSubmissionOverrides(models.Model):
             
             # Subscribe all relevant partners
             if partner_ids:
-                submission.message_subscribe(partner_ids=list(set(partner_ids)))
+                recipient_ids = tuple(sorted(set(partner_ids)))
+                follower_submissions.setdefault(
+                    recipient_ids,
+                    self.env['aps.resource.submission'],
+                )
+                follower_submissions[recipient_ids] |= submission
+
+        for recipient_ids, grouped_submissions in follower_submissions.items():
+            grouped_submissions.message_subscribe(partner_ids=list(recipient_ids))
         
         # Propagate progress up the hierarchy for newly created submissions
         submissions._propagate_progress_to_parents()

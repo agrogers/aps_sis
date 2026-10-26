@@ -89,8 +89,15 @@
                                             class="breadcrumb-expand-btn"
                                             t-att-data-item-id="item.id"
                                             t-on-click.stop.prevent="onExpandDropdownItem"
+                                            t-att-aria-expanded="item.isExpanded ? 'true' : 'false'"
                                             aria-label="Show children">
-                                        <svg class="breadcrumb-arrow-icon"
+                                        <span t-if="item.isLoading"
+                                              class="spinner-border spinner-border-sm"
+                                              role="status">
+                                            <span class="visually-hidden">Loading children&#8230;</span>
+                                        </span>
+                                        <svg t-else=""
+                                             class="breadcrumb-arrow-icon"
                                              t-att-class="item.isExpanded ? 'breadcrumb-arrow-open' : ''"
                                              viewBox="0 0 64 64" fill="currentColor"
                                              aria-hidden="true"><path d="m52.713 31.16631-40.3215-26.70855a1 1 0 0 0 -1.55223.83369v53.4171a1 1 0 0 0 1.55223.83369l40.3215-26.70855a1 1 0 0 0 0-1.66738z"/></svg>
@@ -180,8 +187,15 @@
                                                 class="breadcrumb-expand-btn"
                                                 t-att-data-item-id="item.id"
                                                 t-on-click.stop.prevent="onExpandDropdownItem"
+                                                t-att-aria-expanded="item.isExpanded ? 'true' : 'false'"
                                                 aria-label="Show children">
-                                            <svg class="breadcrumb-arrow-icon"
+                                            <span t-if="item.isLoading"
+                                                  class="spinner-border spinner-border-sm"
+                                                  role="status">
+                                                <span class="visually-hidden">Loading children&#8230;</span>
+                                            </span>
+                                            <svg t-else=""
+                                                 class="breadcrumb-arrow-icon"
                                                  t-att-class="item.isExpanded ? 'breadcrumb-arrow-open' : ''"
                                                  viewBox="0 0 64 64" fill="currentColor"
                                                  aria-hidden="true"><path d="m52.713 31.16631-40.3215-26.70855a1 1 0 0 0 -1.55223.83369v53.4171a1 1 0 0 0 1.55223.83369l40.3215-26.70855a1 1 0 0 0 0-1.66738z"/></svg>

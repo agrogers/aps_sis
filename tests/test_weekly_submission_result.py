@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from unittest.mock import patch
 
 from odoo.tests.common import TransactionCase
 
@@ -71,3 +72,26 @@ class TestWeeklySubmissionResult(TransactionCase):
             )
         )
 
+    def test_submission_active_change_does_not_rebuild_weekly_results(self):
+        student = self.env['res.partner'].create({
+            'name': 'Weekly Result Active Test Student',
+            'is_student': True,
+        })
+        resource = self.env['aps.resources'].create({
+            'name': 'Weekly Result Active Test Resource',
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+        })
+
+        with patch.object(
+            type(self.result_model),
+            'rebuild_for_student',
+        ) as rebuild_for_student:
+            submission.write({'submission_active': True})
+
+        rebuild_for_student.assert_not_called()

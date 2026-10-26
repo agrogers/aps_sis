@@ -161,6 +161,94 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.assertEqual(len(assigned), 2)
         self.assertEqual(set(assigned.mapped('exam_condition')), {'yes_release_scores'})
 
+    def test_assignment_batches_follower_subscriptions_by_student(self):
+        second_student = self.env['res.partner'].create({
+            'name': 'Second Test Student',
+            'is_student': True,
+        })
+        label = 'Follower batching test'
+        wizard = self.env['aps.assign.students.wizard'].with_context(
+            default_date_assigned=False
+        ).new({
+            'resource_id': self.parent_resource.id,
+            'custom_submission_name': label,
+            'submission_label': label,
+            'date_due': fields.Date.today(),
+            'assigned_by': False,
+            'student_line_ids': [
+                (0, 0, {'student_id': self.student.id}),
+                (0, 0, {'student_id': second_student.id}),
+            ],
+            'affected_resource_line_ids': [
+                (0, 0, {
+                    'resource_id': self.parent_resource.id,
+                    'selected': True,
+                }),
+                (0, 0, {
+                    'resource_id': self.child_resource_a.id,
+                    'selected': True,
+                }),
+            ],
+        })
+        submission_model_class = type(self.env['aps.resource.submission'])
+        original_message_subscribe = submission_model_class.message_subscribe
+        subscribe_calls = []
+
+        def track_message_subscribe(records, *args, **kwargs):
+            subscribe_calls.append((
+                tuple(records.ids),
+                tuple(sorted(kwargs.get('partner_ids') or [])),
+            ))
+            return original_message_subscribe(records, *args, **kwargs)
+
+        with patch.object(
+            submission_model_class,
+            'message_subscribe',
+            track_message_subscribe,
+        ):
+            wizard.action_assign_students()
+
+        created = self.env['aps.resource.submission'].search([
+            ('submission_label', '=', label),
+        ])
+        student_ids = {self.student.id, second_student.id}
+        grouped_calls = [
+            (record_ids, partner_ids)
+            for record_ids, partner_ids in subscribe_calls
+            if len(record_ids) > 1
+            and len(partner_ids) == 1
+            and partner_ids[0] in student_ids
+        ]
+        self.assertEqual(len(created), 4)
+        self.assertEqual(len(grouped_calls), 2)
+        for submission in created:
+            follower_ids = submission.message_follower_ids.mapped('partner_id').ids
+            self.assertIn(submission.student_id.id, follower_ids)
+
+    def test_parent_submission_lookup_is_reused_for_sibling_resources(self):
+        submission_model_class = type(self.env['aps.resource.submission'])
+        original_search = submission_model_class.search
+        parent_lookup_domains = []
+
+        def count_parent_search(records, domain=None, *args, **kwargs):
+            if domain and any(
+                isinstance(term, (tuple, list))
+                and len(term) == 3
+                and term[0] == 'task_id.resource_id'
+                and term[1] == '='
+                and term[2] == self.parent_resource.id
+                for term in domain
+            ):
+                parent_lookup_domains.append(domain)
+            return original_search(records, domain, *args, **kwargs)
+
+        with patch.object(submission_model_class, 'search', count_parent_search):
+            (self.child_sub_a | self.child_sub_b)._link_created_parent_submissions()
+
+        self.assertEqual(len(parent_lookup_domains), 1)
+        self.assertEqual(self.child_sub_a.parent_submission_id, self.parent_submission)
+        self.assertEqual(self.child_sub_b.parent_submission_id, self.parent_submission)
+
     def test_exam_condition_visibility_and_hidden_supporting_resources(self):
         hidden_tag = self.env['aps.resource.tags'].create({'name': 'Hide in Exams'})
         visible_support = self.env['aps.resources'].create({

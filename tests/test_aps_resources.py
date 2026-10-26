@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from odoo.tests.common import TransactionCase
 
 class TestAPSResource(TransactionCase):
@@ -468,6 +470,73 @@ class TestAPSResource(TransactionCase):
         self.assertEqual(section['highlightSourceModel'], 'aps.resources')
         self.assertEqual(section['highlightSourceId'], parent.id)
         self.assertEqual(section['highlightSourceField'], 'notes')
+
+    def test_course_explorer_progress_aggregates_resource_and_quiz_components(self):
+        student = self.env.user.partner_id
+        parent = self.env['aps.resources'].create({
+            'name': 'Progress Parent',
+            'has_notes': 'no',
+            'show_in_hierarchy': True,
+        })
+        completed_child = self.env['aps.resources'].create({
+            'name': 'Completed Progress Child',
+            'has_notes': 'yes',
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [parent.id])],
+        })
+        quiz_child = self.env['aps.resources'].create({
+            'name': 'Quiz Progress Child',
+            'has_notes': 'yes',
+            'show_in_hierarchy': True,
+            'parent_ids': [(6, 0, [parent.id])],
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': completed_child.id,
+            'student_id': student.id,
+        })
+        self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'state': 'submitted',
+            'is_course_explorer': True,
+        })
+
+        resources = parent | completed_child | quiz_child
+        quiz_progress = {
+            parent.id: {
+                'quizProgress': 0.0,
+                'quizQuestionCount': 0,
+            },
+            completed_child.id: {
+                'quizProgress': 25.0,
+                'quizQuestionCount': 10,
+            },
+            quiz_child.id: {
+                'quizProgress': 10.0,
+                'quizQuestionCount': 10,
+            },
+        }
+        with patch.object(
+            type(resources),
+            '_get_course_explorer_quiz_progress',
+            autospec=True,
+            return_value=quiz_progress,
+        ):
+            progress = resources._get_course_explorer_progress_data(
+                resources,
+                student.id,
+            )
+
+        self.assertEqual(progress[completed_child.id]['progress'], 75.0)
+        self.assertEqual(progress[completed_child.id]['manualProgress'], 50.0)
+        self.assertEqual(progress[completed_child.id]['quizProgress'], 25.0)
+        self.assertEqual(progress[quiz_child.id]['progress'], 10.0)
+        self.assertEqual(progress[parent.id]['progress'], 42.5)
+        self.assertEqual(progress[parent.id]['manualProgress'], 25.0)
+        self.assertEqual(progress[parent.id]['quizProgress'], 17.5)
+        self.assertEqual(
+            progress[parent.id]['manualProgress'] + progress[parent.id]['quizProgress'],
+            progress[parent.id]['progress'],
+        )
 
     def test_course_explorer_assessment_display_name_includes_past_paper(self):
         paper_type = self.env['aps.resource.types'].create({

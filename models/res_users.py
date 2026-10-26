@@ -9,9 +9,7 @@ class ResUsers(models.Model):
         string='Profile Avatar',
     )
     avatar_image = fields.Image(
-        related='avatar_id.image',
         string='Avatar Image',
-        readonly=True,
     )
 
     points_balance = fields.Integer(
@@ -26,4 +24,4 @@ class ResUsers(models.Model):
 
     @property
     def SELF_WRITEABLE_FIELDS(self):
-        return super().SELF_WRITEABLE_FIELDS + ['avatar_id']
+        return super().SELF_WRITEABLE_FIELDS + ['avatar_id', 'avatar_image']

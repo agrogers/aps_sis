@@ -63,6 +63,24 @@
                     <span class="ce_progress_text"
                           t-att-style="props.node.hasQuizzes ? '' : 'display:none'">
                     </span>
+                    <div class="ce_progress_tooltip">
+                        <div class="ce_tooltip_row">
+                            <span class="ce_tooltip_label">SCORE</span>
+                            <span class="ce_tooltip_value"><t t-esc="scorePercent"/>%</span>
+                        </div>
+                        <div class="ce_tooltip_row">
+                            <span class="ce_tooltip_label">PROGRESS</span>
+                            <span class="ce_tooltip_value"><t t-esc="progressPercent"/>%</span>
+                        </div>
+                        <div class="ce_tooltip_row">
+                            <span class="ce_tooltip_label">Resource</span>
+                            <span class="ce_tooltip_value"><t t-esc="resourceProgressPercent"/>%</span>
+                        </div>
+                        <div class="ce_tooltip_row">
+                            <span class="ce_tooltip_label">Quizzes</span>
+                            <span class="ce_tooltip_value"><t t-esc="quizProgressPercent"/>%</span>
+                        </div>
+                    </div>
                 </div>
             </t>
         </div>

@@ -65,7 +65,7 @@ class APSResourceSubmission(models.Model):
     def write(self, vals):
         tracked = {
             'state', 'score', 'out_of_marks', 'date_submitted',
-            'task_id', 'subjects', 'submission_active',
+            'task_id', 'subjects',
         }
         before_ranges = self._weekly_submission_date_ranges()
         students_before = self.mapped('student_id')
@@ -430,25 +430,42 @@ class APSResourceSubmission(models.Model):
         # Depends on the stored type_id (not resource_id) to avoid traversing
         # aps.resources during recompute, which would trigger resource access rules
         # and fail for teachers who can see submissions across all subjects.
-        for record in self:
-            record.type_icon = record.type_id.icon if record.type_id else False
+        self.fetch(['type_id'])
+        resource_types = self.mapped('type_id')
+        resource_types.fetch(['icon'])
+
+        submissions_by_type = {}
+        for submission in self:
+            type_id = submission.type_id.id or False
+            submissions_by_type.setdefault(type_id, self.browse())
+            submissions_by_type[type_id] |= submission
+
+        for type_id, submissions in submissions_by_type.items():
+            icon = self.env['aps.resource.types'].browse(type_id).icon if type_id else False
+            submissions.type_icon = icon
 
     @api.depends('subjects', 'subjects.icon')
     def _compute_subject_icons(self):
         # Create a clean Environment executing strictly under SUPERUSER
         # Without the SUPERUSER environment, non-admin users might face SVG sanitization issues when accessing subject icons.
         sudo_env = self.env(user=SUPERUSER_ID)
-        
-        for record in self:
-            # Re-bind the record to the SUPERUSER environment
-            sudo_record = record.with_env(sudo_env)
-            
-            if record.subjects:
-                first = record.subjects[:1]
-                # Writing as SUPERUSER bypasses non-admin SVG sanitization
-                sudo_record.subject_icons = first.icon if first else False
-            else:
-                sudo_record.subject_icons = False
+
+        self.fetch(['subjects'])
+        submissions_by_subject = {}
+        for submission in self:
+            subject_id = submission.subjects[:1].id or False
+            submissions_by_subject.setdefault(subject_id, self.browse())
+            submissions_by_subject[subject_id] |= submission
+
+        subjects = self.env['aps.subject'].browse([
+            subject_id for subject_id in submissions_by_subject if subject_id
+        ])
+        subjects.fetch(['icon'])
+
+        for subject_id, submissions in submissions_by_subject.items():
+            icon = self.env['aps.subject'].browse(subject_id).icon if subject_id else False
+            # Writing as SUPERUSER bypasses non-admin SVG sanitization.
+            submissions.with_env(sudo_env).subject_icons = icon
     
 
     @api.depends('date_due','state')
@@ -742,7 +759,7 @@ class APSResourceSubmission(models.Model):
 
 # region - Submission Hierarchy
 
-    def _find_ancestor_submission(self, resource_map=None):
+    def _find_ancestor_submission(self, resource_map=None, lookup_cache=None):
         """Find the nearest ancestor submission for this record.
 
         Walks the resource hierarchy upward via ``primary_parent_id`` and, at
@@ -756,6 +773,9 @@ class APSResourceSubmission(models.Model):
         :param resource_map: optional ``dict[(resource_id, student_id)] -> submission_id``
             covering freshly created submissions that are not yet reliably
             searchable. When provided it is consulted before a domain search.
+        ``lookup_cache``: optional dictionary shared across a bulk link operation;
+            it caches found and missing ancestor searches by resource, student,
+            and submission label.
         """
         self.ensure_one()
         resource = self.resource_id
@@ -772,14 +792,20 @@ class APSResourceSubmission(models.Model):
             if resource_map:
                 candidate_id = resource_map.get((ancestor.id, student_id))
             if not candidate_id:
-                domain = [
-                    ('task_id.resource_id', '=', ancestor.id),
-                    ('task_id.student_id', '=', student_id),
-                ]
-                if label:
-                    domain.append(('submission_label', '=', label))
-                candidate = self.sudo().search(domain, order='submission_order, id', limit=1)
-                candidate_id = candidate.id or None
+                cache_key = (ancestor.id, student_id, label or False)
+                if lookup_cache is not None and cache_key in lookup_cache:
+                    candidate_id = lookup_cache[cache_key]
+                else:
+                    domain = [
+                        ('task_id.resource_id', '=', ancestor.id),
+                        ('task_id.student_id', '=', student_id),
+                    ]
+                    if label:
+                        domain.append(('submission_label', '=', label))
+                    candidate = self.sudo().search(domain, order='submission_order, id', limit=1)
+                    candidate_id = candidate.id or False
+                    if lookup_cache is not None:
+                        lookup_cache[cache_key] = candidate_id
             if candidate_id:
                 return candidate_id
             resource = ancestor
@@ -799,8 +825,12 @@ class APSResourceSubmission(models.Model):
         for record in self:
             key = (record.task_id.resource_id.id, record.task_id.student_id.id)
             resource_map.setdefault(key, record.id)
+        lookup_cache = {}
         for record in self:
-            parent_id = record._find_ancestor_submission(resource_map=resource_map)
+            parent_id = record._find_ancestor_submission(
+                resource_map=resource_map,
+                lookup_cache=lookup_cache,
+            )
             if parent_id and parent_id != record.id:
                 record.parent_submission_id = parent_id
 

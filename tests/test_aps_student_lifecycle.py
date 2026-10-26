@@ -1,8 +1,11 @@
+import base64
+import io
 from datetime import timedelta
 
 from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
+from PIL import Image
 
 
 class TestAPSStudentLifecycle(TransactionCase):
@@ -24,6 +27,43 @@ class TestAPSStudentLifecycle(TransactionCase):
         self.assertTrue(student.enrolment_status.description)
         self.assertGreaterEqual(student.enrolment_status.color, 0)
         self.assertFalse(student.start_date)
+
+    def test_avatar_images_are_stored_independently_of_avatar_records_and_photos(self):
+        def image_binary(color):
+            image_buffer = io.BytesIO()
+            Image.new('RGB', (24, 16), color).save(image_buffer, format='PNG')
+            return base64.b64encode(image_buffer.getvalue()).decode('ascii')
+
+        avatar_binary = image_binary((35, 125, 90))
+        updated_avatar_binary = image_binary((125, 35, 90))
+        photo_binary = image_binary((90, 125, 35))
+        avatar = self.env['aps.avatar'].create({
+            'name': 'Stored Avatar Test',
+            'image': avatar_binary,
+        })
+        user = self.env.user
+        user.write({
+            'image_1920': photo_binary,
+            'avatar_id': avatar.id,
+            'avatar_image': avatar_binary,
+        })
+        student = self._create_student()
+        student.partner_id.image_1920 = photo_binary
+        student.write({
+            'avatar_id': avatar.id,
+            'avatar_image': avatar_binary,
+        })
+
+        avatar.image = updated_avatar_binary
+
+        self.assertFalse(self.env['res.users']._fields['avatar_image'].related)
+        self.assertFalse(self.env['aps.student']._fields['avatar_image'].related)
+        self.assertEqual(user.avatar_image, avatar_binary)
+        self.assertEqual(student.avatar_image, avatar_binary)
+        self.assertEqual(user.avatar_id, avatar)
+        self.assertEqual(student.avatar_id, avatar)
+        self.assertEqual(user.image_1920, photo_binary)
+        self.assertEqual(student.partner_id.image_1920, photo_binary)
 
     def test_admissions_references_can_be_set(self):
         grade = self.env['aps.level'].create({'name': 'Lifecycle Test Level'})

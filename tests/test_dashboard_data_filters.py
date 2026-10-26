@@ -1,7 +1,10 @@
+import base64
+import io
 from datetime import timedelta
 
 from odoo import fields
 from odoo.tests.common import TransactionCase
+from PIL import Image
 
 
 class TestDashboardDataFilters(TransactionCase):
@@ -121,6 +124,28 @@ class TestDashboardDataFilters(TransactionCase):
 
         # Ensure computed active flags are updated for test lookups.
         self.env['aps.resource.submission'].search([])._compute_submission_active()
+
+    def test_leaderboard_avatar_maps_include_saved_user_avatar(self):
+        image_buffer = io.BytesIO()
+        Image.new('RGB', (24, 16), (35, 125, 90)).save(image_buffer, format='PNG')
+        avatar_binary = base64.b64encode(image_buffer.getvalue()).decode('ascii')
+        self.partner_a.image_1920 = avatar_binary
+
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': self.partner_a.name,
+            'login': f'dashboard_avatar_test_{self.partner_a.id}',
+            'partner_id': self.partner_a.id,
+        })
+        user.write({'avatar_image': avatar_binary})
+
+        avatar_map, avatar_image_map, image_map = (
+            self.env['aps.resource.submission']._get_avatar_and_image_maps([self.partner_a.id])
+        )
+
+        self.assertNotIn(self.partner_a.id, avatar_map)
+        self.assertEqual(avatar_image_map[self.partner_a.id]['user_id'], user.id)
+        self.assertTrue(avatar_image_map[self.partner_a.id]['write_date'])
+        self.assertTrue(image_map[self.partner_a.id])
 
     def test_get_dashboard_classes_for_filters_current_year_with_submissions(self):
         classes = self.env['aps.resource.submission'].get_dashboard_classes_for_filters()

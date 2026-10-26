@@ -192,6 +192,7 @@
                     <field name="image_1920" readonly="0" widget="image" class="oe_avatar"
                            options='{"zoom": true, "preview_image":"avatar_128"}'
                            groups="aps_sis.group_aps_teacher"/>
+                    <field name="avatar_image" invisible="True"/>
                     <field name="avatar_id" widget="avatar_selector"/>
                 </div>
             </xpath>
@@ -215,6 +216,7 @@
                     <field name="image_1920" readonly="0" widget="image" class="oe_avatar"
                            options='{"preview_image": "avatar_128"}'
                            groups="aps_sis.group_aps_teacher"/>
+                    <field name="avatar_image" invisible="True"/>
                     <field name="avatar_id" widget="avatar_selector"/>
                 </div>
             </xpath>

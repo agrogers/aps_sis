@@ -90,8 +90,21 @@ class APSResourceTask(models.Model):
         # This is needed because without it the icon is never cached properly. 
         # That means there is a lot of annoying downloads on every page refresh.
         # It is duplicated in other models as well.
-        for record in self:
-            record.type_icon = record.resource_id.type_id.icon if record.resource_id.type_id else False
+        self.fetch(['resource_id'])
+        resources = self.mapped('resource_id')
+        resources.fetch(['type_id'])
+        resource_types = resources.mapped('type_id')
+        resource_types.fetch(['icon'])
+
+        tasks_by_type = {}
+        for task in self:
+            type_id = task.resource_id.type_id.id or False
+            tasks_by_type.setdefault(type_id, self.browse())
+            tasks_by_type[type_id] |= task
+
+        for type_id, tasks in tasks_by_type.items():
+            icon = self.env['aps.resource.types'].browse(type_id).icon if type_id else False
+            tasks.type_icon = icon
 
     @api.depends('student_id', 'resource_id')
     def _compute_display_name(self):

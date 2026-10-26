@@ -1642,14 +1642,19 @@ class APSResource(models.Model):
             if resource.id in computed:
                 return computed[resource.id]
             if resource.id in active:
-                return progress_by_id[resource.id]['progress']
+                data = progress_by_id[resource.id]
+                return {
+                    'progress': data['progress'],
+                    'manualProgress': data['manualProgress'],
+                    'quizProgress': data['quizProgress'],
+                }
             active.add(resource.id)
 
             child_resources = (resource.child_ids & resources).filtered(
                 lambda child: child.id in resource_ids and child.show_in_hierarchy
             )
             child_values = [_combined_progress(child) for child in child_resources]
-            own_progress = progress_by_id[resource.id]['progress']
+            own_data = progress_by_id[resource.id]
 
             if child_values:
                 values = list(child_values)
@@ -1658,14 +1663,35 @@ class APSResource(models.Model):
                     child.has_notes == 'use_parent' for child in child_resources
                 )
                 if has_own_notes and not child_uses_parent_notes:
-                    values.append(own_progress)
-                combined = round(sum(values) / len(values), 1)
+                    values.append({
+                        'progress': own_data['progress'],
+                        'manualProgress': own_data['manualProgress'],
+                        'quizProgress': own_data['quizProgress'],
+                    })
+                combined_progress = round(
+                    sum(value['progress'] for value in values) / len(values),
+                    1,
+                )
+                combined_manual_progress = round(
+                    sum(value['manualProgress'] for value in values) / len(values),
+                    1,
+                )
+                combined_quiz_progress = round(
+                    combined_progress - combined_manual_progress,
+                    1,
+                )
             else:
-                combined = own_progress
+                combined_progress = own_data['progress']
+                combined_manual_progress = own_data['manualProgress']
+                combined_quiz_progress = own_data['quizProgress']
 
             active.discard(resource.id)
-            computed[resource.id] = combined
-            return combined
+            computed[resource.id] = {
+                'progress': combined_progress,
+                'manualProgress': combined_manual_progress,
+                'quizProgress': combined_quiz_progress,
+            }
+            return computed[resource.id]
 
         for resource in resources:
             _combined_progress(resource)
@@ -1678,7 +1704,16 @@ class APSResource(models.Model):
         result = {}
         for resource in resources:
             data = dict(progress_by_id[resource.id])
-            data['progress'] = computed.get(resource.id, data['progress'])
+            combined = computed.get(resource.id, {})
+            data['progress'] = combined.get('progress', data['progress'])
+            data['manualProgress'] = combined.get(
+                'manualProgress',
+                data['manualProgress'],
+            )
+            data['quizProgress'] = combined.get(
+                'quizProgress',
+                data['quizProgress'],
+            )
             result[resource.id] = data
         return result
 

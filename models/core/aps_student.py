@@ -105,6 +105,7 @@ class APSStudent(models.Model):
 
     active = fields.Boolean(default=True, string='Active')
     avatar_id = fields.Many2one('aps.avatar', string='Profile Avatar', ondelete='set null')
+    avatar_image = fields.Image(string='Avatar Image')
     image_128 = fields.Image(related='partner_id.image_128', string='Photo', readonly=True)
     birthday = fields.Date(
         related='partner_id.birthday',

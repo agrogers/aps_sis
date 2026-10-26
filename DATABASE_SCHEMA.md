@@ -221,6 +221,8 @@ This document describes every database model defined or extended by the `aps_sis
 | Field | Type | Required | Key Attributes |
 |-------|------|----------|----------------|
 | `partner_id` | Many2one → `res.partner` | ✅ | ondelete=cascade, unique |
+| `avatar_id` | Many2one → `aps.avatar` | | legacy avatar reference |
+| `avatar_image` | Image | | stored image snapshot |
 | `roll` | Char | | size=20 |
 | `level_id` | Many2one → `aps.level` | | ondelete=set null |
 | `home_class_id` | Many2one → `aps.class` | | ondelete=set null, auto-computed (event-driven) |
@@ -724,7 +726,7 @@ All fields are computed and **not stored**:
 | Added Field | Type | Key Attributes |
 |-------------|------|----------------|
 | `avatar_id` | Many2one → `aps.avatar` | self-readable/writable |
-| `avatar_image` | Image | related=`avatar_id.image`, readonly |
+| `avatar_image` | Image | stored image snapshot |
 | `points_balance` | Integer | default=0, self-readable |
 
 ---

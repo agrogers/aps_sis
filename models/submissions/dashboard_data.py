@@ -220,20 +220,28 @@ class APSResourceSubmissionDashboardData(models.Model):
 
     @api.model
     def _get_avatar_and_image_maps(self, partner_ids):
-        """Return avatar and image maps without forcing filestore binary reads."""
+        """Return legacy, saved-user-avatar, and partner-image maps without binary reads."""
         if not partner_ids:
-            return {}, {}
+            return {}, {}, {}
 
-        user_data = self.env['res.users'].sudo().search_read(
+        user_data = self.env['res.users'].sudo().with_context(bin_size=True).search_read(
             [('partner_id', 'in', partner_ids)],
-            ['partner_id', 'avatar_id'],
+            ['id', 'partner_id', 'avatar_id', 'avatar_image', 'write_date'],
         )
         avatar_map = {d['partner_id'][0]: d['avatar_id'][0] for d in user_data if d.get('avatar_id')}
+        avatar_image_map = {
+            d['partner_id'][0]: {
+                'user_id': d['id'],
+                'write_date': d['write_date'],
+            }
+            for d in user_data
+            if d.get('partner_id') and d.get('avatar_image')
+        }
 
         # bin_size=True returns metadata/size marker for binaries instead of reading file contents.
         partners = self.env['res.partner'].sudo().browse(partner_ids).with_context(bin_size=True)
         image_map = {p.id: bool(p.image_128) for p in partners}
-        return avatar_map, image_map
+        return avatar_map, avatar_image_map, image_map
     
     @api.model
     def get_progress_leaderboard_data(self, limit=30, category_id=None, class_id=None):
@@ -364,9 +372,12 @@ class APSResourceSubmissionDashboardData(models.Model):
 
         # Enrich with avatar and partner image info
         partner_ids = [r['student_id'] for r in result]
-        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
+        avatar_map, avatar_image_map, image_map = self._get_avatar_and_image_maps(partner_ids)
         for entry in result:
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            avatar_image = avatar_image_map.get(entry['student_id'])
+            entry['avatar_image_user_id'] = avatar_image['user_id'] if avatar_image else False
+            entry['avatar_image_write_date'] = avatar_image['write_date'] if avatar_image else False
             entry['has_image'] = image_map.get(entry['student_id'], False)
 
         return result
@@ -645,9 +656,12 @@ class APSResourceSubmissionDashboardData(models.Model):
 
         # --- Enrich with avatar / image info ---
         partner_ids = [r['student_id'] for r in result]
-        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
+        avatar_map, avatar_image_map, image_map = self._get_avatar_and_image_maps(partner_ids)
         for entry in result:
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            avatar_image = avatar_image_map.get(entry['student_id'])
+            entry['avatar_image_user_id'] = avatar_image['user_id'] if avatar_image else False
+            entry['avatar_image_write_date'] = avatar_image['write_date'] if avatar_image else False
             entry['has_image'] = image_map.get(entry['student_id'], False)
 
         deadlines = [value for value in student_deadlines.values() if value]
@@ -687,9 +701,12 @@ class APSResourceSubmissionDashboardData(models.Model):
 
         # Enrich with avatar and partner image info
         partner_ids = [r['student_id'] for r in result]
-        avatar_map, image_map = self._get_avatar_and_image_maps(partner_ids)
+        avatar_map, avatar_image_map, image_map = self._get_avatar_and_image_maps(partner_ids)
         for entry in result:
             entry['avatar_id'] = avatar_map.get(entry['student_id'], False)
+            avatar_image = avatar_image_map.get(entry['student_id'])
+            entry['avatar_image_user_id'] = avatar_image['user_id'] if avatar_image else False
+            entry['avatar_image_write_date'] = avatar_image['write_date'] if avatar_image else False
             entry['has_image'] = image_map.get(entry['student_id'], False)
 
         return result

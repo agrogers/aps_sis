@@ -61,6 +61,22 @@ export class CourseExplorerTreeNode extends Component {
         return getColorForPercent(this.props.node.avgWeightedResult);
     }
 
+    get scorePercent() {
+        return Math.round(this.props.node.avgWeightedResult || 0);
+    }
+
+    get progressPercent() {
+        return Math.round(this.props.node.progress || 0);
+    }
+
+    get resourceProgressPercent() {
+        return Math.round(this.props.node.manualProgress || 0);
+    }
+
+    get quizProgressPercent() {
+        return this.progressPercent - this.resourceProgressPercent;
+    }
+
     get allQuizzesSubmitted() {
         return this.props.node.allQuizzesSubmitted !== false;
     }
@@ -120,7 +136,7 @@ export class CourseExplorer extends Component {
         this._lastRenderedMathVersion = -1;
         this._renderMathRaf = 0;
         this._loadDataRequestId = 0;
-        this._lastTooltipVersion = -1;
+        this._tooltipCells = new WeakSet();
         this._programmaticSectionId = 0;
         this._programmaticSectionTimer = null;
         this._urlStateTimer = null;
@@ -1168,27 +1184,30 @@ export class CourseExplorer extends Component {
     // ── Heading level classes ────────────────────────────────────────
 
     _setupTooltipsIfNeeded() {
-        if (this._lastTooltipVersion === this.state.contentVersion) {
-            return;
-        }
-        this._lastTooltipVersion = this.state.contentVersion;
         this._setupTooltips();
     }
 
     _setupTooltips() {
         const el = this.contentRef.el;
-        if (!el) return;
+        if (!el) {
+            return;
+        }
         const treeControls = document.querySelector(".ce_toolbar");
+        const treeContainer = document.querySelector(".ce_tree_container");
         const cells = [];
         if (treeControls) {
             cells.push(...treeControls.querySelectorAll(".ce_progress_cell"));
         }
-        if (el) {
-            cells.push(...el.querySelectorAll(".ce_progress_cell"));
+        if (treeContainer) {
+            cells.push(...treeContainer.querySelectorAll(".ce_progress_cell"));
         }
+        cells.push(...el.querySelectorAll(".ce_progress_cell"));
         cells.forEach((cell) => {
             const tooltip = cell.querySelector(".ce_progress_tooltip");
-            if (!tooltip) return;
+            if (!tooltip || this._tooltipCells.has(cell)) {
+                return;
+            }
+            this._tooltipCells.add(cell);
             cell.addEventListener("mouseenter", () => {
                 const rect = cell.getBoundingClientRect();
                 tooltip.style.left = `${rect.right - 160}px`;

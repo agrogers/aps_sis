@@ -453,7 +453,7 @@ Entries are displayed **left (worst) → right (best)**. Spacers between entries
 | Percent Pie Ranged | `static/src/js/percentpie_ranged_widget.js` | Partial pie progress indicator |
 | Math Formula Renderer | `static/src/js/math_formula_renderer.js` | LaTeX/MathML rendering |
 | Share URL Widget | `static/src/js/share_url_widget.js` | Portal share-link generator |
-| Avatar Selector | `static/src/js/avatar_selector.js` | Student avatar selection UI |
+| Avatar Selector | `aui_enhancements/static/src/js/avatar_selector.js` | Profile avatar selection from APS or purchased Class Economy avatars |
 | Badge Decorator | `static/src/js/badge_decorator_widget.js` | Achievement badges on records |
 
 ---

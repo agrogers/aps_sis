@@ -11,10 +11,9 @@ import { useService } from "@web/core/utils/hooks";
  * resources (all children of the parent at that position).  This allows quick
  * navigation to any sibling at any level of the hierarchy.
  *
- * Dropdowns support multi-level drill-down: if any item in the dropdown itself
- * has children, a ▶ arrow appears next to it.  Clicking that arrow expands the
- * item's children inline (all levels are pre-fetched in a single BFS pass so
- * subsequent expansions are instant).  Each item shows its resource-type icon.
+ * Dropdowns load the immediate children and prefetch one level ahead. Further
+ * levels are prefetched when their parent is expanded. Each item shows its
+ * resource-type icon.
  *
  * Usage in a view:
  *   <field name="display_name_breadcrumb" widget="breadcrumb_pills"
@@ -35,6 +34,8 @@ export class BreadcrumbField extends Component {
     setup() {
         this.action = useService("action");
         this.orm = useService("orm");
+        this._dropdownRequestId = 0;
+        this._dropdownPendingLoads = new Map();
 
         this.state = useState({
             dropdownOpenIndex: null,  // Which arrow index has the dropdown open (null = none)
@@ -46,14 +47,12 @@ export class BreadcrumbField extends Component {
             hasChildren: false,
             // Which arrow indices have siblings available (object: {index: boolean})
             arrowHasSiblings: {},
-            // Pre-fetched descendant trees for the open dropdown.
-            // Each tree is a plain object: { [parentId]: [childRecord, ...], ... }
-            // where childRecord is { id, name, sequence, type_id, parent_ids }.
+            // Loaded children keyed by parent ID for the open dropdown.
             siblingsTree: null,
             childrenTree: null,
-            // Tracks which items are expanded inside the open dropdown.
-            // Plain object used for OWL reactivity: { [id]: true }
+            // Plain objects used for OWL reactivity, keyed by resource ID.
             dropdownExpandedIds: {},
+            dropdownLoadingIds: {},
         });
 
         this.rootRef = useRef("widgetRoot");
@@ -69,6 +68,7 @@ export class BreadcrumbField extends Component {
         // Re-check when props change (different record)
         onWillUpdateProps(async (nextProps) => {
             if (nextProps.record !== this.props.record) {
+                this._closeDropdowns();
                 await Promise.all([
                     this._checkHasChildren(nextProps),
                     this._checkArrowSiblings(nextProps),
@@ -223,72 +223,130 @@ export class BreadcrumbField extends Component {
         }
     }
 
-    /**
-     * Fetch all descendants of a single root parent as a tree object.
-     *
-     * Uses a breadth-first loop so that ALL levels are retrieved in the
-     * minimum number of ORM calls (one per depth level).  The result is a
-     * plain object keyed by parent-ID whose values are arrays of child
-     * records (each containing id, name, sequence, type_id, parent_ids).
-     *
-     * @param {number} rootParentId
-     * @returns {Promise<Object>}  { [parentId]: [childRecord, ...], ... }
-     */
-    async _fetchDescendantTree(rootParentId) {
-        const tree = { [rootParentId]: [] };
-        let frontier = [rootParentId];
-        const visited = new Set([rootParentId]);
+    /** Fetch children for one or more resource IDs in one ORM request. */
+    async _fetchChildren(parentIds) {
+        const ids = Array.isArray(parentIds) ? parentIds : [parentIds];
+        if (!ids.length) return [];
+        return this.orm.searchRead(
+            "aps.resources",
+            [["parent_ids", "in", ids]],
+            ["id", "name", "type_id", "child_count", "parent_ids"],
+            { order: "sequence asc, name asc" }
+        );
+    }
 
-        while (frontier.length > 0) {
-            let records;
-            try {
-                records = await this.orm.searchRead(
-                    "aps.resources",
-                    [["parent_ids", "in", frontier]],
-                    ["id", "name", "sequence", "type_id", "parent_ids"],
-                    { order: "sequence asc, name asc" }
-                );
-            } catch (error) {
-                console.error("BreadcrumbField: failed to fetch descendants", error);
-                break;
-            }
-
-            const frontierSet = new Set(frontier);
-            const nextFrontier = [];
-
-            for (const rec of records) {
-                if (visited.has(rec.id)) continue;
-                visited.add(rec.id);
-
-                // Assign the record to the first of its parent_ids that is in
-                // the current frontier so we preserve tree structure correctly.
-                const parentIds = Array.isArray(rec.parent_ids) ? rec.parent_ids : [];
-                let assignedParent = null;
-                for (const pid of parentIds) {
-                    if (frontierSet.has(pid)) {
-                        assignedParent = pid;
-                        break;
-                    }
-                }
-
-                if (assignedParent !== null) {
-                    if (!tree[assignedParent]) tree[assignedParent] = [];
-                    tree[assignedParent].push(rec);
-                    tree[rec.id] = [];   // initialise children bucket
-                    nextFrontier.push(rec.id);
-                }
-            }
-
-            frontier = nextFrontier;
+    _loadDropdownChildren(parentIds, treeName, requestId) {
+        const tree = this.state[treeName];
+        if (!tree || requestId !== this._dropdownRequestId) {
+            return Promise.resolve();
         }
 
-        return tree;
+        const missingParentIds = [];
+        const pendingPromises = new Set();
+        for (const parentId of new Set(parentIds)) {
+            if (Object.prototype.hasOwnProperty.call(tree, parentId)) continue;
+            const pending = this._dropdownPendingLoads.get(parentId);
+            if (pending) {
+                pendingPromises.add(pending);
+            } else {
+                missingParentIds.push(parentId);
+            }
+        }
+
+        const loads = [...pendingPromises];
+        if (missingParentIds.length) {
+            loads.push(
+                this._fetchAndStoreDropdownChildren(
+                    missingParentIds, treeName, requestId
+                )
+            );
+        }
+        return Promise.all(loads);
+    }
+
+    _fetchAndStoreDropdownChildren(parentIds, treeName, requestId) {
+        const loadingIds = { ...this.state.dropdownLoadingIds };
+        for (const parentId of parentIds) {
+            loadingIds[parentId] = true;
+        }
+        this.state.dropdownLoadingIds = loadingIds;
+
+        const parentIdSet = new Set(parentIds);
+        const fetchPromise = this._fetchChildren(parentIds);
+        let loadPromise;
+        loadPromise = fetchPromise.then((records) => {
+            if (requestId !== this._dropdownRequestId) return;
+            const currentTree = this.state[treeName];
+            if (!currentTree) return;
+
+            const nextTree = { ...currentTree };
+            for (const parentId of parentIds) {
+                nextTree[parentId] = [];
+            }
+
+            const seenIds = new Set(Object.keys(nextTree).map(Number));
+            for (const children of Object.values(nextTree)) {
+                for (const child of children) {
+                    seenIds.add(child.id);
+                }
+            }
+
+            for (const record of records) {
+                if (seenIds.has(record.id)) continue;
+                const recordParentIds = Array.isArray(record.parent_ids)
+                    ? record.parent_ids
+                    : [];
+                const assignedParentId = recordParentIds.find(
+                    (parentId) => parentIdSet.has(parentId)
+                );
+                if (assignedParentId === undefined) continue;
+
+                nextTree[assignedParentId] = [
+                    ...(nextTree[assignedParentId] || []),
+                    record,
+                ];
+                seenIds.add(record.id);
+            }
+
+            this.state[treeName] = nextTree;
+        }).finally(() => {
+            if (requestId === this._dropdownRequestId) {
+                const currentLoadingIds = { ...this.state.dropdownLoadingIds };
+                for (const parentId of parentIds) {
+                    delete currentLoadingIds[parentId];
+                }
+                this.state.dropdownLoadingIds = currentLoadingIds;
+            }
+            for (const parentId of parentIds) {
+                if (this._dropdownPendingLoads.get(parentId) === loadPromise) {
+                    this._dropdownPendingLoads.delete(parentId);
+                }
+            }
+        });
+
+        for (const parentId of parentIds) {
+            this._dropdownPendingLoads.set(parentId, loadPromise);
+        }
+        return loadPromise;
+    }
+
+    _prefetchDropdownChildren(parentIds, treeName, requestId) {
+        const tree = this.state[treeName];
+        if (!tree || requestId !== this._dropdownRequestId) return;
+
+        const ids = [...new Set(parentIds)].filter(
+            (parentId) => !Object.prototype.hasOwnProperty.call(tree, parentId)
+        );
+        if (!ids.length) return;
+
+        this._loadDropdownChildren(ids, treeName, requestId).catch((error) => {
+            console.error("BreadcrumbField: failed to prefetch child resources", error);
+        });
     }
 
     /**
-     * Build a flat, depth-annotated list of visible dropdown items from a
-     * pre-fetched tree.  Items whose sub-tree is expanded are followed
-     * immediately by their children (recursively).
+     * Build a flat, depth-annotated list of loaded dropdown items. Items whose
+     * sub-tree is expanded are followed by its loaded children.
      *
      * @param {Object} tree          - { [parentId]: [records] }
      * @param {number} parentId      - root whose children to render first
@@ -297,15 +355,21 @@ export class BreadcrumbField extends Component {
      * @param {number} depth         - current nesting depth (0 = top level)
      * @returns {Array}
      */
-    _buildDropdownItems(tree, parentId, expandedIds, excludeId = null, depth = 0) {
+    _buildDropdownItems(
+        tree, parentId, expandedIds, excludeId = null, depth = 0, ancestorIds = null
+    ) {
         const children = tree[parentId] || [];
         const result = [];
+        const ancestors = ancestorIds || new Set([parentId]);
 
         for (const item of children) {
-            if (item.id === excludeId) continue;
+            if (item.id === excludeId || ancestors.has(item.id)) continue;
 
+            const itemChildrenLoaded = Object.prototype.hasOwnProperty.call(tree, item.id);
             const itemChildren = tree[item.id] || [];
-            const hasChildren = itemChildren.length > 0;
+            const hasChildren = itemChildrenLoaded
+                ? itemChildren.length > 0
+                : item.child_count > 0;
             const isExpanded = !!expandedIds[item.id];
 
             result.push({
@@ -318,13 +382,16 @@ export class BreadcrumbField extends Component {
                     : null,
                 hasChildren,
                 isExpanded,
+                isLoading: !!this.state.dropdownLoadingIds[item.id],
                 depth,
             });
 
             if (isExpanded && hasChildren) {
+                const childAncestors = new Set(ancestors);
+                childAncestors.add(item.id);
                 result.push(
                     ...this._buildDropdownItems(
-                        tree, item.id, expandedIds, null, depth + 1
+                        tree, item.id, expandedIds, null, depth + 1, childAncestors
                     )
                 );
             }
@@ -335,7 +402,7 @@ export class BreadcrumbField extends Component {
 
     /**
      * Flat, depth-annotated list of visible items for the sibling dropdown.
-     * Computed from the pre-fetched tree so re-renders are instant once loaded.
+     * Computed from the children loaded so far.
      */
     get siblingDropdownItems() {
         const { dropdownOpenIndex, siblingsTree, dropdownExpandedIds } = this.state;
@@ -353,7 +420,7 @@ export class BreadcrumbField extends Component {
 
     /**
      * Flat, depth-annotated list of visible items for the children dropdown.
-     * Computed from the pre-fetched tree so re-renders are instant once loaded.
+     * Computed from the children loaded so far.
      */
     get childrenDropdownItems() {
         const { childrenTree, dropdownExpandedIds } = this.state;
@@ -368,9 +435,8 @@ export class BreadcrumbField extends Component {
 
     /**
      * Handle click on an arrow between breadcrumb pills.
-     * Opens a dropdown showing sibling resources at that position.
-     * All descendants of the siblings are pre-fetched in a BFS pass so that
-     * in-dropdown expansions are instant (no per-click round-trips).
+     * Opens a dropdown showing sibling resources at that position. The
+     * immediate level is loaded first, then its children are prefetched.
      * @param {MouseEvent} ev
      */
     async onArrowClick(ev) {
@@ -383,7 +449,7 @@ export class BreadcrumbField extends Component {
 
         // If clicking the same arrow that's already open, close it
         if (this.state.dropdownOpenIndex === arrowIndex) {
-            this.state.dropdownOpenIndex = null;
+            this._closeDropdowns();
             return;
         }
 
@@ -400,20 +466,36 @@ export class BreadcrumbField extends Component {
             return;
         }
 
-        // Close children dropdown when opening sibling dropdown
+        const requestId = ++this._dropdownRequestId;
+        this._dropdownPendingLoads.clear();
         this.state.childrenDropdownOpen = false;
+        this.state.childrenLoading = false;
         this.state.dropdownOpenIndex = arrowIndex;
         this.state.loading = true;
-        this.state.siblingsTree = null;
+        this.state.siblingsTree = {};
+        this.state.childrenTree = null;
         this.state.dropdownExpandedIds = {};
+        this.state.dropdownLoadingIds = {};
 
         try {
-            this.state.siblingsTree = await this._fetchDescendantTree(parentId);
+            await this._loadDropdownChildren([parentId], "siblingsTree", requestId);
+            if (requestId !== this._dropdownRequestId) return;
+            const children = this.state.siblingsTree[parentId] || [];
+            this._prefetchDropdownChildren(
+                children.filter((child) => child.child_count > 0)
+                    .map((child) => child.id),
+                "siblingsTree",
+                requestId
+            );
         } catch (error) {
             console.error("BreadcrumbField: failed to load sibling resources", error);
-            this.state.siblingsTree = {};
+            if (requestId === this._dropdownRequestId) {
+                this.state.siblingsTree = { [parentId]: [] };
+            }
         } finally {
-            this.state.loading = false;
+            if (requestId === this._dropdownRequestId) {
+                this.state.loading = false;
+            }
         }
     }
 
@@ -424,25 +506,21 @@ export class BreadcrumbField extends Component {
     onSiblingClick(ev) {
         const id = parseInt(ev.currentTarget.dataset.resId, 10);
         if (id) {
-            this.state.dropdownOpenIndex = null;
+            this._closeDropdowns();
             this.openResource(id);
         }
     }
 
     /**
      * Handle click on the current (final) breadcrumb pill.
-     * Opens a dropdown showing child resources.
-     * All descendants are pre-fetched in a BFS pass so that in-dropdown
-     * expansions are instant (no per-click round-trips).
+     * Opens a dropdown showing child resources. The immediate level is loaded
+     * first, then its children are prefetched.
      * @param {MouseEvent} ev
      */
     async onCurrentClick(ev) {
-        // Close sibling dropdowns first
-        this.state.dropdownOpenIndex = null;
-
         // Toggle children dropdown
         if (this.state.childrenDropdownOpen) {
-            this.state.childrenDropdownOpen = false;
+            this._closeDropdowns();
             return;
         }
 
@@ -452,18 +530,36 @@ export class BreadcrumbField extends Component {
         const currentId = breadcrumbs[breadcrumbs.length - 1].id;
         if (!currentId) return;
 
+        const requestId = ++this._dropdownRequestId;
+        this._dropdownPendingLoads.clear();
+        this.state.dropdownOpenIndex = null;
+        this.state.loading = false;
+        this.state.siblingsTree = null;
         this.state.childrenDropdownOpen = true;
         this.state.childrenLoading = true;
-        this.state.childrenTree = null;
+        this.state.childrenTree = {};
         this.state.dropdownExpandedIds = {};
+        this.state.dropdownLoadingIds = {};
 
         try {
-            this.state.childrenTree = await this._fetchDescendantTree(currentId);
+            await this._loadDropdownChildren([currentId], "childrenTree", requestId);
+            if (requestId !== this._dropdownRequestId) return;
+            const children = this.state.childrenTree[currentId] || [];
+            this._prefetchDropdownChildren(
+                children.filter((child) => child.child_count > 0)
+                    .map((child) => child.id),
+                "childrenTree",
+                requestId
+            );
         } catch (error) {
             console.error("BreadcrumbField: failed to load child resources", error);
-            this.state.childrenTree = {};
+            if (requestId === this._dropdownRequestId) {
+                this.state.childrenTree = { [currentId]: [] };
+            }
         } finally {
-            this.state.childrenLoading = false;
+            if (requestId === this._dropdownRequestId) {
+                this.state.childrenLoading = false;
+            }
         }
     }
 
@@ -474,31 +570,72 @@ export class BreadcrumbField extends Component {
     onChildClick(ev) {
         const id = parseInt(ev.currentTarget.dataset.resId, 10);
         if (id) {
-            this.state.childrenDropdownOpen = false;
+            this._closeDropdowns();
             this.openResource(id);
         }
     }
 
     /**
      * Toggle the in-dropdown expansion of an item that has children.
-     * No network round-trip — the full tree was pre-fetched on dropdown open.
+     * Uses prefetched children when available and starts prefetching one level
+     * deeper after the branch opens.
      * Uses object spread to replace the state property so OWL reactivity
      * reliably detects the change.
      * @param {MouseEvent} ev
      */
-    onExpandDropdownItem(ev) {
+    async onExpandDropdownItem(ev) {
         const itemId = parseInt(ev.currentTarget.dataset.itemId, 10);
         const current = this.state.dropdownExpandedIds;
         if (current[itemId]) {
-            // Remove by spreading and omitting this key
-            const next = {};
-            for (const key of Object.keys(current)) {
-                if (parseInt(key, 10) !== itemId) next[key] = current[key];
-            }
+            const next = { ...current };
+            delete next[itemId];
             this.state.dropdownExpandedIds = next;
-        } else {
-            this.state.dropdownExpandedIds = { ...current, [itemId]: true };
+            return;
         }
+
+        const treeName = this.state.childrenDropdownOpen ? "childrenTree" : "siblingsTree";
+        const tree = this.state[treeName];
+        if (!tree) return;
+
+        this.state.dropdownExpandedIds = { ...current, [itemId]: true };
+        const requestId = this._dropdownRequestId;
+        try {
+            await this._loadDropdownChildren([itemId], treeName, requestId);
+            if (requestId !== this._dropdownRequestId) return;
+            const children = this.state[treeName][itemId] || [];
+            this._prefetchDropdownChildren(
+                children.filter((child) => child.child_count > 0)
+                    .map((child) => child.id),
+                treeName,
+                requestId
+            );
+        } catch (error) {
+            console.error(`BreadcrumbField: failed to load children for resource ${itemId}`, error);
+            if (requestId === this._dropdownRequestId) {
+                const expandedIds = { ...this.state.dropdownExpandedIds };
+                delete expandedIds[itemId];
+                this.state.dropdownExpandedIds = expandedIds;
+            }
+        } finally {
+            if (requestId === this._dropdownRequestId) {
+                const loadingIds = { ...this.state.dropdownLoadingIds };
+                delete loadingIds[itemId];
+                this.state.dropdownLoadingIds = loadingIds;
+            }
+        }
+    }
+
+    _closeDropdowns() {
+        this._dropdownRequestId++;
+        this.state.dropdownOpenIndex = null;
+        this.state.loading = false;
+        this.state.childrenDropdownOpen = false;
+        this.state.childrenLoading = false;
+        this.state.siblingsTree = null;
+        this.state.childrenTree = null;
+        this.state.dropdownExpandedIds = {};
+        this.state.dropdownLoadingIds = {};
+        this._dropdownPendingLoads.clear();
     }
 
     /** Close the dropdown when a click occurs outside the widget. */
@@ -506,8 +643,7 @@ export class BreadcrumbField extends Component {
         if (this.state.dropdownOpenIndex === null && !this.state.childrenDropdownOpen) return;
         const el = this.rootRef.el;
         if (el && !el.contains(ev.target)) {
-            this.state.dropdownOpenIndex = null;
-            this.state.childrenDropdownOpen = false;
+            this._closeDropdowns();
         }
     }
 }

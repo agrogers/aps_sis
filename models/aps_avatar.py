@@ -115,7 +115,11 @@ class ApsAvatar(models.Model):
 
         avatar_ids = all_avatars.ids
         for user in users_without:
-            user.avatar_id = random.choice(avatar_ids)
+            avatar = self.browse(random.choice(avatar_ids))
+            user.write({
+                'avatar_id': avatar.id,
+                'avatar_image': avatar.image,
+            })
 
         return {
             'type': 'ir.actions.client',
