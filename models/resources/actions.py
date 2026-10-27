@@ -1393,9 +1393,14 @@ class APSResource(models.Model):
             for task in tasks:
                 task_map[task.resource_id.id] = task
 
+        def _is_quiz_resource(resource):
+            return bool(
+                resource.type_id
+                and (resource.type_id.name or '').strip().casefold() == 'quiz'
+            )
+
         def _quiz_id_from_resource(resource):
-            type_name = (resource.type_id.name or '').strip() if resource.type_id else ''
-            if type_name.casefold() != 'quiz':
+            if not _is_quiz_resource(resource):
                 return False
             try:
                 values = parse_qs(urlsplit(resource.url or '').query).get('quiz_id', [])
@@ -1444,6 +1449,7 @@ class APSResource(models.Model):
                         'name': child.name or '',
                         'displayName': _assessment_display_name(child),
                         'typeName': child.type_id.name or '',
+                        'isQuiz': _is_quiz_resource(child),
                         'quizId': _quiz_id_from_resource(child),
                         'weightedResult': task.weighted_result if task else 0,
                         'attempts': task.submission_count if task else 0,
@@ -1460,6 +1466,7 @@ class APSResource(models.Model):
                         'name': sup.name or '',
                         'displayName': _assessment_display_name(sup),
                         'typeName': sup.type_id.name or '',
+                        'isQuiz': _is_quiz_resource(sup),
                         'quizId': _quiz_id_from_resource(sup),
                         'weightedResult': task.weighted_result if task else 0,
                         'attempts': task.submission_count if task else 0,
@@ -1476,6 +1483,7 @@ class APSResource(models.Model):
                     'name': assessment.name or '',
                     'displayName': _assessment_display_name(assessment),
                     'typeName': assessment.type_id.name or '',
+                    'isQuiz': _is_quiz_resource(assessment),
                     'quizId': _quiz_id_from_resource(assessment),
                     'weightedResult': task.weighted_result if task else 0,
                     'attempts': task.submission_count if task else 0,
@@ -1483,17 +1491,53 @@ class APSResource(models.Model):
                     'state': task.state if task else 'unassigned',
                 })
             sec['quizzes'] = quizzes
-            # Average weighted result across quizzes for this section
-            wrs = [q['weightedResult'] for q in quizzes if q.get('weightedResult')]
-            sec['avgWeightedResult'] = round(sum(wrs) / len(wrs), 1) if wrs else 0
+            quiz_results = [
+                q['weightedResult']
+                for q in quizzes
+                if q.get('isQuiz') and q.get('weightedResult')
+            ]
+            other_results = [
+                q['weightedResult']
+                for q in quizzes
+                if not q.get('isQuiz') and q.get('weightedResult')
+            ]
+            quiz_average = (
+                round(sum(quiz_results) / len(quiz_results), 1)
+                if quiz_results else 0
+            )
+            other_average = (
+                round(sum(other_results) / len(other_results), 1)
+                if other_results else 0
+            )
+            available_averages = []
+            if quiz_results:
+                available_averages.append(quiz_average)
+            if other_results:
+                available_averages.append(other_average)
+            sec.update({
+                'quizAvgWeightedResult': quiz_average,
+                'otherAvgWeightedResult': other_average,
+                'hasQuizScore': bool(quiz_results),
+                'hasOtherScore': bool(other_results),
+                'hasScore': bool(available_averages),
+                'avgWeightedResult': (
+                    round(sum(available_averages) / len(available_averages), 1)
+                    if available_averages else 0
+                ),
+            })
 
-        # Propagate avgWeightedResult, hasQuizzes and quiz submission
-        # status to tree nodes.
+        # Propagate combined and split scores, assessment presence, and quiz
+        # submission status to tree nodes.
         def _apply_avg_to_tree(nodes):
             for node in nodes:
                 sec = sections_map.get(node['id'])
                 if sec:
                     node['avgWeightedResult'] = sec.get('avgWeightedResult', 0)
+                    node['quizAvgWeightedResult'] = sec.get('quizAvgWeightedResult', 0)
+                    node['otherAvgWeightedResult'] = sec.get('otherAvgWeightedResult', 0)
+                    node['hasQuizScore'] = sec.get('hasQuizScore', False)
+                    node['hasOtherScore'] = sec.get('hasOtherScore', False)
+                    node['hasScore'] = sec.get('hasScore', False)
                     node['hasQuizzes'] = bool(sec.get('quizzes'))
                     quizzes = sec.get('quizzes', [])
                     if quizzes:
@@ -1505,6 +1549,11 @@ class APSResource(models.Model):
                         node['allQuizzesSubmitted'] = True
                 else:
                     node['avgWeightedResult'] = 0
+                    node['quizAvgWeightedResult'] = 0
+                    node['otherAvgWeightedResult'] = 0
+                    node['hasQuizScore'] = False
+                    node['hasOtherScore'] = False
+                    node['hasScore'] = False
                     node['hasQuizzes'] = False
                     node['allQuizzesSubmitted'] = True
                 _apply_avg_to_tree(node.get('children', []))

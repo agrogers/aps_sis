@@ -32,14 +32,6 @@
             <t t-if="props.node.progress !== undefined">
                 <div class="ce_progress_cell">
                     <svg class="ce_progress_ring" viewBox="0 0 36 36">
-                        <defs t-if="props.node.hasQuizzes and !allQuizzesSubmitted">
-                            <linearGradient t-att-id="gradientId" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#d3d3d3"/>
-                                <stop offset="50%" stop-color="#d3d3d3"/>
-                                <stop offset="50%" t-att-stop-color="avgColor"/>
-                                <stop offset="100%" t-att-stop-color="avgColor"/>
-                            </linearGradient>
-                        </defs>
                         <path class="ce_progress_ring_bg"
                               d="M18 2.0845
                                  a 15.9155 15.9155 0 0 1 0 31.831
@@ -54,38 +46,55 @@
                                  a 15.9155 15.9155 0 0 1 0 -31.831"
                               fill="none"
                               stroke-width="3"/>
-                        <circle cx="18" cy="18" r="11"
-                                t-att-fill="props.node.hasQuizzes ? (allQuizzesSubmitted ? avgColor : 'url(#' + gradientId + ')') : 'transparent'"
-                            stroke="none"
-                            t-att-class="props.node.hasQuizzes ? 'ce_quiz_score_circle' : ''"
-                            t-on-click="onQuizClick"/>
+                        <path d="M 7 18 A 11 11 0 0 1 29 18 Z"
+                              t-att-fill="props.node.hasQuizzes ? quizScoreColor : 'transparent'"
+                              t-att-class="props.node.hasQuizzes ? 'ce_quiz_score_circle' : ''"
+                              t-on-click="onQuizClick"/>
+                        <path d="M 29 18 A 11 11 0 0 1 7 18 Z"
+                              t-att-fill="props.node.hasQuizzes ? otherScoreColor : 'transparent'"
+                              t-att-class="props.node.hasQuizzes ? 'ce_quiz_score_circle' : ''"
+                              t-on-click="onQuizClick"/>
                     </svg>
                     <span class="ce_progress_text"
                           t-att-style="props.node.hasQuizzes ? '' : 'display:none'">
                     </span>
                     <div class="ce_progress_tooltip">
-                        <div class="ce_tooltip_row">
-                            <span class="ce_tooltip_label">SCORE</span>
-                            <div class="ce_tooltip_value">
-                                <PercentPie value="scorePercent" showText="false"/>
+                        <t t-if="props.node.hasScore">
+                            <div class="ce_tooltip_row">
+                                <span class="ce_tooltip_label">SCORE</span>
+                                <div class="ce_tooltip_value">
+                                    <PercentPie value="scorePercent" showText="false"/>
+                                </div>
                             </div>
-                        </div>
+                            <div t-if="props.node.hasQuizScore" class="ce_tooltip_row ce_tooltip_row_secondary">
+                                <span class="ce_tooltip_label">- Quizzes</span>
+                                <div class="ce_tooltip_value">
+                                    <PercentPie value="quizScorePercent" showText="false"/>
+                                </div>
+                            </div>
+                            <div t-if="props.node.hasOtherScore" class="ce_tooltip_row ce_tooltip_row_secondary">
+                                <span class="ce_tooltip_label">- Other</span>
+                                <div class="ce_tooltip_value">
+                                    <PercentPie value="otherScorePercent" showText="false"/>
+                                </div>
+                            </div>
+                        </t>
                         <div class="ce_tooltip_row">
                             <span class="ce_tooltip_label">PROGRESS</span>
                             <div class="ce_tooltip_value">
                                 <PercentPie value="progressPercent" showText="false"/>
                             </div>
                         </div>
-                        <div class="ce_tooltip_row">
-                            <span class="ce_tooltip_label">- Resource</span>
-                            <div class="ce_tooltip_value">
-                                <PercentPie value="resourceProgressPercent" showText="false"/>
-                            </div>
-                        </div>
-                        <div class="ce_tooltip_row">
+                        <div t-if="hasQuizProgress" class="ce_tooltip_row ce_tooltip_row_secondary">
                             <span class="ce_tooltip_label">- Quizzes</span>
                             <div class="ce_tooltip_value">
                                 <PercentPie value="quizProgressPercent" showText="false"/>
+                            </div>
+                        </div>
+                        <div class="ce_tooltip_row ce_tooltip_row_secondary">
+                            <span class="ce_tooltip_label">- Resource</span>
+                            <div class="ce_tooltip_value">
+                                <PercentPie value="resourceProgressPercent" showText="false"/>
                             </div>
                         </div>
                     </div>
@@ -255,10 +264,13 @@
                                 </t>
                             </h3>
                             <!-- Average weighted result pie (links to quizzes table) -->
-                            <t t-if="section.quizzes and section.quizzes.length">
+                            <t t-if="section.hasScore">
                                 <a href="#" class="ce_quiz_scroll_link"
                                    t-on-click="(ev) => { ev.preventDefault(); this.scrollToQuiz(ev, section.id); }">
-                                    <PercentPie value="section.avgWeightedResult || 0"/>
+                                    <PercentPie
+                                        value="section.avgWeightedResult"
+                                        string="'Average Score'"
+                                        showText="false"/>
                                 </a>
                             </t>
                             <!-- Completion checkbox for resources that provided notes -->

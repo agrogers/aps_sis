@@ -588,6 +588,10 @@
     padding: 3px 0;
 }
 
+.ce_tooltip_row_secondary .o_pie {
+    transform: scale(0.7);
+}
+
 .ce_tooltip_label {
     color: var(--o-text-muted, #6c757d);
     font-weight: 400;

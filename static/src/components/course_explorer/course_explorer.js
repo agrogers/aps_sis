@@ -55,14 +55,28 @@ export class CourseExplorerTreeNode extends Component {
         return `padding-left: ${this.props.depth * 20}px`;
     }
 
-    get avgColor() {
-        // Show light gray when quizzes exist but none have been scored yet
-        if (!this.props.node.avgWeightedResult) return '#d3d3d3';
-        return getColorForPercent(this.props.node.avgWeightedResult);
-    }
-
     get scorePercent() {
         return Math.round(this.props.node.avgWeightedResult || 0);
+    }
+
+    get quizScorePercent() {
+        return Math.round(this.props.node.quizAvgWeightedResult || 0);
+    }
+
+    get otherScorePercent() {
+        return Math.round(this.props.node.otherAvgWeightedResult || 0);
+    }
+
+    get quizScoreColor() {
+        return this.props.node.hasQuizScore
+            ? getColorForPercent(this.props.node.quizAvgWeightedResult)
+            : '#d3d3d3';
+    }
+
+    get otherScoreColor() {
+        return this.props.node.hasOtherScore
+            ? getColorForPercent(this.props.node.otherAvgWeightedResult)
+            : '#d3d3d3';
     }
 
     get progressPercent() {
@@ -70,19 +84,19 @@ export class CourseExplorerTreeNode extends Component {
     }
 
     get resourceProgressPercent() {
-        return Math.round(this.props.node.manualProgress || 0);
+        const manualProgress = this.props.node.manualProgress || 0;
+        const manualProgressMax = this.props.node.manualProgressMax ?? 100;
+        return manualProgressMax > 0
+            ? Math.round((manualProgress / manualProgressMax) * 100)
+            : 0;
     }
 
     get quizProgressPercent() {
-        return this.progressPercent - this.resourceProgressPercent;
+        return Math.round(this.props.node.quizCompletionPercent || 0);
     }
 
-    get allQuizzesSubmitted() {
-        return this.props.node.allQuizzesSubmitted !== false;
-    }
-
-    get gradientId() {
-        return 'quiz-grad-' + this.props.node.id;
+    get hasQuizProgress() {
+        return (this.props.node.quizQuestionCount || 0) > 0;
     }
 
     onToggleClick(ev) {

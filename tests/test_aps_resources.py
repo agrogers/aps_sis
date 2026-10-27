@@ -358,6 +358,120 @@ class TestAPSResource(TransactionCase):
         self.assertFalse(quizzes[quiz_resources[1].id]['quizId'])
         self.assertFalse(quizzes[quiz_resources[2].id]['quizId'])
 
+    def _create_course_explorer_score_fixture(
+        self,
+        quiz_scores=(),
+        other_scores=(),
+        name_suffix='',
+    ):
+        category = self.env['aps.subject.category'].create({
+            'name': f'Assessment Score Category {name_suffix}',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': f'Assessment Score Subject {name_suffix}',
+            'category_id': category.id,
+        })
+        section_resource = self.env['aps.resources'].create({
+            'name': f'Assessment Score Section {name_suffix}',
+            'has_notes': 'yes',
+            'notes': '<p>Assessment score fixture.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+        quiz_type = self.env['aps.resource.types'].create({
+            'name': 'Quiz',
+            'assessment': True,
+        })
+        other_type = self.env['aps.resource.types'].create({
+            'name': 'Test',
+            'assessment': True,
+        })
+        student = self.env.user.partner_id
+
+        for label, resource_type, scores in (
+            ('Quiz', quiz_type, quiz_scores),
+            ('Other', other_type, other_scores),
+        ):
+            for index, score in enumerate(scores):
+                assessment = self.env['aps.resources'].create({
+                    'name': f'{label} Score Item {index}',
+                    'type_id': resource_type.id,
+                    'show_in_hierarchy': True,
+                    'subjects': [(6, 0, [subject.id])],
+                    'parent_ids': [(6, 0, [section_resource.id])],
+                    'primary_parent_id': section_resource.id,
+                })
+                task = self.env['aps.resource.task'].create({
+                    'resource_id': assessment.id,
+                    'student_id': student.id,
+                })
+                if score is not None:
+                    self.env['aps.resource.submission'].create({
+                        'task_id': task.id,
+                        'state': 'submitted',
+                        'score': score,
+                        'out_of_marks': 100,
+                    })
+
+        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        section = next(
+            item for item in result['contentSections']
+            if item['id'] == section_resource.id
+        )
+        node = next(
+            item for item in result['tree']
+            if item['id'] == section_resource.id
+        )
+        return section, node
+
+    def test_course_explorer_scores_average_quiz_and_other_categories_equally(self):
+        section, node = self._create_course_explorer_score_fixture(
+            quiz_scores=(90, 50),
+            other_scores=(40, 80),
+        )
+
+        self.assertEqual(section['quizAvgWeightedResult'], 70.0)
+        self.assertEqual(section['otherAvgWeightedResult'], 60.0)
+        self.assertEqual(section['avgWeightedResult'], 65.0)
+        self.assertTrue(section['hasQuizScore'])
+        self.assertTrue(section['hasOtherScore'])
+        self.assertTrue(section['hasScore'])
+        self.assertEqual(node['avgWeightedResult'], 65.0)
+        self.assertEqual(node['quizAvgWeightedResult'], 70.0)
+        self.assertEqual(node['otherAvgWeightedResult'], 60.0)
+
+    def test_course_explorer_scores_use_available_category_and_exclude_zero_results(self):
+        section, node = self._create_course_explorer_score_fixture(
+            quiz_scores=(80,),
+            other_scores=(0,),
+        )
+
+        self.assertEqual(section['quizAvgWeightedResult'], 80.0)
+        self.assertEqual(section['otherAvgWeightedResult'], 0)
+        self.assertEqual(section['avgWeightedResult'], 80.0)
+        self.assertTrue(section['hasQuizScore'])
+        self.assertFalse(section['hasOtherScore'])
+        self.assertTrue(node['hasScore'])
+
+    def test_course_explorer_scores_support_other_only_and_hide_missing_scores(self):
+        section, node = self._create_course_explorer_score_fixture(
+            other_scores=(65,),
+        )
+        self.assertFalse(section['hasQuizScore'])
+        self.assertTrue(section['hasOtherScore'])
+        self.assertEqual(section['avgWeightedResult'], 65.0)
+
+        empty_section, empty_node = self._create_course_explorer_score_fixture(
+            quiz_scores=(None,),
+            other_scores=(None,),
+            name_suffix='No Scores',
+        )
+        self.assertFalse(empty_section['hasQuizScore'])
+        self.assertFalse(empty_section['hasOtherScore'])
+        self.assertFalse(empty_section['hasScore'])
+        self.assertEqual(empty_section['avgWeightedResult'], 0)
+        self.assertFalse(empty_node['hasScore'])
+
     def test_course_explorer_data_includes_matching_chapter_tag_assessments(self):
         category = self.env['aps.subject.category'].create({
             'name': 'Chapter Assessment Category',

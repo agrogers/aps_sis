@@ -100,7 +100,7 @@
         <field name="name">aps.resources.hierarchy</field>
         <field name="model">aps.resources</field>
         <field name="arch" type="xml">
-                <list default_order="create_date desc,sequence,name">
+                <list default_order="sequence,name">
                     <field name="sequence" widget="handle"/>
                     <field name="id" string="ID" optional="show"/>
                     <field name="type_icon" string="Icon" widget="image" options="{'size': [24, 24]}" optional="hide"/>
@@ -121,6 +121,7 @@
                     <field name="has_default_answer" optional="hide"/>
                     <field name="has_child_resources" optional="hide"/>
                     <field name="has_supporting_resources" optional="hide"/>
+                    <field name="ai_action" optional="hide"/>
                     <field name="create_date" optional="hide"/>
                     <field name="write_date" optional="hide"/>
                 </list>
