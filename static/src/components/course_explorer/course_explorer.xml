@@ -66,19 +66,27 @@
                     <div class="ce_progress_tooltip">
                         <div class="ce_tooltip_row">
                             <span class="ce_tooltip_label">SCORE</span>
-                            <span class="ce_tooltip_value"><t t-esc="scorePercent"/>%</span>
+                            <div class="ce_tooltip_value">
+                                <PercentPie value="scorePercent" showText="false"/>
+                            </div>
                         </div>
                         <div class="ce_tooltip_row">
                             <span class="ce_tooltip_label">PROGRESS</span>
-                            <span class="ce_tooltip_value"><t t-esc="progressPercent"/>%</span>
+                            <div class="ce_tooltip_value">
+                                <PercentPie value="progressPercent" showText="false"/>
+                            </div>
                         </div>
                         <div class="ce_tooltip_row">
-                            <span class="ce_tooltip_label">Resource</span>
-                            <span class="ce_tooltip_value"><t t-esc="resourceProgressPercent"/>%</span>
+                            <span class="ce_tooltip_label">- Resource</span>
+                            <div class="ce_tooltip_value">
+                                <PercentPie value="resourceProgressPercent" showText="false"/>
+                            </div>
                         </div>
                         <div class="ce_tooltip_row">
-                            <span class="ce_tooltip_label">Quizzes</span>
-                            <span class="ce_tooltip_value"><t t-esc="quizProgressPercent"/>%</span>
+                            <span class="ce_tooltip_label">- Quizzes</span>
+                            <div class="ce_tooltip_value">
+                                <PercentPie value="quizProgressPercent" showText="false"/>
+                            </div>
                         </div>
                     </div>
                 </div>

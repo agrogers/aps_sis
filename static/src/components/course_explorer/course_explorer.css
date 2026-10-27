@@ -411,6 +411,10 @@
     /* color: var(--o-text, #333); */
 }
 
+.ce_section_body details {
+    line-height: 1.5em;
+}
+
 /* Inherit standard Odoo HTML field styling inside sections */
 .ce_section_body h1,
 .ce_section_body h2,

@@ -108,7 +108,7 @@ export class CourseExplorerTreeNode extends Component {
         }
     }
 }
-CourseExplorerTreeNode.components = { CourseExplorerTreeNode };
+CourseExplorerTreeNode.components = { CourseExplorerTreeNode, PercentPie };
 
 // ─── Main course explorer client-action component ─────────────────────
 
