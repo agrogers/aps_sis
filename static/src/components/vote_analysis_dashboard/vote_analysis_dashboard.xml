@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 <t t-name="aps_sis.VoteAnalysisDashboard" owl="1">
-<div class="o_vote_analysis_dashboard h-100 overflow-auto p-4">
+<div class="o_vote_analysis_dashboard wallpaper h-100 overflow-auto p-4">
 
     <div class="d-flex align-items-center justify-content-between mb-3 px-2">
         <div class="d-flex align-items-center">

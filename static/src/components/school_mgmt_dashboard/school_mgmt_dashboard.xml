@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 <t t-name="aps_sis.SchoolMgmtDashboard" owl="1">
-<div class="smd-dashboard vh-100 overflow-auto p-4">
+<div class="smd-dashboard wallpaper vh-100 overflow-auto p-4">
 
     <!-- Header -->
     <div class="smd-header d-flex align-items-center mb-4 px-2">

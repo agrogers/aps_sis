@@ -3,3 +3,6 @@
 - Enrol students is bad. A single form that allows me to select all the subjects that the student will do and enter the start date once would be better.
 - The classes on the Create Class Enrolments should be filtered by Start Date. At present it shows classes from all years.
 [x] Check that the html AI feedback control is processing formulas correctly https://mvis.school/odoo/apex-submissions/740263/aps.resource.submission/740257
+
+- Add an Exam Mode which disables the Discuss messaging. Ideally tie direct to submissions that have a start time and need a new end time
+

@@ -1,5 +1,10 @@
+import math
+from datetime import timedelta
+from urllib.parse import parse_qs, quote, urlsplit
+
+from markupsafe import Markup
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.safe_eval import safe_eval
 from .model import sentinel_zero
 import logging
@@ -11,6 +16,129 @@ class APSResourceSubmissionActions(models.Model):
     _inherit = 'aps.resource.submission'
 
 # region - Action Methods
+    @api.model
+    def award_sticker(
+        self,
+        submission_id,
+        sticker_id,
+        days_to_live,
+        url_prefix,
+        position_x,
+        position_y,
+        size,
+    ):
+        if not self.env.user.has_group('aps_sis.group_aps_teacher'):
+            raise AccessError(_('Only teachers can award stickers.'))
+        if not isinstance(submission_id, int) or isinstance(submission_id, bool):
+            raise ValidationError(_('Select a valid submission.'))
+
+        submission = self.browse(submission_id).exists()
+        if not submission:
+            raise ValidationError(_('The selected submission is not available.'))
+        submission.ensure_one()
+        submission.check_access('write')
+        if not submission._get_current_faculty():
+            raise AccessError(_('Only faculty members can award stickers.'))
+        if not submission.student_id:
+            raise UserError(_('This submission does not have a student.'))
+
+        if isinstance(days_to_live, bool):
+            raise ValidationError(_('Sticker duration must be a whole number of days.'))
+        try:
+            duration = float(days_to_live)
+        except (TypeError, ValueError) as error:
+            raise ValidationError(_('Sticker duration must be a whole number of days.')) from error
+        if not math.isfinite(duration) or not duration.is_integer() or not 1 <= duration <= 3650:
+            raise ValidationError(_('Sticker duration must be from 1 to 3650 whole days.'))
+        days_to_live = int(duration)
+
+        if isinstance(sticker_id, bool):
+            raise ValidationError(_('Select a valid sticker.'))
+        try:
+            sticker_id = int(sticker_id)
+        except (TypeError, ValueError) as error:
+            raise ValidationError(_('Select a valid sticker.')) from error
+        sticker = self.env['aui.sticker'].sudo().search([
+            ('id', '=', sticker_id),
+            ('active', '=', True),
+        ], limit=1)
+        if not sticker:
+            raise ValidationError(_('The selected sticker is not available.'))
+
+        sticker_model = self.env['aui.user.sticker'].sudo()
+        placement_values = sticker_model._validated_values({
+            'position_x': position_x,
+            'position_y': position_y,
+            'size': size,
+        })
+        validated_url = sticker_model._validate_url_prefix(url_prefix)
+        parsed_url = urlsplit(validated_url)
+        base_url = (
+            self.env['ir.config_parameter']
+            .sudo()
+            .get_param('web.base.url', '')
+            .rstrip('/')
+        )
+        parsed_base_url = urlsplit(base_url)
+        expected_path = f"{parsed_base_url.path.rstrip('/')}/web" or '/web'
+        if (
+            parsed_url.scheme != parsed_base_url.scheme
+            or parsed_url.netloc != parsed_base_url.netloc
+            or parsed_url.path != expected_path
+        ):
+            raise ValidationError(_('The sticker must be limited to this submission page.'))
+        route = parse_qs(parsed_url.fragment)
+        if (
+            route.get('model') != [submission._name]
+            or route.get('id') != [str(submission.id)]
+        ):
+            raise ValidationError(_('The sticker must be limited to this submission page.'))
+        url_scope_prefix = f"{base_url}/web#id={submission.id}&model={submission._name}"
+        url_scope_prefix = sticker_model._validate_url_prefix(url_scope_prefix)
+        record_url = f"{url_scope_prefix}&view_type=form"
+
+        student_user = self.env['res.users'].sudo().search([
+            ('partner_id', '=', submission.student_id.id),
+            ('active', '=', True),
+        ], limit=1)
+        if not student_user:
+            raise UserError(_('The student needs an active Odoo user account to receive a sticker.'))
+
+        sticker_model.create({
+            **placement_values,
+            'user_id': student_user.id,
+            'sticker_id': sticker.id,
+            'include_url_prefixes': [url_scope_prefix],
+            'expires_at': fields.Datetime.now() + timedelta(days=days_to_live),
+        })
+        student_user.write({'aui_stickers_enabled': True})
+
+        image_url = f"{base_url}/aui_enhancements/{quote(sticker.image_path, safe='/')}"
+        body = Markup(
+            '<p>You earned a sticker. Good job!</p>'
+            '<p><a href="{record_url}">{record_name}</a></p>'
+            '<p><img src="{image_url}" alt="{sticker_name}" '
+            'style="width: 64px; height: auto;"/></p>'
+        ).format(
+            record_url=record_url,
+            record_name=submission.display_name or _('Submission'),
+            image_url=image_url,
+            sticker_name=sticker.name,
+        )
+        channel = self.env['discuss.channel'].channel_get(
+            partners_to=sorted({
+                self.env.user.partner_id.id,
+                submission.student_id.id,
+            }),
+            pin=False,
+        )
+        channel.message_post(
+            body=body,
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+        )
+        return True
+
     @api.model
     def action_repair_course_explorer_submissions(self):
         """Rebuild Course Explorer records from existing leaf submissions.

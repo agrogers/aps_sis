@@ -1,6 +1,6 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.TimeTrackingDashboard" owl="1">
-        <div class="vh-100 overflow-auto bg-light p-4">
+        <div class="wallpaper vh-100 overflow-auto bg-light p-4">
 
             <!-- Header -->
             <div class="row mb-4 align-items-center bg-white shadow-sm p-3 mx-0 rounded">

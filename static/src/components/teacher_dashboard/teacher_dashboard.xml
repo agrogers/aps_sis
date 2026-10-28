@@ -1,6 +1,6 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.TeacherDashboard" owl="1">
-        <div class="aps-teacher-dashboard vh-100 overflow-auto p-2">
+        <div class="aps-teacher-dashboard wallpaper vh-100 overflow-auto p-2">
 
             <!-- ==================== FILTERS ==================== -->
             <div class="row mb-3 align-items-center aps-dashboard-filters shadow-sm p-2 mx-0 rounded">
