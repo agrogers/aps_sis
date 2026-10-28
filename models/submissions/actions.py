@@ -5,6 +5,7 @@ from urllib.parse import parse_qs, quote, urlsplit
 from markupsafe import Markup
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.http import request
 from odoo.tools.safe_eval import safe_eval
 from .model import sentinel_zero
 import logging
@@ -16,6 +17,148 @@ class APSResourceSubmissionActions(models.Model):
     _inherit = 'aps.resource.submission'
 
 # region - Action Methods
+    @api.model
+    def get_sticker_award_catalog(self, submission_id=None):
+        if not self.env.user.has_group('aps_sis.group_aps_teacher'):
+            raise AccessError(_('Only teachers can view the sticker award catalog.'))
+        return self.env['aui.sticker'].get_catalog()
+
+    @api.model
+    def _resolve_sticker_award(self, sticker_id):
+        if isinstance(sticker_id, bool):
+            raise ValidationError(_('Select a valid sticker.'))
+        try:
+            sticker_id = int(sticker_id)
+        except (TypeError, ValueError) as error:
+            raise ValidationError(_('Select a valid sticker.')) from error
+        sticker = self.env['aui.sticker'].sudo().search([
+            ('id', '=', sticker_id),
+            ('active', '=', True),
+        ], limit=1)
+        if not sticker:
+            raise ValidationError(_('The selected sticker is not available.'))
+        base_url = (
+            self.env['ir.config_parameter']
+            .sudo()
+            .get_param('web.base.url', '')
+            .rstrip('/')
+        )
+        return {
+            'sticker_id': sticker.id,
+            'name': sticker.name,
+            'image_url': f"{base_url}/aui_enhancements/{quote(sticker.image_path, safe='/')}",
+        }
+
+    @api.model
+    def _create_sticker_award_placement(
+        self,
+        sticker,
+        student_user,
+        placement_values,
+        url_scope_prefixes,
+        days_to_live,
+    ):
+        self.env['aui.user.sticker'].with_user(student_user).sudo().create({
+            **placement_values,
+            'user_id': student_user.id,
+            'sticker_id': sticker['sticker_id'],
+            'include_url_prefixes': url_scope_prefixes,
+            'expires_at': fields.Datetime.now() + timedelta(days=days_to_live),
+        })
+
+    @api.model
+    def _get_sticker_award_base_url(self):
+        try:
+            request_base_url = request.httprequest.url_root
+        except RuntimeError:
+            request_base_url = ''
+        if request_base_url:
+            return request_base_url.rstrip('/')
+        return (
+            self.env['ir.config_parameter']
+            .sudo()
+            .get_param('web.base.url', '')
+            .rstrip('/')
+        )
+
+    @api.model
+    def _get_sticker_award_url_scope(self, submission, validated_url, base_url):
+        sticker_model = self.env['aui.user.sticker'].sudo()
+        parsed_url = urlsplit(validated_url)
+        configured_base_url = (
+            self.env['ir.config_parameter']
+            .sudo()
+            .get_param('web.base.url', '')
+            .rstrip('/')
+        )
+        base_urls = [
+            candidate
+            for candidate in (configured_base_url, base_url)
+            if candidate
+        ]
+        base_urls = list(dict.fromkeys(base_urls))
+
+        matched_base_url = None
+        for candidate_base_url in base_urls:
+            candidate_base = urlsplit(candidate_base_url)
+            candidate_base_path = candidate_base.path.rstrip('/')
+            candidate_expected_path = f"{candidate_base_path}/web" or '/web'
+            candidate_odoo_path = f"{candidate_base_path}/odoo" or '/odoo'
+            modern_odoo_route = (
+                parsed_url.path == candidate_odoo_path
+                or parsed_url.path.startswith(f"{candidate_odoo_path}/")
+            )
+            if parsed_url.path == candidate_expected_path or modern_odoo_route:
+                matched_base_url = candidate_base_url
+                break
+        if not matched_base_url:
+            raise ValidationError(_('The sticker must be limited to this submission page.'))
+
+        parsed_base_url = urlsplit(matched_base_url)
+        base_path = parsed_base_url.path.rstrip('/')
+        expected_path = f"{base_path}/web" or '/web'
+        odoo_path = f"{base_path}/odoo" or '/odoo'
+        route = parse_qs(parsed_url.fragment)
+        legacy_record_route = (
+            parsed_url.path == expected_path
+            and route.get('model') == [submission._name]
+            and route.get('id') == [str(submission.id)]
+        )
+        if parsed_url.path == expected_path and not legacy_record_route:
+            raise ValidationError(_('The sticker must be limited to this submission page.'))
+
+        scope_base_url = matched_base_url.rstrip('/')
+        model_route = f"{scope_base_url}/odoo/{submission._name}/{submission.id}"
+        if legacy_record_route:
+            url_scope = model_route
+        else:
+            current_path = parsed_url.path.rstrip('/')
+            last_path_part = current_path.rsplit('/', 1)[-1]
+            if last_path_part.isdigit() and last_path_part != str(submission.id):
+                raise ValidationError(
+                    _('The sticker must be limited to this submission page.')
+                )
+            current_record_path = (
+                current_path
+                if last_path_part == str(submission.id)
+                else f"{current_path}/{submission.id}"
+            )
+            path_segments = [
+                segment for segment in current_path.split('/') if segment
+            ]
+            has_submission_route = any(
+                'submission' in segment.casefold()
+                for segment in path_segments
+            )
+            has_submission_id = str(submission.id) in path_segments
+            if has_submission_route and has_submission_id:
+                url_scope = model_route
+            else:
+                url_scope = (
+                    f"{scope_base_url}{current_record_path}"
+                )
+        return sticker_model._validate_url_prefix(url_scope)
+
     @api.model
     def award_sticker(
         self,
@@ -52,18 +195,7 @@ class APSResourceSubmissionActions(models.Model):
             raise ValidationError(_('Sticker duration must be from 1 to 3650 whole days.'))
         days_to_live = int(duration)
 
-        if isinstance(sticker_id, bool):
-            raise ValidationError(_('Select a valid sticker.'))
-        try:
-            sticker_id = int(sticker_id)
-        except (TypeError, ValueError) as error:
-            raise ValidationError(_('Select a valid sticker.')) from error
-        sticker = self.env['aui.sticker'].sudo().search([
-            ('id', '=', sticker_id),
-            ('active', '=', True),
-        ], limit=1)
-        if not sticker:
-            raise ValidationError(_('The selected sticker is not available.'))
+        sticker = self._resolve_sticker_award(sticker_id)
 
         sticker_model = self.env['aui.user.sticker'].sudo()
         placement_values = sticker_model._validated_values({
@@ -72,30 +204,14 @@ class APSResourceSubmissionActions(models.Model):
             'size': size,
         })
         validated_url = sticker_model._validate_url_prefix(url_prefix)
-        parsed_url = urlsplit(validated_url)
-        base_url = (
-            self.env['ir.config_parameter']
-            .sudo()
-            .get_param('web.base.url', '')
-            .rstrip('/')
-        )
-        parsed_base_url = urlsplit(base_url)
-        expected_path = f"{parsed_base_url.path.rstrip('/')}/web" or '/web'
-        if (
-            parsed_url.scheme != parsed_base_url.scheme
-            or parsed_url.netloc != parsed_base_url.netloc
-            or parsed_url.path != expected_path
-        ):
-            raise ValidationError(_('The sticker must be limited to this submission page.'))
-        route = parse_qs(parsed_url.fragment)
-        if (
-            route.get('model') != [submission._name]
-            or route.get('id') != [str(submission.id)]
-        ):
-            raise ValidationError(_('The sticker must be limited to this submission page.'))
-        url_scope_prefix = f"{base_url}/web#id={submission.id}&model={submission._name}"
-        url_scope_prefix = sticker_model._validate_url_prefix(url_scope_prefix)
-        record_url = f"{url_scope_prefix}&view_type=form"
+        base_url = self._get_sticker_award_base_url()
+        model_route = f"{base_url}/odoo/{submission._name}/{submission.id}"
+        url_scope_prefixes = [self._get_sticker_award_url_scope(
+            submission,
+            validated_url,
+            base_url,
+        )]
+        record_url = model_route
 
         student_user = self.env['res.users'].sudo().search([
             ('partner_id', '=', submission.student_id.id),
@@ -104,16 +220,15 @@ class APSResourceSubmissionActions(models.Model):
         if not student_user:
             raise UserError(_('The student needs an active Odoo user account to receive a sticker.'))
 
-        sticker_model.create({
-            **placement_values,
-            'user_id': student_user.id,
-            'sticker_id': sticker.id,
-            'include_url_prefixes': [url_scope_prefix],
-            'expires_at': fields.Datetime.now() + timedelta(days=days_to_live),
-        })
+        self._create_sticker_award_placement(
+            sticker,
+            student_user,
+            placement_values,
+            url_scope_prefixes,
+            days_to_live,
+        )
         student_user.write({'aui_stickers_enabled': True})
 
-        image_url = f"{base_url}/aui_enhancements/{quote(sticker.image_path, safe='/')}"
         body = Markup(
             '<p>You earned a sticker. Good job!</p>'
             '<p><a href="{record_url}">{record_name}</a></p>'
@@ -122,8 +237,8 @@ class APSResourceSubmissionActions(models.Model):
         ).format(
             record_url=record_url,
             record_name=submission.display_name or _('Submission'),
-            image_url=image_url,
-            sticker_name=sticker.name,
+            image_url=sticker['image_url'],
+            sticker_name=sticker['name'],
         )
         channel = self.env['discuss.channel'].channel_get(
             partners_to=sorted({

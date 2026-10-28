@@ -1,6 +1,6 @@
 <templates xml:space="preserve">
     <t t-name="apex_dashboard.Dashboard" owl="1">
-        <div class="wallpaper vh-100 overflow-auto bg-muted p-4">
+        <div class="apex-lms-dashboard wallpaper vh-100 overflow-auto bg-muted p-4">
             <div class="row mb-4 align-items-center justify-content-between bg-white shadow-sm p-4 mx-0 rounded">
                 <div class="col-lg-4 col-md-12 mb-2 mb-lg-0">
                     <h1 class="text-primary fw-bold mb-0">APEX Dashboard</h1>

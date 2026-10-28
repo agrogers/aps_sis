@@ -1,6 +1,6 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.WeeklySubmissionResults">
-        <div class="o_aps_weekly_results d-flex flex-column vh-100 overflow-hidden bg-light">
+        <div class="o_aps_weekly_results wallpaper d-flex flex-column vh-100 overflow-hidden bg-light">
             <div class="o_aps_weekly_results__filters bg-white border-bottom p-3 d-flex align-items-end gap-3 flex-wrap">
                 <div>
                     <label class="form-label small mb-1">Academic Period</label>

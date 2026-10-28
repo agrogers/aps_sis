@@ -1,11 +1,86 @@
 import json
 import re
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from odoo import fields
 from odoo.tests.common import TransactionCase
 from odoo.addons.aps_sis.models.submissions.model import sentinel_zero
+
+
+class TestAPSStickerAwardUrl(TransactionCase):
+
+    def setUp(self):
+        super().setUp()
+        self.env['ir.config_parameter'].sudo().set_param(
+            'web.base.url',
+            'http://local.odoo1:8069',
+        )
+
+    def test_sticker_award_uses_current_request_url_root(self):
+        with patch(
+            'odoo.addons.aps_sis.models.submissions.actions.request'
+        ) as current_request:
+            current_request.httprequest.url_root = 'https://school.example/'
+            base_url = self.env[
+                'aps.resource.submission'
+            ]._get_sticker_award_base_url()
+
+        self.assertEqual(base_url, 'https://school.example')
+
+    def test_submission_routes_share_one_sticker_scope(self):
+        submission = SimpleNamespace(
+            _name='aps.resource.submission',
+            id=762234,
+        )
+        submission_model = self.env['aps.resource.submission']
+        base_url = 'http://local.odoo1:8069'
+        scopes = [
+            submission_model._get_sticker_award_url_scope(
+                submission,
+                f'{base_url}/odoo/apex-my-submissions/762234',
+                base_url,
+            ),
+            submission_model._get_sticker_award_url_scope(
+                submission,
+                f'{base_url}/odoo/aps.resource.submission/762234',
+                base_url,
+            ),
+            submission_model._get_sticker_award_url_scope(
+                submission,
+                f'{base_url}/odoo/apex-dashboard/aps.resource.submission/'
+                'aps.resource.submission/762234',
+                base_url,
+            ),
+        ]
+
+        self.assertEqual(
+            scopes,
+            [f'{base_url}/odoo/aps.resource.submission/762234'] * 2,
+        )
+
+    def test_sticker_scope_uses_configured_host_when_page_origin_differs(self):
+        self.env['ir.config_parameter'].sudo().set_param(
+            'web.base.url',
+            'https://canonical.school',
+        )
+        submission = SimpleNamespace(
+            _name='aps.resource.submission',
+            id=746249,
+        )
+        scope = self.env[
+            'aps.resource.submission'
+        ]._get_sticker_award_url_scope(
+            submission,
+            'https://mvis.school/odoo/apex-aps-resource-submissions/746249',
+            'http://odoo-internal:8069',
+        )
+
+        self.assertEqual(
+            scope,
+            'https://canonical.school/odoo/aps.resource.submission/746249',
+        )
 
 
 class TestAPSSubmissionMassUpdateWizard(TransactionCase):

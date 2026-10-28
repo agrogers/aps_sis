@@ -1,3 +1,11 @@
+.o_aps_weekly_results.wallpaper.aui-media-wallpaper .o_aps_weekly_results__filters {
+    --bg-opacity: 0.5;
+}
+
+.o_aps_weekly_results.wallpaper.aui-media-wallpaper table {
+    --table-bg: var(--body-bg);
+}
+
 .o_aps_weekly_results__scroll {
     position: relative;
     min-height: 0;
