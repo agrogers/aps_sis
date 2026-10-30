@@ -257,7 +257,7 @@ class APSExamPaperImportBuild(models.Model):
             bottom = max(top + 1, min(page.height, bottom))
             if bottom - top < self._MANUAL_CROP_MIN_HEIGHT:
                 extension_y = next_section_y if next_section_y is not None else page.height
-                bottom = min(page.height, max(bottom, extension_y))
+                bottom = min(page.height, max(top + 1, extension_y))
             for exclusion_region in exclusion_regions or []:
                 exclusion_y = round(self._exclusion_region_y_as_fraction(exclusion_region, page) * page.height)
                 if exclusion_y > top:
@@ -278,6 +278,8 @@ class APSExamPaperImportBuild(models.Model):
                 and candidate_label != source_label
                 and len(candidate_label) > len(source_label)
             )
+            if source_key and candidate_key and source_key.startswith(candidate_key + '/'):
+                continue
             # A parent section must stop at its first child, even when the
             # vision model puts the child label a few pixels above the
             # parent's label.  Without this, Q1a's crop can run through

@@ -93,6 +93,34 @@ class TestExamPaperImport(TransactionCase):
 
         self.assertEqual((left, top, right, bottom), (75, 150, 925, 1400))
 
+    def test_child_crop_ignores_parent_label_below_child_marker(self):
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Child crop boundary', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('child-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('child-crop-rms.pdf').id,
+        })
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 2481, 'height': 3508,
+        })
+        label_positions = {
+            1: [
+                {'source_key': '3/a', 'normalised_label': '3a', 'y': 262 / 3508},
+                {'source_key': '3', 'normalised_label': '3', 'y': 263 / 3508},
+                {'source_key': '3/b', 'normalised_label': '3b', 'y': 1000 / 3508},
+            ],
+        }
+
+        bounds = importer._crop_bounds(
+            {
+                'y1': 262, 'source_key': '3/a', 'detection_label': 'Q3a',
+                'ai_coordinate_system': 'pixels',
+            },
+            page, label_positions, y_adjustment=6,
+        )
+
+        self.assertEqual(bounds[3], 986)
+        self.assertGreater(bounds[3] - bounds[1], importer._MANUAL_CROP_MIN_HEIGHT)
+
     def test_custom_crop_margins_apply_to_crops_and_region_editor(self):
         importer = self.env['aps.exam.paper.import'].create({
             'name': 'Custom crop margins', 'resource_id': self.resource.id,
@@ -155,6 +183,23 @@ class TestExamPaperImport(TransactionCase):
 
         self.assertEqual(next_y, 350)
         self.assertEqual(bounds, (75, 100, 925, 350))
+
+    def test_short_manual_crop_ends_at_next_section_when_rectangle_overlaps(self):
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Overlapping short manual crop', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('overlapping-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('overlapping-crop-rms.pdf').id,
+        })
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 1000, 'height': 1500,
+        })
+
+        bounds = importer._crop_bounds(
+            {'manual': True, 'x1': 75, 'y1': 100, 'x2': 925, 'y2': 190},
+            page, {}, next_section_y=160,
+        )
+
+        self.assertEqual(bounds, (75, 100, 925, 160))
 
     def test_short_last_manual_crop_extends_to_page_bottom(self):
         importer = self.env['aps.exam.paper.import'].create({
