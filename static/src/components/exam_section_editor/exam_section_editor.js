@@ -297,7 +297,14 @@ export class ExamSectionRegionEditor extends Component {
         event.preventDefault();
         event.stopPropagation();
         const image = event.currentTarget.closest(".o_exam_region_image_wrap").querySelector("img");
-        this.dragging = { kind: "section", side, image, pointerId: event.pointerId };
+        this.dragging = {
+            kind: "section",
+            side,
+            initialSide: side,
+            origin: { ...this.state.draft },
+            image,
+            pointerId: event.pointerId,
+        };
         event.currentTarget.setPointerCapture?.(event.pointerId);
         this._move = (moveEvent) => this.resize(moveEvent);
         this._up = () => this.stopDrag();
@@ -328,6 +335,7 @@ export class ExamSectionRegionEditor extends Component {
             kind: "zone",
             zoneId: zone.id,
             side,
+            initialSide: side,
             image,
             origin: { ...zone },
             startPoint: point,
@@ -371,6 +379,30 @@ export class ExamSectionRegionEditor extends Component {
         };
     }
 
+    _resizeBounds(draft, point, dragging, region) {
+        const horizontal = dragging.initialSide === "left" || dragging.initialSide === "right";
+        const startKey = horizontal ? "x1" : "y1";
+        const endKey = horizontal ? "x2" : "y2";
+        const lowerSide = horizontal ? "left" : "top";
+        const upperSide = horizontal ? "right" : "bottom";
+        const coordinate = horizontal ? point.x : point.y;
+        const extent = horizontal ? region.width : region.height;
+        const anchor = dragging.initialSide === lowerSide
+            ? dragging.origin[endKey]
+            : dragging.origin[startKey];
+        const beforeAnchor = coordinate < anchor || (coordinate === anchor && anchor >= extent);
+
+        if (beforeAnchor) {
+            draft[startKey] = Math.min(coordinate, anchor - 1);
+            draft[endKey] = anchor;
+            dragging.side = lowerSide;
+        } else {
+            draft[startKey] = anchor;
+            draft[endKey] = Math.max(coordinate, anchor + 1);
+            dragging.side = upperSide;
+        }
+    }
+
     resize(event) {
         const dragging = this.dragging;
         const region = this.state.selected;
@@ -395,19 +427,12 @@ export class ExamSectionRegionEditor extends Component {
                 draft.y2 = draft.y1 + height;
                 return;
             }
-            if (dragging.side === "left") draft.x1 = Math.min(point.x, draft.x2 - MIN_SIZE);
-            if (dragging.side === "right") draft.x2 = Math.max(point.x, draft.x1 + MIN_SIZE);
-            if (dragging.side === "top") draft.y1 = Math.min(point.y, draft.y2 - MIN_SIZE);
-            if (dragging.side === "bottom") draft.y2 = Math.max(point.y, draft.y1 + MIN_SIZE);
+            this._resizeBounds(draft, point, dragging, region);
             return;
         }
         const draft = this.state.draft;
         if (!draft) return;
-        const { x, y } = point;
-        if (dragging.side === "left") draft.x1 = Math.min(x, draft.x2 - MIN_SIZE);
-        if (dragging.side === "right") draft.x2 = Math.max(x, draft.x1 + MIN_SIZE);
-        if (dragging.side === "top") draft.y1 = Math.min(y, draft.y2 - MIN_SIZE);
-        if (dragging.side === "bottom") draft.y2 = Math.max(y, draft.y1 + MIN_SIZE);
+        this._resizeBounds(draft, point, dragging, region);
     }
 
     async stopDrag() {

@@ -89,23 +89,32 @@ class APSExamPaperImportOcr(models.Model):
     def _ocr_images(self, model, images, document_label):
         if not images:
             return ''
-        content = [{
-            'type': 'text',
-            'text': (
-                'Convert these ordered %s images into accurate Markdown. The text is primarily OCR: preserve '
-                'all visible words, labels, numbers, mathematical notation, marks, alternatives, and meaningful '
-                'bold or italic emphasis. Do not invent or silently omit content. If a diagram, graph, circuit, '
-                'map, apparatus setup, image, or other meaningful visual appears, add a concise description in '
-                'the appropriate location, including labels, relationships, trends, and values that are clearly '
-                'visible. Do not describe decorative elements or answer lines. '
-                'For a question, describe visuals only when they are relevant to understanding or answering it. '
-                'For a mark scheme, rewrite the source layout so it reads naturally as prose: convert borderless '
-                'table rows and columns into paragraphs, bullets, numbered points, or bold criterion labels, '
-                'making the relationship between each criterion and its marks clear. Preserve alternative answers '
-                'and conditions. Do not use Markdown tables unless the source is an actual table that students '
-                'must complete or interpret. Return Markdown only, with no preface or commentary.'
-            ) % document_label,
-        }]
+        prompt = (
+            'Convert these ordered %s images into accurate Markdown. The text is primarily OCR: preserve '
+            'all visible words, labels, numbers, mathematical notation, marks, alternatives, and meaningful '
+            'bold or italic emphasis. Do not invent or silently omit content. If a diagram, graph, circuit, '
+            'map, apparatus setup, image, or other meaningful visual appears, add a concise description in '
+            'the appropriate location, including labels, relationships, trends, and values that are clearly '
+            'visible. Do not describe decorative elements or answer lines. '
+            'For a question, describe visuals only when they are relevant to understanding or answering it. '
+            'Return Markdown only, with no preface or commentary.'
+        ) % document_label
+        if document_label == 'mark scheme':
+            prompt += (
+                ' Rewrite the source layout as readable prose, bullets, or numbered points, not a Markdown '
+                'table unless the table is itself for students to complete or interpret. For borderless or '
+                'unclear tables, infer relationships from visual alignment and proximity rather than assuming '
+                'rows are clearly bounded. In a layout with middle and right-hand columns, treat each note in '
+                'the right-hand column as explaining the specific item immediately to its left in the middle '
+                'column; keep that item, its note, and its marks or conditions together in the same bullet or '
+                'paragraph. Do not attach a note to a different item because row boundaries are unclear. If '
+                'the visual association is genuinely ambiguous, preserve the note separately and state that its '
+                'association is unclear instead of guessing. Preserve alternative answers and conditions. '
+                'Expand an acronym only when its full form is strongly supported by the subject context; write '
+                'the full form followed by the original acronym in parentheses. Leave ambiguous acronyms '
+                'unchanged, and do not expand mathematical symbols, identifiers, or proper names.'
+            )
+        content = [{'type': 'text', 'text': prompt}]
         for attachment in images:
             image_bytes = self._attachment_bytes(attachment)
             if not image_bytes:

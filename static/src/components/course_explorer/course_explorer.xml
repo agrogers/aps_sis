@@ -253,16 +253,18 @@
                              t-att-id="'ce-section-' + section.id"
                              t-att-data-resource-id="section.id">
                         <div class="ce_section_heading" t-att-class="'ce_level_' + (section.depth || 0)">
-                            <h3>
-                                <t t-esc="section.name"/>
-                                <t t-if="state.isManager">
-                                    <a href="#" class="ce_open_resource_link"
-                                       title="Open resource"
-                                       t-on-click="(ev) => this.openResource(ev, section.id)">
-                                        <i class="fa fa-external-link"/>
-                                    </a>
-                                </t>
-                            </h3>
+                            <div class="ce_section_heading_main">
+                                <h3>
+                                    <t t-esc="section.name"/>
+                                    <t t-if="state.isManager">
+                                        <a href="#" class="ce_open_resource_link"
+                                           title="Open resource"
+                                           t-on-click="(ev) => this.openResource(ev, section.id)">
+                                            <i class="fa fa-external-link"/>
+                                        </a>
+                                    </t>
+                                </h3>
+                            </div>
                             <!-- Average weighted result pie (links to quizzes table) -->
                             <t t-if="section.hasScore">
                                 <a href="#" class="ce_quiz_scroll_link"
@@ -297,6 +299,13 @@
                                 </div>
                             </t>
 
+                        </div>
+                        <div t-if="section.supportingResources &amp;&amp; section.supportingResources.length"
+                             class="ce_supporting_resources">
+                            <ResourceLinkButtons
+                                links="section.supportingResources"
+                                size="'40px'"
+                                showName="true"/>
                         </div>
                         <div class="ce_section_body oe_calculateKioskHeight"
                              t-att-data-image-viewer-model="'aps.subject.category'"
@@ -370,11 +379,23 @@
                         <t t-if="section.assessmentRows.length">
                             <div class="ce_quiz_box"
                                  t-att-id="!section.quizMasteryRows.length ? 'ce-quiz-' + section.id : false">
-                                <div class="ce_quiz_box_header">
-                                    <i class="fa fa-question-circle me-1"/>
-                                    <span>Assessment Results</span>
+                                <div class="ce_quiz_box_header ce_assessment_header">
+                                    <div class="ce_assessment_header_title">
+                                        <i class="fa fa-question-circle me-1"/>
+                                        <span>Assessment Results</span>
+                                    </div>
+                                    <span class="ce_assessment_summary">
+                                        <t t-esc="section.assessmentRows.length"/> items |
+                                        <t t-esc="section.assessmentCompletedCount"/> completed |
+                                        Avg
+                                        <t t-if="section.assessmentScoredCount">
+                                            <t t-esc="section.assessmentAverageScore"/>%
+                                        </t>
+                                        <t t-else="">—</t>
+                                    </span>
                                 </div>
-                                <table class="ce_quiz_table">
+                                <table class="ce_quiz_table"
+                                       t-att-id="'ce-assessment-table-' + section.id">
                                     <thead>
                                         <tr>
                                             <th class="ce_quiz_th_name">Name</th>
@@ -385,7 +406,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <t t-foreach="section.assessmentRows" t-as="quiz" t-key="quiz.id">
+                                        <t t-foreach="this.getVisibleAssessmentRows(section)" t-as="quiz" t-key="quiz.id">
                                             <tr class="ce_quiz_row"
                                                 t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
                                                 <td class="ce_quiz_name">
@@ -412,6 +433,15 @@
                                         </t>
                                     </tbody>
                                 </table>
+                                <button t-if="section.assessmentRows.length > 5"
+                                        type="button"
+                                        class="ce_assessment_more"
+                                        t-att-aria-expanded="this.isAssessmentRowsExpanded(section.id) ? 'true' : 'false'"
+                                        t-att-aria-controls="'ce-assessment-table-' + section.id"
+                                        t-on-click="() => this.toggleAssessmentRows(section.id)">
+                                    <t t-if="this.isAssessmentRowsExpanded(section.id)">Show less</t>
+                                    <t t-else="">Show <t t-esc="section.assessmentRows.length - 5"/> more</t>
+                                </button>
                             </div>
                         </t>
                     </section>

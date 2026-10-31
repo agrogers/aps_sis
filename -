@@ -394,3 +394,417 @@ IndentationError: unexpected indent
 2026-10-08 04:46:19,615 893072 INFO odoov18_20260902 odoo.service.server: Initiating shutdown 
 2026-10-08 04:46:19,615 893072 INFO odoov18_20260902 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
 2026-10-08 04:46:19,972 893072 INFO odoov18_20260902 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+2026-10-31 09:34:01,884 48148 INFO ? odoo: Odoo version 18.0 
+2026-10-31 09:34:01,885 48148 INFO ? odoo: Using configuration file at C:\Dev\Odoo\mvis\odoo.conf 
+2026-10-31 09:34:01,885 48148 INFO ? odoo: addons paths: ['c:\\git\\odoo_custom_addons', 'c:\\git\\odoo_oca_addons\\account-reconcile', 'c:\\git\\odoo_oca_addons\\web', 'c:\\dev\\odoo\\mvis\\addons', 'c:\\git\\odoo_3rd_party_addons', 'C:\\Dev\\Odoo\\mvis\\odoo\\addons', 'c:\\dev\\odoo\\mvis\\odoo\\addons', 'c:\\dev\\odoo\\mvis\\addons\\18.0'] 
+2026-10-31 09:34:01,886 48148 INFO ? odoo: database: odoo@127.0.0.1:5432 
+2026-10-31 09:34:02,757 48148 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-10-31 09:34:02,953 48148 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-10-31 09:34:03,732 48148 INFO ? odoo.service.server: HTTP service (werkzeug) running on local.odoo1:8069 
+2026-10-31 09:34:03,812 48148 INFO mvis1B odoo.tests.common: Importing test framework 
+2026-10-31 09:34:03,985 48148 INFO mvis1B odoo.modules.loading: loading 1 modules... 
+2026-10-31 09:34:03,994 48148 INFO mvis1B odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-10-31 09:34:04,027 48148 INFO mvis1B odoo.modules.loading: updating modules list 
+2026-10-31 09:34:04,034 48148 INFO mvis1B odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-10-31 09:34:04,473 48148 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for '___hr_contract_print', defaulting to LGPL-3 
+2026-10-31 09:34:05,171 48148 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-10-31 09:34:05,898 48148 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-10-31 09:34:05,910 48148 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-10-31 09:34:06,034 48148 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-10-31 09:34:06,286 48148 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'html_editor_extensions', defaulting to LGPL-3 
+2026-10-31 09:34:08,408 48148 WARNING mvis1B py.warnings: <unknown>:42: DeprecationWarning: invalid escape sequence '\p'
+  File "C:\Dev\Odoo\mvis\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "C:\Dev\Odoo\mvis\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "C:\Dev\Odoo\mvis\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "C:\Dev\Odoo\mvis\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "C:\Dev\Odoo\mvis\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "<decorator-gen-13>", line 2, in new
+  File "C:\Dev\Odoo\mvis\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "C:\Dev\Odoo\mvis\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "C:\Dev\Odoo\mvis\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "<decorator-gen-89>", line 2, in update_list
+  File "c:\dev\odoo\mvis\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "c:\dev\odoo\mvis\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "c:\dev\odoo\mvis\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 367, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 371, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "C:\Dev\Odoo\mvis\odoo\modules\module.py", line 317, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "C:\Dev\Odoo\mvis\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Python\Python310\lib\ast.py", line 64, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Python\Python310\lib\ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Python\Python310\lib\warnings.py", line 109, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "C:\Dev\Odoo\mvis\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-10-31 09:34:08,611 48148 WARNING mvis1B odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-10-31 09:34:10,098 48148 INFO mvis1B odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['APEX - Academic Progress and Excellence'] to user __system__ #1 via n/a 
+2026-10-31 09:34:10,098 48148 INFO mvis1B odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['APEX - Academic Progress and Excellence'] to user __system__ #1 via n/a 
+2026-10-31 09:34:11,952 48148 INFO mvis1B odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-10-31 09:34:12,351 48148 INFO mvis1B odoo.modules.loading: loading 73 modules... 
+2026-10-31 09:34:17,452 48148 INFO mvis1B odoo.modules.loading: Loading module aps_sis (68/73) 
+2026-10-31 09:34:18,209 48148 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:18,213 48148 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:18,265 48148 INFO mvis1B odoo.modules.registry: module aps_sis: creating or updating database tables 
+2026-10-31 09:34:19,238 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (media_count, media_ids) of aps.media.type() have the same label: Media Items. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,238 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (media_count, media_ids) of aps.media.collection() have the same label: Media Items. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (description_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (type_id_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (category_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (marks_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (sequence_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (weight_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (points_scale_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (score_contributes_to_parent_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (url_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (subject_ids_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,239 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (has_question_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (has_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (has_notes_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (has_lesson_plan_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (has_default_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (has_child_resources_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (has_supporting_resources_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (allow_subject_editing_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (show_in_hierarchy_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_date_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_end_date_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_due_days_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_frequency_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_time_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_all_students_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,240 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_notify_student_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (auto_assign_custom_name_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_instructions_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_model_id_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_model_ids_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_prompt_ids_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_action_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_use_model_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_use_question_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_merge_responses_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_merge_response_chunks_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_use_notes_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_use_supporting_resources_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_targeted_feedback_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_toc_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,241 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_summary_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,242 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_analysis_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,242 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_table_of_results_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,242 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_test_prompt_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,242 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (ai_show_saved_responses_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,243 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (question_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,243 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,243 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (notes_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,243 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (lesson_plan_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,243 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (default_answer_value, name_value) of aps.resource.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,244 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (state_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,244 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (due_date_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,246 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (points_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,246 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (submission_active_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,246 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (date_assigned_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,246 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (time_assigned_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,246 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (date_submitted_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,247 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (date_completed_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,247 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (score_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,247 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (out_of_marks_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,248 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (submission_name_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,248 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (due_status_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,248 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (notification_state_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (subjects_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (question_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (answer_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (set_model_answer_to_resource_value, set_question_to_resource_value) of aps.submission.mass.update.wizard() have the same label: Set to Resource Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (model_answer_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (feedback_value, points_scale_value) of aps.submission.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (display_name, resource_id) of aps.assign.students.wizard.line() have the same label: Resource. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,249 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (parent_resource_id, resource_id) of aps.assign.students.wizard.line() have the same label: Resource. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,250 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (student_line_ids, student_ids) of aps.assign.students.wizard() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,250 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (class_count, class_ids) of aps.subject() have the same label: Classes. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,251 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (class_count, class_ids) of aps.teacher() have the same label: Classes. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,251 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_categories_include_teachers, voter_levels_include_teachers) of aps.award.vote.round.mixin.voters() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,251 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_categories_include_students, voter_levels_include_students) of aps.award.vote.round.mixin.voters() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,252 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (eligible_voter_partner_ids, voter_show_staff) of aps.award.vote.round.mixin.voters() have the same label: People. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,252 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (candidate_levels_include_students, candidate_show_students) of aps.award.vote.round.mixin.candidates() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,252 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round.mixin.candidates() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,252 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_students, candidate_show_students) of aps.award.vote.round.mixin.candidates() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,252 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (candidate_levels_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,252 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,252 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (candidate_categories_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,253 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_show_staff, ineligible_show_people) of aps.award.vote.round() have the same label: People. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,253 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_show_levels, candidate_show_levels) of aps.award.vote.round() have the same label: Levels. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,253 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_show_categories, candidate_show_categories) of aps.award.vote.round() have the same label: Subject Categories. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,253 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_show_departments, candidate_show_departments) of aps.award.vote.round() have the same label: Departments. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,253 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_levels_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,254 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_levels_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,254 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_categories_include_teachers, candidate_levels_include_teachers) of aps.award.vote.round() have the same label: Teachers. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,254 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voter_categories_include_students, candidate_show_students) of aps.award.vote.round() have the same label: Students. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,254 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (eligible_voter_partner_ids, ineligible_show_people) of aps.award.vote.round() have the same label: People. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,254 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (description_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,254 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (short_description_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (color_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (datetime_start_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (datetime_end_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (status_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (recurring_days_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (award_category_id_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (award_sub_category_id_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (academic_week_id_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,255 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (tag_ids_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,256 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (voting_set_ids_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,256 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (round_manager_ids_value, name_value) of aps.award.vote.round.mass.update.wizard() have the same label: Value. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,257 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (supervision_id, is_supervision) of asctt.teacher.workload() have the same label: Supervision. [Modules: aps_sis and aps_sis] 
+2026-10-31 09:34:19,957 48148 INFO mvis1B odoo.modules.registry: Models have no table: aps.ai.tool, aui.user.sticker, aui.sticker, aps.ai.tool.parameter, aps.ai.tool.log, aps.ai.provider.embedding, aps.ai.tool.output.field, aps.ai.tool.confirmation, aps.ai.tool.domain.rule. 
+2026-10-31 09:34:19,958 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool. 
+2026-10-31 09:34:19,958 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aui.user.sticker. 
+2026-10-31 09:34:19,958 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aui.sticker. 
+2026-10-31 09:34:19,958 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.parameter. 
+2026-10-31 09:34:19,958 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.log. 
+2026-10-31 09:34:19,958 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.provider.embedding. 
+2026-10-31 09:34:19,958 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.output.field. 
+2026-10-31 09:34:19,959 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.confirmation. 
+2026-10-31 09:34:19,959 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.domain.rule. 
+2026-10-31 09:34:19,962 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.confirmation has no table. 
+2026-10-31 09:34:19,962 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool has no table. 
+2026-10-31 09:34:19,962 48148 ERROR mvis1B odoo.modules.registry: Model aui.sticker has no table. 
+2026-10-31 09:34:19,962 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.domain.rule has no table. 
+2026-10-31 09:34:19,962 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.log has no table. 
+2026-10-31 09:34:19,962 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.provider.embedding has no table. 
+2026-10-31 09:34:19,963 48148 ERROR mvis1B odoo.modules.registry: Model aui.user.sticker has no table. 
+2026-10-31 09:34:19,963 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.output.field has no table. 
+2026-10-31 09:34:19,963 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.parameter has no table. 
+2026-10-31 09:34:20,052 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/security/groups.xml 
+2026-10-31 09:34:20,617 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/security/ir.model.access.csv 
+2026-10-31 09:34:21,074 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/security/aps_sis_security.xml 
+2026-10-31 09:34:21,388 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/security/weekly_submission_result_security.xml 
+2026-10-31 09:34:21,413 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/cron.xml 
+2026-10-31 09:34:21,593 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/email_templates.xml 
+2026-10-31 09:34:21,635 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/freeform_assessment_prompt.xml 
+2026-10-31 09:34:21,644 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/aps_calendar_date_type_data.xml 
+2026-10-31 09:34:21,665 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/aps_exam_paper_question_identifier_data.xml 
+2026-10-31 09:34:21,681 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/certificate_templates.xml 
+2026-10-31 09:34:21,746 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/subject_categories.xml 
+2026-10-31 09:34:21,770 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_custom_name_views.xml 
+2026-10-31 09:34:21,848 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/portal_templates.xml 
+2026-10-31 09:34:21,925 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resources_views.xml 
+2026-10-31 09:34:22,136 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_hierarchy_views.xml 
+2026-10-31 09:34:22,154 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_types_views.xml 
+2026-10-31 09:34:22,187 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_tags_views.xml 
+2026-10-31 09:34:22,224 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_location_views.xml 
+2026-10-31 09:34:22,276 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_assign_students_wizard_views.xml 
+2026-10-31 09:34:22,307 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_task_views.xml 
+2026-10-31 09:34:22,361 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_submission_views.xml 
+2026-10-31 09:34:22,423 48148 WARNING mvis1B odoo.addons.base.models.ir_ui_view: 'kanban-box' is deprecated, define a 'card' template instead 
+2026-10-31 09:34:22,474 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_submission_views_for_students.xml 
+2026-10-31 09:34:22,562 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_notes_popup_views.xml 
+2026-10-31 09:34:22,576 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_dashboard_views.xml 
+2026-10-31 09:34:22,582 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_submission_mass_update_wizard_views.xml 
+2026-10-31 09:34:22,608 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_resource_mass_update_wizard_views.xml 
+2026-10-31 09:34:22,645 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_submit_mark_wizard_views.xml 
+2026-10-31 09:34:22,668 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_subject_category_views.xml 
+2026-10-31 09:34:22,712 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_level_views.xml 
+2026-10-31 09:34:22,769 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_academic_year_views.xml 
+2026-10-31 09:34:22,817 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_academic_term_views.xml 
+2026-10-31 09:34:22,857 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_academic_week_generate_wizard_views.xml 
+2026-10-31 09:34:22,884 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_academic_week_views.xml 
+2026-10-31 09:34:22,929 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_school_calendar_views.xml 
+2026-10-31 09:34:23,014 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_time_tracking_views.xml 
+2026-10-31 09:34:23,062 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_time_tracking_dashboard_views.xml 
+2026-10-31 09:34:23,068 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_time_tracking_overlap_wizard_views.xml 
+2026-10-31 09:34:23,091 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_teacher_dashboard_views.xml 
+2026-10-31 09:34:23,097 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_school_mgmt_dashboard_views.xml 
+2026-10-31 09:34:23,103 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_certificate_views.xml 
+2026-10-31 09:34:23,191 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_certificates_dashboard_views.xml 
+2026-10-31 09:34:23,196 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_media_views.xml 
+2026-10-31 09:34:23,387 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_award_tag_views.xml 
+2026-10-31 09:34:23,402 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_award_voting_set_views.xml 
+2026-10-31 09:34:23,444 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_award_vote_round_views.xml 
+2026-10-31 09:34:23,490 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_award_vote_views.xml 
+2026-10-31 09:34:23,555 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_award_vote_round_mass_update_wizard_views.xml 
+2026-10-31 09:34:23,586 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_vote_management_dashboard_views.xml 
+2026-10-31 09:34:23,626 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/aps_vote_analysis_dashboard_views.xml 
+2026-10-31 09:34:23,634 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_gradebook_grid_views.xml 
+2026-10-31 09:34:23,640 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_student_matrix_views.xml 
+2026-10-31 09:34:23,646 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_school_calendar_report_views.xml 
+2026-10-31 09:34:23,652 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_school_calendar_generate_wizard_views.xml 
+2026-10-31 09:34:23,671 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_class_views.xml 
+2026-10-31 09:34:23,716 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_class_tag_views.xml 
+2026-10-31 09:34:23,745 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_teacher_views.xml 
+2026-10-31 09:34:23,792 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/data/aps_student_enrolment_status_data.xml 
+2026-10-31 09:34:23,808 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_student_reference_views.xml 
+2026-10-31 09:34:23,879 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_student_views.xml 
+2026-10-31 09:34:23,950 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_student_class_views.xml 
+2026-10-31 09:34:23,993 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_subject_views.xml 
+2026-10-31 09:34:24,026 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/core/aps_timetable_entry_views.xml 
+2026-10-31 09:34:24,077 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/res_partner_views.xml 
+2026-10-31 09:34:24,155 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_partner_voting_token_wizard_views.xml 
+2026-10-31 09:34:24,172 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_avatar_views.xml 
+2026-10-31 09:34:24,359 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_avatar_bulk_upload_views.xml 
+2026-10-31 09:34:24,365 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/hr_employee_views.xml 
+2026-10-31 09:34:24,407 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/awards/awards_voting_templates.xml 
+2026-10-31 09:34:24,428 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/class/aps_class_rollover_wizard_views.xml 
+2026-10-31 09:34:24,452 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_year_level_rollover_wizard_views.xml 
+2026-10-31 09:34:24,470 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/class/aps_class_tag_enrol_wizard_views.xml 
+2026-10-31 09:34:24,494 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/class/aps_student_class_bulk_wizard_views.xml 
+2026-10-31 09:34:24,516 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_partner_profile_pic_views.xml 
+2026-10-31 09:34:24,522 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/search_wizard_views.xml 
+2026-10-31 09:34:24,542 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_sis_menu.xml 
+2026-10-31 09:34:24,996 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_student_daily_mgmt_dashboard_views.xml 
+2026-10-31 09:34:25,016 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/weekly_submission_results_views.xml 
+2026-10-31 09:34:25,035 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/weekly_submission_result_views.xml 
+2026-10-31 09:34:25,087 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_course_explorer_views.xml 
+2026-10-31 09:34:25,103 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/aps_ai_views.xml 
+2026-10-31 09:34:25,173 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/ai_prompts_views.xml 
+2026-10-31 09:34:25,185 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/reports/submission_report.xml 
+2026-10-31 09:34:25,212 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/reports/aps_resource_print_report.xml 
+2026-10-31 09:34:25,230 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/reports/weekly_submission_result_report.xml 
+2026-10-31 09:34:25,247 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/reports/school_calendar_report.xml 
+2026-10-31 09:34:25,266 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/reports/certificate_report.xml 
+2026-10-31 09:34:25,305 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/submission_report_wizard_views.xml 
+2026-10-31 09:34:25,321 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_resource_print_wizard_views.xml 
+2026-10-31 09:34:25,337 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_ai_save_response_wizard_views.xml 
+2026-10-31 09:34:25,353 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_prompt_preview_wizard_views.xml 
+2026-10-31 09:34:25,365 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/create_linked_resources_wizard_views.xml 
+2026-10-31 09:34:25,379 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/wizard/aps_resource_delete_wizard_views.xml 
+2026-10-31 09:34:25,392 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/resources/aps_exam_paper_import_views.xml 
+2026-10-31 09:34:25,464 48148 WARNING mvis1B odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': 'c:\\git\\odoo_custom_addons\\aps_sis\\views\\resources\\aps_exam_paper_import_views.xml',
+ 'line': 4,
+ 'name': 'aps.exam.paper.question.identifier.form',
+ 'view': ir.ui.view(2410,),
+ 'view.model': 'aps.exam.paper.question.identifier',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_aps_exam_paper_question_identifier_form'} 
+2026-10-31 09:34:25,523 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_views.xml 
+2026-10-31 09:34:25,980 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_import_wizard_views.xml 
+2026-10-31 09:34:26,000 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_flat_row_views.xml 
+2026-10-31 09:34:26,066 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_workload_views.xml 
+2026-10-31 09:34:26,167 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_class_subject_minutes_views.xml 
+2026-10-31 09:34:26,216 48148 INFO mvis1B odoo.modules.loading: loading aps_sis/views/asc_timetable/asctt_dashboard_views.xml 
+2026-10-31 09:34:26,488 48148 WARNING mvis1B odoo.modules.loading: The models ['aps.ai.run', 'aps.ai.sample.comparison'] have no access rules in module aps_sis, consider adding some, like:
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+aps_sis.access_aps_ai_run,access_aps_ai_run,aps_sis.model_aps_ai_run,base.group_user,1,0,0,0
+aps_sis.access_aps_ai_sample_comparison,access_aps_ai_sample_comparison,aps_sis.model_aps_ai_sample_comparison,base.group_user,1,0,0,0 
+2026-10-31 09:34:26,670 48148 INFO mvis1B odoo.addons.aps_sis.tests.test_aps_resources: Starting TestAPSResource.test_course_explorer_includes_only_non_assessment_supporting_links ... 
+2026-10-31 09:34:26,895 48148 INFO mvis1B odoo.addons.aps_sis.models.resources.actions: Course Explorer: building data for subject category all 
+2026-10-31 09:34:26,897 48148 INFO mvis1B odoo.addons.aps_sis.models.resources.actions: Course Explorer: loaded 1 hierarchy resources in 0.002s 
+2026-10-31 09:34:26,897 48148 INFO mvis1B odoo.addons.aps_sis.models.resources.actions: Course Explorer: selected 1 content/structural resources (1 with notes, 0 structural parents) 
+2026-10-31 09:34:26,898 48148 INFO mvis1B odoo.addons.aps_sis.models.resources.actions: Course Explorer: built tree and 1 content sections in 0.003s 
+2026-10-31 09:34:26,902 48148 INFO mvis1B odoo.addons.aps_sis.models.resources.actions: Course Explorer: quiz lookup found 2 quiz resources and 0 student tasks in 0.008s 
+2026-10-31 09:34:26,908 48148 INFO mvis1B odoo.addons.aps_sis.models.resources.actions: Course Explorer: finished category all in 0.013s (1 tree roots, 1 sections) 
+2026-10-31 09:34:26,912 48148 INFO mvis1B odoo.addons.aps_sis.tests.test_aps_resources: ====================================================================== 
+2026-10-31 09:34:26,912 48148 ERROR mvis1B odoo.addons.aps_sis.tests.test_aps_resources: FAIL: TestAPSResource.test_course_explorer_includes_only_non_assessment_supporting_links
+Traceback (most recent call last):
+  File "c:\git\odoo_custom_addons\aps_sis\tests\test_aps_resources.py", line 769, in test_course_explorer_includes_only_non_assessment_supporting_links
+    self.assertEqual(
+AssertionError: Lists differ: [] != [287]
+
+Second list contains 1 additional elements.
+First extra element 0:
+287
+
+- []
++ [287]
+ 
+2026-10-31 09:34:27,186 48148 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:27,190 48148 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:27,313 48148 INFO mvis1B odoo.addons.base.models.ir_attachment: filestore gc 3 checked, 0 removed 
+2026-10-31 09:34:27,435 48148 INFO mvis1B odoo.modules.loading: Module aps_sis loaded in 9.98s (incl. 0.72s test), 5070 queries (+45 test, +5070 other) 
+2026-10-31 09:34:27,435 48148 ERROR mvis1B odoo.modules.loading: Module aps_sis: 1 failures, 0 errors of 1 tests 
+2026-10-31 09:34:27,501 48148 INFO mvis1B odoo.modules.loading: Loading module ar_student_interviews (71/73) 
+2026-10-31 09:34:27,684 48148 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:27,687 48148 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:28,036 48148 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:28,039 48148 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:28,095 48148 INFO mvis1B odoo.modules.registry: module ar_student_interviews: creating or updating database tables 
+2026-10-31 09:34:28,153 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (last_interview_date, last_interview_id) of student.progress.profile() have the same label: Last Interview. [Modules: ar_student_interviews and ar_student_interviews] 
+2026-10-31 09:34:28,154 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (barrier_comments, strength_comments) of student.progress.interview.subject() have the same label: Additional Comments. [Modules: ar_student_interviews and ar_student_interviews] 
+2026-10-31 09:34:28,154 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (improvement_comments, strength_comments) of student.progress.interview.subject() have the same label: Additional Comments. [Modules: ar_student_interviews and ar_student_interviews] 
+2026-10-31 09:34:28,217 48148 INFO mvis1B odoo.modules.registry: Models have no table: aps.ai.tool, aui.user.sticker, aui.sticker, aps.ai.tool.parameter, aps.ai.tool.log, aps.ai.provider.embedding, aps.ai.tool.output.field, aps.ai.tool.confirmation, aps.ai.tool.domain.rule. 
+2026-10-31 09:34:28,217 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool. 
+2026-10-31 09:34:28,217 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aui.user.sticker. 
+2026-10-31 09:34:28,218 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aui.sticker. 
+2026-10-31 09:34:28,218 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.parameter. 
+2026-10-31 09:34:28,218 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.log. 
+2026-10-31 09:34:28,218 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.provider.embedding. 
+2026-10-31 09:34:28,218 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.output.field. 
+2026-10-31 09:34:28,218 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.confirmation. 
+2026-10-31 09:34:28,218 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.domain.rule. 
+2026-10-31 09:34:28,224 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.confirmation has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aui.sticker has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.domain.rule has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.log has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.provider.embedding has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aui.user.sticker has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.output.field has no table. 
+2026-10-31 09:34:28,225 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.parameter has no table. 
+2026-10-31 09:34:28,560 48148 INFO mvis1B odoo.modules.loading: loading ar_student_interviews/security/groups.xml 
+2026-10-31 09:34:28,598 48148 INFO mvis1B odoo.modules.loading: loading ar_student_interviews/security/ir.model.access.csv 
+2026-10-31 09:34:28,629 48148 INFO mvis1B odoo.modules.loading: loading ar_student_interviews/data/student_progress_options.xml 
+2026-10-31 09:34:28,697 48148 INFO mvis1B odoo.modules.loading: loading ar_student_interviews/views/student_progress_option_views.xml 
+2026-10-31 09:34:28,752 48148 INFO mvis1B odoo.modules.loading: loading ar_student_interviews/views/student_progress_interview_views.xml 
+2026-10-31 09:34:28,841 48148 INFO mvis1B odoo.modules.loading: loading ar_student_interviews/views/student_progress_profile_views.xml 
+2026-10-31 09:34:28,887 48148 INFO mvis1B odoo.modules.loading: loading ar_student_interviews/views/menus.xml 
+2026-10-31 09:34:29,024 48148 INFO mvis1B odoo.modules.loading: Module ar_student_interviews loaded in 1.52s, 455 queries (+455 other) 
+2026-10-31 09:34:29,303 48148 INFO mvis1B odoo.modules.loading: 73 modules loaded in 16.95s, 5525 queries (+5570 extra) 
+2026-10-31 09:34:29,450 48148 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:29,453 48148 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:29,456 48148 WARNING mvis1B odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:29,719 48148 WARNING mvis1B odoo.fields: Field aps.resources.ai_instructions: unknown parameter 'placeholder', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:29,726 48148 WARNING mvis1B odoo.fields: Field aps.award.vote.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:29,750 48148 WARNING mvis1B odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-10-31 09:34:30,436 48148 INFO mvis1B odoo.modules.registry: verifying fields for every extended model 
+2026-10-31 09:34:30,452 48148 WARNING mvis1B odoo.addons.base.models.ir_model: Two fields (contract_currency_id, currency_id) of hr.employee() have the same label: Currency. [Modules: ar_employee_loans and hr] 
+2026-10-31 09:34:30,494 48148 INFO mvis1B odoo.modules.registry: Models have no table: aps.ai.tool, aui.user.sticker, aui.sticker, aps.ai.tool.parameter, aps.ai.tool.log, aps.ai.provider.embedding, aps.ai.tool.output.field, aps.ai.tool.confirmation, aps.ai.tool.domain.rule. 
+2026-10-31 09:34:30,494 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool. 
+2026-10-31 09:34:30,494 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aui.user.sticker. 
+2026-10-31 09:34:30,494 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aui.sticker. 
+2026-10-31 09:34:30,495 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.parameter. 
+2026-10-31 09:34:30,495 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.log. 
+2026-10-31 09:34:30,495 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.provider.embedding. 
+2026-10-31 09:34:30,495 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.output.field. 
+2026-10-31 09:34:30,497 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.confirmation. 
+2026-10-31 09:34:30,498 48148 INFO mvis1B odoo.modules.registry: Recreate table of model aps.ai.tool.domain.rule. 
+2026-10-31 09:34:30,507 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.confirmation has no table. 
+2026-10-31 09:34:30,507 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool has no table. 
+2026-10-31 09:34:30,507 48148 ERROR mvis1B odoo.modules.registry: Model aui.sticker has no table. 
+2026-10-31 09:34:30,507 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.domain.rule has no table. 
+2026-10-31 09:34:30,507 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.log has no table. 
+2026-10-31 09:34:30,508 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.provider.embedding has no table. 
+2026-10-31 09:34:30,508 48148 ERROR mvis1B odoo.modules.registry: Model aui.user.sticker has no table. 
+2026-10-31 09:34:30,508 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.output.field has no table. 
+2026-10-31 09:34:30,508 48148 ERROR mvis1B odoo.modules.registry: Model aps.ai.tool.parameter has no table. 
+2026-10-31 09:34:32,551 48148 ERROR mvis1B odoo.modules.loading: At least one test failed when loading the modules. 
+2026-10-31 09:34:32,569 48148 INFO mvis1B odoo.modules.registry: Registry changed, signaling through the database 
+2026-10-31 09:34:32,575 48148 INFO mvis1B odoo.modules.registry: Registry loaded in 28.842s 
+2026-10-31 09:34:32,575 48148 INFO mvis1B odoo.service.server: Starting post tests 
+2026-10-31 09:34:32,596 48148 INFO mvis1B odoo.service.server: 0 post-tests in 0.02s, 0 queries 
+2026-10-31 09:34:32,597 48148 INFO mvis1B odoo.tests.stats: aps_sis: 3 tests 0.72s 45 queries 
+2026-10-31 09:34:32,597 48148 ERROR mvis1B odoo.tests.result: 1 failed, 0 error(s) of 1 tests when loading database 'mvis1B' 
+2026-10-31 09:34:32,597 48148 INFO mvis1B odoo.service.server: Initiating shutdown 
+2026-10-31 09:34:32,597 48148 INFO mvis1B odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-10-31 09:34:32,693 48148 INFO mvis1B odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 2 connections  

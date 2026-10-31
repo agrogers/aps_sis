@@ -1289,6 +1289,15 @@ class TestExamPaperImport(TransactionCase):
         self.assertTrue(png_uri.startswith('data:image/png;base64,'))
         self.assertEqual(base64.b64decode(png_uri.split(',', 1)[1]), legacy_png.raw)
 
+        question_prompt = payload['messages'][1]['content'][0]['text']
+        self.assertNotIn('right-hand column', question_prompt)
+        job._ocr_images(model, [crop_attachment], 'mark scheme')
+        mark_scheme_prompt = model._execute_logged_router_call.call_args.args[0]['messages'][1]['content'][0]['text']
+        self.assertIn('prose, bullets, or numbered points', mark_scheme_prompt)
+        self.assertIn('immediately to its left in the middle column', mark_scheme_prompt)
+        self.assertIn('original acronym in parentheses', mark_scheme_prompt)
+        self.assertIn('Leave ambiguous acronyms unchanged', mark_scheme_prompt)
+
     def test_ai_1000_scale_coordinates_are_not_pixels(self):
         importer = self.env['aps.exam.paper.import']
         self.assertAlmostEqual(importer._coordinate_as_fraction(146, 1754), 0.146)

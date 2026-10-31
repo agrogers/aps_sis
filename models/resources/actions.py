@@ -551,17 +551,20 @@ class APSResource(models.Model):
         }
 
     def action_get_or_create_submission(self):
-        """Return an action opening the most recent submission for the current
-        student on this resource. If no submission exists, create a task and
-        an incomplete submission first. These submissions have no assigned
-        date because opening a quiz from the student resource explorers is
-        not itself an assignment. Leaving ``date_assigned`` empty keeps the
-        submission inactive and therefore hidden by the default active-only
-        student submission list, while retaining it for later completion and
-        progress tracking. This method is shared by the Course Explorer and
-        the student resource hierarchy/table."""
+        """Open or create the current student's submission for this resource.
+
+        Non-quiz assessments are assigned through the same wizard workflow as
+        teacher assignments. Other resources retain their Course Explorer
+        progress-tracking submission behavior.
+        """
         self.ensure_one()
         student = self.env.user.partner_id
+
+        if (
+            self.type_id.assessment
+            and (self.type_id.name or '').strip().casefold() != 'quiz'
+        ):
+            return self._action_get_or_create_assigned_assessment_submission(student)
 
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
@@ -606,6 +609,80 @@ class APSResource(models.Model):
                 'subjects': self.subjects.ids,
             })
 
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'aps.resource.submission',
+            'res_id': submission.id,
+            'views': [[False, 'form']],
+            'target': 'current',
+        }
+
+    def _action_get_or_create_assigned_assessment_submission(self, student):
+        self.ensure_one()
+        submission_model = self.env['aps.resource.submission']
+        submission_domain = [
+            ('task_id.resource_id', '=', self.id),
+            ('task_id.student_id', '=', student.id),
+            ('is_course_explorer', '=', False),
+            ('submission_active', '=', True),
+        ]
+        submission = submission_model.search(
+            submission_domain,
+            order='id desc',
+            limit=1,
+        )
+
+        if not submission:
+            wizard_model = self.env['aps.assign.students.wizard']
+            wizard_model = wizard_model.with_context(default_resource_id=self.id)
+            wizard_values = wizard_model.default_get([
+                'resource_id',
+                'date_assigned',
+                'date_due',
+                'time_assigned',
+                'custom_submission_name',
+                'submission_label',
+                'assigned_by',
+                'url',
+                'allow_subject_editing',
+                'has_question',
+                'question',
+                'has_answer',
+                'answer',
+                'has_default_answer',
+                'default_answer',
+                'points_scale',
+                'permit_resubmission',
+                'exam_condition',
+                'class_ids',
+            ])
+            classes = self.env['aps.class'].search([
+                ('academic_year_id.is_current', '=', True),
+                ('subject_id', 'in', self.subjects.ids),
+            ])
+            wizard_values.update({
+                'resource_id': self.id,
+                'class_ids': [(6, 0, classes.ids)],
+                'student_ids': [(6, 0, [student.id])],
+                'student_line_ids': [(0, 0, {'student_id': student.id})],
+                'affected_resource_line_ids': [(0, 0, {
+                    'resource_id': self.id,
+                    'selected': True,
+                    'sequence': 10,
+                })],
+                'notify_student': False,
+            })
+            wizard = wizard_model.new(wizard_values)
+            wizard._onchange_has_question()
+            wizard.action_assign_students()
+            submission = submission_model.search(
+                submission_domain,
+                order='id desc',
+                limit=1,
+            )
+
+        if not submission:
+            return False
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'aps.resource.submission',
@@ -1491,6 +1568,17 @@ class APSResource(models.Model):
                     'state': task.state if task else 'unassigned',
                 })
             sec['quizzes'] = quizzes
+            non_assessment_supporting_ids = set(
+                res.supporting_resource_ids.filtered(
+                    lambda supporting: not supporting.type_id.assessment
+                ).ids
+            )
+            sec['supportingResources'] = [
+                link
+                for link in (res.supporting_resources_buttons or [])
+                if not link.get('is_main')
+                and link.get('id') in non_assessment_supporting_ids
+            ]
             quiz_results = [
                 q['weightedResult']
                 for q in quizzes

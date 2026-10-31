@@ -732,6 +732,45 @@ class TestAPSResource(TransactionCase):
             'Q1b',
         )
 
+    def test_course_explorer_includes_only_non_assessment_supporting_links(self):
+        resource_type = self.env['aps.resource.types'].create({
+            'name': 'Reference',
+        })
+        assessment_type = self.env['aps.resource.types'].create({
+            'name': 'Quiz',
+            'assessment': True,
+        })
+        section = self.env['aps.resources'].create({
+            'name': 'Course Section',
+            'has_notes': 'yes',
+            'notes': '<p>Course notes.</p>',
+            'show_in_hierarchy': True,
+        })
+        reference = self.env['aps.resources'].create({
+            'name': 'Reference Sheet',
+            'type_id': resource_type.id,
+            'url': 'https://example.com/reference',
+        })
+        quiz = self.env['aps.resources'].create({
+            'name': 'Practice Quiz',
+            'type_id': assessment_type.id,
+            'url': 'https://example.com/quiz',
+        })
+        section.write({
+            'supporting_resource_ids': [(6, 0, [reference.id, quiz.id])],
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data()
+        content_section = next(
+            item for item in result['contentSections']
+            if item['id'] == section.id
+        )
+
+        self.assertEqual(
+            [link['id'] for link in content_section['supportingResources']],
+            [reference.id],
+        )
+
     def test_course_explorer_data_keeps_parent_notes_before_child_headings(self):
         category = self.env['aps.subject.category'].create({
             'name': 'Parent Prefix Category',

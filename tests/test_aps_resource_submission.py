@@ -912,6 +912,45 @@ class TestCourseExplorerSubmissionLifecycle(TransactionCase):
         self.assertEqual(second_action['res_id'], submission.id)
         self.assertEqual(len(self._course_submissions(self.resource)), 1)
 
+    def test_opening_non_quiz_assessment_uses_assignment_wizard(self):
+        assessment_type = self.env['aps.resource.types'].create({
+            'name': 'Written Assessment',
+            'assessment': True,
+        })
+        assessment = self.env['aps.resources'].create({
+            'name': 'Written Assessment 1',
+            'type_id': assessment_type.id,
+            'has_question': 'yes',
+            'question': '<p>Answer the question.</p>',
+            'points_scale': 4,
+        })
+
+        action = assessment.action_get_or_create_submission()
+        submission = self.env['aps.resource.submission'].browse(action['res_id'])
+
+        self.assertEqual(submission.state, 'assigned')
+        self.assertEqual(submission.date_assigned, fields.Date.today())
+        self.assertEqual(
+            submission.date_due,
+            fields.Date.today() + self.env['aps.resources']._default_assignment_duration(),
+        )
+        self.assertEqual(submission.submission_name, assessment.display_name)
+        self.assertEqual(submission.question, assessment.question)
+        self.assertEqual(submission.points_scale, assessment.points_scale)
+        self.assertFalse(submission.is_course_explorer)
+        self.assertEqual(submission.notification_state, 'skipped')
+
+        second_action = assessment.action_get_or_create_submission()
+        self.assertEqual(second_action['res_id'], submission.id)
+        self.assertEqual(
+            self.env['aps.resource.submission'].search_count([
+                ('task_id.resource_id', '=', assessment.id),
+                ('task_id.student_id', '=', self.student.id),
+                ('is_course_explorer', '=', False),
+            ]),
+            1,
+        )
+
     def test_completion_reuses_submission_and_dates_it(self):
         self.resource.action_get_or_create_submission()
         result = self.env['aps.resources'].toggle_resource_completion(self.resource.id)

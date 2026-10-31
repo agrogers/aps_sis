@@ -378,7 +378,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
+}
+
+.ce_section_heading_main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ce_supporting_resources {
+    margin-top: 6px;
 }
 
 .ce_section_heading.ce_level_0 {
@@ -669,6 +679,35 @@
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+.ce_assessment_header {
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.ce_assessment_header_title {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.ce_assessment_summary {
+    color: var(--o-text-muted, #6c757d);
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+.ce_assessment_more {
+    width: 100%;
+    padding: 7px;
+    border: 0;
+    background: transparent;
+    color: var(--o-brand-primary, #007bff);
+}
+
+.ce_assessment_more:hover {
+    background: var(--o-primary-bg, #e7f1ff);
 }
 
 /* ── Quiz table ─────────────────────────────────────────────────────── */

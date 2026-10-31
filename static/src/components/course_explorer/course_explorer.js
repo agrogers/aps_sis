@@ -6,8 +6,10 @@ import { ImageViewerDialog } from "@aui_enhancements/js/image_viewer_dialog";
 import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
 import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
 import { QuizProgressBar } from "@aps_sis/components/quiz_progress_bar/quiz_progress_bar";
+import { ResourceLinkButtons } from "@aps_sis/components/resource_link_buttons/resource_link_buttons";
 
 const STORAGE_KEY = "aps_course_explorer";
+const ASSESSMENT_PREVIEW_LIMIT = 5;
 
 // ─── Recursive tree node sub-component ────────────────────────────────
 
@@ -128,7 +130,7 @@ CourseExplorerTreeNode.components = { CourseExplorerTreeNode, PercentPie };
 
 export class CourseExplorer extends Component {
     static template = "aps_sis.CourseExplorer";
-    static components = { CourseExplorerTreeNode, PercentPie, QuizProgressBar };
+    static components = { CourseExplorerTreeNode, PercentPie, QuizProgressBar, ResourceLinkButtons };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
@@ -175,6 +177,7 @@ export class CourseExplorer extends Component {
             activeHeadingId: "",
             resourceTocCollapsed: saved.resourceTocCollapsed === true,
             contentVersion: 0,
+            expandedAssessmentSections: [],
             activeSectionId: this._pendingUrlTarget.sectionId
                 || (categoryChanged ? 0 : saved.activeSectionId || 0),
             sidebarCollapsed: saved.sidebarCollapsed || false,
@@ -572,6 +575,23 @@ export class CourseExplorer extends Component {
 
     // ── Data loading ─────────────────────────────────────────────────
 
+    isAssessmentRowsExpanded(sectionId) {
+        return this.state.expandedAssessmentSections.includes(sectionId);
+    }
+
+    getVisibleAssessmentRows(section) {
+        return this.isAssessmentRowsExpanded(section.id)
+            ? section.assessmentRows
+            : section.assessmentRows.slice(0, ASSESSMENT_PREVIEW_LIMIT);
+    }
+
+    toggleAssessmentRows(sectionId) {
+        const expandedSections = this.state.expandedAssessmentSections;
+        this.state.expandedAssessmentSections = this.isAssessmentRowsExpanded(sectionId)
+            ? expandedSections.filter((id) => id !== sectionId)
+            : [...expandedSections, sectionId];
+    }
+
     async _loadSubjectCategories() {
         this.state.subjectCategories = await this.orm.call(
             "aps.resources",
@@ -653,15 +673,36 @@ export class CourseExplorer extends Component {
                 const quizMasteryRows = quizzes.filter(
                     (quiz) => quiz.progressSummary?.progress_text,
                 );
+                const assessmentRows = quizzes.filter(
+                    (quiz) => !quiz.progressSummary?.progress_text,
+                );
+                const scoredAssessmentRows = assessmentRows.filter(
+                    (assessment) => Number(assessment.attempts) > 0
+                        && assessment.weightedResult !== false
+                        && assessment.weightedResult !== null
+                        && assessment.weightedResult !== undefined
+                        && Number.isFinite(Number(assessment.weightedResult)),
+                );
+                const assessmentAverageScore = scoredAssessmentRows.length
+                    ? Math.round(
+                        scoredAssessmentRows.reduce(
+                            (total, assessment) => total + Number(assessment.weightedResult),
+                            0,
+                        ) / scoredAssessmentRows.length * 10,
+                    ) / 10
+                    : false;
 
                 return {
                     ...sec,
                     html: sec.html ? markup(sec.html) : "",
                     quizzes,
                     quizMasteryRows,
-                    assessmentRows: quizzes.filter(
-                        (quiz) => !quiz.progressSummary?.progress_text,
-                    ),
+                    assessmentRows,
+                    assessmentCompletedCount: assessmentRows.filter(
+                        (assessment) => assessment.state === "complete",
+                    ).length,
+                    assessmentScoredCount: scoredAssessmentRows.length,
+                    assessmentAverageScore,
                     hasNewQuizCategories: quizMasteryRows.some(
                         (quiz) => quiz.progressSummary.student_attempt_threshold !== 1,
                     ),
