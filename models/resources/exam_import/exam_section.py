@@ -173,7 +173,8 @@ class APSExamPaperSection(models.Model):
             'type': 'ir.actions.client',
             'tag': 'aps_exam_section_region_editor',
             'name': _('Review %s') % self.display_label,
-            'target': 'current',
+            'target': 'new',
+            'context': {'dialog_size': 'extra-large'},
             'params': {'section_id': self.id},
         }
 

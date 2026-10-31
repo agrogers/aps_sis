@@ -658,12 +658,7 @@ export class ExamSectionRegionEditor extends Component {
         if (!(await this._save()) || !(await this._saveLabel())) {
             return;
         }
-        const controller = this.action.currentController;
-        if (controller?.config?.historyBack) {
-            controller.config.historyBack();
-        } else {
-            window.history.back();
-        }
+        await this.action.doAction({ type: "ir.actions.act_window_close" });
     }
 }
 
