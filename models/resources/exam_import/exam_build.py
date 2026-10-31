@@ -356,9 +356,10 @@ class APSExamPaperImportBuild(models.Model):
                 if region.get('manual') else None,
             )
             if log:
+                crop_left, crop_top, crop_right, crop_bottom = bounds
                 self._append_image_update_log(section, '%s region %s: raw coordinates=%s (%s), page %s image %sx%s, crop x=%s..%s y=%s..%s.' % (
                     document_type, index, region, self._coordinate_scale(region), page_number,
-                    page.width, page.height, *bounds,
+                    page.width, page.height, crop_left, crop_right, crop_top, crop_bottom,
                 ))
             key = (page.id, bounds)
             if key in seen:
