@@ -54,6 +54,9 @@
     <menuitem id="menu_apex_time_tracking_dashboard" name="Dashboard" parent="menu_apex_time_tracking_heading" action="action_aps_time_tracking_dashboard" sequence="20" groups="aps_sis.group_aps_teacher"/>
 
     <!-- Student Menus -->
+    <menuitem id="menu_apex_student_dashboard" name="Student Dashboard"
+              parent="menu_apex_root" action="action_aps_student_dashboard"
+              sequence="25" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_subject_overview_student" name="Subject Overview" parent="menu_apex_root" action="action_aps_resource_hierarchy_table_student" sequence="125" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student_menu"/>

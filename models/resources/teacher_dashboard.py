@@ -7,6 +7,13 @@ class APSResource(models.Model):
     _inherit = 'aps.resources'
 
     @api.model
+    def _is_student_dashboard(self):
+        return (
+            self.env.user.has_group('aps_sis.group_aps_student')
+            and not self.env.user.has_group('aps_sis.group_aps_teacher')
+        )
+
+    @api.model
     def get_teacher_dashboard_classes(self, category_id=False, days=30):
         """Return classes with submissions in the filtered period."""
         today = fields.Date.today()
@@ -89,7 +96,8 @@ class APSResource(models.Model):
 
     @api.model
     def get_teacher_dashboard_data(
-        self, category_id=False, days=30, student_id=False, class_id=False
+        self, category_id=False, days=30, student_id=False, class_id=False,
+        student_view=False,
     ):
         """Return data for the teacher dashboard.
 
@@ -103,16 +111,19 @@ class APSResource(models.Model):
         """
         today = fields.Date.today()
         start_date = (today - timedelta(days=days)) if days != -1 else False
-        classes = self.get_teacher_dashboard_classes(category_id, days)
+        is_student = bool(student_view or self._is_student_dashboard())
+        classes = [] if is_student else self.get_teacher_dashboard_classes(category_id, days)
         class_id = int(class_id) if class_id else False
         if class_id not in {record['id'] for record in classes}:
             class_id = False
-        students = self.get_teacher_dashboard_students(
+        students = [] if is_student else self.get_teacher_dashboard_students(
             category_id, days, class_id
         )
         student_ids = {student['id'] for student in students}
-        student_id = int(student_id) if student_id else False
-        if student_id not in student_ids:
+        student_id = self.env.user.partner_id.id if is_student else (
+            int(student_id) if student_id else False
+        )
+        if not is_student and student_id not in student_ids:
             student_id = False
 
         metric_base_domain = []
@@ -138,7 +149,7 @@ class APSResource(models.Model):
             )
 
         submission_model = self.env['aps.resource.submission']
-        current_faculty = submission_model._get_current_faculty()
+        current_faculty = False if is_student else submission_model._get_current_faculty()
         review_domain = metric_base_domain + (
             [('review_requested_by', 'in', current_faculty.id)]
             if current_faculty else [('id', '=', False)]
@@ -154,8 +165,8 @@ class APSResource(models.Model):
             ('state', '=', 'assigned'),
             ('date_due', '=', str(today)),
         ]
-        labelled_submissions = submission_model.search(labelled_domain)
-        dashboard_metrics = {
+        labelled_submissions = submission_model.browse() if is_student else submission_model.search(labelled_domain)
+        dashboard_metrics = {} if is_student else {
             'review_requested': {
                 'count': submission_model.search_count(review_domain),
                 'domain': review_domain,
@@ -205,7 +216,7 @@ class APSResource(models.Model):
             combined_domain = subject_domain
 
         combined_domain = ['|', ('type_id.name', '=', 'Subject')] + combined_domain
-        subject_resources = self.env['aps.resources'].search_read(
+        subject_resources = [] if is_student else self.env['aps.resources'].search_read(
             combined_domain,
             ['id', 'name', 'display_name', 'type_id', 'subjects', 'write_date'],
             order='write_date desc',
@@ -233,7 +244,7 @@ class APSResource(models.Model):
             favourite_domain.append(
                 ('subjects.category_id', '=', category_id)
             )
-        favourite_resources = self.env['aps.resources'].search_read(
+        favourite_resources = [] if is_student else self.env['aps.resources'].search_read(
             favourite_domain,
             ['id', 'display_name', 'subject_icons'],
             order='display_name',
@@ -260,14 +271,17 @@ class APSResource(models.Model):
         if class_id:
             task_domain.append(('student_id', 'in', class_partner_ids))
 
-        tasks = self.env['aps.resource.task'].search(
+        tasks = self.env['aps.resource.task'].browse() if is_student else self.env['aps.resource.task'].search(
             task_domain, order='date_assigned desc'
         )
 
         # ------------------------------------------------------------------ #
         # Submission groups
         # ------------------------------------------------------------------ #
-        submission_domain = [('submission_label', '!=', False)]
+        submission_domain = (
+            [('submission_active', '=', True)]
+            if is_student else [('submission_label', '!=', False)]
+        )
         if start_date:
             submission_domain.append(('date_assigned', '>=', str(start_date)))
         if category_id:
@@ -285,7 +299,7 @@ class APSResource(models.Model):
                 ('task_id.student_id', 'in', class_partner_ids)
             )
         submissions = self.env['aps.resource.submission'].search(
-            submission_domain, order='date_assigned desc, id'
+            submission_domain, order='date_assigned desc, id desc' if is_student else 'date_assigned desc, id'
         )
         groups_by_key = {}
         resource_groups = {}
@@ -294,6 +308,7 @@ class APSResource(models.Model):
             label = submission.submission_label or ''
             key = (label, resource.id)
             if key not in groups_by_key:
+                subjects = submission.subjects or resource.subjects
                 groups_by_key[key] = {
                     'key': f'{resource.id}:{label}',
                     'label': label,
@@ -318,6 +333,11 @@ class APSResource(models.Model):
                         submission.type_icon
                         or (resource.type_icon if resource else False)
                     ),
+                    'subject_icons': subjects[:1].icon if subjects else False,
+                    'subject_name': ', '.join(subjects.mapped('display_name')),
+                    'student_state': submission.state,
+                    'student_submission_id': submission.id,
+                    'student_overdue': submission.due_status == 'late',
                     'date_assigned': str(submission.date_assigned or ''),
                     'date_due': False,
                     'days_till_due': False,
@@ -344,7 +364,7 @@ class APSResource(models.Model):
                 filter(None, [group['date_assigned'], str(submission.date_assigned or '')]),
                 default='',
             )
-            if submission.date_due and submission.date_due >= today:
+            if submission.date_due and (is_student or submission.date_due >= today):
                 current_due_date = group['date_due']
                 if not current_due_date or submission.date_due < fields.Date.from_string(
                     current_due_date
@@ -512,6 +532,7 @@ class APSResource(models.Model):
         )
 
         return {
+            'is_student': is_student,
             'categories': categories,
             'students': students,
             'classes': classes,
@@ -537,6 +558,9 @@ class APSResource(models.Model):
         today = fields.Date.today()
         start_date = (today - timedelta(days=days)) if days != -1 else False
 
+        if self._is_student_dashboard():
+            student_id = self.env.user.partner_id.id
+            class_id = False
         domain = [('resource_id', '=', resource_id)]
         if student_id:
             domain.append(('task_id.student_id', '=', student_id))

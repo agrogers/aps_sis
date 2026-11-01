@@ -1,6 +1,7 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.TeacherDashboard" owl="1">
-        <div class="aps-teacher-dashboard wallpaper vh-100 overflow-auto p-2">
+           <div class="aps-teacher-dashboard wallpaper vh-100 overflow-auto p-2"
+               t-att-class="state.isStudent ? 'aps-student-dashboard' : ''">
 
             <!-- ==================== FILTERS ==================== -->
             <div class="row mb-3 align-items-center aps-dashboard-filters shadow-sm p-2 mx-0 rounded">
@@ -9,7 +10,8 @@
                         <img src="/apex_core/static/img/layout.svg"
                              class="aps-dashboard-title-icon me-2"
                              alt="Dashboard"/>
-                        <i class="fa fa-chalkboard-teacher me-2"/>Teacher Dashboard
+                            <i t-if="!state.isStudent" class="fa fa-chalkboard-teacher me-2"/>
+                        <t t-esc="state.isStudent ? 'Student Dashboard' : 'Teacher Dashboard'"/>
                     </h1>
                 </div>
                 <div class="col-md-2 mt-2">
@@ -23,7 +25,7 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-2 mt-2">
+                <div t-if="!state.isStudent" class="col-md-2 mt-2">
                     <select class="form-select" t-on-change="onChangeClass">
                         <option value="">All Classes</option>
                         <t t-foreach="state.classes" t-as="classRecord" t-key="classRecord.id">
@@ -44,7 +46,7 @@
                         </t>
                     </select>
                 </div>
-                <div class="col-md-2 mt-2">
+                <div t-if="!state.isStudent" class="col-md-2 mt-2">
                     <select class="form-select" t-on-change="onChangeStudent">
                         <option value="">All Students</option>
                         <t t-foreach="state.students" t-as="student" t-key="student.id">
@@ -68,7 +70,7 @@
 
             <t t-else="">
 
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-2 mb-3 aps-dashboard-metrics">
+                <div t-if="!state.isStudent" class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-2 mb-3 aps-dashboard-metrics">
                     <div class="col">
                         <a href="#" class="card h-100 aps-dashboard-metric-card aps-dashboard-metric-review"
                            t-att-aria-label="state.dashboardMetrics.review_requested.count + ' submissions have requested your review'"
@@ -131,7 +133,7 @@
                     </div>
                 </div>
 
-                <div t-if="state.favouriteResources.length" class="aps-favourite-resources mb-3"
+                <div t-if="!state.isStudent &amp;&amp; state.favouriteResources.length" class="aps-favourite-resources mb-3"
                      aria-label="Favourite resources">
                     <a t-foreach="state.favouriteResources" t-as="res" t-key="res.id"
                        t-att-href="getResourceUrl(res.id)"
@@ -164,15 +166,15 @@
                                 <button type="button"
                                         t-att-class="state.hiddenSubmissionTypes[type.id] ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-primary'"
                                         t-att-aria-pressed="!state.hiddenSubmissionTypes[type.id]"
-                                        t-att-title="type.name + ': ' + type.total + ' submissions'"
-                                        t-att-aria-label="(state.hiddenSubmissionTypes[type.id] ? 'Show ' : 'Hide ') + type.name + ' (' + type.total + ' submissions)'"
+                                        t-att-title="state.isStudent ? type.name : type.name + ': ' + type.total + ' submissions'"
+                                        t-att-aria-label="(state.hiddenSubmissionTypes[type.id] ? 'Show ' : 'Hide ') + type.name + (state.isStudent ? '' : ' (' + type.total + ' submissions)')"
                                         t-on-click="() => this.toggleSubmissionType(type.id)">
                                     <img t-if="type.type_icon"
                                          t-att-src="binaryIconUrl(type.type_icon)"
                                          class="aps-type-filter-icon"
                                          alt=""/>
                                     <i t-else="" class="fa fa-file-o"/>
-                                    <span t-att-class="'aps-type-filter-count aps-type-filter-count-' + type.badgeColor">
+                                    <span t-if="!state.isStudent" t-att-class="'aps-type-filter-count aps-type-filter-count-' + type.badgeColor">
                                         <t t-esc="type.total"/>
                                     </span>
                                 </button>
@@ -204,8 +206,8 @@
                                     <div t-att-class="'card aps-submission-group-card ' + (state.expandedSubmissionGroups[group.key] ? 'aps-expanded' : '')">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center gap-2 mb-0 aps-submission-group-heading">
-                                                <a t-att-href="getResourceUrl(group.resource_id)"
-                                                   t-on-click.prevent="() => this.openResource(group.resource_id)"
+                                                                <a t-att-href="state.isStudent ? getSubmissionUrl(group.student_submission_id) : getResourceUrl(group.resource_id)"
+                                                                    t-on-click.prevent="() => state.isStudent ? this.openSubmission(group.student_submission_id) : this.openResource(group.resource_id)"
                                                    class="aps-submission-resource-link"
                                                 t-att-title="'Open ' + group.title">
                                                     <img t-if="group.type_icon"
@@ -215,7 +217,13 @@
                                                     <i t-else="" class="fa fa-file-o aps-type-icon-placeholder"/>
                                                 </a>
                                                 <div class="aps-submission-group-title">
-                                                    <strong class="aps-submission-group-label" t-att-title="group.title">
+                                                    <a t-if="state.isStudent" class="aps-submission-group-label aps-resource-link"
+                                                       t-att-href="getSubmissionUrl(group.student_submission_id)"
+                                                       t-on-click.prevent="() => this.openSubmission(group.student_submission_id)"
+                                                       t-att-title="group.title">
+                                                        <t t-esc="group.title"/>
+                                                    </a>
+                                                    <strong t-else="" class="aps-submission-group-label" t-att-title="group.title">
                                                         <t t-esc="group.title"/>
                                                     </strong>
                                                     <div t-if="group.description" class="aps-submission-group-description" t-att-title="group.description">
@@ -233,13 +241,26 @@
                                                         dateFormat="'D-MMM-YY'"
                                                         />
                                                 </span>
-                                                <a href="#" class="aps-submission-group-average" t-att-title="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-att-aria-label="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-on-click.prevent="() => this.openGroupSubmissions(group.scored_ids, group.title, 'Scored submissions')">
+                                                <a t-if="!state.isStudent" href="#" class="aps-submission-group-average" t-att-title="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-att-aria-label="'Average score: ' + (group.avg_score === false ? '—' : group.avg_score + '%')" t-on-click.prevent="() => this.openGroupSubmissions(group.scored_ids, group.title, 'Scored submissions')">
                                                     <PercentPie t-if="group.avg_score !== false" value="group.avg_score" string="" showText="false" showTooltip="true"/>
                                                     <span t-else="">—</span>
                                                     <span t-if="group.out_of &gt; 0" class="aps-submission-out-of">/<t t-esc="group.out_of"/></span>
                                                 </a>
                                             </div>
-                                            <div class="aps-submission-group-metrics">
+                                            <div t-if="state.isStudent" class="aps-student-card-status">
+                                                <a t-att-href="getSubmissionUrl(group.student_submission_id)"
+                                                   t-att-class="'badge ' + stateBadgeClass(studentGroupState(group))"
+                                                   t-att-title="'Open submission: ' + stateLabel(studentGroupState(group))"
+                                                   t-on-click.prevent="() => this.openSubmission(group.student_submission_id)">
+                                                    <t t-esc="stateLabel(studentGroupState(group))"/>
+                                                </a>
+                                                <img t-if="group.subject_icons"
+                                                     t-att-src="binaryIconUrl(group.subject_icons)"
+                                                     class="aps-student-subject-icon"
+                                                     t-att-title="group.subject_name"
+                                                     t-att-alt="group.subject_name"></img>
+                                            </div>
+                                            <div t-else="" class="aps-submission-group-metrics">
                                                 <div t-if="(group.total > 0 || group.child_count > 0) &amp;&amp; this.showTotalSubmissionBadge(group)" class="aps-metric-badge-wrapper">
                                                     <a t-if="group.total > 0" href="#" class="aps-metric-badge aps-total-badge" t-att-title="'Total submissions: ' + group.total" t-att-aria-label="'Total submissions: ' + group.total" t-on-click.prevent="() => this.openGroupSubmissions(group.submission_ids, group.title, 'All submissions')">
                                                         <span><t t-esc="group.total"/></span>
@@ -315,7 +336,7 @@
                 </div>
 
                 <!-- ==================== RESOURCE HIERARCHY (when category selected) ==================== -->
-                <t t-if="state.categoryId">
+                <t t-if="!state.isStudent &amp;&amp; state.categoryId">
                     <ResourceHierarchyTable
                         t-key="state.categoryId"
                         embedded="true"
@@ -325,7 +346,7 @@
                 </t>
 
                 <!-- ==================== TWO-COLUMN ROW ==================== -->
-                <div class="row g-4 mb-3">
+                <div t-if="!state.isStudent" class="row g-4 mb-3">
 
                     <!-- COLUMN 2: Assigned Resources -->
                     <div class="col-md-6">
@@ -452,7 +473,7 @@
                 </div><!-- end two-column row -->
 
                 <!-- ==================== SUBMISSIONS FOR SELECTED RESOURCE ==================== -->
-                <t t-if="state.selectedResourceId">
+                <t t-if="!state.isStudent &amp;&amp; state.selectedResourceId">
                     <div class="card shadow-sm mb-3">
                         <div class="card-header aps-dashboard-card-header fw-bold d-flex justify-content-between align-items-center">
                             <div>

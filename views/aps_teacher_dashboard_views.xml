@@ -5,4 +5,10 @@
         <field name="tag">aps_teacher_dashboard</field>
         <field name="path">apex-teacher-dashboard</field>
     </record>
+    <record id="action_aps_student_dashboard" model="ir.actions.client">
+        <field name="name">Student Dashboard</field>
+        <field name="tag">aps_teacher_dashboard</field>
+        <field name="path">apex-my-dashboard</field>
+        <field name="context">{'student_dashboard': True}</field>
+    </record>
 </odoo>

@@ -212,3 +212,92 @@ class TestDashboardDataFilters(TransactionCase):
             {self.partner_a.id, self.partner_b.id},
         )
         self.assertIn(partner_e.id, {student['id'] for student in all_time_students})
+
+
+class TestStudentDashboard(TransactionCase):
+
+    def setUp(self):
+        super().setUp()
+        self.partner_a = self.env['res.partner'].create({'name': 'Dashboard Student A', 'is_student': True})
+        self.partner_b = self.env['res.partner'].create({'name': 'Dashboard Student B', 'is_student': True})
+        self.partner_d = self.env['res.partner'].create({'name': 'Dashboard Student Without Work', 'is_student': True})
+        self.subject = self.env['aps.subject'].create({'name': 'Dashboard Mathematics'})
+        resource = self.env['aps.resources'].create({
+            'name': 'Student Dashboard Resource',
+            'subjects': [(6, 0, self.subject.ids)],
+        })
+        for partner in [self.partner_a, self.partner_b]:
+            task = self.env['aps.resource.task'].create({
+                'resource_id': resource.id,
+                'student_id': partner.id,
+            })
+            submission = self.env['aps.resource.submission'].create({
+                'task_id': task.id,
+                'submission_name': 'Dashboard Work',
+                'date_assigned': fields.Date.today(),
+            })
+            submission._compute_submission_active()
+
+    def _student_dashboard_user(self, partner):
+        return self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': partner.name,
+            'login': f'dashboard_student_test_{partner.id}',
+            'partner_id': partner.id,
+            'groups_id': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('aps_sis.group_aps_student').id,
+            ])],
+        })
+
+    def test_student_dashboard_forces_own_submissions_and_hides_teacher_data(self):
+        student_user = self._student_dashboard_user(self.partner_a)
+        resources = self.env['aps.resources'].with_user(student_user)
+        own_submissions = self.env['aps.resource.submission'].search([
+            ('student_id', '=', self.partner_a.id),
+        ])
+        resource = own_submissions[:1].resource_id
+        image_buffer = io.BytesIO()
+        Image.new('RGB', (24, 24), (35, 125, 90)).save(image_buffer, format='PNG')
+        self.subject.icon = base64.b64encode(image_buffer.getvalue())
+
+        data = resources.get_teacher_dashboard_data(
+            days=-1, student_id=self.partner_b.id, class_id=999,
+        )
+
+        self.assertTrue(data['is_student'])
+        self.assertEqual(data['selected_student_id'], self.partner_a.id)
+        self.assertFalse(data['selected_class_id'])
+        for key in ['classes', 'students', 'subject_resources', 'favourite_resources', 'task_resources', 'dashboard_metrics']:
+            self.assertFalse(data[key], key)
+        self.assertEqual(
+            {submission_id for group in data['submission_groups'] for submission_id in group['submission_ids']},
+            set(own_submissions.ids),
+        )
+        group = data['submission_groups'][0]
+        self.assertEqual(group['student_submission_id'], own_submissions[:1].id)
+        self.assertEqual(group['student_state'], own_submissions[:1].state)
+        self.assertTrue(group['subject_icons'])
+        self.assertEqual(group['subject_name'], self.subject.display_name)
+
+        submissions = resources.sudo().get_dashboard_submissions_for_resource(
+            resource.id, days=-1, student_id=self.partner_b.id, class_id=999,
+        )
+        self.assertEqual({submission['id'] for submission in submissions}, set(own_submissions.ids))
+
+    def test_student_dashboard_without_submissions_does_not_fall_back_to_all_students(self):
+        student_user = self._student_dashboard_user(self.partner_d)
+        data = self.env['aps.resources'].with_user(student_user).sudo().get_teacher_dashboard_data(
+            days=-1, student_id=self.partner_a.id,
+        )
+        self.assertEqual(data['selected_student_id'], self.partner_d.id)
+        self.assertFalse(data['submission_groups'])
+
+    def test_student_dashboard_hides_future_assignments(self):
+        student_user = self._student_dashboard_user(self.partner_a)
+        own_submission = self.env['aps.resource.submission'].search([
+            ('student_id', '=', self.partner_a.id),
+        ], limit=1)
+        own_submission.date_assigned = fields.Date.today() + timedelta(days=2)
+        own_submission._compute_submission_active()
+        data = self.env['aps.resources'].with_user(student_user).sudo().get_teacher_dashboard_data(days=-1)
+        self.assertFalse(data['submission_groups'])

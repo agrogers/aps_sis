@@ -1,15 +1,16 @@
 import { Component, useState, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { user } from "@web/core/user";
 import { ResourceHierarchyTable } from "../resource_hierarchy_table/resource_hierarchy_table";
 import { PercentPie } from "../percent_pie/percent_pie";
 import { BadgeDecoratorDisplay } from "../../js/badge_decorator_widget";
 
 const STORAGE_KEY = "aps_teacher_dashboard_state";
 
-function _loadStoredState() {
+function _loadStoredState(storageKey) {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(storageKey);
         return raw ? JSON.parse(raw) : {};
     } catch {
         return {};
@@ -41,7 +42,9 @@ export class TeacherDashboard extends Component {
         this._submissionFormViewId = null;
         this._submissionGroupIndex = new Map();
 
-        const storedState = _loadStoredState();
+        const studentView = Boolean(this.props.action?.context?.student_dashboard);
+        this._storageKey = `${STORAGE_KEY}_${user.userId}_${studentView ? "student" : "teacher"}`;
+        const storedState = _loadStoredState(this._storageKey);
         const actionState = this.props.globalState || {};
         const gs = {
             ...storedState,
@@ -50,6 +53,7 @@ export class TeacherDashboard extends Component {
         const restoredResourceId = _normalizeResourceId(gs.selectedResourceId);
         this.state = useState({
             loading: true,
+            isStudent: studentView,
             categoryId: gs.categoryId ?? false,
             days: gs.days ?? 30,
             classId: _normalizeResourceId(gs.classId),
@@ -69,6 +73,9 @@ export class TeacherDashboard extends Component {
             submissions: [],
             submissionsLoading: false,
         });
+        for (const handler of ["onChangeCategory", "onChangeDays", "onChangeStudent", "onChangeClass", "openAllSubmissions"]) {
+            this[handler] = this[handler].bind(this);
+        }
 
         onWillStart(async () => {
             await this._fetchData({ resetSelection: false });
@@ -110,7 +117,7 @@ export class TeacherDashboard extends Component {
             ),
         };
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+            localStorage.setItem(this._storageKey, JSON.stringify(snapshot));
         } catch {
             // localStorage full or blocked - ignore
         }
@@ -134,8 +141,10 @@ export class TeacherDashboard extends Component {
                 days: this.state.days,
                 class_id: this.state.classId,
                 student_id: this.state.studentId,
+                student_view: this.state.isStudent,
             }
         );
+        this.state.isStudent = Boolean(data.is_student);
         this.state.categories = data.categories || [];
         this.state.classes = data.classes || [];
         this.state.classId = data.selected_class_id || false;
@@ -242,20 +251,23 @@ export class TeacherDashboard extends Component {
             return this._submissionFormViewId;
         }
 
+        const viewName = this.state.isStudent
+            ? "view_aps_resource_submission_form_for_students"
+            : "view_aps_resource_submission_form";
         let viewId = false;
         try {
             // Preferred pattern already used elsewhere in this addon static code.
             const [, resolvedViewId] = await this.orm.call(
                 "ir.model.data",
                 "check_object_reference",
-                ["aps_sis", "view_aps_resource_submission_form"]
+                ["aps_sis", viewName]
             );
             viewId = resolvedViewId || false;
         } catch {
             // Fallback for environments where check_object_reference may be restricted.
             const [data] = await this.orm.searchRead(
                 "ir.model.data",
-                [["module", "=", "aps_sis"], ["name", "=", "view_aps_resource_submission_form"]],
+                [["module", "=", "aps_sis"], ["name", "=", viewName]],
                 ["res_id"],
                 { limit: 1 }
             );
@@ -299,6 +311,12 @@ export class TeacherDashboard extends Component {
     toggleSubmissionType(typeId) {
         this.state.hiddenSubmissionTypes[typeId] = !this.state.hiddenSubmissionTypes[typeId];
         this._saveState();
+    }
+
+    studentGroupState(group) {
+        return group.student_state === "assigned" && group.student_overdue
+            ? "overdue"
+            : group.student_state;
     }
 
     showTotalSubmissionBadge(group) {
@@ -517,6 +535,7 @@ export class TeacherDashboard extends Component {
             assigned: { label: "Assigned", badgeClass: "bg-secondary" },
             submitted: { label: "Submitted", badgeClass: "bg-primary" },
             complete: { label: "Finalised", badgeClass: "bg-success" },
+            overdue: { label: "Overdue", badgeClass: "bg-danger" },
         };
     }
 
@@ -561,7 +580,10 @@ export class TeacherDashboard extends Component {
     }
 
     getSubmissionUrl(submissionId) {
-        return `/web#action=aps_sis.action_aps_resource_submissions&id=${submissionId}&view_type=form`;
+        const action = this.state.isStudent
+            ? "action_aps_resource_submissions_for_students"
+            : "action_aps_resource_submissions";
+        return `/web#action=aps_sis.${action}&id=${submissionId}&view_type=form`;
     }
 }
 

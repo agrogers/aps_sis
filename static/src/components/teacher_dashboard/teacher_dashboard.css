@@ -43,6 +43,51 @@
     vertical-align: text-bottom;
 }
 
+.aps-teacher-dashboard.aps-student-dashboard .aps-dashboard-filters h1 {
+    display: flex;
+    align-items: center;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.aps-student-dashboard .aps-dashboard-title-icon {
+    flex: 0 0 28px;
+}
+
+.aps-student-dashboard .aps-submission-group-heading .aps-submission-group-label {
+    display: block;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.aps-student-dashboard .aps-submission-group-date {
+    flex-wrap: wrap;
+}
+
+.aps-student-dashboard .aps-student-card-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 28px;
+    margin-top: auto;
+    padding-top: 0.25rem;
+}
+
+.aps-student-dashboard .aps-student-card-status .badge {
+    max-width: 100%;
+    text-decoration: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.aps-student-dashboard .aps-student-subject-icon {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
 .aps-teacher-dashboard .aps-dashboard-metric-card {
     border-left: 4px solid var(--bs-primary, #0d6efd);
     color: var(--body-color, #212529);
