@@ -11,7 +11,7 @@
                              class="aps-dashboard-title-icon me-2"
                              alt="Dashboard"/>
                             <i t-if="!state.isStudent" class="fa fa-chalkboard-teacher me-2"/>
-                        <t t-esc="state.isStudent ? 'Student Dashboard' : 'Teacher Dashboard'"/>
+                        <t t-esc="state.isStudent ? 'Submission Cards' : 'Teacher Dashboard'"/>
                     </h1>
                 </div>
                 <div class="col-md-2 mt-2">
@@ -157,28 +157,49 @@
                 <!-- ==================== SUBMISSION GROUPS ==================== -->
                 <div class="card shadow-sm mb-3 aps-submission-groups">
                     <div class="card-header aps-dashboard-card-header">
-                        <div class="fw-bold mb-2">
-                            <i class="fa fa-layer-group me-2 text-primary"/>
-                            Resource Type Filter
-                        </div>
-                        <div class="aps-submission-type-filters" role="group" aria-label="Filter cards by resource type">
-                            <t t-foreach="submissionGroupTypes" t-as="type" t-key="type.id">
-                                <button type="button"
-                                        t-att-class="state.hiddenSubmissionTypes[type.id] ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-primary'"
-                                        t-att-aria-pressed="!state.hiddenSubmissionTypes[type.id]"
-                                        t-att-title="state.isStudent ? type.name : type.name + ': ' + type.total + ' submissions'"
-                                        t-att-aria-label="(state.hiddenSubmissionTypes[type.id] ? 'Show ' : 'Hide ') + type.name + (state.isStudent ? '' : ' (' + type.total + ' submissions)')"
-                                        t-on-click="() => this.toggleSubmissionType(type.id)">
-                                    <img t-if="type.type_icon"
-                                         t-att-src="binaryIconUrl(type.type_icon)"
-                                         class="aps-type-filter-icon"
-                                         alt=""/>
-                                    <i t-else="" class="fa fa-file-o"/>
-                                    <span t-if="!state.isStudent" t-att-class="'aps-type-filter-count aps-type-filter-count-' + type.badgeColor">
-                                        <t t-esc="type.total"/>
-                                    </span>
-                                </button>
-                            </t>
+                        <div class="aps-submission-filter-groups">
+                            <div class="aps-submission-filter-section">
+                                <div class="fw-bold mb-2">
+                                    <i class="fa fa-layer-group me-2 text-primary"/>
+                                    Resource Type Filter
+                                </div>
+                                <div class="aps-submission-type-filters" role="group" aria-label="Filter cards by resource type">
+                                    <t t-foreach="submissionGroupTypes" t-as="type" t-key="type.id">
+                                        <button type="button"
+                                                t-att-class="state.hiddenSubmissionTypes[type.id] ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-primary'"
+                                                t-att-aria-pressed="!state.hiddenSubmissionTypes[type.id]"
+                                                t-att-title="state.isStudent ? type.name : type.name + ': ' + type.total + ' submissions'"
+                                                t-att-aria-label="(state.hiddenSubmissionTypes[type.id] ? 'Show ' : 'Hide ') + type.name + (state.isStudent ? '' : ' (' + type.total + ' submissions)')"
+                                                t-on-click="() => this.toggleSubmissionType(type.id)">
+                                            <img t-if="type.type_icon"
+                                                 t-att-src="binaryIconUrl(type.type_icon)"
+                                                 class="aps-type-filter-icon"
+                                                 alt=""/>
+                                            <i t-else="" class="fa fa-file-o"/>
+                                            <span t-if="!state.isStudent" t-att-class="'aps-type-filter-count aps-type-filter-count-' + type.badgeColor">
+                                                <t t-esc="type.total"/>
+                                            </span>
+                                        </button>
+                                    </t>
+                                </div>
+                            </div>
+                            <div class="aps-submission-filter-section">
+                                <div class="fw-bold mb-2">
+                                    <i class="fa fa-filter me-2 text-primary"/>
+                                    State Filter
+                                </div>
+                                <div class="aps-submission-state-filters" role="group" aria-label="Filter cards by submission state">
+                                    <t t-foreach="submissionStates" t-as="status" t-key="status.id">
+                                        <button type="button"
+                                                t-att-class="state.hiddenSubmissionStates[status.id] ? 'btn btn-sm btn-outline-' + status.color : 'btn btn-sm btn-' + status.color"
+                                                t-att-aria-pressed="!state.hiddenSubmissionStates[status.id]"
+                                                t-att-aria-label="(state.hiddenSubmissionStates[status.id] ? 'Show ' : 'Hide ') + status.label + ' submissions'"
+                                                t-on-click="() => this.toggleSubmissionState(status.id)">
+                                            <t t-esc="status.label"/>
+                                        </button>
+                                    </t>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <t t-if="state.submissionGroups.length === 0">
@@ -186,7 +207,7 @@
                     </t>
                     <t t-else="">
                         <t t-if="visibleSubmissionGroups.length === 0">
-                            <div class="card-body text-muted">All resource types are hidden. Select a type icon to show its cards.</div>
+                            <div class="card-body text-muted">No cards match the selected resource type and state filters.</div>
                         </t>
                         <div t-else="" class="row g-2 p-3">
                             <t t-foreach="visibleSubmissionGroupRows" t-as="groupRow" t-key="groupRow.depth + '-' + groupRow.groups[0].key">
@@ -259,6 +280,12 @@
                                                      class="aps-student-subject-icon"
                                                      t-att-title="group.subject_name"
                                                      t-att-alt="group.subject_name"></img>
+                                                   <div t-if="group.out_of &gt; 0 &amp;&amp; group.avg_score !== false"
+                                                       class="aps-student-card-score"
+                                                       t-att-title="'Score: ' + group.avg_score + '% out of ' + group.out_of"
+                                                       t-att-aria-label="'Score: ' + group.avg_score + '% out of ' + group.out_of">
+                                                      <PercentPie value="group.avg_score" string="" showText="false" showTooltip="true"/>
+                                                   </div>
                                             </div>
                                             <div t-else="" class="aps-submission-group-metrics">
                                                 <div t-if="(group.total > 0 || group.child_count > 0) &amp;&amp; this.showTotalSubmissionBadge(group)" class="aps-metric-badge-wrapper">

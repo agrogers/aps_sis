@@ -68,6 +68,7 @@ export class TeacherDashboard extends Component {
             dashboardMetrics: {},
             expandedSubmissionGroups: gs.expandedSubmissionGroups ?? {},
             hiddenSubmissionTypes: gs.hiddenSubmissionTypes ?? {},
+            hiddenSubmissionStates: gs.hiddenSubmissionStates ?? {},
             selectedResourceId: restoredResourceId,
             selectedResourceName: gs.selectedResourceName ?? "",
             submissions: [],
@@ -114,6 +115,9 @@ export class TeacherDashboard extends Component {
             ),
             hiddenSubmissionTypes: Object.fromEntries(
                 Object.entries(this.state.hiddenSubmissionTypes)
+            ),
+            hiddenSubmissionStates: Object.fromEntries(
+                Object.entries(this.state.hiddenSubmissionStates)
             ),
         };
         try {
@@ -379,6 +383,33 @@ export class TeacherDashboard extends Component {
             .sort((left, right) => left.name.localeCompare(right.name));
     }
 
+    get submissionStates() {
+        return [
+            { id: "assigned", label: "Assigned", color: "warning" },
+            { id: "overdue", label: "Overdue", color: "danger" },
+            { id: "submitted", label: "Submitted", color: "info" },
+            { id: "complete", label: "Finalised", color: "secondary" },
+        ];
+    }
+
+    submissionGroupHasState(group, stateId) {
+        if (this.state.isStudent) {
+            return this.studentGroupState(group) === stateId;
+        }
+        const fieldsByState = {
+            assigned: "assigned",
+            overdue: "overdue",
+            submitted: "submitted",
+            complete: "finalised",
+        };
+        return group[fieldsByState[stateId]] > 0;
+    }
+
+    toggleSubmissionState(stateId) {
+        this.state.hiddenSubmissionStates[stateId] = !this.state.hiddenSubmissionStates[stateId];
+        this._saveState();
+    }
+
     get visibleSubmissionGroups() {
         const childrenByParent = new Map();
         for (const group of this.state.submissionGroups) {
@@ -398,24 +429,30 @@ export class TeacherDashboard extends Component {
                 );
             }
         }
-        const hasVisibleTypeInSubtree = (group, ancestors = new Set()) => {
+        const visibleStates = this.submissionStates.filter(
+            (status) => !this.state.hiddenSubmissionStates[status.id]
+        );
+        const hasVisibleGroupInSubtree = (group, ancestors = new Set()) => {
             if (ancestors.has(group.key)) {
                 return false;
             }
             ancestors.add(group.key);
             const typeId = group.type_id ? group.type_id[0] : false;
-            const hasVisibleType =
-                typeId === false || !this.state.hiddenSubmissionTypes[typeId] ||
-                (childrenByParent.get(group.key) || []).some(
-                    (child) => hasVisibleTypeInSubtree(child, ancestors)
-                );
+            const typeVisible = typeId === false || !this.state.hiddenSubmissionTypes[typeId];
+            const stateVisible =
+                visibleStates.length === this.submissionStates.length ||
+                visibleStates.some((status) => this.submissionGroupHasState(group, status.id));
+            const ownGroupVisible = typeVisible && stateVisible;
+            const childVisible = (childrenByParent.get(group.key) || []).some(
+                (child) => hasVisibleGroupInSubtree(child, ancestors)
+            );
             ancestors.delete(group.key);
-            return hasVisibleType;
+            return ownGroupVisible || childVisible;
         };
         const visible = [];
-        const appendChildren = (parentKey, depth, isRoot = false) => {
+        const appendChildren = (parentKey, depth) => {
             for (const group of childrenByParent.get(parentKey) || []) {
-                if (isRoot && !hasVisibleTypeInSubtree(group)) {
+                if (!hasVisibleGroupInSubtree(group)) {
                     continue;
                 }
                 visible.push({
@@ -427,7 +464,7 @@ export class TeacherDashboard extends Component {
                 }
             }
         };
-        appendChildren("", 0, true);
+        appendChildren("", 0);
         return visible;
     }
 
@@ -532,9 +569,9 @@ export class TeacherDashboard extends Component {
     // ------------------------------------------------------------------ //
     get _stateConfig() {
         return {
-            assigned: { label: "Assigned", badgeClass: "bg-secondary" },
-            submitted: { label: "Submitted", badgeClass: "bg-primary" },
-            complete: { label: "Finalised", badgeClass: "bg-success" },
+            assigned: { label: "Assigned", badgeClass: "bg-warning text-dark" },
+            submitted: { label: "Submitted", badgeClass: "bg-info text-dark" },
+            complete: { label: "Finalised", badgeClass: "bg-secondary" },
             overdue: { label: "Overdue", badgeClass: "bg-danger" },
         };
     }

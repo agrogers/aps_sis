@@ -39,5 +39,6 @@
 }
 
 .o_pie_info .o_pie_value {
-    color: var(--PercentPieField-color-active, inherit);
+    /* color: var(--PercentPieField-color-active, inherit); */
+    color: rgba(0, 0, 0, 0.8);
 }
