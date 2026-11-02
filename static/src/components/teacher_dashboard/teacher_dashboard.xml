@@ -11,7 +11,7 @@
                              class="aps-dashboard-title-icon me-2"
                              alt="Dashboard"/>
                             <i t-if="!state.isStudent" class="fa fa-chalkboard-teacher me-2"/>
-                        <t t-esc="state.isStudent ? 'Submission Cards' : 'Teacher Dashboard'"/>
+                        <t t-esc="state.isStudent ? 'Submissions' : 'Teacher Dashboard'"/>
                     </h1>
                 </div>
                 <div class="col-md-2 mt-2">
@@ -347,8 +347,9 @@
                                                         class="btn btn-sm btn-outline-secondary aps-group-toggle"
                                                         t-on-click="() => this.toggleSubmissionGroup(group.key)"
                                                         t-att-aria-expanded="!!state.expandedSubmissionGroups[group.key]"
-                                                        t-att-aria-label="state.expandedSubmissionGroups[group.key] ? 'Collapse child resources' : 'Expand child resources'">
-                                                    <i t-att-class="state.expandedSubmissionGroups[group.key] ? 'fa fa-minus' : 'fa fa-plus'"/>
+                                                        t-att-aria-label="state.expandedSubmissionGroups[group.key] ? 'Collapse child resources' : 'Expand child resources'"
+                                                        t-att-title="state.expandedSubmissionGroups[group.key] ? 'Collapse child resources' : 'Expand child resources'">
+                                                    <i t-att-class="state.expandedSubmissionGroups[group.key] ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
                                                 </button>
                                             </div>
                                         </div>

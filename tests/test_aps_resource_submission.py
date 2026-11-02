@@ -940,6 +940,11 @@ class TestCourseExplorerSubmissionLifecycle(TransactionCase):
         self.assertFalse(submission.is_course_explorer)
         self.assertEqual(submission.notification_state, 'skipped')
 
+        future_date = fields.Date.add(fields.Date.today(), days=1)
+        submission.write({'date_assigned': future_date})
+        submission._compute_submission_active()
+        self.assertFalse(submission.submission_active)
+
         second_action = assessment.action_get_or_create_submission()
         self.assertEqual(second_action['res_id'], submission.id)
         self.assertEqual(
@@ -950,6 +955,40 @@ class TestCourseExplorerSubmissionLifecycle(TransactionCase):
             ]),
             1,
         )
+
+    def test_student_can_create_and_open_non_quiz_assessment(self):
+        student_user = self.env['res.users'].with_context(
+            no_reset_password=True,
+        ).create({
+            'name': self.student.name,
+            'login': f'test_course_explorer_student_{self.student.id}',
+            'partner_id': self.student.id,
+            'groups_id': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('aps_sis.group_aps_student').id,
+            ])],
+        })
+        assessment_type = self.env['aps.resource.types'].create({
+            'name': 'Student Written Assessment',
+            'assessment': True,
+        })
+        assessment = self.env['aps.resources'].create({
+            'name': 'Student Written Assessment 1',
+            'type_id': assessment_type.id,
+            'has_question': 'yes',
+            'question': '<p>Answer the question.</p>',
+            'points_scale': 4,
+        })
+
+        action = assessment.with_user(student_user).action_get_or_create_submission()
+
+        self.assertTrue(action)
+        submission = self.env['aps.resource.submission'].with_user(
+            student_user,
+        ).browse(action['res_id'])
+        self.assertEqual(submission.task_id.resource_id, assessment)
+        self.assertEqual(submission.question, assessment.question)
+        self.assertFalse(submission.is_course_explorer)
 
     def test_completion_reuses_submission_and_dates_it(self):
         self.resource.action_get_or_create_submission()

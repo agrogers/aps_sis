@@ -3,8 +3,7 @@
 
     <t t-name="aps_sis.PercentPie">
         <div class="o_pie_info pe-1">
-            <span class="o_pie_value" t-if="!isSentinel &amp;&amp; showValue" t-esc="formattedValue"
-                  t-att-style="'color: ' + color + ';'"/>
+            <span class="o_pie_value" t-if="!isSentinel &amp;&amp; showValue" t-esc="formattedValue"/>
             <span class="o_pie_text" t-if="showText" t-esc="props.string"/>
             <figure t-if="!isSentinel" class="o_pie mb-0 mr-5 rounded-circle"
                   t-att-title="props.showTooltip === false ? false : tooltip"

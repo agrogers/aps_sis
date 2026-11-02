@@ -624,7 +624,6 @@ class APSResource(models.Model):
             ('task_id.resource_id', '=', self.id),
             ('task_id.student_id', '=', student.id),
             ('is_course_explorer', '=', False),
-            ('submission_active', '=', True),
         ]
         submission = submission_model.search(
             submission_domain,
@@ -633,8 +632,9 @@ class APSResource(models.Model):
         )
 
         if not submission:
-            wizard_model = self.env['aps.assign.students.wizard']
-            wizard_model = wizard_model.with_context(default_resource_id=self.id)
+            wizard_model = self.env['aps.assign.students.wizard'].sudo().with_context(
+                default_resource_id=self.id,
+            )
             wizard_values = wizard_model.default_get([
                 'resource_id',
                 'date_assigned',

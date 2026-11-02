@@ -11,7 +11,7 @@
                 <header>
                     <button name="%(aps_sis.action_aps_student_dashboard)d"
                             type="action"
-                            string="Submission Cards"
+                            string="Cards..."
                             icon="fa-dashboard"
                             class="btn-primary"
                             display="always"
