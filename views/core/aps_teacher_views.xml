@@ -109,6 +109,9 @@
                                 <button name="action_recompute_timetable_loads" type="object"
                                         string="Refresh from Timetable" icon="fa-refresh"
                                         class="btn btn-secondary"/>
+                                <button name="action_open_workload_profile" type="object"
+                                    string="Workload Profile" icon="fa-bar-chart"
+                                    class="btn btn-primary ms-2"/>
                             </div>
                             <group string="Load Details">
                                 <field name="load_details" widget="html" nolabel="1"/>

@@ -121,6 +121,7 @@ def get_timetable_view_query(view_name):
                     t.id AS teacher_id,
                     t.aps_teacher_id,
                     classes.class_names,
+                    s.id AS subject_id,
                     COALESCE(s.name, 'Unknown') AS subject_name,
                     (t.id <> ({teacher_first_id})
                      OR COALESCE(s.force_assistant, FALSE)) AS is_assistant,
@@ -158,6 +159,7 @@ def get_timetable_view_query(view_name):
                     t.id AS teacher_id,
                     t.aps_teacher_id,
                     NULL::VARCHAR AS class_names,
+                    NULL::INTEGER AS subject_id,
                     'Supervision' AS subject_name,
                     TRUE AS is_assistant,
                     TRUE AS is_supervision,

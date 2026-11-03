@@ -31,6 +31,7 @@ class ASCTTTeacherWorkload(models.Model):
     teacher_id = fields.Many2one('asctt.teacher', string='aSc Teacher', readonly=True)
     aps_teacher_id = fields.Many2one('aps.teacher', string='APEX Teacher', readonly=True)
     class_names = fields.Char(string='Classes', readonly=True)
+    subject_id = fields.Many2one('asctt.subject', string='Subject Record', readonly=True)
     subject_name = fields.Char(string='Subject', readonly=True)
     is_assistant = fields.Boolean(string='Assistant', readonly=True, help="This lesson is taught by this teacher as an assistant, not the main teacher.")
     is_supervision = fields.Boolean(string='Supervision', readonly=True, help="This lesson is a supervision duty, not a teaching lesson.")

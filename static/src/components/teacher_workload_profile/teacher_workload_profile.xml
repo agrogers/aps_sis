@@ -1,0 +1,82 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.TeacherWorkloadProfile">
+        <main class="aps-teacher-workload-profile">
+            <header class="aps-twp__header">
+                <div>
+                    <p class="aps-twp__eyebrow">Teacher Workload</p>
+                    <h1 t-if="state.profile"><t t-esc="state.profile.teacher_name"/></h1>
+                    <h1 t-else="">Workload Profile</h1>
+                </div>
+                <button class="btn btn-primary aps-twp__print-button" t-on-click="printPage">
+                    <i class="fa fa-print me-1"/> Print
+                </button>
+            </header>
+
+            <t t-if="state.loading">
+                <div class="aps-twp__message" role="status">Loading workload data...</div>
+            </t>
+            <t t-elif="state.error">
+                <div class="alert alert-warning" role="alert"><t t-esc="state.error"/></div>
+            </t>
+            <t t-else="">
+                <section class="aps-twp__summary" aria-label="Workload summary">
+                    <div class="aps-twp__metric">
+                        <span class="aps-twp__metric-label">Lead Teaching</span>
+                        <strong><t t-esc="formatMinutes(state.profile.lead_total)"/></strong>
+                        <span class="aps-twp__metric-unit">mins</span>
+                        <span class="aps-twp__metric-hours"><t t-esc="formatHours(state.profile.lead_total)"/> hrs</span>
+                    </div>
+                    <div class="aps-twp__metric">
+                        <span class="aps-twp__metric-label">Assistant / Supervision</span>
+                        <strong><t t-esc="formatMinutes(state.profile.assistant_total)"/></strong>
+                        <span class="aps-twp__metric-unit">mins</span>
+                        <span class="aps-twp__metric-hours"><t t-esc="formatHours(state.profile.assistant_total)"/> hrs</span>
+                    </div>
+                    <div class="aps-twp__metric aps-twp__metric--cap">
+                        <span class="aps-twp__metric-label">Maximum Teaching Load</span>
+                        <strong><t t-esc="formatMinutes(state.profile.max_load)"/></strong>
+                        <span t-if="state.profile.over_limit_minutes" class="aps-twp__metric-note aps-twp__metric-note--over">
+                            Over by <t t-esc="formatMinutes(state.profile.over_limit_minutes)"/> min
+                        </span>
+                        <span t-else="" class="aps-twp__metric-note">
+                            <t t-esc="formatMinutes(state.profile.remaining_minutes)"/> min available
+                        </span>
+                    </div>
+                    <div class="aps-twp__metric aps-twp__metric--department">
+                        <span class="aps-twp__metric-label">Department</span>
+                        <strong><t t-esc="state.profile.department_name"/></strong>
+                    </div>
+                </section>
+
+                <section class="aps-twp__chart aps-twp__chart--total">
+                    <div class="aps-twp__chart-heading">
+                        <span class="aps-twp__chart-index">01</span>
+                        <div>
+                            <h2>Total Load vs Maximum</h2>
+                            <p>The dashed marker indicates the teacher's maximum teaching load.</p>
+                        </div>
+                    </div>
+                    <div class="aps-twp__chart-wrap aps-twp__chart-wrap--total">
+                        <canvas t-ref="loadChart" role="img" aria-label="Horizontal stacked workload compared with maximum teaching load"></canvas>
+                    </div>
+                </section>
+
+                <section class="aps-twp__chart aps-twp__chart--subjects">
+                    <div class="aps-twp__chart-heading">
+                        <span class="aps-twp__chart-index">02</span>
+                        <div>
+                            <h2>Minutes by Subject</h2>
+                            <p>Lead and assistant assignments</p>
+                        </div>
+                    </div>
+                    <t t-if="state.profile.subjects.length">
+                        <div class="aps-twp__chart-wrap aps-twp__chart-wrap--subjects">
+                            <canvas t-ref="subjectChart" role="img" aria-label="Stacked minutes by subject"></canvas>
+                        </div>
+                    </t>
+                    <p t-else="" class="aps-twp__empty">No timetable workload is linked to this teacher.</p>
+                </section>
+            </t>
+        </main>
+    </t>
+</templates>

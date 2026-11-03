@@ -193,3 +193,84 @@ class APSTeacher(models.Model):
                 },
             },
         }
+
+    def get_timetable_workload_profile(self):
+        """Return subject-level timetable minutes for the workload profile."""
+        self.ensure_one()
+        rows = self.env['asctt.teacher.workload'].read_group(
+            [('aps_teacher_id', '=', self.id)],
+            ['weighted_minutes:sum'],
+            ['subject_id', 'subject_name', 'is_assistant'],
+            lazy=False,
+        )
+        subject_ids = {
+            row['subject_id'][0]
+            for row in rows
+            if row.get('subject_id')
+        }
+        subject_records = self.env['asctt.subject'].browse(list(subject_ids))
+        category_icon_urls = {
+            subject.id: (
+                f"/web/image/aps.subject.category/{subject.aps_subject_category_id.id}/icon"
+            )
+            for subject in subject_records
+            if subject.aps_subject_category_id and subject.aps_subject_category_id.icon
+        }
+        category_colors = {
+            subject.id: subject.aps_subject_category_id.color_rgb or ''
+            for subject in subject_records
+            if subject.aps_subject_category_id
+        }
+        subject_totals = {}
+        for row in rows:
+            subject = row.get('subject_name') or 'Unknown'
+            subject_id = row['subject_id'][0] if row.get('subject_id') else False
+            subject_key = (subject_id, subject)
+            totals = subject_totals.setdefault(
+                subject_key,
+                {'lead': 0.0, 'assistant': 0.0},
+            )
+            workload_kind = 'assistant' if row.get('is_assistant') else 'lead'
+            totals[workload_kind] += row.get('weighted_minutes', 0.0) or 0.0
+
+        subjects = [
+            {
+                'name': name,
+                'icon_url': category_icon_urls.get(subject_id, ''),
+                'category_color': category_colors.get(subject_id, ''),
+                'lead_minutes': round(totals['lead'], 2),
+                'assistant_minutes': round(totals['assistant'], 2),
+            }
+            for (subject_id, name), totals in sorted(
+                subject_totals.items(),
+                key=lambda item: item[0][1].casefold(),
+            )
+        ]
+        lead_total = round(sum(item['lead_minutes'] for item in subjects), 2)
+        assistant_total = round(sum(item['assistant_minutes'] for item in subjects), 2)
+        total_minutes = round(lead_total + assistant_total, 2)
+        max_load = self.max_load or 0
+
+        return {
+            'teacher_name': self.display_name,
+            'department_name': (
+                self.emp_id.department_id.display_name
+                if self.emp_id and self.emp_id.department_id
+                else 'Not assigned'
+            ),
+            'subjects': subjects,
+            'lead_total': lead_total,
+            'assistant_total': assistant_total,
+            'total_minutes': total_minutes,
+            'max_load': max_load,
+            'remaining_minutes': max(max_load - lead_total, 0),
+            'over_limit_minutes': max(total_minutes - max_load, 0),
+        }
+
+    def action_open_workload_profile(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'aps_teacher_workload_profile',
+            'params': {'teacher_id': self.id},
+        }
