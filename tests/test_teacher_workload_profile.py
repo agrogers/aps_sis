@@ -14,6 +14,7 @@ class TestTeacherWorkloadProfile(TransactionCase):
         self.teacher = self.env['aps.teacher'].create({
             'partner_id': partner.id,
             'max_load': 180,
+            'max_non_teaching_load': 90,
         })
         department = self.env['hr.department'].create({
             'name': 'Workload Profile Department',
@@ -87,6 +88,7 @@ class TestTeacherWorkloadProfile(TransactionCase):
         self.assertEqual(profile['assistant_total'], 75.0)
         self.assertEqual(profile['total_minutes'], 195.0)
         self.assertEqual(profile['max_load'], 180)
+        self.assertEqual(profile['max_non_teaching_load'], 90)
         self.assertEqual(profile['remaining_minutes'], 60)
         self.assertEqual(profile['over_limit_minutes'], 15.0)
 

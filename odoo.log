@@ -28647,3 +28647,1179 @@ View error context:
 2026-10-09 15:52:19,274 774948 DEBUG odoov18_20260902 odoo.service.server: process <_MainThread(MainThread, started 1056172)> (False) 
 2026-10-09 15:52:19,274 774948 INFO odoov18_20260902 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
 2026-10-09 15:52:19,274 774948 DEBUG odoov18_20260902 odoo.service.server: -- 
+2026-11-03 15:17:15,632 20324 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:17:15,655 20324 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:17:16,432 20324 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:17:20,411 20324 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:17:24,186 20324 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:17:24,220 20324 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:18:27,245 23728 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:18:27,253 23728 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:18:27,666 23728 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:18:30,399 23728 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:18:31,598 23728 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:18:31,603 23728 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:19:31,508 32520 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:19:31,520 32520 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:19:32,570 32520 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:19:36,986 32520 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:19:38,635 32520 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:19:38,641 32520 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:21:50,026 19620 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:21:50,034 19620 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:21:50,523 19620 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:21:54,577 19620 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:21:56,397 19620 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:21:56,403 19620 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:23:36,102 23764 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:23:36,106 23764 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:23:36,478 23764 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:23:38,977 23764 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:23:40,055 23764 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:23:40,059 23764 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:25:05,528 14360 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:25:05,533 14360 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:25:05,923 14360 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:25:08,634 14360 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:25:09,989 14360 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:25:09,995 14360 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:26:18,847 31480 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:26:18,852 31480 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:26:19,238 31480 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:26:21,918 31480 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:26:23,442 31480 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:26:23,446 31480 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:27:39,982 11916 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:27:39,988 11916 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:27:40,386 11916 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:27:42,982 11916 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:27:44,417 11916 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:27:44,421 11916 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:29:39,190 20856 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:29:39,196 20856 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:29:39,589 20856 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:29:42,355 20856 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:29:43,701 20856 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:29:43,706 20856 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:30:39,412 25920 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:30:39,417 25920 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:30:39,805 25920 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:30:42,441 25920 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:30:43,632 25920 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:30:43,639 25920 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:32:23,452 19700 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:32:23,461 19700 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:32:23,966 19700 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:32:27,349 19700 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:32:28,458 19700 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:32:28,463 19700 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 
+2026-11-03 15:33:21,631 21408 ERROR ? odoo.tests.common: Importing test framework, avoid importing from business modules and when not running in test mode 
+Stack (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\__init__.py", line 1, in <module>
+    from . import test_aps_enrolment_forecast
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_aps_enrolment_forecast.py", line 4, in <module>
+    from odoo.tests.common import TransactionCase
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\__init__.py", line 8, in <module>
+    from . import common
+  File "<frozen importlib._bootstrap>", line 1415, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Dev\Odoo\mvis1\odoo\tests\common.py", line 97, in <module>
+    _logger.error(
+2026-11-03 15:33:21,641 21408 WARNING ? py.warnings: <stdin>:7: DeprecationWarning: Use directly odoo.modules.registry.Registry
+  File "<stdin>", line 7, in <module>
+ 
+2026-11-03 15:33:22,254 21408 WARNING ? py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "<stdin>", line 7, in <module>
+  File "D:\Dev\Odoo\mvis1\odoo\__init__.py", line 41, in registry
+    return modules.registry.Registry(database_name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 106, in __new__
+    return cls.new(db_name)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 476, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 362, in load_marked_modules
+    graph.add_modules(env.cr, module_list, force)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\graph.py", line 71, in add_modules
+    info = odoo.modules.module.get_manifest(module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-03 15:33:26,515 21408 ERROR ? odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['smile_odoo_editor_align'] 
+2026-11-03 15:33:27,933 21408 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4448: DeprecationWarning: check_access_rights() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 59, in _enrolment_person
+    partner.check_access_rights('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4448, in check_access_rights
+    warnings.warn(
+ 
+2026-11-03 15:33:27,939 21408 WARNING ? py.warnings: D:\Dev\Odoo\mvis1\odoo\models.py:4463: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "<stdin>", line 12, in <module>
+  File "d:\git\odoo_custom_addons\apex_core\tests\test_student_enrolment.py", line 56, in prepare_browser_fixture
+    person = editor._enrolment_person(partner.with_user(manager))
+  File "d:\git\odoo_custom_addons\apex_core\models\student_enrolment.py", line 60, in _enrolment_person
+    partner.check_access_rule('read')
+  File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
+    warnings.warn(
+ 

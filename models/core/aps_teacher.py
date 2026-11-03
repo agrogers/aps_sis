@@ -18,19 +18,24 @@ class APSTeacher(models.Model):
 
     # Workload allocation (minutes)
     teaching_load = fields.Integer(
-        string='Teaching Load (min)',
+        string='Teaching Load (minutes)',
         default=0,
         help='Total minutes allocated to teaching duties.',
     )
     non_teaching_load = fields.Integer(
-        string='Non-Teaching Load (min)',
+        string='Non-Teaching Load (minutes)',
         default=0,
         help='Total minutes allocated to non-teaching duties (admin, pastoral, etc.).',
     )
     max_load = fields.Integer(
-        string='Maximum Load (min)',
+        string='Maximum Load (minutes)',
         default=0,
         help='Maximum total minutes a teacher can be allocated.',
+    )
+    max_non_teaching_load = fields.Integer(
+        string='Maximum Non-Teaching Load (minutes)',
+        default=0,
+        help='Maximum non-teaching minutes a teacher can be allocated. For',
     )
     load_details = fields.Html(
         string='Load Details',
@@ -250,6 +255,7 @@ class APSTeacher(models.Model):
         assistant_total = round(sum(item['assistant_minutes'] for item in subjects), 2)
         total_minutes = round(lead_total + assistant_total, 2)
         max_load = self.max_load or 0
+        max_non_teaching_load = self.max_non_teaching_load or 0
 
         return {
             'teacher_name': self.display_name,
@@ -263,6 +269,7 @@ class APSTeacher(models.Model):
             'assistant_total': assistant_total,
             'total_minutes': total_minutes,
             'max_load': max_load,
+            'max_non_teaching_load': max_non_teaching_load,
             'remaining_minutes': max(max_load - lead_total, 0),
             'over_limit_minutes': max(total_minutes - max_load, 0),
         }

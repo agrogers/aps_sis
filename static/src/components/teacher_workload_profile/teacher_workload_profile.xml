@@ -52,12 +52,12 @@
                     <div class="aps-twp__chart-heading">
                         <span class="aps-twp__chart-index">01</span>
                         <div>
-                            <h2>Total Load vs Maximum</h2>
-                            <p>The dashed marker indicates the teacher's maximum teaching load.</p>
+                            <h2>Teaching and Non-Teaching Load vs Maximum</h2>
+                            <p>Each dashed marker indicates the maximum for its load type.</p>
                         </div>
                     </div>
                     <div class="aps-twp__chart-wrap aps-twp__chart-wrap--total">
-                        <canvas t-ref="loadChart" role="img" aria-label="Horizontal stacked workload compared with maximum teaching load"></canvas>
+                        <canvas t-ref="loadChart" role="img" aria-label="Teaching and non-teaching workload compared with their respective maximums"></canvas>
                     </div>
                 </section>
 

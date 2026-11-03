@@ -15,11 +15,12 @@ function subjectAxisIcons(subjects, images) {
         id: "subjectAxisIcons",
         afterDraw(chart) {
             const xScale = chart.scales.x;
-            if (!xScale) {
+            const yScale = chart.scales.y;
+            if (!xScale || !yScale) {
                 return;
             }
             const iconSize = 20;
-            const iconY = chart.height - 27;
+            const iconY = yScale.getPixelForValue(0) - iconSize - 4;
             const { ctx } = chart;
             ctx.save();
             subjects.forEach((subject, index) => {
@@ -35,31 +36,42 @@ function subjectAxisIcons(subjects, images) {
     };
 }
 
-function maximumLoadMarker(maxLoad) {
+function maximumLoadMarkers(maxLoads) {
     return {
-        id: "maximumLoadMarker",
+        id: "maximumLoadMarkers",
         afterDatasetsDraw(chart) {
             const xScale = chart.scales.x;
-            const { left, right, top, bottom } = chart.chartArea;
-            if (!xScale || maxLoad < xScale.min || maxLoad > xScale.max) {
+            if (!xScale) {
                 return;
             }
-            const x = xScale.getPixelForValue(maxLoad);
-            const label = "Max Load";
+            const { left, right } = chart.chartArea;
+            const bars = chart.getDatasetMeta(0).data;
             const { ctx } = chart;
             ctx.save();
             ctx.strokeStyle = "#b42318";
             ctx.lineWidth = 2;
             ctx.setLineDash([6, 4]);
-            ctx.beginPath();
-            ctx.moveTo(x, top);
-            ctx.lineTo(x, bottom);
-            ctx.stroke();
-            ctx.setLineDash([]);
             ctx.fillStyle = "#b42318";
             ctx.font = "600 12px sans-serif";
-            const labelX = Math.max(left, Math.min(x + 7, right - ctx.measureText(label).width));
-            ctx.fillText(label, labelX, top + 14);
+            ctx.textBaseline = "bottom";
+            maxLoads.forEach((maxLoad, index) => {
+                const bar = bars[index];
+                if (!bar || maxLoad < xScale.min || maxLoad > xScale.max) {
+                    return;
+                }
+                const x = xScale.getPixelForValue(maxLoad);
+                const markerTop = bar.y - bar.height / 2;
+                const markerBottom = bar.y + bar.height / 2;
+                const label = `Max ${formatNumber(maxLoad)}`;
+                const labelX = Math.max(left, Math.min(x + 7, right - ctx.measureText(label).width));
+                ctx.beginPath();
+                ctx.moveTo(x, markerTop);
+                ctx.lineTo(x, markerBottom);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillText(label, labelX, markerTop - 3);
+                ctx.setLineDash([6, 4]);
+            });
             ctx.restore();
         },
     };
@@ -165,7 +177,6 @@ export class TeacherWorkloadProfile extends Component {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { bottom: 32 } },
                     interaction: { mode: "index", intersect: false },
                     plugins: { legend: { position: "bottom" } },
                     scales: {
@@ -185,34 +196,38 @@ export class TeacherWorkloadProfile extends Component {
         }
 
         if (this.loadChartRef.el) {
-            const axisMax = Math.max(profile.total_minutes, profile.max_load, 1);
+            const maximumLoads = [profile.max_load, profile.max_non_teaching_load];
+            const axisMax = Math.max(
+                profile.lead_total,
+                profile.assistant_total,
+                ...maximumLoads,
+                1
+            );
             this.loadChart = new window.Chart(this.loadChartRef.el, {
                 type: "bar",
                 data: {
-                    labels: ["Scheduled Load"],
-                    datasets: subjects.map((subject) => ({
-                        label: subject.name,
-                        data: [subject.lead_minutes + subject.assistant_minutes],
-                        backgroundColor: subject.category_color || "#64748b",
+                    labels: ["Teaching Load", "Non-Teaching Load"],
+                    datasets: [{
+                        label: "Load",
+                        data: [profile.lead_total, profile.assistant_total],
+                        backgroundColor: [LEAD_COLOR, ASSISTANT_COLOR],
                         borderRadius: 2,
-                    })),
+                    }],
                 },
                 options: {
                     indexAxis: "y",
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: "bottom" } },
+                    plugins: { legend: { display: false } },
                     scales: {
                         x: {
-                            stacked: true,
                             beginAtZero: true,
                             max: Math.ceil(axisMax * 1.12),
                             title: { display: true, text: "Minutes" },
                         },
-                        y: { stacked: true },
                     },
                 },
-                plugins: [maximumLoadMarker(profile.max_load)],
+                plugins: [maximumLoadMarkers(maximumLoads)],
             });
         }
     }
