@@ -29,28 +29,32 @@ class TestDashboardDataFilters(TransactionCase):
 
         category = self.env['aps.subject.category'].create({'name': 'Math'})
         self.category = category
-        subject = self.env['aps.subject'].create({
+        self.subject = self.env['aps.subject'].create({
             'name': 'Algebra',
             'category_id': category.id,
         })
 
         self.class_a = self.env['aps.class'].create({
-            'subject_id': subject.id,
+            'name': 'Class A',
+            'subject_id': self.subject.id,
             'identifier': 'A',
             'academic_year_id': self.current_year.id,
         })
         self.class_b = self.env['aps.class'].create({
-            'subject_id': subject.id,
+            'name': 'Class B',
+            'subject_id': self.subject.id,
             'identifier': 'B',
             'academic_year_id': self.current_year.id,
         })
         self.class_no_submission = self.env['aps.class'].create({
-            'subject_id': subject.id,
+            'name': 'Class C',
+            'subject_id': self.subject.id,
             'identifier': 'C',
             'academic_year_id': self.current_year.id,
         })
         self.class_old = self.env['aps.class'].create({
-            'subject_id': subject.id,
+            'name': 'Class D',
+            'subject_id': self.subject.id,
             'identifier': 'D',
             'academic_year_id': self.old_year.id,
         })
@@ -60,10 +64,18 @@ class TestDashboardDataFilters(TransactionCase):
         self.partner_c = self.env['res.partner'].create({'name': 'Student C', 'is_student': True})
         self.partner_d = self.env['res.partner'].create({'name': 'Student D', 'is_student': True})
 
-        self.student_a = self.env['aps.student'].create({'partner_id': self.partner_a.id})
-        self.student_b = self.env['aps.student'].create({'partner_id': self.partner_b.id})
-        self.student_c = self.env['aps.student'].create({'partner_id': self.partner_c.id})
-        self.student_d = self.env['aps.student'].create({'partner_id': self.partner_d.id})
+        self.student_a = self.env['aps.student'].search(
+            [('partner_id', '=', self.partner_a.id)], limit=1
+        )
+        self.student_b = self.env['aps.student'].search(
+            [('partner_id', '=', self.partner_b.id)], limit=1
+        )
+        self.student_c = self.env['aps.student'].search(
+            [('partner_id', '=', self.partner_c.id)], limit=1
+        )
+        self.student_d = self.env['aps.student'].search(
+            [('partner_id', '=', self.partner_d.id)], limit=1
+        )
 
         self.env['aps.student.class'].create({
             'student_id': self.student_a.id,
@@ -91,7 +103,10 @@ class TestDashboardDataFilters(TransactionCase):
             'state': 'enrolled',
         })
 
-        resource = self.env['aps.resources'].create({'name': 'Dashboard Filter Resource'})
+        resource = self.env['aps.resources'].create({
+            'name': 'Dashboard Filter Resource',
+            'subjects': [(6, 0, self.subject.ids)],
+        })
 
         task_a = self.env['aps.resource.task'].create({
             'resource_id': resource.id,
@@ -179,7 +194,9 @@ class TestDashboardDataFilters(TransactionCase):
             'name': 'Student E',
             'is_student': True,
         })
-        student_e = self.env['aps.student'].create({'partner_id': partner_e.id})
+        student_e = self.env['aps.student'].search(
+            [('partner_id', '=', partner_e.id)], limit=1
+        )
         self.env['aps.student.class'].create({
             'student_id': student_e.id,
             'class_id': self.class_a.id,
@@ -198,6 +215,39 @@ class TestDashboardDataFilters(TransactionCase):
             'date_assigned': fields.Date.today() - timedelta(days=60),
         })
 
+        other_category = self.env['aps.subject.category'].create({
+            'name': 'Dashboard Filter Other Category',
+        })
+        other_subject = self.env['aps.subject'].create({
+            'name': 'Dashboard Filter Other Subject',
+            'category_id': other_category.id,
+        })
+        other_resource = self.env['aps.resources'].create({
+            'name': 'Dashboard Filter Other Resource',
+            'subjects': [(6, 0, other_subject.ids)],
+        })
+        partner_f = self.env['res.partner'].create({
+            'name': 'Student F',
+            'is_student': True,
+        })
+        student_f = self.env['aps.student'].search(
+            [('partner_id', '=', partner_f.id)], limit=1
+        )
+        self.env['aps.student.class'].create({
+            'student_id': student_f.id,
+            'class_id': self.class_a.id,
+            'state': 'enrolled',
+        })
+        other_task = self.env['aps.resource.task'].create({
+            'resource_id': other_resource.id,
+            'student_id': partner_f.id,
+        })
+        self.env['aps.resource.submission'].create({
+            'task_id': other_task.id,
+            'submission_name': 'Other Category Submission',
+            'date_assigned': fields.Date.today(),
+        })
+
         recent_students = self.env['aps.resources'].get_teacher_dashboard_students(
             category_id=self.category.id,
             days=1,
@@ -206,12 +256,86 @@ class TestDashboardDataFilters(TransactionCase):
             category_id=self.category.id,
             days=-1,
         )
+        all_time_students_without_category = (
+            self.env['aps.resources'].get_teacher_dashboard_students(days=-1)
+        )
 
         self.assertEqual(
             {student['id'] for student in recent_students},
             {self.partner_a.id, self.partner_b.id},
         )
         self.assertIn(partner_e.id, {student['id'] for student in all_time_students})
+        self.assertNotIn(partner_f.id, {student['id'] for student in recent_students})
+        self.assertNotIn(partner_f.id, {student['id'] for student in all_time_students})
+        self.assertIn(
+            partner_f.id,
+            {student['id'] for student in all_time_students_without_category},
+        )
+
+    def test_teacher_dashboard_class_filter_excludes_other_subject_resources(self):
+        other_category = self.env['aps.subject.category'].create({
+            'name': 'Dashboard Class Filter Other Category',
+        })
+        other_subject = self.env['aps.subject'].create({
+            'name': 'Dashboard Class Filter Other Subject',
+            'category_id': other_category.id,
+        })
+        other_resource = self.env['aps.resources'].create({
+            'name': 'Dashboard Class Filter Other Resource',
+            'subjects': [(6, 0, other_subject.ids)],
+        })
+        partner_f = self.env['res.partner'].create({
+            'name': 'Dashboard Class Filter Student',
+            'is_student': True,
+        })
+        student_f = self.env['aps.student'].search(
+            [('partner_id', '=', partner_f.id)], limit=1
+        )
+        self.env['aps.student.class'].create({
+            'student_id': student_f.id,
+            'class_id': self.class_a.id,
+            'state': 'enrolled',
+        })
+        other_task = self.env['aps.resource.task'].create({
+            'resource_id': other_resource.id,
+            'student_id': partner_f.id,
+        })
+        self.env['aps.resource.submission'].create({
+            'task_id': other_task.id,
+            'submission_name': 'Biology Revision Quiz',
+            'submission_label': 'Biology Revision Quiz',
+            'date_assigned': fields.Date.today(),
+        })
+
+        class_students = self.env['aps.resources'].get_teacher_dashboard_students(
+            days=1,
+            class_id=self.class_a.id,
+        )
+        data = self.env['aps.resources'].get_teacher_dashboard_data(
+            days=1,
+            class_id=self.class_a.id,
+        )
+        resource_submissions = (
+            self.env['aps.resources'].get_dashboard_submissions_for_resource(
+                other_resource.id,
+                days=1,
+                class_id=self.class_a.id,
+            )
+        )
+
+        self.assertEqual(
+            {student['id'] for student in class_students},
+            {self.partner_a.id},
+        )
+        self.assertNotIn(
+            other_resource.id,
+            {resource['id'] for resource in data['task_resources']},
+        )
+        self.assertNotIn(
+            'Biology Revision Quiz',
+            {group['label'] for group in data['submission_groups']},
+        )
+        self.assertFalse(resource_submissions)
 
 
 class TestStudentDashboard(TransactionCase):

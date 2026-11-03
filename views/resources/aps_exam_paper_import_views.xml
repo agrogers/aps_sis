@@ -35,7 +35,7 @@
                     <button name="action_ocr_resources" type="object" string="OCR Pending Sections" class="btn-primary" invisible="analysis_scope != 'pending' or state != 'completed'" />
                     <button name="action_ocr_resources" type="object" string="OCR Pending Sections" class="btn-secondary" invisible="analysis_scope != 'pending' or state == 'completed'" />
                     <button name="action_retry" type="object" string="Retry" invisible="state != 'failed'"/>
-                    <button name="action_open_question_identifiers" type="object" string="Question Identifiers" class="btn-secondary" groups="aps_sis.group_aps_teacher"/>
+                    <button name="action_open_question_identifiers" type="object" string="Identifiers..." class="btn-secondary" groups="aps_sis.group_aps_teacher"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,analysing,review,building,completed"/>
                 </header>
                 <sheet>

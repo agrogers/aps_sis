@@ -227,7 +227,7 @@ class APSExamPaperImport(models.Model):
     def action_open_question_identifiers(self):
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Question Identifiers'),
+            'name': _('Identifiers...'),
             'res_model': 'aps.exam.paper.question.identifier',
             'view_mode': 'list,form',
             'target': 'current',
