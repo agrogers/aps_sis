@@ -110,6 +110,20 @@ class ASCTTDashboard(models.TransientModel):
             'target': 'new',
         }
 
+    def action_open_teacher_sync(self):
+        import_wizard_model = self.env['asctt.import.wizard']
+        import_wizard = import_wizard_model.new(
+            import_wizard_model.default_get([
+                'apply_from_date',
+                'apply_to_term_id',
+            ])
+        )
+        start_date, end_date = import_wizard._get_effective_date_range()
+        return self.env['asctt.teacher.sync.wizard'].action_open({
+            'default_start_date': fields.Date.to_string(start_date),
+            'default_end_date': fields.Date.to_string(end_date),
+        })
+
     def action_open_flat_view(self):
         action = self.env.ref('aps_sis.asctt_teacher_workload_action')
         return action.read()[0]

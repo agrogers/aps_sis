@@ -19,3 +19,4 @@ from . import asctt_class_workload
 from . import asctt_class_subject_minutes
 from . import asctt_dashboard
 from . import asctt_import_wizard
+from . import asctt_teacher_sync_wizard

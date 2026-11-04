@@ -146,6 +146,23 @@ class ASCTTImportWizard(models.TransientModel):
         params.set_param(self._PARAM_TERM_ID, str(self.apply_to_term_id.id) if self.apply_to_term_id else '')
         params.set_param(self._PARAM_GEN_TT, str(self.generate_timetable))
 
+    def _get_effective_date_range(self):
+        """Return the date range used to resolve classes for this import."""
+        self.ensure_one()
+        start_date = self.apply_from_date
+        current_year = self.env['aps.academic.year'].search(
+            [('is_current', '=', True)], limit=1
+        )
+        if self.apply_to_term_id:
+            start_date = max(start_date, self.apply_to_term_id.start_date)
+            end_date = self.apply_to_term_id.end_date
+            academic_year = self.apply_to_term_id.academic_year_id or current_year
+            if academic_year:
+                end_date = min(end_date, academic_year.end_date)
+        else:
+            end_date = current_year.end_date if current_year else start_date
+        return start_date, end_date
+
     # ── Public action ──────────────────────────────────────────────────────────
 
     def action_import(self):
@@ -209,6 +226,12 @@ class ASCTTImportWizard(models.TransientModel):
             entry_count = self._generate_timetable_entries()
             detail += f'\n  Timetable Entries: {entry_count} created'
 
+        start_date, end_date = self._get_effective_date_range()
+        sync_action = self.env['asctt.teacher.sync.wizard'].action_open({
+            'default_start_date': fields.Date.to_string(start_date) if start_date else False,
+            'default_end_date': fields.Date.to_string(end_date) if end_date else False,
+        })
+
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -217,7 +240,7 @@ class ASCTTImportWizard(models.TransientModel):
                 'message': summary + '\n' + detail,
                 'type': 'success',
                 'sticky': True,
-                'next': {'type': 'ir.actions.act_window_close'},
+                'next': sync_action,
             },
         }
 
@@ -819,37 +842,23 @@ class ASCTTImportWizard(models.TransientModel):
         # 6. Iterate cards ───────────────────────────────────────────────────────
         cards = self.env['asctt.card'].search([])
         to_create = []
-        grade_level_cache = {}
         class_lookup_cache = {}
         lesson_info_cache = {}
 
         def get_class_for_asctt_class(asctt_class, subject_category):
-            """Resolve the first enrolled APEX class for the import range."""
-            if not subject_category or not asctt_class.grade:
-                return self.env['aps.class']
-            try:
-                grade_number = int(asctt_class.grade)
-            except (TypeError, ValueError):
-                return self.env['aps.class']
-            if grade_number not in grade_level_cache:
-                grade = self.env['asctt.grade'].search(
-                    [('grade', '=', grade_number)], limit=1
-                )
-                grade_level_cache[grade_number] = grade.aps_level_id
-            level = grade_level_cache[grade_number]
-            if not level:
-                return self.env['aps.class']
-
-            cache_key = (subject_category.id, level.id)
+            """Resolve the same APEX class used by the teacher-sync wizard."""
+            cache_key = (
+                asctt_class.id,
+                subject_category.id if subject_category else False,
+            )
             if cache_key not in class_lookup_cache:
-                class_lookup_cache[cache_key] = self.env['aps.class'].search([
-                ('subject_id.category_id', '=', subject_category.id),
-                ('subject_id.level_id', '=', level.id),
-                ('enrollment_ids.start_date', '<=', end_date),
-                '|',
-                ('enrollment_ids.end_date', '=', False),
-                ('enrollment_ids.end_date', '>=', start_date),
-                ], order='id', limit=1)
+                class_lookup_cache[cache_key] = (
+                    asctt_class._get_aps_class_for_subject(
+                        subject_category,
+                        start_date,
+                        end_date,
+                    )
+                )
             return class_lookup_cache[cache_key]
 
         for card in cards:

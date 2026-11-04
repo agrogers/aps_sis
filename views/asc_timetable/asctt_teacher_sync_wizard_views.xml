@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="asctt_teacher_sync_wizard_view_form" model="ir.ui.view">
+        <field name="name">asctt.teacher.sync.wizard.form</field>
+        <field name="model">asctt.teacher.sync.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Sync Class Teachers">
+                <sheet>
+                    <p class="text-muted">
+                        aSc class teachers are aggregated across lessons. The first
+                        teacher on each lesson is a teacher; all later teachers are
+                        assistants. Anyone who appears as a teacher in any lesson is
+                        kept as a teacher. Classes are matched using the aSc subject
+                        category and grade-to-level links for the selected date range.
+                    </p>
+                    <group>
+                        <field name="start_date" force_save="1"/>
+                        <field name="end_date" force_save="1"/>
+                    </group>
+                    <group string="Classes That Need Syncing">
+                        <div class="alert alert-info" role="alert" invisible="line_ids">
+                            No classes need syncing for this date range.
+                        </div>
+                        <field name="line_ids" nolabel="1" invisible="not line_ids">
+                            <list create="false" delete="false" editable="bottom">
+                                <field name="selected" widget="boolean_toggle"/>
+                                <field name="aps_class_id" force_save="1"/>
+                                <field name="asctt_class_names"/>
+                                <field name="source_subject_names" optional="hide"/>
+                                <field name="current_teacher_names"/>
+                                <field name="source_teacher_names"/>
+                                <field name="current_assistant_teacher_names" optional="show"/>
+                                <field name="source_assistant_teacher_names" optional="show"/>
+                                <field name="unmapped_teacher_names" optional="show"/>
+                                <field name="source_teacher_ids" column_invisible="True"/>
+                                <field name="source_assistant_teacher_ids" column_invisible="True"/>
+                            </list>
+                        </field>
+                    </group>
+                    <div class="alert alert-warning" role="alert" invisible="not issue_names">
+                        <strong>Items with issues:</strong>
+                        <field name="issue_names" nolabel="1"/>
+                    </div>
+                    <div class="alert alert-success" role="alert">
+                        <strong>Already synced:</strong>
+                        <div invisible="synced_class_names">No classes are already synced.</div>
+                        <field name="synced_class_names" nolabel="1"
+                               invisible="not synced_class_names"/>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Sync Selected"
+                            class="btn-primary" invisible="not line_ids"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

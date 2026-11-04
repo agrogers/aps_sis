@@ -105,6 +105,7 @@
 		'views/resources/aps_exam_paper_import_views.xml',
 		'views/asc_timetable/asctt_views.xml',
 		'views/asc_timetable/asctt_import_wizard_views.xml',
+		'views/asc_timetable/asctt_teacher_sync_wizard_views.xml',
 		'views/asc_timetable/asctt_flat_row_views.xml',
 		'views/asc_timetable/asctt_workload_views.xml',
 		'views/asc_timetable/asctt_class_subject_minutes_views.xml',

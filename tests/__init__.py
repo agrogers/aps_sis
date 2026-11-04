@@ -18,3 +18,4 @@ from . import test_aps_student_matrix
 from . import test_submission_ocr
 from . import test_freeform_assessment
 from . import test_teacher_workload_profile
+from . import test_asctt_teacher_sync

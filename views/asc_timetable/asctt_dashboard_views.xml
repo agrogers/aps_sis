@@ -15,6 +15,7 @@
                         </div>
                         <div>
                             <button name="action_import_xml" type="object" string="Import XML" class="btn btn-primary" icon="fa-upload"/>
+                            <button name="action_open_teacher_sync" type="object" string="Teacher Sync" class="btn btn-secondary" icon="fa-users"/>
                             <button name="action_open_teacher_workload" type="object" string="Teacher Workload" class="btn btn-secondary" icon="fa-table"/>
                             <button name="action_open_class_workload" type="object" string="Class Workload" class="btn btn-secondary" icon="fa-users"/>
                             <button name="action_open_class_subject_view" type="object" string="Minutes/Subject" class="btn btn-secondary" icon="fa-pie-chart"/>

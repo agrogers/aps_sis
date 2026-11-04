@@ -28,3 +28,29 @@ class ASCTTClass(models.Model):
         size=64,
         help='Optional identifier used to document the corresponding APEX class.',
     )
+
+    def _get_aps_class_for_subject(self, subject_category, start_date, end_date):
+        """Resolve the first enrolled APEX class matching this grade and subject category."""
+        self.ensure_one()
+        if not subject_category or not self.grade or not start_date or not end_date:
+            return self.env['aps.class']
+        try:
+            grade_number = int(self.grade)
+        except (TypeError, ValueError):
+            return self.env['aps.class']
+
+        grade = self.env['asctt.grade'].search(
+            [('grade', '=', grade_number)],
+            limit=1,
+        )
+        if not grade.aps_level_id:
+            return self.env['aps.class']
+
+        return self.env['aps.class'].search([
+            ('subject_id.category_id', '=', subject_category.id),
+            ('subject_id.level_id', '=', grade.aps_level_id.id),
+            ('enrollment_ids.start_date', '<=', end_date),
+            '|',
+            ('enrollment_ids.end_date', '=', False),
+            ('enrollment_ids.end_date', '>=', start_date),
+        ], order='id', limit=1)
