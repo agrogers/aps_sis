@@ -20,26 +20,32 @@
             </t>
             <t t-else="">
                 <section class="aps-twp__summary" aria-label="Workload summary">
-                    <div class="aps-twp__metric">
-                        <span class="aps-twp__metric-label">Lead Teaching</span>
-                        <strong><t t-esc="formatMinutes(state.profile.lead_total)"/></strong>
-                        <span class="aps-twp__metric-unit">mins</span>
-                        <span class="aps-twp__metric-hours"><t t-esc="formatHours(state.profile.lead_total)"/> hrs</span>
-                    </div>
-                    <div class="aps-twp__metric">
-                        <span class="aps-twp__metric-label">Assistant / Supervision</span>
-                        <strong><t t-esc="formatMinutes(state.profile.assistant_total)"/></strong>
-                        <span class="aps-twp__metric-unit">mins</span>
-                        <span class="aps-twp__metric-hours"><t t-esc="formatHours(state.profile.assistant_total)"/> hrs</span>
-                    </div>
-                    <div class="aps-twp__metric aps-twp__metric--cap">
-                        <span class="aps-twp__metric-label">Maximum Teaching Load</span>
-                        <strong><t t-esc="formatMinutes(state.profile.max_load)"/></strong>
-                        <span t-if="state.profile.over_limit_minutes" class="aps-twp__metric-note aps-twp__metric-note--over">
-                            Over by <t t-esc="formatMinutes(state.profile.over_limit_minutes)"/> min
+                    <div t-attf-class="aps-twp__metric {{ getLoadStatusClass(getTeachingLoadPercentage()) }}">
+                        <span class="aps-twp__metric-label">Teaching</span>
+                        <strong>
+                            <t t-esc="formatMinutes(state.profile.lead_total)"/> /
+                            <t t-if="getTeachingLoadPercentage() !== null">
+                                <t t-esc="formatPercentage(getTeachingLoadPercentage())"/>%
+                            </t>
+                            <t t-else="">N/A</t>
+                        </strong>
+                        <span class="aps-twp__metric-unit">mins / % of maximum</span>
+                        <span t-if="getTeachingLoadPercentage() === null" class="aps-twp__metric-hours">
+                            No maximum set
                         </span>
-                        <span t-else="" class="aps-twp__metric-note">
-                            <t t-esc="formatMinutes(state.profile.remaining_minutes)"/> min available
+                    </div>
+                    <div t-attf-class="aps-twp__metric {{ getLoadStatusClass(getNonTeachingLoadPercentage()) }}">
+                        <span class="aps-twp__metric-label">Non-Teaching Load</span>
+                        <strong>
+                            <t t-esc="formatMinutes(state.profile.assistant_total)"/> /
+                            <t t-if="getNonTeachingLoadPercentage() !== null">
+                                <t t-esc="formatPercentage(getNonTeachingLoadPercentage())"/>%
+                            </t>
+                            <t t-else="">N/A</t>
+                        </strong>
+                        <span class="aps-twp__metric-unit">mins / % of maximum</span>
+                        <span t-if="getNonTeachingLoadPercentage() === null" class="aps-twp__metric-hours">
+                            No maximum set
                         </span>
                     </div>
                     <div class="aps-twp__metric aps-twp__metric--department">
@@ -76,6 +82,13 @@
                     </t>
                     <p t-else="" class="aps-twp__empty">No timetable workload is linked to this teacher.</p>
                 </section>
+
+                <footer class="aps-twp__footer">
+                    <a href="https://docs.google.com/document/d/1CyssPsk07qd8PPWh8lv2IUWn8kOlHWQgSw2F6m57h-0/edit?tab=t.0"
+                       target="_blank" rel="noopener noreferrer">
+                        Teaching  and non-teaching loads are explained in this school policy document.
+                    </a>
+                </footer>
             </t>
         </main>
     </t>

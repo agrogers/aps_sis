@@ -18,6 +18,7 @@ export class PercentPie extends Component {
         showValue: { type: Boolean, optional: true },
         showText: { type: Boolean, optional: true },
         showTooltip: { type: Boolean, optional: true },
+        showActualValue: { type: Boolean, optional: true },
         isSentinel: { type: Boolean, optional: true },
     };
 
@@ -43,16 +44,22 @@ export class PercentPie extends Component {
         return `${this.formattedValue}${this.props.string ? ` - ${this.props.string}` : ""}`;
     }
 
-    get displayValue() {
+    get actualValue() {
         const num = typeof this.props.value === "number"
             ? this.props.value
             : parseFloat(this.props.value || 0);
         if (Number.isNaN(num)) return 0;
+        return num;
+    }
+
+    get displayValue() {
+        const num = this.actualValue;
         return Math.max(0, Math.min(100, num));
     }
 
     get formattedValue() {
-        return formatFloat(this.displayValue, { digits: [16, 0] }) + "%";
+        const value = this.props.showActualValue ? this.actualValue : this.displayValue;
+        return formatFloat(value, { digits: [16, 0] }) + "%";
     }
 
     get color() {

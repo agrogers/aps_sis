@@ -7,6 +7,7 @@ import { PercentPie } from "../percent_pie/percent_pie";
 import { BadgeDecoratorDisplay } from "../../js/badge_decorator_widget";
 
 const STORAGE_KEY = "aps_teacher_dashboard_state";
+const SUBMISSION_GROUP_TYPES_WITH_VISIBLE_CHILDREN = new Set(["Exam", "Past Paper"]);
 
 function _loadStoredState(storageKey) {
     try {
@@ -432,27 +433,47 @@ export class TeacherDashboard extends Component {
         const visibleStates = this.submissionStates.filter(
             (status) => !this.state.hiddenSubmissionStates[status.id]
         );
-        const hasVisibleGroupInSubtree = (group, ancestors = new Set()) => {
+        const includesAllChildTypes = (group, inheritedTypeOverride = false) => {
+            if (inheritedTypeOverride) {
+                return true;
+            }
+            const typeId = group.type_id ? group.type_id[0] : false;
+            const typeVisible = typeId === false || !this.state.hiddenSubmissionTypes[typeId];
+            return (
+                typeVisible &&
+                group.type_id &&
+                SUBMISSION_GROUP_TYPES_WITH_VISIBLE_CHILDREN.has(group.type_id[1])
+            );
+        };
+        const hasVisibleGroupInSubtree = (
+            group,
+            ancestors = new Set(),
+            inheritedTypeOverride = false
+        ) => {
             if (ancestors.has(group.key)) {
                 return false;
             }
             ancestors.add(group.key);
             const typeId = group.type_id ? group.type_id[0] : false;
-            const typeVisible = typeId === false || !this.state.hiddenSubmissionTypes[typeId];
+            const typeVisible =
+                inheritedTypeOverride ||
+                typeId === false ||
+                !this.state.hiddenSubmissionTypes[typeId];
             const stateVisible =
                 visibleStates.length === this.submissionStates.length ||
                 visibleStates.some((status) => this.submissionGroupHasState(group, status.id));
             const ownGroupVisible = typeVisible && stateVisible;
+            const childTypeOverride = includesAllChildTypes(group, inheritedTypeOverride);
             const childVisible = (childrenByParent.get(group.key) || []).some(
-                (child) => hasVisibleGroupInSubtree(child, ancestors)
+                (child) => hasVisibleGroupInSubtree(child, ancestors, childTypeOverride)
             );
             ancestors.delete(group.key);
             return ownGroupVisible || childVisible;
         };
         const visible = [];
-        const appendChildren = (parentKey, depth) => {
+        const appendChildren = (parentKey, depth, inheritedTypeOverride = false) => {
             for (const group of childrenByParent.get(parentKey) || []) {
-                if (!hasVisibleGroupInSubtree(group)) {
+                if (!hasVisibleGroupInSubtree(group, new Set(), inheritedTypeOverride)) {
                     continue;
                 }
                 visible.push({
@@ -460,7 +481,11 @@ export class TeacherDashboard extends Component {
                     depth,
                 });
                 if (this.state.expandedSubmissionGroups[group.key]) {
-                    appendChildren(group.key, depth + 1);
+                    appendChildren(
+                        group.key,
+                        depth + 1,
+                        includesAllChildTypes(group, inheritedTypeOverride)
+                    );
                 }
             }
         };

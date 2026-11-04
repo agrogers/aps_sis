@@ -46,7 +46,7 @@ export class PercentPieRangedField extends Component {
         const raw = this.props.record.data[this.props.name];
         const num = typeof raw === "number" ? raw : parseFloat(raw || 0);
         if (Number.isNaN(num)) return 0;
-        return Math.max(0, Math.min(100, num));
+        return num;
     }
 }
 

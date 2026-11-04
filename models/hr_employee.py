@@ -25,11 +25,18 @@ class HrEmployee(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        # Update faculty mobile if employee mobile changed
         if 'mobile_phone' in vals or 'work_phone' in vals:
-            teacher_records = self.env['aps.teacher'].search([('emp_id', 'in', self.ids)])
+            contact_ids = self.mapped('work_contact_id').ids + self.mapped('user_id.partner_id').ids
+            teacher_records = self.env['aps.teacher'].search([
+                ('partner_id', 'in', contact_ids),
+            ])
             for teacher in teacher_records:
-                if teacher.emp_id.id in self.ids:
-                    teacher.partner_id.mobile = teacher.emp_id.mobile_phone or teacher.emp_id.work_phone
-                    
+                employee = self.filtered(
+                    lambda rec: teacher.partner_id in (
+                        rec.work_contact_id | rec.user_id.partner_id
+                    )
+                )[:1]
+                if employee:
+                    teacher.partner_id.mobile = employee.mobile_phone or employee.work_phone
+
         return res

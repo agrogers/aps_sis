@@ -41,7 +41,7 @@ function maximumLoadMarkers(maxLoads) {
         id: "maximumLoadMarkers",
         afterDatasetsDraw(chart) {
             const xScale = chart.scales.x;
-            if (!xScale) {
+            if (!xScale || !chart.data.datasets.length) {
                 return;
             }
             const { left, right } = chart.chartArea;
@@ -53,7 +53,7 @@ function maximumLoadMarkers(maxLoads) {
             ctx.setLineDash([6, 4]);
             ctx.fillStyle = "#b42318";
             ctx.font = "600 12px sans-serif";
-            ctx.textBaseline = "bottom";
+            ctx.textBaseline = "middle";
             maxLoads.forEach((maxLoad, index) => {
                 const bar = bars[index];
                 if (!bar || maxLoad < xScale.min || maxLoad > xScale.max) {
@@ -69,7 +69,7 @@ function maximumLoadMarkers(maxLoads) {
                 ctx.lineTo(x, markerBottom);
                 ctx.stroke();
                 ctx.setLineDash([]);
-                ctx.fillText(label, labelX, markerTop - 3);
+                ctx.fillText(label, labelX, bar.y);
                 ctx.setLineDash([6, 4]);
             });
             ctx.restore();
@@ -116,7 +116,11 @@ export class TeacherWorkloadProfile extends Component {
     }
 
     async loadProfile() {
-        const teacherId = Number(this.props.action?.params?.teacher_id);
+        const teacherId = Number(
+            this.props.action?.params?.teacher_id ??
+            this.props.action?.context?.active_id ??
+            this.props.action?.params?.active_id
+        );
         if (!Number.isInteger(teacherId) || teacherId <= 0) {
             this.state.error = "A teacher record was not provided.";
             this.state.loading = false;
@@ -207,24 +211,26 @@ export class TeacherWorkloadProfile extends Component {
                 type: "bar",
                 data: {
                     labels: ["Teaching Load", "Non-Teaching Load"],
-                    datasets: [{
-                        label: "Load",
-                        data: [profile.lead_total, profile.assistant_total],
-                        backgroundColor: [LEAD_COLOR, ASSISTANT_COLOR],
+                    datasets: subjects.map((subject) => ({
+                        label: subject.name,
+                        data: [subject.lead_minutes, subject.assistant_minutes],
+                        backgroundColor: subject.category_color || "#64748b",
                         borderRadius: 2,
-                    }],
+                    })),
                 },
                 options: {
                     indexAxis: "y",
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { legend: { position: "bottom" } },
                     scales: {
                         x: {
+                            stacked: true,
                             beginAtZero: true,
                             max: Math.ceil(axisMax * 1.12),
                             title: { display: true, text: "Minutes" },
                         },
+                        y: { stacked: true },
                     },
                 },
                 plugins: [maximumLoadMarkers(maximumLoads)],
@@ -269,8 +275,55 @@ export class TeacherWorkloadProfile extends Component {
         return formatNumber(value);
     }
 
-    formatHours(value) {
-        return formatNumber((Number(value) || 0) / 60);
+    formatPercentage(value) {
+        if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+            return "N/A";
+        }
+        return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(
+            Number(value)
+        );
+    }
+
+    getTeachingLoadPercentage() {
+        return this.getLoadPercentage(
+            this.state.profile?.lead_total,
+            this.state.profile?.max_load
+        );
+    }
+
+    getNonTeachingLoadPercentage() {
+        return this.getLoadPercentage(
+            this.state.profile?.assistant_total,
+            this.state.profile?.max_non_teaching_load
+        );
+    }
+
+    getLoadPercentage(load, maximum) {
+        if (load === null || load === undefined || maximum === null || maximum === undefined) {
+            return null;
+        }
+        const loadValue = Number(load);
+        const maximumValue = Number(maximum);
+        if (!Number.isFinite(loadValue) || !Number.isFinite(maximumValue) || maximumValue <= 0) {
+            return null;
+        }
+        return loadValue / maximumValue * 100;
+    }
+
+    getLoadStatusClass(percentage) {
+        if (percentage === null || percentage === undefined) {
+            return "";
+        }
+        if (percentage >= 100) {
+            return "aps-twp__metric--over-limit";
+        }
+        if (percentage >= 90) {
+            return "aps-twp__metric--near-limit";
+        }
+        if (percentage >= 80) {
+            return "aps-twp__metric--approaching-limit";
+        }
+        return "";
     }
 }
 

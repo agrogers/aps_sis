@@ -1,6 +1,7 @@
 .aps-teacher-dashboard {
     background-color: var(--body-bg);
     color: var(--body-color);
+    --aps-submission-parent-card-background: rgba(128, 128, 128, 0.14);
 }
 
 .aps-teacher-dashboard .aps-dashboard-filters,
@@ -324,7 +325,11 @@
 }
 
 .aps-teacher-dashboard .aps-root-submission-group-has-children > .aps-submission-group-card {
-    background-color: rgba(128, 128, 128, 0.14);
+    background-color: var(--aps-submission-parent-card-background);
+}
+
+.aps-teacher-dashboard .aps-child-submission-group .aps-submission-group-card {
+    background-color: var(--aps-submission-parent-card-background);
 }
 
 .aps-teacher-dashboard .aps-submission-type-filters {
@@ -428,19 +433,19 @@
 }
 
 .aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-1 {
-    padding-left: 1rem;
-}
-
-.aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-2 {
     padding-left: 2rem;
 }
 
-.aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-3 {
+.aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-2 {
     padding-left: 3rem;
 }
 
-.aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-4 {
+.aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-3 {
     padding-left: 4rem;
+}
+
+.aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-4 {
+    padding-left: 5rem;
 }
 
 .aps-teacher-dashboard .aps-submission-group-ancestors {

@@ -49,7 +49,7 @@
 
 .aps-twp__summary {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-bottom: 18px;
 }
 
@@ -63,6 +63,18 @@
 
 .aps-twp__metric + .aps-twp__metric {
     border-left: 1px solid var(--twp-line);
+}
+
+.aps-twp__metric--approaching-limit {
+    background: #fff3cd;
+}
+
+.aps-twp__metric--near-limit {
+    background: #ffe0b2;
+}
+
+.aps-twp__metric--over-limit {
+    background: #f8d7da;
 }
 
 .aps-twp__metric-label,
@@ -141,6 +153,18 @@
 
 .aps-twp__chart-wrap--total {
     height: 180px;
+}
+
+.aps-twp__footer {
+    max-width: 1440px;
+    margin: 0 auto;
+    color: var(--twp-muted);
+    font-size: 13px;
+}
+
+.aps-twp__footer a {
+    color: #16756f;
+    text-decoration: underline;
 }
 
 .aps-twp__empty,

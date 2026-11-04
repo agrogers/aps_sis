@@ -1,5 +1,7 @@
 from odoo import fields, models, api
 
+LOAD_PERCENTAGE_SENTINEL = -0.01
+
 
 class APSTeacher(models.Model):
     _name = 'aps.teacher'
@@ -37,17 +39,78 @@ class APSTeacher(models.Model):
         default=0,
         help='Maximum non-teaching minutes a teacher can be allocated. For',
     )
+    teaching_load_percentage = fields.Float(
+        string='Teaching Load %',
+        compute='_compute_load_percentages',
+        store=True,
+        digits=(16, 2),
+    )
+    non_teaching_load_percentage = fields.Float(
+        string='Non-Teaching Load %',
+        compute='_compute_load_percentages',
+        store=True,
+        digits=(16, 2),
+    )
     load_details = fields.Html(
         string='Load Details',
         help='Detailed breakdown of teaching and non-teaching load allocations.',
     )
-    emp_id = fields.Many2one(
-        'hr.employee',
-        string='Employee',
-        ondelete='set null',
-        help='Linked HR employee record.',
+    role_contract_id = fields.Many2one(
+        'hr.contract',
+        compute='_compute_role_contract_id',
+        groups='hr.group_hr_user',
     )
-
+    role_job1_id = fields.Many2one(
+        'hr.job',
+        related='role_contract_id.job_id',
+        string='Job 1',
+        groups='hr.group_hr_user',
+    )
+    role_fte1 = fields.Float(
+        related='role_contract_id.fte1',
+        string='FTE 1',
+        groups='hr.group_hr_user',
+    )
+    role_department1_id = fields.Many2one(
+        'hr.department',
+        related='role_contract_id.department_id',
+        string='Department 1',
+        groups='hr.group_hr_user',
+    )
+    role_job2_id = fields.Many2one(
+        'hr.job',
+        related='role_contract_id.job2_id',
+        string='Job 2',
+        groups='hr.group_hr_user',
+    )
+    role_fte2 = fields.Float(
+        related='role_contract_id.fte2',
+        string='FTE 2',
+        groups='hr.group_hr_user',
+    )
+    role_department2_id = fields.Many2one(
+        'hr.department',
+        related='role_contract_id.department2_id',
+        string='Department 2',
+        groups='hr.group_hr_user',
+    )
+    role_job3_id = fields.Many2one(
+        'hr.job',
+        related='role_contract_id.job3_id',
+        string='Job 3',
+        groups='hr.group_hr_user',
+    )
+    role_fte3 = fields.Float(
+        related='role_contract_id.fte3',
+        string='FTE 3',
+        groups='hr.group_hr_user',
+    )
+    role_department3_id = fields.Many2one(
+        'hr.department',
+        related='role_contract_id.department3_id',
+        string='Department 3',
+        groups='hr.group_hr_user',
+    )
     # Convenience related fields
     name = fields.Char(related='partner_id.name', string='Name', store=True)
     email = fields.Char(related='partner_id.email', string='Email')
@@ -105,6 +168,22 @@ class APSTeacher(models.Model):
             rec.display_name = name
 
     @api.depends('partner_id')
+    def _compute_role_contract_id(self):
+        for rec in self:
+            employee = rec._get_linked_employee()
+            rec.role_contract_id = employee.contract_id if employee else False
+
+    def _get_linked_employee(self):
+        self.ensure_one()
+        if not self.partner_id:
+            return self.env['hr.employee']
+        return self.env['hr.employee'].search([
+            '|',
+            ('work_contact_id', '=', self.partner_id.id),
+            ('user_id.partner_id', '=', self.partner_id.id),
+        ], limit=1)
+
+    @api.depends('partner_id')
     def _compute_class_ids(self):
         for rec in self:
             if rec.partner_id:
@@ -119,6 +198,74 @@ class APSTeacher(models.Model):
     def _compute_class_count(self):
         for rec in self:
             rec.class_count = len(rec.class_ids)
+
+    # Snapshot load fields invalidate percentages after timetable refreshes.
+    @api.depends(
+        'teaching_load',
+        'max_load',
+        'non_teaching_load',
+        'max_non_teaching_load',
+    )
+    def _compute_load_percentages(self):
+        """Store percentages from live timetable totals, not rounded snapshots."""
+        timetable_totals = self._get_timetable_subject_totals()
+        for rec in self:
+            subject_totals = list(timetable_totals.get(rec.id, {}).values())
+            teaching_load = round(
+                sum(totals['lead_minutes'] for totals in subject_totals),
+                2,
+            )
+            non_teaching_load = round(
+                sum(totals['assistant_minutes'] for totals in subject_totals),
+                2,
+            )
+            rec.teaching_load_percentage = (
+                round(teaching_load / rec.max_load * 100, 2)
+                if rec.max_load > 0
+                else LOAD_PERCENTAGE_SENTINEL
+            )
+            rec.non_teaching_load_percentage = (
+                round(non_teaching_load / rec.max_non_teaching_load * 100, 2)
+                if rec.max_non_teaching_load > 0
+                else LOAD_PERCENTAGE_SENTINEL
+            )
+
+    def _get_timetable_subject_totals(self):
+        """Return rounded teaching and non-teaching minutes grouped by subject."""
+        if not self:
+            return {}
+
+        rows = self.env['asctt.teacher.workload'].read_group(
+            [('aps_teacher_id', 'in', self.ids)],
+            ['weighted_minutes:sum'],
+            ['aps_teacher_id', 'subject_id', 'subject_name', 'is_assistant'],
+            lazy=False,
+        )
+        totals_by_subject = {}
+        for row in rows:
+            teacher = row.get('aps_teacher_id')
+            if not teacher:
+                continue
+            teacher_id = teacher[0]
+            subject = row.get('subject_id')
+            subject_id = subject[0] if subject else False
+            subject_name = row.get('subject_name') or 'Unknown'
+            totals = totals_by_subject.setdefault(
+                (teacher_id, subject_id, subject_name),
+                {'lead': 0.0, 'assistant': 0.0},
+            )
+            workload_kind = 'assistant' if row.get('is_assistant') else 'lead'
+            totals[workload_kind] += row.get('weighted_minutes', 0.0) or 0.0
+
+        totals_by_teacher = {}
+        for (teacher_id, subject_id, subject_name), totals in totals_by_subject.items():
+            totals_by_teacher.setdefault(teacher_id, {})[
+                (subject_id, subject_name)
+            ] = {
+                'lead_minutes': round(totals['lead'], 2),
+                'assistant_minutes': round(totals['assistant'], 2),
+            }
+        return totals_by_teacher
 
     def action_view_classes(self):
         self.ensure_one()
@@ -202,16 +349,11 @@ class APSTeacher(models.Model):
     def get_timetable_workload_profile(self):
         """Return subject-level timetable minutes for the workload profile."""
         self.ensure_one()
-        rows = self.env['asctt.teacher.workload'].read_group(
-            [('aps_teacher_id', '=', self.id)],
-            ['weighted_minutes:sum'],
-            ['subject_id', 'subject_name', 'is_assistant'],
-            lazy=False,
-        )
+        subject_totals = self._get_timetable_subject_totals().get(self.id, {})
         subject_ids = {
-            row['subject_id'][0]
-            for row in rows
-            if row.get('subject_id')
+            subject_id
+            for subject_id, _name in subject_totals
+            if subject_id
         }
         subject_records = self.env['asctt.subject'].browse(list(subject_ids))
         category_icon_urls = {
@@ -226,25 +368,14 @@ class APSTeacher(models.Model):
             for subject in subject_records
             if subject.aps_subject_category_id
         }
-        subject_totals = {}
-        for row in rows:
-            subject = row.get('subject_name') or 'Unknown'
-            subject_id = row['subject_id'][0] if row.get('subject_id') else False
-            subject_key = (subject_id, subject)
-            totals = subject_totals.setdefault(
-                subject_key,
-                {'lead': 0.0, 'assistant': 0.0},
-            )
-            workload_kind = 'assistant' if row.get('is_assistant') else 'lead'
-            totals[workload_kind] += row.get('weighted_minutes', 0.0) or 0.0
 
         subjects = [
             {
                 'name': name,
                 'icon_url': category_icon_urls.get(subject_id, ''),
                 'category_color': category_colors.get(subject_id, ''),
-                'lead_minutes': round(totals['lead'], 2),
-                'assistant_minutes': round(totals['assistant'], 2),
+                'lead_minutes': totals['lead_minutes'],
+                'assistant_minutes': totals['assistant_minutes'],
             }
             for (subject_id, name), totals in sorted(
                 subject_totals.items(),
@@ -256,12 +387,23 @@ class APSTeacher(models.Model):
         total_minutes = round(lead_total + assistant_total, 2)
         max_load = self.max_load or 0
         max_non_teaching_load = self.max_non_teaching_load or 0
+        teaching_load_percentage = (
+            round(lead_total / max_load * 100, 2)
+            if max_load > 0
+            else None
+        )
+        non_teaching_load_percentage = (
+            round(assistant_total / max_non_teaching_load * 100, 2)
+            if max_non_teaching_load > 0
+            else None
+        )
+        employee = self._get_linked_employee()
 
         return {
             'teacher_name': self.display_name,
             'department_name': (
-                self.emp_id.department_id.display_name
-                if self.emp_id and self.emp_id.department_id
+                employee.department_id.display_name
+                if employee and employee.department_id
                 else 'Not assigned'
             ),
             'subjects': subjects,
@@ -270,8 +412,10 @@ class APSTeacher(models.Model):
             'total_minutes': total_minutes,
             'max_load': max_load,
             'max_non_teaching_load': max_non_teaching_load,
+            'teaching_load_percentage': teaching_load_percentage,
+            'non_teaching_load_percentage': non_teaching_load_percentage,
             'remaining_minutes': max(max_load - lead_total, 0),
-            'over_limit_minutes': max(total_minutes - max_load, 0),
+            'over_limit_minutes': max(lead_total - max_load, 0),
         }
 
     def action_open_workload_profile(self):
