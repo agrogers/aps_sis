@@ -564,9 +564,12 @@ class TestExamPaperImport(TransactionCase):
         second = importer._find_or_create_resource('Q1', parent)
         self.assertEqual(first, second)
 
-    def test_vision_prompt_requires_no_ocr_output(self):
+    def test_vision_prompt_extracts_footer_metadata_without_transcribing_questions(self):
         prompt = self.env['aps.exam.paper.import']._vision_system_prompt()
-        self.assertIn('Do not transcribe OCR', prompt)
+        self.assertIn('Do not transcribe question text', prompt)
+        self.assertIn('"printed_page_number": string|null', prompt)
+        self.assertIn('"barcode_value": string|null', prompt)
+        self.assertIn('Do not infer the barcode value by interpreting the bars', prompt)
         self.assertIn('regions', prompt)
         self.assertIn('raw_label', prompt)
         self.assertIn('second pass', prompt)
@@ -574,6 +577,69 @@ class TestExamPaperImport(TransactionCase):
         self.assertIn('no more than 20 words', prompt)
         self.assertIn('including labels printed in table headings', prompt)
         self.assertNotIn('exclude headers, footers', prompt)
+
+    def test_page_display_name_prefers_printed_number_and_preserves_pdf_page_index(self):
+        page = self.env['aps.exam.paper.page'].new({
+            'document_type': 'question',
+            'page_number': 3,
+            'printed_page_number': '4',
+        })
+
+        self.assertEqual(page.display_name, 'Question Paper - Page 4')
+        self.assertEqual(page.page_number, 3)
+
+    def test_page_display_name_falls_back_to_pdf_page_index(self):
+        page = self.env['aps.exam.paper.page'].new({
+            'document_type': 'mark_scheme',
+            'page_number': 7,
+        })
+
+        self.assertEqual(page.display_name, 'Mark Scheme - PDF page 7')
+
+    def test_page_analysis_persists_footer_metadata_and_clears_unreadable_values(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Footer metadata analysis', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('footer-metadata-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('footer-metadata-rms.pdf').id,
+        })
+        page = self.env['aps.exam.paper.page'].create({
+            'import_id': job.id, 'document_type': 'question', 'page_number': 3,
+            'render_dpi': 150, 'attachment_id': self._attachment('footer-metadata-page.png').id,
+            'printed_page_number': 'old page number', 'barcode_value': 'old barcode',
+        })
+        run = self.env['aps.ai.run'].create({
+            'import_id': job.id,
+            'page_ids': [(6, 0, page.ids)],
+            'processor_key': 'exam_page_analysis',
+            'requested_by_id': self.env.user.id,
+            'state': 'queued',
+            'status_message': 'Queued page analysis...',
+        })
+        response = {
+            'detections': [],
+            'printed_page_number': ' 4 ',
+            'barcode_value': ' P78541A0424 ',
+        }
+
+        with patch.object(type(job), '_analyse_page_image', return_value=(response, False)):
+            with patch.object(type(job), '_build_sections_from_page_analysis'):
+                with patch.object(type(run), '_write_progress'):
+                    with patch.object(type(run), '_commit_background_work'):
+                        run._process_analysis_run(job, False, 0)
+
+        self.assertEqual(page.printed_page_number, '4')
+        self.assertEqual(page.barcode_value, 'P78541A0424')
+
+        response.update({'printed_page_number': None, 'barcode_value': None})
+        page.write({'printed_page_number': 'stale page number', 'barcode_value': 'stale barcode'})
+        with patch.object(type(job), '_analyse_page_image', return_value=(response, False)):
+            with patch.object(type(job), '_build_sections_from_page_analysis'):
+                with patch.object(type(run), '_write_progress'):
+                    with patch.object(type(run), '_commit_background_work'):
+                        run._process_analysis_run(job, False, 0)
+
+        self.assertFalse(page.printed_page_number)
+        self.assertFalse(page.barcode_value)
 
     def test_resolve_page_labels_across_pages(self):
         resolver = self.env['aps.exam.paper.import']
@@ -1039,6 +1105,239 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(child.description, 'Teacher part description.')
         self.assertEqual(q1.question.count('data-embedded="tableOfContent"'), 1)
         self.assertEqual(q1.answer.count('data-embedded="tableOfContent"'), 1)
+
+    def test_resource_builder_applies_section_tags_with_child_precedence(self):
+        root_tag = self.env['aps.resource.tags'].create({'name': 'Exam root tag'})
+        child_tag = self.env['aps.resource.tags'].create({'name': 'Exam child tag'})
+        existing_tag = self.env['aps.resource.tags'].create({'name': 'Existing child tag'})
+        existing_root_tag = self.env['aps.resource.tags'].create({'name': 'Existing root tag'})
+
+        root = self.env['aps.resources'].create({
+            'name': 'Q1',
+            'parent_ids': [(4, self.resource.id)],
+            'primary_parent_id': self.resource.id,
+            'tag_ids': [(4, existing_root_tag.id)],
+        })
+        existing_child = self.env['aps.resources'].create({
+            'name': 'Q1c',
+            'parent_ids': [(4, root.id)],
+            'primary_parent_id': root.id,
+            'tag_ids': [(4, existing_tag.id)],
+        })
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Tagged exam paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('tagged-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('tagged-rms.pdf').id,
+        })
+        self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': 1, 'source_key': '1',
+                'display_label': 'Q1', 'root_key': 'Q1',
+                'tag_ids': [(4, root_tag.id)],
+            },
+            {
+                'import_id': job.id, 'sequence': 2, 'source_key': '1a',
+                'display_label': 'Q1a', 'root_key': 'Q1', 'maximum_mark': 2,
+            },
+            {
+                'import_id': job.id, 'sequence': 3, 'source_key': '1b',
+                'display_label': 'Q1b', 'root_key': 'Q1', 'maximum_mark': 3,
+                'tag_ids': [(4, child_tag.id)],
+            },
+            {
+                'import_id': job.id, 'sequence': 4, 'source_key': '1c',
+                'display_label': 'Q1c', 'root_key': 'Q1', 'maximum_mark': 4,
+                'resource_id': existing_child.id,
+            },
+        ])
+
+        with patch.object(type(job), '_build_section_image_html', return_value=''):
+            job.action_build_resources()
+
+        self.assertIn(root_tag, root.tag_ids)
+        self.assertIn(existing_root_tag, root.tag_ids)
+        child_a = root.child_ids.filtered(lambda resource: resource.name == 'Q1a')
+        child_b = root.child_ids.filtered(lambda resource: resource.name == 'Q1b')
+        self.assertIn(root_tag, child_a.tag_ids)
+        self.assertIn(child_tag, child_b.tag_ids)
+        self.assertNotIn(root_tag, child_b.tag_ids)
+        self.assertIn(existing_tag, existing_child.tag_ids)
+        self.assertNotIn(root_tag, existing_child.tag_ids)
+
+    def test_update_resource_images_applies_tags_to_linked_resource_and_children(self):
+        tags = self.env['aps.resource.tags'].create([
+            {'name': 'Updated section tag'},
+            {'name': 'Child override tag'},
+            {'name': 'Preserved resource tag'},
+        ])
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Update tags paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('update-tags-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('update-tags-rms.pdf').id,
+        })
+        root = self.env['aps.resources'].create({
+            'name': 'Q1', 'parent_ids': [(4, self.resource.id)],
+        })
+        parent = self.env['aps.resources'].create({
+            'name': 'Q1a', 'parent_ids': [(4, root.id)],
+        })
+        children = self.env['aps.resources'].create([
+            {'name': name, 'parent_ids': [(4, parent.id)]}
+            for name in ('Untagged', 'Override', 'Already tagged')
+        ])
+        grandchild = self.env['aps.resources'].create({
+            'name': 'Grandchild', 'parent_ids': [(4, children[0].id)],
+        })
+        parent.write({'tag_ids': [(4, tags[2].id)]})
+        children[2].write({'tag_ids': [(4, tags[2].id)]})
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'source_key': '1/a',
+            'display_label': 'Q1a', 'root_key': 'Q1',
+            'resource_id': parent.id, 'tag_ids': [(4, tags[0].id)],
+        })
+        self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'source_key': '1/a/i',
+            'display_label': 'Q1a.i', 'root_key': 'Q1',
+            'resource_id': children[1].id, 'tag_ids': [(4, tags[1].id)],
+        })
+        with patch.object(type(job), '_remove_section_images', return_value=('', '')), \
+                patch.object(type(job), '_replace_section_images', return_value=''):
+            section.action_update_resource_images()
+            section.action_update_resource_images()
+
+        self.assertIn(tags[0], parent.tag_ids)
+        self.assertIn(tags[2], parent.tag_ids)
+        self.assertIn(tags[0], children[0].tag_ids)
+        self.assertIn(tags[0], grandchild.tag_ids)
+        self.assertEqual(children[1].tag_ids, tags[1])
+        self.assertEqual(children[2].tag_ids, tags[2])
+        self.assertNotIn(tags[0], root.tag_ids)
+
+        section.tag_ids = False
+        parent.tag_ids = False
+        self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'source_key': '1',
+            'display_label': 'Q1', 'root_key': 'Q1',
+            'resource_id': root.id, 'tag_ids': [(4, tags[0].id)],
+        })
+        with patch.object(type(job), '_remove_section_images', return_value=('', '')), \
+                patch.object(type(job), '_replace_section_images', return_value=''):
+            section.action_update_resource_images()
+        self.assertEqual(parent.tag_ids, tags[0])
+
+    def _fake_parent_tag_import(self, hierarchical=True):
+        resource = self.env['aps.resources'].create({'name': 'Fake parent tag paper'})
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Fake parent tags', 'resource_id': resource.id,
+            'question_attachment_id': self._attachment('fake-parent-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('fake-parent-rms.pdf').id,
+        })
+        keys = (
+            ['2', '2/a', '2/a/i', '2/a/ii', '2/a/iii', '2/b']
+            if hierarchical else ['2', '2a', '2ai', '2aii', '2aiii', '2b']
+        )
+        sections = self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': index,
+                'source_key': source_key, 'display_label': label,
+                'root_key': 'Q2', 'hierarchy_level': level,
+                'include_resource': index != 2,
+            }
+            for index, (source_key, label, level) in enumerate(zip(
+                keys, ['Q2', 'Q2a', 'Q2a.i', 'Q2a.ii', 'Q2a.iii', 'Q2b'],
+                [1, 2, 3, 3, 3, 2],
+            ), start=1)
+        ])
+        return job, sections
+
+    def test_resource_builder_inherits_tags_from_excluded_parent(self):
+        for hierarchical in (False, True):
+            with self.subTest(hierarchical=hierarchical):
+                job, sections = self._fake_parent_tag_import(hierarchical)
+                tags = self.env['aps.resource.tags'].create([
+                    {'name': 'Root section tag'},
+                    {'name': 'Excluded parent tag'},
+                    {'name': 'Specific subpart tag'},
+                ])
+                sections[0].tag_ids = tags[0]
+                sections[1].tag_ids = tags[1]
+                sections[3].tag_ids = tags[2]
+                with patch.object(type(job), '_build_section_image_html', return_value=''):
+                    job.action_build_resources()
+
+                self.assertFalse(sections[1].resource_id)
+                self.assertFalse(job.resource_id._get_all_descendants().filtered(
+                    lambda resource: resource.name == 'Q2a'
+                ))
+                inherited_tag = tags[1] if hierarchical else tags[0]
+                self.assertEqual(sections[2].resource_id.tag_ids, inherited_tag)
+                self.assertEqual(sections[3].resource_id.tag_ids, tags[2])
+                self.assertEqual(sections[4].resource_id.tag_ids, inherited_tag)
+                self.assertEqual(sections[5].resource_id.tag_ids, tags[0])
+
+    def test_update_excluded_parent_applies_tags_without_creating_resource(self):
+        job, sections = self._fake_parent_tag_import()
+        tags = self.env['aps.resource.tags'].create([
+            {'name': 'Updated excluded parent tag'},
+            {'name': 'Specific child section tag'},
+            {'name': 'Existing child resource tag'},
+        ])
+        sections[3].tag_ids = tags[1]
+        with patch.object(type(job), '_build_section_image_html', return_value=''):
+            job.action_build_resources()
+        sections[1].tag_ids = tags[0]
+        sections[4].resource_id.tag_ids = tags[2]
+        grandchild = self.env['aps.resources'].create({
+            'name': 'Untagged grandchild',
+            'parent_ids': [(4, sections[2].resource_id.id)],
+        })
+        before_ids = set(job.resource_id._get_all_descendants().ids)
+        with patch.object(type(job), '_refresh_section_images') as refresh:
+            result = sections[1].action_update_resource_images()
+            sections[1].action_update_resource_images()
+            refresh.assert_not_called()
+
+        self.assertEqual(result['params']['type'], 'success')
+        self.assertFalse(sections[1].resource_id)
+        self.assertEqual(set(job.resource_id._get_all_descendants().ids), before_ids)
+        self.assertEqual(sections[2].resource_id.tag_ids, tags[0])
+        self.assertEqual(grandchild.tag_ids, tags[0])
+        self.assertEqual(sections[3].resource_id.tag_ids, tags[1])
+        self.assertEqual(sections[4].resource_id.tag_ids, tags[2])
+        self.assertFalse(sections[5].resource_id.tag_ids)
+
+        sections[2].resource_id.tag_ids = False
+        with patch.object(type(job), '_remove_section_images', return_value=('', '')), \
+                patch.object(type(job), '_replace_section_images', return_value=''):
+            sections[2].action_update_resource_images()
+        self.assertEqual(sections[2].resource_id.tag_ids, tags[0])
+
+    def test_update_excluded_parent_requires_built_descendants(self):
+        job, sections = self._fake_parent_tag_import()
+        with self.assertRaisesRegex(UserError, 'Build the child resources'):
+            sections[1].action_update_resource_images()
+
+    def test_section_tag_ancestry_uses_only_slash_separated_source_keys(self):
+        job, sections = self._fake_parent_tag_import()
+        tag = self.env['aps.resource.tags'].create({'name': 'Slash parent tag'})
+        sections[1].tag_ids = tag
+        sections[2].write({'sequence': 0, 'hierarchy_level': 1})
+        unrelated = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'source_key': '2/b/i',
+            'display_label': 'Q2a.iv', 'root_key': 'Q2',
+            'sequence': 3, 'hierarchy_level': 3,
+        })
+        similar_prefix = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'source_key': '2/ab/i',
+            'display_label': 'Q2a.v', 'root_key': 'Q2',
+            'sequence': 4, 'hierarchy_level': 3,
+        })
+        self.assertIn(sections[1], job._section_tag_chain(sections[2]))
+        self.assertEqual(job._section_resource_tags(sections[2]), tag)
+        self.assertNotIn(sections[1], job._section_tag_chain(unrelated))
+        self.assertFalse(job._section_resource_tags(unrelated))
+        self.assertNotIn(sections[1], job._section_tag_chain(similar_prefix))
+        self.assertFalse(job._section_resource_tags(similar_prefix))
 
     def test_resource_builder_sets_finalised_and_leaf_ai_settings(self):
         existing_tag = self.env['aps.resource.tags'].create({

@@ -83,6 +83,10 @@
     font-size: 13px;
 }
 
+.aps-twp__metric strong .aps-twp__metric-unit {
+    font-weight: 400;
+}
+
 .aps-twp__metric-hours {
     color: #89979c;
     font-size: 11px;
@@ -107,6 +111,56 @@
 
 .aps-twp__metric-note--over {
     color: #b42318;
+}
+
+.aps-twp__roles {
+    max-width: 1440px;
+    margin: 0 auto 18px;
+}
+
+.aps-twp__roles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.aps-twp__role {
+    min-width: 0;
+    padding: 14px 16px;
+    background: #f7f9f8;
+    border: 1px solid var(--twp-line);
+    border-radius: 4px;
+}
+
+.aps-twp__role--unassigned {
+    visibility: hidden;
+}
+
+.aps-twp__role h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.aps-twp__role dl {
+    margin: 0;
+}
+
+.aps-twp__role dl > div {
+    display: grid;
+    grid-template-columns: minmax(82px, auto) minmax(0, 1fr);
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.aps-twp__role dt {
+    color: var(--twp-muted);
+    font-weight: 600;
+}
+
+.aps-twp__role dd {
+    margin: 0;
+    overflow-wrap: anywhere;
 }
 
 .aps-twp__chart {
@@ -178,6 +232,10 @@
         grid-template-columns: 1fr;
     }
 
+    .aps-twp__roles-grid {
+        grid-template-columns: 1fr;
+    }
+
     .aps-twp__metric + .aps-twp__metric {
         border-top: 1px solid var(--twp-line);
         border-left: 0;
@@ -195,6 +253,10 @@
 
 @media (min-width: 701px) and (max-width: 900px) {
     .aps-twp__summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .aps-twp__roles-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

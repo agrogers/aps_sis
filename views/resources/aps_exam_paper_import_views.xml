@@ -59,36 +59,38 @@
                             <field name="page_count" widget="statinfo" string="Pages"/>
                         </button>
                     </div>
-                    <group>
-                        <group>
-                            <field name="name"/>
-                            <field name="resource_id" readonly="1"/>
-                            <field name="question_attachment_id" readonly="1"/>
-                            <field name="mark_scheme_attachment_id" readonly="1"/>
-                            <field name="section_count" readonly="1"/>
-                            <field name="page_count" readonly="1"/>
-                        </group>
-                        <group>
-                            <field name="analysis_scope"/>
-                            <field name="ai_model_id" options="{'no_create': True}"/>
-                            <field name="single_page_ai_model_id" options="{'no_create': True}"/>
-                            <field name="ocr_ai_model_id" options="{'no_create': True}"/>
-                            <field name="render_dpi"/>
-                        </group>
-                    </group>
-                    <group string="Crop Margins (reference pixels at 1500 px page height)">
-                        <group>
-                            <field name="crop_margin_left"/>
-                            <field name="crop_margin_right"/>
-                        </group>
-                        <group>
-                            <field name="crop_margin_top"/>
-                            <field name="crop_margin_bottom"/>
-                        </group>
-                    </group>
-                    <field name="error_message" readonly="1" invisible="not error_message"/>
                     <notebook>
-                        <page string="Detected Sections">
+                        <page string="Details">
+                            <group>
+                                <group>
+                                    <field name="name"/>
+                                    <field name="resource_id" readonly="1"/>
+                                    <field name="question_attachment_id" readonly="1"/>
+                                    <field name="mark_scheme_attachment_id" readonly="1"/>
+                                    <field name="section_count" readonly="1"/>
+                                    <field name="page_count" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="analysis_scope"/>
+                                    <field name="ai_model_id" options="{'no_create': True}"/>
+                                    <field name="single_page_ai_model_id" options="{'no_create': True}"/>
+                                    <field name="ocr_ai_model_id" options="{'no_create': True}"/>
+                                    <field name="render_dpi"/>
+                                </group>
+                            </group>
+                            <group string="Crop Margins (reference pixels at 1500 px page height)">
+                                <group>
+                                    <field name="crop_margin_left"/>
+                                    <field name="crop_margin_right"/>
+                                </group>
+                                <group>
+                                    <field name="crop_margin_top"/>
+                                    <field name="crop_margin_bottom"/>
+                                </group>
+                            </group>
+                            <field name="error_message" readonly="1" invisible="not error_message"/>
+                        </page>
+                        <page string="Sections">
                             <field name="section_ids">
                                 <list editable="bottom" default_order="sequence" limit="999">
                                     <field name="sequence" widget="handle"/>
@@ -98,6 +100,7 @@
                                     <field name="hierarchy_level" optional="show"/>
                                     <field name="include_resource" widget="boolean_toggle" optional="show"/>
                                     <field name="include_parent_question" widget="boolean_toggle" optional="show"/>
+                                    <field name="tag_ids" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
                                     <field name="maximum_mark" optional="show"/>
                                     <button name="action_open_region_editor" type="object" string="Regions" icon="fa-crop" class="btn-link" optional="show"/>
                                     <field name="question_summary" optional="show"/>
@@ -108,7 +111,7 @@
                                     <field name="answer_pages" optional="hide"/>
                                     <field name="answer_regions" optional="hide"/>
                                     <button name="action_open_section_form" type="object" string="Open" icon="fa-external-link" class="btn-link" optional="show"/>
-                                    <button name="action_update_resource_images" type="object" string="Update" icon="fa-picture-o" class="btn-link" invisible="not resource_id" optional="show"/>
+                                    <button name="action_update_resource_images" type="object" string="Update" icon="fa-picture-o" class="btn-link" invisible="not resource_id and include_resource" optional="show"/>
                                     <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id" optional="show"/>
                                 </list>
                             </field>
@@ -225,9 +228,12 @@
             <form string="Rendered Page Analysis">
                 <sheet>
                     <group>
+                        <field name="display_name" readonly="1"/>
                         <field name="import_id" readonly="1"/>
                         <field name="document_type" readonly="1"/>
-                        <field name="page_number" readonly="1"/>
+                        <field name="page_number" string="PDF Page" readonly="1"/>
+                        <field name="printed_page_number" readonly="1"/>
+                        <field name="barcode_value" readonly="1"/>
                         <field name="attachment_id" readonly="1"/>
                         <field name="ai_state" readonly="1"/>
                         <field name="ai_call_log_id" readonly="1"/>
@@ -261,6 +267,7 @@
                 <field name="hierarchy_level" optional="show"/>
                 <field name="resource_key" optional="hide"/>
                 <field name="resource_id" optional="hide"/>
+                <field name="tag_ids" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
                 <field name="maximum_mark" optional="show"/>
                 <field name="question_summary" optional="hide"/>
                 <field name="include_resource" optional="hide"/>
@@ -278,6 +285,7 @@
                 <field name="ocr_state" optional="hide"/>
                 <field name="ocr_model_id" optional="hide"/>
                 <field name="ocr_error" optional="hide"/>
+                <button name="action_update_resource_images" type="object" string="Update" icon="fa-picture-o" class="btn-link" invisible="not resource_id and include_resource"/>
                 <button name="action_ocr_section" type="object" string="OCR" icon="fa-font" class="btn-link" invisible="not resource_id"/>
                 <button name="action_open_region_editor" type="object" string="Review Regions" icon="fa-crop" class="btn-link"/>
                 <button name="action_open_section_form" type="object" string="Open Section" icon="fa-external-link" class="btn-link"/>
@@ -291,7 +299,7 @@
         <field name="arch" type="xml">
             <form string="Imported Section">
                 <header>
-                    <button name="action_update_resource_images" type="object" string="Update Images" class="btn-primary" invisible="not resource_id"/>
+                    <button name="action_update_resource_images" type="object" string="Update" class="btn-primary" invisible="not resource_id and include_resource"/>
                 </header>
                 <sheet>
                     <group>
@@ -301,6 +309,7 @@
                         <field name="root_key"/>
                         <field name="hierarchy_level"/>
                         <field name="resource_id" readonly="1"/>
+                        <field name="tag_ids" widget="many2many_tags" options="{'no_create': False}"/>
                         <field name="maximum_mark"/>
                         <field name="question_summary"/>
                         <field name="include_resource"/>
@@ -327,9 +336,12 @@
         <field name="model">aps.exam.paper.page</field>
         <field name="arch" type="xml">
             <list default_order="import_id,document_type,page_number">
+                <field name="display_name" string="Page"/>
                 <field name="import_id"/>
                 <field name="document_type"/>
-                <field name="page_number"/>
+                <field name="page_number" string="PDF Page" optional="hide"/>
+                <field name="printed_page_number" optional="show"/>
+                <field name="barcode_value" optional="hide"/>
                 <field name="render_dpi"/>
                 <field name="attachment_id"/>
                 <field name="ai_state"/>

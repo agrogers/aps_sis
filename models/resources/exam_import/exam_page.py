@@ -9,13 +9,18 @@ _logger = logging.getLogger(__name__)
 class APSExamPaperPage(models.Model):
     _name = 'aps.exam.paper.page'
     _description = 'Rendered Exam Paper Page'
+    _rec_name = 'display_name'
     _order = 'document_type, page_number'
+
+    display_name = fields.Char(compute='_compute_display_name', store=True)
 
     import_id = fields.Many2one('aps.exam.paper.import', required=True, ondelete='cascade', index=True)
     document_type = fields.Selection([
         ('question', 'Question Paper'), ('mark_scheme', 'Mark Scheme'),
     ], required=True, index=True)
     page_number = fields.Integer(required=True)
+    printed_page_number = fields.Char(string='Printed Page Number', readonly=True)
+    barcode_value = fields.Char(string='Barcode Value', readonly=True)
     render_dpi = fields.Integer(required=True)
     width = fields.Integer(readonly=True)
     height = fields.Integer(readonly=True)
@@ -33,6 +38,18 @@ class APSExamPaperPage(models.Model):
         ('page_render_unique', 'unique(import_id, document_type, page_number, render_dpi)',
          'A page can only be rendered once at the same DPI for an import.'),
     ]
+
+    @api.depends('document_type', 'page_number', 'printed_page_number')
+    def _compute_display_name(self):
+        document_labels = dict(self._fields['document_type'].selection)
+        for page in self:
+            document_label = document_labels.get(page.document_type, page.document_type)
+            page_label = (
+                _('Page %s') % page.printed_page_number
+                if page.printed_page_number
+                else _('PDF page %s') % page.page_number
+            )
+            page.display_name = '%s - %s' % (document_label, page_label)
 
     @api.depends('ai_response', 'ai_state')
     def _compute_detected_labels(self):

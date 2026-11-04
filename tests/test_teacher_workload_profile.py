@@ -109,6 +109,43 @@ class TestTeacherWorkloadProfile(TransactionCase):
         self.assertEqual(profile['remaining_minutes'], 180)
         self.assertEqual(profile['over_limit_minutes'], 0)
 
+    def test_profile_scales_maximums_and_percentages_by_fte(self):
+        rows = [
+            {
+                'aps_teacher_id': (self.teacher.id, self.teacher.display_name),
+                'subject_id': (self.timetable_subject.id, self.timetable_subject.name),
+                'subject_name': 'Math',
+                'is_assistant': False,
+                'weighted_minutes': 120.0,
+            },
+            {
+                'aps_teacher_id': (self.teacher.id, self.teacher.display_name),
+                'subject_id': (self.timetable_subject.id, self.timetable_subject.name),
+                'subject_name': 'Math',
+                'is_assistant': True,
+                'weighted_minutes': 45.0,
+            },
+        ]
+        with patch.object(type(self.workload_model), 'read_group', return_value=rows):
+            self.teacher.write({
+                'teaching_load_fte': 0.5,
+                'non_teaching_load_fte': 0.25,
+            })
+
+            self.assertAlmostEqual(self.teacher.teaching_load_percentage, 133.33, places=2)
+            self.assertAlmostEqual(self.teacher.non_teaching_load_percentage, 200.0, places=2)
+
+            profile = self.teacher.get_timetable_workload_profile()
+
+        self.assertEqual(profile['teaching_load_fte'], 0.5)
+        self.assertEqual(profile['non_teaching_load_fte'], 0.25)
+        self.assertEqual(profile['max_load'], 90.0)
+        self.assertEqual(profile['max_non_teaching_load'], 22.5)
+        self.assertAlmostEqual(profile['teaching_load_percentage'], 133.33, places=2)
+        self.assertEqual(profile['non_teaching_load_percentage'], 200.0)
+        self.assertEqual(profile['remaining_minutes'], 0)
+        self.assertEqual(profile['over_limit_minutes'], 30.0)
+
     def test_profile_finds_department_from_employee_contact(self):
         profile = self._profile_for_rows([])
 
@@ -131,6 +168,8 @@ class TestTeacherWorkloadProfile(TransactionCase):
         contract = self.env['hr.contract'].create({
             'name': 'Workload Profile Contract',
             'employee_id': self.employee.id,
+            'job_id': jobs[0].id,
+            'department_id': self.department.id,
             'wage': 1000,
             'state': 'open',
             'fte1': 0.8,
@@ -143,6 +182,9 @@ class TestTeacherWorkloadProfile(TransactionCase):
         })
         self.employee.contract_id = contract
 
+        self.assertEqual(self.employee.contract_id, contract)
+        self.assertEqual(self.teacher._get_linked_employee(), self.employee)
+        self.assertEqual(self.teacher.role_contract_id, contract)
         self.assertEqual(self.teacher.role_job1_id, jobs[0])
         self.assertEqual(self.teacher.role_fte1, 0.8)
         self.assertEqual(self.teacher.role_department1_id, self.department)
@@ -153,10 +195,28 @@ class TestTeacherWorkloadProfile(TransactionCase):
         self.assertEqual(self.teacher.role_fte3, 0.25)
         self.assertEqual(self.teacher.role_department3_id, self.department)
 
+        profile = self._profile_for_rows([])
+        if self.env.user.has_group('hr.group_hr_user'):
+            self.assertTrue(all(role['assigned'] for role in profile['roles']))
+            self.assertEqual(profile['roles'][0]['job'], jobs[0].display_name)
+            self.assertEqual(profile['roles'][0]['department'], self.department.display_name)
+            self.assertEqual(profile['roles'][0]['fte'], 0.8)
+            self.assertEqual(profile['roles'][1]['job'], jobs[1].display_name)
+            self.assertEqual(profile['roles'][2]['job'], jobs[2].display_name)
+        else:
+            self.assertEqual(profile['roles'], [])
+
     def test_roles_are_empty_without_a_current_contract(self):
         self.assertFalse(self.teacher.role_job1_id)
         self.assertFalse(self.teacher.role_job2_id)
         self.assertFalse(self.teacher.role_job3_id)
+
+        profile = self._profile_for_rows([])
+        if self.env.user.has_group('hr.group_hr_user'):
+            self.assertEqual(len(profile['roles']), 3)
+            self.assertFalse(any(role['assigned'] for role in profile['roles']))
+        else:
+            self.assertEqual(profile['roles'], [])
 
     def test_stored_load_percentages_match_live_timetable_and_maximums(self):
         rows = [

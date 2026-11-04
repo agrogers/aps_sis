@@ -96,6 +96,10 @@ class APSExamPaperImportRun(models.Model):
                     response, log_record = importer._analyse_page_image(model, page)
                     page.write({
                         'ai_response': response,
+                        'printed_page_number': importer._normalise_page_metadata(
+                            response.get('printed_page_number'),
+                        ),
+                        'barcode_value': importer._normalise_page_metadata(response.get('barcode_value')),
                         'exclusion_regions': importer._merge_page_exclusion_regions(page, response),
                         'ai_state': 'complete',
                         'error_message': False,

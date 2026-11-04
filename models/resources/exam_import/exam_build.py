@@ -111,6 +111,35 @@ class APSExamPaperImportBuild(models.Model):
         ).sorted(key=lambda candidate: candidate.sequence, reverse=True)
         return candidates[:1]
 
+    def _section_tag_chain(self, section):
+        """Return tagged ancestors using only slash-delimited source keys."""
+        chain = section
+        parent_key = section.source_key or ''
+        while '/' in parent_key:
+            parent_key = parent_key.rsplit('/', 1)[0]
+            chain |= self.section_ids.filtered(
+                lambda candidate: candidate.source_key == parent_key
+            )
+        return chain
+
+    def _section_resource_tags(self, section):
+        for ancestor in self._section_tag_chain(section):
+            if ancestor.tag_ids:
+                return ancestor.tag_ids
+        return self.env['aps.resource.tags']
+
+    def _update_unlinked_section_tags(self, section):
+        descendants = self.section_ids.filtered(
+            lambda candidate: candidate.include_resource and candidate.resource_id
+            and candidate != section and section in self._section_tag_chain(candidate)
+        )
+        if not descendants:
+            raise UserError(_('Build the child resources before updating tags for this section.'))
+        for descendant in descendants:
+            self._update_section_resource_tags(
+                descendant.resource_id, self._section_resource_tags(descendant),
+            )
+
     def _append_image_update_log(self, section, message):
         local_now = fields.Datetime.context_timestamp(section, fields.Datetime.now())
         section.write({
@@ -535,10 +564,35 @@ class APSExamPaperImportBuild(models.Model):
         question = self._replace_section_images(resource, section, 'question', question, log=True)
         answer = self._replace_section_images(resource, section, 'mark_scheme', answer, log=True)
         resource.write({'question': question, 'answer': answer})
+        self._update_section_resource_tags(
+            section.resource_id, self._section_resource_tags(section),
+        )
         self._append_image_update_log(section, 'Resource %s updated: question HTML=%s characters, answer HTML=%s characters.' % (
             resource.id, len(question), len(answer),
         ))
         self._append_image_update_log(section, 'Refresh completed.')
+
+    def _update_section_resource_tags(self, resource, tags):
+        """Apply reviewed tags to a resource and its untagged descendants."""
+        sections = {
+            section.resource_id.id: section
+            for section in self.section_ids
+            if section.resource_id
+        }
+        pending = [(resource, tags)]
+        visited = set()
+        while pending:
+            current, inherited_tags = pending.pop()
+            if current.id in visited:
+                continue
+            visited.add(current.id)
+            section = sections.get(current.id)
+            if section and section.tag_ids:
+                self._add_section_tags(current, section.tag_ids)
+            elif not current.tag_ids:
+                tags = self._section_resource_tags(section) if section else inherited_tags
+                self._add_section_tags(current, tags or inherited_tags)
+            pending.extend((child, current.tag_ids) for child in current.child_ids)
 
     def _append_section_content(self, root, section, headings, answers):
         question_html = self._build_section_image_html(root, section, 'question')
@@ -602,6 +656,7 @@ class APSExamPaperImportBuild(models.Model):
                 lambda section: (section.root_key or section.source_key) == root_key
                 and self._normalise_key(section.display_label) == self._normalise_key(root.name)
             )[:1]
+            self._add_section_tags(root, root_section.tag_ids)
             toc_placeholder = (
                 '<div data-embedded="tableOfContent" '
                 'data-oe-protected="true" contenteditable="false"></div>'
@@ -642,11 +697,19 @@ class APSExamPaperImportBuild(models.Model):
                     if child.name in raw_labels and child.name != section.display_label:
                         child.write({'name': section.display_label})
                 else:
-                    child = self._find_or_create_resource(section.display_label, root)
+                    child = self._find_or_create_resource(
+                        section.display_label,
+                        root,
+                        tag_ids=self._section_resource_tags(section) or None,
+                    )
                 if child.id in existing_child_ids:
                     reused_resource_count += 1
                 else:
                     created_resource_count += 1
+                if section.tag_ids:
+                    self._add_section_tags(child, section.tag_ids)
+                elif not child.tag_ids:
+                    self._add_section_tags(child, self._section_resource_tags(section))
                 question_regions = self._section_regions(section, 'question')
                 question_pages = set(filter(None, (section.question_pages or '').split(',')))
                 question_pages.update(
@@ -707,7 +770,15 @@ class APSExamPaperImportBuild(models.Model):
             next=self._open_form(),
         )
 
-    def _find_or_create_resource(self, name, parent):
+    def _add_section_tags(self, resource, tags):
+        """Add section tags without replacing tags already on a resource."""
+        missing_tag_ids = set(tags.ids) - set(resource.tag_ids.ids)
+        if missing_tag_ids:
+            resource.write({
+                'tag_ids': [(4, tag_id) for tag_id in sorted(missing_tag_ids)],
+            })
+
+    def _find_or_create_resource(self, name, parent, tag_ids=None):
         child = parent.child_ids.filtered(lambda r: r.name == name)[:1]
         if child:
             return child
@@ -716,7 +787,7 @@ class APSExamPaperImportBuild(models.Model):
         ], limit=1)
         if not resource_type:
             raise UserError(_('The resource type "Question (Past Paper)" was not found.'))
-        return self.env['aps.resources'].create({
+        values = {
             'name': name,
             'parent_ids': [(4, parent.id)],
             'primary_parent_id': parent.id,
@@ -725,4 +796,7 @@ class APSExamPaperImportBuild(models.Model):
             'has_question': 'no',
             'has_answer': 'no',
             'category': 'mandatory',
-        })
+        }
+        if tag_ids:
+            values['tag_ids'] = [(6, 0, tag_ids.ids)]
+        return self.env['aps.resources'].create(values)

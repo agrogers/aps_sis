@@ -30,6 +30,13 @@ class APSExamPaperSection(models.Model):
     )
     resource_id = fields.Many2one('aps.resources', readonly=True, ondelete='set null')
     resource_key = fields.Char(readonly=True)
+    tag_ids = fields.Many2many(
+        'aps.resource.tags', string='Tags',
+        help='Added to the linked resource on Build Resources or Update Images. '
+             'Child resources inherit tags only when they have no tags of their own. '
+             'Tags on excluded parent sections also apply to their child resources. '
+             'Section ancestry follows slash-separated source keys, such as 2/a and 2/a/i.',
+    )
     maximum_mark = fields.Float(string='Out Of', digits=(16, 1))
     question_summary = fields.Char(string='Question Summary')
     include_resource = fields.Boolean(
@@ -147,13 +154,18 @@ class APSExamPaperSection(models.Model):
 
     def action_update_resource_images(self):
         self.ensure_one()
-        self.import_id._refresh_section_images(self)
+        if not self.resource_id and not self.include_resource:
+            self.import_id._update_unlinked_section_tags(self)
+            message = _('The child resource tags were updated for %s.') % self.display_label
+        else:
+            self.import_id._refresh_section_images(self)
+            message = _('The resource images and tags were updated for %s.') % self.display_label
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': _('Resource Updated'),
-                'message': _('The resource images were updated for %s.') % self.display_label,
+                'message': message,
                 'type': 'success',
                 'sticky': False,
             },

@@ -23,34 +23,66 @@
                     <div t-attf-class="aps-twp__metric {{ getLoadStatusClass(getTeachingLoadPercentage()) }}">
                         <span class="aps-twp__metric-label">Teaching</span>
                         <strong>
-                            <t t-esc="formatMinutes(state.profile.lead_total)"/> /
+                            <t t-esc="formatMinutes(state.profile.lead_total)"/>
+                            <span class="aps-twp__metric-unit">mins</span> /
                             <t t-if="getTeachingLoadPercentage() !== null">
                                 <t t-esc="formatPercentage(getTeachingLoadPercentage())"/>%
+                                <span class="aps-twp__metric-unit">of maximum</span>
                             </t>
                             <t t-else="">N/A</t>
                         </strong>
-                        <span class="aps-twp__metric-unit">mins / % of maximum</span>
                         <span t-if="getTeachingLoadPercentage() === null" class="aps-twp__metric-hours">
                             No maximum set
+                        </span>
+                        <span class="aps-twp__metric-note">
+                            FTE: <t t-esc="formatFte(state.profile.teaching_load_fte)"/>
                         </span>
                     </div>
                     <div t-attf-class="aps-twp__metric {{ getLoadStatusClass(getNonTeachingLoadPercentage()) }}">
                         <span class="aps-twp__metric-label">Non-Teaching Load</span>
                         <strong>
-                            <t t-esc="formatMinutes(state.profile.assistant_total)"/> /
+                            <t t-esc="formatMinutes(state.profile.assistant_total)"/>
+                            <span class="aps-twp__metric-unit">mins</span> /
                             <t t-if="getNonTeachingLoadPercentage() !== null">
                                 <t t-esc="formatPercentage(getNonTeachingLoadPercentage())"/>%
+                                <span class="aps-twp__metric-unit">of maximum</span>
                             </t>
                             <t t-else="">N/A</t>
                         </strong>
-                        <span class="aps-twp__metric-unit">mins / % of maximum</span>
                         <span t-if="getNonTeachingLoadPercentage() === null" class="aps-twp__metric-hours">
                             No maximum set
+                        </span>
+                        <span class="aps-twp__metric-note">
+                            FTE: <t t-esc="formatFte(state.profile.non_teaching_load_fte)"/>
                         </span>
                     </div>
                     <div class="aps-twp__metric aps-twp__metric--department">
                         <span class="aps-twp__metric-label">Department</span>
                         <strong><t t-esc="state.profile.department_name"/></strong>
+                    </div>
+                </section>
+
+                <section t-if="state.profile.roles.length" class="aps-twp__roles" aria-label="Roles">
+                    <div class="aps-twp__roles-grid">
+                        <article t-foreach="state.profile.roles" t-as="role" t-key="role.label"
+                                 t-attf-class="aps-twp__role {{ role.job !== 'Not assigned' ? '' : 'aps-twp__role--unassigned' }}"
+                                 t-att-aria-hidden="role.job !== 'Not assigned' ? 'false' : 'true'">
+                            <h3><t t-esc="role.label"/></h3>
+                            <dl>
+                                <div>
+                                    <dt>Job</dt>
+                                    <dd><t t-esc="role.job"/></dd>
+                                </div>
+                                <div>
+                                    <dt>Department</dt>
+                                    <dd><t t-esc="role.department"/></dd>
+                                </div>
+                                <div>
+                                    <dt>FTE</dt>
+                                    <dd><t t-esc="formatFte(role.fte)"/></dd>
+                                </div>
+                            </dl>
+                        </article>
                     </div>
                 </section>
 

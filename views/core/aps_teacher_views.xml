@@ -101,16 +101,23 @@
                     </group>
                     <notebook>
                         <page string="Workload">
-                            <group string="Workload Allocation">
-                                <group>
-                                    <field name="teaching_load"/>
-                                    <field name="teaching_load_percentage" widget="percentpie_ranged" options="{'sentinel': -0.01}"/>
-                                    <field name="non_teaching_load"/>
-                                    <field name="non_teaching_load_percentage" widget="percentpie_ranged" options="{'sentinel': -0.01}"/>
+                            <group string="Workload Allocation" col="8">
+                                <group string="Teaching" col="8" colspan="8">
+                                    <field name="teaching_load" string="Load" readonly="1"/>
+                                    <field name="teaching_load_percentage" string="%" widget="percentpie_ranged"
+                                           options="{'sentinel': -0.01}" readonly="1"/>
+                                    <field name="max_load" string="Max"/>
+                                    <field name="teaching_load_fte" string="FTE"/>
+                                    <div class="text-muted" colspan="8">
+                                        Load amounts are calculated from the timetable.
+                                    </div>
                                 </group>
-                                <group>
-                                    <field name="max_load"/>
-                                    <field name="max_non_teaching_load"/>
+                                <group string="Non-Teaching" col="8" colspan="8">
+                                    <field name="non_teaching_load" string="Load" readonly="1"/>
+                                    <field name="non_teaching_load_percentage" string="%" widget="percentpie_ranged"
+                                           options="{'sentinel': -0.01}" readonly="1"/>
+                                    <field name="max_non_teaching_load" string="Max"/>
+                                    <field name="non_teaching_load_fte" string="FTE"/>
                                 </group>
                             </group>
                             <group string="Roles" groups="hr.group_hr_user">

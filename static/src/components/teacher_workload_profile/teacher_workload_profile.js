@@ -275,6 +275,12 @@ export class TeacherWorkloadProfile extends Component {
         return formatNumber(value);
     }
 
+    formatFte(value) {
+        return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
+            Number(value) || 0
+        );
+    }
+
     formatPercentage(value) {
         if (value === null || value === undefined || !Number.isFinite(Number(value))) {
             return "N/A";

@@ -13,6 +13,14 @@ _logger = logging.getLogger(__name__)
 class APSExamPaperImportAnalyse(models.Model):
     _inherit = 'aps.exam.paper.import'
 
+    @staticmethod
+    def _normalise_page_metadata(value):
+        if isinstance(value, str):
+            return value.strip() or False
+        if isinstance(value, int) and not isinstance(value, bool):
+            return str(value)
+        return False
+
     def action_analyse_pages_with_ai(self):
         """Queue analysis of all rendered pages and show the shared progress dialog."""
         self.ensure_one()
@@ -152,12 +160,16 @@ class APSExamPaperImportAnalyse(models.Model):
             'labels and their visual regions. Treat labels as layout markers, including a bare root '
             'number such as "1", a part such as "(b)", or a subpart such as "(i)", or text such as "Task A3b" at the start of '
             'a line or sentence or the top of the page. Do not require the label to be followed by question text on the same '
-            'line. Do not transcribe OCR and do not invent question text. Provide a concise '
+            'line. Do not transcribe question text or invent question text. Separately extract the printed page number from '
+            'the footer and the human-readable value printed with a barcode. Return the page number as printed and the barcode '
+            'value as contiguous code characters, ignoring visual spacing between individual characters. Do not infer the '
+            'barcode value by interpreting the bars. Return null for either value when it is absent or unreadable. Provide a concise '
             'question_summary of no more than 20 words describing what the student is asked to do; '
             'do not provide an answer. Report the label exactly as '
             'printed on the current page in raw_label; return it exactly as visible. '
             'Return only JSON with this shape: {"image_width": number, "image_height": number, '
-            '"coordinate_system": "pixels", "exclusion_zones": [{"x1": number, '
+            '"coordinate_system": "pixels", "printed_page_number": string|null, "barcode_value": string|null, '
+            '"exclusion_zones": [{"x1": number, '
             '"y1": number, "x2": number, "y2": number, "confidence": number}], '
             '"detections": [{"raw_label": string, '
             '"question_summary": string, '

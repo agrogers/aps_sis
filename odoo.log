@@ -29823,3 +29823,308 @@ Stack (most recent call last):
   File "D:\Dev\Odoo\mvis1\odoo\models.py", line 4463, in check_access_rule
     warnings.warn(
  
+2026-11-04 17:10:44,657 23564 INFO ? odoo: Odoo version 18.0 
+2026-11-04 17:10:44,657 23564 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-11-04 17:10:44,657 23564 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-11-04 17:10:44,658 23564 INFO ? odoo: database: odoo@localhost:5432 
+2026-11-04 17:10:44,871 23564 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-11-04 17:10:44,902 23564 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-11-04 17:10:45,320 23564 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-11-04 17:10:45,388 23564 INFO office_money_test_20261031 odoo.tests.common: Importing test framework 
+2026-11-04 17:10:45,532 23564 INFO office_money_test_20261031 odoo.modules.loading: loading 1 modules... 
+2026-11-04 17:10:45,538 23564 INFO office_money_test_20261031 odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-11-04 17:10:45,564 23564 INFO office_money_test_20261031 odoo.modules.loading: updating modules list 
+2026-11-04 17:10:45,581 23564 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-11-04 17:10:45,933 23564 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-11-04 17:10:46,207 23564 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-11-04 17:10:46,725 23564 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-11-04 17:10:46,728 23564 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-11-04 17:10:46,836 23564 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-11-04 17:10:47,678 23564 WARNING office_money_test_20261031 py.warnings: <unknown>:21: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-04 17:10:48,156 23564 WARNING office_money_test_20261031 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-04 17:10:48,218 23564 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-11-04 17:10:48,773 23564 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Accounts Tweaks and Tools'] to user __system__ #1 via n/a 
+2026-11-04 17:10:48,773 23564 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Accounts Tweaks and Tools'] to user __system__ #1 via n/a 
+2026-11-04 17:10:49,356 23564 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-11-04 17:10:49,462 23564 INFO office_money_test_20261031 odoo.modules.loading: loading 77 modules... 
+2026-11-04 17:10:51,330 23564 INFO office_money_test_20261031 odoo.modules.loading: Loading module accounts_tweaks_and_tools (56/77) 
+2026-11-04 17:10:51,647 23564 INFO office_money_test_20261031 odoo.modules.registry: module accounts_tweaks_and_tools: creating or updating database tables 
+2026-11-04 17:10:51,775 23564 INFO office_money_test_20261031 odoo.models: Prepare computation of office.money.movement.is_staff_balance_transaction 
+2026-11-04 17:10:52,015 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/security/office_money_security.xml 
+2026-11-04 17:10:52,211 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/security/ir.model.access.csv 
+2026-11-04 17:10:52,232 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/data/office_money_sequence.xml 
+2026-11-04 17:10:52,238 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/office_money_views.xml 
+2026-11-04 17:10:52,383 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/office_money_batch_wizard_views.xml 
+2026-11-04 17:10:52,443 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_settings_views.xml 
+2026-11-04 17:10:52,485 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_move_view.xml 
+2026-11-04 17:10:52,515 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_move_filter_view.xml 
+2026-11-04 17:10:52,541 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_move_bulk_wizard_views.xml 
+2026-11-04 17:10:53,953 23564 INFO office_money_test_20261031 odoo.modules.loading: Module accounts_tweaks_and_tools loaded in 2.62s, 657 queries (+657 other) 
+2026-11-04 17:10:54,124 23564 INFO office_money_test_20261031 odoo.modules.loading: Loading module accounts_tweaks_and_tools_employee_loans (77/77) 
+2026-11-04 17:10:54,198 23564 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:10:54,311 23564 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:10:54,333 23564 INFO office_money_test_20261031 odoo.modules.registry: module accounts_tweaks_and_tools_employee_loans: creating or updating database tables 
+2026-11-04 17:10:54,469 23564 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools_employee_loans/views/office_money_loan_views.xml 
+2026-11-04 17:10:54,525 23564 INFO office_money_test_20261031 odoo.modules.loading: Module accounts_tweaks_and_tools_employee_loans loaded in 0.40s, 127 queries (+127 other) 
+2026-11-04 17:10:54,525 23564 INFO office_money_test_20261031 odoo.modules.loading: 77 modules loaded in 5.06s, 784 queries (+784 extra) 
+2026-11-04 17:10:54,609 23564 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:10:54,733 23564 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:10:54,900 23564 INFO office_money_test_20261031 odoo.modules.registry: verifying fields for every extended model 
+2026-11-04 17:10:55,549 23564 INFO office_money_test_20261031 odoo.modules.loading: Modules loaded. 
+2026-11-04 17:10:55,553 23564 INFO office_money_test_20261031 odoo.modules.registry: Registry changed, signaling through the database 
+2026-11-04 17:10:55,553 23564 INFO office_money_test_20261031 odoo.modules.registry: Registry loaded in 10.232s 
+2026-11-04 17:10:55,554 23564 INFO office_money_test_20261031 odoo.service.server: Starting post tests 
+2026-11-04 17:10:58,288 23564 INFO office_money_test_20261031 odoo.addons.accounts_tweaks_and_tools.tests.test_office_money: Starting TestOfficeMoney.test_staff_balance_classification_is_stored_searchable_and_tracks_template_renames ... 
+2026-11-04 17:10:58,406 23564 INFO office_money_test_20261031 odoo.addons.base.models.ir_attachment: filestore gc 4 checked, 1 removed 
+2026-11-04 17:10:58,407 23564 INFO office_money_test_20261031 odoo.service.server: 1 post-tests in 2.85s, 2381 queries 
+2026-11-04 17:10:58,407 23564 INFO office_money_test_20261031 odoo.tests.stats: accounts_tweaks_and_tools: 3 tests 2.85s 2381 queries 
+2026-11-04 17:10:58,407 23564 INFO office_money_test_20261031 odoo.tests.result: 0 failed, 0 error(s) of 1 tests when loading database 'office_money_test_20261031' 
+2026-11-04 17:10:58,407 23564 INFO office_money_test_20261031 odoo.service.server: Initiating shutdown 
+2026-11-04 17:10:58,407 23564 INFO office_money_test_20261031 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-11-04 17:10:58,516 23564 INFO office_money_test_20261031 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+2026-11-04 17:11:11,833 36056 INFO ? odoo: Odoo version 18.0 
+2026-11-04 17:11:11,834 36056 INFO ? odoo: Using configuration file at D:\Dev\Odoo\mvis1\odoo.conf 
+2026-11-04 17:11:11,834 36056 INFO ? odoo: addons paths: ['D:\\Dev\\Odoo\\mvis1\\odoo\\addons', 'd:\\dev\\odoo\\mvis1\\addons\\18.0', 'd:\\dev\\odoo\\mvis1\\addons', 'd:\\git\\odoo_custom_addons', 'd:\\git\\odoo_3rd_party_addons', 'd:\\git\\odoo_3rd_party_addons\\oca', 'd:\\git\\odoo_3rd_party_addons\\spreadsheet', 'd:\\dev\\odoo\\mvis1\\odoo\\addons'] 
+2026-11-04 17:11:11,834 36056 INFO ? odoo: database: odoo@localhost:5432 
+2026-11-04 17:11:12,005 36056 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe 
+2026-11-04 17:11:12,027 36056 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe 
+2026-11-04 17:11:12,290 36056 INFO ? odoo.service.server: HTTP service (werkzeug) running on Andrew-Asus.lan:8069 
+2026-11-04 17:11:12,347 36056 INFO office_money_test_20261031 odoo.tests.common: Importing test framework 
+2026-11-04 17:11:12,427 36056 INFO office_money_test_20261031 odoo.modules.loading: loading 1 modules... 
+2026-11-04 17:11:12,433 36056 INFO office_money_test_20261031 odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra) 
+2026-11-04 17:11:12,451 36056 INFO office_money_test_20261031 odoo.modules.loading: updating modules list 
+2026-11-04 17:11:12,456 36056 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-11-04 17:11:12,534 36056 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'ar_data', defaulting to LGPL-3 
+2026-11-04 17:11:12,581 36056 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'calendar_display_options', defaulting to LGPL-3 
+2026-11-04 17:11:12,631 36056 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_extended', defaulting to LGPL-3 
+2026-11-04 17:11:12,632 36056 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'hr_contract_print', defaulting to LGPL-3 
+2026-11-04 17:11:12,642 36056 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'hr_job_website_extension', defaulting to LGPL-3 
+2026-11-04 17:11:13,019 36056 WARNING office_money_test_20261031 py.warnings: <unknown>:21: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-04 17:11:13,074 36056 WARNING office_money_test_20261031 py.warnings: <unknown>:42: SyntaxWarning: invalid escape sequence '\p'
+  File "D:\Dev\Odoo\mvis1\odoo-bin", line 8, in <module>
+    odoo.cli.main()
+  File "D:\Dev\Odoo\mvis1\odoo\cli\command.py", line 66, in main
+    o.run(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 180, in run
+    main(args)
+  File "D:\Dev\Odoo\mvis1\odoo\cli\server.py", line 173, in main
+    rc = odoo.service.server.start(preload=preload, stop=stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1414, in start
+    rc = server.run(preload, stop)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 581, in run
+    rc = preload_registries(preload)
+  File "D:\Dev\Odoo\mvis1\odoo\service\server.py", line 1318, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\tools\func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\registry.py", line 127, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\loading.py", line 439, in load_modules
+    Module.update_list()
+  File "D:\Dev\Odoo\mvis1\.venv\Lib\site-packages\decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 75, in check_and_log
+    return method(self, *args, **kwargs)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 772, in update_list
+    terp = self.get_module_info(mod_name)
+  File "D:\Dev\Odoo\mvis1\odoo\addons\base\models\ir_module.py", line 162, in get_module_info
+    return modules.get_manifest(name)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 363, in get_manifest
+    return copy.deepcopy(_get_manifest_cached(module, mod_path))
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 367, in _get_manifest_cached
+    return load_manifest(module, mod_path)
+  File "D:\Dev\Odoo\mvis1\odoo\modules\module.py", line 313, in load_manifest
+    manifest.update(ast.literal_eval(f.read()))
+  File "D:\Dev\Odoo\mvis1\odoo\_monkeypatches\literal_eval.py", line 28, in literal_eval
+    return orig_literal_eval(expr)
+  File "C:\Program Files\Python312\Lib\ast.py", line 66, in literal_eval
+    node_or_string = parse(node_or_string.lstrip(" \t"), mode='eval')
+  File "C:\Program Files\Python312\Lib\ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+  File "C:\Program Files\Python312\Lib\warnings.py", line 112, in _showwarnmsg
+    sw(msg.message, msg.category, msg.filename, msg.lineno,
+  File "D:\Dev\Odoo\mvis1\odoo\netsvc.py", line 345, in showwarning_with_traceback
+    for frame in traceback.extract_stack():
+ 
+2026-11-04 17:11:13,115 36056 WARNING office_money_test_20261031 odoo.modules.module: Missing `license` key in manifest for 'product_variant_image_update', defaulting to LGPL-3 
+2026-11-04 17:11:13,346 36056 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Accounts Tweaks and Tools'] to user __system__ #1 via n/a 
+2026-11-04 17:11:13,346 36056 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Accounts Tweaks and Tools'] to user __system__ #1 via n/a 
+2026-11-04 17:11:13,798 36056 INFO office_money_test_20261031 odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-11-04 17:11:13,848 36056 INFO office_money_test_20261031 odoo.modules.loading: loading 77 modules... 
+2026-11-04 17:11:14,889 36056 INFO office_money_test_20261031 odoo.modules.loading: Loading module accounts_tweaks_and_tools (56/77) 
+2026-11-04 17:11:15,126 36056 INFO office_money_test_20261031 odoo.modules.registry: module accounts_tweaks_and_tools: creating or updating database tables 
+2026-11-04 17:11:15,281 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/security/office_money_security.xml 
+2026-11-04 17:11:15,402 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/security/ir.model.access.csv 
+2026-11-04 17:11:15,416 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/data/office_money_sequence.xml 
+2026-11-04 17:11:15,419 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/office_money_views.xml 
+2026-11-04 17:11:15,497 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/office_money_batch_wizard_views.xml 
+2026-11-04 17:11:15,542 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_settings_views.xml 
+2026-11-04 17:11:15,568 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_move_view.xml 
+2026-11-04 17:11:15,589 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_move_filter_view.xml 
+2026-11-04 17:11:15,608 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools/views/account_move_bulk_wizard_views.xml 
+2026-11-04 17:11:15,827 36056 INFO office_money_test_20261031 odoo.modules.loading: Module accounts_tweaks_and_tools loaded in 0.94s, 640 queries (+640 other) 
+2026-11-04 17:11:15,955 36056 INFO office_money_test_20261031 odoo.modules.loading: Loading module accounts_tweaks_and_tools_employee_loans (77/77) 
+2026-11-04 17:11:16,025 36056 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:11:16,111 36056 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:11:16,132 36056 INFO office_money_test_20261031 odoo.modules.registry: module accounts_tweaks_and_tools_employee_loans: creating or updating database tables 
+2026-11-04 17:11:16,253 36056 INFO office_money_test_20261031 odoo.modules.loading: loading accounts_tweaks_and_tools_employee_loans/views/office_money_loan_views.xml 
+2026-11-04 17:11:16,298 36056 INFO office_money_test_20261031 odoo.modules.loading: Module accounts_tweaks_and_tools_employee_loans loaded in 0.34s, 127 queries (+127 other) 
+2026-11-04 17:11:16,298 36056 INFO office_money_test_20261031 odoo.modules.loading: 77 modules loaded in 2.45s, 767 queries (+767 extra) 
+2026-11-04 17:11:16,364 36056 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:11:16,447 36056 WARNING office_money_test_20261031 odoo.fields: Field employee.loan.deduction.state: unknown parameter 'tracking', if this is an actual parameter you may want to override the method _valid_field_parameter on the relevant model in order to allow it 
+2026-11-04 17:11:16,587 36056 INFO office_money_test_20261031 odoo.modules.registry: verifying fields for every extended model 
+2026-11-04 17:11:17,118 36056 INFO office_money_test_20261031 odoo.modules.loading: Modules loaded. 
+2026-11-04 17:11:17,122 36056 INFO office_money_test_20261031 odoo.modules.registry: Registry changed, signaling through the database 
+2026-11-04 17:11:17,122 36056 INFO office_money_test_20261031 odoo.modules.registry: Registry loaded in 4.831s 
+2026-11-04 17:11:17,123 36056 INFO office_money_test_20261031 odoo.service.server: Starting post tests 
+2026-11-04 17:11:18,988 36056 INFO office_money_test_20261031 odoo.addons.accounts_tweaks_and_tools.tests.test_office_money: Starting TestOfficeMoney.test_staff_balance_classification_is_stored_searchable_and_tracks_template_renames ... 
+2026-11-04 17:11:19,053 36056 INFO office_money_test_20261031 odoo.addons.base.models.ir_attachment: filestore gc 1 checked, 1 removed 
+2026-11-04 17:11:19,053 36056 INFO office_money_test_20261031 odoo.service.server: 1 post-tests in 1.93s, 2381 queries 
+2026-11-04 17:11:19,054 36056 INFO office_money_test_20261031 odoo.tests.stats: accounts_tweaks_and_tools: 3 tests 1.93s 2381 queries 
+2026-11-04 17:11:19,054 36056 INFO office_money_test_20261031 odoo.tests.result: 0 failed, 0 error(s) of 1 tests when loading database 'office_money_test_20261031' 
+2026-11-04 17:11:19,054 36056 INFO office_money_test_20261031 odoo.service.server: Initiating shutdown 
+2026-11-04 17:11:19,054 36056 INFO office_money_test_20261031 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-11-04 17:11:19,374 36056 INFO office_money_test_20261031 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  

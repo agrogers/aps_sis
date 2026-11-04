@@ -22,22 +22,36 @@ class APSTeacher(models.Model):
     teaching_load = fields.Integer(
         string='Teaching Load (minutes)',
         default=0,
-        help='Total minutes allocated to teaching duties.',
+        readonly=True,
+        help='Calculated from the timetable.',
     )
     non_teaching_load = fields.Integer(
         string='Non-Teaching Load (minutes)',
         default=0,
-        help='Total minutes allocated to non-teaching duties (admin, pastoral, etc.).',
+        readonly=True,
+        help='Calculated from the timetable.',
     )
     max_load = fields.Integer(
         string='Maximum Load (minutes)',
         default=0,
         help='Maximum total minutes a teacher can be allocated.',
     )
+    teaching_load_fte = fields.Float(
+        string='Teaching FTE',
+        default=1.0,
+        digits=(16, 2),
+        help='Full-time equivalent used to scale the maximum teaching load.',
+    )
     max_non_teaching_load = fields.Integer(
         string='Maximum Non-Teaching Load (minutes)',
         default=0,
         help='Maximum non-teaching minutes a teacher can be allocated. For',
+    )
+    non_teaching_load_fte = fields.Float(
+        string='Non-Teaching FTE',
+        default=1.0,
+        digits=(16, 2),
+        help='Full-time equivalent used to scale the maximum non-teaching load.',
     )
     teaching_load_percentage = fields.Float(
         string='Teaching Load %',
@@ -167,7 +181,11 @@ class APSTeacher(models.Model):
                 name = f"[{rec.tutor_code}] {name}"
             rec.display_name = name
 
-    @api.depends('partner_id')
+    @api.depends(
+        'partner_id',
+        'partner_id.employee_ids.contract_id',
+        'partner_id.user_ids.employee_ids.contract_id',
+    )
     def _compute_role_contract_id(self):
         for rec in self:
             employee = rec._get_linked_employee()
@@ -203,8 +221,10 @@ class APSTeacher(models.Model):
     @api.depends(
         'teaching_load',
         'max_load',
+        'teaching_load_fte',
         'non_teaching_load',
         'max_non_teaching_load',
+        'non_teaching_load_fte',
     )
     def _compute_load_percentages(self):
         """Store percentages from live timetable totals, not rounded snapshots."""
@@ -219,14 +239,19 @@ class APSTeacher(models.Model):
                 sum(totals['assistant_minutes'] for totals in subject_totals),
                 2,
             )
+            teaching_maximum = (rec.max_load or 0) * (rec.teaching_load_fte or 0.0)
+            non_teaching_maximum = (
+                (rec.max_non_teaching_load or 0) *
+                (rec.non_teaching_load_fte or 0.0)
+            )
             rec.teaching_load_percentage = (
-                round(teaching_load / rec.max_load * 100, 2)
-                if rec.max_load > 0
+                round(teaching_load / teaching_maximum * 100, 2)
+                if teaching_maximum > 0
                 else LOAD_PERCENTAGE_SENTINEL
             )
             rec.non_teaching_load_percentage = (
-                round(non_teaching_load / rec.max_non_teaching_load * 100, 2)
-                if rec.max_non_teaching_load > 0
+                round(non_teaching_load / non_teaching_maximum * 100, 2)
+                if non_teaching_maximum > 0
                 else LOAD_PERCENTAGE_SENTINEL
             )
 
@@ -385,8 +410,12 @@ class APSTeacher(models.Model):
         lead_total = round(sum(item['lead_minutes'] for item in subjects), 2)
         assistant_total = round(sum(item['assistant_minutes'] for item in subjects), 2)
         total_minutes = round(lead_total + assistant_total, 2)
-        max_load = self.max_load or 0
-        max_non_teaching_load = self.max_non_teaching_load or 0
+        teaching_fte = self.teaching_load_fte or 0.0
+        non_teaching_fte = self.non_teaching_load_fte or 0.0
+        max_load = (self.max_load or 0) * teaching_fte
+        max_non_teaching_load = (
+            (self.max_non_teaching_load or 0) * non_teaching_fte
+        )
         teaching_load_percentage = (
             round(lead_total / max_load * 100, 2)
             if max_load > 0
@@ -398,6 +427,37 @@ class APSTeacher(models.Model):
             else None
         )
         employee = self._get_linked_employee()
+        roles = []
+        if self.env.user.has_group('hr.group_hr_user'):
+            roles = [
+                {
+                    'label': 'Role 1',
+                    'assigned': bool(self.role_job1_id),
+                    'job': self.role_job1_id.display_name or 'Not assigned',
+                    'department': (
+                        self.role_department1_id.display_name or 'Not assigned'
+                    ),
+                    'fte': self.role_fte1 or 0.0,
+                },
+                {
+                    'label': 'Role 2',
+                    'assigned': bool(self.role_job2_id),
+                    'job': self.role_job2_id.display_name or 'Not assigned',
+                    'department': (
+                        self.role_department2_id.display_name or 'Not assigned'
+                    ),
+                    'fte': self.role_fte2 or 0.0,
+                },
+                {
+                    'label': 'Role 3',
+                    'assigned': bool(self.role_job3_id),
+                    'job': self.role_job3_id.display_name or 'Not assigned',
+                    'department': (
+                        self.role_department3_id.display_name or 'Not assigned'
+                    ),
+                    'fte': self.role_fte3 or 0.0,
+                },
+            ]
 
         return {
             'teacher_name': self.display_name,
@@ -412,10 +472,13 @@ class APSTeacher(models.Model):
             'total_minutes': total_minutes,
             'max_load': max_load,
             'max_non_teaching_load': max_non_teaching_load,
+            'teaching_load_fte': teaching_fte,
+            'non_teaching_load_fte': non_teaching_fte,
             'teaching_load_percentage': teaching_load_percentage,
             'non_teaching_load_percentage': non_teaching_load_percentage,
             'remaining_minutes': max(max_load - lead_total, 0),
             'over_limit_minutes': max(lead_total - max_load, 0),
+            'roles': roles,
         }
 
     def action_open_workload_profile(self):
