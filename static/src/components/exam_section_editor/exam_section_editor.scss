@@ -9,8 +9,7 @@
     overflow: hidden;
 }
 
-.o_exam_region_editor_header,
-.o_exam_region_editor_footer {
+.o_exam_region_editor_header {
     display: flex;
     align-items: center;
     gap: .75rem;
@@ -99,13 +98,6 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-}
-
-.o_exam_region_editor_footer {
-    position: relative;
-    z-index: 2;
-    background: #fff;
-    padding-top: .75rem;
 }
 
 .o_exam_region_editor_content {
