@@ -152,6 +152,7 @@ export class CourseExplorer extends Component {
         this._lastRenderedMathVersion = -1;
         this._renderMathRaf = 0;
         this._loadDataRequestId = 0;
+        this._contentObserver = null;
         this._tooltipCells = new WeakSet();
         this._programmaticSectionId = 0;
         this._programmaticSectionTimer = null;
@@ -224,6 +225,7 @@ export class CourseExplorer extends Component {
                 this._restoreScroll();
             }
             this._setupScrollObserver();
+            this._setupContentObserver();
             this._setupScrollListener();
             this._setupImageClickHandler();
             this._renderEmbeddedVideos();
@@ -240,6 +242,7 @@ export class CourseExplorer extends Component {
             this._renderMathIfNeeded();
             this._setupTooltipsIfNeeded();
             this._setupScrollObserver();
+            this._setupContentObserver();
             this._setupScrollListener();
             this._setupImageClickHandler();
             this._renderEmbeddedVideos();
@@ -266,6 +269,7 @@ export class CourseExplorer extends Component {
                 el.removeEventListener("scroll", this._boundOnScrollDetect);
                 el.removeEventListener("click", this._boundOnContentClick);
             }
+            this._contentObserver?.disconnect();
         });
     }
 
@@ -343,6 +347,10 @@ export class CourseExplorer extends Component {
         if (!section) {
             this._pendingUrlTarget = null;
             this._updateUrlState({ immediate: true });
+            return;
+        }
+        if (!section.htmlLoaded) {
+            this._loadSectionContent([section.id]);
             return;
         }
 
@@ -629,7 +637,7 @@ export class CourseExplorer extends Component {
             const result = await this.orm.call(
                 "aps.resources",
                 "get_course_explorer_data",
-                [this.state.selectedCategoryId],
+                [this.state.selectedCategoryId, false],
             );
             console.info(
                 "Course Explorer: data RPC completed in %dms",
@@ -694,7 +702,10 @@ export class CourseExplorer extends Component {
 
                 return {
                     ...sec,
-                    html: sec.html ? markup(sec.html) : "",
+                    html: markup('<span class="d-none"></span>'),
+                    htmlLoaded: false,
+                    htmlLoading: false,
+                    htmlLoadError: false,
                     quizzes,
                     quizMasteryRows,
                     assessmentRows,
@@ -725,6 +736,65 @@ export class CourseExplorer extends Component {
             if (requestId === this._loadDataRequestId) {
                 this.state.loading = false;
             }
+        }
+    }
+
+    async _loadSectionContent(sectionIds) {
+        const requestId = this._loadDataRequestId;
+        const requestedIds = new Set(sectionIds);
+        const sections = this.state.contentSections.filter(
+            (section) => requestedIds.has(section.id)
+                && !section.htmlLoaded
+                && !section.htmlLoading,
+        );
+        if (!sections.length) return;
+
+        const loadingIds = new Set(sections.map((section) => section.id));
+        for (const section of sections) {
+            section.htmlLoading = true;
+            section.htmlLoadError = false;
+        }
+
+        try {
+            const contentById = await this.orm.call(
+                "aps.resources",
+                "get_course_explorer_section_content",
+                [this.state.selectedCategoryId, [...loadingIds]],
+            ) || {};
+            if (requestId !== this._loadDataRequestId) return;
+
+            const missingIds = sections
+                .filter((section) => !Object.prototype.hasOwnProperty.call(
+                    contentById,
+                    String(section.id),
+                ))
+                .map((section) => section.id);
+            if (missingIds.length) {
+                throw new Error(
+                    `Course Explorer content response omitted resource IDs: ${missingIds.join(", ")}`,
+                );
+            }
+
+            this.state.contentSections = this.state.contentSections.map((section) => {
+                if (!loadingIds.has(section.id)) return section;
+                const html = contentById[String(section.id)];
+                return {
+                    ...section,
+                    html: html ? markup(html) : "",
+                    htmlLoaded: true,
+                    htmlLoading: false,
+                    htmlLoadError: false,
+                };
+            });
+            this._mathRenderVersion++;
+        } catch (err) {
+            if (requestId !== this._loadDataRequestId) return;
+            console.error("CourseExplorer: failed to load section content", err);
+            this.state.contentSections = this.state.contentSections.map((section) => (
+                loadingIds.has(section.id)
+                    ? { ...section, htmlLoading: false, htmlLoadError: true }
+                    : section
+            ));
         }
     }
 
@@ -1074,6 +1144,45 @@ export class CourseExplorer extends Component {
         el.addEventListener("scroll", this._boundOnScrollDetect, {
             passive: true,
         });
+    }
+
+    _setupContentObserver() {
+        const root = this.contentRef.el;
+        if (!root || this.state.loading) return;
+        if (!this._contentObserver) {
+            this._contentObserver = new IntersectionObserver((entries) => {
+                const resourceIds = [];
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    const resourceId = Number(entry.target.dataset.resourceId);
+                    if (Number.isSafeInteger(resourceId) && resourceId > 0) {
+                        this._contentObserver.unobserve(entry.target);
+                        resourceIds.push(resourceId);
+                    }
+                }
+                if (resourceIds.length) {
+                    this._loadSectionContent(resourceIds);
+                }
+            }, {
+                root,
+                rootMargin: "1200px 0px",
+            });
+        }
+
+        const sectionsById = new Map(
+            this.state.contentSections.map((section) => [section.id, section]),
+        );
+        for (const element of root.querySelectorAll(".ce_content_section")) {
+            const section = sectionsById.get(Number(element.dataset.resourceId));
+            if (
+                section
+                && !section.htmlLoaded
+                && !section.htmlLoading
+                && !section.htmlLoadError
+            ) {
+                this._contentObserver.observe(element);
+            }
+        }
     }
 
     _onScrollDetect() {

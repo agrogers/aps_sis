@@ -379,7 +379,13 @@ class TestStudentDashboard(TransactionCase):
         own_submissions = self.env['aps.resource.submission'].search([
             ('student_id', '=', self.partner_a.id),
         ])
-        resource = own_submissions[:1].resource_id
+        own_submission = own_submissions[:1]
+        resource = own_submission.resource_id
+        own_submission.answer = (
+            '<p>private submission answer</p>'
+            '<img src="data:image/png;base64,' + ('A' * 1024) + '"/>'
+        )
+        resource.description = '<img src="data:image/png;base64,' + ('B' * 1024) + '"/>'
         image_buffer = io.BytesIO()
         Image.new('RGB', (24, 24), (35, 125, 90)).save(image_buffer, format='PNG')
         self.subject.icon = base64.b64encode(image_buffer.getvalue())
@@ -400,7 +406,10 @@ class TestStudentDashboard(TransactionCase):
         group = data['submission_groups'][0]
         self.assertEqual(group['student_submission_id'], own_submissions[:1].id)
         self.assertEqual(group['student_state'], own_submissions[:1].state)
-        self.assertTrue(group['subject_icons'])
+        self.assertTrue(group['subject_icons'].startswith('/web/image/aps.subject/'))
+        self.assertNotIn('description', group)
+        self.assertNotIn('private submission answer', str(data))
+        self.assertNotIn('<img src="data:image/png;base64,', str(data))
         self.assertEqual(group['subject_name'], self.subject.display_name)
 
         submissions = resources.sudo().get_dashboard_submissions_for_resource(

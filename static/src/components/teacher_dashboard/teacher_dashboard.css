@@ -487,15 +487,6 @@
     min-width: 0;
 }
 
-.aps-teacher-dashboard .aps-submission-group-description {
-    overflow: hidden;
-    font-size: 0.6rem;
-    padding-bottom: 0.2rem;
-    line-height: 1;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .aps-teacher-dashboard .aps-submission-out-of {
     padding-left: 5px;
 }

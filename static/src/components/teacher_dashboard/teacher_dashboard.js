@@ -618,7 +618,7 @@ export class TeacherDashboard extends Component {
         if (!iconData) {
             return "";
         }
-        return iconData.startsWith("data:")
+        return iconData.startsWith("data:") || iconData.startsWith("/web/")
             ? iconData
             : `data:image/png;base64,${iconData}`;
     }

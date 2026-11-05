@@ -247,9 +247,6 @@
                                                     <strong t-else="" class="aps-submission-group-label" t-att-title="group.title">
                                                         <t t-esc="group.title"/>
                                                     </strong>
-                                                    <div t-if="group.description" class="aps-submission-group-description" t-att-title="group.description">
-                                                        <t t-esc="group.description"/>
-                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="aps-submission-group-date small text-muted">

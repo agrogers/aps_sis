@@ -17,12 +17,25 @@ class APSResource(models.Model):
     def _get_teacher_dashboard_class_subject_domain(self, class_id, field_name='resource_id.subjects'):
         if not class_id:
             return []
-        class_record = self.env['aps.class'].browse(int(class_id)).exists()
+        class_record = self.env['aps.class'].with_context(
+            prefetch_fields=False
+        ).browse(int(class_id)).exists()
         subject_ids = class_record.subject_id.ids
         return (
             [(field_name, 'in', subject_ids)]
             if subject_ids else [('id', '=', False)]
         )
+
+    @api.model
+    def _get_teacher_dashboard_submission_student_ids(self, domain):
+        submissions = self.env['aps.resource.submission'].with_context(
+            prefetch_fields=False
+        ).search_fetch(domain, ['task_id'])
+        task_ids = submissions.mapped('task_id').ids
+        tasks = self.env['aps.resource.task'].with_context(
+            prefetch_fields=False
+        ).search_fetch([('id', 'in', task_ids)], ['student_id'])
+        return tasks.mapped('student_id').ids
 
     @api.model
     def get_teacher_dashboard_classes(self, category_id=False, days=30):
@@ -40,9 +53,9 @@ class APSResource(models.Model):
                 ('resource_id.subjects', 'in', subjects.ids)
                 if subjects else ('id', '=', False)
             )
-        partner_ids = self.env['aps.resource.submission'].search(
+        partner_ids = self._get_teacher_dashboard_submission_student_ids(
             submission_domain
-        ).mapped('student_id').ids
+        )
         if not partner_ids:
             return []
 
@@ -64,9 +77,9 @@ class APSResource(models.Model):
         classes = self.env['aps.student.class'].search(
             enrollment_domain
         ).mapped('class_id')
-        return classes.sorted(lambda record: (record.name or '').lower()).read(
-            ['id', 'name']
-        )
+        return classes.sorted(
+            lambda record: (record.name or '').lower()
+        ).with_context(prefetch_fields=False).read(['id', 'name'])
 
     @api.model
     def get_teacher_dashboard_students(self, category_id=False, days=30, class_id=False):
@@ -87,8 +100,9 @@ class APSResource(models.Model):
         submission_domain += self._get_teacher_dashboard_class_subject_domain(
             class_id
         )
-        submissions = self.env['aps.resource.submission'].search(submission_domain)
-        partner_ids = submissions.mapped('student_id').ids
+        partner_ids = self._get_teacher_dashboard_submission_student_ids(
+            submission_domain
+        )
         if not partner_ids:
             return []
 
@@ -114,7 +128,9 @@ class APSResource(models.Model):
         unique_students = self.env['res.partner'].browse(
             list(set(students.ids))
         ).sorted(lambda student: (student.name or '').lower())
-        return unique_students.read(['id', 'name'])
+        return unique_students.with_context(prefetch_fields=False).read(
+            ['id', 'name']
+        )
 
     @api.model
     def get_teacher_dashboard_data(
@@ -173,7 +189,16 @@ class APSResource(models.Model):
                 ('task_id.student_id', 'in', class_partner_ids)
             )
 
-        submission_model = self.env['aps.resource.submission']
+        # Submission records contain large answer HTML; avoid prefetching unused fields.
+        submission_model = self.env['aps.resource.submission'].with_context(
+            prefetch_fields=False
+        )
+        task_model = self.env['aps.resource.task'].with_context(
+            prefetch_fields=False
+        )
+        resources_model = self.env['aps.resources'].with_context(
+            prefetch_fields=False
+        )
         current_faculty = False if is_student else submission_model._get_current_faculty()
         review_domain = metric_base_domain + (
             [('review_requested_by', 'in', current_faculty.id)]
@@ -213,7 +238,9 @@ class APSResource(models.Model):
         # ------------------------------------------------------------------ #
         # Subject Categories
         # ------------------------------------------------------------------ #
-        categories = self.env['aps.subject.category'].search_read(
+        categories = self.env['aps.subject.category'].with_context(
+            prefetch_fields=False
+        ).search_read(
             [], ['id', 'name'], order='name'
         )
 
@@ -244,7 +271,7 @@ class APSResource(models.Model):
             combined_domain = subject_domain
 
         combined_domain = ['|', ('type_id.name', '=', 'Subject')] + combined_domain
-        subject_resources = [] if is_student else self.env['aps.resources'].search_read(
+        subject_resources = [] if is_student else resources_model.search_read(
             combined_domain,
             ['id', 'name', 'display_name', 'type_id', 'subjects', 'write_date'],
             order='write_date desc',
@@ -275,11 +302,17 @@ class APSResource(models.Model):
         favourite_domain += self._get_teacher_dashboard_class_subject_domain(
             class_id, 'subjects'
         )
-        favourite_resources = [] if is_student else self.env['aps.resources'].search_read(
+        favourite_resources = [] if is_student else resources_model.search_read(
             favourite_domain,
-            ['id', 'display_name', 'subject_icons'],
+            ['id', 'display_name', 'subjects'],
             order='display_name',
         )
+        for resource in favourite_resources:
+            subject_ids = resource.pop('subjects', [])
+            resource['subject_icons'] = (
+                f'/web/image/aps.subject/{subject_ids[0]}/icon'
+                if subject_ids else False
+            )
 
         # ------------------------------------------------------------------ #
         # Section 4 – Assigned Resources
@@ -305,8 +338,10 @@ class APSResource(models.Model):
         if class_id:
             task_domain.append(('student_id', 'in', class_partner_ids))
 
-        tasks = self.env['aps.resource.task'].browse() if is_student else self.env['aps.resource.task'].search(
-            task_domain, order='date_assigned desc'
+        tasks = task_model.browse() if is_student else task_model.search_fetch(
+            task_domain,
+            ['resource_id', 'date_assigned', 'submission_count', 'state', 'avg_result'],
+            order='date_assigned desc',
         )
 
         # ------------------------------------------------------------------ #
@@ -335,13 +370,50 @@ class APSResource(models.Model):
             submission_domain.append(
                 ('task_id.student_id', 'in', class_partner_ids)
             )
-        submissions = self.env['aps.resource.submission'].search(
-            submission_domain, order='date_assigned desc, id desc' if is_student else 'date_assigned desc, id'
+        submissions = submission_model.search_fetch(
+            submission_domain,
+            [
+                'task_id',
+                'submission_label',
+                'display_name',
+                'subjects',
+                'state',
+                'due_status',
+                'date_assigned',
+                'date_due',
+                'out_of',
+                'score',
+                'result_percent',
+            ],
+            order='date_assigned desc, id desc' if is_student else 'date_assigned desc, id',
         )
+        submission_task_ids = submissions.mapped('task_id').ids
+        task_model.browse(submission_task_ids).fetch(['resource_id'])
+        resource_ids = set(tasks.mapped('resource_id').ids)
+        resource_ids.update(
+            task_model.browse(submission_task_ids).mapped('resource_id').ids
+        )
+        dashboard_resources = resources_model.browse(list(resource_ids))
+        dashboard_resources.fetch([
+            'name',
+            'display_name',
+            'sequence',
+            'primary_parent_id',
+            'parent_ids',
+            'type_id',
+            'subjects',
+        ])
+        dashboard_resources.mapped('type_id').fetch(['display_name'])
+        subject_ids = set(dashboard_resources.mapped('subjects').ids)
+        subject_ids.update(submissions.mapped('subjects').ids)
+        dashboard_subjects = self.env['aps.subject'].with_context(
+            prefetch_fields=False
+        ).browse(list(subject_ids))
+        dashboard_subjects.fetch(['display_name'])
         groups_by_key = {}
         resource_groups = {}
         for submission in submissions:
-            resource = submission.resource_id
+            resource = submission.task_id.resource_id
             label = submission.submission_label or ''
             key = (label, resource.id)
             if key not in groups_by_key:
@@ -361,16 +433,18 @@ class APSResource(models.Model):
                         )
                     ),
                     'resource_name': resource.display_name or resource.name or '',
-                    'description': resource.description or '',
                     'type_id': (
                         [resource.type_id.id, resource.type_id.display_name]
                         if resource.type_id else [0, 'Uncategorised']
                     ),
                     'type_icon': (
-                        submission.type_icon
-                        or (resource.type_icon if resource else False)
+                        f'/web/image/aps.resource.types/{resource.type_id.id}/icon'
+                        if resource.type_id else False
                     ),
-                    'subject_icons': subjects[:1].icon if subjects else False,
+                    'subject_icons': (
+                        f'/web/image/aps.subject/{subjects[0].id}/icon'
+                        if subjects else False
+                    ),
                     'subject_name': ', '.join(subjects.mapped('display_name')),
                     'student_state': submission.state,
                     'student_submission_id': submission.id,
@@ -429,12 +503,12 @@ class APSResource(models.Model):
         for key, group in groups_by_key.items():
             child_groups = [
                 groups_by_key[child_key]
-                for child in self.env['aps.resources'].browse(group['resource_id']).child_ids
+                for child in resources_model.browse(group['resource_id']).child_ids
                 for child_key in resource_groups.get(child.id, [])
             ]
             descendant_groups = [
                 groups_by_key[child_key]
-                for descendant in self.browse(group['resource_id'])._get_all_descendants()
+                for descendant in resources_model.browse(group['resource_id'])._get_all_descendants()
                 for child_key in resource_groups.get(descendant.id, [])
             ]
             child_count = sum(child['total'] for child in descendant_groups)
@@ -512,7 +586,10 @@ class APSResource(models.Model):
                         ]
                         if task.resource_id.type_id else [0, 'Uncategorised']
                     ),
-                    'type_icon': task.type_icon or task.resource_id.type_icon,
+                    'type_icon': (
+                        f'/web/image/aps.resource.types/{task.resource_id.type_id.id}/icon'
+                        if task.resource_id.type_id else False
+                    ),
                     'oldest_date_assigned': task.date_assigned,
                     'most_recent_date_assigned': task.date_assigned,
                     'total_submissions': 0,
@@ -611,12 +688,14 @@ class APSResource(models.Model):
         if start_date:
             domain.append(('date_assigned', '>=', str(start_date)))
 
-        submissions = self.env['aps.resource.submission'].search_read(
+        submissions = self.env['aps.resource.submission'].with_context(
+            prefetch_fields=False
+        ).search_read(
             domain,
             [
                 'id',
                 'display_name',
-                'type_icon',
+                'type_id',
                 'student_id',
                 'state',
                 'date_assigned',
@@ -630,6 +709,11 @@ class APSResource(models.Model):
         )
 
         for sub in submissions:
+            type_id = sub['type_id'] and sub['type_id'][0]
+            sub['type_icon'] = (
+                f'/web/image/aps.resource.types/{type_id}/icon'
+                if type_id else False
+            )
             for key in ['date_assigned', 'date_due', 'date_submitted']:
                 if sub[key]:
                     sub[key] = str(sub[key])

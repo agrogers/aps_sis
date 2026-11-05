@@ -294,6 +294,53 @@ class TestAPSResource(TransactionCase):
         self.assertEqual(section['highlightSourceId'], resource.id)
         self.assertEqual(section['highlightSourceField'], 'notes')
 
+    def test_course_explorer_data_can_defer_section_content(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Deferred Course Explorer Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Deferred Course Explorer Subject',
+            'category_id': category.id,
+        })
+        resource = self.env['aps.resources'].create({
+            'name': 'Deferred Course Explorer Resource',
+            'has_notes': 'yes',
+            'notes': '<p>Deferred resource content.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+        other_category = self.env['aps.subject.category'].create({
+            'name': 'Other Deferred Course Explorer Category',
+        })
+        other_subject = self.env['aps.subject'].create({
+            'name': 'Other Deferred Course Explorer Subject',
+            'category_id': other_category.id,
+        })
+        other_resource = self.env['aps.resources'].create({
+            'name': 'Other Deferred Course Explorer Resource',
+            'has_notes': 'yes',
+            'notes': '<p>Content from another category.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [other_subject.id])],
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data(
+            category.id,
+            include_html=False,
+        )
+        section = next(
+            item for item in result['contentSections']
+            if item['id'] == resource.id
+        )
+        content = self.env['aps.resources'].get_course_explorer_section_content(
+            category.id,
+            [resource.id],
+        )
+
+        self.assertNotIn('html', section)
+        self.assertEqual(content[resource.id], '<p>Deferred resource content.</p>')
+        self.assertNotIn(other_resource.id, content)
+
     def test_course_explorer_data_extracts_quiz_id_only_for_quiz_assessments(self):
         category = self.env['aps.subject.category'].create({
             'name': 'Quiz Link Category',

@@ -1198,7 +1198,7 @@ class APSResource(models.Model):
         return re.split(r'<h[1-6]\b[^>]*>', html, maxsplit=1, flags=re.IGNORECASE)[0]
 
     @api.model
-    def get_course_explorer_data(self, subject_category_id=False):
+    def get_course_explorer_data(self, subject_category_id=False, include_html=True):
         """Return tree and content data for the course explorer view.
 
         Builds a recursive tree of resources with ``show_in_hierarchy=True``.
@@ -1213,6 +1213,7 @@ class APSResource(models.Model):
 
         Args:
             subject_category_id: optional ``aps.subject.category`` id.
+            include_html: whether to include section notes in the result.
 
         Returns:
             dict with keys ``tree`` (list of root node dicts) and
@@ -1673,10 +1674,69 @@ class APSResource(models.Model):
             len(ordered_sections),
         )
 
+        if not include_html:
+            for section in ordered_sections:
+                section.pop('html', None)
+
         return {
             'tree': tree,
             'contentSections': ordered_sections,
         }
+
+    @api.model
+    def get_course_explorer_section_content(self, subject_category_id, resource_ids):
+        """Return notes HTML for requested sections in a subject category.
+
+        Args:
+            subject_category_id: optional ``aps.subject.category`` id.
+            resource_ids: list of resource IDs from the Course Explorer tree.
+
+        Returns:
+            dict mapping each accessible resource ID to its notes HTML.
+        """
+        if not isinstance(resource_ids, (list, tuple)) or any(
+            isinstance(resource_id, bool) or not isinstance(resource_id, int)
+            for resource_id in resource_ids
+        ):
+            raise UserError(_('Resource IDs must be provided as a list of integers.'))
+
+        requested_ids = set(resource_ids)
+        if not requested_ids:
+            return {}
+
+        base_domain = [('show_in_hierarchy', '=', True)]
+        if subject_category_id:
+            base_domain.append(('subjects.category_id', '=', subject_category_id))
+
+        all_hier = self.search(base_domain)
+        has_notes_res = all_hier.filtered(lambda resource: resource.has_notes != 'no')
+        extra_parents = self.env['aps.resources']
+        for resource in has_notes_res:
+            for parent in resource.parent_ids:
+                if parent in all_hier and parent.has_notes == 'no':
+                    extra_parents |= parent
+        all_resources = has_notes_res | extra_parents
+        requested_resources = all_resources.filtered(
+            lambda resource: resource.id in requested_ids
+        )
+
+        suppressed_parents = set()
+        for resource in requested_resources:
+            if resource.has_notes == 'yes' and any(
+                child.has_notes == 'use_parent'
+                for child in (resource.child_ids & all_resources)
+            ):
+                suppressed_parents.add(resource.id)
+
+        result = {}
+        for resource in requested_resources:
+            notes_html, _source_id = resource._resolve_notes()
+            if resource.id in suppressed_parents and notes_html:
+                notes_html = Markup(
+                    self._truncate_course_explorer_notes(str(notes_html))
+                )
+            result[resource.id] = str(notes_html or '')
+        return result
 
     # ------------------------------------------------------------------
     # Course Explorer student progress tracking

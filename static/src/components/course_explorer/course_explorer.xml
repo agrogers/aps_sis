@@ -314,6 +314,18 @@
                                       t-att-data-image-viewer-source-id="section.highlightSourceId"
                                       t-att-data-image-viewer-source-field="section.highlightSourceField"
                              t-out="section.html"/>
+                        <div class="text-muted" role="status"
+                             t-att-class="section.htmlLoaded || section.htmlLoadError ? 'd-none' : ''">
+                            Loading content&#8230;
+                        </div>
+                        <div class="text-danger"
+                             t-att-class="section.htmlLoadError ? '' : 'd-none'">
+                            Unable to load this content.
+                            <button type="button" class="btn btn-link p-0"
+                                    t-on-click="() => this._loadSectionContent([section.id])">
+                                Retry
+                            </button>
+                        </div>
                         <!-- Quiz mastery table -->
                         <t t-if="section.quizMasteryRows.length">
                             <div class="ce_quiz_box" t-att-id="'ce-quiz-' + section.id">
