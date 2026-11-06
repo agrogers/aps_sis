@@ -4,6 +4,7 @@ from . import test_dashboard_data_filters
 from . import test_ai_chunking
 from . import test_ai_word_count
 from . import test_ai_run_queue
+from . import test_chapter_tagging
 from . import test_sample_scaling
 from . import test_sample_comparison
 from . import test_vote_round_mass_update
