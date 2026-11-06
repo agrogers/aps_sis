@@ -748,6 +748,12 @@ class APSResource(models.Model):
             _logger.info('Auto-assign skipped for resource %s (id=%s): past end date', safe_name, self.id)
             return
 
+        assign_date = today
+        if self.auto_assign_exclude_weekends and assign_date.weekday() >= 5:
+            assign_date += timedelta(days=7 - assign_date.weekday())
+            self.write({'auto_assign_date': assign_date})
+            return
+
         task_model = self.env['aps.resource.task']
         submission_model = self.env['aps.resource.submission']
 
@@ -766,7 +772,6 @@ class APSResource(models.Model):
         submission_label = f'{submission_name} ({today})'
 
         # Date/time for submissions
-        assign_date = today
         assign_time = self.auto_assign_time or 0.0
         date_due = assign_date + timedelta(days=self.auto_assign_due_days or 6)
 

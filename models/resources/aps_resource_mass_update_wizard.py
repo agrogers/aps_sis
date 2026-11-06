@@ -132,6 +132,8 @@ class APSResourceMassUpdateWizard(models.TransientModel):
     auto_assign_due_days_value = fields.Integer(string='Value')
     update_auto_assign_frequency = fields.Boolean(string='Auto Assign Frequency')
     auto_assign_frequency_value = fields.Integer(string='Value')
+    update_auto_assign_exclude_weekends = fields.Boolean(string='Exclude Weekend Days')
+    auto_assign_exclude_weekends_value = fields.Boolean(string='Value', default=True)
     update_auto_assign_time = fields.Boolean(string='Auto Assign Time')
     auto_assign_time_value = fields.Float(string='Value')
     update_auto_assign_all_students = fields.Boolean(string='Assign All Students')
@@ -338,7 +340,8 @@ class APSResourceMassUpdateWizard(models.TransientModel):
 
         for field_name in (
             'auto_assign', 'auto_assign_date', 'auto_assign_end_date',
-            'auto_assign_due_days', 'auto_assign_frequency', 'auto_assign_time',
+            'auto_assign_due_days', 'auto_assign_frequency',
+            'auto_assign_exclude_weekends', 'auto_assign_time',
             'auto_assign_all_students', 'auto_assign_notify_student',
             'auto_assign_custom_name',
         ):
