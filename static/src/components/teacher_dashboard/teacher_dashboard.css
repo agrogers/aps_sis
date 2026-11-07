@@ -2,6 +2,34 @@
     background-color: var(--body-bg);
     color: var(--body-color);
     --aps-submission-parent-card-background: rgba(128, 128, 128, 0.14);
+    --aps-submission-expanded-card-background: #fff3cd;
+}
+
+:where(
+    .o_web_client.o_dark,
+    .o_web_client[data-color-scheme="dark"],
+    .o_web_client[data-theme="dark"],
+    .o_web_client[data-theme="dark-mode"],
+    .o_web_client[data-bs-theme="dark"],
+    .o_web_client.theme-dark,
+    .o_web_client.o_dark_mode,
+    body.o_dark,
+    body[data-color-scheme="dark"],
+    body[data-theme="dark"],
+    body[data-theme="dark-mode"],
+    body[data-bs-theme="dark"],
+    body.theme-dark,
+    html.o_dark,
+    html[data-color-scheme="dark"],
+    html[data-theme="dark"]
+) .aps-teacher-dashboard {
+    --aps-submission-expanded-card-background: #51461f;
+}
+
+@media (prefers-color-scheme: dark) {
+    .aps-teacher-dashboard {
+        --aps-submission-expanded-card-background: #51461f;
+    }
 }
 
 .aps-teacher-dashboard .aps-dashboard-filters,
@@ -430,6 +458,11 @@
 
 .aps-teacher-dashboard .aps-child-submission-group .aps-submission-group-card {
     min-height: 70px;
+}
+
+.aps-teacher-dashboard .aps-submission-group-card.aps-expanded,
+.aps-teacher-dashboard .aps-submission-child-row .aps-submission-group-card {
+    background-color: var(--aps-submission-expanded-card-background);
 }
 
 .aps-teacher-dashboard .aps-submission-child-row.aps-submission-depth-1 {
