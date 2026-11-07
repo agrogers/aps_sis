@@ -12,11 +12,15 @@
             <form string="Tag Textbook Chapters with AI">
                 <p>Select a textbook summary resource tagged “Textbook Chapter Summary”.
                     Its Note should describe each chapter using labels such as Ch01 or Chapter 1.
+                    Only summaries sharing a subject with every selected resource are available.
                     Only text is sent; up to three chapter tags are added per resource.
                     Existing tags are preserved.</p>
                 <group>
                     <field name="resource_ids" widget="many2many_tags"/>
-                    <field name="summary_id" options="{'no_create': True}"/>
+                    <field name="eligible_summary_ids" invisible="1"/>
+                    <field name="summary_id"
+                           domain="[('id', 'in', eligible_summary_ids)]"
+                           options="{'no_create': True}"/>
                 </group>
                 <footer>
                     <button name="action_tag_chapters" type="object" string="Start Chapter Tagging" class="btn-primary"/>

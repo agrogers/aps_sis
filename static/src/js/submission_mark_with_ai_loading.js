@@ -5,20 +5,13 @@ import { FormController } from "@web/views/form/form_controller";
 import { AiRunProgressDialog } from "@aps_ai/js/ai_run_progress_dialog";
 
 registry.category("actions").add("aps_chapter_tagging_progress", (env, action) => {
-    const runIds = [...(action.params?.run_ids || [])];
-    const showNext = () => {
-        const runId = runIds.shift();
-        if (!runId) {
-            return;
-        }
-        env.services.dialog.add(AiRunProgressDialog, {
-            runModel: "aps.ai.run",
-            runId,
-            title: "Textbook Chapter Tagging",
-            onCompleted: showNext,
-        });
-    };
-    showNext();
+    const params = action.params || {};
+    env.services.dialog.add(AiRunProgressDialog, {
+        runModel: params.run_model || "aps.ai.run",
+        runIds: params.run_ids || [],
+        runLabels: params.run_labels || [],
+        title: "Textbook Chapter Tagging",
+    });
 });
 
 registry.category("actions").add("aps_exam_page_analysis_progress", (env, action) => {

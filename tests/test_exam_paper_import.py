@@ -1,4 +1,5 @@
 import base64
+import time
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
@@ -21,6 +22,130 @@ class TestExamPaperImport(TransactionCase):
             'res_model': 'aps.resources',
             'res_id': self.resource.id,
         })
+
+    def _process_ocr_for_resources(self, resources, ocr_resources=None):
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Automatic chapter tagging',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('auto-tag-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('auto-tag-rms.pdf').id,
+        })
+        sections = self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': importer.id,
+                'source_key': 'Q%s' % index,
+                'display_label': 'Q%s' % index,
+                'resource_id': resource.id,
+            }
+            for index, resource in enumerate(resources, start=1)
+        ])
+        ocr_resources = ocr_resources or resources
+        ocr_sections = sections.filtered(lambda section: section.resource_id in ocr_resources)
+        run = self.env['aps.ai.run'].create({
+            'import_id': importer.id,
+            'ocr_section_ids': [(6, 0, ocr_sections.ids)],
+            'processor_key': 'exam_ocr',
+            'run_type': 'ocr',
+            'requested_by_id': self.env.uid,
+            'state': 'running',
+            'status_message': 'Running OCR...',
+        })
+        with (
+            patch.object(type(importer), '_ocr_section') as process_section,
+            patch.object(
+                type(run), '_write_progress', autospec=True,
+                side_effect=lambda record, values: record.write(values),
+            ),
+            patch.object(type(run), '_commit_background_work'),
+            patch.object(type(run), '_queue_background_processing') as queue,
+        ):
+            process_section.return_value = {
+                'question': 'provider_call',
+                'mark_scheme': 'cache_hit',
+            }
+            run._process_ocr_run(importer, False, time.perf_counter())
+        self.assertEqual(process_section.call_count, len(ocr_sections))
+        return importer, sections, run, queue.call_count
+
+    def test_ocr_queues_tagging_only_for_ocr_sections_and_transitions_status(self):
+        subject = self.env['aps.subject'].create({'name': 'OCR Chapter Subject'})
+        summary = self.env['aps.resources'].create({
+            'name': 'OCR Chapter Summary',
+            'notes': '<p>Ch01: Cells</p>',
+            'subjects': [(6, 0, subject.ids)],
+            'tag_ids': [(4, self.env.ref('aps_sis.tag_textbook_chapter_summary').id)],
+        })
+        resources = self.env['aps.resources'].create([
+            {'name': 'OCR Question 1', 'subjects': [(6, 0, subject.ids)], 'question': '<p>Cell</p>'},
+            {'name': 'OCR Question 2', 'subjects': [(6, 0, subject.ids)], 'question': '<p>Plant</p>'},
+        ])
+
+        importer, sections, ocr_run, queue_count = self._process_ocr_for_resources(
+            resources, ocr_resources=resources[:1],
+        )
+
+        tagging_runs = ocr_run.chapter_tagging_run_ids
+        self.assertEqual(queue_count, 1)
+        self.assertEqual(len(tagging_runs), 1)
+        self.assertEqual(tagging_runs.mapped('resource_id'), resources[:1])
+        self.assertTrue(all(run.chapter_summary_id == summary for run in tagging_runs))
+        self.assertEqual(
+            ocr_run._serialize_status()['follow_up_runs'],
+            [{'id': run.id, 'label': run.resource_id.display_name} for run in tagging_runs],
+        )
+        self.assertIn('Chapter tagging queued for 1 resource(s).', ocr_run.result_message)
+        self.assertIn(
+            'OCR activity: 1 provider call(s) completed, 1 local cache hit(s), '
+            '0 document(s) skipped because no valid images were available.',
+            ocr_run.result_message,
+        )
+        self.assertEqual(len(sections), 2)
+        self.assertEqual(ocr_run.ocr_section_ids, sections[:1])
+        self.assertEqual(importer, ocr_run.import_id)
+
+    def test_ocr_reports_resources_without_a_unique_subject_summary(self):
+        math = self.env['aps.subject'].create({'name': 'OCR Math'})
+        science = self.env['aps.subject'].create({'name': 'OCR Science'})
+        no_summary_subject = self.env['aps.subject'].create({'name': 'OCR History'})
+        summary_tag = self.env.ref('aps_sis.tag_textbook_chapter_summary')
+        self.env['aps.resources'].create([
+            {
+                'name': 'Math Summary',
+                'notes': '<p>Ch01: Algebra</p>',
+                'subjects': [(6, 0, math.ids)],
+                'tag_ids': [(4, summary_tag.id)],
+            },
+            {
+                'name': 'Science Summary One',
+                'notes': '<p>Ch01: Cells</p>',
+                'subjects': [(6, 0, science.ids)],
+                'tag_ids': [(4, summary_tag.id)],
+            },
+            {
+                'name': 'Science Summary Two',
+                'notes': '<p>Ch02: Matter</p>',
+                'subjects': [(6, 0, science.ids)],
+                'tag_ids': [(4, summary_tag.id)],
+            },
+        ])
+        resources = self.env['aps.resources'].create([
+            {'name': 'Math Resource', 'subjects': [(6, 0, math.ids)], 'question': '<p>Algebra</p>'},
+            {'name': 'Science Resource', 'subjects': [(6, 0, science.ids)], 'question': '<p>Cells</p>'},
+            {
+                'name': 'History Resource',
+                'subjects': [(6, 0, no_summary_subject.ids)],
+                'question': '<p>History</p>',
+            },
+        ])
+
+        _importer, _sections, ocr_run, queue_count = self._process_ocr_for_resources(resources)
+
+        self.assertEqual(queue_count, 1)
+        self.assertEqual(ocr_run.chapter_tagging_run_ids.mapped('resource_id'), resources[:1])
+        self.assertIn('Multiple subject-matched textbook summaries for 1 resource(s)', ocr_run.result_message)
+        self.assertIn('No subject-matched textbook summary for 1 resource(s)', ocr_run.result_message)
+        follow_up = ocr_run._serialize_status()['follow_up_runs']
+        self.assertEqual(len(follow_up), 1)
 
     def test_multi_record_unlink_deletes_rendered_page_attachments(self):
         import_job = self.env['aps.exam.paper.import'].create({
@@ -460,6 +585,10 @@ class TestExamPaperImport(TransactionCase):
             'display_label': 'Q1', 'ocr_state': 'complete',
             'question_html': '<p>Old question OCR</p>',
             'answer_html': '<p>Old answer OCR</p>',
+            'question_ocr_cache_key': 'question-cache-key',
+            'question_ocr_cache_markdown': 'Cached question OCR',
+            'answer_ocr_cache_key': 'answer-cache-key',
+            'answer_ocr_cache_markdown': 'Cached mark scheme OCR',
         })
 
         section.write({'source_key': 'manual-q1'})
@@ -468,6 +597,10 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(section.ocr_state, 'pending')
         self.assertFalse(section.question_html)
         self.assertFalse(section.answer_html)
+        self.assertEqual(section.question_ocr_cache_key, 'question-cache-key')
+        self.assertEqual(section.question_ocr_cache_markdown, 'Cached question OCR')
+        self.assertEqual(section.answer_ocr_cache_key, 'answer-cache-key')
+        self.assertEqual(section.answer_ocr_cache_markdown, 'Cached mark scheme OCR')
         self.assertFalse(section.ocr_model_id)
         self.assertFalse(section.ocr_error)
         self.assertEqual(job.state, 'analysing')
@@ -490,6 +623,10 @@ class TestExamPaperImport(TransactionCase):
             'resource_key': str(self.resource.id),
             'question_html': '<p>Generated question</p>',
             'answer_html': '<p>Generated answer</p>',
+            'question_ocr_cache_key': 'question-cache-key',
+            'question_ocr_cache_markdown': 'Cached question OCR',
+            'answer_ocr_cache_key': 'answer-cache-key',
+            'answer_ocr_cache_markdown': 'Cached mark scheme OCR',
             'ocr_state': 'complete',
         })
 
@@ -503,6 +640,10 @@ class TestExamPaperImport(TransactionCase):
         self.assertFalse(duplicate.resource_key)
         self.assertFalse(duplicate.question_html)
         self.assertFalse(duplicate.answer_html)
+        self.assertFalse(duplicate.question_ocr_cache_key)
+        self.assertFalse(duplicate.question_ocr_cache_markdown)
+        self.assertFalse(duplicate.answer_ocr_cache_key)
+        self.assertFalse(duplicate.answer_ocr_cache_markdown)
         self.assertEqual(duplicate.ocr_state, 'pending')
         self.assertEqual(job.state, 'analysing')
 
@@ -1576,26 +1717,145 @@ class TestExamPaperImport(TransactionCase):
         model = MagicMock()
         model.model_key = 'test-model'
         model.max_completion_tokens = 2400
+        model.provider_id.provider_type = 'openai'
         model._execute_logged_router_call.return_value = {'response_json': {}}
         model._extract_message_content.return_value = 'OCR result'
 
         self.assertEqual(job._ocr_images(model, [crop_attachment, legacy_png], 'question'), 'OCR result')
         payload = model._execute_logged_router_call.call_args.args[0]
-        image_items = [item for item in payload['messages'][1]['content'] if item['type'] == 'image_url']
+        system_message, user_message = payload['messages']
+        self.assertEqual(system_message['role'], 'system')
+        self.assertIn('Convert these ordered question images', system_message['content'][0]['text'])
+        self.assertEqual(
+            system_message['content'][0]['cache_control'],
+            {'type': 'ephemeral'},
+        )
+        self.assertEqual(user_message['role'], 'user')
+        image_items = [item for item in user_message['content'] if item['type'] == 'image_url']
         webp_uri, png_uri = [item['image_url']['url'] for item in image_items]
         self.assertTrue(webp_uri.startswith('data:image/webp;base64,'))
         self.assertEqual(base64.b64decode(webp_uri.split(',', 1)[1]), crop_attachment.raw)
         self.assertTrue(png_uri.startswith('data:image/png;base64,'))
         self.assertEqual(base64.b64decode(png_uri.split(',', 1)[1]), legacy_png.raw)
+        self.assertEqual(user_message['content'][-1]['type'], 'text')
+        self.assertEqual(user_message['content'][-1]['text'], 'End of source images.')
+        self.assertEqual(
+            user_message['content'][-1]['cache_control'],
+            {'type': 'ephemeral'},
+        )
 
-        question_prompt = payload['messages'][1]['content'][0]['text']
+        question_prompt = system_message['content'][0]['text']
         self.assertNotIn('right-hand column', question_prompt)
         job._ocr_images(model, [crop_attachment], 'mark scheme')
-        mark_scheme_prompt = model._execute_logged_router_call.call_args.args[0]['messages'][1]['content'][0]['text']
+        mark_scheme_prompt = model._execute_logged_router_call.call_args.args[0]['messages'][0]['content'][0]['text']
         self.assertIn('prose, bullets, or numbered points', mark_scheme_prompt)
         self.assertIn('immediately to its left in the middle column', mark_scheme_prompt)
         self.assertIn('original acronym in parentheses', mark_scheme_prompt)
         self.assertIn('Leave ambiguous acronyms unchanged', mark_scheme_prompt)
+
+    def test_section_image_extraction_accepts_h1_attributes(self):
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'OCR heading attributes',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('ocr-heading-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('ocr-heading-rms.pdf').id,
+        })
+        resource = self.env['aps.resources'].create({'name': 'OCR heading resource'})
+        images = self.env['ir.attachment'].create([
+            {
+                'name': 'ocr-heading-q1.png',
+                'type': 'binary',
+                'datas': base64.b64encode(b'q1 image').decode('ascii'),
+                'mimetype': 'image/png',
+                'res_model': 'aps.resources',
+                'res_id': resource.id,
+            },
+            {
+                'name': 'ocr-heading-q2.png',
+                'type': 'binary',
+                'datas': base64.b64encode(b'q2 image').decode('ascii'),
+                'mimetype': 'image/png',
+                'res_model': 'aps.resources',
+                'res_id': resource.id,
+            },
+        ])
+        resource.write({
+            'question': (
+                '<h1 data-oe-version="1.1">Q1a.i</h1>'
+                '<p><img src="/web/image/%s"/></p>'
+                '<h1 data-oe-version="1.1">Q1a.ii</h1>'
+                '<p><img src="/web/image/%s"/></p>'
+            ) % (images[0].id, images[1].id),
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': importer.id,
+            'source_key': '1ai',
+            'display_label': 'Q1a.i',
+            'resource_id': resource.id,
+        })
+
+        self.assertEqual(
+            importer._section_images_from_resource_html(resource, section, 'question'),
+            images[:1],
+        )
+
+    def test_ocr_markdown_cache_reuses_matches_and_invalidates_changed_inputs(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'OCR cache paper',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('ocr-cache-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('ocr-cache-rms.pdf').id,
+        })
+        section = self.env['aps.exam.paper.section'].create({
+            'import_id': job.id,
+            'source_key': '1',
+            'display_label': 'Q1',
+        })
+        image = self.env['ir.attachment'].create({
+            'name': 'ocr-cache-question.png',
+            'type': 'binary',
+            'datas': base64.b64encode(b'original image bytes').decode('ascii'),
+            'mimetype': 'image/png',
+        })
+        model = MagicMock()
+        model.id = 42
+        model.model_key = 'test/ocr-cache'
+        model.max_completion_tokens = 2400
+        model.provider_id.id = 11
+        model.provider_id.provider_type = 'openai'
+        model.provider_id.api_base_url = 'https://example.invalid'
+
+        with patch.object(
+            type(job), '_ocr_images', autospec=True, return_value='Extracted question text',
+        ) as ocr_call:
+            result, source = job._get_or_create_ocr_markdown(section, model, [image], 'question')
+            original_cache_key = section.question_ocr_cache_key
+            self.assertEqual(result, 'Extracted question text')
+            self.assertEqual(source, 'provider_call')
+            self.assertTrue(original_cache_key)
+
+            result, source = job._get_or_create_ocr_markdown(section, model, [image], 'question')
+            self.assertEqual(result, 'Extracted question text')
+            self.assertEqual(source, 'cache_hit')
+            self.assertEqual(ocr_call.call_count, 1)
+
+            image.write({
+                'datas': base64.b64encode(b'changed image bytes').decode('ascii'),
+            })
+            _result, source = job._get_or_create_ocr_markdown(section, model, [image], 'question')
+            self.assertEqual(source, 'provider_call')
+            self.assertEqual(ocr_call.call_count, 2)
+            self.assertNotEqual(section.question_ocr_cache_key, original_cache_key)
+
+            model.model_key = 'test/updated-ocr-cache'
+            _result, source = job._get_or_create_ocr_markdown(section, model, [image], 'question')
+            self.assertEqual(source, 'provider_call')
+            self.assertEqual(ocr_call.call_count, 3)
+
+            result, source = job._get_or_create_ocr_markdown(section, model, [], 'question')
+            self.assertEqual(result, '')
+            self.assertEqual(source, 'no_images')
+            self.assertEqual(ocr_call.call_count, 3)
 
     def test_ai_1000_scale_coordinates_are_not_pixels(self):
         importer = self.env['aps.exam.paper.import']

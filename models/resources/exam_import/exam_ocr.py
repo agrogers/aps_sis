@@ -1,5 +1,7 @@
 """OCR of section images into question/answer text."""
 import base64
+import hashlib
+import json
 import logging
 import mimetypes
 import re
@@ -70,8 +72,12 @@ class APSExamPaperImportOcr(models.Model):
         answer_images = self._section_images_from_resource_html(resource, section, 'answer')
         section.write({'ocr_state': 'processing', 'ocr_error': False})
         try:
-            question_markdown = self._ocr_images(model, question_images, 'question')
-            answer_markdown = self._ocr_images(model, answer_images, 'mark scheme')
+            question_markdown, question_source = self._get_or_create_ocr_markdown(
+                section, model, question_images, 'question',
+            )
+            answer_markdown, mark_scheme_source = self._get_or_create_ocr_markdown(
+                section, model, answer_images, 'mark scheme',
+            )
             question_html = self._ocr_markdown_to_html(model, question_markdown)
             answer_html = self._ocr_markdown_to_html(model, answer_markdown)
             section.write({
@@ -82,13 +88,41 @@ class APSExamPaperImportOcr(models.Model):
                 'ocr_error': False,
             })
             self._insert_section_ocr_text(section)
+            return {
+                'question': question_source,
+                'mark_scheme': mark_scheme_source,
+            }
         except Exception as exc:
             section.write({'ocr_state': 'failed', 'ocr_error': str(exc)})
             raise
 
-    def _ocr_images(self, model, images, document_label):
-        if not images:
-            return ''
+    def _get_or_create_ocr_markdown(self, section, model, images, document_label):
+        image_data = self._prepare_ocr_images(images)
+        cache_key = self._build_ocr_cache_key(model, document_label, image_data)
+        cache_prefix = 'question' if document_label == 'question' else 'answer'
+        cache_key_field = '%s_ocr_cache_key' % cache_prefix
+        cache_markdown_field = '%s_ocr_cache_markdown' % cache_prefix
+        if not image_data:
+            return '', 'no_images'
+        cached_markdown = getattr(section, cache_markdown_field)
+        if getattr(section, cache_key_field) == cache_key and cached_markdown:
+            return cached_markdown, 'cache_hit'
+
+        markdown = self._ocr_images(
+            model,
+            images,
+            document_label,
+            prepared_images=image_data,
+        )
+        if markdown:
+            section.write({
+                cache_key_field: cache_key,
+                cache_markdown_field: markdown,
+            })
+        return markdown, 'provider_call'
+
+    @staticmethod
+    def _build_ocr_prompt(document_label):
         prompt = (
             'Convert these ordered %s images into accurate Markdown. The text is primarily OCR: preserve '
             'all visible words, labels, numbers, mathematical notation, marks, alternatives, and meaningful '
@@ -114,22 +148,88 @@ class APSExamPaperImportOcr(models.Model):
                 'the full form followed by the original acronym in parentheses. Leave ambiguous acronyms '
                 'unchanged, and do not expand mathematical symbols, identifiers, or proper names.'
             )
-        content = [{'type': 'text', 'text': prompt}]
+        return prompt
+
+    @staticmethod
+    def _build_ocr_system_prompt(document_label):
+        return (
+            'You are an accurate examination-paper transcription assistant.\n\n%s'
+            % APSExamPaperImportOcr._build_ocr_prompt(document_label)
+        )
+
+    def _prepare_ocr_images(self, images):
+        prepared_images = []
         for attachment in images:
             image_bytes = self._attachment_bytes(attachment)
             if not image_bytes:
                 continue
             mime_type = attachment.mimetype or mimetypes.guess_type(attachment.name or '')[0] or 'image/png'
-            content.append({
-                'type': 'image_url',
-                'image_url': {'url': 'data:%s;base64,%s' % (mime_type, base64.b64encode(
-                    image_bytes).decode('ascii'))},
+            prepared_images.append({
+                'bytes': image_bytes,
+                'mime_type': mime_type,
             })
+        return prepared_images
+
+    @staticmethod
+    def _build_ocr_cache_key(model, document_label, image_data):
+        request_fingerprint = {
+            'document_label': document_label,
+            'system_prompt': APSExamPaperImportOcr._build_ocr_system_prompt(document_label),
+            'provider_id': model.provider_id.id,
+            'provider_type': model.provider_id.provider_type,
+            'api_base_url': model.provider_id.api_base_url or '',
+            'model_id': model.id,
+            'model_key': model.model_key,
+            'max_completion_tokens': min(model.max_completion_tokens or 2400, 6000),
+            'temperature': 0,
+            'images': [
+                {
+                    'mime_type': image['mime_type'],
+                    'sha256': hashlib.sha256(image['bytes']).hexdigest(),
+                }
+                for image in image_data
+            ],
+        }
+        serialized_fingerprint = json.dumps(
+            request_fingerprint,
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(',', ':'),
+        ).encode('utf-8')
+        return hashlib.sha256(serialized_fingerprint).hexdigest()
+
+    def _ocr_images(self, model, images, document_label, prepared_images=None):
+        image_data = prepared_images if prepared_images is not None else self._prepare_ocr_images(images)
+        if not image_data:
+            return ''
+        system_content = [{
+            'type': 'text',
+            'text': self._build_ocr_system_prompt(document_label),
+        }]
+        user_content = [{
+            'type': 'text',
+            'text': 'Transcribe the supplied %s images.' % document_label,
+        }]
+        for image in image_data:
+            user_content.append({
+                'type': 'image_url',
+                'image_url': {'url': 'data:%s;base64,%s' % (
+                    image['mime_type'],
+                    base64.b64encode(image['bytes']).decode('ascii'),
+                )},
+            })
+        if model.provider_id.provider_type == 'openai':
+            system_content[-1]['cache_control'] = {'type': 'ephemeral'}
+            user_content.append({
+                'type': 'text',
+                'text': 'End of source images.',
+            })
+            user_content[-1]['cache_control'] = {'type': 'ephemeral'}
         result = model._execute_logged_router_call({
             'model': model.model_key,
             'messages': [
-                {'role': 'system', 'content': 'You are an accurate examination-paper transcription assistant.'},
-                {'role': 'user', 'content': content},
+                {'role': 'system', 'content': system_content},
+                {'role': 'user', 'content': user_content},
             ],
             'temperature': 0,
             'max_completion_tokens': min(model.max_completion_tokens or 2400, 6000),
@@ -168,7 +268,9 @@ class APSExamPaperImportOcr(models.Model):
         html = getattr(resource, field_name) or ''
         heading = escape(section.display_label or '')
         block_match = re.search(
-            r'<h1>%s</h1>(.*?)(?=<h1>|$)' % re.escape(heading), html, flags=re.S | re.I,
+            r'<h1\b[^>]*>\s*%s\s*</h1>(.*?)(?=<h1\b[^>]*>|$)' % re.escape(heading),
+            html,
+            flags=re.S | re.I,
         )
         if not block_match:
             return self.env['ir.attachment']

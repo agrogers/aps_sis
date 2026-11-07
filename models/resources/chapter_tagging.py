@@ -7,13 +7,55 @@ from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 
-def chapter_text(value):
+def _tagged_chapter_summaries(env, subject_ids):
+    if not subject_ids:
+        return env['aps.resources']
+    tag = env.ref('aps_sis.tag_textbook_chapter_summary')
+    return env['aps.resources'].search([
+        ('tag_ids', 'in', [tag.id]),
+        ('subjects', 'in', list(subject_ids)),
+    ])
+
+
+def chapter_summary_candidates(env, resources):
+    resources = resources.exists()
+    if not resources or any(not resource.subjects for resource in resources):
+        return env['aps.resources']
+    subject_ids = {subject.id for resource in resources for subject in resource.subjects}
+    summaries = _tagged_chapter_summaries(env, subject_ids)
+    return summaries.filtered(
+        lambda summary: all(summary.subjects & resource.subjects for resource in resources)
+    )
+
+
+def chapter_summary_candidates_by_resource(env, resources):
+    resources = resources.exists()
+    subject_ids = {subject.id for resource in resources for subject in resource.subjects}
+    summaries = _tagged_chapter_summaries(env, subject_ids)
+    return {
+        resource.id: summaries.filtered(lambda summary: bool(summary.subjects & resource.subjects))
+        for resource in resources
+    }
+
+
+def _chapter_root(value):
     root = html.fragment_fromstring(value or '', create_parent=True)
     for element in root.xpath(
         './/img | .//svg | .//script | .//style | .//iframe | .//object | .//video | .//audio'
     ):
         element.drop_tree()
+    return root
+
+
+def chapter_text(value):
+    root = _chapter_root(value)
     return ' '.join(' '.join(root.itertext()).split())
+
+
+def chapter_markdown(value, ai_model):
+    root = _chapter_root(value)
+    html_content = html.tostring(root, encoding='unicode')
+    return ai_model._html_to_markdown(html_content).strip()
 
 
 def chapter_labels(text):
@@ -21,6 +63,33 @@ def chapter_labels(text):
         'Ch%02d' % int(number)
         for number in re.findall(r'\bch(?:apter)?[\s._-]*(\d{1,3})\b', text, re.I)
     }
+
+
+def create_chapter_tagging_run(resource, summary, requested_by_id, source_run=None):
+    ai_model = resource.env['aps.ai.model']
+    summary_text = chapter_markdown(summary.notes, ai_model)
+    if not chapter_labels(summary_text):
+        raise UserError(_('The summary Note must contain text with chapter labels such as Ch01 or Chapter 1.'))
+    inputs = [
+        (label, chapter_markdown(resource[field], ai_model))
+        for label, field in [('Question', 'question'), ('Model Answer', 'answer'), ('Note', 'notes')]
+    ]
+    inputs = [(label, text) for label, text in inputs if text]
+    values = {
+        'resource_id': resource.id,
+        'requested_by_id': requested_by_id,
+        'processor_key': 'chapter_tagging',
+        'chapter_summary_id': summary.id,
+        'chapter_summary_text': summary_text,
+        'chapter_input_fields': ', '.join(label for label, text in inputs) or _('None'),
+        'chapter_input_text': '\n\n'.join('%s:\n%s' % item for item in inputs),
+        'status_message': _('Queued chapter tagging...'),
+    }
+    if source_run:
+        values['chapter_tagging_source_run_id'] = source_run.id
+    run = resource.env['aps.ai.run'].sudo().create(values)
+    run._queue_background_processing()
+    return run
 
 
 class ResourceChapterTagRun(models.Model):

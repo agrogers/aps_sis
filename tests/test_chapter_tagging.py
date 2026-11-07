@@ -5,7 +5,7 @@ from unittest.mock import patch
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
-from ..models.resources.chapter_tagging import chapter_labels, chapter_text
+from ..models.resources.chapter_tagging import chapter_labels, chapter_markdown, chapter_text
 
 
 class TestChapterTagging(TransactionCase):
@@ -21,16 +21,19 @@ class TestChapterTagging(TransactionCase):
             'model_key': 'test/chapter-tagging',
             'provider_id': cls.provider.id,
         })
+        cls.subject = cls.env['aps.subject'].create({'name': 'Chapter tagging subject'})
         cls.summary = cls.env['aps.resources'].create({
             'name': 'Textbook summary',
             'notes': '<p>Ch01: Cells</p><p>Chapter 2: Plants</p><p>Ch03: Animals</p><p>Ch04: Ecology</p>',
             'tag_ids': [(4, cls.env.ref('aps_sis.tag_textbook_chapter_summary').id)],
+            'subjects': [(6, 0, cls.subject.ids)],
         })
 
     def _resource(self, **values):
         return self.env['aps.resources'].create({
             'name': 'Chapter tagging resource',
             'question': '<p>Describe a cell.</p>',
+            'subjects': [(6, 0, self.subject.ids)],
             'ai_model_ids': [(6, 0, self.model.ids)],
             **values,
         })
@@ -44,6 +47,8 @@ class TestChapterTagging(TransactionCase):
             action = wizard.action_tag_chapters()
         self.assertEqual(queue.call_count, len(resources))
         self.assertEqual(action['tag'], 'aps_chapter_tagging_progress')
+        self.assertEqual(action['params']['run_labels'], resources.mapped('display_name'))
+        self.assertEqual(action['params']['run_model'], 'aps.ai.run')
         return self.env['aps.ai.run'].browse(action['params']['run_ids'])
 
     def _process(self, run, chapters):
@@ -68,6 +73,30 @@ class TestChapterTagging(TransactionCase):
         self.assertFalse(chapter_text('<p>&nbsp;<img src="/web/image/123"></p>'))
         self.assertFalse(chapter_text(False))
 
+    def test_prompt_text_preserves_html_outline_structure_as_markdown(self):
+        self.summary.write({
+            'notes': (
+                '<h1>UNIT 1: Organisms and Life Processes</h1>'
+                '<h2>Chapter 1: Life Processes</h2>'
+                '<ul><li>Cell structure</li><li>Movement of substances</li></ul>'
+            ),
+        })
+        resource = self._resource(
+            question=(
+                '<h2>Question 1</h2><p>Describe cell structure.</p>'
+                '<ul><li>Nucleus</li><li>Cell membrane</li></ul>'
+            ),
+        )
+        run = self._queue(resource)
+
+        self.assertIn('# UNIT 1: Organisms and Life Processes', run.chapter_summary_text)
+        self.assertIn('## Chapter 1: Life Processes', run.chapter_summary_text)
+        self.assertIn('- Cell structure', run.chapter_summary_text)
+        self.assertIn('Question:\n## Question 1', run.chapter_input_text)
+        self.assertIn('- Cell membrane', run.chapter_input_text)
+        self.assertNotIn('<h1>', run.chapter_summary_text)
+        self.assertNotIn('<ul>', run.chapter_input_text)
+
     def test_chapter_labels_are_canonical(self):
         self.assertEqual(
             chapter_labels('Chapter 1: Cells; CH02: Plants; Ch 23: Ecology; Chapter 1 repeated'),
@@ -81,6 +110,13 @@ class TestChapterTagging(TransactionCase):
         self.assertEqual(len(runs), 2)
         self.assertEqual(runs.mapped('resource_id'), resources)
         self.assertTrue(all(run.processor_key == 'chapter_tagging' for run in runs))
+        self.assertEqual(
+            runs[0]._get_processor_display_name(),
+            'Chapter tagging: %s' % resources[0].display_name,
+        )
+        statuses = self.env['aps.ai.run'].action_get_run_statuses(runs.ids)
+        self.assertEqual([status['id'] for status in statuses], runs.ids)
+        self.assertEqual([status['state'] for status in statuses], ['queued', 'queued'])
         self.assertEqual(runs[0].chapter_input_fields, 'Question, Model Answer, Note')
         self.assertIn('Cell membrane.', runs[0].chapter_input_text)
         self.assertEqual(runs[1].chapter_input_fields, 'None')
@@ -90,14 +126,40 @@ class TestChapterTagging(TransactionCase):
 
     def test_wizard_defaults_keep_selection_and_do_not_guess_between_textbooks(self):
         resource = self._resource()
+        other_subject = self.env['aps.subject'].create({'name': 'Different summary subject'})
+        self.env['aps.resources'].create({
+            'name': 'Different-subject textbook summary',
+            'notes': '<p>Ch01: Different subject</p>',
+            'tag_ids': [(4, self.env.ref('aps_sis.tag_textbook_chapter_summary').id)],
+            'subjects': [(6, 0, other_subject.ids)],
+        })
         wizard_model = self.env['aps.chapter.tagging.wizard'].with_context(
             active_model='aps.resources', active_ids=resource.ids,
         )
         defaults = wizard_model.default_get(['resource_ids', 'summary_id'])
         self.assertEqual(defaults['resource_ids'], [(6, 0, resource.ids)])
+        self.assertEqual(defaults['summary_id'], self.summary.id)
+        wizard = wizard_model.create({
+            'resource_ids': [(6, 0, resource.ids)],
+            'summary_id': self.summary.id,
+        })
+        self.assertEqual(wizard.eligible_summary_ids, self.summary)
         self.summary.copy({'name': 'Another textbook'})
         defaults = wizard_model.default_get(['summary_id'])
         self.assertFalse(defaults.get('summary_id'))
+
+    def test_wizard_requires_a_summary_matching_every_resource_subject(self):
+        other_subject = self.env['aps.subject'].create({'name': 'Other chapter tagging subject'})
+        resources = self._resource() | self._resource(
+            subjects=[(6, 0, other_subject.ids)],
+        )
+        wizard = self.env['aps.chapter.tagging.wizard'].create({
+            'resource_ids': [(6, 0, resources.ids)],
+            'summary_id': self.summary.id,
+        })
+        self.assertFalse(wizard.eligible_summary_ids)
+        with self.assertRaisesRegex(UserError, 'share a subject with every selected resource'):
+            wizard.action_tag_chapters()
 
     def test_runs_share_queue_lane_to_avoid_duplicate_tag_creation(self):
         runs = self._queue(self._resource() | self._resource())

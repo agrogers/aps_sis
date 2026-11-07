@@ -49,6 +49,10 @@ class APSExamPaperSection(models.Model):
     )
     question_html = fields.Html(string='Question HTML')
     answer_html = fields.Html(string='Answer HTML')
+    question_ocr_cache_key = fields.Char(readonly=True, copy=False)
+    question_ocr_cache_markdown = fields.Text(readonly=True, copy=False)
+    answer_ocr_cache_key = fields.Char(readonly=True, copy=False)
+    answer_ocr_cache_markdown = fields.Text(readonly=True, copy=False)
     question_pages = fields.Char()
     question_regions = fields.Json(string='Question Regions')
     answer_pages = fields.Char()
@@ -116,6 +120,10 @@ class APSExamPaperSection(models.Model):
             'resource_key': False,
             'question_html': False,
             'answer_html': False,
+            'question_ocr_cache_key': False,
+            'question_ocr_cache_markdown': False,
+            'answer_ocr_cache_key': False,
+            'answer_ocr_cache_markdown': False,
             'image_update_log': False,
             'ocr_state': 'pending',
             'ocr_model_id': False,

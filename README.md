@@ -37,18 +37,29 @@
 ### Textbook chapter tagging
 
 1. Put a chapter-by-chapter textbook summary in a resource's **Note**, with labels
-   such as `Ch01`, `Ch23`, or `Chapter 1`, and apply the **Textbook Chapter Summary** tag.
+   such as `Ch01`, `Ch23`, or `Chapter 1`, assign its subject, and apply the
+   **Textbook Chapter Summary** tag.
 2. Select resources in the resource list and choose **Action → Tag Textbook Chapters with AI**.
-   Select the relevant textbook summary and start tagging.
+   The summary selector shows only tagged summaries sharing a subject with every
+   selected resource. It defaults only when there is one matching summary.
 3. Each resource gets an independent background AI run using its configured AI models
    (or the default enabled model). Only text from **Question**, **Model Answer**, and
-   **Note** is sent, regardless of marking field switches; images are excluded.
+   **Note** is sent, regardless of marking field switches. Rich-text structure such as
+   headings, lists, and tables is converted to Markdown; images and non-text embeds are
+   excluded.
    Up to three matching chapter tags are appended, leaving existing tags unchanged.
-4. The standard AI progress dialog can be closed without stopping the queue.
-   Review individual runs under **AI → Runs**, or the resource's AI run history:
+4. The shared AI progress dialog lists every selected resource and shows live
+   details for the resource currently being processed. It can be closed without
+   stopping the queue. Review individual runs under **AI → Runs**, or the resource's AI run history:
    the chapter audit contains the exact text and field names, the summary, the AI
    response, and added/already-present tags or the reason for skipping/failure.
    Image-only/empty resources are skipped; a failure does not stop other resources.
+5. Exam-import OCR automatically queues chapter tagging after OCR finishes, only for
+   resources linked to sections included in that OCR run. It uses a uniquely
+   subject-matched summary and continues in the same progress dialog. Resources with
+   no matching summary or multiple matches are skipped and reported in the OCR result.
+   The OCR run summary distinguishes provider calls, local cache hits, and documents
+   skipped because no valid images were available.
 
 APEX is a comprehensive **student progress tracking and academic management system** built as a custom Odoo 18 addon. It extends the [OpenEducat](https://www.openeducat.org/) SIS (Student Information System) with:
 
