@@ -348,6 +348,7 @@ This document describes every database model defined or extended by the `aps_sis
 | `auto_assign_date` | Date | | next run date |
 | `auto_assign_end_date` | Date | | optional stop date |
 | `auto_assign_frequency` | Integer | | default=7, days between runs |
+| `auto_assign_exclude_weekends` | Boolean | | default=False; move weekend assignments to the following Monday |
 | `auto_assign_time` | Float | | decimal time (14.5 = 14:30) |
 | `auto_assign_all_students` | Boolean | | default=True |
 | `auto_assign_student_ids` | Many2many → `res.partner` | | relation=`aps_resources_auto_assign_students_rel` |

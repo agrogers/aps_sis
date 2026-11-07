@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from odoo.tests.common import TransactionCase
@@ -247,6 +248,45 @@ class TestAPSResource(TransactionCase):
         selected = resource._get_auto_assign_student_partners()
 
         self.assertEqual(set(selected.ids), {partners[0].id, partners[1].id})
+
+    def test_auto_assign_excludes_weekends_until_monday(self):
+        resource, _class_a, _class_b, _partners = self._make_auto_assign_fixture()
+        resource.write({
+            'auto_assign_exclude_weekends': True,
+            'auto_assign_date': '2026-01-03',
+            'auto_assign_frequency': 7,
+            'auto_assign_due_days': 3,
+        })
+        submission_model = self.env['aps.resource.submission']
+        domain = [('task_id.resource_id', '=', resource.id)]
+
+        resource._do_auto_assign(date(2026, 1, 3))
+        self.assertEqual(resource.auto_assign_date, date(2026, 1, 5))
+
+        resource._do_auto_assign(date(2026, 1, 4))
+
+        self.assertFalse(submission_model.search(domain))
+
+        monday = date(2026, 1, 5)
+        resource._do_auto_assign(monday)
+
+        submission = submission_model.search(domain)
+        self.assertTrue(submission)
+        self.assertEqual(submission.date_assigned, monday)
+        self.assertEqual(submission.date_due, monday + timedelta(days=3))
+        self.assertEqual(resource.auto_assign_date, monday + timedelta(days=7))
+
+    def test_auto_assign_weekend_behavior_is_unchanged_when_exclusion_disabled(self):
+        resource, _class_a, _class_b, _partners = self._make_auto_assign_fixture()
+        saturday = date(2026, 1, 3)
+
+        resource._do_auto_assign(saturday)
+
+        submission = self.env['aps.resource.submission'].search([
+            ('task_id.resource_id', '=', resource.id),
+        ])
+        self.assertTrue(submission)
+        self.assertEqual(submission.date_assigned, saturday)
 
     def test_compute_display_name_simple(self):
         """Test that display_name is set correctly for a resource with no parents."""

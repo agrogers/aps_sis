@@ -359,6 +359,11 @@ class APSResource(models.Model):
         default=7,
         help='Number of days between automatic assignments.',
     )
+    auto_assign_exclude_weekends = fields.Boolean(
+        string='Exclude Weekend Days',
+        default=False,
+        help='When enabled, assignments scheduled for Saturday or Sunday are made on the following Monday.',
+    )
     auto_assign_time = fields.Float(
         string='Time Assigned',
         default=0.0,
