@@ -26,12 +26,6 @@
     --aps-submission-expanded-card-background: #51461f;
 }
 
-@media (prefers-color-scheme: dark) {
-    .aps-teacher-dashboard {
-        --aps-submission-expanded-card-background: #51461f;
-    }
-}
-
 .aps-teacher-dashboard .aps-dashboard-filters,
 .aps-teacher-dashboard .aps-dashboard-card-header,
 .aps-teacher-dashboard .aps-dashboard-table-header {
