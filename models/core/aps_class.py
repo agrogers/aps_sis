@@ -65,6 +65,11 @@ class APSClass(models.Model):
         column2='tag_id',
         string='Tags',
     )
+    subject_icon = fields.Image(
+        related='subject_id.icon',
+        string='Subject Icon',
+        readonly=True,
+    )
     enrollment_count = fields.Integer(
         string='Students',
         compute='_compute_enrollment_count',
