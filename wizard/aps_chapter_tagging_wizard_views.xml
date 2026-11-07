@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="tag_textbook_chapter_summary" model="aps.resource.tags">
+            <field name="name">Textbook Chapter Summary</field>
+        </record>
+    </data>
+    <record id="view_chapter_tagging_wizard" model="ir.ui.view">
+        <field name="name">aps.chapter.tagging.wizard.form</field>
+        <field name="model">aps.chapter.tagging.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tag Textbook Chapters with AI">
+                <p>Select a textbook summary resource tagged “Textbook Chapter Summary”.
+                    Its Note should describe each chapter using labels such as Ch01 or Chapter 1.
+                    Only text is sent; up to three chapter tags are added per resource.
+                    Existing tags are preserved.</p>
+                <group>
+                    <field name="resource_ids" widget="many2many_tags"/>
+                    <field name="summary_id" options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_tag_chapters" type="object" string="Start Chapter Tagging" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_chapter_tagging_wizard" model="ir.actions.act_window">
+        <field name="name">Tag Textbook Chapters with AI</field>
+        <field name="res_model">aps.chapter.tagging.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_aps_resources"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_teacher'))]"/>
+    </record>
+</odoo>

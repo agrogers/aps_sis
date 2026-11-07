@@ -34,6 +34,22 @@
 
 ## Overview
 
+### Textbook chapter tagging
+
+1. Put a chapter-by-chapter textbook summary in a resource's **Note**, with labels
+   such as `Ch01`, `Ch23`, or `Chapter 1`, and apply the **Textbook Chapter Summary** tag.
+2. Select resources in the resource list and choose **Action → Tag Textbook Chapters with AI**.
+   Select the relevant textbook summary and start tagging.
+3. Each resource gets an independent background AI run using its configured AI models
+   (or the default enabled model). Only text from **Question**, **Model Answer**, and
+   **Note** is sent, regardless of marking field switches; images are excluded.
+   Up to three matching chapter tags are appended, leaving existing tags unchanged.
+4. The standard AI progress dialog can be closed without stopping the queue.
+   Review individual runs under **AI → Runs**, or the resource's AI run history:
+   the chapter audit contains the exact text and field names, the summary, the AI
+   response, and added/already-present tags or the reason for skipping/failure.
+   Image-only/empty resources are skipped; a failure does not stop other resources.
+
 APEX is a comprehensive **student progress tracking and academic management system** built as a custom Odoo 18 addon. It extends the [OpenEducat](https://www.openeducat.org/) SIS (Student Information System) with:
 
 - Assignment creation and distribution to students

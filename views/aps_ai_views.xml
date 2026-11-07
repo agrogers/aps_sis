@@ -109,6 +109,13 @@
                     <group string="Error" invisible="not error_message">
                         <field name="error_message" nolabel="1"/>
                     </group>
+                    <group string="Chapter Tagging Audit" invisible="processor_key != 'chapter_tagging'">
+                        <field name="chapter_summary_id"/>
+                        <field name="chapter_input_fields" string="Fields Sent"/>
+                        <field name="chapter_input_text" string="Resource Text"/>
+                        <field name="chapter_summary_text" string="Summary Text"/>
+                        <field name="response_preview" string="AI Response"/>
+                    </group>
                 </sheet>
             </form>
         </field>

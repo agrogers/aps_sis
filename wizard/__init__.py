@@ -10,3 +10,4 @@ from . import create_linked_resources_wizard
 from . import aps_resource_delete_wizard
 from . import aps_year_level_rollover_wizard
 from . import aps_time_tracking_overlap_wizard
+from . import aps_chapter_tagging_wizard
