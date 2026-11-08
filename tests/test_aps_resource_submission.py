@@ -49,6 +49,11 @@ class TestAPSStickerAwardUrl(TransactionCase):
             ),
             submission_model._get_sticker_award_url_scope(
                 submission,
+                f'{base_url}/odoo/action-1121',
+                base_url,
+            ),
+            submission_model._get_sticker_award_url_scope(
+                submission,
                 f'{base_url}/odoo/apex-dashboard/aps.resource.submission/'
                 'aps.resource.submission/762234',
                 base_url,
@@ -57,7 +62,22 @@ class TestAPSStickerAwardUrl(TransactionCase):
 
         self.assertEqual(
             scopes,
-            [f'{base_url}/odoo/aps.resource.submission/762234'] * 2,
+            [f'{base_url}/odoo/aps.resource.submission/762234'] * 4,
+        )
+
+    def test_sticker_award_catalog_uses_same_origin_image_url(self):
+        sticker = self.env['aui.sticker'].sudo().create({
+            'name': 'Award URL Test Sticker',
+            'image_path': 'static/img/stickers/test.svg',
+        })
+
+        resolved = self.env[
+            'aps.resource.submission'
+        ]._resolve_sticker_award(sticker.id)
+
+        self.assertEqual(
+            resolved['image_url'],
+            '/aui_enhancements/static/img/stickers/test.svg',
         )
 
     def test_sticker_scope_uses_configured_host_when_page_origin_differs(self):

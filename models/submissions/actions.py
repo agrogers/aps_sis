@@ -37,16 +37,10 @@ class APSResourceSubmissionActions(models.Model):
         ], limit=1)
         if not sticker:
             raise ValidationError(_('The selected sticker is not available.'))
-        base_url = (
-            self.env['ir.config_parameter']
-            .sudo()
-            .get_param('web.base.url', '')
-            .rstrip('/')
-        )
         return {
             'sticker_id': sticker.id,
             'name': sticker.name,
-            'image_url': f"{base_url}/aui_enhancements/{quote(sticker.image_path, safe='/')}",
+            'image_url': f"/aui_enhancements/{quote(sticker.image_path, safe='/')}",
         }
 
     @api.model
@@ -58,7 +52,7 @@ class APSResourceSubmissionActions(models.Model):
         url_scope_prefixes,
         days_to_live,
     ):
-        self.env['aui.user.sticker'].with_user(student_user).sudo().create({
+        self.env['aui.user.sticker'].with_user(student_user).create({
             **placement_values,
             'user_id': student_user.id,
             'sticker_id': sticker['sticker_id'],
@@ -127,36 +121,17 @@ class APSResourceSubmissionActions(models.Model):
         if parsed_url.path == expected_path and not legacy_record_route:
             raise ValidationError(_('The sticker must be limited to this submission page.'))
 
-        scope_base_url = matched_base_url.rstrip('/')
-        model_route = f"{scope_base_url}/odoo/{submission._name}/{submission.id}"
-        if legacy_record_route:
-            url_scope = model_route
-        else:
+        if not legacy_record_route:
             current_path = parsed_url.path.rstrip('/')
             last_path_part = current_path.rsplit('/', 1)[-1]
             if last_path_part.isdigit() and last_path_part != str(submission.id):
                 raise ValidationError(
                     _('The sticker must be limited to this submission page.')
                 )
-            current_record_path = (
-                current_path
-                if last_path_part == str(submission.id)
-                else f"{current_path}/{submission.id}"
-            )
-            path_segments = [
-                segment for segment in current_path.split('/') if segment
-            ]
-            has_submission_route = any(
-                'submission' in segment.casefold()
-                for segment in path_segments
-            )
-            has_submission_id = str(submission.id) in path_segments
-            if has_submission_route and has_submission_id:
-                url_scope = model_route
-            else:
-                url_scope = (
-                    f"{scope_base_url}{current_record_path}"
-                )
+        url_scope = (
+            f"{matched_base_url.rstrip('/')}/odoo/"
+            f"{submission._name}/{submission.id}"
+        )
         return sticker_model._validate_url_prefix(url_scope)
 
     @api.model
@@ -205,13 +180,12 @@ class APSResourceSubmissionActions(models.Model):
         })
         validated_url = sticker_model._validate_url_prefix(url_prefix)
         base_url = self._get_sticker_award_base_url()
-        model_route = f"{base_url}/odoo/{submission._name}/{submission.id}"
         url_scope_prefixes = [self._get_sticker_award_url_scope(
             submission,
             validated_url,
             base_url,
         )]
-        record_url = model_route
+        record_url = f"/odoo/{submission._name}/{submission.id}"
 
         student_user = self.env['res.users'].sudo().search([
             ('partner_id', '=', submission.student_id.id),
