@@ -475,6 +475,7 @@ Entries are displayed **left (worst) → right (best)**. Spacers between entries
 | KPI Card | `components/kpi_card/` | Value + period-over-period % change |
 | KPI Gauge | `components/kpi_gauge/` | Circular tier/rank indicator |
 | Chart Renderer | `components/chart_renderer/` | Generic Chart.js wrapper |
+| Past Paper Progress | `components/past_paper_progress/` | Student/teacher paper progress with per-question attempt heatmap |
 | Timer Systray | `components/timer_systray/` | System tray time-entry start/stop |
 | Time Tracking Dashboard | `components/time_tracking_dashboard/` | Study-time summary by subject |
 | Percent Pie Ranged | `static/src/js/percentpie_ranged_widget.js` | Partial pie progress indicator |

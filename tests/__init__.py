@@ -13,6 +13,7 @@ from . import test_weekly_submission_result
 from . import test_aps_time_tracking
 from . import test_aps_student_lifecycle
 from . import test_exam_question_identifier_data
+from . import test_past_paper_progress
 from . import test_exam_exclusion_zones
 from . import test_exam_paper_import
 from . import test_aps_student_matrix

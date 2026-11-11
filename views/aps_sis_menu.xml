@@ -7,6 +7,12 @@
         <field name="tag">ar_teacher_toolkit.student_picker</field>
     </record>
 
+    <record id="action_aps_past_paper_progress" model="ir.actions.client">
+        <field name="path">apex-aps-past-paper-progress</field>
+        <field name="name">Past Paper Progress</field>
+        <field name="tag">aps_sis_past_paper_progress</field>
+    </record>
+
     <!-- APS SIS Menu Structure -->
     <menuitem id="menu_apex_root" name="APEX LMS" sequence="10" web_icon="aps_sis,static/description/icon.png" groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student"/>
 
@@ -57,6 +63,12 @@
     <menuitem id="menu_apex_subject_overview_student" name="Subject Overview" parent="menu_apex_root" action="action_aps_resource_hierarchy_table_student" sequence="125" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student_menu"/>
+    <menuitem id="menu_apex_past_paper_progress"
+              name="Past Paper Progress"
+              parent="menu_apex_root"
+              action="action_aps_past_paper_progress"
+              sequence="45"
+              groups="aps_sis.group_aps_teacher,aps_sis.group_aps_student_menu"/>
 
     <menuitem id="menu_apex_other_student" name="Other" parent="menu_apex_root" sequence="50" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_submit_mark_student" name="Submit a Mark" parent="menu_apex_other_student" action="action_aps_submit_mark_wizard_student" sequence="10" groups="aps_sis.group_aps_student_menu"/>

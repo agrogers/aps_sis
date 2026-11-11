@@ -1,0 +1,191 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.PastPaperProgress">
+        <main class="o_aps_past_paper_progress">
+            <header class="o_aps_past_paper_progress__filters">
+                <div class="o_aps_past_paper_progress__filter">
+                    <label for="o_aps_past_paper_category">Subject Category</label>
+                    <select id="o_aps_past_paper_category"
+                            class="form-select"
+                            t-model="state.categoryId"
+                            t-on-change="onCategoryChange">
+                        <option value="0">All Categories</option>
+                        <t t-foreach="state.categories" t-as="category" t-key="category.id">
+                            <option t-att-value="category.id"><t t-esc="category.name"/></option>
+                        </t>
+                    </select>
+                </div>
+                <div t-if="state.role === 'teacher'"
+                     class="o_aps_past_paper_progress__filter">
+                    <label for="o_aps_past_paper_student">Student</label>
+                    <select id="o_aps_past_paper_student"
+                            class="form-select"
+                            t-model="state.studentId"
+                            t-on-change="onStudentChange">
+                        <option value="0">Select a student</option>
+                        <t t-foreach="state.students" t-as="student" t-key="student.id">
+                            <option t-att-value="student.id"><t t-esc="student.name"/></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="o_aps_past_paper_progress__filter">
+                    <label for="o_aps_past_paper_filter">Papers</label>
+                    <select id="o_aps_past_paper_filter"
+                            class="form-select"
+                            t-model="state.paperFilter"
+                            t-on-change="onPaperFilterChange">
+                        <option value="all">All Papers</option>
+                        <option value="attempted">Attempted Papers</option>
+                        <option value="new">New Papers</option>
+                    </select>
+                </div>
+            </header>
+
+            <div t-if="state.loading" class="o_aps_past_paper_progress__message">
+                Loading Past Paper progress...
+            </div>
+            <div t-elif="state.error" class="alert alert-danger m-3" role="alert">
+                <t t-esc="state.error"/>
+            </div>
+            <div t-elif="state.role === 'teacher' &amp;&amp; !state.student_id"
+                 class="o_aps_past_paper_progress__message">
+                Select a student to view their Past Paper progress.
+            </div>
+            <div t-elif="!visiblePapers.length" class="o_aps_past_paper_progress__message">
+                No Past Papers match these filters.
+            </div>
+            <section t-else="" class="o_aps_past_paper_progress__grid">
+                <article t-foreach="visiblePapers"
+                         t-as="paper"
+                         t-key="paper.id"
+                         class="o_aps_past_paper_progress__card"
+                         t-att-style="paperStyle(paper)"
+                         t-att-data-paper-id="paper.id"
+                         tabindex="0"
+                         role="button"
+                         t-on-click="onPaperClick"
+                         t-on-keydown="onPaperKeydown">
+                    <div class="o_aps_past_paper_progress__image">
+                        <img t-if="paper.thumbnail_url"
+                             t-att-src="paper.thumbnail_url"
+                             t-att-alt="paper.name"></img>
+                        <div t-else="" class="o_aps_past_paper_progress__image-fallback">
+                            <i class="fa fa-file" aria-hidden="true"></i>
+                            <span>Past Paper</span>
+                        </div>
+                        <div class="o_aps_past_paper_progress__paper-score">
+                            <PercentPie t-if="paper.weighted_result !== false"
+                                        value="paper.weighted_result"
+                                        string="'Weighted'"
+                                        showText="false"
+                                        showTooltip="true"/>
+                            <span t-else="" class="o_aps_past_paper_progress__no-score">
+                                No score
+                            </span>
+                        </div>
+                        <div class="o_aps_past_paper_progress__heatmap"
+                             role="group"
+                             t-att-aria-label="paper.question_count + ' question progress indicators'">
+                            <div t-foreach="paper.questions"
+                                 t-as="question"
+                                 t-key="question.id"
+                                 class="o_aps_past_paper_progress__question-wrap"
+                                 t-att-data-question-id="question.id"
+                                 t-on-mouseleave="onQuestionMouseLeave">
+                                <button type="button"
+                                        class="o_aps_past_paper_progress__question"
+                                        t-att-style="questionStyle(question)"
+                                        t-att-data-question-id="question.id"
+                                        t-att-aria-label="question.name + ': ' + question.attempts + ' attempts'"
+                                        t-on-mouseenter="onQuestionMouseEnter"
+                                        t-on-focus="onQuestionMouseEnter"
+                                        t-on-blur="onQuestionMouseLeave"
+                                        t-on-click.stop="onQuestionClick"></button>
+                            </div>
+                        </div>
+                        <div t-if="state.hoveredQuestionId"
+                             t-foreach="paper.questions"
+                             t-as="question"
+                             t-key="'tooltip-' + question.id">
+                            <div t-if="state.hoveredQuestionId === question.id"
+                                     class="o_aps_past_paper_progress__tooltip"
+                                     t-att-style="state.tooltipStyle"
+                                     role="tooltip">
+                                <strong t-esc="question.name"></strong>
+                                <div>Attempts: <t t-esc="question.attempts"/></div>
+                                <div class="o_aps_past_paper_progress__tooltip-score">
+                                    <span>Weighted score:</span>
+                                    <PercentPie t-if="question.weighted_result !== false"
+                                                value="question.weighted_result"
+                                                string="'Weighted'"
+                                                showTooltip="true"/>
+                                    <span t-else="">Not scored</span>
+                                </div>
+                                <div>Out Of: <t t-esc="question.out_of"/></div>
+                                <p t-if="question.description" t-esc="question.description"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_aps_past_paper_progress__card-body">
+                        <h2 t-esc="paper.name"></h2>
+                        <p t-if="paper.description" t-esc="paper.description"></p>
+                        <span class="text-muted">
+                            <t t-esc="paper.question_count"/> questions
+                        </span>
+                    </div>
+                </article>
+            </section>
+
+            <div t-if="activePaper"
+                 class="o_aps_past_paper_progress__backdrop"
+                 role="presentation"
+                 t-on-click="closePaperDialog">
+                <section class="o_aps_past_paper_progress__dialog"
+                         role="dialog"
+                         aria-modal="true"
+                         t-att-aria-label="activePaper.name"
+                         t-on-click="stopDialogClick">
+                    <header class="o_aps_past_paper_progress__dialog-header">
+                        <h2 t-esc="activePaper.name"></h2>
+                        <button type="button"
+                                class="btn-close"
+                                aria-label="Close"
+                                t-on-click="closePaperDialog"/>
+                    </header>
+                    <button type="button"
+                            class="btn btn-primary"
+                            t-on-click="assignPaper">
+                        <t t-if="state.role === 'teacher'">Assign whole paper</t>
+                        <t t-else="">Start a new past paper</t>
+                    </button>
+                    <h3>Past Paper submissions</h3>
+                    <p t-if="!activePaper.history.length" class="text-muted">
+                        No submissions for this paper yet.
+                    </p>
+                    <div t-else="" class="o_aps_past_paper_progress__history">
+                        <button t-foreach="activePaper.history"
+                                t-as="history"
+                                t-key="history.label"
+                                type="button"
+                                class="o_aps_past_paper_progress__history-row"
+                                t-att-data-history-index="history_index"
+                                t-on-click="onHistoryClick">
+                            <span class="o_aps_past_paper_progress__history-label"
+                                  t-esc="history.label"/>
+                            <span class="o_aps_past_paper_progress__history-result">
+                                <PercentPie t-if="history.result !== false"
+                                            value="history.result"
+                                            string="'Overall'"
+                                            showTooltip="true"/>
+                                <span t-else="">No result</span>
+                            </span>
+                            <span>
+                                <t t-esc="history.completed_questions"/> /
+                                <t t-esc="history.total_questions"/> questions completed
+                            </span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </t>
+</templates>

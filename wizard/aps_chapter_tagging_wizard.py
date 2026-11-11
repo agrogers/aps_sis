@@ -3,6 +3,7 @@ from odoo.exceptions import AccessError, UserError
 
 from ..models.resources.chapter_tagging import (
     chapter_summary_candidates,
+    chapter_labels,
     chapter_text,
     create_chapter_tagging_run,
 )
@@ -30,12 +31,14 @@ class APSChapterTaggingWizard(models.TransientModel):
         values = super().default_get(field_names)
         if self.env.context.get('active_model') == 'aps.resources' and 'resource_ids' in field_names:
             values['resource_ids'] = [(6, 0, self.env.context.get('active_ids', []))]
-        if 'summary_id' in field_names:
+        if 'summary_id' in field_names or 'eligible_summary_ids' in field_names:
             resources = self.env['aps.resources'].browse(
                 self.env.context.get('active_ids', []),
             ).exists()
             summaries = chapter_summary_candidates(self.env, resources)
-            if len(summaries) == 1:
+            if 'eligible_summary_ids' in field_names:
+                values['eligible_summary_ids'] = [(6, 0, summaries.ids)]
+            if 'summary_id' in field_names and len(summaries) == 1:
                 values['summary_id'] = summaries.id
         return values
 

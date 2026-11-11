@@ -7,6 +7,7 @@ from . import computed
 from . import parent_sync
 from . import overrides
 from . import actions
+from . import past_paper_progress
 from . import teacher_dashboard
 from . import aps_resource_tags
 from . import aps_resource_types

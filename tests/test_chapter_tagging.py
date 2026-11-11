@@ -141,9 +141,14 @@ class TestChapterTagging(TransactionCase):
         wizard_model = self.env['aps.chapter.tagging.wizard'].with_context(
             active_model='aps.resources', active_ids=resource.ids,
         )
-        defaults = wizard_model.default_get(['resource_ids', 'summary_id'])
+        defaults = wizard_model.default_get([
+            'resource_ids', 'summary_id', 'eligible_summary_ids',
+        ])
         self.assertEqual(defaults['resource_ids'], [(6, 0, resource.ids)])
         self.assertEqual(defaults['summary_id'], self.summary.id)
+        self.assertEqual(
+            defaults['eligible_summary_ids'], [(6, 0, self.summary.ids)],
+        )
         wizard = wizard_model.create({
             'resource_ids': [(6, 0, resource.ids)],
             'summary_id': self.summary.id,
