@@ -5,7 +5,12 @@ from unittest.mock import patch
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
-from ..models.resources.chapter_tagging import chapter_labels, chapter_markdown, chapter_text
+from ..models.resources.chapter_tagging import (
+    chapter_labels,
+    chapter_markdown,
+    chapter_summary_candidates,
+    chapter_text,
+)
 
 
 class TestChapterTagging(TransactionCase):
@@ -147,6 +152,18 @@ class TestChapterTagging(TransactionCase):
         self.summary.copy({'name': 'Another textbook'})
         defaults = wizard_model.default_get(['summary_id'])
         self.assertFalse(defaults.get('summary_id'))
+
+    def test_summary_lookup_matches_tag_display_name(self):
+        same_name_tag = self.env['aps.resource.tags'].create({
+            'name': 'Textbook Chapter Summary',
+        })
+        summary = self.env['aps.resources'].create({
+            'name': 'Summary with separately created tag',
+            'tag_ids': [(4, same_name_tag.id)],
+            'subjects': [(6, 0, self.subject.ids)],
+        })
+
+        self.assertIn(summary, chapter_summary_candidates(self.env, self._resource()))
 
     def test_wizard_requires_a_summary_matching_every_resource_subject(self):
         other_subject = self.env['aps.subject'].create({'name': 'Other chapter tagging subject'})

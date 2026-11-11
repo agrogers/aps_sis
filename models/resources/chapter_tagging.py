@@ -10,9 +10,8 @@ from odoo.exceptions import UserError
 def _tagged_chapter_summaries(env, subject_ids):
     if not subject_ids:
         return env['aps.resources']
-    tag = env.ref('aps_sis.tag_textbook_chapter_summary')
     return env['aps.resources'].search([
-        ('tag_ids', 'in', [tag.id]),
+        ('tag_ids.name', '=ilike', 'Textbook Chapter Summary'),
         ('subjects', 'in', list(subject_ids)),
     ])
 
