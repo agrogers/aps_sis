@@ -441,6 +441,14 @@ class TestPastPaperProgress(TransactionCase):
 
         self.assertEqual(first_action['res_model'], 'aps.resource.submission')
         self.assertEqual(second_action['res_model'], 'aps.resource.submission')
+        self.assertEqual(
+            [view[1] for view in first_action['views']],
+            ['list'],
+        )
+        self.assertEqual(
+            [view[1] for view in second_action['views']],
+            ['list'],
+        )
         paper_submissions = self.env['aps.resource.submission'].search([
             ('task_id.resource_id', '=', self.paper.id),
             ('task_id.student_id', '=', self.student_partner.id),
@@ -456,6 +464,14 @@ class TestPastPaperProgress(TransactionCase):
             ('task_id.student_id', '=', self.student_partner.id),
         ])
         self.assertEqual(len(question_submissions), 4)
+        self.assertFalse(any(
+            (paper_submissions | question_submissions).mapped('date_due')
+        ))
+        self.assertEqual(
+            set(first_action['domain'][0][2]),
+            set(paper_submissions.sorted('id')[:1].ids)
+            | set(question_submissions.sorted('id')[:2].ids),
+        )
 
     def test_assign_question_creates_only_that_question_submission(self):
         nested_question = self.env['aps.resources'].create({

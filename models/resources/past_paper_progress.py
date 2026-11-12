@@ -562,6 +562,8 @@ class APSResource(models.Model):
             'notify_student': False,
             'submission_label': label,
         })
+        if not question_id:
+            wizard_values['date_due'] = False
         wizard = wizard_model.new(wizard_values)
         wizard._onchange_resource_id()
         wizard._onchange_has_question()
@@ -595,6 +597,16 @@ class APSResource(models.Model):
         ], order='submission_order, id')
         if not created_submissions:
             raise UserError(_('No submissions were created for this resource.'))
+
+        if not question_id:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Past Paper submissions: %s') % label,
+                'res_model': 'aps.resource.submission',
+                'views': [self._get_past_paper_submission_views(role)[0]],
+                'domain': [('id', 'in', created_submissions.ids)],
+                'context': {},
+            }
 
         first_question = created_submissions.filtered(
             lambda submission: submission.resource_id.type_id

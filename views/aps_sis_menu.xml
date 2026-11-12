@@ -64,7 +64,7 @@
     <menuitem id="menu_apex_submissions_students_root_menu" name="My Submissions" parent="menu_apex_root" action="action_aps_resource_submissions_for_students" sequence="30" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_task_list_student" name="Tasks" parent="menu_apex_root" action="action_aps_resource_tasks" sequence="40" groups="aps_sis.group_aps_student_menu"/>
     <menuitem id="menu_apex_past_paper_progress"
-              name="Past Paper Progress"
+              name="Past Papers"
               parent="menu_apex_root"
               action="action_aps_past_paper_progress"
               sequence="45"
