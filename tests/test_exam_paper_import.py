@@ -1484,6 +1484,13 @@ class TestExamPaperImport(TransactionCase):
         existing_tag = self.env['aps.resource.tags'].create({
             'name': 'Existing exam tag',
         })
+        finalised_tag = self.env['aps.resource.tags'].search([
+            ('name', '=', 'State:Finalised'),
+        ], limit=1)
+        if not finalised_tag:
+            finalised_tag = self.env['aps.resource.tags'].create({
+                'name': 'State:Finalised',
+            })
         self.resource.write({'tag_ids': [(4, existing_tag.id)]})
         q1 = self.env['aps.resources'].create({
             'name': 'Q1',
@@ -1497,6 +1504,7 @@ class TestExamPaperImport(TransactionCase):
             'ai_table_of_results': True,
             'ai_targeted_feedback': True,
             'ai_analysis': True,
+            'tag_ids': [(4, finalised_tag.id)],
         })
         job = self.env['aps.exam.paper.import'].create({
             'name': 'AI settings paper', 'resource_id': self.resource.id,
@@ -1538,13 +1546,12 @@ class TestExamPaperImport(TransactionCase):
         with patch.object(type(job), '_build_section_image_html', return_value=''):
             job.action_build_resources()
 
-        finalised_tag = self.env['aps.resource.tags'].search([
-            ('name', '=', 'State:Finalised'),
-        ], limit=1)
         self.assertIn(finalised_tag, self.resource.tag_ids)
         self.assertIn(existing_tag, self.resource.tag_ids)
         self.assertIn(finalised_tag, q1.tag_ids)
         self.assertIn(existing_tag, q1.tag_ids)
+        self.assertEqual(self.resource.has_child_resources, 'yes')
+        self.assertEqual(self.resource.has_question, 'hidden')
         self.assertEqual(q1.has_child_resources, 'yes')
         self.assertEqual(q1.has_question, 'hidden')
         self.assertEqual(q1.has_answer, 'hidden')
@@ -1554,6 +1561,7 @@ class TestExamPaperImport(TransactionCase):
             child.name: child
             for child in q1.child_ids
         }
+        self.assertNotIn(finalised_tag, leaves['Q1a'].tag_ids)
         for name in ('Q1a', 'Q1b', 'Q1c'):
             self.assertEqual(leaves[name].ai_action, 'mark_submission')
             self.assertTrue(leaves[name].ai_use_model_answer)
@@ -1617,6 +1625,9 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(resource.description, 'Determine the value of the unknown.')
         self.assertEqual(section.resource_id, resource)
         self.assertEqual(resource.has_child_resources, 'no')
+        self.assertNotIn('State:Finalised', resource.tag_ids.mapped('name'))
+        self.assertEqual(self.resource.has_child_resources, 'yes')
+        self.assertEqual(self.resource.has_question, 'hidden')
         self.assertEqual(resource.ai_action, 'mark_submission')
         self.assertTrue(resource.ai_use_model_answer)
         self.assertTrue(resource.ai_use_question)

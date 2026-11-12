@@ -726,12 +726,10 @@ class APSExamPaperImportBuild(models.Model):
                     'has_question': 'hidden' if child_has_children else 'use_parent',
                     'has_answer': 'hidden' if child_has_children else 'use_parent',
                     'marks': section.maximum_mark,
+                    'tag_ids': self._finalised_tag_commands(child, finalised_tag),
                 }
                 if child_has_children:
-                    child_values.update({
-                        'has_child_resources': 'yes',
-                        'tag_ids': [(4, finalised_tag.id)],
-                    })
+                    child_values['has_child_resources'] = 'yes'
                 else:
                     child_values.update(self._leaf_question_ai_values(section.maximum_mark))
                 if not child.description and section.question_summary:
@@ -748,15 +746,18 @@ class APSExamPaperImportBuild(models.Model):
                 'question': ''.join(headings),
                 'answer': ''.join(answers),
                 'marks': total_marks,
+                'tag_ids': self._finalised_tag_commands(root, finalised_tag),
             }
-            if root_has_children:
-                root_values['tag_ids'] = [(4, finalised_tag.id)]
-            else:
+            if not root_has_children:
                 root_values.update(self._leaf_question_ai_values(total_marks))
             if not root.description and root_section.question_summary:
                 root_values['description'] = root_section.question_summary
             root.write(root_values)
-        self.resource_id.write({'tag_ids': [(4, finalised_tag.id)]})
+        self.resource_id.write({
+            'has_child_resources': 'yes',
+            'has_question': 'hidden',
+            'tag_ids': self._finalised_tag_commands(self.resource_id, finalised_tag),
+        })
         self.write({'state': 'completed', 'progress': 100, 'completed_at': fields.Datetime.now()})
         # Show the completion toast and then re-open the form so the refreshed
         # state, progress and section resource links are shown without a
@@ -769,6 +770,12 @@ class APSExamPaperImportBuild(models.Model):
             'success',
             next=self._open_form(),
         )
+
+    @staticmethod
+    def _finalised_tag_commands(resource, finalised_tag):
+        if resource.child_ids:
+            return [(4, finalised_tag.id)]
+        return [(3, finalised_tag.id)]
 
     def _add_section_tags(self, resource, tags):
         """Add section tags without replacing tags already on a resource."""
