@@ -71,11 +71,19 @@
                         <img t-if="paper.thumbnail_url"
                              t-att-src="paper.thumbnail_url"
                              t-att-alt="paper.name"></img>
-                        <img t-if="paper.subject_icon_url"
-                             class="o_aps_past_paper_progress__subject-icon"
-                             t-att-src="paper.subject_icon_url"
-                             t-att-alt="paper.subject_name"
-                             t-att-title="paper.subject_name"></img>
+                        <div class="o_aps_past_paper_progress__header-indicators">
+                            <img t-if="paper.subject_icon_url"
+                                 class="o_aps_past_paper_progress__subject-icon"
+                                 t-att-src="paper.subject_icon_url"
+                                 t-att-alt="paper.subject_name"
+                                 t-att-title="paper.subject_name"></img>
+                            <span t-if="paper.completed_paper_attempts || paper.partial_paper_attempts"
+                                  class="o_aps_past_paper_progress__attempt-marks"
+                                  t-att-aria-label="paperAttemptLabel(paper)"
+                                  t-att-title="paperAttemptLabel(paper)">
+                                <t t-esc="paperAttemptMarks(paper)"/>
+                            </span>
+                        </div>
                         <div class="o_aps_past_paper_progress__paper-score">
                             <PercentPie t-if="paper.weighted_result !== false"
                                         value="paper.weighted_result"
@@ -140,12 +148,6 @@
                             <span class="text-muted">
                                 <t t-esc="paper.attempted_question_count"/> of
                                 <t t-esc="paper.question_count"/> questions attempted
-                            </span>
-                            <span t-if="paper.completed_paper_attempts || paper.partial_paper_attempts"
-                                  class="o_aps_past_paper_progress__attempt-marks"
-                                  t-att-aria-label="paperAttemptLabel(paper)"
-                                  t-att-title="paperAttemptLabel(paper)">
-                                <t t-esc="paperAttemptMarks(paper)"/>
                             </span>
                         </div>
                     </div>

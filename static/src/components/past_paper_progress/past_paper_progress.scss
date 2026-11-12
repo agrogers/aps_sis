@@ -83,11 +83,17 @@
     }
 }
 
-.o_aps_past_paper_progress__subject-icon {
+.o_aps_past_paper_progress__header-indicators {
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.o_aps_past_paper_progress__subject-icon {
     width: 2rem;
     height: 2rem;
     padding: 0.15rem;
@@ -245,8 +251,11 @@
     display: inline-flex;
     flex-shrink: 0;
     gap: 0.1rem;
+    padding: 0.35rem;
     line-height: 1;
     white-space: nowrap;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 0.25rem;
 }
 
 .o_aps_past_paper_progress__backdrop {
