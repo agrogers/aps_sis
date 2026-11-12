@@ -1,8 +1,20 @@
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
 import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
 import { getColorForPercent } from "@aps_sis/js/utils/color_utils";
+
+const VIEW_STATE_KEY = `aps_sis_past_paper_progress_${user.userId}`;
+
+function restoreViewState() {
+    try {
+        const saved = JSON.parse(window.localStorage.getItem(VIEW_STATE_KEY) || "null");
+        return saved && typeof saved === "object" ? saved : {};
+    } catch {
+        return {};
+    }
+}
 
 export class PastPaperProgress extends Component {
     static template = "aps_sis.PastPaperProgress";
@@ -11,6 +23,9 @@ export class PastPaperProgress extends Component {
     setup() {
         this.orm = useService("orm");
         this.actionService = useService("action");
+        this.rootRef = useRef("root");
+        this._scrollSaveFrame = null;
+        const saved = restoreViewState();
         this.state = useState({
             loading: true,
             error: false,
@@ -18,10 +33,15 @@ export class PastPaperProgress extends Component {
             categories: [],
             students: [],
             papers: [],
-            categoryId: 0,
-            studentId: 0,
-            paperFilter: "all",
+            categoryId: Number(saved.categoryId) || 0,
+            studentId: Number(saved.studentId) || 0,
+            paperFilter: ["all", "attempted", "new"].includes(saved.paperFilter)
+                ? saved.paperFilter
+                : "all",
             activePaperId: false,
+            activeQuestionId: false,
+            selectedPaperId: Number(saved.selectedPaperId) || 0,
+            scrollTop: Math.max(0, Number(saved.scrollTop) || 0),
             hoveredQuestionId: false,
             tooltipStyle: "",
             submissionViews: [],
@@ -31,6 +51,7 @@ export class PastPaperProgress extends Component {
         this.onPaperFilterChange = this.onPaperFilterChange.bind(this);
         this.onPaperClick = this.onPaperClick.bind(this);
         this.onPaperKeydown = this.onPaperKeydown.bind(this);
+        this.onScroll = this.onScroll.bind(this);
         this.onQuestionMouseEnter = this.onQuestionMouseEnter.bind(this);
         this.onQuestionMouseLeave = this.onQuestionMouseLeave.bind(this);
         this.onQuestionClick = this.onQuestionClick.bind(this);
@@ -39,6 +60,21 @@ export class PastPaperProgress extends Component {
         this.stopDialogClick = this.stopDialogClick.bind(this);
         this.assignPaper = this.assignPaper.bind(this);
         onWillStart(() => this.load());
+        onMounted(() => {
+            if (this.rootRef.el) {
+                this.rootRef.el.scrollTop = this.state.scrollTop;
+            }
+        });
+        onWillUnmount(() => {
+            if (this.rootRef.el) {
+                this.state.scrollTop = this.rootRef.el.scrollTop;
+            }
+            if (this._scrollSaveFrame !== null) {
+                window.cancelAnimationFrame(this._scrollSaveFrame);
+                this._scrollSaveFrame = null;
+            }
+            this.saveViewState();
+        });
     }
 
     get visiblePapers() {
@@ -54,6 +90,12 @@ export class PastPaperProgress extends Component {
     get activePaper() {
         return this.state.papers.find(
             (paper) => paper.id === this.state.activePaperId
+        );
+    }
+
+    get activeQuestion() {
+        return this.activePaper?.questions.find(
+            (question) => question.id === this.state.activeQuestionId
         );
     }
 
@@ -77,23 +119,56 @@ export class PastPaperProgress extends Component {
 
     async onCategoryChange(event) {
         this.state.categoryId = Number(event.target.value) || 0;
-        this.state.studentId = 0;
         this.state.activePaperId = false;
+        this.state.activeQuestionId = false;
+        this.saveViewState();
         await this.load();
     }
 
     async onStudentChange(event) {
         this.state.studentId = Number(event.target.value) || 0;
+        this.state.categoryId = 0;
         this.state.activePaperId = false;
+        this.state.activeQuestionId = false;
+        this.saveViewState();
         await this.load();
     }
 
     onPaperFilterChange(event) {
         this.state.paperFilter = event.target.value;
+        this.saveViewState();
+    }
+
+    onScroll(event) {
+        this.state.scrollTop = event.currentTarget.scrollTop;
+        if (this._scrollSaveFrame === null) {
+            this._scrollSaveFrame = window.requestAnimationFrame(() => {
+                this._scrollSaveFrame = null;
+                this.saveViewState();
+            });
+        }
+    }
+
+    saveViewState() {
+        try {
+            window.localStorage.setItem(VIEW_STATE_KEY, JSON.stringify({
+                categoryId: this.state.categoryId,
+                studentId: this.state.studentId,
+                paperFilter: this.state.paperFilter,
+                selectedPaperId: this.state.selectedPaperId,
+                scrollTop: this.state.scrollTop,
+            }));
+        } catch {
+            // Browser storage can be unavailable or full.
+        }
     }
 
     onPaperClick(event) {
-        this.state.activePaperId = Number(event.currentTarget.dataset.paperId);
+        const paperId = Number(event.currentTarget.dataset.paperId);
+        this.state.selectedPaperId = paperId;
+        this.state.activePaperId = paperId;
+        this.state.activeQuestionId = false;
+        this.saveViewState();
     }
 
     onPaperKeydown(event) {
@@ -102,7 +177,7 @@ export class PastPaperProgress extends Component {
             && (event.key === "Enter" || event.key === " ")
         ) {
             event.preventDefault();
-            this.state.activePaperId = Number(event.currentTarget.dataset.paperId);
+            this.onPaperClick(event);
         }
     }
 
@@ -124,11 +199,21 @@ export class PastPaperProgress extends Component {
 
     async onQuestionClick(event) {
         event.stopPropagation();
+        const paperId = Number(event.currentTarget.dataset.paperId);
         const questionId = Number(event.currentTarget.dataset.questionId);
-        const question = this.activePaper?.questions.find(
+        const paper = this.state.papers.find((item) => item.id === paperId);
+        const question = paper?.questions.find(
             (item) => item.id === questionId
         );
-        if (!question) {
+        if (!paper || !question) {
+            return;
+        }
+        if (!question.attempts) {
+            this.state.selectedPaperId = paper.id;
+            this.state.activePaperId = paper.id;
+            this.state.activeQuestionId = question.id;
+            this.state.hoveredQuestionId = false;
+            this.saveViewState();
             return;
         }
         await this.openSubmissions(
@@ -172,6 +257,7 @@ export class PastPaperProgress extends Component {
 
     closePaperDialog() {
         this.state.activePaperId = false;
+        this.state.activeQuestionId = false;
         this.state.hoveredQuestionId = false;
     }
 
@@ -184,29 +270,44 @@ export class PastPaperProgress extends Component {
         if (!paper) {
             return;
         }
+        const question = this.activeQuestion;
         this.state.loading = true;
         this.state.error = false;
         try {
             const action = await this.orm.call(
                 "aps.resources",
-                "action_assign_past_paper",
-                [
+                question
+                    ? "action_assign_past_paper_question"
+                    : "action_assign_past_paper",
+                question
+                    ? [
+                        paper.id,
+                        question.id,
+                        Number(this.state.studentId) || false,
+                        Number(this.state.categoryId) || false,
+                    ]
+                    : [
                     paper.id,
                     Number(this.state.studentId) || false,
                     Number(this.state.categoryId) || false,
-                ]
+                    ]
             );
             this.closePaperDialog();
             await this.actionService.doAction(action);
         } catch (error) {
             this.state.loading = false;
-            this.state.error = error.message || "Unable to start this Past Paper.";
+            this.state.error = error.message || (
+                question
+                    ? "Unable to assign this question."
+                    : "Unable to start this Past Paper."
+            );
         }
     }
 
     questionStyle(question) {
         const attempts = Number(question.attempts) || 0;
-        const opacity = attempts ? Math.min((10 + attempts * 10) / 100, 0.8) : 0;
+        const grayPercent = attempts ? Math.min(10 + attempts * 10, 80) : 0;
+        const gray = Math.round(255 * (1 - grayPercent / 100));
         const score = Number(question.weighted_result);
         const borderColor = attempts
             && question.weighted_result !== false
@@ -215,15 +316,41 @@ export class PastPaperProgress extends Component {
             : "#cbd2d9";
         const borderWidth = question.has_children ? 2 : 1;
         return [
-            `--attempt-opacity: ${opacity}`,
+            `--attempt-fill: rgb(${gray}, ${gray}, ${gray})`,
+            `--attempt-text: ${gray < 128 ? "#fff" : "#212529"}`,
             `border: ${borderWidth}px solid ${borderColor}`,
         ].join(";");
     }
 
+    paperAttemptMarks(paper) {
+        const completedAttempts = Math.max(
+            0,
+            Math.floor(Number(paper.completed_paper_attempts) || 0)
+        );
+        const partialAttempts = Math.max(
+            0,
+            Math.floor(Number(paper.partial_paper_attempts) || 0)
+        );
+        return "\u{1F5F9}".repeat(completedAttempts)
+            + "\u2610".repeat(partialAttempts);
+    }
+
+    paperAttemptLabel(paper) {
+        const completedAttempts = Number(paper.completed_paper_attempts) || 0;
+        const partialAttempts = Number(paper.partial_paper_attempts) || 0;
+        const statuses = [];
+        if (completedAttempts) {
+            statuses.push(`${completedAttempts} completed`);
+        }
+        if (partialAttempts) {
+            statuses.push(`${partialAttempts} partially completed`);
+        }
+        return `${statuses.join(", ")} paper attempts`;
+    }
+
     paperStyle(paper) {
-        const attempts = Number(paper.attempts) || 0;
-        const opacity = attempts ? Math.min((10 + attempts * 10) / 100, 0.8) : 0;
-        return `--paper-progress-opacity: ${opacity}`;
+        const gray = Number(paper.completed_paper_attempts) > 0 ? 204 : 255;
+        return `--paper-progress-color: rgb(${gray}, ${gray}, ${gray})`;
     }
 }
 

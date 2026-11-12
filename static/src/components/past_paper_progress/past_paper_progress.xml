@@ -1,19 +1,9 @@
 <templates xml:space="preserve">
     <t t-name="aps_sis.PastPaperProgress">
-        <main class="o_aps_past_paper_progress">
+        <main class="o_aps_past_paper_progress"
+              t-ref="root"
+              t-on-scroll="onScroll">
             <header class="o_aps_past_paper_progress__filters">
-                <div class="o_aps_past_paper_progress__filter">
-                    <label for="o_aps_past_paper_category">Subject Category</label>
-                    <select id="o_aps_past_paper_category"
-                            class="form-select"
-                            t-model="state.categoryId"
-                            t-on-change="onCategoryChange">
-                        <option value="0">All Categories</option>
-                        <t t-foreach="state.categories" t-as="category" t-key="category.id">
-                            <option t-att-value="category.id"><t t-esc="category.name"/></option>
-                        </t>
-                    </select>
-                </div>
                 <div t-if="state.role === 'teacher'"
                      class="o_aps_past_paper_progress__filter">
                     <label for="o_aps_past_paper_student">Student</label>
@@ -24,6 +14,19 @@
                         <option value="0">Select a student</option>
                         <t t-foreach="state.students" t-as="student" t-key="student.id">
                             <option t-att-value="student.id"><t t-esc="student.name"/></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="o_aps_past_paper_progress__filter">
+                    <label for="o_aps_past_paper_category">Subject Category</label>
+                    <select id="o_aps_past_paper_category"
+                            class="form-select"
+                            t-model="state.categoryId"
+                            t-att-disabled="state.role === 'teacher' &amp;&amp; !state.studentId"
+                            t-on-change="onCategoryChange">
+                        <option value="0">All Categories</option>
+                        <t t-foreach="state.categories" t-as="category" t-key="category.id">
+                            <option t-att-value="category.id"><t t-esc="category.name"/></option>
                         </t>
                     </select>
                 </div>
@@ -58,7 +61,7 @@
                          t-as="paper"
                          t-key="paper.id"
                          class="o_aps_past_paper_progress__card"
-                         t-att-style="paperStyle(paper)"
+                         t-att-class="state.selectedPaperId === paper.id ? 'o_aps_past_paper_progress__card--selected' : ''"
                          t-att-data-paper-id="paper.id"
                          tabindex="0"
                          role="button"
@@ -68,14 +71,15 @@
                         <img t-if="paper.thumbnail_url"
                              t-att-src="paper.thumbnail_url"
                              t-att-alt="paper.name"></img>
-                        <div t-else="" class="o_aps_past_paper_progress__image-fallback">
-                            <i class="fa fa-file" aria-hidden="true"></i>
-                            <span>Past Paper</span>
-                        </div>
+                        <img t-if="paper.subject_icon_url"
+                             class="o_aps_past_paper_progress__subject-icon"
+                             t-att-src="paper.subject_icon_url"
+                             t-att-alt="paper.subject_name"
+                             t-att-title="paper.subject_name"></img>
                         <div class="o_aps_past_paper_progress__paper-score">
                             <PercentPie t-if="paper.weighted_result !== false"
                                         value="paper.weighted_result"
-                                        string="'Weighted'"
+                                        string=""
                                         showText="false"
                                         showTooltip="true"/>
                             <span t-else="" class="o_aps_past_paper_progress__no-score">
@@ -93,13 +97,17 @@
                                  t-on-mouseleave="onQuestionMouseLeave">
                                 <button type="button"
                                         class="o_aps_past_paper_progress__question"
+                                        t-att-class="!question.has_children ? 'o_aps_past_paper_progress__question--nested' : ''"
                                         t-att-style="questionStyle(question)"
+                                        t-att-data-paper-id="paper.id"
                                         t-att-data-question-id="question.id"
                                         t-att-aria-label="question.name + ': ' + question.attempts + ' attempts'"
                                         t-on-mouseenter="onQuestionMouseEnter"
                                         t-on-focus="onQuestionMouseEnter"
                                         t-on-blur="onQuestionMouseLeave"
-                                        t-on-click.stop="onQuestionClick"></button>
+                                        t-on-click.stop="onQuestionClick">
+                                    <t t-esc="question.number"/>
+                                </button>
                             </div>
                         </div>
                         <div t-if="state.hoveredQuestionId"
@@ -125,12 +133,21 @@
                             </div>
                         </div>
                     </div>
-                    <div class="o_aps_past_paper_progress__card-body">
+                    <div class="o_aps_past_paper_progress__card-body"
+                         t-att-style="paperStyle(paper)">
                         <h2 t-esc="paper.name"></h2>
-                        <p t-if="paper.description" t-esc="paper.description"></p>
-                        <span class="text-muted">
-                            <t t-esc="paper.question_count"/> questions
-                        </span>
+                        <div class="o_aps_past_paper_progress__card-footer">
+                            <span class="text-muted">
+                                <t t-esc="paper.attempted_question_count"/> of
+                                <t t-esc="paper.question_count"/> questions attempted
+                            </span>
+                            <span t-if="paper.completed_paper_attempts || paper.partial_paper_attempts"
+                                  class="o_aps_past_paper_progress__attempt-marks"
+                                  t-att-aria-label="paperAttemptLabel(paper)"
+                                  t-att-title="paperAttemptLabel(paper)">
+                                <t t-esc="paperAttemptMarks(paper)"/>
+                            </span>
+                        </div>
                     </div>
                 </article>
             </section>
@@ -142,10 +159,10 @@
                 <section class="o_aps_past_paper_progress__dialog"
                          role="dialog"
                          aria-modal="true"
-                         t-att-aria-label="activePaper.name"
+                     t-att-aria-label="activeQuestion ? activeQuestion.name : activePaper.name"
                          t-on-click="stopDialogClick">
                     <header class="o_aps_past_paper_progress__dialog-header">
-                        <h2 t-esc="activePaper.name"></h2>
+                    <h2 t-esc="activeQuestion ? activeQuestion.name : activePaper.name"></h2>
                         <button type="button"
                                 class="btn-close"
                                 aria-label="Close"
@@ -154,17 +171,23 @@
                     <button type="button"
                             class="btn btn-primary"
                             t-on-click="assignPaper">
-                        <t t-if="state.role === 'teacher'">Assign whole paper</t>
+                        <t t-if="activeQuestion">Assign Question</t>
+                        <t t-elif="state.role === 'teacher'">Assign whole paper</t>
                         <t t-else="">Start a new past paper</t>
                     </button>
-                    <h3>Past Paper submissions</h3>
-                    <p t-if="!activePaper.history.length" class="text-muted">
+                    <h3 t-if="activeQuestion">Question submissions</h3>
+                    <h3 t-else="">Past Paper submissions</h3>
+                    <p t-if="activeQuestion || !activePaper.history.length"
+                       class="text-muted">
+                        <t t-if="activeQuestion">No submissions for this question yet.</t>
+                        <t t-else="">
                         No submissions for this paper yet.
+                        </t>
                     </p>
                     <div t-else="" class="o_aps_past_paper_progress__history">
                         <button t-foreach="activePaper.history"
                                 t-as="history"
-                                t-key="history.label"
+                                t-key="history.submission_id"
                                 type="button"
                                 class="o_aps_past_paper_progress__history-row"
                                 t-att-data-history-index="history_index"

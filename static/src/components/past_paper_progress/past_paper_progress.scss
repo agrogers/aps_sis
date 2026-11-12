@@ -49,14 +49,17 @@
     min-width: 0;
     overflow: visible;
     cursor: pointer;
+    color: var(--body-color, #212529);
     background-color: #fff;
-    background-image: linear-gradient(
-        rgba(var(--bs-primary-rgb, 13, 110, 253), var(--paper-progress-opacity, 0)),
-        rgba(var(--bs-primary-rgb, 13, 110, 253), var(--paper-progress-opacity, 0))
-    );
+    background-image: none;
     border: 1px solid var(--border-color, #dee2e6);
     border-radius: 0.5rem;
     box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.08);
+
+    &--selected {
+        border: 3px solid var(--primary, #0d6efd);
+        box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb, 13, 110, 253), 0.2);
+    }
 
     &:focus-visible {
         outline: 2px solid var(--primary, #0d6efd);
@@ -66,12 +69,13 @@
 
 .o_aps_past_paper_progress__image {
     position: relative;
-    min-height: 9rem;
+    height: 12rem;
+    min-height: 12rem;
     overflow: visible;
-    background: #e9ecef;
+    background: transparent;
     border-radius: 0.5rem 0.5rem 0 0;
 
-    > img {
+    > img:not(.o_aps_past_paper_progress__subject-icon) {
         width: 100%;
         height: 12rem;
         object-fit: cover;
@@ -79,19 +83,17 @@
     }
 }
 
-.o_aps_past_paper_progress__image-fallback {
-    display: flex;
-    height: 12rem;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    color: #64748b;
-    font-size: 1rem;
-
-    .fa {
-        font-size: 2rem;
-    }
+.o_aps_past_paper_progress__subject-icon {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 1;
+    width: 2rem;
+    height: 2rem;
+    padding: 0.15rem;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 0.25rem;
 }
 
 .o_aps_past_paper_progress__paper-score {
@@ -130,39 +132,44 @@
 
 .o_aps_past_paper_progress__heatmap {
     position: absolute;
+    top: 3rem;
     right: 0.5rem;
     bottom: 0.5rem;
     left: 0.5rem;
     z-index: 1;
     display: flex;
-    max-height: 4.5rem;
     flex-wrap: wrap;
     gap: 0.25rem;
     overflow: auto;
-    padding: 0.4rem;
-    background: rgba(15, 23, 42, 0.78);
-    border-radius: 0.25rem;
+    align-content: flex-start;
+    padding: 0.15rem;
 }
 
 .o_aps_past_paper_progress__question-wrap {
     position: relative;
     display: flex;
-    width: 0.9rem;
-    height: 0.9rem;
-    flex: 0 0 0.9rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: 0 0 1.35rem;
 }
 
 .o_aps_past_paper_progress__question {
+    display: flex;
     width: 100%;
     height: 100%;
+    align-items: center;
+    justify-content: center;
     padding: 0;
-    background-color: #fff;
-    background-image: linear-gradient(
-        rgba(var(--bs-primary-rgb, 13, 110, 253), var(--attempt-opacity, 0)),
-        rgba(var(--bs-primary-rgb, 13, 110, 253), var(--attempt-opacity, 0))
-    );
+    color: var(--attempt-text, #212529);
+    font-size: 0.65rem;
+    line-height: 1;
+    background-color: var(--attempt-fill, #fff);
     border-radius: 0;
     cursor: pointer;
+
+    &--nested {
+        border-radius: 50%;
+    }
 }
 
 .o_aps_past_paper_progress__tooltip {
@@ -206,6 +213,13 @@
 
 .o_aps_past_paper_progress__card-body {
     padding: 0.75rem;
+    background-color: var(--paper-progress-color, #fff);
+    border-radius: 0 0 0.5rem 0.5rem;
+
+    .text-muted {
+        color: var(--body-color, #6c757d) !important;
+        opacity: 0.8;
+    }
 
     h2 {
         margin: 0;
@@ -218,6 +232,21 @@
         color: var(--body-color, #6c757d);
         font-size: 0.875rem;
     }
+}
+
+.o_aps_past_paper_progress__card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.o_aps_past_paper_progress__attempt-marks {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 0.1rem;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .o_aps_past_paper_progress__backdrop {
