@@ -9,7 +9,7 @@ import { QuizProgressBar } from "@aps_sis/components/quiz_progress_bar/quiz_prog
 import { ResourceLinkButtons } from "@aps_sis/components/resource_link_buttons/resource_link_buttons";
 
 const STORAGE_KEY = "aps_course_explorer";
-const ASSESSMENT_PREVIEW_LIMIT = 5;
+const TABLE_PREVIEW_LIMIT = 5;
 
 // ─── Recursive tree node sub-component ────────────────────────────────
 
@@ -153,6 +153,7 @@ export class CourseExplorer extends Component {
         this._renderMathRaf = 0;
         this._loadDataRequestId = 0;
         this._contentObserver = null;
+        this._contentObserverRoot = null;
         this._tooltipCells = new WeakSet();
         this._programmaticSectionId = 0;
         this._programmaticSectionTimer = null;
@@ -178,6 +179,7 @@ export class CourseExplorer extends Component {
             activeHeadingId: "",
             resourceTocCollapsed: saved.resourceTocCollapsed === true,
             contentVersion: 0,
+            expandedQuizSections: [],
             expandedAssessmentSections: [],
             activeSectionId: this._pendingUrlTarget.sectionId
                 || (categoryChanged ? 0 : saved.activeSectionId || 0),
@@ -270,6 +272,8 @@ export class CourseExplorer extends Component {
                 el.removeEventListener("click", this._boundOnContentClick);
             }
             this._contentObserver?.disconnect();
+            this._contentObserver = null;
+            this._contentObserverRoot = null;
         });
     }
 
@@ -587,10 +591,27 @@ export class CourseExplorer extends Component {
         return this.state.expandedAssessmentSections.includes(sectionId);
     }
 
+    isQuizRowsExpanded(sectionId) {
+        return this.state.expandedQuizSections.includes(sectionId);
+    }
+
+    getVisibleQuizRows(section) {
+        return this.isQuizRowsExpanded(section.id)
+            ? section.quizMasteryRows
+            : section.quizMasteryRows.slice(0, TABLE_PREVIEW_LIMIT);
+    }
+
+    toggleQuizRows(sectionId) {
+        const expandedSections = this.state.expandedQuizSections;
+        this.state.expandedQuizSections = this.isQuizRowsExpanded(sectionId)
+            ? expandedSections.filter((id) => id !== sectionId)
+            : [...expandedSections, sectionId];
+    }
+
     getVisibleAssessmentRows(section) {
         return this.isAssessmentRowsExpanded(section.id)
             ? section.assessmentRows
-            : section.assessmentRows.slice(0, ASSESSMENT_PREVIEW_LIMIT);
+            : section.assessmentRows.slice(0, TABLE_PREVIEW_LIMIT);
     }
 
     toggleAssessmentRows(sectionId) {
@@ -1149,14 +1170,15 @@ export class CourseExplorer extends Component {
     _setupContentObserver() {
         const root = this.contentRef.el;
         if (!root || this.state.loading) return;
-        if (!this._contentObserver) {
-            this._contentObserver = new IntersectionObserver((entries) => {
+        if (this._contentObserverRoot !== root) {
+            this._contentObserver?.disconnect();
+            const observer = new IntersectionObserver((entries) => {
                 const resourceIds = [];
                 for (const entry of entries) {
                     if (!entry.isIntersecting) continue;
                     const resourceId = Number(entry.target.dataset.resourceId);
                     if (Number.isSafeInteger(resourceId) && resourceId > 0) {
-                        this._contentObserver.unobserve(entry.target);
+                        observer.unobserve(entry.target);
                         resourceIds.push(resourceId);
                     }
                 }
@@ -1167,6 +1189,8 @@ export class CourseExplorer extends Component {
                 root,
                 rootMargin: "1200px 0px",
             });
+            this._contentObserver = observer;
+            this._contentObserverRoot = root;
         }
 
         const sectionsById = new Map(

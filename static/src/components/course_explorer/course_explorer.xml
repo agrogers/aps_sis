@@ -334,7 +334,8 @@
                                     <span>Quiz Progress</span>
                                 </div>
                                 <div class="ce_quiz_table_scroll">
-                                    <table class="ce_quiz_table ce_quiz_mastery_table">
+                                    <table class="ce_quiz_table ce_quiz_mastery_table"
+                                           t-att-id="'ce-quiz-table-' + section.id">
                                         <thead>
                                             <tr>
                                                 <th class="ce_quiz_th_name">Name</th>
@@ -359,7 +360,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <t t-foreach="section.quizMasteryRows" t-as="quiz" t-key="quiz.id">
+                                            <t t-foreach="this.getVisibleQuizRows(section)" t-as="quiz" t-key="quiz.id">
                                                 <tr class="ce_quiz_row ce_quiz_mastery_row"
                                                     t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
                                                     <td class="ce_quiz_name">
@@ -385,6 +386,15 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                <button t-if="section.quizMasteryRows.length > 5"
+                                        type="button"
+                                        class="ce_assessment_more"
+                                        t-att-aria-expanded="this.isQuizRowsExpanded(section.id) ? 'true' : 'false'"
+                                        t-att-aria-controls="'ce-quiz-table-' + section.id"
+                                        t-on-click="() => this.toggleQuizRows(section.id)">
+                                    <t t-if="this.isQuizRowsExpanded(section.id)">Show less</t>
+                                    <t t-else="">Show <t t-esc="section.quizMasteryRows.length - 5"/> more</t>
+                                </button>
                             </div>
                         </t>
                         <!-- Existing assessment result table -->
