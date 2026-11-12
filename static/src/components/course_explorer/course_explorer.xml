@@ -434,16 +434,30 @@
                                                 <td class="ce_quiz_name">
                                                     <i class="fa fa-file-text-o me-1"/>
                                                     <t t-esc="quiz.displayName || quiz.name"/>
+                                                    <small t-if="quiz.description"
+                                                           class="ce_assessment_description text-muted">
+                                                        <t t-esc="quiz.description"/>
+                                                    </small>
                                                 </td>
                                                 <td class="ce_quiz_num">
-                                                    <t t-if="quiz.weightedResult"><t t-esc="quiz.weightedResult"/>%</t>
+                                                    <PercentPie
+                                                        t-if="quiz.attempts > 0 &amp;&amp; quiz.weightedResult !== false &amp;&amp; quiz.weightedResult !== null &amp;&amp; quiz.weightedResult !== undefined &amp;&amp; quiz.weightedResult !== -0.01"
+                                                        value="quiz.weightedResult"
+                                                        string="'Weighted Result'"
+                                                        showText="false"
+                                                        showTooltip="true"/>
                                                     <t t-else="">—</t>
                                                 </td>
                                                 <td class="ce_quiz_num">
                                                     <t t-esc="quiz.attempts"/>
                                                 </td>
                                                 <td class="ce_quiz_num">
-                                                    <t t-if="quiz.lastResult"><t t-esc="quiz.lastResult"/>%</t>
+                                                    <PercentPie
+                                                        t-if="quiz.attempts > 0 &amp;&amp; quiz.lastResult !== false &amp;&amp; quiz.lastResult !== null &amp;&amp; quiz.lastResult !== undefined &amp;&amp; quiz.lastResult !== -0.01"
+                                                        value="quiz.lastResult"
+                                                        string="'Last Result'"
+                                                        showText="false"
+                                                        showTooltip="true"/>
                                                     <t t-else="">—</t>
                                                 </td>
                                                 <td>

@@ -1423,7 +1423,9 @@ class APSResource(models.Model):
         chapter_tag_ids = set()
         for res in all_resources:
             chapter_tags = res.tag_ids.filtered(
-                lambda tag: tag.name and tag.name.startswith('Ch')
+                lambda tag: bool(
+                    re.fullmatch(r'ch\d{2}', (tag.name or '').strip(), re.IGNORECASE)
+                )
             )
             chapter_tags_by_section[res.id] = chapter_tags
             chapter_tag_ids.update(chapter_tags.ids)
@@ -1530,6 +1532,7 @@ class APSResource(models.Model):
                     quizzes.append({
                         'id': child.id,
                         'name': child.name or '',
+                        'description': child.description or '',
                         'displayName': _assessment_display_name(child),
                         'typeName': child.type_id.name or '',
                         'isQuiz': _is_quiz_resource(child),
@@ -1547,6 +1550,7 @@ class APSResource(models.Model):
                     quizzes.append({
                         'id': sup.id,
                         'name': sup.name or '',
+                        'description': sup.description or '',
                         'displayName': _assessment_display_name(sup),
                         'typeName': sup.type_id.name or '',
                         'isQuiz': _is_quiz_resource(sup),
@@ -1564,6 +1568,7 @@ class APSResource(models.Model):
                 quizzes.append({
                     'id': assessment.id,
                     'name': assessment.name or '',
+                    'description': assessment.description or '',
                     'displayName': _assessment_display_name(assessment),
                     'typeName': assessment.type_id.name or '',
                     'isQuiz': _is_quiz_resource(assessment),

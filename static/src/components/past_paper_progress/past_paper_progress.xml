@@ -41,6 +41,15 @@
                         <option value="new">New Papers</option>
                     </select>
                 </div>
+                <div class="o_aps_past_paper_progress__filter">
+                    <label for="o_aps_past_paper_search">Search paper titles</label>
+                    <input id="o_aps_past_paper_search"
+                           type="search"
+                           class="form-control"
+                           placeholder="Search paper titles"
+                           t-model="state.searchText"
+                           t-on-input="onPaperSearchInput"/>
+                </div>
             </header>
 
             <div t-if="state.loading" class="o_aps_past_paper_progress__message">
@@ -132,7 +141,7 @@
                                     <span>Weighted score:</span>
                                     <PercentPie t-if="question.weighted_result !== false"
                                                 value="question.weighted_result"
-                                                string="'Weighted'"
+                                                string="''"
                                                 showTooltip="true"/>
                                     <span t-else="">Not scored</span>
                                 </div>

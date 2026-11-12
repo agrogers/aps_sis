@@ -154,12 +154,16 @@ export class CourseExplorer extends Component {
         this._loadDataRequestId = 0;
         this._contentObserver = null;
         this._contentObserverRoot = null;
+        this._scrollAnchorCleanup = null;
         this._tooltipCells = new WeakSet();
         this._programmaticSectionId = 0;
         this._programmaticSectionTimer = null;
         this._urlStateTimer = null;
         this._urlStateUpdateDelay = 180;
         this._pendingUrlTarget = this._readUrlTarget();
+        this._bookmarkScrollTarget = null;
+        this._bookmarkScrollRetryPending = false;
+        this._bookmarkScrollRetryCount = 0;
         this._hasUrlSectionTarget = Boolean(this._pendingUrlTarget.sectionId);
 
         const saved = this._loadStorage();
@@ -265,6 +269,7 @@ export class CourseExplorer extends Component {
                 cancelAnimationFrame(this._renderMathRaf);
                 this._renderMathRaf = 0;
             }
+            this._cancelBookmarkScroll("component unmounted");
             const el = this.contentRef.el;
             if (el) {
                 el.removeEventListener("scroll", this._boundOnScroll);
@@ -294,14 +299,20 @@ export class CourseExplorer extends Component {
     }
 
     _readUrlTarget() {
-        const params = this.props.action?.params || {};
-        return {
-            categoryId: this._toPositiveId(params.ce_category),
-            sectionId: this._toPositiveId(params.ce_section),
-            headingId: typeof params.ce_heading === "string"
-                ? params.ce_heading.trim()
-                : "",
+        const actionParams = this.props.action?.params || {};
+        const queryParams = new URLSearchParams(window.location.search);
+        const target = {
+            categoryId: this._toPositiveId(queryParams.get("ce_category"))
+                || this._toPositiveId(actionParams.ce_category),
+            sectionId: this._toPositiveId(queryParams.get("ce_section"))
+                || this._toPositiveId(actionParams.ce_section),
+            headingId: queryParams.get("ce_heading")?.trim()
+                || (typeof actionParams.ce_heading === "string"
+                    ? actionParams.ce_heading.trim()
+                    : ""),
         };
+        console.info("Course Explorer: URL target parsed", target);
+        return target;
     }
 
     _updateUrlState({ immediate = false } = {}) {
@@ -342,19 +353,29 @@ export class CourseExplorer extends Component {
     }
 
     _restorePendingUrlTarget() {
-        const requested = this._pendingUrlTarget;
+        const pendingTarget = this._pendingUrlTarget;
+        const retry = !pendingTarget
+            && this._bookmarkScrollRetryPending
+            && this._bookmarkScrollTarget;
+        const requested = pendingTarget || (retry ? this._bookmarkScrollTarget : null);
         if (!requested || !requested.sectionId || this.state.loading) return;
         if (!this.state.contentVersion) return;
         const section = this.visibleContentSections.find(
             (candidate) => candidate.id === requested.sectionId,
         );
         if (!section) {
-            this._pendingUrlTarget = null;
-            this._updateUrlState({ immediate: true });
+            if (pendingTarget) {
+                this._pendingUrlTarget = null;
+                this._updateUrlState({ immediate: true });
+            } else {
+                this._cancelBookmarkScroll("bookmark section not found");
+            }
             return;
         }
-        if (!section.htmlLoaded) {
-            this._loadSectionContent([section.id]);
+        if (!section.htmlLoaded && (pendingTarget || requested.headingId)) {
+            if (pendingTarget) {
+                this._loadSectionContent([section.id]);
+            }
             return;
         }
 
@@ -371,13 +392,30 @@ export class CourseExplorer extends Component {
         const sectionTarget = root?.querySelector(`#ce-section-${requested.sectionId}`);
         if (!target && !sectionTarget) return;
 
-        this._pendingUrlTarget = null;
-        this.state.activeSectionId = requested.sectionId;
-        this.state.activeHeadingId = tocEntry && target ? tocEntry.id : "";
-        this._updateUrlState({ immediate: true });
+        if (pendingTarget) {
+            this._pendingUrlTarget = null;
+            this._bookmarkScrollTarget = {
+                sectionId: requested.sectionId,
+                headingId: requested.headingId,
+            };
+            this._bookmarkScrollRetryCount = 0;
+            this.state.activeSectionId = requested.sectionId;
+            this.state.activeHeadingId = tocEntry && target ? tocEntry.id : "";
+            this._updateUrlState({ immediate: true });
+        }
+        this._bookmarkScrollRetryPending = false;
         this._holdProgrammaticSection(requested.sectionId);
-        this._scrollToTarget(target || sectionTarget);
-        this._saveStorage();
+        if (retry) {
+            this._bookmarkScrollRetryCount++;
+        }
+        this._scrollToTarget(target || sectionTarget, {
+            retry: Boolean(retry),
+            retryCount: this._bookmarkScrollRetryCount,
+            navigation: !requested.headingId,
+        });
+        if (pendingTarget) {
+            this._saveStorage();
+        }
     }
 
     _saveStorage() {
@@ -534,7 +572,14 @@ export class CourseExplorer extends Component {
 
     _updateActiveHeading() {
         const root = this.contentRef.el;
-        if (!root || !this.state.resourceToc.length || this._programmaticSectionId) return;
+        if (
+            !root
+            || !this.state.resourceToc.length
+            || this._programmaticSectionId
+            || this._bookmarkScrollTarget
+        ) {
+            return;
+        }
         const threshold = root.getBoundingClientRect().top + 48;
         let active = this.state.resourceToc[0].id;
         for (const entry of this.state.resourceToc) {
@@ -554,6 +599,7 @@ export class CourseExplorer extends Component {
         const root = this.contentRef.el;
         const heading = root?.querySelector(`#${CSS.escape(entry.id)}`);
         if (!heading) return;
+        this._cancelBookmarkScroll("resource contents navigation");
         this.state.activeHeadingId = entry.id;
         this.state.activeSectionId = entry.sectionId;
         this._updateUrlState({ immediate: true });
@@ -641,6 +687,7 @@ export class CourseExplorer extends Component {
     }
 
     async _loadData() {
+        this._stopScrollAnchor("course data reloaded");
         const requestId = ++this._loadDataRequestId;
         // Don't load data if no subject category is selected
         if (!this.state.selectedCategoryId) {
@@ -807,6 +854,13 @@ export class CourseExplorer extends Component {
                     htmlLoadError: false,
                 };
             });
+            if (this._bookmarkScrollTarget) {
+                this._bookmarkScrollRetryPending = true;
+                console.info("Course Explorer: scroll retry scheduled after content loaded", {
+                    targetSectionId: this._bookmarkScrollTarget.sectionId,
+                    loadedSectionIds: [...loadingIds],
+                });
+            }
             this._mathRenderVersion++;
         } catch (err) {
             if (requestId !== this._loadDataRequestId) return;
@@ -974,6 +1028,7 @@ export class CourseExplorer extends Component {
     // ── User actions ─────────────────────────────────────────────────
 
     async onCategoryChange(ev) {
+        this._cancelBookmarkScroll("subject category changed");
         // Save current category's expanded state before switching
         if (this.state.selectedCategoryId) {
             this._expandedByCategory[this.state.selectedCategoryId] = [...this._expandedIds];
@@ -1041,11 +1096,15 @@ export class CourseExplorer extends Component {
         if (!el) return;
         const target = el.querySelector(`#ce-section-${sectionId}`);
         if (!target) return;
+        this._cancelBookmarkScroll("section navigation");
         this.state.activeSectionId = sectionId;
         this.state.activeHeadingId = "";
         this._updateUrlState({ immediate: true });
+        this._bookmarkScrollTarget = { sectionId, headingId: "" };
+        this._bookmarkScrollRetryPending = false;
+        this._bookmarkScrollRetryCount = 0;
         this._holdProgrammaticSection(sectionId);
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        this._scrollToTarget(target, { navigation: true });
         this._saveStorage();
         this._updateUrlState({ immediate: true });
     }
@@ -1056,6 +1115,7 @@ export class CourseExplorer extends Component {
         if (!el) return;
         const target = el.querySelector(`#ce-quiz-${sectionId}`);
         if (!target) return;
+        this._cancelBookmarkScroll("quiz navigation");
         target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
@@ -1075,49 +1135,105 @@ export class CourseExplorer extends Component {
         }, 1200);
     }
 
-    _scrollToTarget(target) {
-        let lastHeight = target.offsetHeight;
-        let stableCount = 0;
-        let disconnected = false;
-        function doScroll() {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-        const observer = new ResizeObserver(() => {
-            const newHeight = target.offsetHeight;
-            if (newHeight !== lastHeight) {
-                lastHeight = newHeight;
-                stableCount = 0;
-                doScroll();
-            } else {
-                stableCount++;
-                if (stableCount >= 5 && !disconnected) {
-                    disconnected = true;
-                    observer.disconnect();
-                    cleanup();
-                }
+    _scrollToTarget(target, { retry = false, retryCount = 0, navigation = false } = {}) {
+        const root = this.contentRef.el;
+        if (!root || !target) return;
+        this._stopScrollAnchor("new bookmark target");
+
+        const rootRect = root.getBoundingClientRect();
+        const rootStyle = getComputedStyle(root);
+        const targetStyle = getComputedStyle(target);
+        const scrollPaddingTop = parseFloat(rootStyle.scrollPaddingTop) || 0;
+        const scrollMarginTop = parseFloat(targetStyle.scrollMarginTop) || 0;
+        const desiredTop = rootRect.top + root.clientTop
+            + scrollPaddingTop + scrollMarginTop;
+        const scrollTop = root.scrollTop
+            + target.getBoundingClientRect().top - desiredTop;
+        root.scrollTo({ top: scrollTop, behavior: "instant" });
+        const anchorTop = target.getBoundingClientRect().top;
+
+        const sections = [...root.querySelectorAll(".ce_content_section")];
+        const targetSectionIndex = sections.indexOf(
+            target.closest(".ce_content_section"),
+        );
+        const sectionsToObserve = targetSectionIndex >= 0
+            ? sections.slice(0, targetSectionIndex + 1)
+            : [target];
+        const targetLabel = target.id || target.tagName.toLowerCase();
+        const message = retry
+            ? "Course Explorer: scroll repositioned after section load"
+            : navigation
+                ? "Course Explorer: sidebar target positioned"
+                : "Course Explorer: bookmark jump positioned";
+        console.info(message, {
+            target: targetLabel,
+            retryCount,
+            observedSections: sectionsToObserve.length,
+            scrollTop: Math.round(root.scrollTop),
+            targetTop: Math.round(anchorTop),
+        });
+        let stopAnchor;
+        const resizeObserver = new ResizeObserver(() => {
+            if (this._scrollAnchorCleanup !== stopAnchor) return;
+            if (!root.isConnected || !target.isConnected) {
+                this._stopScrollAnchor("bookmark target or pane removed");
+                return;
+            }
+            const offset = target.getBoundingClientRect().top - anchorTop;
+            if (Math.abs(offset) > 0.5) {
+                root.scrollTo({
+                    top: root.scrollTop + offset,
+                    behavior: "instant",
+                });
+                console.info("Course Explorer: corrected bookmark after content resize", {
+                    target: targetLabel,
+                    offset: Number(offset.toFixed(1)),
+                    scrollTop: Math.round(root.scrollTop),
+                });
             }
         });
-        observer.observe(target);
-
-        // Also re-scroll when any lazy image inside the target loads
-        const images = target.querySelectorAll("img[loading='lazy']");
-        const onImageLoad = () => doScroll();
-        images.forEach((img) => {
-            if (!img.complete) {
-                img.addEventListener("load", onImageLoad, { once: true });
+        const onUserScrollIntent = (ev) => {
+            if (
+                ev.type === "keydown"
+                && !["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]
+                    .includes(ev.key)
+            ) {
+                return;
             }
-        });
-
-        function cleanup() {
-            images.forEach((img) => img.removeEventListener("load", onImageLoad));
+            const reason = ev.type === "keydown"
+                ? `user key: ${ev.key}`
+                : `user ${ev.type}`;
+            this._cancelBookmarkScroll(reason);
+        };
+        const userInputEvents = ["wheel", "touchstart", "pointerdown", "keydown"];
+        for (const eventName of userInputEvents) {
+            root.addEventListener(eventName, onUserScrollIntent, { passive: true });
         }
-        setTimeout(() => {
-            if (!disconnected) {
-                disconnected = true;
-                observer.disconnect();
-                cleanup();
+
+        stopAnchor = () => {
+            resizeObserver.disconnect();
+            for (const eventName of userInputEvents) {
+                root.removeEventListener(eventName, onUserScrollIntent);
             }
-        }, 10000);
+        };
+        this._scrollAnchorCleanup = stopAnchor;
+        sectionsToObserve.forEach((section) => resizeObserver.observe(section));
+    }
+
+    _stopScrollAnchor(reason) {
+        const cleanup = this._scrollAnchorCleanup;
+        this._scrollAnchorCleanup = null;
+        if (cleanup) {
+            cleanup();
+            console.info("Course Explorer: bookmark scroll anchoring stopped", reason);
+        }
+    }
+
+    _cancelBookmarkScroll(reason) {
+        this._pendingUrlTarget = null;
+        this._bookmarkScrollTarget = null;
+        this._bookmarkScrollRetryPending = false;
+        this._stopScrollAnchor(reason);
     }
 
     async openResource(ev, resourceId) {
@@ -1212,7 +1328,7 @@ export class CourseExplorer extends Component {
     _onScrollDetect() {
         const el = this.contentRef.el;
         if (!el) return;
-        if (this._programmaticSectionId) return;
+        if (this._programmaticSectionId || this._bookmarkScrollTarget) return;
         this._updateActiveHeading();
         const sections = el.querySelectorAll(".ce_content_section");
         if (!sections.length) return;
@@ -1398,7 +1514,7 @@ export class CourseExplorer extends Component {
             this._tooltipCells.add(cell);
             cell.addEventListener("mouseenter", () => {
                 const rect = cell.getBoundingClientRect();
-                tooltip.style.left = `${rect.right - 160}px`;
+                tooltip.style.left = `${rect.right - 180}px`;
                 tooltip.style.top = `${rect.top - 8}px`;
             });
         });

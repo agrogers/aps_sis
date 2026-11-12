@@ -38,6 +38,7 @@ export class PastPaperProgress extends Component {
             paperFilter: ["all", "attempted", "new"].includes(saved.paperFilter)
                 ? saved.paperFilter
                 : "all",
+            searchText: typeof saved.searchText === "string" ? saved.searchText : "",
             activePaperId: false,
             activeQuestionId: false,
             selectedPaperId: Number(saved.selectedPaperId) || 0,
@@ -49,6 +50,7 @@ export class PastPaperProgress extends Component {
         this.onCategoryChange = this.onCategoryChange.bind(this);
         this.onStudentChange = this.onStudentChange.bind(this);
         this.onPaperFilterChange = this.onPaperFilterChange.bind(this);
+        this.onPaperSearchInput = this.onPaperSearchInput.bind(this);
         this.onPaperClick = this.onPaperClick.bind(this);
         this.onPaperKeydown = this.onPaperKeydown.bind(this);
         this.onScroll = this.onScroll.bind(this);
@@ -78,13 +80,16 @@ export class PastPaperProgress extends Component {
     }
 
     get visiblePapers() {
+        let papers = this.state.papers;
         if (this.state.paperFilter === "attempted") {
-            return this.state.papers.filter((paper) => paper.has_attempts);
+            papers = papers.filter((paper) => paper.has_attempts);
+        } else if (this.state.paperFilter === "new") {
+            papers = papers.filter((paper) => !paper.has_attempts);
         }
-        if (this.state.paperFilter === "new") {
-            return this.state.papers.filter((paper) => !paper.has_attempts);
-        }
-        return this.state.papers;
+        const searchText = this.state.searchText.trim().toLowerCase();
+        return searchText
+            ? papers.filter((paper) => (paper.name || "").toLowerCase().includes(searchText))
+            : papers;
     }
 
     get activePaper() {
@@ -139,6 +144,11 @@ export class PastPaperProgress extends Component {
         this.saveViewState();
     }
 
+    onPaperSearchInput(event) {
+        this.state.searchText = event.target.value;
+        this.saveViewState();
+    }
+
     onScroll(event) {
         this.state.scrollTop = event.currentTarget.scrollTop;
         if (this._scrollSaveFrame === null) {
@@ -155,6 +165,7 @@ export class PastPaperProgress extends Component {
                 categoryId: this.state.categoryId,
                 studentId: this.state.studentId,
                 paperFilter: this.state.paperFilter,
+                searchText: this.state.searchText,
                 selectedPaperId: this.state.selectedPaperId,
                 scrollTop: this.state.scrollTop,
             }));
@@ -306,18 +317,29 @@ export class PastPaperProgress extends Component {
 
     questionStyle(question) {
         const attempts = Number(question.attempts) || 0;
-        const grayPercent = attempts ? Math.min(10 + attempts * 10, 80) : 0;
-        const gray = Math.round(255 * (1 - grayPercent / 100));
         const score = Number(question.weighted_result);
         const borderColor = attempts
             && question.weighted_result !== false
             && Number.isFinite(score)
             ? getColorForPercent(score)
             : "#cbd2d9";
+        const color = borderColor.slice(1);
+        const red = Number.parseInt(color.slice(0, 2), 16);
+        const green = Number.parseInt(color.slice(2, 4), 16);
+        const blue = Number.parseInt(color.slice(4, 6), 16);
+        const opacity = Math.max(0, Math.min(attempts * 0.1, 1));
+        const displayedRed = Math.round(255 + (red - 255) * opacity);
+        const displayedGreen = Math.round(255 + (green - 255) * opacity);
+        const displayedBlue = Math.round(255 + (blue - 255) * opacity);
+        const displayedLuminance = (
+            displayedRed * 0.299
+            + displayedGreen * 0.587
+            + displayedBlue * 0.114
+        );
         const borderWidth = question.has_children ? 2 : 1;
         return [
-            `--attempt-fill: rgb(${gray}, ${gray}, ${gray})`,
-            `--attempt-text: ${gray < 128 ? "#fff" : "#212529"}`,
+            `--attempt-fill: rgba(${red}, ${green}, ${blue}, ${opacity})`,
+            `--attempt-text: ${displayedLuminance < 128 ? "#fff" : "#212529"}`,
             `border: ${borderWidth}px solid ${borderColor}`,
         ].join(";");
     }

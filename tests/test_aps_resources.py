@@ -571,12 +571,13 @@ class TestAPSResource(TransactionCase):
             'name': 'Other Chapter Assessment Subject',
             'category_id': category.id,
         })
-        chapter_tag, other_chapter_tag, finalised_tag = self.env[
+        chapter_tag, other_chapter_tag, finalised_tag, chemistry_tag = self.env[
             'aps.resource.tags'
         ].create([
             {'name': 'Ch01'},
             {'name': 'Ch02'},
             {'name': 'State:Finalised'},
+            {'name': 'Chemistry'},
         ])
         chapter = self.env['aps.resources'].create({
             'name': 'Chapter One',
@@ -584,7 +585,7 @@ class TestAPSResource(TransactionCase):
             'notes': '<p>Chapter one notes.</p>',
             'show_in_hierarchy': True,
             'subjects': [(6, 0, [subject.id])],
-            'tag_ids': [(6, 0, [chapter_tag.id])],
+            'tag_ids': [(6, 0, [chapter_tag.id, chemistry_tag.id])],
         })
         assessment_type = self.env['aps.resource.types'].create({
             'name': 'Chapter Quiz',
@@ -597,6 +598,7 @@ class TestAPSResource(TransactionCase):
         assessments = self.env['aps.resources'].create([
             {
                 'name': 'Matching Chapter Assessment',
+                'description': 'Exercise for chapter one.',
                 'type_id': assessment_type.id,
                 'subjects': [(6, 0, [subject.id])],
                 'tag_ids': [(6, 0, [chapter_tag.id])],
@@ -625,6 +627,12 @@ class TestAPSResource(TransactionCase):
                 'subjects': [(6, 0, [subject.id])],
                 'tag_ids': [(6, 0, [chapter_tag.id])],
             },
+            {
+                'name': 'Chemistry-tagged Assessment',
+                'type_id': assessment_type.id,
+                'subjects': [(6, 0, [subject.id])],
+                'tag_ids': [(6, 0, [chemistry_tag.id])],
+            },
         ])
 
         result = self.env['aps.resources'].get_course_explorer_data(category.id)
@@ -636,6 +644,10 @@ class TestAPSResource(TransactionCase):
         self.assertEqual(
             [quiz['id'] for quiz in section['quizzes']],
             [assessments[0].id],
+        )
+        self.assertEqual(
+            section['quizzes'][0]['description'],
+            'Exercise for chapter one.',
         )
 
     def test_course_explorer_data_returns_inherited_notes_highlight_source(self):
