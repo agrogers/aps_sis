@@ -716,7 +716,8 @@ class TestExamPaperImport(TransactionCase):
         self.assertIn('second pass', prompt)
         self.assertIn('question_summary', prompt)
         self.assertIn('no more than 20 words', prompt)
-        self.assertIn('including labels printed in table headings', prompt)
+        self.assertIn('set y1 to the top of the first line of the linked question text', prompt)
+        self.assertIn('including identifiers printed inside tables', prompt)
         self.assertNotIn('exclude headers, footers', prompt)
 
     def test_page_display_name_prefers_printed_number_and_preserves_pdf_page_index(self):
