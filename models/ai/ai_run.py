@@ -123,6 +123,22 @@ class APSAIRun(models.Model):
                 return
             submission.write({'submission_ocr_state': 'running'})
             return
+        if self.processor_key == 'submission_paper_scan':
+            if submission._get_paper_scan_fingerprint() != self.fingerprint:
+                self.write({
+                    'state': 'skipped',
+                    'status_message': _('Skipped because the attached pages changed.'),
+                    'error_message': False,
+                    'finished_at': fields.Datetime.now(),
+                })
+                if submission.paper_scan_fingerprint == self.fingerprint:
+                    submission.write({
+                        'paper_scan_state': 'failed',
+                        'paper_scan_error': _('The attached pages changed before processing started.'),
+                    })
+                return
+            submission.write({'paper_scan_state': 'running'})
+            return
         if submission._has_pending_submission_ocr():
             self.write({
                 'state': 'failed',
