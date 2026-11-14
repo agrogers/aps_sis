@@ -148,4 +148,5 @@ class TestSubmissionPaperScan(TransactionCase):
         self.assertEqual(normalize('Q 3 (b). (i)'), '3bi')
         self.assertEqual(normalize('Q4'), '4')
         self.assertEqual(normalize('Q3b.i cont'), '3bi')
+        self.assertEqual(normalize('Q3b.i cont.'), '3bi')
         self.assertFalse(normalize('Q3b.i extra'))

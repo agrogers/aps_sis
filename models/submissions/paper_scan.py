@@ -129,7 +129,12 @@ class APSResourceSubmissionPaperScan(models.Model):
     @staticmethod
     def _normalise_paper_question_code(value):
         value = (value or '').strip()
-        value = re.sub(r'[\s.,:;_-]*\(?\s*cont(?:inued)?\s*\)?\s*$', '', value, flags=re.IGNORECASE)
+        value = re.sub(
+            r'[\s.,:;_-]*\(?\s*cont(?:inued)?\s*\)?[.,:;_-]*\s*$',
+            '',
+            value,
+            flags=re.IGNORECASE,
+        )
         code = re.sub(r'[^a-z0-9]', '', value.casefold())
         if code.startswith('q'):
             code = code[1:]
