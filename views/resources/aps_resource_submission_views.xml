@@ -274,6 +274,7 @@
                     <field name="is_current_user_reviewed" invisible="1"/>
                     <field name="ai_action" invisible="1"/>
                     <field name="has_ai_feedback" invisible="1"/>
+                    <field name="can_import_student_answers" invisible="1"/>
                     <img src="/aps_sis/static/src/img/ai.png" alt="AI Feedback"
                          invisible="not has_ai_feedback"
                          style="width: 24px; height: 24px; margin-left: 8px;"
@@ -429,6 +430,14 @@
                                 <summary>Student Answer (Editable)</summary>
                                 <field name="answer" nolabel="1"/>
                             </details>
+                            <div class="d-flex justify-content-end mt-2">
+                                <button name="action_import_student_answers"
+                                        string="Import Student Answers"
+                                        type="object"
+                                        class="btn-primary"
+                                        groups="aps_sis.group_aps_teacher"
+                                        invisible="not can_import_student_answers"/>
+                            </div>
                         </page>
                         <page string="Teacher Feedback" class="tab-with-icon teacher-feedback-tab" name="feedback_page">
                             <div class="row align-items-start">

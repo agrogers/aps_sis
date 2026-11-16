@@ -47,6 +47,78 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             lambda prompt: (prompt.prompt_name or '').strip().casefold() != SHOW_WORD_COUNT_PROMPT_NAME
         )
 
+    def _get_submission_image_bytes(self, image_tag, purpose='word counting'):
+        src_match = re.search(r'\bsrc=["\']([^"\']+)["\']', image_tag, re.IGNORECASE)
+        if not src_match:
+            raise UserError(_('A submitted image could not be read for %s.') % purpose)
+
+        src = src_match.group(1)
+        src_url = urlparse(src)
+        is_data_image = src.casefold().startswith('data:image/')
+        image_route = src_url.path.startswith(('/web/image/', '/web/content/'))
+        odoo_base_url = urlparse(
+            self.env['ir.config_parameter'].sudo().get_param('web.base.url') or ''
+        )
+        is_odoo_image = (
+            image_route
+            and not src_url.scheme
+            and not src_url.netloc
+        ) or (
+            image_route
+            and src_url.scheme in ('http', 'https')
+            and src_url.scheme == odoo_base_url.scheme
+            and src_url.netloc.casefold() == odoo_base_url.netloc.casefold()
+        )
+        if not is_data_image and not is_odoo_image:
+            if purpose == 'word counting':
+                raise UserError(_('Only Odoo-hosted images can be OCR-transcribed for word counting.'))
+            raise UserError(_('Only Odoo-hosted images can be processed for %s.') % purpose)
+
+        attachment_match = re.match(
+            r'^/web/(?:image|content)/(\d+)(?:[-/].*)?$',
+            src_url.path,
+        )
+        model_match = re.match(r'^/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src_url.path)
+        if attachment_match:
+            image_record = self.env['ir.attachment'].browse(int(attachment_match.group(1)))
+        elif model_match:
+            model_name, record_id, field_name = model_match.groups()
+            if model_name not in self.env.registry.models:
+                raise UserError(_('A submitted image could not be read for %s.') % purpose)
+            image_record = self.env[model_name].browse(int(record_id))
+            if field_name not in image_record.fields_get([field_name]):
+                raise UserError(_('A submitted image could not be read for %s.') % purpose)
+        elif not is_data_image:
+            raise UserError(_('A submitted image could not be read for %s.') % purpose)
+        else:
+            image_record = self.env['ir.attachment']
+
+        if image_record:
+            if not image_record.exists():
+                raise UserError(_('A submitted image could not be read for %s.') % purpose)
+            image_record.check_access_rights('read')
+            image_record.check_access_rule('read')
+
+        image_src = src
+        if not is_data_image:
+            image_src = src_url.path
+            if src_url.query:
+                image_src = '%s?%s' % (image_src, src_url.query)
+        image_bytes = self._get_ai_feedback_resource()._get_image_bytes_from_url(image_src)
+        if not image_bytes:
+            raise UserError(_('A submitted image could not be read for %s.') % purpose)
+
+        mime_type = (
+            src[5:].split(';', 1)[0]
+            if is_data_image
+            else image_record.mimetype
+            if image_record and image_record._name == 'ir.attachment'
+            else mimetypes.guess_type(src_url.path)[0]
+        ) or 'image/png'
+        if not mime_type.casefold().startswith('image/'):
+            raise UserError(_('The submitted content is not an image.'))
+        return image_bytes, mime_type
+
     def _ocr_ai_answer_images(self, image_tags, model_id=None):
         resource = self._get_ai_feedback_resource()
         content = [{
@@ -59,75 +131,12 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
             ),
         }]
         for image_tag in image_tags:
-            src_match = re.search(r'\bsrc=["\']([^"\']+)["\']', image_tag, re.IGNORECASE)
-            if not src_match:
-                raise UserError(_('A submitted image could not be read for word counting.'))
-            src = src_match.group(1)
-            src_url = urlparse(src)
-            is_data_image = src.casefold().startswith('data:image/')
-            image_route = src_url.path.startswith(('/web/image/', '/web/content/'))
-            odoo_base_url = urlparse(
-                self.env['ir.config_parameter'].sudo().get_param('web.base.url') or ''
-            )
-            is_odoo_image = (
-                image_route
-                and not src_url.scheme
-                and not src_url.netloc
-            ) or (
-                image_route
-                and src_url.scheme in ('http', 'https')
-                and src_url.scheme == odoo_base_url.scheme
-                and src_url.netloc.casefold() == odoo_base_url.netloc.casefold()
-            )
-            if not is_data_image and not is_odoo_image:
-                raise UserError(_('Only Odoo-hosted images can be OCR-transcribed for word counting.'))
-            attachment_match = re.match(
-                r'^/web/(?:image|content)/(\d+)(?:[-/].*)?$',
-                src_url.path,
-            )
-            model_match = re.match(r'^/web/image/(\w+(?:\.\w+)*)/(\d+)/(\w+)', src_url.path)
-            if attachment_match:
-                image_record = self.env['ir.attachment'].browse(int(attachment_match.group(1)))
-            elif model_match:
-                model_name, record_id, field_name = model_match.groups()
-                if model_name not in self.env.registry.models:
-                    raise UserError(_('A submitted image could not be read for word counting.'))
-                image_record = self.env[model_name].browse(int(record_id))
-                if field_name not in image_record.fields_get([field_name]):
-                    raise UserError(_('A submitted image could not be read for word counting.'))
-            elif not src.casefold().startswith('data:image/'):
-                raise UserError(_('A submitted image could not be read for word counting.'))
-            else:
-                image_record = self.env['ir.attachment']
-            if image_record:
-                if not image_record.exists():
-                    raise UserError(_('A submitted image could not be read for word counting.'))
-                image_record.check_access_rights('read')
-                image_record.check_access_rule('read')
-            image_src = src
-            if not is_data_image:
-                image_src = src_url.path
-                if src_url.query:
-                    image_src = '%s?%s' % (image_src, src_url.query)
-            image_bytes = resource._get_image_bytes_from_url(image_src)
-            if not image_bytes:
-                raise UserError(_('A submitted image could not be read for word counting.'))
-            mime_type = (
-                src[5:].split(';', 1)[0]
-                if src.casefold().startswith('data:')
-                else mimetypes.guess_type(urlparse(src).path)[0]
-            ) or 'image/png'
+            image_bytes, mime_type = self._get_submission_image_bytes(image_tag)
             content.append({
                 'type': 'image_url',
                 'image_url': {
                     'url': 'data:%s;base64,%s' % (
-                        (
-                            src[5:].split(';', 1)[0]
-                            if is_data_image
-                            else image_record.mimetype
-                            if image_record and image_record._name == 'ir.attachment'
-                            else mimetypes.guess_type(src_url.path)[0]
-                        ) or 'image/png',
+                        mime_type,
                         base64.b64encode(image_bytes).decode('ascii'),
                     ),
                 },
