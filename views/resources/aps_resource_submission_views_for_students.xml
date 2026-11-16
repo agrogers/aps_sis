@@ -81,11 +81,20 @@
                     <field name="permit_resubmission" invisible="1"/>
                     <field name="is_exam_condition_active" invisible="1"/>
                     <field name="submission_ocr_state" invisible="1"/>
+                    <field name="can_student_delete" invisible="1"/>
                     <img src="/aps_sis/static/src/img/ai.png" alt="AI Feedback"
                          invisible="not has_ai_feedback"
                          style="width: 24px; height: 24px; margin-left: 8px;"
                          title="This submission has AI-generated feedback"/>
                     <button name="action_open_submission" string="Submission Details" type="object" class="btn-secondary" invisible="not is_current_user_faculty"/>
+                    <button name="action_delete_self_created_submission"
+                            string="Delete"
+                            type="object"
+                            class="btn-secondary"
+                            icon="fa-trash"
+                            groups="aps_sis.group_aps_student"
+                            invisible="not can_student_delete"
+                            confirm="Delete this self-created submission?"/>
                     <separator invisible="not is_current_user_faculty"/>
                     <separator invisible="not is_current_user_faculty"/>
                     <field name="state" widget="statusbar" statusbar_visible="assigned,submitted,complete" statusbar_colors="assigned:warning;submitted:info;complete:success"/>

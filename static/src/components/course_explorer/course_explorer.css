@@ -772,6 +772,18 @@
     vertical-align: middle;
 }
 
+.ce_assessment_description_row td {
+    padding: 0 8px 7px;
+}
+
+.ce_assessment_table .o_pie {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
+    flex: 0 0 22px;
+}
+
 .ce_quiz_mastery_progress {
     flex: 1 1 auto;
     min-width: 0;
@@ -883,74 +895,6 @@
     text-align: center;
     font-variant-numeric: tabular-nums;
     color: var(--o-text, #333);
-}
-
-/* ── Quiz state badges ─────────────────────────────────────────────── */
-
-.ce_quiz_state {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.78rem;
-    font-weight: 500;
-    text-align: center;
-    white-space: nowrap;
-    text-transform: capitalize;
-}
-
-.ce_quiz_state_unassigned {
-    background: #e9ecef;
-    color: #6c757d;
-}
-
-.ce_quiz_state_created {
-    background: #e9ecef;
-    color: #6c757d;
-}
-
-.ce_quiz_state_assigned {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.ce_quiz_state_reassigned {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.ce_quiz_state_due {
-    background: #d1ecf1;
-    color: #0c5460;
-}
-
-.ce_quiz_state_early {
-    background: #d4edda;
-    color: #155724;
-}
-
-.ce_quiz_state_on-time {
-    background: #d4edda;
-    color: #155724;
-}
-
-.ce_quiz_state_submitted {
-    background: #cce5ff;
-    color: #004085;
-}
-
-.ce_quiz_state_overdue {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.ce_quiz_state_complete {
-    background: #d4edda;
-    color: #155724;
-}
-
-.ce_quiz_state_late {
-    background: #f8d7da;
-    color: #721c24;
 }
 
 /* ── Loading / empty states ──────────────────────────────────────── */

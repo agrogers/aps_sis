@@ -121,7 +121,7 @@ class TestExamExclusionZones(TransactionCase):
         self.assertEqual(refreshed[0], manual_region)
         self.assertEqual(refreshed[1]['source'], 'ai')
         self.assertEqual(refreshed[1]['y1'], 500)
-        self.assertIn('"exclusion_zones"', importer._vision_system_prompt())
+        self.assertIn('"exclusion_zones"', importer._vision_system_prompt('mark_scheme'))
 
     def test_section_editor_shows_and_saves_page_exclusion_zones(self):
         importer = self._import('editor-zone')

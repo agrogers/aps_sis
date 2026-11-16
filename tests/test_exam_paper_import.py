@@ -218,6 +218,40 @@ class TestExamPaperImport(TransactionCase):
 
         self.assertEqual((left, top, right, bottom), (75, 150, 925, 1400))
 
+    def test_short_detected_last_region_extends_to_bottom_margin(self):
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Short detected crop region', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('short-detected-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('short-detected-crop-rms.pdf').id,
+        })
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 1000, 'height': 1500,
+        })
+
+        bounds = importer._crop_bounds(
+            {'y1': 100, 'y2': 249, 'ai_coordinate_system': 'pixels'},
+            page, {}, y_adjustment=6,
+        )
+
+        self.assertEqual(bounds[3], 1400)
+
+    def test_tall_detected_last_region_uses_its_y2(self):
+        importer = self.env['aps.exam.paper.import'].create({
+            'name': 'Tall detected crop region', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('tall-detected-crop-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('tall-detected-crop-rms.pdf').id,
+        })
+        page = self.env['aps.exam.paper.page'].new({
+            'page_number': 1, 'width': 1000, 'height': 1500,
+        })
+
+        bounds = importer._crop_bounds(
+            {'y1': 100, 'y2': 250, 'ai_coordinate_system': 'pixels'},
+            page, {}, y_adjustment=6,
+        )
+
+        self.assertEqual(bounds[3], 250)
+
     def test_child_crop_ignores_parent_label_below_child_marker(self):
         importer = self.env['aps.exam.paper.import'].create({
             'name': 'Child crop boundary', 'resource_id': self.resource.id,
@@ -244,7 +278,7 @@ class TestExamPaperImport(TransactionCase):
         )
 
         self.assertEqual(bounds[3], 986)
-        self.assertGreater(bounds[3] - bounds[1], importer._MANUAL_CROP_MIN_HEIGHT)
+        self.assertGreater(bounds[3] - bounds[1], importer._SECTION_CROP_MIN_HEIGHT)
 
     def test_custom_crop_margins_apply_to_crops_and_region_editor(self):
         importer = self.env['aps.exam.paper.import'].create({
@@ -705,19 +739,53 @@ class TestExamPaperImport(TransactionCase):
         second = importer._find_or_create_resource('Q1', parent)
         self.assertEqual(first, second)
 
-    def test_vision_prompt_extracts_footer_metadata_without_transcribing_questions(self):
-        prompt = self.env['aps.exam.paper.import']._vision_system_prompt()
+    def test_question_vision_prompt_extracts_footer_metadata_without_transcribing_questions(self):
+        question_prompt_record = self.env.ref('aps_sis.prompt_exam_import_question_analyse')
+        prompt = self.env['aps.exam.paper.import']._vision_system_prompt('question')
+        self.assertEqual(question_prompt_record.default_prompt, question_prompt_record.prompt)
+        self.assertIn('Exam Import Question Analyse', question_prompt_record.notes)
         self.assertIn('Do not transcribe question text', prompt)
         self.assertIn('"printed_page_number": string|null', prompt)
         self.assertIn('"barcode_value": string|null', prompt)
         self.assertIn('Do not infer the barcode value by interpreting the bars', prompt)
         self.assertIn('regions', prompt)
         self.assertIn('raw_label', prompt)
-        self.assertIn('second pass', prompt)
+        self.assertIn('resolves continuation labels', prompt)
         self.assertIn('question_summary', prompt)
         self.assertIn('no more than 20 words', prompt)
-        self.assertIn('including labels printed in table headings', prompt)
+        self.assertIn('Include question identifiers printed inside tables', prompt)
         self.assertNotIn('exclude headers, footers', prompt)
+
+    def test_answer_vision_prompt_targets_mark_scheme_sections(self):
+        answer_prompt_record = self.env.ref('aps_sis.prompt_exam_import_answer_analyse')
+        prompt = self.env['aps.exam.paper.import']._vision_system_prompt('mark_scheme')
+        self.assertEqual(answer_prompt_record.default_prompt, answer_prompt_record.prompt)
+        self.assertIn('Exam Import Answer Analyse', answer_prompt_record.notes)
+        self.assertIn('mark scheme, which is the answer document', prompt)
+        self.assertIn('start of each answer section', prompt)
+        self.assertIn('Set visible_mark to the explicitly printed total mark', prompt)
+        self.assertIn('Do not sum individual marking points', prompt)
+        self.assertIn('"exclusion_zones"', prompt)
+        self.assertIn('question_summary to an empty string', prompt)
+
+    def test_vision_prompt_requires_enabled_non_empty_named_record(self):
+        importer = self.env['aps.exam.paper.import']
+        prompt = self.env.ref('aps_sis.prompt_exam_import_question_analyse')
+
+        prompt.write({'enabled': False})
+        with self.assertRaises(UserError):
+            importer._vision_system_prompt('question')
+
+        prompt.write({'enabled': True, 'prompt': '  '})
+        with self.assertRaises(UserError):
+            importer._vision_system_prompt('question')
+
+        prompt.write({
+            'prompt_name': 'Renamed exam question prompt',
+            'prompt': 'Usable prompt text',
+        })
+        with self.assertRaises(UserError):
+            importer._vision_system_prompt('question')
 
     def test_page_display_name_prefers_printed_number_and_preserves_pdf_page_index(self):
         page = self.env['aps.exam.paper.page'].new({

@@ -409,6 +409,7 @@ class TestAPSResource(TransactionCase):
                 'name': 'Linked Quiz',
                 'type_id': quiz_type.id,
                 'url': 'action:42?quiz_id=123&quiz_token=token',
+                'marks': 25,
                 'show_in_hierarchy': True,
                 'subjects': [(6, 0, [subject.id])],
                 'parent_ids': [(6, 0, [parent.id])],
@@ -442,6 +443,7 @@ class TestAPSResource(TransactionCase):
         quizzes = {quiz['id']: quiz for quiz in section['quizzes']}
 
         self.assertEqual(quizzes[quiz_resources[0].id]['quizId'], 123)
+        self.assertEqual(quizzes[quiz_resources[0].id]['outOfMarks'], 25)
         self.assertFalse(quizzes[quiz_resources[1].id]['quizId'])
         self.assertFalse(quizzes[quiz_resources[2].id]['quizId'])
 

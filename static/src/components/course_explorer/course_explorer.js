@@ -167,6 +167,7 @@ export class CourseExplorer extends Component {
         this._hasUrlSectionTarget = Boolean(this._pendingUrlTarget.sectionId);
 
         const saved = this._loadStorage();
+        this._assessmentTargetSectionId = this._pendingUrlTarget.assessmentSectionId;
         const savedCategoryId = this._toPositiveId(saved.selectedCategoryId);
         const urlCategoryId = this._pendingUrlTarget.categoryId;
         const categoryChanged = Boolean(
@@ -306,6 +307,8 @@ export class CourseExplorer extends Component {
                 || this._toPositiveId(actionParams.ce_category),
             sectionId: this._toPositiveId(queryParams.get("ce_section"))
                 || this._toPositiveId(actionParams.ce_section),
+            assessmentSectionId: this._toPositiveId(queryParams.get("ce_assessment"))
+                || this._toPositiveId(actionParams.ce_assessment),
             headingId: queryParams.get("ce_heading")?.trim()
                 || (typeof actionParams.ce_heading === "string"
                     ? actionParams.ce_heading.trim()
@@ -333,6 +336,7 @@ export class CourseExplorer extends Component {
             const state = {
                 ce_category: this.state.selectedCategoryId || false,
                 ce_section: this.state.activeSectionId || false,
+                ce_assessment: this._assessmentTargetSectionId || false,
                 ce_heading: this.state.resourceToc.some(
                     (entry) => entry.id === this.state.activeHeadingId
                         && entry.sectionId === this.state.activeSectionId,
@@ -386,9 +390,12 @@ export class CourseExplorer extends Component {
                     && entry.sectionId === requested.sectionId,
             )
             : null;
-        const target = tocEntry
+        const assessmentTarget = requested.assessmentSectionId === requested.sectionId
+            ? root?.querySelector(`#ce-assessment-${requested.sectionId}`)
+            : null;
+        const target = assessmentTarget || (tocEntry
             ? root?.querySelector(`#${CSS.escape(tocEntry.id)}`)
-            : root?.querySelector(`#ce-section-${requested.sectionId}`);
+            : root?.querySelector(`#ce-section-${requested.sectionId}`));
         const sectionTarget = root?.querySelector(`#ce-section-${requested.sectionId}`);
         if (!target && !sectionTarget) return;
 
@@ -397,10 +404,18 @@ export class CourseExplorer extends Component {
             this._bookmarkScrollTarget = {
                 sectionId: requested.sectionId,
                 headingId: requested.headingId,
+                assessmentSectionId: assessmentTarget
+                    ? requested.assessmentSectionId
+                    : 0,
             };
             this._bookmarkScrollRetryCount = 0;
             this.state.activeSectionId = requested.sectionId;
-            this.state.activeHeadingId = tocEntry && target ? tocEntry.id : "";
+            this.state.activeHeadingId = tocEntry && target && !assessmentTarget
+                ? tocEntry.id
+                : "";
+            this._assessmentTargetSectionId = assessmentTarget
+                ? requested.assessmentSectionId
+                : 0;
             this._updateUrlState({ immediate: true });
         }
         this._bookmarkScrollRetryPending = false;
@@ -600,6 +615,7 @@ export class CourseExplorer extends Component {
         const heading = root?.querySelector(`#${CSS.escape(entry.id)}`);
         if (!heading) return;
         this._cancelBookmarkScroll("resource contents navigation");
+        this._assessmentTargetSectionId = 0;
         this.state.activeHeadingId = entry.id;
         this.state.activeSectionId = entry.sectionId;
         this._updateUrlState({ immediate: true });
@@ -778,7 +794,7 @@ export class CourseExplorer extends Component {
                     quizMasteryRows,
                     assessmentRows,
                     assessmentCompletedCount: assessmentRows.filter(
-                        (assessment) => assessment.state === "complete",
+                        (assessment) => Number(assessment.attempts) > 0,
                     ).length,
                     assessmentScoredCount: scoredAssessmentRows.length,
                     assessmentAverageScore,
@@ -1029,6 +1045,7 @@ export class CourseExplorer extends Component {
 
     async onCategoryChange(ev) {
         this._cancelBookmarkScroll("subject category changed");
+        this._assessmentTargetSectionId = 0;
         // Save current category's expanded state before switching
         if (this.state.selectedCategoryId) {
             this._expandedByCategory[this.state.selectedCategoryId] = [...this._expandedIds];
@@ -1097,6 +1114,7 @@ export class CourseExplorer extends Component {
         const target = el.querySelector(`#ce-section-${sectionId}`);
         if (!target) return;
         this._cancelBookmarkScroll("section navigation");
+        this._assessmentTargetSectionId = 0;
         this.state.activeSectionId = sectionId;
         this.state.activeHeadingId = "";
         this._updateUrlState({ immediate: true });
@@ -1113,10 +1131,22 @@ export class CourseExplorer extends Component {
         ev.preventDefault();
         const el = this.contentRef.el;
         if (!el) return;
-        const target = el.querySelector(`#ce-quiz-${sectionId}`);
+        const assessmentTarget = el.querySelector(`#ce-assessment-${sectionId}`);
+        const target = assessmentTarget || el.querySelector(`#ce-quiz-${sectionId}`);
         if (!target) return;
         this._cancelBookmarkScroll("quiz navigation");
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (this._programmaticSectionTimer) {
+            clearTimeout(this._programmaticSectionTimer);
+            this._programmaticSectionTimer = null;
+        }
+        this._programmaticSectionId = 0;
+        this._assessmentTargetSectionId = assessmentTarget ? sectionId : 0;
+        this.state.activeSectionId = sectionId;
+        this.state.activeHeadingId = "";
+        this._updateUrlState({ immediate: true });
+        this._holdProgrammaticSection(sectionId);
+        this._scrollToTarget(target, { navigation: true });
+        this._saveStorage();
     }
 
     scrollToQuizFromSidebar(sectionId) {
@@ -1428,6 +1458,7 @@ export class CourseExplorer extends Component {
     async openQuizSubmission(ev, quizId) {
         ev.preventDefault();
         ev.stopPropagation();
+        this._saveStorage();
         try {
             const result = await this.orm.call(
                 "aps.resources",

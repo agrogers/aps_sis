@@ -662,6 +662,7 @@ class APSResource(models.Model):
             ])
             wizard_values.update({
                 'resource_id': self.id,
+                'date_due': False,
                 'class_ids': [(6, 0, classes.ids)],
                 'student_ids': [(6, 0, [student.id])],
                 'student_line_ids': [(0, 0, {'student_id': student.id})],
@@ -1537,6 +1538,7 @@ class APSResource(models.Model):
                         'typeName': child.type_id.name or '',
                         'isQuiz': _is_quiz_resource(child),
                         'quizId': _quiz_id_from_resource(child),
+                        'outOfMarks': child.marks or 0,
                         'weightedResult': task.weighted_result if task else 0,
                         'attempts': task.submission_count if task else 0,
                         'lastResult': task.last_result if task else 0,
@@ -1555,6 +1557,7 @@ class APSResource(models.Model):
                         'typeName': sup.type_id.name or '',
                         'isQuiz': _is_quiz_resource(sup),
                         'quizId': _quiz_id_from_resource(sup),
+                        'outOfMarks': sup.marks or 0,
                         'weightedResult': task.weighted_result if task else 0,
                         'attempts': task.submission_count if task else 0,
                         'lastResult': task.last_result if task else 0,
@@ -1573,6 +1576,7 @@ class APSResource(models.Model):
                     'typeName': assessment.type_id.name or '',
                     'isQuiz': _is_quiz_resource(assessment),
                     'quizId': _quiz_id_from_resource(assessment),
+                    'outOfMarks': assessment.marks or 0,
                     'weightedResult': task.weighted_result if task else 0,
                     'attempts': task.submission_count if task else 0,
                     'lastResult': task.last_result if task else 0,

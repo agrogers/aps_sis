@@ -3,7 +3,7 @@ import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_d
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { KanbanRecord } from "@web/views/kanban/kanban_record";
+import { CANCEL_GLOBAL_CLICK, KanbanRecord } from "@web/views/kanban/kanban_record";
 import { KanbanRenderer } from "@web/views/kanban/kanban_renderer";
 import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field";
 
@@ -12,8 +12,25 @@ export class SelectableKanbanRecord extends KanbanRecord {
     static props = [
         ...KanbanRecord.props,
         "isSelected",
+        "isSelectionActive",
         "toggleSelection",
     ];
+
+    onGlobalClick(event) {
+        const target = event.target;
+        if (
+            !target?.closest ||
+            target.closest(CANCEL_GLOBAL_CLICK) ||
+            target.closest(".aui-image-viewer-clickable")
+        ) {
+            return;
+        }
+        if (this.props.isSelectionActive) {
+            this.props.toggleSelection(this.props.record);
+        } else {
+            super.onGlobalClick(event);
+        }
+    }
 }
 
 export class SelectableKanbanRenderer extends KanbanRenderer {
@@ -39,6 +56,10 @@ export class SelectableKanbanRenderer extends KanbanRenderer {
 
     get selectedCount() {
         return this.getSelectedRecords().length;
+    }
+
+    get isSelectionActive() {
+        return this.state.selectedIds.length > 0;
     }
 
     get visibleRecords() {

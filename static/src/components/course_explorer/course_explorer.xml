@@ -400,7 +400,7 @@
                         <!-- Existing assessment result table -->
                         <t t-if="section.assessmentRows.length">
                             <div class="ce_quiz_box"
-                                 t-att-id="!section.quizMasteryRows.length ? 'ce-quiz-' + section.id : false">
+                                 t-att-id="'ce-assessment-' + section.id">
                                 <div class="ce_quiz_box_header ce_assessment_header">
                                     <div class="ce_assessment_header_title">
                                         <i class="fa fa-question-circle me-1"/>
@@ -416,7 +416,7 @@
                                         <t t-else="">—</t>
                                     </span>
                                 </div>
-                                <table class="ce_quiz_table"
+                                <table class="ce_quiz_table ce_assessment_table"
                                        t-att-id="'ce-assessment-table-' + section.id">
                                     <thead>
                                         <tr>
@@ -424,7 +424,7 @@
                                             <th class="ce_quiz_th_num">Weighted Result</th>
                                             <th class="ce_quiz_th_num">Attempts</th>
                                             <th class="ce_quiz_th_num">Last Result</th>
-                                            <th class="ce_quiz_th_state">State</th>
+                                            <th class="ce_quiz_th_num">Out Of</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -434,10 +434,6 @@
                                                 <td class="ce_quiz_name">
                                                     <i class="fa fa-file-text-o me-1"/>
                                                     <t t-esc="quiz.displayName || quiz.name"/>
-                                                    <small t-if="quiz.description"
-                                                           class="ce_assessment_description text-muted">
-                                                        <t t-esc="quiz.description"/>
-                                                    </small>
                                                 </td>
                                                 <td class="ce_quiz_num">
                                                     <PercentPie
@@ -460,10 +456,20 @@
                                                         showTooltip="true"/>
                                                     <t t-else="">—</t>
                                                 </td>
-                                                <td>
-                                                    <span t-att-class="'ce_quiz_state ce_quiz_state_' + quiz.state">
-                                                        <t t-esc="quiz.state"/>
-                                                    </span>
+                                                <td class="ce_quiz_num">
+                                                    <t t-if="quiz.outOfMarks">
+                                                        <t t-esc="quiz.outOfMarks"/>
+                                                    </t>
+                                                    <t t-else="">—</t>
+                                                </td>
+                                            </tr>
+                                            <tr t-if="quiz.description"
+                                                class="ce_quiz_row ce_assessment_description_row"
+                                                t-on-click="(ev) => this.openQuizSubmission(ev, quiz.id)">
+                                                <td colspan="5">
+                                                    <small class="ce_assessment_description text-muted">
+                                                        <t t-esc="quiz.description"/>
+                                                    </small>
                                                 </td>
                                             </tr>
                                         </t>

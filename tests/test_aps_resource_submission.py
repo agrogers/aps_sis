@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from odoo import fields
+from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase
 from odoo.addons.aps_sis.models.submissions.model import sentinel_zero
 
@@ -918,6 +919,127 @@ class TestCourseExplorerSubmissionLifecycle(TransactionCase):
             ('is_course_explorer', '=', True),
         ])
 
+    def _create_student_user(self):
+        student = self.env['res.partner'].create({
+            'name': 'Submission Cleanup Student',
+            'is_student': True,
+        })
+        user = self.env['res.users'].with_context(
+            no_reset_password=True,
+        ).create({
+            'name': student.name,
+            'login': f'test_submission_cleanup_{student.id}',
+            'partner_id': student.id,
+            'groups_id': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('aps_sis.group_aps_student').id,
+            ])],
+        })
+        return student, user
+
+    def _create_course_explorer_submission(
+        self,
+        student,
+        creator,
+        state='assigned',
+        age_days=0,
+        name='Cleanup Test Submission',
+    ):
+        task = self.env['aps.resource.task'].sudo().search([
+            ('resource_id', '=', self.resource.id),
+            ('student_id', '=', student.id),
+        ], limit=1)
+        if not task:
+            task = self.env['aps.resource.task'].sudo().create({
+                'resource_id': self.resource.id,
+                'student_id': student.id,
+            })
+
+        return self.env['aps.resource.submission'].with_user(creator).create({
+            'task_id': task.id,
+            'submission_name': name,
+            'state': state,
+            'is_course_explorer': True,
+            'date_assigned': False,
+            'create_date': fields.Datetime.now() - timedelta(days=age_days),
+        })
+
+    def test_cleanup_removes_only_old_student_created_assigned_submissions(self):
+        student, student_user = self._create_student_user()
+        old_self_created = self._create_course_explorer_submission(
+            student,
+            student_user,
+            age_days=3,
+            name='Old Student Submission',
+        )
+        recent_self_created = self._create_course_explorer_submission(
+            student,
+            student_user,
+            age_days=1,
+            name='Recent Student Submission',
+        )
+        old_submitted = self._create_course_explorer_submission(
+            student,
+            student_user,
+            state='submitted',
+            age_days=3,
+            name='Old Submitted Student Submission',
+        )
+        old_teacher_created = self._create_course_explorer_submission(
+            student,
+            self.env.user,
+            age_days=3,
+            name='Old Teacher Submission',
+        )
+
+        deleted_count = self.env[
+            'aps.resource.submission'
+        ].cron_cleanup_student_self_created_submissions()
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(old_self_created.exists())
+        self.assertTrue(recent_self_created.exists())
+        self.assertTrue(old_submitted.exists())
+        self.assertTrue(old_teacher_created.exists())
+
+    def test_student_can_delete_only_their_own_assigned_submission(self):
+        student, student_user = self._create_student_user()
+        self_created = self._create_course_explorer_submission(
+            student,
+            student_user,
+            name='Student Deletable Submission',
+        )
+        teacher_created = self._create_course_explorer_submission(
+            student,
+            self.env.user,
+            name='Teacher Created Submission',
+        )
+        submitted = self._create_course_explorer_submission(
+            student,
+            student_user,
+            state='submitted',
+            name='Submitted Student Submission',
+        )
+
+        self.assertTrue(self_created.with_user(student_user).can_student_delete)
+        self.assertFalse(teacher_created.with_user(student_user).can_student_delete)
+        self.assertFalse(submitted.with_user(student_user).can_student_delete)
+
+        with self.assertRaises(AccessError):
+            teacher_created.with_user(
+                student_user,
+            ).action_delete_self_created_submission()
+        with self.assertRaises(AccessError):
+            submitted.with_user(
+                student_user,
+            ).action_delete_self_created_submission()
+
+        action = self_created.with_user(
+            student_user,
+        ).action_delete_self_created_submission()
+        self.assertFalse(self_created.exists())
+        self.assertEqual(action['res_model'], 'aps.resource.submission')
+
     def test_opening_resource_creates_one_undated_inactive_submission(self):
         action = self.resource.action_get_or_create_submission()
         submission = self.env['aps.resource.submission'].browse(action['res_id'])
@@ -950,10 +1072,8 @@ class TestCourseExplorerSubmissionLifecycle(TransactionCase):
 
         self.assertEqual(submission.state, 'assigned')
         self.assertEqual(submission.date_assigned, fields.Date.today())
-        self.assertEqual(
-            submission.date_due,
-            fields.Date.today() + self.env['aps.resources']._default_assignment_duration(),
-        )
+        self.assertFalse(submission.date_due)
+        self.assertFalse(submission.task_id.date_due)
         self.assertEqual(submission.submission_name, assessment.display_name)
         self.assertEqual(submission.question, assessment.question)
         self.assertEqual(submission.points_scale, assessment.points_scale)

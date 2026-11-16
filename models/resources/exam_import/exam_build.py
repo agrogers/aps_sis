@@ -175,9 +175,9 @@ class APSExamPaperImportBuild(models.Model):
         return positions
 
     @staticmethod
-    def _region_y_as_fraction(region, page):
+    def _region_y_as_fraction(region, page, coordinate='y1'):
         try:
-            y_value = float(region.get('y1', 0))
+            y_value = float(region.get(coordinate, 0))
         except (TypeError, ValueError):
             return 0.0
         coordinate_system = (region.get('ai_coordinate_system') or '').casefold()
@@ -284,7 +284,7 @@ class APSExamPaperImportBuild(models.Model):
             top = max(0, min(page.height - 1, top))
             right = max(left + 1, min(page.width, right))
             bottom = max(top + 1, min(page.height, bottom))
-            if bottom - top < self._MANUAL_CROP_MIN_HEIGHT:
+            if bottom - top < self._SECTION_CROP_MIN_HEIGHT:
                 extension_y = next_section_y if next_section_y is not None else page.height
                 bottom = min(page.height, max(top + 1, extension_y))
             for exclusion_region in exclusion_regions or []:
@@ -323,6 +323,14 @@ class APSExamPaperImportBuild(models.Model):
             exclusion_y = self._exclusion_region_y_as_fraction(exclusion_region, page)
             if exclusion_y > start_y + self._LABEL_Y_TOLERANCE:
                 next_y = exclusion_y if next_y is None else min(next_y, exclusion_y)
+        region_bottom_y = None
+        if region.get('y2') is not None:
+            candidate_bottom_y = self._region_y_as_fraction(region, page, 'y2')
+            if (
+                candidate_bottom_y > start_y
+                and (candidate_bottom_y - start_y) * page.height >= self._SECTION_CROP_MIN_HEIGHT
+            ):
+                region_bottom_y = candidate_bottom_y
         crop_left = self._scaled_crop_margin(self.crop_margin_left, page)
         crop_top = self._scaled_crop_margin(self.crop_margin_top, page)
         crop_right = self._scaled_crop_margin(self.crop_margin_right, page)
@@ -332,7 +340,12 @@ class APSExamPaperImportBuild(models.Model):
         top = max(0, min(page.height, max(crop_top, round(start_y * page.height) - scaled_y_adjustment)))
         right = max(left + 1, min(page.width, page.width - crop_right))
         bottom_limit = max(top + 1, page.height - crop_bottom)
-        bottom = bottom_limit if next_y is None else round(next_y * page.height) - scaled_y_adjustment
+        if region_bottom_y is not None:
+            bottom = round(region_bottom_y * page.height)
+            if next_y is not None:
+                bottom = min(bottom, round(next_y * page.height) - scaled_y_adjustment)
+        else:
+            bottom = bottom_limit if next_y is None else round(next_y * page.height) - scaled_y_adjustment
         if bottom <= top:
             # A stale or slightly out-of-order detected label must never
             # produce an inverted Pillow crop. Fall back to the page limit.

@@ -4,7 +4,7 @@ import re
 import pytz
 from odoo import SUPERUSER_ID, models, fields, api, _
 from ..resources.model import HAS_QUESTION_SELECTION
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -89,6 +89,34 @@ class APSResourceSubmission(models.Model):
                     date_range[1] if date_range else False,
                 )
         return result
+
+    def _is_student_created_by_owner(self):
+        self.ensure_one()
+        return bool(
+                self.student_id
+                and self.student_id.is_student
+                and self.create_uid.partner_id == self.student_id
+        )
+
+    def action_delete_self_created_submission(self):
+        self.ensure_one()
+        user = self.env.user
+        if (
+                not user.has_group('aps_sis.group_aps_student')
+                or not user.partner_id.is_student
+                or self.state != 'assigned'
+                or self.student_id != user.partner_id
+                or self.create_uid != user
+                or not self._is_student_created_by_owner()
+        ):
+                raise AccessError(
+                    _('You can only delete your own assigned submissions created by you.')
+                )
+
+        self.sudo().unlink()
+        return self.env['ir.actions.act_window']._for_xml_id(
+                'aps_sis.action_aps_resource_submissions_for_students'
+        )
 
     def unlink(self):
         students = self.mapped('student_id')
@@ -250,6 +278,7 @@ class APSResourceSubmission(models.Model):
     )
     is_current_user_faculty = fields.Boolean(compute='_compute_is_current_user_faculty')
     is_current_user_reviewed = fields.Boolean(compute='_compute_is_current_user_reviewed')
+    can_student_delete = fields.Boolean(compute='_compute_can_student_delete')
     model_answer = fields.Html(
         string='Model Answer',
         related='resource_id.answer',
@@ -664,11 +693,47 @@ class APSResourceSubmission(models.Model):
             })
         return True
 
+    @api.model
+    def cron_cleanup_student_self_created_submissions(self):
+        cutoff = fields.Datetime.now() - timedelta(days=2)
+        candidates = self.sudo().search([
+            ('state', '=', 'assigned'),
+            ('create_date', '<=', cutoff),
+            ('create_uid.partner_id.is_student', '=', True),
+        ])
+        submissions = candidates.filtered(
+            lambda submission: submission._is_student_created_by_owner()
+        )
+        deleted_count = len(submissions)
+        if submissions:
+            submissions.unlink()
+            _logger.info(
+                'Deleted %s expired student-created assigned submissions',
+                deleted_count,
+            )
+        return deleted_count
+
     @api.depends()
     def _compute_is_current_user_faculty(self):
         faculty = self._get_current_faculty()
         for record in self:
             record.is_current_user_faculty = bool(faculty)
+
+    @api.depends('state', 'student_id', 'student_id.is_student', 'create_uid')
+    def _compute_can_student_delete(self):
+        user = self.env.user
+        partner = user.partner_id
+        is_student_user = (
+            user.has_group('aps_sis.group_aps_student')
+            and partner.is_student
+        )
+        for record in self:
+            record.can_student_delete = bool(
+                is_student_user
+                and record.state == 'assigned'
+                and record.student_id == partner
+                and record.create_uid == user
+            )
 
     @api.depends('reviewed_by')
     def _compute_is_current_user_reviewed(self):

@@ -4,7 +4,7 @@ import logging
 import mimetypes
 from typing import Any
 
-from odoo import _, models
+from odoo import _, api, models
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -12,6 +12,11 @@ _logger = logging.getLogger(__name__)
 
 class APSExamPaperImportAnalyse(models.Model):
     _inherit = 'aps.exam.paper.import'
+
+    _EXAM_VISION_PROMPT_NAMES = {
+        'question': 'Exam Import Question Analyse',
+        'mark_scheme': 'Exam Import Answer Analyse',
+    }
 
     @staticmethod
     def _normalise_page_metadata(value):
@@ -97,7 +102,7 @@ class APSExamPaperImportAnalyse(models.Model):
         payload = {
             'model': model.model_key,
             'messages': [
-                {'role': 'system', 'content': self._vision_system_prompt()},
+                {'role': 'system', 'content': self._vision_system_prompt(page_record.document_type)},
                 {'role': 'user', 'content': content},
             ],
             'temperature': 0,
@@ -153,51 +158,17 @@ class APSExamPaperImportAnalyse(models.Model):
             })
         return manual_regions + ai_regions
 
-    @staticmethod
-    def _vision_system_prompt():
-        return (
-            'You analyse exactly one isolated page of an IGCSE examination paper. Detect question and sub-question '
-            'labels and their visual regions. Treat labels as layout markers, including a bare root '
-            'number such as "1", a part such as "(b)", or a subpart such as "(i)", or text such as "Task A3b" at the start of '
-            'a line or sentence or the top of the page. Do not require the label to be followed by question text on the same '
-            'line. Do not transcribe question text or invent question text. Separately extract the printed page number from '
-            'the footer and the human-readable value printed with a barcode. Return the page number as printed and the barcode '
-            'value as contiguous code characters, ignoring visual spacing between individual characters. Do not infer the '
-            'barcode value by interpreting the bars. Return null for either value when it is absent or unreadable. Provide a concise '
-            'question_summary of no more than 20 words describing what the student is asked to do; '
-            'do not provide an answer. Report the label exactly as '
-            'printed on the current page in raw_label; return it exactly as visible. '
-            'Return only JSON with this shape: {"image_width": number, "image_height": number, '
-            '"coordinate_system": "pixels", "printed_page_number": string|null, "barcode_value": string|null, '
-            '"exclusion_zones": [{"x1": number, '
-            '"y1": number, "x2": number, "y2": number, "confidence": number}], '
-            '"detections": [{"raw_label": string, '
-            '"question_summary": string, '
-            '"label_kind": "root"|"part"|"subpart"|"continuation", "regions": [{"x1": number, '
-            '"y1": number, "x2": number, "y2": number}], "visible_mark": number|null, '
-            '"is_answer_space_number": boolean, '
-            '"mark_confidence": number, "continues_from_previous_page": boolean, '
-            '"continues_on_next_page": boolean, "contains_diagram": boolean, "confidence": number}]}. '
-            'Coordinates must be integer pixel coordinates relative to the declared image_width and image_height. Each region must '
-            'tightly bound only the printed question identifier itself, such as "Q1", "(a)", or "(i)". Include parentheses '
-            'and punctuation that are part of the identifier, but exclude surrounding whitespace, question text, marks, the rest '
-            'of the line, and the full question section. Keep the box close to the outer edges of the identifier glyphs, with '
-            'no intentional padding. The question_summary is separate and must not affect region size. Include visible '
-            'question and mark-scheme section labels, including identifiers printed inside tables. Do not treat column '
-            'headings such as "Question Number", "Answer", "Additional Guidance", or "Mark" as identifiers; return '
-            'their header band as an exclusion zone when it separates sections. Exclude running page '
-            'headers and footers, general instructions, and blank answer spaces. Do not detect standalone numbers printed beside answer lines or boxes; set '
-            'exclusion_zones for structural header bands within the question flow that should not be included in a section, '
-            'such as a mark-scheme table heading between answers and the next question identifier. Detect these on both '
-            'question-paper and mark-scheme pages. The top edge of each zone ends the preceding section; the next '
-            'question identifier starts the following section. Do not use exclusion_zones for running page headers, '
-            'footers, or general instructions. Return an empty list when no such zones are present. '
-            'is_answer_space_number=true for those markers. A bare number starts a root question only when '
-            'it begins actual question text. On later pages, resolve (a), (b), '
-            '(i), and (ii) as raw labels only. The application will resolve them against the most likely '
-            'preceding root/part in a second pass. Read marks printed at the end of question text, commonly as (2), but '
-            'do not confuse them with numbering. '
-            'Return raw labels only; the application resolves continuation labels across pages. '
-            'Never return a detection for a label that is not visibly present on this page. '
-            'When uncertain, include the detection with a lower confidence rather than guessing.'
-        )
+    @api.model
+    def _vision_system_prompt(self, document_type):
+        prompt_name = self._EXAM_VISION_PROMPT_NAMES.get(document_type)
+        if not prompt_name:
+            raise ValidationError(_('Unsupported page type for vision analysis: %s') % document_type)
+        prompt = self.env['ai_prompts'].sudo().search([
+            ('prompt_name', '=', prompt_name),
+        ], limit=1)
+        if not prompt or not prompt.enabled or not (prompt.prompt or '').strip():
+            raise UserError(_(
+                'The exam-import prompt "%s" must exist, be enabled, and contain prompt text. '
+                'Check the Prompt Templates menu.'
+            ) % prompt_name)
+        return prompt.prompt

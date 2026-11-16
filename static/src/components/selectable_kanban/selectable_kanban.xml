@@ -11,10 +11,12 @@
     <t t-name="aps_sis.SelectableKanbanRenderer" t-inherit="web.KanbanRenderer" t-inherit-mode="primary">
         <xpath expr="//KanbanRecord[@record='record']" position="attributes">
             <attribute name="isSelected">this.isSelected(record)</attribute>
+            <attribute name="isSelectionActive">this.isSelectionActive</attribute>
             <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
         </xpath>
         <xpath expr="//KanbanRecord[@record='groupOrRecord.record']" position="attributes">
             <attribute name="isSelected">this.isSelected(groupOrRecord.record)</attribute>
+            <attribute name="isSelectionActive">this.isSelectionActive</attribute>
             <attribute name="toggleSelection">(record) =&gt; this.toggleSelection(record)</attribute>
         </xpath>
         <xpath expr="//t[@t-foreach='getGroupsOrRecords()']" position="before">

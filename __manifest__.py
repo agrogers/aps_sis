@@ -17,6 +17,7 @@
 		'data/cron.xml',
 		'data/email_templates.xml',
 		'data/freeform_assessment_prompt.xml',
+		'data/exam_import_vision_prompts.xml',
 		'data/aps_calendar_date_type_data.xml',
 		'data/aps_exam_paper_question_identifier_data.xml',
 		'data/certificate_templates.xml',
