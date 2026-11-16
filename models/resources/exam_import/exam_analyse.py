@@ -172,3 +172,4 @@ class APSExamPaperImportAnalyse(models.Model):
                 'Check the Prompt Templates menu.'
             ) % prompt_name)
         return prompt.prompt
+

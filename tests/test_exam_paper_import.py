@@ -754,6 +754,7 @@ class TestExamPaperImport(TransactionCase):
         self.assertIn('question_summary', prompt)
         self.assertIn('no more than 20 words', prompt)
         self.assertIn('Include question identifiers printed inside tables', prompt)
+
         self.assertNotIn('exclude headers, footers', prompt)
 
     def test_answer_vision_prompt_targets_mark_scheme_sections(self):
