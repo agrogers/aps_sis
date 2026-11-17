@@ -39,9 +39,8 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
         if not self.can_import_student_answers:
             raise UserError(_('Student answers can only be imported for Past Paper or Exam resources.'))
 
-        answer_html = self.answer or ''
-        fingerprint = hashlib.sha256(answer_html.encode('utf-8')).hexdigest()
-        image_tags = re.findall(r'<img\b[^>]*>', answer_html, re.IGNORECASE)
+        fingerprint = self._get_exam_answer_import_fingerprint()
+        image_tags = self._get_answer_image_tags()
         imports = self.env['aps.exam.paper.import'].search([
             ('resource_id', '=', self.resource_id.id),
             ('state', '=', 'completed'),
@@ -325,6 +324,99 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
             return candidates, 'ambiguous_question', page
         return candidates, False, page
 
+    @staticmethod
+    def _exam_section_regions_on_page(section, page):
+        return [
+            region for region in (section.question_regions or [])
+            if isinstance(region, dict)
+            and str(region.get('page_number') or '') == str(page.page_number)
+            and region.get('source_key') in (None, section.source_key)
+        ]
+
+    def _find_exam_continuation_section(self, importer, printed_page_number):
+        empty = self.env['aps.exam.paper.section']
+        normalized_page = self._normalise_exam_page_number(printed_page_number)
+        pages = importer.page_ids.filtered(lambda page: page.document_type == 'question')
+        current_pages = pages.filtered(
+            lambda page: self._normalise_exam_page_number(page.printed_page_number) == normalized_page
+        )
+        if len(current_pages) > 1:
+            return empty, 'ambiguous_page', False, False
+
+        if current_pages:
+            current_page = current_pages[0]
+            explicit = importer.section_ids.filtered(
+                lambda section: self._exam_section_regions_on_page(section, current_page)
+                and any(
+                    self._exam_section_regions_on_page(section, previous)
+                    for previous in pages
+                    if previous.page_number < current_page.page_number
+                )
+            )
+            if explicit:
+                # Parent/child mappings can overlap; only the most specific owner applies.
+                explicit = explicit.filtered(lambda section: not any(
+                    other.source_key.startswith(section.source_key + '/')
+                    for other in explicit if other != section
+                ))
+                error = 'ambiguous_continuation' if len(explicit) != 1 else (
+                    False if explicit.resource_id else 'question_resource_not_found'
+                )
+                return explicit, error, current_page, 'section_page'
+
+        if not normalized_page.isdecimal():
+            return empty, 'continuation_not_found', False, False
+        preceding = pages.filtered(
+            lambda page: (
+                self._normalise_exam_page_number(page.printed_page_number) or ''
+            ).isdecimal()
+            and int(self._normalise_exam_page_number(page.printed_page_number)) < int(normalized_page)
+            and any(
+                self._exam_section_regions_on_page(section, page)
+                for section in importer.section_ids
+            )
+        )
+        if not preceding:
+            return empty, 'continuation_not_found', False, False
+        anchor_number = max(
+            int(self._normalise_exam_page_number(page.printed_page_number))
+            for page in preceding
+        )
+        anchors = pages.filtered(
+            lambda page: self._normalise_exam_page_number(page.printed_page_number) == str(anchor_number)
+        )
+        if len(anchors) != 1:
+            return empty, 'ambiguous_page', False, False
+        anchor = anchors[0]
+        candidates = importer.section_ids.filtered(
+            lambda section: self._exam_section_regions_on_page(section, anchor)
+        )
+        last_sequence = max(candidates.mapped('sequence'))
+        owners = candidates.filtered(lambda section: section.sequence == last_sequence)
+        owners = owners.filtered(lambda section: not any(
+            other.source_key.startswith(section.source_key + '/')
+            for other in owners if other != section
+        ))
+        if len(owners) != 1:
+            return owners, 'ambiguous_continuation', anchor, 'preceding_page'
+        owner = owners[0]
+        positions = {}
+        for section in candidates:
+            regions = self._exam_section_regions_on_page(section, anchor)
+            try:
+                positions[section.id] = min(
+                    float(region['y1']) for region in regions
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+        if owner.id in positions and any(
+            position > positions[owner.id] + max(1, anchor.height * 0.025)
+            for section_id, position in positions.items() if section_id != owner.id
+        ):
+            return owners, 'ambiguous_continuation', anchor, 'preceding_page'
+        error = False if owner.resource_id else 'question_resource_not_found'
+        return owners, error, anchor, 'preceding_page'
+
     def _exam_answer_submission_belongs_to_source(self, submission):
         self.ensure_one()
         parent = submission.parent_submission_id
@@ -401,6 +493,9 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
             'ambiguous_page': _('Printed page is ambiguous'),
             'question_not_found': _('Question was not matched'),
             'ambiguous_question': _('Question match is ambiguous'),
+            'continuation_not_found': _('No preceding question was found for this continuation'),
+            'ambiguous_continuation': _('Continuation question match is ambiguous'),
+            'question_resource_not_found': _('The matched question has no linked resource'),
             'invalid_bounds': _('Bounding rectangle is invalid'),
             'submission_not_found': _('Student submission was not found'),
             'ambiguous_submission': _('Student submission is ambiguous'),
@@ -408,12 +503,22 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
             'not_detected': _('No answer region was detected'),
             'no_sections': _('No imported question resources exist on this page'),
             'no_answers': _('No answer regions were returned'),
+            'pending': _('Matched; waiting to add crop'),
         }
         source = _('Image %s') % result.get('image_number', '?')
         page = result.get('page_number') or _('unknown page')
         question = result.get('question_identifier') or _('unknown question')
         label = labels.get(result.get('status'), result.get('status') or _('Unknown'))
         detail = result.get('detail') or ''
+        if result.get('mapping_method') == 'preceding_page':
+            detail = '%s%s' % (
+                _('Continuation of %s from page %s. ') % (
+                    result.get('question_identifier'), result.get('anchor_page_number'),
+                ),
+                detail,
+            )
+        elif result.get('mapping_method') == 'section_page':
+            detail = _('Continuation matched by Section page mapping. ') + detail
         return '%s - page %s - %s: %s%s' % (
             source,
             page,
@@ -428,8 +533,8 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
             [cls._exam_answer_import_result_line(result) for result in results]
         ) or _('No answer regions were returned.')
 
-    def _process_exam_answer_detection(
-        self, run, importer, image, image_number, answer_number, detection, identifier_rules,
+    def _resolve_exam_answer_detection(
+        self, importer, image, image_number, detection, identifier_rules,
     ):
         result = {
             'image_number': image_number,
@@ -443,22 +548,39 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
 
         page_number = detection.get('printed_page_number')
         question_identifier = detection.get('question_identifier')
+        is_continuation = detection.get('is_continuation', False)
         result.update({
             'page_number': str(page_number or ''),
             'question_identifier': str(question_identifier or ''),
+            'is_continuation': is_continuation,
         })
-        if not self._normalise_exam_page_number(page_number) or not (
-            isinstance(question_identifier, str) and question_identifier.strip()
+        has_identifier = isinstance(question_identifier, str) and bool(question_identifier.strip())
+        if (
+            not self._normalise_exam_page_number(page_number)
+            or not isinstance(is_continuation, bool)
+            or (not has_identifier and not (
+                is_continuation and question_identifier in (None, '')
+            ))
         ):
-            result['detail'] = _('Printed page number and question identifier are required.')
+            result['detail'] = _(
+                'A printed page number and question identifier are required, '
+                'unless an unlabelled answer is explicitly marked as a continuation.'
+            )
             return result, False
 
-        sections, mapping_error, page = self._find_exam_question_section(
-            importer,
-            page_number,
-            question_identifier.strip(),
-            identifier_rules,
-        )
+        if has_identifier:
+            sections, mapping_error, page = self._find_exam_question_section(
+                importer, page_number, question_identifier.strip(), identifier_rules,
+            )
+            result['mapping_method'] = 'page_identifier'
+        else:
+            sections, mapping_error, page, method = self._find_exam_continuation_section(
+                importer, page_number,
+            )
+            result['mapping_method'] = method
+            result['anchor_page_number'] = page.printed_page_number if page else False
+            if len(sections) == 1:
+                result['question_identifier'] = sections.display_label
         if mapping_error:
             result['status'] = mapping_error
             result['detail'] = _('No unique imported question matches this page and identifier.')
@@ -466,28 +588,35 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
 
         section = sections[0]
         result['section_id'] = section.id
-        result['page_number'] = str(page.printed_page_number or page_number)
+        if not has_identifier:
+            result['question_identifier'] = section.display_label
         try:
-            bounds = self._validate_exam_answer_bounds(detection, image)
+            result['bounds'] = self._validate_exam_answer_bounds(detection, image)
         except ValidationError as error:
             result['status'] = 'invalid_bounds'
             result['detail'] = str(error)
             return result, section
 
+        result['status'] = 'pending'
+        return result, section
+
+    def _apply_exam_answer_crop(self, run, image, image_number, answer_number, result, section):
+        bounds = result['bounds']
         targets, target_error = self._find_exam_question_submission(section)
         if target_error:
             result['status'] = target_error
             result['detail'] = _('Question resource: %s') % section.resource_id.display_name
-            return result, section
+            return
 
         target = targets[0].with_user(self.env.uid)
+        result['submission_id'] = target.id
         attachment = self.env['ir.attachment']
         try:
             from PIL import Image
         except ImportError as error:
             result['status'] = 'crop_failed'
             result['detail'] = _('Image cropping requires the Pillow package.')
-            return result, section
+            return
 
         try:
             with self.env.cr.savepoint():
@@ -518,7 +647,7 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
                 image_html = (
                     '<p><img src="/web/image/%s" class="img-fluid" '
                     'alt="%s"></img></p>'
-                ) % (attachment.id, escape(section.display_label or question_identifier))
+                ) % (attachment.id, escape(section.display_label or result['question_identifier']))
                 answer_html = '%s%s' % ((target.answer or ''), image_html)
                 target.write({
                     'answer': answer_html,
@@ -532,11 +661,21 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
             )
             result['status'] = 'crop_failed'
             result['detail'] = str(error)
-            return result, section
+            return
 
         result['status'] = 'applied'
         result['detail'] = _('Added to %s.') % target.display_name
-        return result, section
+
+    def _exam_answer_crop_sort_key(self, pending):
+        result = pending['result']
+        page = self._normalise_exam_page_number(result['page_number'])
+        return (
+            0 if page.isdecimal() else 1,
+            int(page) if page.isdecimal() else page,
+            result['bounds']['y1'],
+            pending['image_number'],
+            pending['answer_number'],
+        )
 
     def _process_exam_submission_answer_import(self, run, started_perf):
         self.ensure_one()
@@ -551,18 +690,21 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
         if self._get_exam_answer_import_fingerprint() != run.fingerprint:
             run._write_progress({
                 'state': 'skipped',
-                'status_message': _('Skipped because the Answer HTML changed.'),
-                'result_message': _('No images were processed because the source answer changed.'),
-                'exam_answer_import_result_log': _('Skipped because the Answer HTML changed.'),
+                'status_message': _('Skipped because the embedded answer images changed.'),
+                'result_message': _('No images were processed because the source images changed.'),
+                'exam_answer_import_result_log': _('Skipped because the embedded answer images changed.'),
                 'finished_at': fields.Datetime.now(),
             })
             return
 
-        image_tags = re.findall(r'<img\b[^>]*>', self.answer or '', re.IGNORECASE)
+        image_tags = self._get_answer_image_tags()
         results = []
         raw_responses = []
         pages_detected = set()
         sections_detected_by_page = {}
+        continuation_pages = set()
+        pending_crops = []
+        image_fingerprints = {}
         identifier_rules = self.env['aps.exam.paper.question.identifier'].search(
             [('active', '=', True)],
             order='sequence, id',
@@ -580,8 +722,8 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
             if self._get_exam_answer_import_fingerprint() != run.fingerprint:
                 run._write_progress({
                     'state': 'skipped',
-                    'status_message': _('Stopped because the Answer HTML changed.'),
-                    'result_message': _('Processing stopped after the source answer changed.'),
+                    'status_message': _('Stopped because the embedded answer images changed.'),
+                    'result_message': _('Processing stopped after the source images changed.'),
                     'exam_answer_import_result_log': self._format_exam_answer_import_log(results),
                     'finished_at': fields.Datetime.now(),
                     'duration_ms': int((time.perf_counter() - started_perf) * 1000),
@@ -635,6 +777,7 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
                 continue
 
             ai_responses += 1
+            image_fingerprints[image_number] = hashlib.sha256(image['bytes']).hexdigest()
             raw_responses.append({
                 'image_number': image_number,
                 'response': raw_content,
@@ -656,12 +799,10 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
                         pages_detected.add(normalized)
 
             for answer_number, detection in enumerate(response['answers'], 1):
-                result, section = self._process_exam_answer_detection(
-                    run,
+                result, section = self._resolve_exam_answer_detection(
                     importer,
                     image,
                     image_number,
-                    answer_number,
                     detection,
                     identifier_rules,
                 )
@@ -669,14 +810,21 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
                 if section:
                     page_key = self._normalise_exam_page_number(result.get('page_number'))
                     sections_detected_by_page.setdefault(page_key, set()).add(section.id)
-                if result['status'] == 'applied':
-                    applied_count += 1
+                    if result.get('is_continuation'):
+                        continuation_pages.add(page_key)
+                if result['status'] == 'pending':
+                    pending_crops.append({
+                        'image_number': image_number,
+                        'answer_number': answer_number,
+                        'result': result,
+                        'section': section,
+                    })
                 elif result.get('detail'):
                     failure_messages.append(result['detail'])
 
                 run._commit_background_work()
                 run._write_progress({
-                    'status_message': _('Processed answer %s from image %s of %s.') % (
+                    'status_message': _('Matched answer %s from image %s of %s.') % (
                         answer_number, image_number, image_count,
                     ),
                     'exam_answer_import_result_log': self._format_exam_answer_import_log(results),
@@ -693,6 +841,61 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
                     'exam_answer_import_result_log': self._format_exam_answer_import_log(results),
                 })
 
+        prepared_image_number = None
+        prepared_image = None
+        preparation_error = None
+        for pending in sorted(pending_crops, key=self._exam_answer_crop_sort_key):
+            self.invalidate_recordset(['answer'])
+            if self._get_exam_answer_import_fingerprint() != run.fingerprint:
+                run._write_progress({
+                    'state': 'skipped',
+                    'status_message': _('Stopped because the embedded answer images changed.'),
+                    'result_message': _('Processing stopped after the source images changed.'),
+                    'exam_answer_import_result_log': self._format_exam_answer_import_log(results),
+                    'finished_at': fields.Datetime.now(),
+                    'duration_ms': int((time.perf_counter() - started_perf) * 1000),
+                })
+                return
+            image_number = pending['image_number']
+            result = pending['result']
+            if image_number != prepared_image_number:
+                prepared_image_number = image_number
+                prepared_image = None
+                preparation_error = None
+                try:
+                    prepared_image = self._prepare_exam_answer_image(image_tags[image_number - 1])
+                    if hashlib.sha256(prepared_image['bytes']).hexdigest() != image_fingerprints[image_number]:
+                        raise ValidationError(_('The embedded image changed after answer detection.'))
+                except Exception as error:
+                    _logger.exception(
+                        'Could not reread exam answer image %s for submission %s',
+                        image_number, self.id,
+                    )
+                    preparation_error = str(error)
+            if preparation_error:
+                result.update({'status': 'image_failed', 'detail': preparation_error})
+            else:
+                try:
+                    self._validate_exam_answer_bounds({'bbox': result['bounds']}, prepared_image)
+                except ValidationError as error:
+                    result.update({'status': 'invalid_bounds', 'detail': str(error)})
+                else:
+                    self._apply_exam_answer_crop(
+                        run, prepared_image, image_number, pending['answer_number'],
+                        result, pending['section'],
+                    )
+            if result['status'] == 'applied':
+                applied_count += 1
+            elif result.get('detail'):
+                failure_messages.append(result['detail'])
+            run._commit_background_work()
+            run._write_progress({
+                'status_message': _('Processed answer %s from image %s of %s.') % (
+                    pending['answer_number'], image_number, image_count,
+                ),
+                'exam_answer_import_result_log': self._format_exam_answer_import_log(results),
+            })
+
         for normalized_page in sorted(pages_detected):
             page_matches = importer.page_ids.filtered(
                 lambda page: page.document_type == 'question'
@@ -700,6 +903,8 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
             )
             page_label = page_matches[:1].printed_page_number if page_matches else normalized_page
             if not page_matches:
+                if normalized_page in continuation_pages:
+                    continue
                 results.append({
                     'image_number': 0,
                     'page_number': page_label,
@@ -724,7 +929,7 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
                     for region in (section.question_regions or [])
                 )
             )
-            if not page_sections:
+            if not page_sections and normalized_page not in continuation_pages:
                 results.append({
                     'image_number': 0,
                     'page_number': page_label,
@@ -778,7 +983,7 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
 
     def _get_exam_answer_import_fingerprint(self):
         self.ensure_one()
-        return hashlib.sha256((self.answer or '').encode('utf-8')).hexdigest()
+        return hashlib.sha256('\n'.join(self._get_answer_image_tags()).encode('utf-8')).hexdigest()
 
 
 class APSAIExamSubmissionAnswerImportRun(models.Model):
@@ -823,9 +1028,9 @@ class APSAIExamSubmissionAnswerImportRun(models.Model):
         if submission._get_exam_answer_import_fingerprint() != self.fingerprint:
             self.write({
                 'state': 'skipped',
-                'status_message': _('Skipped because the Answer HTML changed.'),
-                'result_message': _('No images were processed because the source answer changed.'),
-                'exam_answer_import_result_log': _('Skipped because the Answer HTML changed.'),
+                'status_message': _('Skipped because the embedded answer images changed.'),
+                'result_message': _('No images were processed because the source images changed.'),
+                'exam_answer_import_result_log': _('Skipped because the embedded answer images changed.'),
                 'finished_at': fields.Datetime.now(),
             })
 

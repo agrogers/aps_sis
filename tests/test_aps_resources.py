@@ -5,6 +5,42 @@ from odoo.tests.common import TransactionCase
 
 class TestAPSResource(TransactionCase):
 
+    def _get_course_explorer_current_year(self):
+        year = self.env['aps.academic.year'].search(
+            [('is_current', '=', True)],
+            limit=1,
+        )
+        today = date.today()
+        start_date = today - timedelta(days=1)
+        end_date = today + timedelta(days=365)
+        if not year:
+            year = self.env['aps.academic.year'].create({
+                'name': 'Course Explorer Current Year',
+                'short_name': 'CECY',
+                'start_date': start_date,
+                'end_date': end_date,
+                'is_current': True,
+            })
+        elif not year.start_date <= today <= year.end_date:
+            year.write({
+                'start_date': start_date,
+                'end_date': end_date,
+            })
+        return year
+
+    def _create_course_explorer_user(self, partner, group_xml_id, login):
+        return self.env['res.users'].with_context(
+            no_reset_password=True
+        ).create({
+            'name': partner.name,
+            'login': login,
+            'partner_id': partner.id,
+            'groups_id': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref(group_xml_id).id,
+            ])],
+        })
+
     def test_mass_update_selection_options_match_resource_fields(self):
         resources = self.env['aps.resources']
         wizard = self.env['aps.resource.mass.update.wizard']
@@ -324,7 +360,7 @@ class TestAPSResource(TransactionCase):
             'subjects': [(6, 0, [subject.id])],
         })
 
-        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
 
         section = next(
             section for section in result['contentSections']
@@ -365,7 +401,7 @@ class TestAPSResource(TransactionCase):
         })
 
         result = self.env['aps.resources'].get_course_explorer_data(
-            category.id,
+            subject.id,
             include_html=False,
         )
         section = next(
@@ -373,13 +409,184 @@ class TestAPSResource(TransactionCase):
             if item['id'] == resource.id
         )
         content = self.env['aps.resources'].get_course_explorer_section_content(
-            category.id,
+            subject.id,
             [resource.id],
         )
 
         self.assertNotIn('html', section)
         self.assertEqual(content[resource.id], '<p>Deferred resource content.</p>')
         self.assertNotIn(other_resource.id, content)
+
+    def test_course_explorer_subjects_and_data_are_limited_to_student_enrolment(self):
+        year = self._get_course_explorer_current_year()
+        enrolled_subject = self.env['aps.subject'].create({
+            'name': 'Course Explorer Enrolled Subject',
+        })
+        unenrolled_subject = self.env['aps.subject'].create({
+            'name': 'Course Explorer Unenrolled Subject',
+        })
+        enrolled_class = self.env['aps.class'].create({
+            'subject_id': enrolled_subject.id,
+            'academic_year_id': year.id,
+        })
+        unenrolled_class = self.env['aps.class'].create({
+            'subject_id': unenrolled_subject.id,
+            'academic_year_id': year.id,
+        })
+        partner = self.env['res.partner'].create({
+            'name': 'Course Explorer Student',
+            'is_student': True,
+        })
+        student = self.env['aps.student'].create({'partner_id': partner.id})
+        self.env['aps.student.class'].create([
+            {
+                'student_id': student.id,
+                'class_id': enrolled_class.id,
+                'state': 'enrolled',
+            },
+            {
+                'student_id': student.id,
+                'class_id': unenrolled_class.id,
+                'state': 'finished',
+            },
+        ])
+        user = self._create_course_explorer_user(
+            partner,
+            'aps_sis.group_aps_student',
+            'course-explorer-student',
+        )
+        enrolled_resource = self.env['aps.resources'].create({
+            'name': 'Enrolled Subject Resource',
+            'has_notes': 'yes',
+            'notes': '<p>Enrolled content.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [enrolled_subject.id])],
+        })
+        unenrolled_resource = self.env['aps.resources'].create({
+            'name': 'Unenrolled Subject Resource',
+            'has_notes': 'yes',
+            'notes': '<p>Unenrolled content.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [unenrolled_subject.id])],
+        })
+
+        resources = self.env['aps.resources'].with_user(user)
+        subjects = resources.get_course_explorer_subjects()
+        data = resources.get_course_explorer_data(
+            enrolled_subject.id,
+            include_html=False,
+        )
+        unauthorized_data = resources.get_course_explorer_data(
+            unenrolled_subject.id,
+            include_html=False,
+        )
+        unauthorized_content = resources.get_course_explorer_section_content(
+            unenrolled_subject.id,
+            [unenrolled_resource.id],
+        )
+
+        self.assertEqual([item['id'] for item in subjects], [enrolled_subject.id])
+        self.assertEqual(subjects[0]['resource_count'], 1)
+        self.assertEqual(
+            {section['id'] for section in data['contentSections']},
+            {enrolled_resource.id},
+        )
+        self.assertEqual(
+            [node['id'] for node in data['tree']],
+            [enrolled_resource.id],
+        )
+        self.assertEqual(unauthorized_data['tree'], [])
+        self.assertEqual(unauthorized_data['contentSections'], [])
+        self.assertEqual(unauthorized_content, {})
+
+    def test_course_explorer_subjects_include_teacher_and_assistant_classes(self):
+        year = self._get_course_explorer_current_year()
+        teacher_subject = self.env['aps.subject'].create({
+            'name': 'Course Explorer Teacher Subject',
+        })
+        assistant_subject = self.env['aps.subject'].create({
+            'name': 'Course Explorer Assistant Subject',
+        })
+        other_subject = self.env['aps.subject'].create({
+            'name': 'Course Explorer Other Subject',
+        })
+        partner = self.env['res.partner'].create({
+            'name': 'Course Explorer Teacher',
+            'is_teacher': True,
+        })
+        teacher_class = self.env['aps.class'].create({
+            'subject_id': teacher_subject.id,
+            'academic_year_id': year.id,
+            'teacher_ids': [(4, partner.id)],
+        })
+        assistant_class = self.env['aps.class'].create({
+            'subject_id': assistant_subject.id,
+            'academic_year_id': year.id,
+            'assistant_teacher_ids': [(4, partner.id)],
+        })
+        self.env['aps.class'].create({
+            'subject_id': other_subject.id,
+            'academic_year_id': year.id,
+        })
+        user = self._create_course_explorer_user(
+            partner,
+            'aps_sis.group_aps_teacher',
+            'course-explorer-teacher',
+        )
+        teacher_resources = self.env['aps.resources'].create([
+            {
+                'name': 'Teacher Subject Resource',
+                'has_notes': 'yes',
+                'notes': '<p>Teacher content.</p>',
+                'show_in_hierarchy': True,
+                'subjects': [(6, 0, [teacher_subject.id])],
+            },
+            {
+                'name': 'Assistant Subject Resource',
+                'has_notes': 'yes',
+                'notes': '<p>Assistant content.</p>',
+                'show_in_hierarchy': True,
+                'subjects': [(6, 0, [assistant_subject.id])],
+            },
+            {
+                'name': 'Other Subject Resource',
+                'has_notes': 'yes',
+                'notes': '<p>Other content.</p>',
+                'show_in_hierarchy': True,
+                'subjects': [(6, 0, [other_subject.id])],
+            },
+        ])
+
+        resources = self.env['aps.resources'].with_user(user)
+        subjects = resources.get_course_explorer_subjects()
+        assistant_data = resources.get_course_explorer_data(
+            assistant_subject.id,
+            include_html=False,
+        )
+        unauthorized_data = resources.get_course_explorer_data(
+            other_subject.id,
+            include_html=False,
+        )
+        unauthorized_content = resources.get_course_explorer_section_content(
+            other_subject.id,
+            [teacher_resources[2].id],
+        )
+
+        self.assertEqual(
+            {item['id'] for item in subjects},
+            {teacher_subject.id, assistant_subject.id},
+        )
+        self.assertEqual(
+            {section['id'] for section in assistant_data['contentSections']},
+            {teacher_resources[1].id},
+        )
+        self.assertEqual(
+            [node['id'] for node in assistant_data['tree']],
+            [teacher_resources[1].id],
+        )
+        self.assertEqual(unauthorized_data['tree'], [])
+        self.assertEqual(unauthorized_data['contentSections'], [])
+        self.assertEqual(unauthorized_content, {})
 
     def test_course_explorer_data_extracts_quiz_id_only_for_quiz_assessments(self):
         category = self.env['aps.subject.category'].create({
@@ -435,7 +642,7 @@ class TestAPSResource(TransactionCase):
             },
         ])
 
-        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
         section = next(
             section for section in result['contentSections']
             if section['id'] == parent.id
@@ -502,7 +709,7 @@ class TestAPSResource(TransactionCase):
                         'out_of_marks': 100,
                     })
 
-        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
         section = next(
             item for item in result['contentSections']
             if item['id'] == section_resource.id
@@ -637,7 +844,7 @@ class TestAPSResource(TransactionCase):
             },
         ])
 
-        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
         section = next(
             section for section in result['contentSections']
             if section['id'] == chapter.id
@@ -676,7 +883,7 @@ class TestAPSResource(TransactionCase):
             'subjects': [(6, 0, [subject.id])],
         })
 
-        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
 
         section = next(
             section for section in result['contentSections']
@@ -899,7 +1106,7 @@ class TestAPSResource(TransactionCase):
             'subjects': [(6, 0, [subject.id])],
         })
 
-        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
         sections = {section['id']: section for section in result['contentSections']}
 
         self.assertEqual(
@@ -928,7 +1135,7 @@ class TestAPSResource(TransactionCase):
             'subjects': [(6, 0, [subject.id])],
         })
 
-        result = self.env['aps.resources'].get_course_explorer_data(category.id)
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
         section = next(
             section for section in result['contentSections']
             if section['id'] == resource.id

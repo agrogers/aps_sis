@@ -116,6 +116,14 @@ When `auto_score = True` on a parent submission, the submission's `score`, `out_
 
 `out_of_marks` on the parent reflects only children that are in `submitted` or `complete` state, giving a **live running denominator** — e.g. `7/10` while 1 of 2 children is still pending, updating to `15/20` once both are submitted.
 
+### Answer text and images
+
+Recalculation replaces the parent's answer text with the latest child-score summary at the top. Existing embedded images are retained below it, in their original order, with their image attributes unchanged. Repeated score updates replace the summary rather than accumulating old summaries or duplicating images.
+
+When there are no contributing children or no eligible submitted/complete child submissions, the score and summary are reset, but the images remain. With Auto Score disabled, recalculation leaves the answer unchanged.
+
+The exam answer importer fingerprints the embedded images rather than the generated summary text, so propagated score updates do not interrupt an import while those images remain unchanged.
+
 ## Where to set it
 
 Submission form view → *(details tab)* → **Other Details** group → **Auto Score** toggle (`boolean_toggle` widget).

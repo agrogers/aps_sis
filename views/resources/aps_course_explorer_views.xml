@@ -7,12 +7,12 @@
         <field name="path">course-explorer</field>
     </record>
 
-    <!-- Menu item under APEX Resources section -->
+    <!-- Available to students and teachers from the main APEX menu -->
     <record id="menu_course_explorer" model="ir.ui.menu">
         <field name="name">Course Explorer</field>
         <field name="action" ref="action_course_explorer"/>
-        <field name="parent_id" ref="aps_sis.menu_apex_resources_heading"/>
-        <field name="sequence" eval="8"/>
-        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_manager'))]"/>
+        <field name="parent_id" ref="aps_sis.menu_apex_root"/>
+        <field name="sequence" eval="27"/>
+        <field name="groups_id" eval="[(4, ref('aps_sis.group_aps_teacher')), (4, ref('aps_sis.group_aps_student'))]"/>
     </record>
 </odoo>

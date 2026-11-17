@@ -1115,23 +1115,67 @@ class APSResource(models.Model):
     # ------------------------------------------------------------------
 
     @api.model
-    def get_course_explorer_subject_categories(self):
-        """Return subject categories that have at least one hierarchy-visible
-        resource with notes (has_notes != 'no')."""
-        resources = self.search([
+    def _get_course_explorer_allowed_subjects(self):
+        """Return subjects available to the current Course Explorer user.
+
+        Managers retain the unrestricted view. Teachers are limited to
+        subjects of their assigned classes, while students are limited to
+        subjects of their enrolled classes.
+        """
+        Subject = self.env['aps.subject']
+        user = self.env.user
+        if user.has_group('aps_sis.group_aps_manager'):
+            return None
+
+        partner = user.partner_id
+        if user.has_group('aps_sis.group_aps_teacher'):
+            classes = self.env['aps.class'].search([
+                '|',
+                ('teacher_ids', 'in', [partner.id]),
+                ('assistant_teacher_ids', 'in', [partner.id]),
+            ])
+            subject_ids = classes.mapped('subject_id').ids
+        elif (
+            user.has_group('aps_sis.group_aps_student')
+            and partner.is_student
+        ):
+            student = self.env['aps.student'].search(
+                [('partner_id', '=', partner.id)],
+                limit=1,
+            )
+            subject_ids = student.enrollment_ids.filtered(
+                lambda enrollment: enrollment.state == 'enrolled'
+            ).mapped('class_id.subject_id').ids
+        else:
+            return Subject
+
+        return Subject.search([('id', 'in', subject_ids)])
+
+    @api.model
+    def get_course_explorer_subjects(self):
+        """Return available subjects with hierarchy-visible resources and notes."""
+        allowed_subjects = self._get_course_explorer_allowed_subjects()
+        domain = [
             ('show_in_hierarchy', '=', True),
             ('has_notes', '!=', 'no'),
-        ])
-        categories = resources.mapped('subject_categories')
+        ]
+        if allowed_subjects is not None:
+            domain.append(('subjects', 'in', allowed_subjects.ids))
+        resources = self.search(domain)
+        subjects = resources.mapped('subjects')
+        if allowed_subjects is not None:
+            subjects &= allowed_subjects
         return [
             {
-                'id': c.id,
-                'name': c.name or '',
-                'resource_count': len(resources.filtered(
-                    lambda r, cat=c: cat in r.subject_categories
-                )),
+                'id': subject.id,
+                'name': subject.name or '',
+                'resource_count': len(
+                    resources.filtered(
+                        lambda resource: subject in resource.subjects
+                    )
+                ),
             }
-            for c in categories.sorted('name')
+            for subject in subjects.sorted('name')
         ]
 
     @staticmethod
@@ -1204,21 +1248,22 @@ class APSResource(models.Model):
         return re.split(r'<h[1-6]\b[^>]*>', html, maxsplit=1, flags=re.IGNORECASE)[0]
 
     @api.model
-    def get_course_explorer_data(self, subject_category_id=False, include_html=True):
+    def get_course_explorer_data(self, subject_id=False, include_html=True):
         """Return tree and content data for the course explorer view.
 
         Builds a recursive tree of resources with ``show_in_hierarchy=True``.
-        Resources with notes (``has_notes != 'no'``) are included as content
-        nodes.  Parent resources that have no notes of their own are still
-        included in the tree when they are ancestors of resources that do
-        have notes, so the hierarchy is always complete.
+        When ``subject_id`` is provided, both tree nodes and content are
+        restricted to resources assigned to that subject. Resources with notes
+        (``has_notes != 'no'``) are included as content nodes. Parent resources
+        that have no notes of their own are still included when they match the
+        selected subject and are ancestors of resources that have notes.
 
         Each content section resolves ``has_notes='use_parent'`` up the
         parent chain and deduplicates so identical inherited content is not
         rendered twice.
 
         Args:
-            subject_category_id: optional ``aps.subject.category`` id.
+            subject_id: optional ``aps.subject`` id.
             include_html: whether to include section notes in the result.
 
         Returns:
@@ -1227,20 +1272,22 @@ class APSResource(models.Model):
         """
         started_at = time.perf_counter()
         _logger.info(
-            "Course Explorer: building data for subject category %s",
-            subject_category_id or 'all',
+            "Course Explorer: building data for subject %s",
+            subject_id or 'all',
         )
 
         # Base domain: hierarchy-visible resources
         base_domain = [('show_in_hierarchy', '=', True)]
-        if subject_category_id:
-            base_domain.append(('subjects.category_id', '=', subject_category_id))
+        allowed_subjects = self._get_course_explorer_allowed_subjects()
+        if allowed_subjects is not None:
+            base_domain.append(('subjects', 'in', allowed_subjects.ids))
+        if subject_id:
+            base_domain.append(('subjects', 'in', [subject_id]))
 
         all_hier = self.search(base_domain)
         all_hier.mapped('child_ids')
         all_hier.mapped('parent_ids')
         all_hier.mapped('primary_parent_id')
-        all_hier.mapped('subject_categories')
         _logger.info(
             "Course Explorer: loaded %d hierarchy resources in %.3fs",
             len(all_hier),
@@ -1680,9 +1727,9 @@ class APSResource(models.Model):
         _collect_sections(tree)
 
         _logger.info(
-            "Course Explorer: finished category %s in %.3fs "
+            "Course Explorer: finished subject %s in %.3fs "
             "(%d tree roots, %d sections)",
-            subject_category_id or 'all',
+            subject_id or 'all',
             time.perf_counter() - started_at,
             len(tree),
             len(ordered_sections),
@@ -1698,11 +1745,11 @@ class APSResource(models.Model):
         }
 
     @api.model
-    def get_course_explorer_section_content(self, subject_category_id, resource_ids):
-        """Return notes HTML for requested sections in a subject category.
+    def get_course_explorer_section_content(self, subject_id, resource_ids):
+        """Return notes HTML for requested sections in a subject.
 
         Args:
-            subject_category_id: optional ``aps.subject.category`` id.
+            subject_id: optional ``aps.subject`` id.
             resource_ids: list of resource IDs from the Course Explorer tree.
 
         Returns:
@@ -1719,8 +1766,11 @@ class APSResource(models.Model):
             return {}
 
         base_domain = [('show_in_hierarchy', '=', True)]
-        if subject_category_id:
-            base_domain.append(('subjects.category_id', '=', subject_category_id))
+        allowed_subjects = self._get_course_explorer_allowed_subjects()
+        if allowed_subjects is not None:
+            base_domain.append(('subjects', 'in', allowed_subjects.ids))
+        if subject_id:
+            base_domain.append(('subjects', 'in', [subject_id]))
 
         all_hier = self.search(base_domain)
         has_notes_res = all_hier.filtered(lambda resource: resource.has_notes != 'no')

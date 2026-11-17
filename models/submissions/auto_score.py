@@ -1,6 +1,7 @@
 from odoo import models, api, fields
 from odoo.tools import float_compare
 from .model import sentinel_zero
+from lxml import html
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -18,9 +19,20 @@ class APSResourceSubmissionAutoScore(models.Model):
             return str(int(n))
         return f"{n:.2f}"
 
+    def _get_answer_image_tags(self):
+        self.ensure_one()
+        root = html.fragment_fromstring(self.answer or '', create_parent=True)
+        return [
+            html.tostring(image, encoding='unicode', with_tail=False)
+            for image in root.iter('img')
+        ]
+
     def _recalculate_score_from_children(self):
         """For records with auto_score=True, recalculate score and answer summary
         from child resource submissions for the same student and submission label.
+
+        Replace the previous text while retaining embedded images, in their
+        existing order, below the generated summary or on their own when cleared.
 
         The parent score is only updated when *every* contributing child has at
         least one submission in the 'submitted' or 'complete' state for the same
@@ -36,6 +48,10 @@ class APSResourceSubmissionAutoScore(models.Model):
             if not child_resources:
                 continue
 
+            images_html = ''.join(
+                '<p>%s</p>' % image for image in record._get_answer_image_tags()
+            )
+
             # Only include children that contribute to the parent score
             contributing_children = child_resources.filtered(
                 lambda resource: resource.score_contributes_to_parent
@@ -44,13 +60,13 @@ class APSResourceSubmissionAutoScore(models.Model):
                 vals = {
                     'score': sentinel_zero,
                     'out_of_marks': 0.0,
-                    'answer': False,
+                    'answer': images_html or False,
                     'auto_score': True,
                 }
                 if (
                     float_compare(record.score, sentinel_zero, precision_digits=2)
                     or float_compare(record.out_of_marks, 0.0, precision_digits=1)
-                    or record.answer not in (False, '')
+                    or record.answer != (images_html or False)
                     or not record.auto_score
                 ):
                     record.with_context(skip_markbook_submission_sync=False).write(vals)
@@ -82,13 +98,13 @@ class APSResourceSubmissionAutoScore(models.Model):
                 vals = {
                     'score': sentinel_zero,
                     'out_of_marks': 0.0,
-                    'answer': False,
+                    'answer': images_html or False,
                     'auto_score': True,
                 }
                 if (
                     float_compare(record.score, sentinel_zero, precision_digits=2)
                     or float_compare(record.out_of_marks, 0.0, precision_digits=1)
-                    or record.answer not in (False, '')
+                    or record.answer != (images_html or False)
                     or not record.auto_score
                 ):
                     record.with_context(skip_markbook_submission_sync=False).write(vals)
@@ -138,7 +154,7 @@ class APSResourceSubmissionAutoScore(models.Model):
 
             total_line = f"TOTAL: {self._fmt_num(total_score)}/{self._fmt_num(total_out_of)}"
             all_lines = lines + [total_line]
-            summary_html = '<p>' + '</p><p>'.join(all_lines) + '</p>'
+            summary_html = '<p>' + '</p><p>'.join(all_lines) + '</p>' + images_html
 
             # Pass auto_score=True explicitly so write() does not flip the flag back to False
             # Clear the suppression context inherited from a Markbook child

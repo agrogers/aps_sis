@@ -129,13 +129,13 @@
 
                 <!-- Toolbar -->
                 <div class="ce_toolbar">
-                    <select class="ce_category_select form-select form-select-sm"
-                            t-on-change="onCategoryChange">
+                    <select class="ce_subject_select form-select form-select-sm"
+                            t-on-change="onSubjectChange">
                         <option value="">Select a subject</option>
-                        <t t-foreach="state.subjectCategories" t-as="cat" t-key="cat.id">
-                            <option t-att-value="cat.id"
-                                    t-att-selected="cat.id === state.selectedCategoryId">
-                                <t t-esc="cat.name"/> (<t t-esc="cat.resource_count"/>)
+                        <t t-foreach="state.subjects" t-as="subject" t-key="subject.id">
+                            <option t-att-value="subject.id"
+                                    t-att-selected="subject.id === state.selectedSubjectId">
+                                <t t-esc="subject.name"/> (<t t-esc="subject.resource_count"/>)
                             </option>
                         </t>
                     </select>
@@ -308,8 +308,8 @@
                                 showName="true"/>
                         </div>
                         <div class="ce_section_body oe_calculateKioskHeight"
-                             t-att-data-image-viewer-model="'aps.subject.category'"
-                             t-att-data-image-viewer-id="state.selectedCategoryId"
+                             t-att-data-image-viewer-model="'aps.subject'"
+                             t-att-data-image-viewer-id="state.selectedSubjectId"
                                       t-att-data-image-viewer-source-model="section.highlightSourceModel"
                                       t-att-data-image-viewer-source-id="section.highlightSourceId"
                                       t-att-data-image-viewer-source-field="section.highlightSourceField"
@@ -490,7 +490,7 @@
                 </t>
 
                 <div t-if="!state.loading and !visibleContentSections.length" class="ce_empty text-muted fst-italic p-5 text-center">
-                    Select a subject category from the dropdown to view content.
+                    Select a subject from the dropdown to view content.
                 </div>
             </div>
         </div>

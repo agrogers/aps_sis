@@ -4,6 +4,8 @@ from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from lxml import html
+
 from odoo import fields
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase
@@ -655,6 +657,68 @@ class TestAPSResourceSubmissionAutoScore(TransactionCase):
         self.assertIn('Q1c', answer)
         self.assertIn('TOTAL', answer)
         self.assertIn('9/14', answer)
+
+    def test_parent_score_summary_preserves_images_below_replaced_text(self):
+        self.parent_submission.write({
+            'answer': (
+                '<p>Old summary before <img src="/web/image/101" alt="First scan" '
+                'width="400" class="img-fluid">old text after image.</p>'
+                '<div><span><img src="/web/image/102?width=800&amp;height=600" '
+                'alt="Second scan" style="width: 75%;"></span>Old trailing text.</div>'
+            ),
+            'auto_score': True,
+        })
+        original_images = [
+            dict(image.attrib)
+            for image in html.fragment_fromstring(
+                self.parent_submission.answer, create_parent=True,
+            ).iter('img')
+        ]
+
+        self.child_sub_a.write({'score': 2.0, 'auto_score': False, 'state': 'submitted'})
+        self.child_sub_a.write({'score': 3.0, 'auto_score': False})
+
+        answer = self.parent_submission.answer
+        root = html.fragment_fromstring(answer, create_parent=True)
+        self.assertEqual([dict(image.attrib) for image in root.iter('img')], original_images)
+        self.assertLess(answer.index('TOTAL: 3/5'), answer.index('<img'))
+        self.assertEqual(answer.count('TOTAL:'), 1)
+        self.assertNotIn('Old summary', answer)
+        self.assertNotIn('old text after image', answer)
+        self.assertNotIn('Old trailing text', answer)
+        self.assertNotIn('TOTAL: 2/5', answer)
+        self.assertEqual(self.parent_submission.score, 3.0)
+        self.assertEqual(self.parent_submission.out_of_marks, 5.0)
+        self.assertTrue(self.parent_submission.auto_score)
+
+    def test_parent_without_submitted_children_keeps_images_when_clearing_summary(self):
+        self.parent_submission.write({
+            'answer': '<p>Stale score text<img src="/web/image/103">stale tail.</p>',
+            'auto_score': True,
+        })
+
+        self.parent_submission._recalculate_score_from_children()
+
+        root = html.fragment_fromstring(self.parent_submission.answer, create_parent=True)
+        self.assertEqual([image.get('src') for image in root.iter('img')], ['/web/image/103'])
+        self.assertFalse(root.text_content().strip())
+        self.assertEqual(self.parent_submission.score, sentinel_zero)
+        self.assertEqual(self.parent_submission.out_of_marks, 0.0)
+
+    def test_parent_without_contributing_children_keeps_images_when_clearing_summary(self):
+        self.parent_resource.child_ids.write({'score_contributes_to_parent': False})
+        self.parent_submission.write({
+            'answer': '<p>Stale score text<img src="/web/image/104">stale tail.</p>',
+            'auto_score': True,
+        })
+
+        self.parent_submission._recalculate_score_from_children()
+
+        root = html.fragment_fromstring(self.parent_submission.answer, create_parent=True)
+        self.assertEqual([image.get('src') for image in root.iter('img')], ['/web/image/104'])
+        self.assertFalse(root.text_content().strip())
+        self.assertEqual(self.parent_submission.score, sentinel_zero)
+        self.assertEqual(self.parent_submission.out_of_marks, 0.0)
 
     def test_parent_not_updated_when_auto_score_false(self):
         """Parent score should NOT be updated when parent.auto_score=False."""

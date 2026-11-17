@@ -5,7 +5,7 @@ Course Explorer feature — a split-pane client action for browsing course conte
 
 ## Recent Changes
 - Created `course_explorer` client action with OWL 2 components
-- Added Python RPC methods: `get_course_explorer_data()`, `get_course_explorer_subject_categories()`, `_resolve_notes()`
+- Added Python RPC methods: `get_course_explorer_data()`, `get_course_explorer_subjects()`, `_resolve_notes()`
 - Implemented bidirectional scroll sync with IntersectionObserver
 - Fixed HTML rendering by importing `markup` from `@odoo/owl`
 - Fixed content ordering to match tree traversal order
@@ -13,9 +13,9 @@ Course Explorer feature — a split-pane client action for browsing course conte
 - Added structural parent inclusion for tree completeness
 
 ## Key Design Decisions
-- Subject category dropdown filters resources (not individual subjects)
+- Subject dropdown lists subjects with hierarchy-visible resources and notes; students see enrolled subjects, teachers see assigned/assistant classes, and managers retain full access
 - Parent resources with `has_notes='no'` included in tree when children have notes
-- No content shown until a subject category is selected
+- No content shown until a subject is selected
 - Content sections collected during tree traversal (not sorted afterward)
 - HTML wrapped in `markup()` for proper rendering via `t-out`
 - `markup` imported from `@odoo/owl` (NOT `@web/core/utils/markup` — that module doesn't exist)

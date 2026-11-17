@@ -168,16 +168,16 @@ export class CourseExplorer extends Component {
 
         const saved = this._loadStorage();
         this._assessmentTargetSectionId = this._pendingUrlTarget.assessmentSectionId;
-        const savedCategoryId = this._toPositiveId(saved.selectedCategoryId);
-        const urlCategoryId = this._pendingUrlTarget.categoryId;
-        const categoryChanged = Boolean(
-            urlCategoryId && urlCategoryId !== savedCategoryId,
+        const savedSubjectId = this._toPositiveId(saved.selectedSubjectId);
+        const urlSubjectId = this._pendingUrlTarget.subjectId;
+        const subjectChanged = Boolean(
+            urlSubjectId && urlSubjectId !== savedSubjectId,
         );
 
         this.state = useState({
             loading: false,
-            subjectCategories: [],
-            selectedCategoryId: urlCategoryId || savedCategoryId || false,
+            subjects: [],
+            selectedSubjectId: urlSubjectId || savedSubjectId || false,
             tree: [],
             contentSections: [],
             resourceToc: [],
@@ -187,19 +187,19 @@ export class CourseExplorer extends Component {
             expandedQuizSections: [],
             expandedAssessmentSections: [],
             activeSectionId: this._pendingUrlTarget.sectionId
-                || (categoryChanged ? 0 : saved.activeSectionId || 0),
+                || (subjectChanged ? 0 : saved.activeSectionId || 0),
             sidebarCollapsed: saved.sidebarCollapsed || false,
             isManager: false,
         });
 
         // Expanded node IDs tracked reactively as an array (for OWL reactivity)
-        // Per-category expanded state: { [categoryId]: [nodeId, ...] }
-        this._expandedByCategory = saved.expandedByCategory || {};
-        const categoryExpanded = this.state.selectedCategoryId
-            ? this._expandedByCategory[this.state.selectedCategoryId] || []
+        // Per-subject expanded state: { [subjectId]: [nodeId, ...] }
+        this._expandedBySubject = saved.expandedBySubject || {};
+        const subjectExpanded = this.state.selectedSubjectId
+            ? this._expandedBySubject[this.state.selectedSubjectId] || []
             : [];
-        this.state.expandedNodeIds = categoryExpanded;
-        this._expandedIds = new Set(categoryExpanded);
+        this.state.expandedNodeIds = subjectExpanded;
+        this._expandedIds = new Set(subjectExpanded);
         // Debounce timer for scroll persistence
         this._scrollTimer = null;
         // IntersectionObserver reference
@@ -212,12 +212,12 @@ export class CourseExplorer extends Component {
                 "Course Explorer: group check completed in %dms",
                 Math.round(performance.now() - startedAt),
             );
-            const categoriesStartedAt = performance.now();
-            await this._loadSubjectCategories();
+            const subjectsStartedAt = performance.now();
+            await this._loadSubjects();
             console.info(
-                "Course Explorer: subject categories loaded in %dms (%d categories)",
-                Math.round(performance.now() - categoriesStartedAt),
-                this.state.subjectCategories.length,
+                "Course Explorer: subjects loaded in %dms (%d subjects)",
+                Math.round(performance.now() - subjectsStartedAt),
+                this.state.subjects.length,
             );
             await this._loadData();
             console.info(
@@ -303,8 +303,8 @@ export class CourseExplorer extends Component {
         const actionParams = this.props.action?.params || {};
         const queryParams = new URLSearchParams(window.location.search);
         const target = {
-            categoryId: this._toPositiveId(queryParams.get("ce_category"))
-                || this._toPositiveId(actionParams.ce_category),
+            subjectId: this._toPositiveId(queryParams.get("ce_subject"))
+                || this._toPositiveId(actionParams.ce_subject),
             sectionId: this._toPositiveId(queryParams.get("ce_section"))
                 || this._toPositiveId(actionParams.ce_section),
             assessmentSectionId: this._toPositiveId(queryParams.get("ce_assessment"))
@@ -334,7 +334,7 @@ export class CourseExplorer extends Component {
             this._urlStateTimer = null;
             if (this._pendingUrlTarget?.sectionId || this._programmaticSectionId) return;
             const state = {
-                ce_category: this.state.selectedCategoryId || false,
+                ce_subject: this.state.selectedSubjectId || false,
                 ce_section: this.state.activeSectionId || false,
                 ce_assessment: this._assessmentTargetSectionId || false,
                 ce_heading: this.state.resourceToc.some(
@@ -435,13 +435,13 @@ export class CourseExplorer extends Component {
 
     _saveStorage() {
         try {
-            if (this.state.selectedCategoryId) {
-                this._expandedByCategory[this.state.selectedCategoryId] = [...this._expandedIds];
+            if (this.state.selectedSubjectId) {
+                this._expandedBySubject[this.state.selectedSubjectId] = [...this._expandedIds];
             }
             const data = {
-                expandedByCategory: this._expandedByCategory,
+                expandedBySubject: this._expandedBySubject,
                 expandedNodeIds: [...this._expandedIds],
-                selectedCategoryId: this.state.selectedCategoryId,
+                selectedSubjectId: this.state.selectedSubjectId,
                 activeSectionId: this.state.activeSectionId,
                 sidebarCollapsed: this.state.sidebarCollapsed,
                 resourceTocCollapsed: this.state.resourceTocCollapsed,
@@ -683,30 +683,39 @@ export class CourseExplorer extends Component {
             : [...expandedSections, sectionId];
     }
 
-    async _loadSubjectCategories() {
-        this.state.subjectCategories = await this.orm.call(
+    async _loadSubjects() {
+        this.state.subjects = await this.orm.call(
             "aps.resources",
-            "get_course_explorer_subject_categories",
+            "get_course_explorer_subjects",
             [],
         );
-        if (this._pendingUrlTarget?.categoryId) {
-            const isAvailable = this.state.subjectCategories.some(
-                (category) => category.id === this._pendingUrlTarget.categoryId,
+        const availableSubjectIds = new Set(
+            this.state.subjects.map((subject) => subject.id),
+        );
+        if (
+            this._pendingUrlTarget?.subjectId
+            && !availableSubjectIds.has(this._pendingUrlTarget.subjectId)
+        ) {
+            this._pendingUrlTarget.subjectId = 0;
+        }
+        if (
+            this.state.selectedSubjectId
+            && !availableSubjectIds.has(this.state.selectedSubjectId)
+        ) {
+            const savedSubjectId = this._toPositiveId(
+                this._loadStorage().selectedSubjectId,
             );
-            if (!isAvailable) {
-                this._pendingUrlTarget.categoryId = 0;
-                this.state.selectedCategoryId = this._toPositiveId(
-                    this._loadStorage().selectedCategoryId,
-                ) || false;
-            }
+            this.state.selectedSubjectId = availableSubjectIds.has(savedSubjectId)
+                ? savedSubjectId
+                : false;
         }
     }
 
     async _loadData() {
         this._stopScrollAnchor("course data reloaded");
         const requestId = ++this._loadDataRequestId;
-        // Don't load data if no subject category is selected
-        if (!this.state.selectedCategoryId) {
+        // Don't load data if no subject is selected
+        if (!this.state.selectedSubjectId) {
             this.state.tree = [];
             this.state.contentSections = [];
             this.state.resourceToc = [];
@@ -721,7 +730,7 @@ export class CourseExplorer extends Component {
             const result = await this.orm.call(
                 "aps.resources",
                 "get_course_explorer_data",
-                [this.state.selectedCategoryId, false],
+                [this.state.selectedSubjectId, false],
             );
             console.info(
                 "Course Explorer: data RPC completed in %dms",
@@ -843,7 +852,7 @@ export class CourseExplorer extends Component {
             const contentById = await this.orm.call(
                 "aps.resources",
                 "get_course_explorer_section_content",
-                [this.state.selectedCategoryId, [...loadingIds]],
+                [this.state.selectedSubjectId, [...loadingIds]],
             ) || {};
             if (requestId !== this._loadDataRequestId) return;
 
@@ -1043,19 +1052,19 @@ export class CourseExplorer extends Component {
 
     // ── User actions ─────────────────────────────────────────────────
 
-    async onCategoryChange(ev) {
-        this._cancelBookmarkScroll("subject category changed");
+    async onSubjectChange(ev) {
+        this._cancelBookmarkScroll("subject changed");
         this._assessmentTargetSectionId = 0;
-        // Save current category's expanded state before switching
-        if (this.state.selectedCategoryId) {
-            this._expandedByCategory[this.state.selectedCategoryId] = [...this._expandedIds];
+        // Save current subject's expanded state before switching
+        if (this.state.selectedSubjectId) {
+            this._expandedBySubject[this.state.selectedSubjectId] = [...this._expandedIds];
         }
         const val = ev.target.value;
-        const newCategoryId = val ? parseInt(val, 10) : false;
-        this.state.selectedCategoryId = newCategoryId;
-        // Restore expanded state for the newly selected category
-        const restored = newCategoryId
-            ? (this._expandedByCategory[newCategoryId] || [])
+        const newSubjectId = val ? parseInt(val, 10) : false;
+        this.state.selectedSubjectId = newSubjectId;
+        // Restore expanded state for the newly selected subject
+        const restored = newSubjectId
+            ? (this._expandedBySubject[newSubjectId] || [])
             : [];
         this._expandedIds = new Set(restored);
         this.state.expandedNodeIds = [...this._expandedIds];

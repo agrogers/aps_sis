@@ -23,17 +23,18 @@ registry.category("actions").add("tag_name", ComponentClass)
 
 ### Data Flow (Course Explorer)
 ```
-User selects category
-  → JS calls orm.call("aps.resources", "get_course_explorer_data", [categoryId])
+User selects subject
+  → JS calls orm.call("aps.resources", "get_course_explorer_data", [subjectId])
   → Python builds tree (depth-first, sequence-sorted) + resolves notes
   → Returns { tree: [...], contentSections: [...] }
   → JS wraps HTML in markup(), stores in state
   → OWL renders tree nodes + content sections
 ```
+- Subject scope is resolved server-side from student enrollments or teacher/assistant class assignments; managers retain the unrestricted view.
 
 ### Persistence Pattern
 - localStorage key: `aps_course_explorer`
-- Saves: expandedNodeIds, selectedCategoryId, activeSectionId, sidebarCollapsed, scrollPosition
+- Saves: expandedNodeIds, selectedSubjectId, activeSectionId, sidebarCollapsed, scrollPosition
 - Loaded on setup(), saved on state changes (debounced for scroll)
 
 ### Scroll Sync Pattern
