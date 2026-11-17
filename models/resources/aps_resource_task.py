@@ -137,6 +137,7 @@ class APSResourceTask(models.Model):
         2. Assigned — if any submission is still in 'assigned' state
         3. Otherwise use the due_status of the most recent submission:
            - 'late' on submission → 'late' on task
+           - 'not_submitted' on submission → 'overdue' on task
            - 'complete'/'submitted' submission → map to task state
         """
         for task in self:
@@ -160,6 +161,8 @@ class APSResourceTask(models.Model):
                     reverse=True
                 )[:1]
                 new_state = most_recent.due_status
+                if new_state == 'not_submitted':
+                    new_state = 'overdue'
 
             if task.state != new_state:
                 task.state = new_state

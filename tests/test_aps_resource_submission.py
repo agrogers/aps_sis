@@ -118,6 +118,35 @@ class TestAPSSubmissionMassUpdateWizard(TransactionCase):
                 )
 
 
+class TestAPSResourceTaskSubmissionState(TransactionCase):
+
+    def test_not_submitted_submission_sets_task_overdue(self):
+        student = self.env['res.partner'].create({
+            'name': 'Overdue Submission Student',
+            'is_student': True,
+        })
+        resource = self.env['aps.resources'].create({
+            'name': 'Overdue Submission Resource',
+        })
+        task = self.env['aps.resource.task'].create({
+            'resource_id': resource.id,
+            'student_id': student.id,
+        })
+        submission = self.env['aps.resource.submission'].create({
+            'task_id': task.id,
+            'state': 'complete',
+            'date_due': fields.Date.add(fields.Date.today(), days=-20),
+            'date_completed': fields.Date.add(fields.Date.today(), days=-5),
+            'date_submitted': False,
+        })
+
+        self.assertEqual(submission.due_status, 'not_submitted')
+
+        task._update_state_from_submissions()
+
+        self.assertEqual(task.state, 'overdue')
+
+
 class TestAPSResourceSubmissionAutoScore(TransactionCase):
     """Tests for the auto_score field and parent score calculation."""
 
