@@ -136,7 +136,11 @@ class APSTeacher(models.Model):
         'aps.class',
         compute='_compute_class_ids',
         string='Classes',
-        readonly=True,
+        readonly=False,
+    )
+    show_all_classes = fields.Boolean(
+        compute='_compute_show_all_classes',
+        inverse='_inverse_show_all_classes',
     )
     class_count = fields.Integer(string='Classes', compute='_compute_class_count')
 
@@ -212,6 +216,13 @@ class APSTeacher(models.Model):
                 ])
             else:
                 rec.class_ids = False
+
+    def _compute_show_all_classes(self):
+        for rec in self:
+            rec.show_all_classes = False
+
+    def _inverse_show_all_classes(self):
+        return
 
     def _compute_class_count(self):
         for rec in self:
