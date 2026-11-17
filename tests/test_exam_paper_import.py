@@ -806,6 +806,25 @@ class TestExamPaperImport(TransactionCase):
 
         self.assertEqual(page.display_name, 'Mark Scheme - PDF page 7')
 
+    def test_page_analysis_uses_model_completion_token_limit(self):
+        job = self.env['aps.exam.paper.import']
+        page = MagicMock()
+        model = MagicMock()
+        model.model_key = 'test-model'
+        model._execute_logged_router_call.return_value = {'response_json': {}}
+        model._parse_router_response_json.return_value = {'detections': []}
+
+        with (
+            patch.object(type(job), '_image_data_uri', return_value='data:image/png;base64,dGVzdA=='),
+            patch.object(type(job), '_vision_system_prompt', return_value='Analyse the page.'),
+        ):
+            for token_limit in (9600, 1600):
+                with self.subTest(token_limit=token_limit):
+                    model.max_completion_tokens = token_limit
+                    job._analyse_page_image(model, page)
+                    payload = model._execute_logged_router_call.call_args.args[0]
+                    self.assertEqual(payload['max_completion_tokens'], token_limit)
+
     def test_page_analysis_persists_footer_metadata_and_clears_unreadable_values(self):
         job = self.env['aps.exam.paper.import'].create({
             'name': 'Footer metadata analysis', 'resource_id': self.resource.id,

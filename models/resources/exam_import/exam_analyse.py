@@ -106,7 +106,7 @@ class APSExamPaperImportAnalyse(models.Model):
                 {'role': 'user', 'content': content},
             ],
             'temperature': 0,
-            'max_completion_tokens': min(model.max_completion_tokens or 1200, 2400),
+            'max_completion_tokens': model.max_completion_tokens,
             'response_format': {'type': 'json_object'},
         }
         result = model._execute_logged_router_call(
