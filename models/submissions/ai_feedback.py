@@ -119,9 +119,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 resource = self.env['aps.resource.task'].browse(vals['task_id']).resource_id
             answer = vals.get('answer') or ''
             needs_ocr = bool(
-                resource
-                and resource.ai_action != _FREEFORM_ASSESSMENT_ACTION
-                and any((tag.name or '').strip().casefold() == 'ocr required' for tag in resource.tag_ids)
+                self._get_resource_submission_ocr_mode(resource)
                 and self._get_pending_submission_ocr_image_matches(answer)
             )
             deferred = {}
@@ -204,14 +202,31 @@ class APSResourceSubmissionAIFeedback(models.Model):
         answer = self.answer if answer is None else answer
         return bool(self._get_pending_submission_ocr_image_matches(answer))
 
+    @api.model
+    def _get_resource_submission_ocr_mode(self, resource):
+        if not resource or resource.ai_action == _FREEFORM_ASSESSMENT_ACTION:
+            return False
+        tag_names = {
+            (tag.name or '').strip().casefold()
+            for tag in resource.tag_ids
+        }
+        if 'ocr required primary' in tag_names:
+            return 'primary'
+        if 'ocr required' in tag_names:
+            return 'inline'
+        return False
+
+    def _get_submission_ocr_mode(self):
+        self.ensure_one()
+        return self._get_resource_submission_ocr_mode(self.resource_id)
+
     def _submission_ocr_is_enabled(self):
         self.ensure_one()
-        if self.ai_action == _FREEFORM_ASSESSMENT_ACTION:
-            return False
-        return any(
-            (tag.name or '').strip().casefold() == 'ocr required'
-            for tag in self.resource_id.tag_ids
-        )
+        return bool(self._get_submission_ocr_mode())
+
+    def _submission_ocr_is_primary(self):
+        self.ensure_one()
+        return self._get_submission_ocr_mode() == 'primary'
 
     def _submission_requires_ocr(self):
         self.ensure_one()
@@ -319,6 +334,7 @@ class APSResourceSubmissionAIFeedback(models.Model):
         image_matches = self._get_pending_submission_ocr_image_matches(answer)
         if not image_matches or not self._submission_ocr_is_enabled():
             return False
+        primary_mode = self._submission_ocr_is_primary()
         resource = self.resource_id
         fingerprint = self._get_submission_ocr_fingerprint()
         if expected_fingerprint and fingerprint != expected_fingerprint:
@@ -331,10 +347,18 @@ class APSResourceSubmissionAIFeedback(models.Model):
                     [image_match.group(0)],
                     model_id=resource.ai_model_id.id if resource.ai_model_id else None,
                 )
-                text_version = self._build_submission_text_version_html(ocr_text)
+                text_version = (
+                    self._build_primary_submission_text_version_html(ocr_text, image_match.group(0))
+                    if primary_mode
+                    else self._build_submission_text_version_html(ocr_text)
+                )
                 if not text_version:
                     raise UserError(_('OCR did not return transcription text for one of the submitted images.'))
-                insertion_offset = self._get_submission_ocr_insertion_offset(answer, image_match)
+                insertion_offset = (
+                    0
+                    if primary_mode
+                    else self._get_submission_ocr_insertion_offset(answer, image_match)
+                )
                 text_versions.append((insertion_offset, text_version))
         except Exception:
             _logger.exception('Failed to OCR image answer for submission %s', self.id)
@@ -343,18 +367,27 @@ class APSResourceSubmissionAIFeedback(models.Model):
         if self._get_submission_ocr_fingerprint() != fingerprint:
             return False
 
-        for insertion_offset, text_version in sorted(text_versions, reverse=True):
+        if primary_mode:
+            insertion_offset = self._get_primary_submission_ocr_insertion_offset(answer)
+            primary_text = ''.join(text_version for _, text_version in text_versions)
             answer = '%s%s%s' % (
                 answer[:insertion_offset],
-                text_version,
+                primary_text,
                 answer[insertion_offset:],
             )
+        else:
+            for insertion_offset, text_version in sorted(text_versions, reverse=True):
+                answer = '%s%s%s' % (
+                    answer[:insertion_offset],
+                    text_version,
+                    answer[insertion_offset:],
+                )
         self.with_context(**{_SKIP_SUBMISSION_OCR_CTX: True}).write({'answer': answer})
         self._send_submission_ocr_dm()
         return True
 
     @staticmethod
-    def _build_submission_text_version_html(ocr_text):
+    def _build_submission_ocr_paragraphs_html(ocr_text):
         if not (ocr_text or '').strip():
             return ''
         paragraphs = re.split(r'\n\s*\n+', (ocr_text or '').strip())
@@ -362,16 +395,81 @@ class APSResourceSubmissionAIFeedback(models.Model):
         paragraphs = [escape(paragraph) for paragraph in paragraphs if paragraph]
         if not paragraphs:
             return ''
-        return '<details><summary>OCR Text</summary>%s</details>' % ''.join(
-            '<p>%s</p>' % paragraph for paragraph in paragraphs
+        return ''.join('<p>%s</p>' % paragraph for paragraph in paragraphs)
+
+    @classmethod
+    def _build_submission_text_version_html(cls, ocr_text):
+        paragraphs_html = cls._build_submission_ocr_paragraphs_html(ocr_text)
+        if not paragraphs_html:
+            return ''
+        return '<details><summary>OCR Text</summary>%s</details>' % paragraphs_html
+
+    @staticmethod
+    def _get_submission_ocr_image_fingerprint(image_html):
+        source_match = re.search(
+            r'\bsrc\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>]+))',
+            image_html or '',
+            re.IGNORECASE,
+        )
+        image_source = image_html or ''
+        if source_match:
+            image_source = next(
+                (source for source in source_match.groups() if source is not None),
+                image_source,
+            )
+        return hashlib.sha256(image_source.encode('utf-8')).hexdigest()
+
+    @classmethod
+    def _build_primary_submission_text_version_html(cls, ocr_text, image_html):
+        paragraphs_html = cls._build_submission_ocr_paragraphs_html(ocr_text)
+        if not paragraphs_html:
+            return ''
+        fingerprint = cls._get_submission_ocr_image_fingerprint(image_html)
+        return (
+            '<div class="aps-submission-ocr-primary aps-submission-ocr-image-%s">%s</div>'
+            % (fingerprint, paragraphs_html)
         )
 
     @staticmethod
-    def _get_pending_submission_ocr_image_matches(answer):
+    def _get_primary_submission_ocr_insertion_offset(answer):
+        primary_sections = re.match(
+            r'(?:\s*<div\b(?=[^>]*\sclass=["\'][^"\']*\baps-submission-ocr-primary\b[^"\']*["\'])'
+            r'[^>]*>.*?</div\s*>)+',
+            answer or '',
+            re.IGNORECASE | re.DOTALL,
+        )
+        return primary_sections.end() if primary_sections else 0
+
+    @classmethod
+    def _get_pending_submission_ocr_image_matches(cls, answer):
         answer = answer or ''
         image_matches = list(re.finditer(r'<img\b[^>]*>', answer, re.IGNORECASE))
         if not image_matches:
             return []
+
+        primary_processed_fingerprints = []
+        for marker in re.finditer(
+            r'<div\b([^>]*)>',
+            answer,
+            re.IGNORECASE | re.DOTALL,
+        ):
+            class_match = re.search(
+                r'(?:^|\s)class\s*=\s*(["\'])(.*?)\1',
+                marker.group(1),
+                re.IGNORECASE,
+            )
+            if not class_match:
+                continue
+            class_names = class_match.group(2).split()
+            if 'aps-submission-ocr-primary' not in class_names:
+                continue
+            primary_processed_fingerprints.extend(
+                re.findall(
+                    r'\baps-submission-ocr-image-([0-9a-f]{64})\b',
+                    class_match.group(2),
+                    re.IGNORECASE,
+                )
+            )
 
         details_matches = list(re.finditer(
             r'<details\b[^>]*>.*?</details\s*>',
@@ -399,6 +497,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
 
         pending_matches = []
         for index, image_match in enumerate(image_matches):
+            image_fingerprint = cls._get_submission_ocr_image_fingerprint(image_match.group(0))
+            if image_fingerprint in primary_processed_fingerprints:
+                primary_processed_fingerprints.remove(image_fingerprint)
+                continue
             next_image_start = (
                 image_matches[index + 1].start()
                 if index + 1 < len(image_matches)
@@ -435,12 +537,18 @@ class APSResourceSubmissionAIFeedback(models.Model):
             Markup('<a href="%s">%s</a>') % (record_url, escape(submission_label))
             if record_url else escape(submission_label)
         )
-        body = Markup('<p>%s</p><p>%s</p>') % (
-            _(
-                'Your answer has been processed and a text version has been created. '
-                'Please review it to make sure it is correct; you can correct any OCR mistakes. '
-                'The text version is found under each image.'
-            ),
+        text_location = (
+            _('The text version is at the top of your answer.')
+            if self._submission_ocr_is_primary()
+            else _('The text version is found under each image.')
+        )
+        message = _(
+            'Your answer has been processed and a text version has been created. '
+            'Please review it to make sure it is correct; you can correct any OCR mistakes.'
+        )
+        body = Markup('<p>%s %s</p><p>%s</p>') % (
+            message,
+            text_location,
             Markup(_('Open your submission: %s')) % record_link,
         )
         try:
@@ -492,9 +600,16 @@ class APSResourceSubmissionAIFeedback(models.Model):
         self.ensure_one()
         return self.resource_id._build_ai_feedback_ctx(
             include_reasoning=include_reasoning,
-            student_answer_html=self.answer or '',
+            student_answer_html=self._get_ai_marking_student_answer_html(),
             out_of_marks=self.out_of_marks if self.out_of_marks and self.out_of_marks > 0 else False,
         )
+
+    def _get_ai_marking_student_answer_html(self):
+        self.ensure_one()
+        answer = self.answer or ''
+        if self._submission_ocr_is_primary():
+            return re.sub(r'<img\b[^>]*>', '', answer, flags=re.IGNORECASE)
+        return answer
 
     def _validate_ai_marking_request(self):
         self.ensure_one()
@@ -603,7 +718,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 'absent': _('Content absent'),
             }[status]
 
-        student_answer_status = self._get_ai_context_content_status(self.answer, student_answer=True)
+        student_answer_status = self._get_ai_context_content_status(
+            self._get_ai_marking_student_answer_html(),
+            student_answer=True,
+        )
         details = [
             _('Student Answer: %(status)s') % {
                 'status': _('provided') if student_answer_status == 'provided' else _('absent'),
@@ -684,7 +802,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
                 continue
             if record.ai_last_model_id or record.ai_auto_mark_state in ('pending', 'running', 'retry', 'completed'):
                 continue
-            if record._get_ai_context_content_status(record.answer, student_answer=True) == 'absent':
+            if record._get_ai_context_content_status(
+                record._get_ai_marking_student_answer_html(),
+                student_answer=True,
+            ) == 'absent':
                 continue
             record.sudo().write({
                 'ai_auto_mark_state': 'pending',
@@ -881,7 +1002,10 @@ class APSResourceSubmissionAIFeedback(models.Model):
             return False
         if self.ai_auto_mark_attempt_count >= _AUTO_MARK_MAX_ATTEMPTS:
             return False
-        if self._get_ai_context_content_status(self.answer, student_answer=True) == 'absent':
+        if self._get_ai_context_content_status(
+            self._get_ai_marking_student_answer_html(),
+            student_answer=True,
+        ) == 'absent':
             return False
 
         attempt_number = (self.ai_auto_mark_attempt_count or 0) + 1
@@ -1867,6 +1991,30 @@ class APSResourceSubmissionAIFeedback(models.Model):
     def action_start_mark_with_ai(self):
         self.ensure_one()
         self._validate_ai_marking_request()
+
+        pending_images = self._get_pending_submission_ocr_image_matches(self.answer)
+        if self._submission_ocr_is_enabled() and pending_images:
+            fingerprint = self._get_submission_ocr_fingerprint()
+            if (
+                self.submission_ocr_state == 'failed'
+                and self.submission_ocr_fingerprint == fingerprint
+            ):
+                raise UserError(_(
+                    'Required OCR failed for this answer. Retry OCR before starting AI marking.'
+                ))
+            self._queue_submission_answer_ocr()
+            if self._has_pending_submission_ocr():
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('OCR Queued'),
+                        'message': _(
+                            'OCR has been queued for this answer. Start AI marking again after transcription finishes.'
+                        ),
+                        'type': 'info',
+                    },
+                }
 
         active_run, created = self._start_ai_marking_background_run(request_origin='manual')
         if not created:

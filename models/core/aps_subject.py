@@ -14,6 +14,13 @@ class APSSubject(models.Model):
         string='Category',
         ondelete='set null',
     )
+    tag_ids = fields.Many2many(
+        'aps.subject.tag',
+        relation='aps_subject_tag_rel',
+        column1='subject_id',
+        column2='tag_id',
+        string='Tags',
+    )
     level_id = fields.Many2one(
         'aps.level',
         string='Level',

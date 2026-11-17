@@ -208,8 +208,11 @@ class TestFreeformAssessment(TransactionCase):
 
     def test_scanned_mode_does_not_queue_transcription_ocr(self):
         prompt = self._create_prompt('Freeform Assessment', 'Assess the answer.')
-        ocr_tag = self.env['aps.resource.tags'].create({'name': 'OCR Required'})
-        resource = self._create_resource(prompts=[prompt], tags=ocr_tag)
+        ocr_tags = self.env['aps.resource.tags'].create([
+            {'name': 'OCR Required'},
+            {'name': 'OCR Required Primary'},
+        ])
+        resource = self._create_resource(prompts=[prompt], tags=ocr_tags)
 
         submission = self._create_submission(
             resource,

@@ -17,6 +17,7 @@ from . import aps_student_entry_source
 from . import aps_student_class
 from . import aps_subject_category_tag
 from . import aps_subject_category
+from . import aps_subject_tag
 from . import aps_subject
 from . import aps_teacher
 from . import aps_timetable_entry

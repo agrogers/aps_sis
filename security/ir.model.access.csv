@@ -98,6 +98,8 @@ access_aps_level_user,aps.level.user,model_aps_level,base.group_user,1,0,0,0
 access_aps_teacher_teacher,aps.teacher.teacher,model_aps_teacher,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_subject_category_tag_teacher,aps.subject.category.tag.teacher,model_aps_subject_category_tag,aps_sis.group_aps_teacher,1,1,1,1
 access_aps_subject_category_tag_user,aps.subject.category.tag.user,model_aps_subject_category_tag,base.group_user,1,0,0,0
+access_aps_subject_tag_teacher,aps.subject.tag.teacher,model_aps_subject_tag,aps_sis.group_aps_teacher,1,1,1,1
+access_aps_subject_tag_user,aps.subject.tag.user,model_aps_subject_tag,base.group_user,1,0,0,0
 access_aps_teacher_student,aps.teacher.student,model_aps_teacher,aps_sis.group_aps_student,1,0,0,0
 access_aps_teacher_user,aps.teacher.user,model_aps_teacher,base.group_user,1,0,0,0
 access_aps_user_media_settings_student,aps.user.media.settings.student,model_aps_user_media_settings,aps_sis.group_aps_student,1,1,1,0

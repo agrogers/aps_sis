@@ -156,7 +156,10 @@ class APSAIRun(models.Model):
             return
         if (
             self.request_origin == 'automatic'
-            and submission._get_ai_context_content_status(submission.answer, student_answer=True) == 'absent'
+            and submission._get_ai_context_content_status(
+                submission._get_ai_marking_student_answer_html(),
+                student_answer=True,
+            ) == 'absent'
         ):
             self.write({
                 'state': 'skipped',

@@ -135,7 +135,7 @@
                         <t t-foreach="state.subjects" t-as="subject" t-key="subject.id">
                             <option t-att-value="subject.id"
                                     t-att-selected="subject.id === state.selectedSubjectId">
-                                <t t-esc="subject.name"/> (<t t-esc="subject.resource_count"/>)
+                                <t t-esc="subject.name.replace('(IGCSE)', '').trim()"/>
                             </option>
                         </t>
                     </select>

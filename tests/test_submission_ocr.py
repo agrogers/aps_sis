@@ -46,6 +46,32 @@ class TestSubmissionOcr(TransactionCase):
         self.assertEqual(run.processor_key, 'submission_ocr')
         self.assertEqual(run.state, 'queued')
 
+    def test_mark_with_ai_queues_ocr_for_an_existing_tagged_image_answer(self):
+        primary_tag = self.env['aps.resource.tags'].create({
+            'name': 'OCR Required Primary',
+        })
+        self.resource.write({
+            'ai_action': 'mark_submission',
+            'tag_ids': [(5, 0, 0)],
+        })
+        self.submission.write({
+            'answer': '<p><img src="/web/image/123/answer.png"></p>',
+        })
+        self.assertEqual(self.submission.submission_ocr_state, 'not_required')
+
+        self.resource.write({'tag_ids': [(6, 0, [primary_tag.id])]})
+        with patch.object(type(self.submission), '_get_current_faculty', return_value=True):
+            result = self.submission.action_start_mark_with_ai()
+
+        self.assertEqual(result['tag'], 'display_notification')
+        self.assertEqual(result['params']['title'], 'OCR Queued')
+        self.assertEqual(self.submission.submission_ocr_state, 'pending')
+        self.assertEqual(self.submission.submission_ocr_run_id.state, 'queued')
+        self.assertFalse(self.env['aps.ai.run'].search([
+            ('submission_id', '=', self.submission.id),
+            ('processor_key', '=', 'standard'),
+        ]))
+
     def test_changed_answer_skips_old_queued_ocr_run(self):
         self.submission.write({
             'answer': '<p><img src="/web/image/123/first-answer.png"></p>',
@@ -135,6 +161,110 @@ class TestSubmissionOcr(TransactionCase):
             self.submission.answer.index('<details><summary>OCR Text</summary>'),
         )
 
+    def test_primary_ocr_inserts_visible_text_at_top_and_tracks_new_images(self):
+        primary_tag = self.env['aps.resource.tags'].create({
+            'name': 'OCR Required Primary',
+        })
+        self.resource.write({'tag_ids': [(6, 0, [primary_tag.id])]})
+        first_image = '<p><img src="/web/image/123/first.png"></p>'
+        second_image = '<p><img src="/web/image/124/second.png"></p>'
+        self.submission.write({'answer': first_image + second_image})
+        first_run = self.submission.submission_ocr_run_id
+
+        with (
+            patch.object(
+                type(self.submission),
+                '_ocr_ai_answer_images',
+                autospec=True,
+                side_effect=['First page text.', 'Second page text.'],
+            ) as ocr,
+            patch.object(type(self.submission), '_send_submission_ocr_dm', autospec=True),
+            patch.object(first_run, '_write_progress', side_effect=lambda values: first_run.write(values)),
+        ):
+            first_run._process_submission_ocr_background()
+
+        self.assertEqual(ocr.call_count, 2)
+        first_answer = self.submission.answer
+        self.assertTrue(first_answer.startswith(
+            '<div class="aps-submission-ocr-primary aps-submission-ocr-image-'
+        ))
+        self.assertNotIn('<details>', first_answer)
+        self.assertIn('First page text.', first_answer)
+        self.assertIn('Second page text.', first_answer)
+        self.assertIn(first_image, first_answer)
+        self.assertIn(second_image, first_answer)
+        self.assertEqual(
+            self.submission._get_pending_submission_ocr_image_matches(first_answer),
+            [],
+        )
+
+        third_image = '<p><img src="/web/image/125/third.png"></p>'
+        self.submission.write({'answer': first_answer + third_image})
+        second_run = self.submission.submission_ocr_run_id
+        with (
+            patch.object(
+                type(self.submission),
+                '_ocr_ai_answer_images',
+                autospec=True,
+                return_value='Third page text.',
+            ) as ocr,
+            patch.object(type(self.submission), '_send_submission_ocr_dm', autospec=True),
+            patch.object(second_run, '_write_progress', side_effect=lambda values: second_run.write(values)),
+        ):
+            second_run._process_submission_ocr_background()
+
+        ocr.assert_called_once()
+        self.assertEqual(ocr.call_args.args[1], ['<img src="/web/image/125/third.png">'])
+        self.assertIn('Third page text.', self.submission.answer)
+        self.assertIn(first_image, self.submission.answer)
+        self.assertIn(second_image, self.submission.answer)
+        self.assertIn(third_image, self.submission.answer)
+        self.assertLess(
+            self.submission.answer.index('First page text.'),
+            self.submission.answer.index('Second page text.'),
+        )
+        self.assertLess(
+            self.submission.answer.index('Second page text.'),
+            self.submission.answer.index('Third page text.'),
+        )
+        self.assertEqual(
+            self.submission._get_pending_submission_ocr_image_matches(self.submission.answer),
+            [],
+        )
+
+    def test_primary_ocr_marking_context_uses_text_without_images(self):
+        primary_tag = self.env['aps.resource.tags'].create({
+            'name': 'OCR Required Primary',
+        })
+        self.resource.write({'tag_ids': [(6, 0, [primary_tag.id])]})
+        image = '<p><img src="/web/image/123/answer.png"></p>'
+        self.submission.write({'answer': image})
+        run = self.submission.submission_ocr_run_id
+        with (
+            patch.object(
+                type(self.submission),
+                '_ocr_ai_answer_images',
+                autospec=True,
+                return_value='Recognized student answer.',
+            ),
+            patch.object(type(self.submission), '_send_submission_ocr_dm', autospec=True),
+            patch.object(run, '_write_progress', side_effect=lambda values: run.write(values)),
+        ):
+            run._process_submission_ocr_background()
+
+        with patch.object(
+            type(self.resource),
+            '_build_ai_feedback_ctx',
+            autospec=True,
+            return_value={},
+        ) as build_context:
+            self.submission._build_ai_feedback_ctx()
+
+        marking_answer = build_context.call_args.kwargs['student_answer_html']
+        self.assertNotIn('<img', marking_answer)
+        self.assertIn('Recognized student answer.', marking_answer)
+        self.assertIn(image, self.submission.answer)
+
     def test_ocr_completion_dm_links_to_submission(self):
         channel = MagicMock()
         record_url = 'https://odoo.example/web#id=123&model=aps.resource.submission'
@@ -151,6 +281,26 @@ class TestSubmissionOcr(TransactionCase):
         body = channel.with_context.return_value.message_post.call_args.kwargs['body']
         self.assertIn('href="https://odoo.example/web#id=123&amp;model=aps.resource.submission"', str(body))
         self.assertIn(str(self.submission.display_name), str(body))
+
+    def test_primary_ocr_completion_dm_points_to_top_of_answer(self):
+        primary_tag = self.env['aps.resource.tags'].create({
+            'name': 'OCR Required Primary',
+        })
+        self.resource.write({'tag_ids': [(6, 0, [primary_tag.id])]})
+        channel = MagicMock()
+        with (
+            patch.object(type(self.submission), '_get_submission_url', return_value='https://odoo.example/submission'),
+            patch.object(
+                type(self.env['discuss.channel']),
+                'channel_get',
+                return_value=channel,
+            ),
+        ):
+            self.submission._send_submission_ocr_dm()
+
+        body = channel.with_context.return_value.message_post.call_args.kwargs['body']
+        self.assertIn('at the top of your answer', str(body))
+        self.assertNotIn('under each image', str(body))
 
     def test_mixed_text_and_images_processes_only_pages_without_ocr_details(self):
         first_image = '<p><img src="/web/content/101?download=false"></p>'

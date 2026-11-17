@@ -247,22 +247,47 @@ export class SubmissionFeedbackViewer extends Component {
         if (this.isTargeted && this.answerChunkedHtml) {
             const answerField = this.props.answerField || "answer";
             const originalAnswer = this.props.record.data[answerField] || "";
-            const originalImageCount = (originalAnswer.match(/<img\b/gi) || []).length;
-            const chunkedImageCount = (this.answerChunkedHtml.match(/<img\b/gi) || []).length;
-            // Chunk generation can turn images into the literal [image] marker.
-            // In that case, show the original HTML instead of losing the image.
-            if (originalImageCount > chunkedImageCount) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(`<div>${originalAnswer}</div>`, "text/html");
-                this._openOcrTextSections(doc.body.firstElementChild);
-                return markup(doc.body.firstElementChild?.innerHTML || originalAnswer);
+            const parser = new DOMParser();
+            const chunkedDoc = parser.parseFromString(`<div>${this.answerChunkedHtml}</div>`, "text/html");
+            const answerRoot = chunkedDoc.body.firstElementChild;
+            const originalDoc = parser.parseFromString(`<div>${originalAnswer}</div>`, "text/html");
+            const originalImages = Array.from(
+                originalDoc.body.firstElementChild?.querySelectorAll("img") || []
+            );
+            const originalText = originalDoc.body.firstElementChild?.textContent || "";
+            if (originalImages.length && !/\[image\]/i.test(originalText)) {
+                for (const node of Array.from(answerRoot.querySelectorAll("[data-chunk-id]"))) {
+                    if (!/\[image\]/i.test(node.textContent || "")) {
+                        continue;
+                    }
+                    const walker = node.ownerDocument.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+                    let textNode = walker.nextNode();
+                    while (textNode) {
+                        textNode.textContent = textNode.textContent.replace(/\[image\]/gi, "");
+                        textNode = walker.nextNode();
+                    }
+                    if (!node.textContent.trim()) {
+                        node.remove();
+                    }
+                }
+            }
+            for (const image of answerRoot.querySelectorAll("img")) {
+                image.remove();
+            }
+            if (originalImages.length) {
+                const imagesContainer = answerRoot.ownerDocument.createElement("div");
+                imagesContainer.className = "aps-ai-feedback-answer-images";
+                for (const image of originalImages) {
+                    const paragraph = answerRoot.ownerDocument.createElement("p");
+                    paragraph.appendChild(image.cloneNode(true));
+                    imagesContainer.appendChild(paragraph);
+                }
+                answerRoot.appendChild(imagesContainer);
             }
             const activeChunkIds = new Set(this.activeChunkIds);
             const toneClass = this.activeFeedbackItem ? this._getToneClass(this.activeFeedbackItem) : "is-info";
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(`<div>${this.answerChunkedHtml}</div>`, "text/html");
-            this._openOcrTextSections(doc.body.firstElementChild);
-            for (const node of doc.body.querySelectorAll("[data-chunk-id]")) {
+            this._openOcrTextSections(answerRoot);
+            for (const node of answerRoot.querySelectorAll("[data-chunk-id]")) {
                 node.classList.add("aps-ai-answer-chunk");
                 node.classList.remove("is-success", "is-error", "is-info");
                 if (activeChunkIds.has(node.dataset.chunkId)) {
@@ -271,7 +296,7 @@ export class SubmissionFeedbackViewer extends Component {
                     node.classList.remove("is-active");
                 }
             }
-            return markup(doc.body.firstElementChild?.innerHTML || this.answerChunkedHtml);
+            return markup(answerRoot?.innerHTML || this.answerChunkedHtml);
         }
         const answerField = this.props.answerField || "answer";
         return markup(this.props.record.data[answerField] || '<p class="text-muted mb-0">No answer supplied.</p>');

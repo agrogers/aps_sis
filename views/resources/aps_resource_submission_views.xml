@@ -376,6 +376,10 @@
                         </page>
                         <page string="Student Answer+Feedback" class="tab-with-icon student-answer-tab" name="student_answer_page">
 
+                            <div class="alert alert-info mt-3" role="status" invisible="submission_ocr_state not in ['pending', 'running']">
+                                OCR is processing this image answer. Grading and completion will be applied after the OCR attempt.
+                            </div>
+
                             <div class="row align-items-start">
                                 <div class="col-lg-11">
                                     <field name="ai_targeted_feedback" invisible="1"/>
@@ -412,9 +416,6 @@
                                 </div>
                             </div>
 
-                            <div class="alert alert-info mt-3" role="status" invisible="submission_ocr_state not in ['pending', 'running']">
-                                OCR is processing this image answer. Grading and completion will be applied after the OCR attempt.
-                            </div>
                             <div class="alert alert-warning mt-3" role="status" invisible="submission_ocr_state != 'failed'">
                                 OCR was attempted but did not produce text. Deferred grading and completion have been applied.
                             </div>

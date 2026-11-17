@@ -709,6 +709,10 @@ export class CourseExplorer extends Component {
                 ? savedSubjectId
                 : false;
         }
+        if (!this.state.selectedSubjectId && this.state.sidebarCollapsed) {
+            this.state.sidebarCollapsed = false;
+            this._saveStorage();
+        }
     }
 
     async _loadData() {
@@ -774,9 +778,12 @@ export class CourseExplorer extends Component {
                 const quizMasteryRows = quizzes.filter(
                     (quiz) => quiz.progressSummary?.progress_text,
                 );
-                const assessmentRows = quizzes.filter(
-                    (quiz) => !quiz.progressSummary?.progress_text,
-                );
+                const assessmentRows = quizzes
+                    .filter((quiz) => !quiz.progressSummary?.progress_text)
+                    .sort(
+                        (left, right) =>
+                            Number(left.outOfMarks || 0) - Number(right.outOfMarks || 0),
+                    );
                 const scoredAssessmentRows = assessmentRows.filter(
                     (assessment) => Number(assessment.attempts) > 0
                         && assessment.weightedResult !== false
