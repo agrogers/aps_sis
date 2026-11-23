@@ -28,10 +28,10 @@ export class LocalStorageBooleanField extends Component {
         return Boolean(this.state.value);
     }
 
-    onChange(event) {
+    async onChange(event) {
         const value = event.target.checked;
         this.state.value = value;
-        this.props.record.update({ [this.props.name]: value });
+        await this.props.record.update({ [this.props.name]: value });
         try {
             localStorage.setItem(STORAGE_KEY, String(value));
         } catch (error) {}

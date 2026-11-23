@@ -302,9 +302,9 @@ class TestExamSubmissionAnswerImport(TransactionCase):
         crops = self._import_crops(target)
         self.assertEqual(len(crops), 3)
         self.assertEqual([crop.name for crop in crops], [
-            'student-answer-%s-3-1.png' % run.id,
-            'student-answer-%s-2-1.png' % run.id,
-            'student-answer-%s-1-1.png' % run.id,
+            'student-answer-%s-3-1.webp' % run.id,
+            'student-answer-%s-2-1.webp' % run.id,
+            'student-answer-%s-1-1.webp' % run.id,
         ])
         self.assertIn('<p>Existing answer.</p>', target.answer)
         self.assertLess(target.answer.index('Existing answer.'), target.answer.index('/web/image/'))
@@ -471,6 +471,8 @@ class TestExamSubmissionAnswerImport(TransactionCase):
         queue.assert_called_once()
 
     def test_image_answer_is_matched_cropped_appended_and_submitted(self):
+        from PIL import Image
+
         importer, _section, target = self._create_import()
         run = self._create_run(importer)
 
@@ -489,7 +491,70 @@ class TestExamSubmissionAnswerImport(TransactionCase):
             ('description', 'like', 'aps_exam_submission_answer_import:%'),
         ], limit=1)
         self.assertTrue(crop)
-        self.assertEqual(crop.mimetype, 'image/png')
+        self.assertEqual(crop.mimetype, 'image/webp')
+        self.assertTrue(crop.name.endswith('.webp'))
+        with Image.open(BytesIO(crop.raw)) as image:
+            self.assertEqual(image.format, 'WEBP')
+            self.assertEqual(image.size, (40, 40))
+
+    def test_webp_source_is_cropped_without_changing_existing_png(self):
+        from PIL import Image
+
+        importer, _section, target = self._create_import()
+        original_png = self.env['ir.attachment'].create({
+            'name': 'existing-answer.png',
+            'type': 'binary',
+            'datas': base64.b64encode(self._png_bytes()).decode('ascii'),
+            'mimetype': 'image/png',
+            'res_model': 'aps.resource.submission',
+            'res_id': target.id,
+        })
+        target.write({
+            'answer': self._source_image_html(original_png.id),
+            'auto_score': target.auto_score,
+        })
+        source_bytes = BytesIO()
+        with Image.new('RGB', (100, 80), 'white') as image:
+            image.save(source_bytes, format='WEBP')
+        source = self.env['ir.attachment'].create({
+            'name': 'source-answer.webp',
+            'type': 'binary',
+            'datas': base64.b64encode(source_bytes.getvalue()).decode('ascii'),
+            'mimetype': 'image/webp',
+            'res_model': 'aps.resource.submission',
+            'res_id': self.source_submission.id,
+        })
+        self.source_submission.answer = self._source_image_html(source.id)
+        run = self._create_run(importer)
+
+        self._process_run(run)
+
+        crops = self._import_crops(target)
+        self.assertEqual(run.state, 'completed')
+        self.assertEqual(len(crops), 1)
+        self.assertEqual(crops.mimetype, 'image/webp')
+        with Image.open(BytesIO(crops.raw)) as image:
+            self.assertEqual(image.format, 'WEBP')
+            self.assertEqual(image.size, (40, 40))
+        self.assertEqual(original_png.mimetype, 'image/png')
+        self.assertEqual(original_png.raw, self._png_bytes())
+        self.assertIn('/web/image/%s' % original_png.id, target.answer)
+        self.assertIn('/web/image/%s' % crops.id, target.answer)
+
+    def test_webp_encoding_failure_is_reported_without_changing_submission(self):
+        importer, _section, target = self._create_import()
+        run = self._create_run(importer)
+
+        with patch.object(
+            type(importer), '_encode_webp', side_effect=UserError('WebP encoding failed'),
+        ):
+            self._process_run(run)
+
+        self.assertIn('Crop could not be added', run.exam_answer_import_result_log)
+        self.assertIn('WebP encoding failed', run.exam_answer_import_result_log)
+        self.assertEqual(target.answer, '<p>Existing answer.</p>')
+        self.assertEqual(target.state, 'assigned')
+        self.assertFalse(self._import_crops(target))
 
     def test_nested_question_submission_matches_exam_submission(self):
         importer, _section, target = self._create_import(nested_parent=True)

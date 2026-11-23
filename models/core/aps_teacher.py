@@ -205,15 +205,18 @@ class APSTeacher(models.Model):
             ('user_id.partner_id', '=', self.partner_id.id),
         ], limit=1)
 
-    @api.depends('partner_id')
+    @api.depends('partner_id', 'show_all_classes')
     def _compute_class_ids(self):
         for rec in self:
             if rec.partner_id:
-                rec.class_ids = self.env['aps.class'].search([
+                domain = [
                     '|',
                     ('teacher_ids', 'in', rec.partner_id.id),
                     ('assistant_teacher_ids', 'in', rec.partner_id.id),
-                ])
+                ]
+                if not rec.show_all_classes:
+                    domain.append(('academic_year_id.is_current', '=', True))
+                rec.class_ids = self.env['aps.class'].search(domain)
             else:
                 rec.class_ids = False
 

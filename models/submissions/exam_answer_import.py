@@ -625,19 +625,17 @@ class APSResourceSubmissionExamAnswerImport(models.Model):
                         bounds['x1'], bounds['y1'], bounds['x2'], bounds['y2'],
                     ))
                     try:
-                        output = BytesIO()
-                        crop.save(output, format='PNG')
-                        crop_bytes = output.getvalue()
+                        crop_bytes = section.import_id._encode_webp(crop)
                     finally:
                         crop.close()
 
                 attachment = self.env['ir.attachment'].create({
-                    'name': 'student-answer-%s-%s-%s.png' % (
+                    'name': 'student-answer-%s-%s-%s.webp' % (
                         run.id, image_number, answer_number,
                     ),
                     'type': 'binary',
                     'datas': base64.b64encode(crop_bytes).decode('ascii'),
-                    'mimetype': 'image/png',
+                    'mimetype': 'image/webp',
                     'res_model': 'aps.resource.submission',
                     'res_id': target.id,
                     'description': 'aps_exam_submission_answer_import:%s:%s:%s' % (
