@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aps_sis.LocalStorageBooleanField">
+        <label class="form-check form-switch">
+            <input class="form-check-input" type="checkbox"
+                   t-att-checked="value" t-on-change="onChange"/>
+            <span class="form-check-label">Show all academic years</span>
+        </label>
+    </t>
+</templates>
