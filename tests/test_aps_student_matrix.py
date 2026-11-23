@@ -21,10 +21,15 @@ class TestAPSStudentMatrix(TransactionCase):
         })
         home_category = cls.env['aps.subject.category'].create({
             'name': 'Student Matrix Home Category',
+            'color_rgb': '#123456',
             'tag_ids': [(6, 0, category_tag.ids)],
         })
         cls.home_subject = cls.env['aps.subject'].create({
             'name': 'Student Matrix Home Subject',
+            'category_id': home_category.id,
+        })
+        cls.second_home_subject = cls.env['aps.subject'].create({
+            'name': 'Student Matrix Second Home Subject',
             'category_id': home_category.id,
         })
         cls.other_subject = cls.env['aps.subject'].create({
@@ -32,6 +37,10 @@ class TestAPSStudentMatrix(TransactionCase):
         })
         cls.home_class = cls.env['aps.class'].create({
             'subject_id': cls.home_subject.id,
+            'academic_year_id': cls.past_year.id,
+        })
+        cls.second_home_class = cls.env['aps.class'].create({
+            'subject_id': cls.second_home_subject.id,
             'academic_year_id': cls.past_year.id,
         })
         cls.other_class = cls.env['aps.class'].create({
@@ -47,6 +56,13 @@ class TestAPSStudentMatrix(TransactionCase):
             {
                 'student_id': cls.student.id,
                 'class_id': cls.home_class.id,
+                'start_date': cls.past_year.start_date,
+                'end_date': cls.past_year.end_date,
+                'state': 'finished',
+            },
+            {
+                'student_id': cls.student.id,
+                'class_id': cls.second_home_class.id,
                 'start_date': cls.past_year.start_date,
                 'end_date': cls.past_year.end_date,
                 'state': 'finished',
@@ -73,7 +89,32 @@ class TestAPSStudentMatrix(TransactionCase):
         self.assertEqual([student['id'] for student in data['students']], [self.student.id])
         self.assertEqual(
             {subject['id'] for subject in data['subjects']},
-            {self.home_subject.id, self.other_subject.id},
+            {self.home_subject.id, self.second_home_subject.id, self.other_subject.id},
+        )
+        subjects_by_id = {subject['id']: subject for subject in data['subjects']}
+        self.assertEqual(
+            subjects_by_id[self.home_subject.id]['category_id'],
+            self.home_subject.category_id.id,
+        )
+        self.assertEqual(
+            subjects_by_id[self.home_subject.id]['category_name'],
+            self.home_subject.category_id.name,
+        )
+        self.assertEqual(
+            subjects_by_id[self.home_subject.id]['category_color'],
+            '#123456',
+        )
+        self.assertEqual(
+            subjects_by_id[self.other_subject.id]['category_key'],
+            'uncategorized',
+        )
+        self.assertEqual(
+            subjects_by_id[self.other_subject.id]['category_name'],
+            'Uncategorized',
+        )
+        self.assertEqual(
+            data['category_totals'],
+            {str(self.home_subject.category_id.id): 2, 'uncategorized': 1},
         )
 
     def test_current_year_classes_still_exclude_finished_enrollments(self):

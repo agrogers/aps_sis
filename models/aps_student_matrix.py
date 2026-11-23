@@ -1,4 +1,4 @@
-from odoo import fields, models, api
+from odoo import _, api, fields, models
 
 
 class APSStudentMatrix(models.TransientModel):
@@ -78,6 +78,7 @@ class APSStudentMatrix(models.TransientModel):
                 'subject_colors': {},
                 'student_totals': {},
                 'subject_totals': {},
+                'category_totals': {},
             }
 
         year = (
@@ -103,6 +104,7 @@ class APSStudentMatrix(models.TransientModel):
                 'subject_colors': {},
                 'student_totals': {},
                 'subject_totals': {},
+                'category_totals': {},
             }
 
         # Find ALL enrollments for these students (optionally filtered by academic year)
@@ -149,6 +151,18 @@ class APSStudentMatrix(models.TransientModel):
         for subject in subject_ids:
             subject_totals[subject.id] = len(subject_enrolled_students[subject.id])
 
+        category_totals = {}
+        for subject in subject_ids:
+            category_key = (
+                str(subject.category_id.id)
+                if subject.category_id
+                else 'uncategorized'
+            )
+            category_totals[category_key] = (
+                category_totals.get(category_key, 0)
+                + subject_totals[subject.id]
+            )
+
         # Round student totals to 1 decimal place
         for sid in student_totals:
             student_totals[sid] = round(student_totals[sid], 1)
@@ -164,12 +178,23 @@ class APSStudentMatrix(models.TransientModel):
 
         subjects = []
         for s in subject_ids.sorted(key=lambda r: r.name or ''):
+            category = s.category_id
+            category_color = '#888888'
+            if category:
+                category_color = (
+                    category.color_rgb
+                    or s._generate_color_from_name(category.name)
+                )
             subjects.append({
                 'id': s.id,
                 'name': s.name or '',
                 'code': s.code or '',
                 'color': subject_colors.get(s.id, '#888888'),
                 'gcse_certificate': s.gcse_certificate or 0.0,
+                'category_id': category.id if category else False,
+                'category_key': str(category.id) if category else 'uncategorized',
+                'category_name': category.name if category else _('Uncategorized'),
+                'category_color': category_color,
             })
 
         return {
@@ -179,4 +204,5 @@ class APSStudentMatrix(models.TransientModel):
             'subject_colors': subject_colors,
             'student_totals': student_totals,
             'subject_totals': subject_totals,
+            'category_totals': category_totals,
         }

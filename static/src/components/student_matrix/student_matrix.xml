@@ -36,6 +36,19 @@
                     </div>
 
                     <div class="ms-auto d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 fw-bold" for="matrixDisplayMode">Display:</label>
+                        <select id="matrixDisplayMode"
+                                class="form-select form-select-sm w-auto"
+                                t-on-change="onDisplayModeChange">
+                            <option value="subject"
+                                    t-att-selected="state.displayMode === 'subject'">
+                                Subject
+                            </option>
+                            <option value="category"
+                                    t-att-selected="state.displayMode === 'category'">
+                                Subject Category
+                            </option>
+                        </select>
                         <label class="form-label mb-0 fw-bold" for="academicYearSelect">Academic Year:</label>
                         <select id="academicYearSelect"
                                 class="form-select form-select-sm w-auto"
@@ -65,20 +78,21 @@
                                 <th class="o_count_header">
                                     <button class="o_subjects_label_button"
                                             type="button"
-                                            title="Show all subjects"
-                                            t-on-click="onShowAllSubjects">
-                                        <div class="o_subjects_label_rotated">Subjects</div>
+                                            t-att-title="state.displayMode === 'subject' ? 'Show all subjects' : 'Show all categories'"
+                                            t-on-click="onShowAllColumns">
+                                        <div class="o_subjects_label_rotated"
+                                             t-out="state.displayMode === 'subject' ? 'Subjects' : 'Categories'"/>
                                     </button>
                                 </th>
-                                <t t-foreach="visibleSubjects" t-as="subject" t-key="subject.id">
+                                <t t-foreach="visibleColumns" t-as="column" t-key="column.key">
                                     <th class="o_subject_header"
-                                        t-att-style="'background-color:' + subject.color + '20;'">
+                                        t-att-style="'background-color:' + column.color + '20;'">
                                         <button class="o_subject_filter_button"
                                                 type="button"
-                                                t-att-class="state.selectedSubjectId === subject.id ? 'is-selected' : ''"
-                                                t-att-title="state.selectedSubjectId === subject.id ? 'Show all subjects' : 'Show only ' + subject.name"
-                                                t-on-click="() => this.onSubjectClick(subject.id)">
-                                            <div class="o_subject_name_rotated" t-out="subject.name"/>
+                                                t-att-class="isColumnSelected(column) ? 'is-selected' : ''"
+                                                t-att-title="isColumnSelected(column) ? 'Show all ' + (column.type === 'subject' ? 'subjects' : 'categories') : 'Show only ' + column.label"
+                                                t-on-click="() => this.onColumnClick(column)">
+                                            <div class="o_subject_name_rotated" t-out="column.label"/>
                                         </button>
                                     </th>
                                 </t>
@@ -94,15 +108,15 @@
                                     </button>
                                 </th>
                                 <td class="o_count_cell_header"><strong>GCSE</strong></td>
-                                <t t-foreach="visibleSubjects" t-as="subject" t-key="'total_' + subject.id">
+                                <t t-foreach="visibleColumns" t-as="column" t-key="'total_' + column.key">
                                     <td class="o_subject_total_header"
-                                        t-att-style="'background-color:' + subject.color + '30;'">
+                                        t-att-style="'background-color:' + column.color + '30;'">
                                         <button class="o_subject_total_filter_button"
                                                 type="button"
-                                                t-att-class="state.selectedSubjectId === subject.id ? 'is-selected' : ''"
-                                                title="Hide this subject"
-                                                t-on-click="() => this.onSubjectTotalClick(subject.id)">
-                                            <strong t-out="getSubjectTotal(subject.id)"/>
+                                                t-att-class="isColumnSelected(column) ? 'is-selected' : ''"
+                                                t-att-title="column.type === 'subject' ? 'Hide this subject' : 'Hide this category'"
+                                                t-on-click="() => this.onColumnTotalClick(column)">
+                                            <strong t-out="getColumnTotal(column)"/>
                                         </button>
                                     </td>
                                 </t>
@@ -121,15 +135,15 @@
                                         </button>
                                     </td>
                                     <td class="o_student_total" t-out="getStudentTotal(student.id)"/>
-                                    <t t-foreach="visibleSubjects" t-as="subject" t-key="student.id + '_' + subject.id">
+                                    <t t-foreach="visibleColumns" t-as="column" t-key="student.id + '_' + column.key">
                                         <td class="o_matrix_cell"
-                                            t-att-style="hasCell(student.id, subject.id) ? 'background-color:' + subject.color + '40;' : ''">
-                                            <span t-if="hasCell(student.id, subject.id)"
-                                                  t-attf-class="o_tick_mark #{getTickClass(student.id, subject.id)}"
-                                                  t-out="getTickSymbol(student.id, subject.id)"/>
-                                            <sup t-if="getGcseSuperscript(student.id, subject.id)"
+                                            t-att-style="hasColumnCell(student.id, column) ? 'background-color:' + column.color + '40;' : ''">
+                                            <span t-if="hasColumnCell(student.id, column)"
+                                                 t-attf-class="o_tick_mark #{getColumnTickClass(student.id, column)}"
+                                                 t-out="getColumnTickSymbol(student.id, column)"/>
+                                            <sup t-if="getColumnSuperscript(student.id, column)"
                                                  class="o_gcse_superscript"
-                                                 t-out="getGcseSuperscript(student.id, subject.id)"/>
+                                                 t-out="getColumnSuperscript(student.id, column)"/>
                                         </td>
                                     </t>
                                 </tr>
