@@ -234,7 +234,8 @@ class APSAwardVote(models.Model):
         Returns:
             dict with keys:
                 - series: list of {id, name} for the series dimension
-                - recipients: list of {id, name, votes: {series_id: count}, total}
+                - recipients: list of {id, name, votes: {series_id: count}, total, latest_vote_date}
+                - detail_rows: vote counts and IDs grouped by recipient, voter and submission date
                 - certificate_counts: dict of {partner_id: int} (empty dict when overlay != 'certificates')
         """
         filters = filters or {}
@@ -271,7 +272,8 @@ class APSAwardVote(models.Model):
         # Fetch votes with all possible series fields
         votes = self.search_read(
             domain,
-            ['recipient_partner_id', 'vote_round_id', 'award_category_id', 'award_sub_category_id'],
+            ['recipient_partner_id', 'voter_partner_id', 'vote_round_id', 'award_category_id',
+             'award_sub_category_id', 'submitted_date'],
         )
 
         # Map series IDs to names
@@ -345,6 +347,7 @@ class APSAwardVote(models.Model):
 
         # Aggregate: recipient -> series item -> count + vote IDs
         recipient_data = {}
+        detail_data = {}
         for v in votes:
             partner = v['recipient_partner_id']
             if not partner:
@@ -355,16 +358,39 @@ class APSAwardVote(models.Model):
 
             def _ensure_recipient(d, p_id, p_name):
                 if p_id not in d:
-                    d[p_id] = {'id': p_id, 'name': p_name, 'votes': {}, 'total': 0, 'vote_ids': {}}
+                    d[p_id] = {
+                        'id': p_id, 'name': p_name, 'votes': {}, 'total': 0,
+                        'vote_ids': {}, 'latest_vote_date': False,
+                    }
 
-            def _add_vote(d, p_id, s_id, vote_id):
+            def _add_vote(d, p_id, s_id, vote_id, submitted_date):
                 d[p_id]['votes'][s_id] = d[p_id]['votes'].get(s_id, 0) + 1
                 d[p_id]['total'] += 1
+                if submitted_date and (not d[p_id]['latest_vote_date'] or submitted_date > d[p_id]['latest_vote_date']):
+                    d[p_id]['latest_vote_date'] = submitted_date
                 if s_id not in d[p_id]['vote_ids']:
                     d[p_id]['vote_ids'][s_id] = []
                 d[p_id]['vote_ids'][s_id].append(vote_id)
                 if s_id not in series_ids_in_data:
                     series_ids_in_data.add(s_id)
+                voter = v['voter_partner_id']
+                voter_id = voter[0] if voter else False
+                key = (p_id, voter_id, submitted_date)
+                if key not in detail_data:
+                    detail_data[key] = {
+                        'id': p_id,
+                        'name': pname,
+                        'voter_id': voter_id,
+                        'voter_name': voter[1] if voter else '',
+                        'submitted_date': submitted_date,
+                        'votes': {},
+                        'total': 0,
+                        'vote_ids': {},
+                    }
+                row = detail_data[key]
+                row['votes'][s_id] = row['votes'].get(s_id, 0) + 1
+                row['total'] += 1
+                row['vote_ids'].setdefault(s_id, []).append(vote_id)
 
             # Determine the series ID for this vote
             if series_by == 'voting_set':
@@ -372,22 +398,22 @@ class APSAwardVote(models.Model):
                 vs_ids = round_to_voting_sets.get(rid, []) if rid else []
                 for vs_id in vs_ids:
                     _ensure_recipient(recipient_data, pid, pname)
-                    _add_vote(recipient_data, pid, vs_id, vid)
+                    _add_vote(recipient_data, pid, vs_id, vid, v['submitted_date'])
             elif series_by == 'category':
                 sid = v['award_category_id'][0] if v['award_category_id'] else False
                 if sid:
                     _ensure_recipient(recipient_data, pid, pname)
-                    _add_vote(recipient_data, pid, sid, vid)
+                    _add_vote(recipient_data, pid, sid, vid, v['submitted_date'])
             elif series_by == 'sub_category':
                 sid = v['award_sub_category_id'][0] if v['award_sub_category_id'] else False
                 if sid:
                     _ensure_recipient(recipient_data, pid, pname)
-                    _add_vote(recipient_data, pid, sid, vid)
+                    _add_vote(recipient_data, pid, sid, vid, v['submitted_date'])
             else:  # 'round'
                 sid = v['vote_round_id'][0] if v['vote_round_id'] else False
                 if sid:
                     _ensure_recipient(recipient_data, pid, pname)
-                    _add_vote(recipient_data, pid, sid, vid)
+                    _add_vote(recipient_data, pid, sid, vid, v['submitted_date'])
 
         # Sort by total descending, then name
         recipients = sorted(
@@ -428,6 +454,7 @@ class APSAwardVote(models.Model):
         return {
             'series': series_list,
             'recipients': recipients,
+            'detail_rows': list(detail_data.values()),
             'certificate_counts': certificate_counts,
         }
 

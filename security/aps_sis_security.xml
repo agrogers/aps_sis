@@ -213,8 +213,7 @@
             <field name="groups" eval="[(4, ref('group_aps_student'))]"/>
         </record>
 
-        <!-- Award voting visibility: teachers are assigned through voting sets.
-             APEX and Awards Managers receive unrestricted overrides below. -->
+        <!-- Voting-set and round visibility is group-based; vote visibility is global. -->
         <record id="rule_aps_award_voting_set_teacher" model="ir.rule">
             <field name="name">Teacher (APEX): Assigned Award Voting Sets</field>
             <field name="model_id" ref="model_aps_award_voting_set"/>
@@ -230,14 +229,26 @@
         </record>
 
         <record id="rule_aps_award_vote_teacher" model="ir.rule">
-            <field name="name">Teacher (APEX): Assigned Award Votes or Own Votes</field>
+            <field name="name">Award Votes: Own, Managed or Pastoral Care</field>
             <field name="model_id" ref="model_aps_award_vote"/>
             <field name="domain_force">
-                ['|',
+                ['|', '|',
                   ('voter_partner_id', '=', user.partner_id.id),
-                  ('vote_round_id.voting_set_ids.vote_set_managers', '=', user.partner_id.id)]
+                  ('vote_round_id.voting_set_ids.vote_set_managers', '=', user.partner_id.id),
+                  '&amp;',
+                  ('vote_round_id.voting_set_ids.vote_set_restricted_managers', '=', user.partner_id.id),
+                  ('recipient_partner_id.aps_student_ids', 'any', [
+                      ('enrollment_ids', 'any', [
+                          ('active', '=', True),
+                          ('state', '=', 'enrolled'),
+                          ('class_id.subject_id.category_id.tag_ids.name', '=', 'Home Class'),
+                          '|',
+                          ('class_id.teacher_ids', 'in', [user.partner_id.id]),
+                          ('class_id.assistant_teacher_ids', 'in', [user.partner_id.id]),
+                      ]),
+                  ])]
             </field>
-            <field name="groups" eval="[(4, ref('group_aps_teacher'))]"/>
+            <field name="groups" eval="[(5, 0, 0)]"/>
         </record>
 
         <record id="rule_aps_award_voting_set_manager" model="ir.rule">

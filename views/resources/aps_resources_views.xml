@@ -300,22 +300,30 @@
                                 <list default_order="sequence,name" >
                                     <field name="sequence" widget="handle"/>
                                     <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
+                                    <field name="id" string="ID" optional="hide"/>
+                                    <field name="is_favourite" widget="boolean_favorite" nolabel="1" optional="hide" string="★"/>
                                     <field name="name" optional="show"/>
                                     <field name="display_name" optional="hide"/>
                                     <field name="type_id" optional="show"/>
                                     <field name="category" optional="hide"/>
                                     <field name="marks" optional="hide" sum="total"/>
+                                    <field name="weight" optional="hide"/>
+                                    <field name="points_scale" optional="hide"/>
+                                    <field name="score_contributes_to_parent" widget="boolean_toggle" optional="hide"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                                     <field name="tag_ids" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
                                     <field name="description" optional="show"/>
+                                    <field name="parent_ids" optional="hide"/>
                                     <field name="has_question" optional="hide"/>
                                     <field name="has_answer" optional="hide"/>
                                     <field name="child_count" optional="hide"/>
-                                    <field name="child_count" optional="hide"/>
+                                    <field name="has_child_resources" optional="hide"/>
+                                    <field name="has_supporting_resources" optional="hide"/>
                                     <field name="url" optional="hide"/>
                                     <field name="allow_subject_editing" widget="boolean_toggle" optional="hide"/>
-                                    <field name="points_scale" optional="hide"/>
                                     <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
+                                    <field name="create_date" optional="hide"/>
+                                    <field name="write_date" optional="hide"/>
                                     <!-- Parent-child custom name pill: shows custom name or Create... -->
                                     <field name="parent_custom_name_data" string="Custom Name" widget="parent_child_name_pill" context="{'current_parent_id': parent.id}"/>
                                     <!-- Quick access to full custom name list -->
@@ -338,15 +346,30 @@
                                 <list default_order="sequence,name" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="type_icon" widget="image" options="{'size': [20, 20]}" class="me-1" nolabel="1" optional="hide"/>
+                                    <field name="id" string="ID" optional="hide"/>
+                                    <field name="is_favourite" widget="boolean_favorite" nolabel="1" optional="hide" string="★"/>
                                     <field name="name" optional="show"/>
                                     <field name="display_name" optional="hide"/>
                                     <field name="type_id" optional="show"/>
                                     <field name="category" optional="hide"/>
+                                    <field name="marks" optional="hide" sum="total"/>
+                                    <field name="weight" optional="hide"/>
+                                    <field name="points_scale" optional="hide"/>
+                                    <field name="score_contributes_to_parent" widget="boolean_toggle" optional="hide"/>
                                     <field name="subjects" widget="many2many_tags" options="{'no_create': True}" optional="hide"/>
                                     <field name="tag_ids" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
                                     <field name="description" optional="show"/>
+                                    <field name="parent_ids" optional="hide"/>
+                                    <field name="has_question" optional="hide"/>
+                                    <field name="has_answer" optional="hide"/>
                                     <field name="child_count" optional="hide"/>
+                                    <field name="has_child_resources" optional="hide"/>
+                                    <field name="has_supporting_resources" optional="hide"/>
                                     <field name="url" optional="hide"/>
+                                    <field name="allow_subject_editing" widget="boolean_toggle" optional="hide"/>
+                                    <field name="supporting_resources_buttons" widget="resource_links" optional="hide"/>
+                                    <field name="create_date" optional="hide"/>
+                                    <field name="write_date" optional="hide"/>
                                     <button name="get_formview_action" type="object" string="Open..." title="Open Submission" class="btn-secondary btn-sm"/>
                                 </list>
                             </field>

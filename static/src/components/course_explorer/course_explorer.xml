@@ -310,6 +310,8 @@
                         <div class="ce_section_body oe_calculateKioskHeight"
                              t-att-data-image-viewer-model="'aps.subject'"
                              t-att-data-image-viewer-id="state.selectedSubjectId"
+                             t-att-data-image-viewer-fallback-model="'aps.resources'"
+                             t-att-data-image-viewer-fallback-id="section.id"
                                       t-att-data-image-viewer-source-model="section.highlightSourceModel"
                                       t-att-data-image-viewer-source-id="section.highlightSourceId"
                                       t-att-data-image-viewer-source-field="section.highlightSourceField"

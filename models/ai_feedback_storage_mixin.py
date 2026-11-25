@@ -425,8 +425,9 @@ class APSAIFeedbackStorageMixin(models.AbstractModel):
         prompts = self._get_sample_comparison_prompts(resource, strategy_prompt)
         rubric = target_context.get('model_answer') or ''
         comparison_instructions = _(
-            'Compare the Answer 1 in <answer_1> with the Answer 2 in <answer_2>. '
-            'These labels are authoritative. Never swap them, refer to them as Answer A or Answer B, or infer either '
+            'Compare Answer 1 (the <code>answer_1</code> section containing the student submission) with '
+            'Answer 2 (the <code>answer_2</code> section containing the benchmark sample). '
+            'These labels and section keys are authoritative. Never swap them, refer to them as Answer A or Answer B, or infer either '
             'answer from the order in which text appears. Use the supplied marking rubric to judge '
             'both answers against the same task. Focus only on the criteria stated '
             'in the supplied rubric. Do not introduce, assume, or substitute a topic or criteria not stated in the '

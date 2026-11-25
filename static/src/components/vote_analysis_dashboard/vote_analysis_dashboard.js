@@ -7,6 +7,11 @@ import { cookie } from "@web/core/browser/cookie";
 
 const COMPONENT_KEY = "vote_analysis_dashboard";
 const ACTIVE_TAB_STORAGE_KEY = "aps_sis.vote_analysis_dashboard.active_tab";
+const SHOW_VOTER_STORAGE_KEY = "aps_sis.vote_analysis_dashboard.show_voter";
+const SHOW_DATE_STORAGE_KEY = "aps_sis.vote_analysis_dashboard.show_date";
+const SHOW_SERIES_STORAGE_KEY = "aps_sis.vote_analysis_dashboard.show_series";
+const SORT_COLUMN_STORAGE_KEY = "aps_sis.vote_analysis_dashboard.sort_column";
+const SORT_DIRECTION_STORAGE_KEY = "aps_sis.vote_analysis_dashboard.sort_direction";
 const DASHBOARD_TABS = ["chart", "data", "details", "certs"];
 
 export class VoteAnalysisDashboard extends Component {
@@ -35,6 +40,21 @@ export class VoteAnalysisDashboard extends Component {
         this._isDarkMode = cookie.get("color_scheme") === "dark";
         this.filterPresets = new FilterPresetManager(this.orm, COMPONENT_KEY);
         const savedActiveTab = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+        const showVoter = window.localStorage.getItem(SHOW_VOTER_STORAGE_KEY) !== "false";
+        const showDate = window.localStorage.getItem(SHOW_DATE_STORAGE_KEY) !== "false";
+        const showSeries = window.localStorage.getItem(SHOW_SERIES_STORAGE_KEY) !== "false";
+        const savedSortColumn = window.localStorage.getItem(SORT_COLUMN_STORAGE_KEY);
+        const savedSortDirection = window.localStorage.getItem(SORT_DIRECTION_STORAGE_KEY);
+        let sortColumn = ["name", "voter_name", "submitted_date", "total"].includes(savedSortColumn)
+            ? savedSortColumn
+            : (/^\d+$/.test(savedSortColumn || "") ? Number(savedSortColumn) : "total");
+        let sortDirection = ["asc", "desc"].includes(savedSortDirection) ? savedSortDirection : "desc";
+        if ((!showVoter && sortColumn === "voter_name") ||
+            (!showDate && sortColumn === "submitted_date") ||
+            (!showSeries && typeof sortColumn === "number")) {
+            sortColumn = "total";
+            sortDirection = "desc";
+        }
 
         this.state = useState({
             loading: true,
@@ -57,12 +77,17 @@ export class VoteAnalysisDashboard extends Component {
             subCategoryOptions: [],
             series: [],
             recipients: [],
+            detailRows: [],
             chartOrder: "value_desc",
-            sortColumn: "total",
-            sortDirection: "desc",
+            showVoter,
+            showDate,
+            showSeries,
+            sortColumn,
+            sortDirection,
             presets: [],
             activePresetId: null,
             activePresetName: "",
+            creatingPreset: false,
             savingPreset: false,
             detailRecipient: null,
             detailRoundId: null,
@@ -98,7 +123,7 @@ export class VoteAnalysisDashboard extends Component {
         onWillUnmount(() => {
             this._destroyDetailGrid();
             if (this._chartClickHandler && this.chartRef.el) {
-                this.chartRef.el.removeEventListener('click', this._chartClickHandler);
+                this.chartRef.el.removeEventListener('click', this._chartClickHandler, true);
                 this._chartClickHandler = null;
             }
             if (this._chartMouseMoveHandler && this.chartRef.el) {
@@ -137,6 +162,7 @@ export class VoteAnalysisDashboard extends Component {
         const data = await this.orm.call("aps.award.vote", "get_vote_analysis_data", [], { filters });
         this.state.series = data.series || [];
         this.state.recipients = data.recipients || [];
+        this.state.detailRows = data.detail_rows;
         this.state.certificateCounts = data.certificate_counts || {};
         this.state.loading = false;
     }
@@ -157,7 +183,7 @@ export class VoteAnalysisDashboard extends Component {
     _renderChart() {
         if (!this.chartRef.el) { return; }
         if (this._chartClickHandler) {
-            this.chartRef.el.removeEventListener('click', this._chartClickHandler);
+            this.chartRef.el.removeEventListener('click', this._chartClickHandler, true);
             this._chartClickHandler = null;
         }
         if (this._chartMouseMoveHandler) {
@@ -311,10 +337,6 @@ export class VoteAnalysisDashboard extends Component {
             const rect = this.chartRef.el.getBoundingClientRect();
             const x = nativeEvent.clientX - rect.left;
             const y = nativeEvent.clientY - rect.top;
-            // Check if click hit a bar element — if so, let Chart.js onClick handle it
-            const elements = this.chart.getElementsAtEventForMode(nativeEvent, 'index', { intersect: false }, false);
-            if (elements.length > 0) return;
-            // Check icon rects
             const iconRects = this._chartIconRects;
             if (!iconRects) return;
             for (const iconRect of iconRects) {
@@ -322,14 +344,14 @@ export class VoteAnalysisDashboard extends Component {
                     y >= iconRect.y && y <= iconRect.y + iconRect.h) {
                     const recipients = this.chartOrderedRecipients;
                     if (iconRect.index >= 0 && iconRect.index < recipients.length) {
+                        nativeEvent.stopImmediatePropagation();
                         this.onTotalClick(recipients[iconRect.index]);
                     }
                     return;
                 }
             }
-
         };
-        this.chartRef.el.addEventListener('click', this._chartClickHandler);
+        this.chartRef.el.addEventListener('click', this._chartClickHandler, true);
 
         // Mousemove handler for tooltip + pointer cursor on icon hover
         this._chartMouseMoveHandler = (nativeEvent) => {
@@ -419,6 +441,7 @@ export class VoteAnalysisDashboard extends Component {
     }
 
     async clearAllFilters() {
+        await this.filterPresets.clearActive();
         this.state.dateFrom = "";
         this.state.dateTo = "";
         this.state.selectedRoundIds = [];
@@ -432,6 +455,7 @@ export class VoteAnalysisDashboard extends Component {
         this.state.overlay = "none";
         this.state.activePresetId = null;
         this.state.activePresetName = "";
+        this.state.creatingPreset = false;
         await this._loadData();
     }
 
@@ -472,13 +496,22 @@ export class VoteAnalysisDashboard extends Component {
         this.state.overlay = data.overlay || "none";
     }
 
-    onPresetNameInput(ev) { this.state.activePresetName = ev.target.value; this.state.activePresetId = null; }
+    onPresetNameInput(ev) { this.state.activePresetName = ev.target.value; }
 
     async onPresetSelect(ev) {
-        const presetId = ev.target.value ? parseInt(ev.target.value, 10) : null;
-        if (!presetId) { this.state.activePresetId = null; this.state.activePresetName = ""; return; }
+        if (ev.target.value === "new_filter") {
+            this.state.activePresetName = "";
+            this.state.creatingPreset = true;
+            return;
+        }
+        if (!ev.target.value) {
+            await this.clearAllFilters();
+            return;
+        }
+        const presetId = parseInt(ev.target.value, 10);
         const preset = await this.filterPresets.loadPreset(presetId);
-        if (!preset) { return; }
+        await this.filterPresets.setActive(presetId);
+        this.state.presets = this.filterPresets.presetList;
         this.state.activePresetId = presetId;
         this.state.activePresetName = preset.name;
         this._applyFilterData(preset.filter_data);
@@ -489,14 +522,24 @@ export class VoteAnalysisDashboard extends Component {
     async onPresetSave() {
         const name = (this.state.activePresetName || "").trim();
         if (!name) { return; }
+        if (this.state.presets.some((preset) => preset.name === name)) {
+            this.notification.add(`A filter named "${name}" already exists.`, { type: "warning" });
+            return;
+        }
         this.state.savingPreset = true;
         try {
             const result = await this.filterPresets.save(name, this._getFilterData());
             this.state.activePresetId = result.id;
             this.state.activePresetName = name;
+            this.state.creatingPreset = false;
             this.state.presets = this.filterPresets.presetList || [];
             this.notification.add(`Preset "${name}" ${result.action === 'created' ? 'saved' : 'updated'}`, { type: "success" });
         } finally { this.state.savingPreset = false; }
+    }
+
+    onPresetCancel() {
+        this.state.creatingPreset = false;
+        this.state.activePresetName = "";
     }
 
     async onPresetDelete() {
@@ -787,28 +830,89 @@ export class VoteAnalysisDashboard extends Component {
     // ------------------------------------------------------------------
 
     get sortedRecipients() {
-        const recipients = [...this.state.recipients];
+        const groups = new Map();
+        for (const detail of this.state.detailRows) {
+            const key = JSON.stringify([
+                detail.id,
+                this.state.showVoter ? detail.voter_id : null,
+                this.state.showDate ? detail.submitted_date : null,
+            ]);
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    ...detail,
+                    key,
+                    votes: {},
+                    vote_ids: {},
+                    total: 0,
+                });
+            }
+            const row = groups.get(key);
+            row.total += detail.total;
+            for (const [seriesId, count] of Object.entries(detail.votes)) {
+                row.votes[seriesId] = (row.votes[seriesId] || 0) + count;
+                if (!row.vote_ids[seriesId]) {
+                    row.vote_ids[seriesId] = [];
+                }
+                row.vote_ids[seriesId].push(...detail.vote_ids[seriesId]);
+            }
+        }
+        const recipients = [...groups.values()];
         const column = this.state.sortColumn;
         const direction = this.state.sortDirection === "asc" ? 1 : -1;
         recipients.sort((a, b) => {
             let aVal, bVal;
-            if (column === "name") {
-                aVal = (a.name || "").toLowerCase(); bVal = (b.name || "").toLowerCase();
-                if (aVal < bVal) return -1 * direction;
-                if (aVal > bVal) return 1 * direction;
-                return 0;
+            if (["name", "voter_name", "submitted_date"].includes(column)) {
+                aVal = a[column] || "";
+                bVal = b[column] || "";
+                if (column === "submitted_date" && (!aVal || !bVal) && aVal !== bVal) {
+                    return aVal ? -1 : 1;
+                }
+                const comparison = aVal.localeCompare(bVal);
+                if (comparison) return comparison * direction;
+            } else {
+                if (column === "total") { aVal = a.total || 0; bVal = b.total || 0; }
+                else { aVal = a.votes?.[column] || 0; bVal = b.votes?.[column] || 0; }
+                if (aVal !== bVal) return (aVal - bVal) * direction;
             }
-            if (column === "total") { aVal = a.total || 0; bVal = b.total || 0; }
-            else { aVal = a.votes?.[column] || 0; bVal = b.votes?.[column] || 0; }
-            if (aVal === bVal) return (a.name || "").localeCompare(b.name || "");
-            return (aVal - bVal) * direction;
+            return (a.name || "").localeCompare(b.name || "") ||
+                (a.voter_name || "").localeCompare(b.voter_name || "") ||
+                (a.submitted_date || "").localeCompare(b.submitted_date || "");
         });
         return recipients;
     }
 
     onSort(column) {
         if (this.state.sortColumn === column) this.state.sortDirection = this.state.sortDirection === "asc" ? "desc" : "asc";
-        else { this.state.sortColumn = column; this.state.sortDirection = column === "name" ? "asc" : "desc"; }
+        else {
+            this.state.sortColumn = column;
+            this.state.sortDirection = ["name", "voter_name"].includes(column) ? "asc" : "desc";
+        }
+        this._saveTableSort();
+    }
+
+    _saveTableSort() {
+        window.localStorage.setItem(SORT_COLUMN_STORAGE_KEY, this.state.sortColumn);
+        window.localStorage.setItem(SORT_DIRECTION_STORAGE_KEY, this.state.sortDirection);
+    }
+
+    onTableColumnChange(column, ev) {
+        if (column === "voter") {
+            this.state.showVoter = ev.target.checked;
+            window.localStorage.setItem(SHOW_VOTER_STORAGE_KEY, this.state.showVoter);
+        } else if (column === "date") {
+            this.state.showDate = ev.target.checked;
+            window.localStorage.setItem(SHOW_DATE_STORAGE_KEY, this.state.showDate);
+        } else if (column === "series") {
+            this.state.showSeries = ev.target.checked;
+            window.localStorage.setItem(SHOW_SERIES_STORAGE_KEY, this.state.showSeries);
+        }
+        if ((!this.state.showVoter && this.state.sortColumn === "voter_name") ||
+            (!this.state.showDate && this.state.sortColumn === "submitted_date") ||
+            (!this.state.showSeries && typeof this.state.sortColumn === "number")) {
+            this.state.sortColumn = "total";
+            this.state.sortDirection = "desc";
+            this._saveTableSort();
+        }
     }
 
     getSortIconClass(column) {
@@ -821,6 +925,11 @@ export class VoteAnalysisDashboard extends Component {
     get chartOrderedRecipients() {
         const recipients = [...this.state.recipients];
         switch (this.state.chartOrder) {
+            case "recent_desc":
+                recipients.sort((a, b) =>
+                    (b.latest_vote_date || "").localeCompare(a.latest_vote_date || "") ||
+                    (a.name || "").localeCompare(b.name || ""));
+                break;
             case "name_asc": recipients.sort((a, b) => (a.name || "").localeCompare(b.name || "")); break;
             case "name_desc": recipients.sort((a, b) => (b.name || "").localeCompare(a.name || "")); break;
             case "value_asc": recipients.sort((a, b) => a.total - b.total); break;

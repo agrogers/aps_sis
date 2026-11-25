@@ -4,6 +4,11 @@ from odoo import fields, models, api
 class ResPartnerStudent(models.Model):
     _inherit = 'res.partner'
 
+    aps_student_ids = fields.One2many(
+        'aps.student',
+        'partner_id',
+        string='APS Student Records',
+    )
     aps_student_count = fields.Integer(
         compute='_compute_aps_student_count',
         string='APS Student Records',

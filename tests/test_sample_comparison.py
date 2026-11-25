@@ -135,6 +135,9 @@ class TestSampleComparison(TransactionCase):
         self.assertIn('"result"', context['output_schema_override'])
         self.assertIn('Answer 1', context['instructions'])
         self.assertIn('Answer 2', context['instructions'])
+        compiled_instructions = self.model._html_to_markdown(context['instructions']).casefold()
+        self.assertIn('`answer_1` section containing the student submission', compiled_instructions)
+        self.assertIn('`answer_2` section containing the benchmark sample', compiled_instructions)
         self.assertNotIn('sample answer', context['instructions'].casefold())
         self.assertIn('Do not introduce, assume, or substitute a topic', context['instructions'])
 

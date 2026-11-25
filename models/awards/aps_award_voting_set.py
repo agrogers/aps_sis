@@ -18,9 +18,19 @@ class APSAwardVotingSet(models.Model):
         'aps_award_voting_set_manager_rel',
         'voting_set_id',
         'partner_id',
-        string='Vote Set Managers',
+        string='General Managers',
         domain=[('user_ids', '!=', False)],
         help='Users who can view votes belonging to this voting set.',
+    )
+
+    vote_set_restricted_managers = fields.Many2many(
+        'res.partner',
+        'aps_award_voting_set_restricted_manager_rel',
+        'voting_set_id',
+        'partner_id',
+        string='Restricted Managers',
+        domain=[('user_ids', '!=', False)],
+        help='Users who can view votes allocated to students (ie Home Class teachers) or votes for employees they manage.',
     )
 
     round_ids = fields.Many2many(

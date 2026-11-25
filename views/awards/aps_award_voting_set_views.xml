@@ -11,6 +11,11 @@
                 <field name="name"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
+                <field name="color" widget="color" optional="hide"/>
+                <field name="vote_set_managers" widget="many2many_tags" optional="hide"/>
+                <field name="vote_set_restricted_managers" widget="many2many_tags" optional="hide"/>
+                <field name="round_ids" widget="many2many_tags" optional="hide"/>
+                <field name="vote_ids" widget="many2many_tags" optional="hide"/>
             </list>
         </field>
     </record>
@@ -32,6 +37,10 @@
                             <field name="date_end"/>
                             <field name="color" widget="color"/>
                             <field name="vote_set_managers"
+                                   widget="many2many_tags"
+                                   domain="[('user_ids', '!=', False)]"
+                                   context="{'create': False}"/>
+                            <field name="vote_set_restricted_managers"
                                    widget="many2many_tags"
                                    domain="[('user_ids', '!=', False)]"
                                    context="{'create': False}"/>
@@ -80,6 +89,7 @@
         <field name="arch" type="xml">
             <search string="Voting Sets">
                 <field name="name"/>
+                <field name="vote_set_restricted_managers"/>
             </search>
         </field>
     </record>

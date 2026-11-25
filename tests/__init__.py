@@ -8,6 +8,8 @@ from . import test_chapter_tagging
 from . import test_sample_scaling
 from . import test_sample_comparison
 from . import test_vote_round_mass_update
+from . import test_award_vote_security
+from . import test_vote_analysis
 from . import test_class_tag_enrol_wizard
 from . import test_weekly_submission_result
 from . import test_aps_time_tracking

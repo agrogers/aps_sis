@@ -59,7 +59,7 @@
                                     <field name="child_reschedule_id" readonly="1"/>
                                 </group>
                                 <group string="Award">
-                                    <field name="voting_set_ids" widget="many2many_tags"/>
+                                    <field name="voting_set_ids" widget="clickable_many2many_tags"/>
                                     <field name="color" widget="color"/>
                                     <field name="award_category_id"/>
                                     <field name="award_sub_category_id"
