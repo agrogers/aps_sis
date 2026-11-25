@@ -100,6 +100,12 @@ class APSExamPaperPage(models.Model):
 
     def action_analyse_page_with_ai(self):
         self.ensure_one()
+        return self.import_id._execute_workflow_action(
+            _('Page Analysis'),
+            self._queue_page_analysis,
+        )
+
+    def _queue_page_analysis(self):
         run = self.import_id._create_page_analysis_run(
             self, model=self.import_id.single_page_ai_model_id or self.import_id.ai_model_id,
         )

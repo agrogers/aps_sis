@@ -15,6 +15,12 @@ class APSExamPaperImportDetect(models.Model):
     def action_detect_sections(self):
         """Build detected sections from the stored page-analysis responses."""
         self.ensure_one()
+        return self._execute_workflow_action(
+            _('Section Detection'),
+            self._detect_sections,
+        )
+
+    def _detect_sections(self):
         summary = self._build_sections_from_page_analysis()
         self.write({'state': 'analysing', 'progress': 60})
         # Re-open the form so the sections list and state refresh without a

@@ -1,3 +1,4 @@
+import base64
 from datetime import timedelta
 
 from odoo import fields
@@ -24,13 +25,20 @@ class TestAPSStudentMatrix(TransactionCase):
             'color_rgb': '#123456',
             'tag_ids': [(6, 0, category_tag.ids)],
         })
+        cls.level = cls.env['aps.level'].create({
+            'name': 'Student Matrix Level',
+            'short_name': 'SML',
+            'sequence': 5,
+        })
         cls.home_subject = cls.env['aps.subject'].create({
             'name': 'Student Matrix Home Subject',
             'category_id': home_category.id,
+            'level_id': cls.level.id,
         })
         cls.second_home_subject = cls.env['aps.subject'].create({
             'name': 'Student Matrix Second Home Subject',
             'category_id': home_category.id,
+            'level_id': cls.level.id,
         })
         cls.other_subject = cls.env['aps.subject'].create({
             'name': 'Student Matrix Other Subject',
@@ -105,6 +113,19 @@ class TestAPSStudentMatrix(TransactionCase):
             '#123456',
         )
         self.assertEqual(
+            subjects_by_id[self.home_subject.id]['level_id'],
+            self.level.id,
+        )
+        self.assertEqual(
+            subjects_by_id[self.home_subject.id]['level_name'],
+            self.level.display_name,
+        )
+        self.assertEqual(
+            subjects_by_id[self.home_subject.id]['level_sequence'],
+            5,
+        )
+        self.assertFalse(subjects_by_id[self.other_subject.id]['level_id'])
+        self.assertEqual(
             subjects_by_id[self.other_subject.id]['category_key'],
             'uncategorized',
         )
@@ -116,6 +137,26 @@ class TestAPSStudentMatrix(TransactionCase):
             data['category_totals'],
             {str(self.home_subject.category_id.id): 2, 'uncategorized': 1},
         )
+
+    def test_matrix_subject_icons_prefer_subject_then_category_icon(self):
+        category_icon = base64.b64encode(b'category-icon')
+        subject_icon = base64.b64encode(b'subject-icon')
+        self.home_subject.category_id.write({'icon': category_icon})
+        self.home_subject.write({'icon': subject_icon})
+        self.second_home_subject.write({'icon': False})
+
+        data = self.matrix.get_matrix_data([self.home_class.id], self.past_year.id)
+        subjects_by_id = {subject['id']: subject for subject in data['subjects']}
+
+        self.assertEqual(
+            subjects_by_id[self.home_subject.id]['icon_url'],
+            f'/web/image/aps.subject/{self.home_subject.id}/icon',
+        )
+        self.assertEqual(
+            subjects_by_id[self.second_home_subject.id]['icon_url'],
+            f'/web/image/aps.subject.category/{self.home_subject.category_id.id}/icon',
+        )
+        self.assertFalse(subjects_by_id[self.other_subject.id]['icon_url'])
 
     def test_current_year_classes_still_exclude_finished_enrollments(self):
         today = fields.Date.today()

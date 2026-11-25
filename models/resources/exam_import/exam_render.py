@@ -1,11 +1,8 @@
 """PDF page rendering for exam paper imports."""
 import base64
-import logging
 
 from odoo import _, models
 from odoo.exceptions import UserError, ValidationError
-
-_logger = logging.getLogger(__name__)
 
 
 class APSExamPaperImportRender(models.Model):
@@ -13,17 +10,16 @@ class APSExamPaperImportRender(models.Model):
 
     def action_render_pages(self):
         self.ensure_one()
+        return self._execute_workflow_action(_('Render Pages'), self._render_pages)
+
+    def _render_pages(self):
+        self.ensure_one()
         if not 72 <= self.render_dpi <= 300:
             raise ValidationError(_('Render DPI must be between 72 and 300.'))
-        try:
-            self.write({'progress': 20, 'error_message': False})
-            self._render_pdf_pages(self.question_attachment_id, 'question')
-            self._render_pdf_pages(self.mark_scheme_attachment_id, 'mark_scheme')
-            self.write({'state': 'uploaded', 'progress': 40})
-        except Exception as exc:
-            _logger.exception('IGCSE page rendering failed for %s', self.display_name)
-            self.write({'state': 'failed', 'error_message': str(exc)})
-            raise UserError(_('Page rendering failed: %s') % exc) from exc
+        self.write({'progress': 20, 'completed_at': False})
+        self._render_pdf_pages(self.question_attachment_id, 'question')
+        self._render_pdf_pages(self.mark_scheme_attachment_id, 'mark_scheme')
+        self.write({'state': 'uploaded', 'progress': 40})
         return self._open_form()
 
     def _render_pdf_pages(self, pdf_attachment, document_type):

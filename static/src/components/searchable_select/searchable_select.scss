@@ -1,0 +1,35 @@
+.aps-searchable-select {
+    min-width: 0;
+
+    &__button {
+        width: 100%;
+        font-size: 0.875rem;
+        border-radius: 3px;
+        border-color: #96969699;
+        text-align: left;
+
+        &:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        }
+    }
+
+    &__menu {
+        max-height: 80vh;
+        overflow-y: auto;
+
+        .dropdown-item,
+        .dropdown-header {
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+        }
+    }
+
+    &__group-toggle {
+        border: 0;
+        padding: 0;
+        color: inherit;
+        background: transparent;
+        line-height: 1;
+    }
+}

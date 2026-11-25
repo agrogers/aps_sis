@@ -29,6 +29,12 @@ class APSExamPaperImportAnalyse(models.Model):
     def action_analyse_pages_with_ai(self):
         """Queue analysis of all rendered pages and show the shared progress dialog."""
         self.ensure_one()
+        return self._execute_workflow_action(
+            _('Page Analysis'),
+            self._queue_page_analysis,
+        )
+
+    def _queue_page_analysis(self):
         run = self._create_page_analysis_run()
         if not run:
             # Nothing to analyse: the state was already updated, so re-open

@@ -2,10 +2,11 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { PercentPie } from "@aps_sis/components/percent_pie/percent_pie";
+import { SearchableSelect } from "@aps_sis/components/searchable_select/searchable_select";
 
 export class WeeklySubmissionResults extends Component {
     static template = "aps_sis.WeeklySubmissionResults";
-    static components = { PercentPie };
+    static components = { PercentPie, SearchableSelect };
 
     setup() {
         this.orm = useService("orm");
@@ -14,10 +15,7 @@ export class WeeklySubmissionResults extends Component {
         this.toggleType = this.toggleType.bind(this);
         this.selectAllTypes = this.selectAllTypes.bind(this);
         this.selectNoTypes = this.selectNoTypes.bind(this);
-        this.toggleClassDropdown = this.toggleClassDropdown.bind(this);
-        this.selectClass = this.selectClass.bind(this);
         this.onStudentChange = this.onStudentChange.bind(this);
-        this.onDropdownSearchKeydown = this.onDropdownSearchKeydown.bind(this);
         this.storageKey = "aps_sis_weekly_submission_results_filters";
         this.state = useState({
             loading: true,
@@ -25,7 +23,6 @@ export class WeeklySubmissionResults extends Component {
             classId: false,
             classes: [],
             classDropdownOpen: false,
-            classSearch: "",
             studentId: false,
             students: [],
             canSelectAllStudents: true,
@@ -120,37 +117,22 @@ export class WeeklySubmissionResults extends Component {
         await this.load();
     }
 
-    toggleClassDropdown() {
-        this.state.classDropdownOpen = !this.state.classDropdownOpen;
-        this.state.classSearch = "";
+    setClassDropdownOpen(isOpen) {
+        this.state.classDropdownOpen = isOpen;
     }
 
-    async selectClass(classOrEvent) {
-        const classId = classOrEvent?.currentTarget
-            ? Number(classOrEvent.currentTarget.dataset.classId) || false
-            : classOrEvent?.id || false;
-        this.state.classId = classId;
-        this.state.classDropdownOpen = false;
-        this.state.classSearch = "";
+    async selectClass(classId) {
+        this.state.classId = classId ? Number(classId) : false;
         await this.onClassChange();
     }
 
-    onDropdownSearchKeydown(event) {
-        event.stopPropagation();
-    }
-
-    get filteredClasses() {
-        const query = (this.state.classSearch || "").trim().toLowerCase();
-        if (!query) {
-            return this.state.classes;
-        }
-        return this.state.classes.filter((classItem) =>
-            (classItem.name || "").toLowerCase().includes(query)
-        );
-    }
-
-    get selectedClass() {
-        return this.state.classes.find((classItem) => classItem.id === this.state.classId);
+    get classOptions() {
+        return this.state.classes.map((classItem) => ({
+            value: classItem.id,
+            label: classItem.name,
+            iconUrl: classItem.icon_url,
+            group: classItem.level_name,
+        }));
     }
 
     get selectedStudentName() {

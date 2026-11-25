@@ -10,6 +10,7 @@ from ..models.resources.chapter_tagging import (
     chapter_markdown,
     chapter_summary_candidates,
     chapter_text,
+    create_chapter_tagging_run,
 )
 
 
@@ -219,6 +220,30 @@ class TestChapterTagging(TransactionCase):
         self.assertEqual(call.kwargs['related_record'], resource)
         self.assertEqual(run.state, 'completed')
         self.assertIn('Fields sent: Question, Model Answer, Note.', run.result_message)
+
+    def test_openrouter_prompt_caches_static_summary_before_resource(self):
+        self.model.provider_id.api_base_url = 'https://openrouter.ai/api/v1'
+        resource = self._resource(question='<p>Describe a cell.</p>')
+        with patch.object(type(self.env['aps.ai.run']), '_queue_background_processing'):
+            run = create_chapter_tagging_run(resource, self.summary, self.env.uid)
+
+        call = self._process(run, ['Ch01'])
+        payload = self.model._prepare_openrouter_payload(
+            call.args[0], 'resource_chapter_tagging',
+        )
+        system_message, user_message = payload['messages']
+        system_content = system_message['content']
+
+        self.assertEqual(system_message['role'], 'system')
+        self.assertIsInstance(system_content, list)
+        self.assertIn('Allowed chapter labels: Ch01, Ch02, Ch03, Ch04', system_content[0]['text'])
+        self.assertIn('Textbook summary:', system_content[0]['text'])
+        self.assertIn('Ch01: Cells', system_content[0]['text'])
+        self.assertEqual(system_content[0]['cache_control'], {'type': 'ephemeral'})
+        self.assertEqual(user_message, {
+            'role': 'user',
+            'content': 'Resource:\nQuestion:\nDescribe a cell.',
+        })
 
     def test_tags_are_append_only_deduplicated_and_limited_to_three(self):
         existing = self.env['aps.resource.tags'].create([{'name': 'Keep me'}, {'name': 'Ch01'}])

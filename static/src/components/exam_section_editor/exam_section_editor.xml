@@ -143,4 +143,12 @@
             </t>
         </div>
     </t>
+
+    <t t-name="aps_sis.ExamSectionActionDialogHeaderTitle"
+       t-inherit="web.ActionDialog.header"
+       t-inherit-mode="extension">
+        <xpath expr="//h4/t[@t-esc='props.title']" position="replace">
+            <t t-esc="env.dialogData.title || props.title"/>
+        </xpath>
+    </t>
 </templates>

@@ -130,7 +130,7 @@ class APSExamPaperSection(models.Model):
             'ocr_error': False,
         })
         duplicate = super().copy(defaults)
-        if duplicate.import_id.state == 'completed':
+        if duplicate.import_id.state in ('building', 'completed'):
             duplicate.import_id.write({
                 'state': 'analysing',
                 'progress': 60,
@@ -152,7 +152,9 @@ class APSExamPaperSection(models.Model):
             })
         result = super().write(vals)
         if rebuild_required:
-            completed_imports = imports.filtered(lambda item: item.state == 'completed')
+            completed_imports = imports.filtered(
+                lambda item: item.state in ('building', 'completed')
+            )
             completed_imports.write({
                 'state': 'analysing',
                 'progress': 60,
@@ -485,6 +487,12 @@ class APSExamPaperSection(models.Model):
 
     def action_ocr_section(self):
         self.ensure_one()
+        return self.import_id._execute_workflow_action(
+            _('Section OCR'),
+            self._queue_section_ocr,
+        )
+
+    def _queue_section_ocr(self):
         if not self.resource_id:
             raise UserError(_('Build a resource for this section before running OCR.'))
         run = self.import_id._create_ocr_run(self, force=True)

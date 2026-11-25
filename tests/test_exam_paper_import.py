@@ -1,6 +1,8 @@
 import base64
+import importlib.util
 import time
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from odoo.tests.common import TransactionCase
@@ -23,12 +25,15 @@ class TestExamPaperImport(TransactionCase):
             'res_id': self.resource.id,
         })
 
-    def _process_ocr_for_resources(self, resources, ocr_resources=None):
+    def _process_ocr_for_resources(
+        self, resources, ocr_resources=None, completes_import=False, fail_ocr=False,
+    ):
         importer = self.env['aps.exam.paper.import'].create({
             'name': 'Automatic chapter tagging',
             'resource_id': self.resource.id,
             'question_attachment_id': self._attachment('auto-tag-que.pdf').id,
             'mark_scheme_attachment_id': self._attachment('auto-tag-rms.pdf').id,
+            'state': 'building' if completes_import else 'draft',
         })
         sections = self.env['aps.exam.paper.section'].create([
             {
@@ -46,6 +51,7 @@ class TestExamPaperImport(TransactionCase):
             'ocr_section_ids': [(6, 0, ocr_sections.ids)],
             'processor_key': 'exam_ocr',
             'run_type': 'ocr',
+            'completes_import': completes_import,
             'requested_by_id': self.env.uid,
             'state': 'running',
             'status_message': 'Running OCR...',
@@ -59,13 +65,146 @@ class TestExamPaperImport(TransactionCase):
             patch.object(type(run), '_commit_background_work'),
             patch.object(type(run), '_queue_background_processing') as queue,
         ):
-            process_section.return_value = {
-                'question': 'provider_call',
-                'mark_scheme': 'cache_hit',
-            }
+            if fail_ocr:
+                process_section.side_effect = UserError('Simulated OCR failure')
+            else:
+                process_section.return_value = {
+                    'question': 'provider_call',
+                    'mark_scheme': 'cache_hit',
+                }
             run._process_ocr_run(importer, False, time.perf_counter())
         self.assertEqual(process_section.call_count, len(ocr_sections))
         return importer, sections, run, queue.call_count
+
+    def test_workflow_action_persists_issue_and_rolls_back_partial_changes(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Issue handling paper',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('issue-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('issue-rms.pdf').id,
+        })
+
+        def fail_after_partial_write():
+            job.write({'name': 'Partially changed'})
+            raise UserError('Simulated stage failure')
+
+        action = job._execute_workflow_action('Test Stage', fail_after_partial_write)
+
+        self.assertEqual(job.name, 'Issue handling paper')
+        self.assertTrue(job.has_issues)
+        self.assertIn('Simulated stage failure', job.error_message)
+        self.assertTrue(any(
+            'Simulated stage failure' in message.body
+            for message in job.message_ids
+        ))
+        self.assertEqual(action['params']['type'], 'danger')
+
+    def test_manual_state_change_clears_issue_flag_but_keeps_chatter_history(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Issue resolution paper',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('resolve-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('resolve-rms.pdf').id,
+        })
+        job._record_issue('Rendering', 'Previous rendering failure')
+
+        job.write({'state': 'uploaded'})
+
+        self.assertFalse(job.has_issues)
+        self.assertFalse(job.error_message)
+        self.assertTrue(any(
+            'Previous rendering failure' in message.body
+            for message in job.message_ids
+        ))
+
+    def test_render_pages_changes_import_state_to_rendered(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Rendered state paper',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('render-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('render-rms.pdf').id,
+        })
+
+        with patch.object(type(job), '_render_pdf_pages'):
+            job.action_render_pages()
+
+        self.assertEqual(job.state, 'uploaded')
+
+    def test_ocr_completion_with_partial_failure_marks_completed_and_logs_issue(self):
+        resource = self.env['aps.resources'].create({
+            'name': 'OCR failure resource',
+            'question': '<p>Question</p>',
+        })
+
+        importer, _sections, run, _queue_count = self._process_ocr_for_resources(
+            resource,
+            completes_import=True,
+            fail_ocr=True,
+        )
+
+        self.assertEqual(run.state, 'completed')
+        self.assertEqual(importer.state, 'completed')
+        self.assertEqual(importer.progress, 100)
+        self.assertTrue(importer.completed_at)
+        self.assertTrue(importer.has_issues)
+        self.assertIn('Simulated OCR failure', importer.error_message)
+        self.assertTrue(any(
+            'Simulated OCR failure' in message.body
+            for message in importer.message_ids
+        ))
+
+    def test_migration_maps_legacy_failed_and_cancelled_states(self):
+        failed_job = self.env['aps.exam.paper.import'].create({
+            'name': 'Legacy failed import',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('legacy-failed-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('legacy-failed-rms.pdf').id,
+            'error_message': 'Legacy render issue',
+        })
+        cancelled_job = self.env['aps.exam.paper.import'].create({
+            'name': 'Legacy cancelled import',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('legacy-cancelled-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('legacy-cancelled-rms.pdf').id,
+        })
+        completed_job = self.env['aps.exam.paper.import'].create({
+            'name': 'Already completed import',
+            'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('already-completed-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('already-completed-rms.pdf').id,
+            'state': 'completed',
+        })
+        self.env.cr.execute(
+            "UPDATE aps_exam_paper_import SET state = 'failed' WHERE id = %s",
+            [failed_job.id],
+        )
+        self.env.cr.execute(
+            "UPDATE aps_exam_paper_import SET state = 'cancelled' WHERE id = %s",
+            [cancelled_job.id],
+        )
+        migration_path = (
+            Path(__file__).resolve().parents[1]
+            / 'migrations' / '18.0.1.0.76' / 'post-migration.py'
+        )
+        spec = importlib.util.spec_from_file_location('aps_sis_exam_import_migration', migration_path)
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+
+        migration.migrate(self.env.cr, '18.0.1.0.75')
+
+        failed_job.invalidate_recordset()
+        cancelled_job.invalidate_recordset()
+        completed_job.invalidate_recordset()
+        self.assertEqual(failed_job.state, 'completed')
+        self.assertTrue(failed_job.has_issues)
+        self.assertEqual(cancelled_job.state, 'completed')
+        self.assertFalse(cancelled_job.has_issues)
+        self.assertEqual(completed_job.state, 'completed')
+        self.assertFalse(completed_job.has_issues)
+        self.assertTrue(any(
+            'Legacy render issue' in message.body
+            for message in failed_job.message_ids
+        ))
 
     def test_ocr_queues_tagging_only_for_ocr_sections_and_transitions_status(self):
         subject = self.env['aps.subject'].create({'name': 'OCR Chapter Subject'})
@@ -190,7 +329,7 @@ class TestExamPaperImport(TransactionCase):
         job = self.env['aps.exam.paper.import'].create_from_resource(self.resource)
         self.assertEqual(job.question_attachment_id.name, 'Paper_QUE.pdf')
         self.assertEqual(job.mark_scheme_attachment_id.name, 'Paper_RMS.pdf')
-        self.assertEqual(job.state, 'uploaded')
+        self.assertEqual(job.state, 'draft')
 
     def test_attachment_selection_requires_one_of_each(self):
         self._attachment('Paper_QUE.pdf')
@@ -1305,6 +1444,7 @@ class TestExamPaperImport(TransactionCase):
             },
         ])
         job.action_build_resources()
+        self.assertEqual(job.state, 'building')
         q1 = self.resource.child_ids.filtered(lambda r: r.name == 'Q1')
         self.assertEqual(len(q1), 1)
         child = q1.child_ids.filtered(lambda r: r.name == 'Q1a')
@@ -1816,7 +1956,6 @@ class TestExamPaperImport(TransactionCase):
         model = MagicMock()
         model.model_key = 'test-model'
         model.max_completion_tokens = 2400
-        model.provider_id.provider_type = 'openai'
         model._execute_logged_router_call.return_value = {'response_json': {}}
         model._extract_message_content.return_value = 'OCR result'
 
@@ -1825,10 +1964,6 @@ class TestExamPaperImport(TransactionCase):
         system_message, user_message = payload['messages']
         self.assertEqual(system_message['role'], 'system')
         self.assertIn('Convert these ordered question images', system_message['content'][0]['text'])
-        self.assertEqual(
-            system_message['content'][0]['cache_control'],
-            {'type': 'ephemeral'},
-        )
         self.assertEqual(user_message['role'], 'user')
         image_items = [item for item in user_message['content'] if item['type'] == 'image_url']
         webp_uri, png_uri = [item['image_url']['url'] for item in image_items]
@@ -1836,12 +1971,6 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(base64.b64decode(webp_uri.split(',', 1)[1]), crop_attachment.raw)
         self.assertTrue(png_uri.startswith('data:image/png;base64,'))
         self.assertEqual(base64.b64decode(png_uri.split(',', 1)[1]), legacy_png.raw)
-        self.assertEqual(user_message['content'][-1]['type'], 'text')
-        self.assertEqual(user_message['content'][-1]['text'], 'End of source images.')
-        self.assertEqual(
-            user_message['content'][-1]['cache_control'],
-            {'type': 'ephemeral'},
-        )
 
         question_prompt = system_message['content'][0]['text']
         self.assertNotIn('right-hand column', question_prompt)

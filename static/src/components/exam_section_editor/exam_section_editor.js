@@ -1,6 +1,7 @@
 import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { _t } from "@web/core/l10n/translation";
 import { Dialog } from "@web/core/dialog/dialog";
 
 const MIN_SIZE = 8;
@@ -62,6 +63,7 @@ export class ExamSectionRegionEditor extends Component {
         this.state.data = await this.orm.call(
             "aps.exam.paper.section", "get_region_editor_data", [[sectionId]]
         );
+        this._updateDialogTitle(this.state.data.label || "");
         this.savedLabel = this.state.data.label || "";
         this.state.selected = null;
         this.state.draft = null;
@@ -73,6 +75,12 @@ export class ExamSectionRegionEditor extends Component {
         const firstRegion = this.regions[0];
         if (firstRegion) {
             this.selectRegion(firstRegion);
+        }
+    }
+
+    _updateDialogTitle(label) {
+        if (this.env.dialogData) {
+            this.env.dialogData.title = _t("Review %s", label);
         }
     }
 
@@ -513,6 +521,7 @@ export class ExamSectionRegionEditor extends Component {
 
     onLabelInput(event) {
         this.state.data.label = event.target.value;
+        this._updateDialogTitle(event.target.value);
         window.clearTimeout(this.labelSaveTimer);
         this.labelSaveTimer = window.setTimeout(() => this._saveLabel(), 400);
     }
@@ -526,11 +535,13 @@ export class ExamSectionRegionEditor extends Component {
         const label = (this.state.data.label || "").trim();
         if (!label) {
             this.state.data.label = this.savedLabel;
+            this._updateDialogTitle(this.savedLabel);
             this.notification.add("Section name cannot be empty.", { type: "warning" });
             return false;
         }
         if (label === this.savedLabel) {
             this.state.data.label = label;
+            this._updateDialogTitle(label);
             return true;
         }
         if (this.labelSavePromise) {
@@ -552,10 +563,12 @@ export class ExamSectionRegionEditor extends Component {
             this.savedLabel = label;
             if ((this.state.data.label || "").trim() === label) {
                 this.state.data.label = label;
+                this._updateDialogTitle(label);
             }
         } catch {
             if ((this.state.data?.label || "").trim() === label) {
                 this.state.data.label = previousLabel;
+                this._updateDialogTitle(previousLabel);
             }
             this.notification.add("Unable to save the section name.", { type: "danger" });
             return false;

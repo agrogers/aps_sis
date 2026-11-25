@@ -14,39 +14,53 @@
 
                 <!-- Toolbar -->
                 <div class="o_student_matrix_toolbar d-flex align-items-center gap-2 mb-3 flex-wrap">
-                    <span class="fw-bold">Classes:</span>
-
-                    <button class="btn btn-sm btn-primary"
-                            t-on-click="onSelectAll">
-                        Select All
-                    </button>
-                    <button class="btn btn-sm btn-secondary"
-                            t-on-click="onClearAll">
-                        Clear
-                    </button>
-
-                    <div class="o_class_chips d-flex gap-1 flex-wrap ms-2">
-                        <t t-foreach="state.classes" t-as="cls" t-key="cls.id">
-                            <button class="btn btn-sm"
-                                    t-att-class="isClassSelected(cls.id) ? 'btn-success' : 'btn-outline-secondary'"
-                                    t-on-click="() => this.onClassToggle(cls.id)">
-                                <t t-out="cls.name"/>
-                            </button>
-                        </t>
-                    </div>
-
                     <div class="ms-auto d-flex align-items-center gap-2">
                         <label class="form-label mb-0 fw-bold" for="matrixDisplayMode">Display:</label>
                         <select id="matrixDisplayMode"
                                 class="form-select form-select-sm w-auto"
                                 t-on-change="onDisplayModeChange">
-                            <option value="subject"
-                                    t-att-selected="state.displayMode === 'subject'">
-                                Subject
+                            <option value="selected_subjects"
+                                    t-att-selected="state.displayMode === 'selected_subjects'">
+                                Selected Subjects
+                            </option>
+                            <option value="all_subjects"
+                                    t-att-selected="state.displayMode === 'all_subjects'">
+                                All Subjects
+                            </option>
+                            <option value="selected_categories"
+                                    t-att-selected="state.displayMode === 'selected_categories'">
+                                Selected Categories
+                            </option>
+                            <option value="all_categories"
+                                    t-att-selected="state.displayMode === 'all_categories'">
+                                All Categories
+                            </option>
+                        </select>
+                        <label class="form-label mb-0 fw-bold">Subject:</label>
+                        <div class="o_student_matrix_subject_selector">
+                            <SearchableSelect options="subjectOptions"
+                                              value="state.selectedSubjectIds"
+                                              placeholder="'Select subjects'"
+                                              searchPlaceholder="'Search subjects...'"
+                                              ariaLabel="'Subject filter'"
+                                              clearable="true"
+                                              multiple="true"
+                                              clearLabel="'Clear selection'"
+                                              disabled="!state.subjects.length"
+                                              resetKey="state.subjectDropdownResetKey"
+                                              onSelectionChange.bind="onSubjectChange"/>
+                        </div>
+                        <label class="form-label mb-0 fw-bold" for="matrixSubjectGroupBy">Group by:</label>
+                        <select id="matrixSubjectGroupBy"
+                                class="form-select form-select-sm w-auto"
+                                t-on-change="onSubjectGroupByChange">
+                            <option value="level"
+                                    t-att-selected="state.subjectGroupBy === 'level'">
+                                Level
                             </option>
                             <option value="category"
-                                    t-att-selected="state.displayMode === 'category'">
-                                Subject Category
+                                    t-att-selected="state.subjectGroupBy === 'category'">
+                                Category
                             </option>
                         </select>
                         <label class="form-label mb-0 fw-bold" for="academicYearSelect">Academic Year:</label>
@@ -69,7 +83,8 @@
                 </div>
 
                 <!-- Matrix table -->
-                <div t-if="state.students.length > 0" class="o_student_matrix_table_wrapper">
+                <div t-if="state.students.length > 0 &amp;&amp; state.selectedSubjectIds.length > 0"
+                     class="o_student_matrix_table_wrapper">
                     <table class="o_student_matrix_table">
                         <thead>
                             <!-- Subject names row -->
@@ -78,10 +93,10 @@
                                 <th class="o_count_header">
                                     <button class="o_subjects_label_button"
                                             type="button"
-                                            t-att-title="state.displayMode === 'subject' ? 'Show all subjects' : 'Show all categories'"
+                                    t-att-title="isCategoryDisplay ? 'Show all categories' : 'Show all subjects'"
                                             t-on-click="onShowAllColumns">
                                         <div class="o_subjects_label_rotated"
-                                             t-out="state.displayMode === 'subject' ? 'Subjects' : 'Categories'"/>
+                                     t-out="isCategoryDisplay ? 'Categories' : 'Subjects'"/>
                                     </button>
                                 </th>
                                 <t t-foreach="visibleColumns" t-as="column" t-key="column.key">
@@ -90,7 +105,15 @@
                                         <button class="o_subject_filter_button"
                                                 type="button"
                                                 t-att-class="isColumnSelected(column) ? 'is-selected' : ''"
-                                                t-att-title="isColumnSelected(column) ? 'Show all ' + (column.type === 'subject' ? 'subjects' : 'categories') : 'Show only ' + column.label"
+                                                t-att-title="column.type === 'subject'
+                                                    ? (state.displayMode === 'selected_subjects'
+                                                        &amp;&amp; state.selectedSubjectIds.length === 1
+                                                        &amp;&amp; isColumnSelected(column)
+                                                        ? 'Show all subjects'
+                                                        : 'Show only ' + column.label)
+                                                    : (isColumnSelected(column)
+                                                        ? 'Show all categories'
+                                                        : 'Show only ' + column.label)"
                                                 t-on-click="() => this.onColumnClick(column)">
                                             <div class="o_subject_name_rotated" t-out="column.label"/>
                                         </button>
@@ -153,7 +176,13 @@
                 </div>
 
                 <!-- Empty state -->
-                <div t-if="state.students.length === 0 &amp;&amp; state.selectedClassIds.length > 0"
+                <div t-if="state.selectedClassIds.length > 0 &amp;&amp; state.selectedSubjectIds.length === 0"
+                     class="text-center p-5 text-muted">
+                    <i class="fa fa-info-circle fa-2x mb-3"/>
+                    <p t-if="state.subjects.length > 0">Select one or more subjects to display the matrix.</p>
+                    <p t-else="">No subjects found in the selected classes.</p>
+                </div>
+                <div t-elif="state.students.length === 0 &amp;&amp; state.selectedClassIds.length > 0"
                      class="text-center p-5 text-muted">
                     <i class="fa fa-info-circle fa-2x mb-3"/>
                     <p>No students found in the selected classes.</p>
@@ -162,8 +191,8 @@
                 <!-- No selection state -->
                 <div t-if="state.selectedClassIds.length === 0"
                      class="text-center p-5 text-muted">
-                    <i class="fa fa-hand-pointer-o fa-2x mb-3"/>
-                    <p>Select one or more classes above to view the student subject matrix.</p>
+                    <i class="fa fa-info-circle fa-2x mb-3"/>
+                    <p>No home classes are available for this academic year.</p>
                 </div>
             </div>
         </div>

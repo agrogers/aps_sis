@@ -26,6 +26,12 @@ class APSExamPaperImportBuild(models.Model):
 
     def action_validate(self):
         self.ensure_one()
+        return self._execute_workflow_action(
+            _('Resource Validation'),
+            self._validate_resources,
+        )
+
+    def _validate_resources(self):
         errors = []
         seen = set()
         sections = self.section_ids.filtered('include_resource')
@@ -633,7 +639,14 @@ class APSExamPaperImportBuild(models.Model):
 
     def action_build_resources(self):
         self.ensure_one()
-        self.write({'state': 'building', 'progress': 70})
+        return self._execute_workflow_action(
+            _('Resource Building'),
+            self._build_resources,
+        )
+
+    def _build_resources(self):
+        self.ensure_one()
+        self.write({'state': 'building', 'progress': 70, 'completed_at': False})
         finalised_tag = self.env['aps.resource.tags'].search([
             ('name', '=', 'State:Finalised'),
         ], limit=1)
@@ -771,12 +784,9 @@ class APSExamPaperImportBuild(models.Model):
             'has_question': 'hidden',
             'tag_ids': self._finalised_tag_commands(self.resource_id, finalised_tag),
         })
-        self.write({'state': 'completed', 'progress': 100, 'completed_at': fields.Datetime.now()})
-        # Show the completion toast and then re-open the form so the refreshed
-        # state, progress and section resource links are shown without a
-        # manual reload.
+        self.write({'state': 'building', 'progress': 80})
         return self._notification(
-            _('Import completed'),
+            _('Resources Built'),
             _('%s resource(s) created; %s existing resource(s) reused.') % (
                 created_resource_count, reused_resource_count,
             ),

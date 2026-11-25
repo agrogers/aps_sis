@@ -195,6 +195,22 @@ class APSStudentMatrix(models.TransientModel):
                 'category_key': str(category.id) if category else 'uncategorized',
                 'category_name': category.name if category else _('Uncategorized'),
                 'category_color': category_color,
+                'level_id': s.level_id.id if s.level_id else False,
+                'level_name': (
+                    s.level_id.display_name or s.level_id.name
+                    if s.level_id
+                    else _('Unassigned')
+                ),
+                'level_sequence': s.level_id.sequence if s.level_id else 999999,
+                'icon_url': (
+                    f'/web/image/aps.subject/{s.id}/icon'
+                    if s.icon
+                    else (
+                        f'/web/image/aps.subject.category/{category.id}/icon'
+                        if category and category.icon
+                        else False
+                    )
+                ),
             })
 
         return {

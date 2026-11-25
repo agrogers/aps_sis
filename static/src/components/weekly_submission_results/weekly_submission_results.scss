@@ -22,18 +22,6 @@
 .o_aps_weekly_results__class-dropdown {
     min-width: 240px;
 
-    .form-select-sm {
-        font-size: 0.875rem;
-        border-radius: 3px;
-        border-color: #96969699;
-        text-align: left;
-
-        &:focus {
-            border-color: #86b7fe;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-        }
-    }
-
     .dropdown-menu {
         max-height: 320px;
         overflow-y: auto;

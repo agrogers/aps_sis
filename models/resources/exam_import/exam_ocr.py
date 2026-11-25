@@ -18,6 +18,12 @@ class APSExamPaperImportOcr(models.Model):
 
     def action_ocr_resources(self):
         self.ensure_one()
+        return self._execute_workflow_action(
+            _('OCR Resources'),
+            self._queue_ocr_resources,
+        )
+
+    def _queue_ocr_resources(self):
         sections = self.section_ids.filtered('resource_id')
         if self.analysis_scope == 'all':
             # A full OCR request is an explicit re-run. Reset every linked
@@ -30,10 +36,16 @@ class APSExamPaperImportOcr(models.Model):
             if self.analysis_scope == 'pending':
                 raise UserError(_('All linked sections have already been processed by OCR.'))
             raise UserError(_('No linked sections are available for OCR. Build resources first.'))
-        run = self._create_ocr_run(sections)
+        self.write({
+            'state': 'building',
+            'progress': 80,
+            'completed_at': False,
+            'ocr_started': True,
+        })
+        run = self._create_ocr_run(sections, completes_import=True)
         return self._build_ocr_run_notification(run)
 
-    def _create_ocr_run(self, sections, force=False):
+    def _create_ocr_run(self, sections, force=False, completes_import=False):
         sections = sections.filtered('resource_id')
         if self.analysis_scope == 'pending' and not force:
             sections = sections.filtered(lambda section: section.ocr_state != 'complete')
@@ -47,6 +59,7 @@ class APSExamPaperImportOcr(models.Model):
             'processor_key': 'exam_ocr', 'run_type': 'ocr', 'ai_model_id': model.id,
             'requested_by_id': self.env.user.id, 'state': 'queued',
             'status_message': _('Queued OCR...'),
+            'completes_import': completes_import,
         })
         run._queue_background_processing()
         return run
@@ -218,13 +231,6 @@ class APSExamPaperImportOcr(models.Model):
                     base64.b64encode(image['bytes']).decode('ascii'),
                 )},
             })
-        if model.provider_id.provider_type == 'openai':
-            system_content[-1]['cache_control'] = {'type': 'ephemeral'}
-            user_content.append({
-                'type': 'text',
-                'text': 'End of source images.',
-            })
-            user_content[-1]['cache_control'] = {'type': 'ephemeral'}
         result = model._execute_logged_router_call({
             'model': model.model_key,
             'messages': [

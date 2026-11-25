@@ -1,0 +1,98 @@
+<templates xml:space="preserve">
+    <t t-name="aps_sis.SearchableSelect" owl="1">
+        <div class="aps-searchable-select position-relative" t-ref="root">
+            <button type="button"
+                    class="form-select form-select-sm d-flex align-items-center gap-2 aps-searchable-select__button"
+                    t-on-click="toggleDropdown"
+                    aria-haspopup="listbox"
+                    t-att-disabled="props.disabled"
+                    t-att-aria-expanded="dropdownIsOpen ? 'true' : 'false'"
+                    t-att-aria-label="props.ariaLabel || selectedSummary"
+                    t-att-title="selectedSummary">
+                <img t-if="!props.multiple &amp;&amp; selectedOptions.length &amp;&amp; selectedOptions[0].iconUrl"
+                     t-att-src="selectedOptions[0].iconUrl"
+                     class="object-fit-cover flex-shrink-0"
+                     style="width:20px;height:20px;"
+                     t-att-alt="selectedOptions[0].label"/>
+                <span t-elif="!props.multiple &amp;&amp; selectedOptions.length &amp;&amp; props.showIconPlaceholder"
+                      class="rounded-circle bg-secondary flex-shrink-0"
+                      style="width:20px;height:20px;"/>
+                <span t-att-class="selectedOptions.length ? 'text-truncate' : 'text-muted text-truncate'">
+                    <t t-esc="selectedSummary"/>
+                </span>
+                <span t-if="selectedBadge" class="badge bg-secondary ms-auto">
+                    <t t-esc="selectedBadge"/>
+                </span>
+            </button>
+            <div t-if="dropdownIsOpen"
+                 t-ref="menu"
+                 class="dropdown-menu show w-100 p-1 aps-searchable-select__menu"
+                 t-on-scroll="rememberMenuScroll">
+                <input type="search"
+                       class="form-control form-control-sm mb-1"
+                       t-att-placeholder="props.searchPlaceholder"
+                       t-att-aria-label="props.searchPlaceholder"
+                       t-model="state.query"
+                       t-on-keydown="onSearchKeydown"/>
+                <div role="listbox"
+                     t-att-aria-label="props.placeholder"
+                     t-att-aria-multiselectable="props.multiple ? 'true' : 'false'">
+                    <button t-if="props.clearable"
+                            type="button"
+                            class="dropdown-item d-flex align-items-center gap-2"
+                            role="option"
+                            t-att-aria-selected="selectedOptions.length ? 'false' : 'true'"
+                            t-on-click="clearSelection">
+                        <t t-esc="props.clearLabel"/>
+                    </button>
+                    <t t-foreach="filteredOptions" t-as="option" t-key="option.value">
+                        <div t-if="option.showGroupHeading"
+                             class="dropdown-header small text-uppercase fw-bold text-muted border-top mt-1 pt-2 d-flex align-items-center gap-2"
+                             role="presentation">
+                            <button t-if="props.multiple"
+                                    type="button"
+                                    class="aps-searchable-select__group-toggle"
+                                    role="checkbox"
+                                    t-att-aria-checked="getGroupSelectionState(option.group)"
+                                    t-att-aria-label="'Toggle selection for ' + option.group"
+                                    t-on-click="(ev) => this.toggleGroup(option.group, ev)">
+                                <i t-att-class="getGroupCheckboxClass(option.group)"
+                                   aria-hidden="true"/>
+                            </button>
+                            <span t-esc="option.group"/>
+                        </div>
+                        <button type="button"
+                                class="dropdown-item d-flex align-items-center gap-2"
+                                role="option"
+                                t-att-aria-selected="isSelected(option) ? 'true' : 'false'"
+                                t-on-click="() => this.selectOption(option)">
+                            <i t-if="props.multiple"
+                               t-att-class="isSelected(option) ? 'fa fa-check-square-o fa-fw' : 'fa fa-square-o fa-fw'"
+                               t-on-click="(ev) => this.toggleOption(option, ev)"
+                               aria-hidden="true"/>
+                            <img t-if="option.iconUrl"
+                                 t-att-src="option.iconUrl"
+                                 class="object-fit-cover flex-shrink-0"
+                                 style="width:20px;height:20px;"
+                                 loading="lazy"
+                                 decoding="async"
+                                 t-on-error="(ev) => this.onOptionIconError(option, ev)"
+                                 t-att-alt="option.label"/>
+                            <span t-elif="props.showIconPlaceholder"
+                                  class="rounded-circle bg-secondary flex-shrink-0"
+                                  style="width:20px;height:20px;"/>
+                            <span class="text-truncate"><t t-esc="option.label"/></span>
+                            <span t-if="option.badge" class="badge bg-secondary ms-auto">
+                                <t t-esc="option.badge"/>
+                            </span>
+                        </button>
+                    </t>
+                </div>
+                <div t-if="!filteredOptions.length"
+                     class="dropdown-item-text text-muted small px-2 py-1">
+                    No matching options found
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

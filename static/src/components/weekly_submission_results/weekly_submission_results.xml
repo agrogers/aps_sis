@@ -21,67 +21,17 @@
                 </div>
                 <div class="o_aps_weekly_results__class-dropdown position-relative">
                     <label class="form-label small mb-1">Class</label>
-                    <button type="button"
-                            class="form-select form-select-sm d-flex align-items-center gap-2"
-                            t-on-click="toggleClassDropdown"
-                            aria-haspopup="listbox"
-                            t-att-aria-expanded="state.classDropdownOpen ? 'true' : 'false'">
-                        <t t-if="selectedClass">
-                                    <img t-if="selectedClass.icon_url"
-                                         t-att-src="selectedClass.icon_url"
-                                         class="object-fit-cover flex-shrink-0"
-                                         style="width:20px;height:20px;"
-                                         t-att-alt="selectedClass.name"></img>
-                                    <span t-else=""
-                                          class="rounded-circle bg-secondary flex-shrink-0"
-                                          style="width:20px;height:20px;"></span>
-                            <span class="text-truncate"><t t-esc="selectedClass.name"/></span>
-                        </t>
-                        <span t-else="" class="text-muted">All Classes</span>
-                    </button>
-                    <div t-if="state.classDropdownOpen"
-                         class="dropdown-menu show w-100 p-1"
-                         role="listbox">
-                        <input type="search"
-                               class="form-control form-control-sm mb-1"
-                               placeholder="Search classes..."
-                               t-model="state.classSearch"
-                               t-on-click.stop="onDropdownSearchKeydown"
-                               t-on-keydown="onDropdownSearchKeydown"/>
-                        <button type="button"
-                                class="dropdown-item d-flex align-items-center gap-2"
-                                t-on-click="selectClass"
-                                t-att-data-class-id="false">
-                            All Classes
-                        </button>
-                        <t t-foreach="filteredClasses" t-as="classItem" t-key="classItem.id">
-                            <t t-if="classItem.level_name !== (filteredClasses[filteredClasses.indexOf(classItem) - 1]?.level_name)">
-                                <div t-if="classItem.level_name"
-                                     class="dropdown-header small text-uppercase fw-bold text-muted border-top mt-1 pt-2">
-                                    <t t-esc="classItem.level_name"/>
-                                </div>
-                            </t>
-                            <button type="button"
-                                    class="dropdown-item d-flex align-items-center gap-2"
-                                    role="option"
-                                    t-on-click="selectClass"
-                                    t-att-data-class-id="classItem.id">
-                                <img t-if="classItem.icon_url"
-                                     t-att-src="classItem.icon_url"
-                                     class="object-fit-cover flex-shrink-0"
-                                     style="width:20px;height:20px;"
-                                     t-att-alt="classItem.name"></img>
-                                <span t-else=""
-                                      class="rounded-circle bg-secondary flex-shrink-0"
-                                      style="width:20px;height:20px;"></span>
-                                <span class="text-truncate"><t t-esc="classItem.name"/></span>
-                            </button>
-                        </t>
-                        <div t-if="!filteredClasses.length"
-                             class="dropdown-item-text text-muted small px-2 py-1">
-                            No matching classes found
-                        </div>
-                    </div>
+                    <SearchableSelect options="classOptions"
+                                      value="state.classId"
+                                      multiple="false"
+                                      placeholder="'All Classes'"
+                                      searchPlaceholder="'Search classes...'"
+                                      clearable="true"
+                                      clearLabel="'All Classes'"
+                                      showIconPlaceholder="true"
+                                      isOpen="state.classDropdownOpen"
+                                      onOpenChange.bind="setClassDropdownOpen"
+                                      onSelectionChange.bind="selectClass"/>
                 </div>
                 <div t-if="state.canSelectAllStudents || state.students.length">
                     <label class="form-label small mb-1">Student</label>

@@ -12,6 +12,8 @@ import logging
 import re
 from io import BytesIO
 
+from markupsafe import Markup, escape
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
@@ -46,11 +48,11 @@ class APSExamPaperImport(models.Model):
         ('draft', 'Draft'),
         ('uploaded', 'Rendered'),
         ('analysing', 'Analysed'),
-        ('building', 'Building Resources'),
+        ('building', 'Resources Built'),
         ('completed', 'Completed'),
-        ('failed', 'Failed'),
-        ('cancelled', 'Cancelled'),
     ], default='draft', required=True, tracking=True)
+    has_issues = fields.Boolean(default=False, readonly=True, copy=False)
+    ocr_started = fields.Boolean(default=False, readonly=True, copy=False)
     progress = fields.Integer(default=0, tracking=True)
     error_message = fields.Text(readonly=True)
     parser_version = fields.Char(default='1.0', readonly=True)
@@ -111,6 +113,43 @@ class APSExamPaperImport(models.Model):
         ('resource_import_unique', 'unique(resource_id, question_attachment_id, mark_scheme_attachment_id)',
          'This pair of PDFs has already been imported for the resource.'),
     ]
+
+    def write(self, vals):
+        if 'state' in vals and 'has_issues' not in vals:
+            vals = dict(vals, has_issues=False, error_message=False)
+        return super().write(vals)
+
+    def _record_issue(self, stage, details):
+        self.ensure_one()
+        details = str(details)
+        self.write({'has_issues': True, 'error_message': details})
+        body = Markup('<p><strong>%s issue:</strong></p><pre>%s</pre>') % (
+            escape(stage), escape(details),
+        )
+        self.message_post(body=body, subtype_xmlid='mail.mt_note')
+
+    def _clear_issues(self):
+        self.write({'has_issues': False, 'error_message': False})
+
+    def _execute_workflow_action(self, stage, callback):
+        self.ensure_one()
+        try:
+            with self.env.cr.savepoint():
+                result = callback()
+        except Exception as exc:
+            _logger.exception(
+                'Exam paper import %s stage failed for %s',
+                stage, self.display_name,
+            )
+            self._record_issue(stage, exc)
+            return self._notification(
+                _('Issue during %s') % stage,
+                _('See the chatter for details: %s') % exc,
+                'danger',
+                next=self._open_form(),
+            )
+        self._clear_issues()
+        return result
 
     @api.constrains(
         'crop_margin_left', 'crop_margin_right', 'crop_margin_top', 'crop_margin_bottom',
@@ -187,7 +226,6 @@ class APSExamPaperImport(models.Model):
             ('resource_id', '=', resource.id),
             ('question_attachment_id', '=', question.id),
             ('mark_scheme_attachment_id', '=', mark_scheme.id),
-            ('state', '!=', 'cancelled'),
         ], limit=1)
         if existing:
             return existing
@@ -197,7 +235,7 @@ class APSExamPaperImport(models.Model):
             'resource_id': resource.id,
             'question_attachment_id': question.id,
             'mark_scheme_attachment_id': mark_scheme.id,
-            'state': 'uploaded',
+            'state': 'draft',
             'ai_model_id': previous.ai_model_id.id or False,
             'single_page_ai_model_id': previous.single_page_ai_model_id.id or False,
             'ocr_ai_model_id': previous.ocr_ai_model_id.id or False,
@@ -232,11 +270,6 @@ class APSExamPaperImport(models.Model):
             'view_mode': 'list,form',
             'target': 'current',
         }
-
-    def action_retry(self):
-        self.ensure_one()
-        if self.state != 'failed':
-            raise UserError(_('Only failed imports can be retried.'))
 
     @staticmethod
     def _normalise_key(value):

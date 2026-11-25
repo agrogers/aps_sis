@@ -1,9 +1,11 @@
 import { Component, useState, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
+import { SearchableSelect } from "@aps_sis/components/searchable_select/searchable_select";
 
 export class StudentMatrix extends Component {
     static template = "aps_sis.StudentMatrix";
+    static components = { SearchableSelect };
     static props = {
         action: { type: Object, optional: true },
         actionId: { type: Number, optional: true },
@@ -14,8 +16,8 @@ export class StudentMatrix extends Component {
 
     setup() {
         this.orm = useService("orm");
-        this._STORAGE_KEY = "aps_student_matrix_class_selection";
         this._YEAR_STORAGE_KEY = "aps_student_matrix_year_selection";
+        this._SUBJECT_STORAGE_KEY = "aps_student_matrix_subject_selection";
 
         this.state = useState({
             loading: true,
@@ -23,12 +25,14 @@ export class StudentMatrix extends Component {
             selectedYearId: null,
             classes: [],
             selectedClassIds: [],
+            subjectDropdownResetKey: 0,
             selectedStudentId: null,
-            selectedSubjectId: null,
+            selectedSubjectIds: [],
+            subjectGroupBy: "level",
             selectedCategoryKey: null,
             hiddenSubjectIds: [],
             hiddenCategoryKeys: [],
-            displayMode: "subject",
+            displayMode: "selected_subjects",
             students: [],
             subjects: [],
             cells: {},
@@ -42,7 +46,6 @@ export class StudentMatrix extends Component {
             await this._loadAcademicYears();
             this._restoreYearSelection();
             await this._loadClasses();
-            this._restoreSelection();
             this.state.loading = false;
         });
     }
@@ -80,14 +83,14 @@ export class StudentMatrix extends Component {
         } catch (e) {}
     }
 
-    onYearChange(ev) {
+    async onYearChange(ev) {
         const yearId = parseInt(ev.target.value, 10);
         this.state.selectedYearId = yearId || null;
         this._saveYearSelection();
-        // Clear class selection and reload classes for the new year
         this.state.selectedClassIds = [];
         this.state.selectedStudentId = null;
-        this.state.selectedSubjectId = null;
+        this.state.selectedSubjectIds = [];
+        this.state.subjectDropdownResetKey += 1;
         this.state.selectedCategoryKey = null;
         this.state.hiddenSubjectIds = [];
         this.state.hiddenCategoryKeys = [];
@@ -98,8 +101,8 @@ export class StudentMatrix extends Component {
         this.state.studentTotals = {};
         this.state.subjectTotals = {};
         this.state.categoryTotals = {};
-        this._saveSelection();
-        this._loadClasses();
+        this._saveSubjectSelection([]);
+        await this._loadClasses();
     }
 
     async _loadClasses() {
@@ -107,71 +110,129 @@ export class StudentMatrix extends Component {
             const args = this.state.selectedYearId ? [this.state.selectedYearId] : [];
             const classes = await this.orm.call("aps.student.matrix", "get_home_classes", args);
             this.state.classes = classes || [];
+            this.state.selectedClassIds = this.state.classes.map((classItem) => classItem.id);
+            await this._loadMatrix();
         } catch (err) {
             console.error("StudentMatrix: failed to load classes", err);
             this.state.classes = [];
+            this.state.selectedClassIds = [];
         }
     }
 
-    _restoreSelection() {
+    _saveSubjectSelection(subjectIds) {
         try {
-            const raw = localStorage.getItem(this._STORAGE_KEY);
-            if (!raw) return;
-            const saved = JSON.parse(raw);
-            if (Array.isArray(saved) && saved.length > 0) {
-                const validIds = this.state.classes.map((c) => c.id);
-                this.state.selectedClassIds = saved.filter((id) => validIds.includes(id));
-                if (this.state.selectedClassIds.length > 0) {
-                    this._loadMatrix();
-                }
+            if (subjectIds.length) {
+                localStorage.setItem(this._SUBJECT_STORAGE_KEY, JSON.stringify(subjectIds));
+            } else {
+                localStorage.removeItem(this._SUBJECT_STORAGE_KEY);
             }
-        } catch (e) {}
-    }
-
-    _saveSelection() {
-        try {
-            localStorage.setItem(this._STORAGE_KEY, JSON.stringify(this.state.selectedClassIds));
-        } catch (e) {}
-    }
-
-    onClassToggle(classId) {
-        const idx = this.state.selectedClassIds.indexOf(classId);
-        if (idx >= 0) {
-            this.state.selectedClassIds.splice(idx, 1);
-        } else {
-            this.state.selectedClassIds.push(classId);
+        } catch (err) {
+            console.warn("StudentMatrix: failed to save subject selection", err);
         }
-        this._saveSelection();
-        this._loadMatrix();
     }
 
-    onSelectAll() {
-        this.state.selectedClassIds = this.state.classes.map((c) => c.id);
-        this._saveSelection();
-        this._loadMatrix();
+    _restoreSubjectSelection() {
+        let savedSubjectIds = [];
+        try {
+            const raw = localStorage.getItem(this._SUBJECT_STORAGE_KEY);
+            const saved = raw ? JSON.parse(raw) : [];
+            savedSubjectIds = Array.isArray(saved) ? saved : saved ? [saved] : [];
+        } catch (err) {
+            console.warn("StudentMatrix: failed to restore subject selection", err);
+            this._saveSubjectSelection([]);
+            this.state.selectedSubjectIds = [];
+            return;
+        }
+        const availableSubjectIds = new Set(
+            this.state.subjects.map((subject) => subject.id)
+        );
+        this.state.selectedSubjectIds = [
+            ...new Set(
+                savedSubjectIds
+                    .map(Number)
+                    .filter(
+                        (subjectId) =>
+                            Number.isInteger(subjectId) &&
+                            subjectId > 0 &&
+                            availableSubjectIds.has(subjectId)
+                    )
+            ),
+        ];
+        this._saveSubjectSelection(this.state.selectedSubjectIds);
     }
 
-    onClearAll() {
-        this.state.selectedClassIds = [];
+    async _loadSubjectLevelsIfMissing() {
+        if (
+            !this.state.subjects.some(
+                (subject) =>
+                    !Object.prototype.hasOwnProperty.call(subject, "level_name") ||
+                    !Object.prototype.hasOwnProperty.call(subject, "level_sequence")
+            )
+        ) {
+            return;
+        }
+        try {
+            const subjectIds = this.state.subjects.map((subject) => subject.id);
+            const records = await this.orm.call(
+                "aps.subject",
+                "read",
+                [subjectIds, ["level_id"]]
+            );
+            const levelBySubjectId = new Map(
+                records.map((record) => [record.id, record.level_id])
+            );
+            const levelIds = [
+                ...new Set(
+                    records
+                        .map((record) =>
+                            Array.isArray(record.level_id)
+                                ? record.level_id[0]
+                                : record.level_id
+                        )
+                        .filter(Boolean)
+                ),
+            ];
+            const levels = levelIds.length
+                ? await this.orm.call("aps.level", "read", [levelIds, ["sequence"]])
+                : [];
+            const sequenceByLevelId = new Map(
+                levels.map((level) => [level.id, level.sequence])
+            );
+            this.state.subjects = this.state.subjects.map((subject) => {
+                const level = levelBySubjectId.get(subject.id);
+                const levelId = Array.isArray(level) ? level[0] : level || false;
+                return {
+                    ...subject,
+                    level_id: levelId,
+                    level_name: subject.level_name ?? (
+                        Array.isArray(level) ? level[1] : "Unassigned"
+                    ),
+                    level_sequence:
+                        sequenceByLevelId.get(levelId) ?? subject.level_sequence ?? 999999,
+                };
+            });
+        } catch (err) {
+            console.error("StudentMatrix: failed to load subject levels", err);
+        }
+    }
+
+    onSubjectChange(subjectIds) {
+        this.state.selectedSubjectIds = [
+            ...new Set((Array.isArray(subjectIds) ? subjectIds : []).map(Number)),
+        ];
         this.state.selectedStudentId = null;
-        this.state.selectedSubjectId = null;
         this.state.selectedCategoryKey = null;
-        this.state.hiddenSubjectIds = [];
-        this.state.hiddenCategoryKeys = [];
-        this.state.students = [];
-        this.state.subjects = [];
-        this.state.cells = {};
-        this.state.subjectColors = {};
-        this.state.studentTotals = {};
-        this.state.subjectTotals = {};
-        this.state.categoryTotals = {};
-        this._saveSelection();
+        this._saveSubjectSelection(this.state.selectedSubjectIds);
+    }
+
+    onSubjectGroupByChange(ev) {
+        this.state.subjectGroupBy = ev.target.value === "category" ? "category" : "level";
     }
 
     async _loadMatrix() {
         if (this.state.selectedClassIds.length === 0) {
             this.state.selectedStudentId = null;
-            this.state.selectedSubjectId = null;
+            this.state.selectedSubjectIds = [];
             this.state.selectedCategoryKey = null;
             this.state.hiddenSubjectIds = [];
             this.state.hiddenCategoryKeys = [];
@@ -182,6 +243,7 @@ export class StudentMatrix extends Component {
             this.state.studentTotals = {};
             this.state.subjectTotals = {};
             this.state.categoryTotals = {};
+            this._saveSubjectSelection([]);
             return;
         }
         try {
@@ -192,11 +254,13 @@ export class StudentMatrix extends Component {
             );
             this.state.students = data.students || [];
             this.state.selectedStudentId = null;
-            this.state.selectedSubjectId = null;
+            this.state.selectedSubjectIds = [];
             this.state.selectedCategoryKey = null;
             this.state.hiddenSubjectIds = [];
             this.state.hiddenCategoryKeys = [];
             this.state.subjects = data.subjects || [];
+            await this._loadSubjectLevelsIfMissing();
+            this._restoreSubjectSelection();
             this.state.cells = data.cells || {};
             this.state.subjectColors = data.subject_colors || {};
             this.state.studentTotals = data.student_totals || {};
@@ -260,16 +324,27 @@ export class StudentMatrix extends Component {
         return this.state.subjectTotals[subjectId] || 0;
     }
 
-    isClassSelected(classId) {
-        return this.state.selectedClassIds.includes(classId);
+    get isCategoryDisplay() {
+        return (
+            this.state.displayMode === "selected_categories" ||
+            this.state.displayMode === "all_categories"
+        );
     }
 
     get visibleStudents() {
+        if (!this.state.selectedSubjectIds.length) {
+            return [];
+        }
         let students = this.state.students;
-        if (this.state.selectedSubjectId) {
+        const allSubjectsSelected = this.state.subjects.every((subject) =>
+            this.state.selectedSubjectIds.includes(subject.id)
+        );
+        if (!allSubjectsSelected) {
             students = students.filter((student) =>
-                this.hasCell(student.id, this.state.selectedSubjectId)
-            );
+                this.state.selectedSubjectIds.some((subjectId) =>
+                    this.hasCell(student.id, subjectId)
+                )
+            )
         }
         if (this.state.selectedCategoryKey) {
             const category = this.categories.find(
@@ -289,20 +364,46 @@ export class StudentMatrix extends Component {
     }
 
     get visibleSubjects() {
-        const studentsForSubjects = this.state.selectedStudentId
-            ? this.state.students.filter(
-                  (student) => student.id === this.state.selectedStudentId
-              )
-            : this.state.students;
-        const visibleStudentIds = new Set(studentsForSubjects.map((student) => student.id));
+        const visibleStudentIds = new Set(
+            this.visibleStudents.map((student) => student.id)
+        );
         return this.state.subjects.filter((subject) =>
             [...visibleStudentIds].some((studentId) =>
                 this.hasCell(studentId, subject.id)
             )
         ).filter((subject) =>
-            (!this.state.selectedSubjectId || subject.id === this.state.selectedSubjectId) &&
+            (this.state.displayMode === "all_subjects" ||
+                this.state.selectedSubjectIds.includes(subject.id)) &&
             !this.state.hiddenSubjectIds.includes(subject.id)
         );
+    }
+
+    get subjectOptions() {
+        const groupByLevel = this.state.subjectGroupBy === "level";
+        const options = this.state.subjects.map((subject) => ({
+            value: subject.id,
+            label: this.getSubjectDisplayName(subject),
+            iconUrl: subject.icon_url || `/web/image/aps.subject/${subject.id}/icon`,
+            fallbackIconUrl: subject.category_id
+                ? `/web/image/aps.subject.category/${subject.category_id}/icon`
+                : false,
+            group: groupByLevel
+                ? subject.level_name || "Unassigned"
+                : subject.category_name || "Uncategorized",
+            groupSequence: groupByLevel ? subject.level_sequence ?? 999999 : 0,
+        }));
+        return options.sort((first, second) => {
+            if (groupByLevel) {
+                const sequenceDifference = first.groupSequence - second.groupSequence;
+                if (sequenceDifference) {
+                    return sequenceDifference;
+                }
+            }
+            return (
+                first.group.localeCompare(second.group) ||
+                first.label.localeCompare(second.label)
+            );
+        });
     }
 
     get categories() {
@@ -326,13 +427,8 @@ export class StudentMatrix extends Component {
     }
 
     get visibleCategories() {
-        const studentsForCategories = this.state.selectedStudentId
-            ? this.state.students.filter(
-                  (student) => student.id === this.state.selectedStudentId
-              )
-            : this.state.students;
         const visibleStudentIds = new Set(
-            studentsForCategories.map((student) => student.id)
+            this.visibleStudents.map((student) => student.id)
         );
         return this.categories
             .filter((category) =>
@@ -344,12 +440,16 @@ export class StudentMatrix extends Component {
                 (category) =>
                     (!this.state.selectedCategoryKey ||
                         category.categoryKey === this.state.selectedCategoryKey) &&
+                    (this.state.displayMode === "all_categories" ||
+                        category.subjects.some((subject) =>
+                            this.state.selectedSubjectIds.includes(subject.id)
+                        )) &&
                     !this.state.hiddenCategoryKeys.includes(category.categoryKey)
             );
     }
 
     get visibleColumns() {
-        if (this.state.displayMode === "category") {
+        if (this.isCategoryDisplay) {
             return this.visibleCategories.map((category) => ({
                 ...category,
                 type: "category",
@@ -374,7 +474,10 @@ export class StudentMatrix extends Component {
         if (column.type === "subject") {
             return this.getSubjectTotal(column.id);
         }
-        return this.state.categoryTotals[column.categoryKey] || 0;
+        return this.visibleStudents.reduce(
+            (total, student) => total + this.getCategorySubjectCount(student.id, column),
+            0
+        );
     }
 
     getColumnSubjectCount(studentId, column) {
@@ -432,12 +535,11 @@ export class StudentMatrix extends Component {
 
     isColumnSelected(column) {
         return column.type === "subject"
-            ? this.state.selectedSubjectId === column.id
+            ? this.state.selectedSubjectIds.includes(column.id)
             : this.state.selectedCategoryKey === column.categoryKey;
     }
 
     onStudentClick(studentId) {
-        this.state.selectedSubjectId = null;
         this.state.selectedCategoryKey = null;
         this.state.selectedStudentId =
             this.state.selectedStudentId === studentId ? null : studentId;
@@ -445,13 +547,19 @@ export class StudentMatrix extends Component {
 
     onShowAllStudents() {
         this.state.selectedStudentId = null;
-        this.state.selectedSubjectId = null;
         this.state.selectedCategoryKey = null;
     }
 
     onDisplayModeChange(ev) {
-        this.state.displayMode = ev.target.value;
-        this.state.selectedSubjectId = null;
+        const validModes = [
+            "selected_subjects",
+            "all_subjects",
+            "selected_categories",
+            "all_categories",
+        ];
+        this.state.displayMode = validModes.includes(ev.target.value)
+            ? ev.target.value
+            : "selected_subjects";
         this.state.selectedCategoryKey = null;
         this.state.hiddenSubjectIds = [];
         this.state.hiddenCategoryKeys = [];
@@ -461,11 +569,22 @@ export class StudentMatrix extends Component {
         this.state.selectedStudentId = null;
         if (column.type === "subject") {
             this.state.selectedCategoryKey = null;
-            this.state.selectedSubjectId =
-                this.state.selectedSubjectId === column.id ? null : column.id;
+            const isOnlySelectedSubject =
+                this.state.selectedSubjectIds.length === 1 &&
+                this.state.selectedSubjectIds[0] === column.id;
+            if (this.state.displayMode === "all_subjects") {
+                this.state.displayMode = "selected_subjects";
+                this.state.selectedSubjectIds = [column.id];
+                this._saveSubjectSelection(this.state.selectedSubjectIds);
+            } else if (isOnlySelectedSubject) {
+                this.state.displayMode = "all_subjects";
+            } else {
+                this.state.selectedSubjectIds = [column.id];
+                this._saveSubjectSelection(this.state.selectedSubjectIds);
+            }
+            this.state.hiddenSubjectIds = [];
             return;
         }
-        this.state.selectedSubjectId = null;
         this.state.selectedCategoryKey =
             this.state.selectedCategoryKey === column.categoryKey
                 ? null
@@ -473,7 +592,9 @@ export class StudentMatrix extends Component {
     }
 
     onShowAllColumns() {
-        this.state.selectedSubjectId = null;
+        this.state.displayMode = this.isCategoryDisplay
+            ? "all_categories"
+            : "all_subjects";
         this.state.selectedCategoryKey = null;
         this.state.hiddenSubjectIds = [];
         this.state.hiddenCategoryKeys = [];
@@ -481,11 +602,17 @@ export class StudentMatrix extends Component {
 
     onColumnTotalClick(column) {
         this.state.selectedStudentId = null;
-        this.state.selectedSubjectId = null;
         this.state.selectedCategoryKey = null;
         if (column.type === "subject") {
             if (!this.state.hiddenSubjectIds.includes(column.id)) {
                 this.state.hiddenSubjectIds.push(column.id);
+            }
+            if (
+                this.state.displayMode === "selected_subjects" &&
+                this.state.selectedSubjectIds.length === 1 &&
+                this.state.selectedSubjectIds[0] === column.id
+            ) {
+                this.state.displayMode = "all_subjects";
             }
             return;
         }

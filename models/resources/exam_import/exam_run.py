@@ -29,6 +29,7 @@ class APSExamPaperImportRun(models.Model):
         'exam_ocr': 'set default',
     })
     run_type = fields.Selection([('analysis', 'Page Analysis'), ('ocr', 'OCR')], default='analysis', readonly=True)
+    completes_import = fields.Boolean(default=False, readonly=True, copy=False)
     ocr_section_ids = fields.Many2many(
         'aps.exam.paper.section', 'aps_exam_import_run_section_rel',
         'run_id', 'section_id', string='OCR Sections', readonly=True,
@@ -70,8 +71,8 @@ class APSExamPaperImportRun(models.Model):
             'finished_at': False,
             'error_message': False,
         })
+        importer = self.import_id
         try:
-            importer = self.import_id
             model = self.ai_model_id or importer.ai_model_id
             if self.run_type == 'ocr':
                 self._process_ocr_run(importer, model, started_perf)
@@ -83,10 +84,20 @@ class APSExamPaperImportRun(models.Model):
                 'error_message': str(exc), 'finished_at': fields.Datetime.now(),
                 'duration_ms': int((time.perf_counter() - started_perf) * 1000),
             })
+            if importer:
+                if self.run_type == 'ocr' and self.completes_import:
+                    importer.write({
+                        'state': 'completed',
+                        'progress': 100,
+                        'completed_at': fields.Datetime.now(),
+                    })
+                stage = _('OCR') if self.run_type == 'ocr' else _('Page Analysis')
+                importer._record_issue(stage, exc)
 
     def _process_ocr_run(self, importer, model, started_perf):
         sections = self.ocr_section_ids.filtered('resource_id')
         updated = failed = 0
+        failure_details = []
         activity_counts = {
             'provider_call': 0,
             'cache_hit': 0,
@@ -101,8 +112,9 @@ class APSExamPaperImportRun(models.Model):
                 for source in activity.values():
                     activity_counts[source] += 1
                 updated += 1
-            except Exception:
+            except Exception as exc:
                 failed += 1
+                failure_details.append('%s: %s' % (section.display_label, exc))
                 _logger.exception('OCR failed for exam paper section %s', section.display_label)
             self._commit_background_work()
             self._write_progress({'status_message': _('Completed OCR section %s.') % section.display_label})
@@ -142,6 +154,25 @@ class APSExamPaperImportRun(models.Model):
                 len(invalid_summary),
                 ', '.join(invalid_details),
             ))
+        issue_details = list(failure_details)
+        if activity_counts['no_images']:
+            issue_details.append(_(
+                'OCR skipped %s document(s) because no valid images were available.'
+            ) % activity_counts['no_images'])
+        if invalid_summary:
+            issue_details.append(_('Could not queue chapter tagging for: %s.') % ', '.join(
+                '%s (%s)' % item for item in invalid_summary
+            ))
+        if self.completes_import:
+            importer.write({
+                'state': 'completed',
+                'progress': 100,
+                'completed_at': fields.Datetime.now(),
+            })
+        if issue_details:
+            importer._record_issue(_('OCR'), '\n'.join(issue_details))
+        else:
+            importer._clear_issues()
         self._write_progress({
             'state': 'completed', 'status_message': _('Completed.'),
             'result_message': '\n'.join(result_messages),
@@ -259,6 +290,17 @@ class APSExamPaperImportRun(models.Model):
         # Move the import to "Analysed" once no pages remain to analyse.
         if not importer.page_ids.filtered(lambda item: item.ai_state != 'complete'):
             importer.write({'state': 'analysing', 'progress': 60})
+        failed_pages = pages.filtered(lambda page: page.ai_state == 'failed')
+        if failed_pages:
+            importer._record_issue(
+                _('Page Analysis'),
+                '\n'.join(
+                    '%s: %s' % (page.display_name, page.error_message or _('Analysis failed.'))
+                    for page in failed_pages
+                ),
+            )
+        else:
+            importer._clear_issues()
         self._commit_background_work()
         self._write_progress({
             'state': 'completed',
