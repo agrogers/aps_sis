@@ -1079,6 +1079,84 @@ class TestAPSResource(TransactionCase):
             [reference.id],
         )
 
+    def test_course_explorer_shows_tagged_direct_child_as_link_only(self):
+        category = self.env['aps.subject.category'].create({
+            'name': 'Course Explorer Link-Only Category',
+        })
+        subject = self.env['aps.subject'].create({
+            'name': 'Course Explorer Link-Only Subject',
+            'category_id': category.id,
+        })
+        tag = self.env['aps.resource.tags'].create({
+            'name': 'Include in Course Explorer',
+        })
+        section = self.env['aps.resources'].create({
+            'name': 'Course Explorer Link-Only Section',
+            'has_notes': 'yes',
+            'notes': '<p>Section notes.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+        })
+        link_only_child = self.env['aps.resources'].create({
+            'name': 'Course Explorer Link-Only Resource',
+            'has_notes': 'yes',
+            'notes': '<p>This should not become a section.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+            'parent_ids': [(4, section.id)],
+            'url': 'https://example.com/link-only',
+            'tag_ids': [(4, tag.id)],
+        })
+        notes_only_child = self.env['aps.resources'].create({
+            'name': 'Course Explorer Notes-Only Link',
+            'has_notes': 'yes',
+            'has_question': 'no',
+            'notes': '<p>Notes-only link content.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+            'parent_ids': [(4, section.id)],
+            'tag_ids': [(4, tag.id)],
+        })
+        regular_child = self.env['aps.resources'].create({
+            'name': 'Course Explorer Regular Child',
+            'has_notes': 'yes',
+            'notes': '<p>This remains a section.</p>',
+            'show_in_hierarchy': True,
+            'subjects': [(6, 0, [subject.id])],
+            'parent_ids': [(4, section.id)],
+        })
+
+        result = self.env['aps.resources'].get_course_explorer_data(subject.id)
+        content_section = next(
+            item for item in result['contentSections']
+            if item['id'] == section.id
+        )
+
+        self.assertEqual(
+            [node['id'] for node in result['tree'][0]['children']],
+            [regular_child.id],
+        )
+        self.assertNotIn(
+            link_only_child.id,
+            [item['id'] for item in result['contentSections']],
+        )
+        self.assertCountEqual(
+            [link['id'] for link in content_section['supportingResources']],
+            [link_only_child.id, notes_only_child.id],
+        )
+        notes_link = next(
+            link for link in content_section['supportingResources']
+            if link['id'] == notes_only_child.id
+        )
+        self.assertEqual(notes_link['link_type'], 'notes')
+        self.assertEqual(
+            next(
+                link for link in content_section['supportingResources']
+                if link['id'] == link_only_child.id
+            )['url'],
+            'https://example.com/link-only',
+        )
+
     def test_course_explorer_data_keeps_parent_notes_before_child_headings(self):
         category = self.env['aps.subject.category'].create({
             'name': 'Parent Prefix Category',
