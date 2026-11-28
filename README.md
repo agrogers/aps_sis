@@ -34,6 +34,18 @@
 
 ## Overview
 
+### Certificate PDF page sizing
+
+A4 certificate paper formats explicitly use 96 DPI, matching Odoo's effective
+Windows setting. Leaving the default of 90 DPI can apply a different zoom on
+Linux and push a full-page certificate onto a second, mostly blank page.
+Certificate reports also remove the standard report container padding so the
+frame starts at the paper edge.
+
+After deploying changes to certificate paper formats, upgrade `aps_sis` on the
+target database to apply the XML records. Keep A4 certificate paper formats at
+96 DPI with zero margins; no changes to the certificate email body are needed.
+
 ### Textbook chapter tagging
 
 1. Put a chapter-by-chapter textbook summary in a resource's **Note**, with labels
@@ -60,6 +72,13 @@
    no matching summary or multiple matches are skipped and reported in the OCR result.
    The OCR run summary distinguishes provider calls, local cache hits, and documents
    skipped because no valid images were available.
+
+### Exam-import resource ordering
+
+**Build Resources** copies the reviewed section sequence to question resources and
+their child resources, rather than relying on alphabetical question labels.
+A root question uses the sequence of its first included section. Rebuilding also
+updates reused resources, so section-order changes apply without creating duplicates.
 
 APEX is a comprehensive **student progress tracking and academic management system** built as a custom Odoo 18 addon. It extends the [OpenEducat](https://www.openeducat.org/) SIS (Student Information System) with:
 
@@ -279,6 +298,15 @@ Resources whose `name` contains **" Progress"** (space + "Progress") are treated
 ## Dashboard & Analytics
 
 The main dashboard is an **OWL 2 client action** (`apex_dashboard.Dashboard`) loaded as a backend view.
+
+### Teacher Dashboard paper filters
+
+With **Past Paper** enabled, question cards remain nested under their paper,
+including questions whose own type filter is hidden. Disabling **Past Paper**
+hides the paper cards and shows matching questions at the root level, regardless
+of whether their paper was expanded. In this mode, the **Question (Past Paper)**
+and submission-state filters control which questions appear. Re-enabling
+**Past Paper** restores the saved paper expansion state. Exam grouping is unchanged.
 
 ### KPI Cards
 

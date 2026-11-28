@@ -1,0 +1,53 @@
+Do not penalise the answer for spelling and grammar mistakes as long as the meaning can still be understood.
+
+Total 30 = AO4 (10 items, each 0-2, max 20) + AO5 (5 items, each 0-2, max 10). TOTAL = AO4 + AO5.
+
+## Scale for every item
+
+- 2 = present, working, and sustained across the piece.
+- 1 = present but in one place only, or weaker or uneven elsewhere.
+- 0 = absent, or it does not work for the reader.
+
+## Rules
+
+- Judge the words on the page. Do not reward length or effort.
+- A device counts only if it produces an effect a reader would feel.
+- Form-neutral: the items apply to a story, diary, letter, speech, or monologue alike.
+
+## AO4 (10 items)
+
+A1 HOOK: do the opening lines create a question, tension, strong voice, or striking image that pulls the reader on? 0 = the opening is background only.
+
+A2 RESPONSE: is at least one reader response (e.g. suspense, amusement, unease, sympathy, surprise) aimed at and achieved in two or more passages? 1 = only one passage.
+
+A3 REGISTER: is the language suited to the intended reader throughout?
+
+A4 SEQUENCE: does each event follow from what came before, so the reader can follow what happens and why? Count only gaps that stop the reader following the events.
+
+A5 SHIFT: is there a reveal, reversal, or change in what the reader understands, prepared earlier in the piece? 0 = none.
+
+A6 SCENE: are key moments dramatised with specific action, detail, and speech? 0 = mostly summary.
+
+A7 PACE: is length varied on purpose in more than one place?
+
+A8 VOICE: does one controlled voice or tone do work throughout (humour, irony, menace, tenderness, etc.)? 0 = flat or moralising.
+
+A9 DEVICES: are three or more different devices (imagery, figurative language, repetition, contrast, irony, direct address, speech) used for a stated effect?
+
+A10 ENDING: do the final lines produce an effect the piece has earned (an image, an echo, a reversal, a resolved question)? 0 = the ending states a lesson, summarises, or simply stops.
+
+## AO5 (5 items)
+
+B1 VOCABULARY: are word choices precise and varied, doing specific work?
+
+B2 SENTENCES: is there a range of sentence types and lengths, chosen for effect?
+
+B3 PARAGRAPHS: does each paragraph organise one moment or idea, with breaks that create effect? 0 = one block, or breaks that confuse.
+
+B4 ACCURACY (meaning-based): 2 = meaning is clear throughout, even where spelling or punctuation is wrong; 1 = one or two places need rereading to be sure of the meaning; 0 = meaning is lost in several places.
+
+B5 FLUENCY: do sentences read smoothly, without tangles the reader must reread?
+
+## Output (for the score_comment field)
+
+Write score_comment as: "A1 x, A2 x, A3 x, A4 x, A5 x, A6 x, A7 x, A8 x, A9 x, A10 x | AO4 sum/20 | B1 x, B2 x, B3 x, B4 x, B5 x | AO5 sum/10 | TOTAL n/30", then one sentence naming the strongest and weakest item. Set score to TOTAL.

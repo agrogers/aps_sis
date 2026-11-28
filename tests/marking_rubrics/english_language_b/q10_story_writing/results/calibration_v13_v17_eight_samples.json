@@ -1,0 +1,745 @@
+{
+  "created_at_utc": "2026-11-26T16:00:16.902213+00:00",
+  "selected_candidate_version": 15,
+  "baseline_version": 13,
+  "scope": "Calibration only; no production rubric was replaced.",
+  "dataset": {
+    "count": 8,
+    "samples": {
+      "E1": 16,
+      "E2": 27,
+      "E3": 17,
+      "E4": 29,
+      "E5": 30,
+      "E6": 19,
+      "E7": 30,
+      "E8": 27
+    },
+    "input_files": {
+      "essays_blind.txt": "c580f53f260b2606facf097202746b1dba00d78635b1fc39cba57addbaa9ef82",
+      "official_marks.json": "5569d0dc0bdc20216c342270bfaba6675d246aa215e8ebca95eaa6db71db089c"
+    },
+    "excluded": [
+      {
+        "title": "An unexpected find",
+        "reason": "Excluded at the user's request from all tuning and metrics; not used as a held-out validation set."
+      }
+    ]
+  },
+  "methodology": {
+    "model": "anthropic/claude-haiku-5.5",
+    "effort": "low",
+    "temperature": 0.05,
+    "runs_per_phase": 3,
+    "confirmation": "After evaluating v14-v17, selected v15 and reran v13/v15 with no further changes. Confirmation uses fresh calls on the same samples, not unseen answers.",
+    "primary_metric": "Mean abs(reported API score - reference mark), averaged over every successful call.",
+    "arithmetic_diagnostic": "Recomputed item sums are diagnostic only. Original API scores and raw results were preserved.",
+    "reference_isolation": "The runner sends only rubric and unmarked essay text to the grading model. Reference marks are used locally for reporting.",
+    "routing": "OpenRouter provider routing was not pinned and varied across some runs.",
+    "generalization_warning": "Eight known calibration samples are insufficient to establish improvement on unseen answers."
+  },
+  "combined_comparison": {
+    "v13": {
+      "calls": 48,
+      "reported_score_mae": 2.9375,
+      "recomputed_score_mae": 3.0416666666666665,
+      "outputs_with_validation_issues": 10,
+      "per_sample": [
+        {
+          "essay": "E1",
+          "title": "The Beginning (Roberts family)",
+          "reference": 16,
+          "scores": [
+            16,
+            14,
+            16,
+            13,
+            14,
+            16
+          ],
+          "mean": 14.833333333333334,
+          "bias": -1.166666666666666,
+          "mae": 1.1666666666666667,
+          "minimum": 13,
+          "maximum": 16
+        },
+        {
+          "essay": "E2",
+          "title": "Father reunion",
+          "reference": 27,
+          "scores": [
+            24,
+            25,
+            26,
+            26,
+            25,
+            27
+          ],
+          "mean": 25.5,
+          "bias": -1.5,
+          "mae": 1.5,
+          "minimum": 24,
+          "maximum": 27
+        },
+        {
+          "essay": "E3",
+          "title": "The Discovery",
+          "reference": 17,
+          "scores": [
+            16,
+            17,
+            17,
+            16,
+            16,
+            16
+          ],
+          "mean": 16.333333333333332,
+          "bias": -0.6666666666666679,
+          "mae": 0.6666666666666666,
+          "minimum": 16,
+          "maximum": 17
+        },
+        {
+          "essay": "E4",
+          "title": "The Beginning (satirical dictator story)",
+          "reference": 29,
+          "scores": [
+            23,
+            24,
+            21,
+            25,
+            22,
+            22
+          ],
+          "mean": 22.833333333333332,
+          "bias": -6.166666666666668,
+          "mae": 6.166666666666667,
+          "minimum": 21,
+          "maximum": 25
+        },
+        {
+          "essay": "E5",
+          "title": "First impression",
+          "reference": 30,
+          "scores": [
+            27,
+            26,
+            29,
+            26,
+            26,
+            28
+          ],
+          "mean": 27,
+          "bias": -3,
+          "mae": 3,
+          "minimum": 26,
+          "maximum": 29
+        },
+        {
+          "essay": "E6",
+          "title": "The Message",
+          "reference": 19,
+          "scores": [
+            22,
+            23,
+            22,
+            22,
+            23,
+            22
+          ],
+          "mean": 22.333333333333332,
+          "bias": 3.333333333333332,
+          "mae": 3.3333333333333335,
+          "minimum": 22,
+          "maximum": 23
+        },
+        {
+          "essay": "E7",
+          "title": "Funfair and statue",
+          "reference": 30,
+          "scores": [
+            29,
+            29,
+            30,
+            30,
+            30,
+            29
+          ],
+          "mean": 29.5,
+          "bias": -0.5,
+          "mae": 0.5,
+          "minimum": 29,
+          "maximum": 30
+        },
+        {
+          "essay": "E8",
+          "title": "Freedom",
+          "reference": 27,
+          "scores": [
+            22,
+            18,
+            20,
+            17,
+            21,
+            21
+          ],
+          "mean": 19.833333333333332,
+          "bias": -7.166666666666668,
+          "mae": 7.166666666666667,
+          "minimum": 17,
+          "maximum": 22
+        }
+      ]
+    },
+    "v15": {
+      "calls": 48,
+      "reported_score_mae": 2.4791666666666665,
+      "recomputed_score_mae": 2.4375,
+      "outputs_with_validation_issues": 5,
+      "per_sample": [
+        {
+          "essay": "E1",
+          "title": "The Beginning (Roberts family)",
+          "reference": 16,
+          "scores": [
+            19,
+            20,
+            18,
+            19,
+            20,
+            19
+          ],
+          "mean": 19.166666666666668,
+          "bias": 3.166666666666668,
+          "mae": 3.1666666666666665,
+          "minimum": 18,
+          "maximum": 20
+        },
+        {
+          "essay": "E2",
+          "title": "Father reunion",
+          "reference": 27,
+          "scores": [
+            30,
+            30,
+            30,
+            29,
+            30,
+            30
+          ],
+          "mean": 29.833333333333332,
+          "bias": 2.833333333333332,
+          "mae": 2.8333333333333335,
+          "minimum": 29,
+          "maximum": 30
+        },
+        {
+          "essay": "E3",
+          "title": "The Discovery",
+          "reference": 17,
+          "scores": [
+            18,
+            21,
+            20,
+            17,
+            19,
+            24
+          ],
+          "mean": 19.833333333333332,
+          "bias": 2.833333333333332,
+          "mae": 2.8333333333333335,
+          "minimum": 17,
+          "maximum": 24
+        },
+        {
+          "essay": "E4",
+          "title": "The Beginning (satirical dictator story)",
+          "reference": 29,
+          "scores": [
+            27,
+            24,
+            26,
+            28,
+            24,
+            23
+          ],
+          "mean": 25.333333333333332,
+          "bias": -3.666666666666668,
+          "mae": 3.6666666666666665,
+          "minimum": 23,
+          "maximum": 28
+        },
+        {
+          "essay": "E5",
+          "title": "First impression",
+          "reference": 30,
+          "scores": [
+            30,
+            29,
+            24,
+            30,
+            30,
+            30
+          ],
+          "mean": 28.833333333333332,
+          "bias": -1.1666666666666679,
+          "mae": 1.1666666666666667,
+          "minimum": 24,
+          "maximum": 30
+        },
+        {
+          "essay": "E6",
+          "title": "The Message",
+          "reference": 19,
+          "scores": [
+            25,
+            25,
+            22,
+            22,
+            22,
+            21
+          ],
+          "mean": 22.833333333333332,
+          "bias": 3.833333333333332,
+          "mae": 3.8333333333333335,
+          "minimum": 21,
+          "maximum": 25
+        },
+        {
+          "essay": "E7",
+          "title": "Funfair and statue",
+          "reference": 30,
+          "scores": [
+            29,
+            30,
+            30,
+            29,
+            30,
+            29
+          ],
+          "mean": 29.5,
+          "bias": -0.5,
+          "mae": 0.5,
+          "minimum": 29,
+          "maximum": 30
+        },
+        {
+          "essay": "E8",
+          "title": "Freedom",
+          "reference": 27,
+          "scores": [
+            27,
+            21,
+            26,
+            27,
+            26,
+            24
+          ],
+          "mean": 25.166666666666668,
+          "bias": -1.8333333333333321,
+          "mae": 1.8333333333333333,
+          "minimum": 21,
+          "maximum": 27
+        }
+      ]
+    },
+    "absolute_mae_reduction": 0.4583333333333335,
+    "relative_mae_reduction_percent": 15.60283687943263
+  },
+  "experiments": [
+    {
+      "version": 13,
+      "phase": "initial",
+      "results_file": "results\\results_v13_eight_samples_low_t005.json",
+      "model": "anthropic/claude-haiku-5.5",
+      "config": {
+        "project": "D:\\git\\odoo_custom_addons\\aps_sis\\tests\\marking_rubrics\\english_language_b\\q10_story_writing",
+        "system": "rubrics\\request_v13_system.txt",
+        "effort": "low",
+        "temperature": 0.05,
+        "max_tokens": 9200,
+        "runs": 3,
+        "essays": null,
+        "workers": 6
+      },
+      "successful_calls": 24,
+      "reported_score_mae": 2.8333333333333335,
+      "recomputed_score_mae": 2.9583333333333335,
+      "outputs_with_validation_issues": 5,
+      "validation_issues": [
+        {
+          "essay": "E8",
+          "run": 1,
+          "reported_score": 22,
+          "recomputed_score": 21,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E4",
+          "run": 2,
+          "reported_score": 21,
+          "recomputed_score": 20,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E6",
+          "run": 2,
+          "reported_score": 22,
+          "recomputed_score": 21,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E8",
+          "run": 2,
+          "reported_score": 20,
+          "recomputed_score": 19,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E8",
+          "run": 3,
+          "reported_score": 21,
+          "recomputed_score": 20,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        }
+      ],
+      "providers": [
+        "Claude Platform on AWS",
+        "Google"
+      ],
+      "cost_usd": 0.0274181
+    },
+    {
+      "version": 14,
+      "phase": "initial",
+      "results_file": "results\\results_v14_eight_samples_low_t005.json",
+      "model": "anthropic/claude-haiku-5.5",
+      "config": {
+        "project": "D:\\git\\odoo_custom_addons\\aps_sis\\tests\\marking_rubrics\\english_language_b\\q10_story_writing",
+        "system": "rubrics\\request_v14_system.txt",
+        "effort": "low",
+        "temperature": 0.05,
+        "max_tokens": 9200,
+        "runs": 3,
+        "essays": null,
+        "workers": 6
+      },
+      "successful_calls": 24,
+      "reported_score_mae": 3.5416666666666665,
+      "recomputed_score_mae": 3.5416666666666665,
+      "outputs_with_validation_issues": 2,
+      "validation_issues": [
+        {
+          "essay": "E3",
+          "run": 1,
+          "reported_score": 17,
+          "recomputed_score": 16,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E1",
+          "run": 2,
+          "reported_score": 18,
+          "recomputed_score": 17,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        }
+      ],
+      "providers": [
+        "Claude Platform on AWS"
+      ],
+      "cost_usd": 0.026022
+    },
+    {
+      "version": 15,
+      "phase": "initial",
+      "results_file": "results\\results_v15_eight_samples_low_t005.json",
+      "model": "anthropic/claude-haiku-5.5",
+      "config": {
+        "project": "D:\\git\\odoo_custom_addons\\aps_sis\\tests\\marking_rubrics\\english_language_b\\q10_story_writing",
+        "system": "rubrics\\request_v15_system.txt",
+        "effort": "low",
+        "temperature": 0.05,
+        "max_tokens": 9200,
+        "runs": 3,
+        "essays": null,
+        "workers": 6
+      },
+      "successful_calls": 24,
+      "reported_score_mae": 2.2916666666666665,
+      "recomputed_score_mae": 2.2083333333333335,
+      "outputs_with_validation_issues": 1,
+      "validation_issues": [
+        {
+          "essay": "E4",
+          "run": 2,
+          "reported_score": 26,
+          "recomputed_score": 28,
+          "issues": [
+            "AO5 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        }
+      ],
+      "providers": [
+        "Claude Platform on AWS",
+        "Google"
+      ],
+      "cost_usd": 0.0247683
+    },
+    {
+      "version": 16,
+      "phase": "initial",
+      "results_file": "results\\results_v16_eight_samples_low_t005.json",
+      "model": "anthropic/claude-haiku-5.5",
+      "config": {
+        "project": "D:\\git\\odoo_custom_addons\\aps_sis\\tests\\marking_rubrics\\english_language_b\\q10_story_writing",
+        "system": "rubrics\\request_v16_system.txt",
+        "effort": "low",
+        "temperature": 0.05,
+        "max_tokens": 9200,
+        "runs": 3,
+        "essays": null,
+        "workers": 6
+      },
+      "successful_calls": 24,
+      "reported_score_mae": 2.7083333333333335,
+      "recomputed_score_mae": 2.75,
+      "outputs_with_validation_issues": 1,
+      "validation_issues": [
+        {
+          "essay": "E4",
+          "run": 3,
+          "reported_score": 23,
+          "recomputed_score": 22,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        }
+      ],
+      "providers": [
+        "Claude Platform on AWS"
+      ],
+      "cost_usd": 0.0256594
+    },
+    {
+      "version": 17,
+      "phase": "initial",
+      "results_file": "results\\results_v17_eight_samples_low_t005.json",
+      "model": "anthropic/claude-haiku-5.5",
+      "config": {
+        "project": "D:\\git\\odoo_custom_addons\\aps_sis\\tests\\marking_rubrics\\english_language_b\\q10_story_writing",
+        "system": "rubrics\\request_v17_system.txt",
+        "effort": "low",
+        "temperature": 0.05,
+        "max_tokens": 9200,
+        "runs": 3,
+        "essays": null,
+        "workers": 6
+      },
+      "successful_calls": 24,
+      "reported_score_mae": 5.958333333333333,
+      "recomputed_score_mae": 5.958333333333333,
+      "outputs_with_validation_issues": 0,
+      "validation_issues": [],
+      "providers": [
+        "Claude Platform on AWS",
+        "Google"
+      ],
+      "cost_usd": 0.0180737
+    },
+    {
+      "version": 13,
+      "phase": "confirmation",
+      "results_file": "results\\results_v13_eight_samples_confirmation_low_t005.json",
+      "model": "anthropic/claude-haiku-5.5",
+      "config": {
+        "project": "D:\\git\\odoo_custom_addons\\aps_sis\\tests\\marking_rubrics\\english_language_b\\q10_story_writing",
+        "system": "rubrics\\request_v13_system.txt",
+        "effort": "low",
+        "temperature": 0.05,
+        "max_tokens": 9200,
+        "runs": 3,
+        "essays": null,
+        "workers": 6
+      },
+      "successful_calls": 24,
+      "reported_score_mae": 3.0416666666666665,
+      "recomputed_score_mae": 3.125,
+      "outputs_with_validation_issues": 5,
+      "validation_issues": [
+        {
+          "essay": "E6",
+          "run": 1,
+          "reported_score": 23,
+          "recomputed_score": 23,
+          "issues": [
+            "JSON shape or stored score differs from raw output"
+          ]
+        },
+        {
+          "essay": "E6",
+          "run": 2,
+          "reported_score": 22,
+          "recomputed_score": 21,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E3",
+          "run": 3,
+          "reported_score": 16,
+          "recomputed_score": 15,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E5",
+          "run": 3,
+          "reported_score": 28,
+          "recomputed_score": 27,
+          "issues": [
+            "score differs from stated TOTAL",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E8",
+          "run": 3,
+          "reported_score": 21,
+          "recomputed_score": 20,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        }
+      ],
+      "providers": [
+        "Claude Platform on AWS",
+        "Google"
+      ],
+      "cost_usd": 0.0280196
+    },
+    {
+      "version": 15,
+      "phase": "confirmation",
+      "results_file": "results\\results_v15_eight_samples_confirmation_low_t005.json",
+      "model": "anthropic/claude-haiku-5.5",
+      "config": {
+        "project": "D:\\git\\odoo_custom_addons\\aps_sis\\tests\\marking_rubrics\\english_language_b\\q10_story_writing",
+        "system": "rubrics\\request_v15_system.txt",
+        "effort": "low",
+        "temperature": 0.05,
+        "max_tokens": 9200,
+        "runs": 3,
+        "essays": null,
+        "workers": 6
+      },
+      "successful_calls": 24,
+      "reported_score_mae": 2.6666666666666665,
+      "recomputed_score_mae": 2.6666666666666665,
+      "outputs_with_validation_issues": 4,
+      "validation_issues": [
+        {
+          "essay": "E4",
+          "run": 1,
+          "reported_score": 24,
+          "recomputed_score": 25,
+          "issues": [
+            "score differs from stated TOTAL",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E3",
+          "run": 1,
+          "reported_score": 21,
+          "recomputed_score": 20,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E3",
+          "run": 2,
+          "reported_score": 17,
+          "recomputed_score": 16,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        },
+        {
+          "essay": "E8",
+          "run": 3,
+          "reported_score": 24,
+          "recomputed_score": 23,
+          "issues": [
+            "AO4 subtotal differs from item sum",
+            "TOTAL differs from recomputed sum",
+            "score differs from recomputed sum"
+          ]
+        }
+      ],
+      "providers": [
+        "Claude Platform on AWS"
+      ],
+      "cost_usd": 0.0250518
+    }
+  ],
+  "total_successful_calls": 168,
+  "total_reported_cost_usd": 0.1750129,
+  "candidate_changes": [
+    "Remove automatic penalties for purposeful repetition and reflective writing.",
+    "Assess development without requiring a foreshadowed plot twist.",
+    "Allow thought, observation, and purposeful summary to realise key scenes.",
+    "Distinguish genuine incoherence from omitted backstory or fictional implausibility.",
+    "Retain the 15-item /30 scoring structure and JSON response keys."
+  ],
+  "limitations": [
+    "V15 overmarks the two weaker recount-style answers and the father reunion compared with v13.",
+    "The Message remains overmarked; candidate improvement is not uniform across samples.",
+    "Some outputs still have inconsistent item sums, subtotals, or score fields. Deterministic validation is needed before production use.",
+    "Failed candidate experiments are retained, not omitted from the report."
+  ]
+}

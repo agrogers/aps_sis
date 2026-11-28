@@ -1,0 +1,709 @@
+{
+  "model": "anthropic/claude-haiku-5.5",
+  "rubric": "request_v15_system.txt",
+  "temperature": 0.05,
+  "method": "Mean of five independently marked answers, using the sum of their 15 rubric item marks. No stretch or calibration.",
+  "experiments": {
+    "low": {
+      "source": "results_v15_haiku_five_runs_low_t005.json",
+      "single_call_mean_absolute_error": 2.525,
+      "five_call_mean_absolute_error": 2.525,
+      "cost_usd": 0.0313053,
+      "arithmetic_corrections": [
+        {
+          "essay": "E1",
+          "run": 1,
+          "model_score": 18,
+          "declared_totals": {
+            "AO4 TOTAL": 12,
+            "AO5 TOTAL": 6,
+            "TOTAL": 18
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 11,
+            "AO5 TOTAL": 6,
+            "TOTAL": 17
+          }
+        },
+        {
+          "essay": "E1",
+          "run": 5,
+          "model_score": 22,
+          "declared_totals": {
+            "AO4 TOTAL": 15,
+            "AO5 TOTAL": 7,
+            "TOTAL": 22
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 14,
+            "AO5 TOTAL": 7,
+            "TOTAL": 21
+          }
+        },
+        {
+          "essay": "E3",
+          "run": 4,
+          "model_score": 20,
+          "declared_totals": {
+            "AO4 TOTAL": 13,
+            "AO5 TOTAL": 7,
+            "TOTAL": 20
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 12,
+            "AO5 TOTAL": 7,
+            "TOTAL": 19
+          }
+        },
+        {
+          "essay": "E8",
+          "run": 4,
+          "model_score": 25,
+          "declared_totals": {
+            "AO4 TOTAL": 18,
+            "AO5 TOTAL": 7,
+            "TOTAL": 25
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 17,
+            "AO5 TOTAL": 7,
+            "TOTAL": 24
+          }
+        }
+      ],
+      "results": {
+        "E1": {
+          "official": 16,
+          "model_totals": [
+            18,
+            20,
+            20,
+            19,
+            22
+          ],
+          "item_sums": [
+            17,
+            20,
+            20,
+            19,
+            21
+          ],
+          "mean": 19.4,
+          "difference_from_official": 3.4,
+          "item_means": {
+            "A1": 1.0,
+            "A2": 1.2,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.8,
+            "A6": 1.0,
+            "A7": 1.0,
+            "A8": 1.0,
+            "A9": 1.0,
+            "A10": 0.6,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 1.8,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E2": {
+          "official": 27,
+          "model_totals": [
+            30,
+            30,
+            30,
+            29,
+            30
+          ],
+          "item_sums": [
+            30,
+            30,
+            30,
+            29,
+            30
+          ],
+          "mean": 29.8,
+          "difference_from_official": 2.8,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.8
+          }
+        },
+        "E3": {
+          "official": 17,
+          "model_totals": [
+            23,
+            19,
+            18,
+            20,
+            19
+          ],
+          "item_sums": [
+            23,
+            19,
+            18,
+            19,
+            19
+          ],
+          "mean": 19.6,
+          "difference_from_official": 2.6,
+          "item_means": {
+            "A1": 1.2,
+            "A2": 1.0,
+            "A3": 1.8,
+            "A4": 2.0,
+            "A5": 1.4,
+            "A6": 1.6,
+            "A7": 1.0,
+            "A8": 1.4,
+            "A9": 1.2,
+            "A10": 0.4,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 1.6,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E4": {
+          "official": 29,
+          "model_totals": [
+            28,
+            29,
+            25,
+            25,
+            24
+          ],
+          "item_sums": [
+            28,
+            29,
+            25,
+            25,
+            24
+          ],
+          "mean": 26.2,
+          "difference_from_official": -2.8,
+          "item_means": {
+            "A1": 1.8,
+            "A2": 1.6,
+            "A3": 2.0,
+            "A4": 1.4,
+            "A5": 1.4,
+            "A6": 2.0,
+            "A7": 1.8,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 1.8,
+            "B1": 1.4,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E5": {
+          "official": 30,
+          "model_totals": [
+            29,
+            30,
+            29,
+            27,
+            30
+          ],
+          "item_sums": [
+            29,
+            30,
+            29,
+            27,
+            30
+          ],
+          "mean": 29.0,
+          "difference_from_official": -1.0,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 1.8,
+            "A5": 1.8,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 1.8,
+            "B2": 1.8,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.8
+          }
+        },
+        "E6": {
+          "official": 19,
+          "model_totals": [
+            21,
+            19,
+            25,
+            24,
+            26
+          ],
+          "item_sums": [
+            21,
+            19,
+            25,
+            24,
+            26
+          ],
+          "mean": 23.0,
+          "difference_from_official": 4.0,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 1.4,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.4,
+            "A6": 1.8,
+            "A7": 1.4,
+            "A8": 1.2,
+            "A9": 1.4,
+            "A10": 1.6,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 1.6,
+            "B4": 2.0,
+            "B5": 1.2
+          }
+        },
+        "E7": {
+          "official": 30,
+          "model_totals": [
+            29,
+            30,
+            29,
+            30,
+            29
+          ],
+          "item_sums": [
+            29,
+            30,
+            29,
+            30,
+            29
+          ],
+          "mean": 29.4,
+          "difference_from_official": -0.6,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 1.8,
+            "B5": 1.6
+          }
+        },
+        "E8": {
+          "official": 27,
+          "model_totals": [
+            24,
+            24,
+            22,
+            25,
+            26
+          ],
+          "item_sums": [
+            24,
+            24,
+            22,
+            24,
+            26
+          ],
+          "mean": 24.0,
+          "difference_from_official": -3.0,
+          "item_means": {
+            "A1": 1.8,
+            "A2": 1.6,
+            "A3": 2.0,
+            "A4": 1.2,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 1.0,
+            "A8": 2.0,
+            "A9": 1.4,
+            "A10": 1.8,
+            "B1": 1.2,
+            "B2": 1.6,
+            "B3": 2.0,
+            "B4": 1.4,
+            "B5": 1.0
+          }
+        }
+      }
+    },
+    "medium": {
+      "source": "results_v15_haiku_five_runs_medium_t005.json",
+      "single_call_mean_absolute_error": 2.35,
+      "five_call_mean_absolute_error": 2.3,
+      "cost_usd": 0.03680373,
+      "arithmetic_corrections": [
+        {
+          "essay": "E4",
+          "run": 3,
+          "model_score": 24,
+          "declared_totals": {
+            "AO4 TOTAL": 17,
+            "AO5 TOTAL": 7,
+            "TOTAL": 24
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 16,
+            "AO5 TOTAL": 7,
+            "TOTAL": 23
+          }
+        },
+        {
+          "essay": "E4",
+          "run": 5,
+          "model_score": 25,
+          "declared_totals": {
+            "AO4 TOTAL": 17,
+            "AO5 TOTAL": 8,
+            "TOTAL": 25
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 16,
+            "AO5 TOTAL": 8,
+            "TOTAL": 24
+          }
+        },
+        {
+          "essay": "E8",
+          "run": 4,
+          "model_score": 26,
+          "declared_totals": {
+            "AO4 TOTAL": 20,
+            "AO5 TOTAL": 6,
+            "TOTAL": 26
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 20,
+            "AO5 TOTAL": 7,
+            "TOTAL": 27
+          }
+        }
+      ],
+      "results": {
+        "E1": {
+          "official": 16,
+          "model_totals": [
+            18,
+            17,
+            17,
+            18,
+            18
+          ],
+          "item_sums": [
+            18,
+            17,
+            17,
+            18,
+            18
+          ],
+          "mean": 17.6,
+          "difference_from_official": 1.6,
+          "item_means": {
+            "A1": 1.0,
+            "A2": 1.0,
+            "A3": 2.0,
+            "A4": 1.8,
+            "A5": 1.0,
+            "A6": 1.0,
+            "A7": 1.0,
+            "A8": 1.0,
+            "A9": 1.0,
+            "A10": 0.0,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 1.8,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E2": {
+          "official": 27,
+          "model_totals": [
+            30,
+            30,
+            29,
+            29,
+            29
+          ],
+          "item_sums": [
+            30,
+            30,
+            29,
+            29,
+            29
+          ],
+          "mean": 29.4,
+          "difference_from_official": 2.4,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.4
+          }
+        },
+        "E3": {
+          "official": 17,
+          "model_totals": [
+            20,
+            21,
+            23,
+            21,
+            22
+          ],
+          "item_sums": [
+            20,
+            21,
+            23,
+            21,
+            22
+          ],
+          "mean": 21.4,
+          "difference_from_official": 4.4,
+          "item_means": {
+            "A1": 1.8,
+            "A2": 1.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.0,
+            "A6": 1.6,
+            "A7": 1.0,
+            "A8": 2.0,
+            "A9": 1.6,
+            "A10": 0.4,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 1.8,
+            "B4": 2.0,
+            "B5": 1.2
+          }
+        },
+        "E4": {
+          "official": 29,
+          "model_totals": [
+            27,
+            23,
+            24,
+            21,
+            25
+          ],
+          "item_sums": [
+            27,
+            23,
+            23,
+            21,
+            24
+          ],
+          "mean": 23.6,
+          "difference_from_official": -5.4,
+          "item_means": {
+            "A1": 1.6,
+            "A2": 1.0,
+            "A3": 1.8,
+            "A4": 1.8,
+            "A5": 1.2,
+            "A6": 2.0,
+            "A7": 1.0,
+            "A8": 1.8,
+            "A9": 1.6,
+            "A10": 2.0,
+            "B1": 1.4,
+            "B2": 1.6,
+            "B3": 1.8,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E5": {
+          "official": 30,
+          "model_totals": [
+            30,
+            28,
+            28,
+            30,
+            28
+          ],
+          "item_sums": [
+            30,
+            28,
+            28,
+            30,
+            28
+          ],
+          "mean": 28.8,
+          "difference_from_official": -1.2,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 1.4,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.4
+          }
+        },
+        "E6": {
+          "official": 19,
+          "model_totals": [
+            23,
+            22,
+            21,
+            22,
+            21
+          ],
+          "item_sums": [
+            23,
+            22,
+            21,
+            22,
+            21
+          ],
+          "mean": 21.8,
+          "difference_from_official": 2.8,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 1.2,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.2,
+            "A6": 1.6,
+            "A7": 1.2,
+            "A8": 1.0,
+            "A9": 1.0,
+            "A10": 1.4,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.2
+          }
+        },
+        "E7": {
+          "official": 30,
+          "model_totals": [
+            30,
+            30,
+            30,
+            29,
+            30
+          ],
+          "item_sums": [
+            30,
+            30,
+            30,
+            29,
+            30
+          ],
+          "mean": 29.8,
+          "difference_from_official": -0.2,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.8
+          }
+        },
+        "E8": {
+          "official": 27,
+          "model_totals": [
+            26,
+            27,
+            25,
+            26,
+            28
+          ],
+          "item_sums": [
+            26,
+            27,
+            25,
+            27,
+            28
+          ],
+          "mean": 26.6,
+          "difference_from_official": -0.4,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 1.8,
+            "A3": 2.0,
+            "A4": 1.6,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 1.8,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 1.4,
+            "B2": 1.8,
+            "B3": 2.0,
+            "B4": 1.2,
+            "B5": 1.0
+          }
+        }
+      }
+    }
+  }
+}

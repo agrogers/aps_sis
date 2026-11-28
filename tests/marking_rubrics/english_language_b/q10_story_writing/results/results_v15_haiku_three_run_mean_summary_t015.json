@@ -1,0 +1,589 @@
+{
+  "model": "anthropic/claude-haiku-5.5",
+  "rubric": "request_v15_system.txt",
+  "requested_temperature": 0.15,
+  "temperature_validation": "OpenRouter does not list temperature as supported for this provider. A request requiring temperature support was rejected, while the same request without temperature succeeded. The effective temperature of the scoring calls is unknown.",
+  "method": "Mean of three independently marked answers, using the sum of their 15 rubric item marks. No stretch or calibration.",
+  "baseline_method": "Mean error of each possible three-mark combination from the previous five temperature-0.05 marks, averaged across the eight answers. This is a resampled estimate, not a new independent batch.",
+  "baseline_source": "results_v15_haiku_five_run_mean_summary_t005.json",
+  "experiments": {
+    "low": {
+      "source": "results_v15_haiku_three_runs_low_t015.json",
+      "single_call_mean_absolute_error": 2.3333333333333335,
+      "three_call_mean_absolute_error": 2.25,
+      "previous_005_estimated_three_call_mean_absolute_error": 2.525,
+      "cost_usd": 0.01929661,
+      "arithmetic_corrections": [
+        {
+          "essay": "E1",
+          "run": 1,
+          "model_score": 16,
+          "declared_totals": {
+            "AO4 TOTAL": 9,
+            "AO5 TOTAL": 7,
+            "TOTAL": 16
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 8,
+            "AO5 TOTAL": 7,
+            "TOTAL": 15
+          }
+        },
+        {
+          "essay": "E1",
+          "run": 2,
+          "model_score": 18,
+          "declared_totals": {
+            "AO4 TOTAL": 11,
+            "AO5 TOTAL": 7,
+            "TOTAL": 18
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 10,
+            "AO5 TOTAL": 7,
+            "TOTAL": 17
+          }
+        },
+        {
+          "essay": "E4",
+          "run": 1,
+          "model_score": 26,
+          "declared_totals": {
+            "AO4 TOTAL": 18,
+            "AO5 TOTAL": 8,
+            "TOTAL": 26
+          },
+          "correct_totals": {
+            "AO4 TOTAL": 17,
+            "AO5 TOTAL": 8,
+            "TOTAL": 25
+          }
+        }
+      ],
+      "results": {
+        "E1": {
+          "official": 16,
+          "model_totals": [
+            16,
+            18,
+            19
+          ],
+          "item_sums": [
+            15,
+            17,
+            19
+          ],
+          "mean": 17.0,
+          "difference_from_official": 1.0,
+          "item_means": {
+            "A1": 1.0,
+            "A2": 1.0,
+            "A3": 1.3333333333333333,
+            "A4": 2.0,
+            "A5": 1.3333333333333333,
+            "A6": 0.6666666666666666,
+            "A7": 1.0,
+            "A8": 1.0,
+            "A9": 0.6666666666666666,
+            "A10": 0.0,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E2": {
+          "official": 27,
+          "model_totals": [
+            30,
+            29,
+            30
+          ],
+          "item_sums": [
+            30,
+            29,
+            30
+          ],
+          "mean": 29.666666666666668,
+          "difference_from_official": 2.6666666666666665,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.6666666666666667
+          }
+        },
+        "E3": {
+          "official": 17,
+          "model_totals": [
+            22,
+            21,
+            19
+          ],
+          "item_sums": [
+            22,
+            21,
+            19
+          ],
+          "mean": 20.666666666666668,
+          "difference_from_official": 3.6666666666666665,
+          "item_means": {
+            "A1": 1.0,
+            "A2": 1.0,
+            "A3": 1.6666666666666667,
+            "A4": 2.0,
+            "A5": 1.0,
+            "A6": 2.0,
+            "A7": 1.0,
+            "A8": 1.6666666666666667,
+            "A9": 1.6666666666666667,
+            "A10": 0.3333333333333333,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.3333333333333333
+          }
+        },
+        "E4": {
+          "official": 29,
+          "model_totals": [
+            26,
+            28,
+            24
+          ],
+          "item_sums": [
+            25,
+            28,
+            24
+          ],
+          "mean": 25.666666666666668,
+          "difference_from_official": -3.3333333333333335,
+          "item_means": {
+            "A1": 1.6666666666666667,
+            "A2": 1.6666666666666667,
+            "A3": 2.0,
+            "A4": 1.3333333333333333,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 1.3333333333333333,
+            "A8": 2.0,
+            "A9": 1.6666666666666667,
+            "A10": 2.0,
+            "B1": 1.3333333333333333,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 1.6666666666666667,
+            "B5": 1.0
+          }
+        },
+        "E5": {
+          "official": 30,
+          "model_totals": [
+            30,
+            29,
+            30
+          ],
+          "item_sums": [
+            30,
+            29,
+            30
+          ],
+          "mean": 29.666666666666668,
+          "difference_from_official": -0.3333333333333333,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.6666666666666667
+          }
+        },
+        "E6": {
+          "official": 19,
+          "model_totals": [
+            26,
+            23,
+            21
+          ],
+          "item_sums": [
+            26,
+            23,
+            21
+          ],
+          "mean": 23.333333333333332,
+          "difference_from_official": 4.333333333333333,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 1.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.3333333333333333,
+            "A6": 2.0,
+            "A7": 1.3333333333333333,
+            "A8": 1.3333333333333333,
+            "A9": 1.0,
+            "A10": 1.3333333333333333,
+            "B1": 1.3333333333333333,
+            "B2": 1.0,
+            "B3": 1.6666666666666667,
+            "B4": 2.0,
+            "B5": 2.0
+          }
+        },
+        "E7": {
+          "official": 30,
+          "model_totals": [
+            29,
+            30,
+            30
+          ],
+          "item_sums": [
+            29,
+            30,
+            30
+          ],
+          "mean": 29.666666666666668,
+          "difference_from_official": -0.3333333333333333,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.6666666666666667
+          }
+        },
+        "E8": {
+          "official": 27,
+          "model_totals": [
+            25,
+            22,
+            27
+          ],
+          "item_sums": [
+            25,
+            22,
+            27
+          ],
+          "mean": 24.666666666666668,
+          "difference_from_official": -2.3333333333333335,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 1.6666666666666667,
+            "A3": 2.0,
+            "A4": 1.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 1.3333333333333333,
+            "A8": 2.0,
+            "A9": 1.6666666666666667,
+            "A10": 2.0,
+            "B1": 1.0,
+            "B2": 1.3333333333333333,
+            "B3": 2.0,
+            "B4": 1.6666666666666667,
+            "B5": 1.0
+          }
+        }
+      }
+    },
+    "medium": {
+      "source": "results_v15_haiku_three_runs_medium_t015.json",
+      "single_call_mean_absolute_error": 2.0,
+      "three_call_mean_absolute_error": 2.0,
+      "previous_005_estimated_three_call_mean_absolute_error": 2.308333333333333,
+      "cost_usd": 0.02239811,
+      "arithmetic_corrections": [],
+      "results": {
+        "E1": {
+          "official": 16,
+          "model_totals": [
+            18,
+            18,
+            20
+          ],
+          "item_sums": [
+            18,
+            18,
+            20
+          ],
+          "mean": 18.666666666666668,
+          "difference_from_official": 2.6666666666666665,
+          "item_means": {
+            "A1": 1.0,
+            "A2": 1.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.6666666666666667,
+            "A6": 0.6666666666666666,
+            "A7": 1.0,
+            "A8": 1.0,
+            "A9": 1.0,
+            "A10": 0.3333333333333333,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E2": {
+          "official": 27,
+          "model_totals": [
+            29,
+            29,
+            28
+          ],
+          "item_sums": [
+            29,
+            29,
+            28
+          ],
+          "mean": 28.666666666666668,
+          "difference_from_official": 1.6666666666666667,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 1.6666666666666667,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E3": {
+          "official": 17,
+          "model_totals": [
+            17,
+            19,
+            21
+          ],
+          "item_sums": [
+            17,
+            19,
+            21
+          ],
+          "mean": 19.0,
+          "difference_from_official": 2.0,
+          "item_means": {
+            "A1": 1.3333333333333333,
+            "A2": 1.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.0,
+            "A6": 1.3333333333333333,
+            "A7": 1.0,
+            "A8": 1.3333333333333333,
+            "A9": 1.0,
+            "A10": 0.6666666666666666,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 1.3333333333333333,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E4": {
+          "official": 29,
+          "model_totals": [
+            29,
+            28,
+            29
+          ],
+          "item_sums": [
+            29,
+            28,
+            29
+          ],
+          "mean": 28.666666666666668,
+          "difference_from_official": -0.3333333333333333,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 1.6666666666666667,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.0
+          }
+        },
+        "E5": {
+          "official": 30,
+          "model_totals": [
+            29,
+            30,
+            28
+          ],
+          "item_sums": [
+            29,
+            30,
+            28
+          ],
+          "mean": 29.0,
+          "difference_from_official": -1.0,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 1.6666666666666667,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 1.6666666666666667,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 1.6666666666666667
+          }
+        },
+        "E6": {
+          "official": 19,
+          "model_totals": [
+            22,
+            25,
+            24
+          ],
+          "item_sums": [
+            22,
+            25,
+            24
+          ],
+          "mean": 23.666666666666668,
+          "difference_from_official": 4.666666666666667,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 1.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 1.3333333333333333,
+            "A6": 2.0,
+            "A7": 1.6666666666666667,
+            "A8": 1.0,
+            "A9": 1.0,
+            "A10": 1.6666666666666667,
+            "B1": 1.0,
+            "B2": 1.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 2.0
+          }
+        },
+        "E7": {
+          "official": 30,
+          "model_totals": [
+            30,
+            30,
+            30
+          ],
+          "item_sums": [
+            30,
+            30,
+            30
+          ],
+          "mean": 30.0,
+          "difference_from_official": 0.0,
+          "item_means": {
+            "A1": 2.0,
+            "A2": 2.0,
+            "A3": 2.0,
+            "A4": 2.0,
+            "A5": 2.0,
+            "A6": 2.0,
+            "A7": 2.0,
+            "A8": 2.0,
+            "A9": 2.0,
+            "A10": 2.0,
+            "B1": 2.0,
+            "B2": 2.0,
+            "B3": 2.0,
+            "B4": 2.0,
+            "B5": 2.0
+          }
+        },
+        "E8": {
+          "official": 27,
+          "model_totals": [
+            27,
+            20,
+            23
+          ],
+          "item_sums": [
+            27,
+            20,
+            23
+          ],
+          "mean": 23.333333333333332,
+          "difference_from_official": -3.6666666666666665,
+          "item_means": {
+            "A1": 1.6666666666666667,
+            "A2": 1.3333333333333333,
+            "A3": 2.0,
+            "A4": 1.6666666666666667,
+            "A5": 2.0,
+            "A6": 1.6666666666666667,
+            "A7": 1.3333333333333333,
+            "A8": 2.0,
+            "A9": 1.3333333333333333,
+            "A10": 2.0,
+            "B1": 1.3333333333333333,
+            "B2": 1.3333333333333333,
+            "B3": 1.6666666666666667,
+            "B4": 1.0,
+            "B5": 1.0
+          }
+        }
+      }
+    }
+  }
+}

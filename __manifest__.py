@@ -189,6 +189,9 @@
 		'web.assets_web_dark': [
 			'aps_sis/static/src/css/submission_score_widget.dark.scss',
 		],
+		'web.assets_unit_tests': [
+			'aps_sis/static/tests/teacher_dashboard.test.js',
+		],
 	},
 	'installable': True,
 	'application': False,
