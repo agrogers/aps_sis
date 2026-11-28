@@ -11,6 +11,7 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 _COURSE_EXPLORER_HIDE_CHILD_NOTES_TAG = 'course explorer: hide child notes'
+_COURSE_EXPLORER_LINK_ONLY_TAG = 'include in course explorer'
 
 
 class APSResource(models.Model):
@@ -1307,6 +1308,21 @@ class APSResource(models.Model):
 
         # All resources that appear in the tree
         all_resources = has_notes_res | extra_parents
+        course_explorer_link_children = all_resources.mapped('child_ids')
+        course_explorer_link_children.mapped('tag_ids')
+        course_explorer_link_children = course_explorer_link_children.filtered(
+            lambda child: (
+                any(
+                    (tag.name or '').strip().casefold()
+                    == _COURSE_EXPLORER_LINK_ONLY_TAG
+                    for tag in child.tag_ids
+                )
+                and not (child.type_id and child.type_id.assessment)
+                and (child.url or (child.notes and child.has_question == 'no'))
+            )
+        )
+        course_explorer_link_child_ids = set(course_explorer_link_children.ids)
+        course_explorer_link_children.mapped('supporting_resources_buttons')
         filtered_ids = set(all_resources.ids)
         _logger.info(
             "Course Explorer: selected %d content/structural resources "
@@ -1379,6 +1395,18 @@ class APSResource(models.Model):
             ).sorted(key=lambda r: (r.sequence or 0, r.name or ''))
             child_nodes = []
             for child in children:
+                if child.id in course_explorer_link_child_ids:
+                    visited.add(child.id)
+                    promoted_children = (
+                        (child.child_ids & all_resources)
+                        .filtered(lambda c: c.id not in visited)
+                        .sorted(key=lambda r: (r.sequence or 0, r.name or ''))
+                    )
+                    for promoted_child in promoted_children:
+                        node = _build_node(promoted_child, depth + 1)
+                        if node:
+                            child_nodes.append(node)
+                    continue
                 node = _build_node(child, depth + 1)
                 if node:
                     child_nodes.append(node)
@@ -1641,6 +1669,40 @@ class APSResource(models.Model):
                 if not link.get('is_main')
                 and link.get('id') in non_assessment_supporting_ids
             ]
+            supporting_link_ids = {
+                link.get('id') for link in sec['supportingResources']
+            }
+            for child in res.child_ids.filtered(
+                lambda item: item.id in course_explorer_link_child_ids
+            ).sorted(key=lambda item: (item.sequence or 0, item.name or '')):
+                main_link = next(
+                    (
+                        link
+                        for link in (child.supporting_resources_buttons or [])
+                        if link.get('is_main')
+                    ),
+                    None,
+                )
+                if not main_link and child.notes and child.has_question == 'no':
+                    main_link = {
+                        'id': child.id,
+                        'name': child.name or child.display_name,
+                        'url': None,
+                        'icon_url': (
+                            '/web/image/aps.resources/%d/type_icon' % child.id
+                            if child.type_icon else False
+                        ),
+                        'type_name': child.type_id.name if child.type_id else 'Resource',
+                        'is_main': False,
+                        'out_of_marks': child.marks,
+                        'link_type': 'notes',
+                    }
+                if main_link and main_link.get('id') not in supporting_link_ids:
+                    sec['supportingResources'].append({
+                        **main_link,
+                        'is_main': False,
+                    })
+                    supporting_link_ids.add(main_link.get('id'))
             quiz_results = [
                 q['weightedResult']
                 for q in quizzes
