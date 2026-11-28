@@ -381,6 +381,27 @@
     min-height: 34px;
 }
 
+.aps-teacher-dashboard .aps-submission-search-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.aps-teacher-dashboard .aps-submission-name-filter {
+    width: 14rem;
+    min-height: 34px;
+}
+
+.aps-teacher-dashboard .aps-submission-min-filter {
+    width: 7rem;
+}
+
+.aps-teacher-dashboard .aps-submission-min-filter .form-control,
+.aps-teacher-dashboard .aps-submission-min-filter .input-group-text {
+    min-height: 34px;
+}
+
 .aps-teacher-dashboard .aps-submission-type-filters .btn {
     position: relative;
     width: 38px;

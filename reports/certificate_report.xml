@@ -4,6 +4,7 @@
         <record id="paperformat_certificate_a4" model="report.paperformat">
             <field name="name">Certificate A4 Portrait</field>
             <field name="format">A4</field>
+            <field name="dpi">96</field>
             <field name="orientation">Portrait</field>
             <field name="margin_top">0</field>
             <field name="margin_bottom">0</field>
@@ -16,6 +17,7 @@
         <record id="paperformat_certificate_a4_landscape" model="report.paperformat">
             <field name="name">Certificate A4 Landscape</field>
             <field name="format">A4</field>
+            <field name="dpi">96</field>
             <field name="orientation">Landscape</field>
             <field name="margin_top">0</field>
             <field name="margin_bottom">0</field>
@@ -28,6 +30,7 @@
         <record id="paperformat_certificate_a5" model="report.paperformat">
             <field name="name">Certificate A5 Portrait</field>
             <field name="format">A5</field>
+            <field name="dpi">96</field>
             <field name="orientation">Portrait</field>
             <field name="margin_top">0</field>
             <field name="margin_bottom">0</field>
@@ -40,6 +43,7 @@
         <record id="paperformat_certificate_a5_landscape" model="report.paperformat">
             <field name="name">Certificate A5 Landscape</field>
             <field name="format">A5</field>
+            <field name="dpi">96</field>
             <field name="orientation">Landscape</field>
             <field name="margin_top">0</field>
             <field name="margin_bottom">0</field>
@@ -90,18 +94,27 @@
         </record>
 
         <template id="report_certificate_template_landscape">
-            <t t-call="web.basic_layout">
-                <t t-foreach="docs" t-as="o">
-                    <div class="page o_certificate_page" t-attf-style="#{'page-break-before: always; ' if o_index else ''}page-break-inside: avoid; #{o._get_page_dimensions_style()} box-sizing: border-box; position: relative; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-position: center center; background-repeat: no-repeat;">
-                        <div style="position: relative; z-index: 1; padding: 28px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
-                            <div t-out="o._render_certificate_body_html()"/>
-                        </div>
-                    </div>
-                </t>
-            </t>
+            <t t-call="aps_sis.report_certificate_template_portrait"/>
         </template>
         <template id="report_certificate_template_portrait">
             <t t-call="web.basic_layout">
+                <!-- Kept inside the article so Odoo preserves it when preparing the PDF. -->
+                <style>
+                    html,
+                    body,
+                    body #wrapwrap,
+                    body main,
+                    body .article {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        max-width: none !important;
+                    }
+                    .o_certificate_page {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                </style>
                 <t t-foreach="docs" t-as="o">
                     <div class="page o_certificate_page" t-attf-style="#{'page-break-before: always; ' if o_index else ''}page-break-inside: avoid; #{o._get_page_dimensions_style()} box-sizing: border-box; position: relative; background-image: url(#{o._get_certificate_frame_data_uri()}); background-size: 100% 100%; background-position: center center; background-repeat: no-repeat;">
                         <div style="position: relative; z-index: 1; padding: 28px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">

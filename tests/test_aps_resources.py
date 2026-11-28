@@ -41,6 +41,157 @@ class TestAPSResource(TransactionCase):
             ])],
         })
 
+    def _create_linked_resources_from_headings(self, resource, source_field):
+        wizard = self.env['aps.create.linked.resources'].create({
+            'resource_id': resource.id,
+            'source_field': source_field,
+        })
+        return wizard.action_create()
+
+    def _linked_resources_in_list_order(self, resource):
+        return self.env['aps.resources'].search(
+            [('id', 'in', resource.child_ids.ids)],
+            order='sequence,name',
+        )
+
+    def test_create_linked_resources_follows_heading_order(self):
+        html = (
+            '<h2>Zebra</h2><h3>Nested heading</h3>'
+            '<h2>Apple</h2><h2>Middle</h2>'
+        )
+        expected = ['Zebra', 'Apple', 'Middle']
+
+        for source_field in ('question', 'answer', 'notes', 'lesson_plan'):
+            with self.subTest(source_field=source_field):
+                resource = self.env['aps.resources'].create({
+                    'name': f'Heading order: {source_field}',
+                    source_field: html,
+                })
+                self._create_linked_resources_from_headings(resource, source_field)
+
+                children = self._linked_resources_in_list_order(resource)
+                self.assertEqual(children.mapped('name'), expected)
+                sequences = children.mapped('sequence')
+                self.assertTrue(all(left < right for left, right in zip(sequences, sequences[1:])))
+                self.assertEqual(
+                    [child['name'] for child in resource.get_resource_tree()['current']['children']],
+                    expected,
+                )
+
+    def test_create_linked_resources_preserves_existing_sequences_when_possible(self):
+        resource = self.env['aps.resources'].create({
+            'name': 'Heading order with a gap',
+            'question': '<h2>Zebra</h2><h2>Apple</h2><h2>Middle</h2>',
+        })
+        apple = self.env['aps.resources'].create({
+            'name': 'Apple',
+            'sequence': 40,
+            'parent_ids': [(4, resource.id)],
+        })
+        unrelated = self.env['aps.resources'].create({
+            'name': 'Unrelated',
+            'sequence': 100,
+            'parent_ids': [(4, resource.id)],
+        })
+
+        self._create_linked_resources_from_headings(resource, 'question')
+        self.assertEqual(
+            self._linked_resources_in_list_order(resource).mapped('name'),
+            ['Zebra', 'Apple', 'Middle', 'Unrelated'],
+        )
+        self.assertEqual(apple.sequence, 40)
+        self.assertEqual(unrelated.sequence, 100)
+
+        other_resource = self.env['aps.resources'].create({
+            'name': 'Heading order without matches',
+            'notes': '<h2>Zebra</h2><h2>Apple</h2>',
+        })
+        other_child = self.env['aps.resources'].create({
+            'name': 'Unrelated',
+            'sequence': 100,
+            'parent_ids': [(4, other_resource.id)],
+        })
+        self._create_linked_resources_from_headings(other_resource, 'notes')
+        self.assertEqual(
+            self._linked_resources_in_list_order(other_resource).mapped('name'),
+            ['Unrelated', 'Zebra', 'Apple'],
+        )
+        self.assertEqual(other_child.sequence, 100)
+
+    def test_create_linked_resources_reorders_existing_matches(self):
+        resource = self.env['aps.resources'].create({
+            'name': 'Heading order with existing children',
+            'question': '<h2>Zebra</h2><h2>Apple</h2><h2>Orange</h2><h2>Mango</h2>',
+        })
+        other_parent = self.env['aps.resources'].create({'name': 'Other parent'})
+        zebra = self.env['aps.resources'].create({
+            'name': 'Zebra',
+            'sequence': 50,
+            'parent_ids': [(4, resource.id)],
+        })
+        apple = self.env['aps.resources'].create({
+            'name': 'Apple',
+            'sequence': 10,
+            'parent_ids': [(4, resource.id), (4, other_parent.id)],
+            'primary_parent_id': resource.id,
+        })
+        mango = self.env['aps.resources'].create({
+            'name': 'Mango',
+            'sequence': 70,
+            'parent_ids': [(4, resource.id)],
+        })
+        unrelated = self.env['aps.resources'].create({
+            'name': 'Unrelated',
+            'sequence': 60,
+            'parent_ids': [(4, resource.id)],
+        })
+
+        action = self._create_linked_resources_from_headings(resource, 'question')
+        children = self._linked_resources_in_list_order(resource)
+        heading_children = children.filtered(lambda child: child.name != 'Unrelated')
+
+        self.assertEqual(heading_children.mapped('name'), ['Zebra', 'Apple', 'Orange', 'Mango'])
+        self.assertEqual(len(children), 5)
+        self.assertIn(zebra, children)
+        self.assertIn(apple, children)
+        self.assertIn(mango, children)
+        self.assertIn(apple, other_parent.child_ids)
+        self.assertEqual(unrelated.sequence, 60)
+        self.assertEqual(mango.sequence, 70)
+        message = action['infos']['notification']['message']
+        self.assertIn('Skipped 3 already existing', message)
+        self.assertIn('Reordered 1 existing resource(s)', message)
+        self.assertIn('other parents', message)
+
+    def test_create_linked_resources_reorders_repeated_existing_headings(self):
+        resource = self.env['aps.resources'].create({
+            'name': 'Repeated headings',
+            'notes': '<h2>Zebra</h2><h2>Apple</h2><h2>Zebra</h2>',
+        })
+        self._create_linked_resources_from_headings(resource, 'notes')
+        children = self._linked_resources_in_list_order(resource)
+        self.assertEqual(children.mapped('name'), ['Zebra', 'Apple', 'Zebra'])
+
+        zebras = children.filtered(lambda child: child.name == 'Zebra')
+        zebras[0].sequence = 50
+        zebras[1].sequence = 20
+        children.filtered(lambda child: child.name == 'Apple').sequence = 10
+        extra_zebra = self.env['aps.resources'].create({
+            'name': 'Zebra',
+            'sequence': 30,
+            'parent_ids': [(4, resource.id)],
+        })
+        existing_ids = set((children | extra_zebra).ids)
+
+        self._create_linked_resources_from_headings(resource, 'notes')
+        reordered = self._linked_resources_in_list_order(resource)
+        self.assertEqual(reordered.mapped('name'), ['Zebra', 'Apple', 'Zebra', 'Zebra'])
+        self.assertEqual(set(reordered.ids), existing_ids)
+        sequences = reordered.mapped('sequence')
+
+        self._create_linked_resources_from_headings(resource, 'notes')
+        self.assertEqual(self._linked_resources_in_list_order(resource).mapped('sequence'), sequences)
+
     def test_mass_update_selection_options_match_resource_fields(self):
         resources = self.env['aps.resources']
         wizard = self.env['aps.resource.mass.update.wizard']

@@ -30,12 +30,16 @@ export class VoteAnalysisDashboard extends Component {
         this.actionService = useService("action");
         this.notification = useService("notification");
         this.chartRef = useRef("chart");
+        this.presetNameRef = useRef("presetName");
         this.chart = null;
         this._chartClickHandler = null;
         this._chartMouseMoveHandler = null;
         this._chartIconRects = [];
         this.voteDetailsGridRef = useRef("voteDetailsGrid");
+        this._voteDetailsGridBundle = null;
         this._voteDetailsGrid = null;
+        this._detailGridInitTimer = null;
+        this._detailGridResizeObserver = null;
         this._voteDetailsDataView = null;
         this._isDarkMode = cookie.get("color_scheme") === "dark";
         this.filterPresets = new FilterPresetManager(this.orm, COMPONENT_KEY);
@@ -160,9 +164,26 @@ export class VoteAnalysisDashboard extends Component {
             overlay: this.state.overlay,
         };
         const data = await this.orm.call("aps.award.vote", "get_vote_analysis_data", [], { filters });
+        const voteIds = [...new Set(data.detail_rows.flatMap((row) => Object.values(row.vote_ids).flat()))];
+        const certificates = voteIds.length
+            ? await this.orm.searchRead("aps.certificate", [["related_vote_ids", "in", voteIds]], ["related_vote_ids"])
+            : [];
+        const certificateIdsByVote = new Map();
+        for (const certificate of certificates) {
+            for (const voteId of certificate.related_vote_ids) {
+                if (!certificateIdsByVote.has(voteId)) {
+                    certificateIdsByVote.set(voteId, []);
+                }
+                certificateIdsByVote.get(voteId).push(certificate.id);
+            }
+        }
         this.state.series = data.series || [];
         this.state.recipients = data.recipients || [];
-        this.state.detailRows = data.detail_rows;
+        this.state.detailRows = data.detail_rows.map((row) => ({
+            ...row,
+            certificate_ids: [...new Set(Object.values(row.vote_ids).flat()
+                .flatMap((voteId) => certificateIdsByVote.get(voteId) || []))],
+        }));
         this.state.certificateCounts = data.certificate_counts || {};
         this.state.loading = false;
     }
@@ -397,7 +418,7 @@ export class VoteAnalysisDashboard extends Component {
             Promise.resolve().then(() => this._renderChart());
         }
         if (tab === "details" && this.state.detailRecipient && this.state.detailVotes.length > 0) {
-            setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
+            this._scheduleDetailGridInit();
         }
     }
 
@@ -502,6 +523,7 @@ export class VoteAnalysisDashboard extends Component {
         if (ev.target.value === "new_filter") {
             this.state.activePresetName = "";
             this.state.creatingPreset = true;
+            setTimeout(() => this.presetNameRef.el?.focus(), 0);
             return;
         }
         if (!ev.target.value) {
@@ -534,6 +556,21 @@ export class VoteAnalysisDashboard extends Component {
             this.state.creatingPreset = false;
             this.state.presets = this.filterPresets.presetList || [];
             this.notification.add(`Preset "${name}" ${result.action === 'created' ? 'saved' : 'updated'}`, { type: "success" });
+        } finally { this.state.savingPreset = false; }
+    }
+
+    async onPresetUpdate() {
+        if (!this.state.activePresetId || this.state.savingPreset) { return; }
+        this.state.savingPreset = true;
+        try {
+            const result = await this.filterPresets.save(
+                this.state.activePresetName,
+                this._getFilterData()
+            );
+            this.state.activePresetId = result.id;
+            this.state.activePresetName = result.name;
+            this.state.presets = this.filterPresets.presetList || [];
+            this.notification.add(`Preset "${result.name}" updated`, { type: "success" });
         } finally { this.state.savingPreset = false; }
     }
 
@@ -589,7 +626,7 @@ export class VoteAnalysisDashboard extends Component {
         this.state.detailLoading = false;
         this._setActiveTab("details");
         this._destroyDetailGrid();
-        setTimeout(() => this._initVoteDetailsGrid(this.state.detailVotes), 100);
+        this._scheduleDetailGridInit();
     }
 
     clearDetail() {
@@ -607,16 +644,37 @@ export class VoteAnalysisDashboard extends Component {
     // SlickGrid: Vote Details grid
     // ------------------------------------------------------------------
 
+    _scheduleDetailGridInit() {
+        clearTimeout(this._detailGridInitTimer);
+        this._detailGridInitTimer = setTimeout(() => {
+            this._detailGridInitTimer = null;
+            this._initVoteDetailsGrid(this.state.detailVotes);
+        }, 100);
+    }
+
     _destroyDetailGrid() {
-        if (this._voteDetailsGrid) {
+        clearTimeout(this._detailGridInitTimer);
+        this._detailGridInitTimer = null;
+        if (this._detailGridResizeObserver) {
+            this._detailGridResizeObserver.disconnect();
+            this._detailGridResizeObserver = null;
+        }
+        if (this._voteDetailsGridBundle) {
             try {
-                if (this._voteDetailsGrid.editController) {
+                if (this._voteDetailsGrid && this._voteDetailsGrid.editController) {
                     this._voteDetailsGrid.editController.commitCurrentEdit();
                 }
-                this._voteDetailsGrid.destroy();
+                // dispose() also tears down the ResizerService (window resize listener, timers);
+                // destroying only the raw SlickGrid leaves those alive and they fire on a dead grid.
+                this._voteDetailsGridBundle.dispose();
             } catch (e) { /* ignore */ }
-            this._voteDetailsGrid = null;
-            this._voteDetailsDataView = null;
+            this._voteDetailsGridBundle = null;
+        }
+        this._voteDetailsGrid = null;
+        this._voteDetailsDataView = null;
+        const container = this.voteDetailsGridRef.el;
+        if (container) {
+            container.querySelectorAll(".slickgrid-container").forEach((el) => el.remove());
         }
     }
 
@@ -678,6 +736,7 @@ export class VoteAnalysisDashboard extends Component {
             },
         }, data);
 
+        this._voteDetailsGridBundle = gridBundle;
         this._voteDetailsGrid = gridBundle.slickGrid;
         this._voteDetailsDataView = gridBundle.dataView;
 
@@ -734,7 +793,7 @@ export class VoteAnalysisDashboard extends Component {
             if (this._voteDetailsGrid) this._voteDetailsGrid.resizeCanvas();
         });
         this._detailGridResizeObserver.observe(container);
-        setTimeout(() => this._voteDetailsGrid.resizeCanvas(), 100);
+        setTimeout(() => this._voteDetailsGrid?.resizeCanvas(), 100);
     }
 
     // ------------------------------------------------------------------
@@ -768,6 +827,7 @@ export class VoteAnalysisDashboard extends Component {
                     `Certificate created for ${result.recipient_name} — ${result.event}`,
                     { type: "success" },
                 );
+                await this._loadData();
                 // Navigate to Tab 4: Certificates for this recipient
                 await this._loadCertDetails(this.state.detailRecipient);
             } else {
@@ -843,10 +903,12 @@ export class VoteAnalysisDashboard extends Component {
                     key,
                     votes: {},
                     vote_ids: {},
+                    certificate_ids: [],
                     total: 0,
                 });
             }
             const row = groups.get(key);
+            row.certificate_ids = [...new Set([...row.certificate_ids, ...detail.certificate_ids])];
             row.total += detail.total;
             for (const [seriesId, count] of Object.entries(detail.votes)) {
                 row.votes[seriesId] = (row.votes[seriesId] || 0) + count;

@@ -1,3 +1,5 @@
+from collections import Counter
+
 from odoo import api, fields, models
 
 
@@ -35,8 +37,7 @@ class CreateLinkedResourcesWizard(models.TransientModel):
     # ------------------------------------------------------------------
 
     def action_create(self):
-        """Parse headings from the selected source field and create a linked
-        child resource for each heading found at the top-most level."""
+        """Create missing linked resources and order them by top-level headings."""
         self.ensure_one()
         resource = self.resource_id
 
@@ -56,15 +57,47 @@ class CreateLinkedResourcesWizard(models.TransientModel):
                 'warning',
             )
 
-        existing_names = set(resource.child_ids.mapped('name'))
+        existing_by_name = {}
+        for child in resource.child_ids.sorted(key=lambda child: (child.sequence, child.id)):
+            existing_by_name.setdefault(child.name, []).append(child)
+
+        first_existing = next(
+            (
+                (index, existing_by_name[title][0].sequence)
+                for index, title in enumerate(headings)
+                if title in existing_by_name
+            ),
+            None,
+        )
+        if first_existing is None:
+            sequence = max(resource.child_ids.mapped('sequence'), default=0)
+        else:
+            index, first_sequence = first_existing
+            # Leave room for new headings before the first existing match.
+            sequence = first_sequence - index - 1
+
+        remaining_headings = Counter(headings)
         created = self.env['aps.resources']
         skipped = []
+        reordered_count = 0
         for title in headings:
-            if title in existing_names:
+            remaining_headings[title] -= 1
+            if title in existing_by_name:
+                matches = existing_by_name[title]
+                # Associate surplus same-named resources with the last matching heading.
+                match_count = len(matches) if not remaining_headings[title] else 1
+                for child in matches[:match_count]:
+                    sequence = max(sequence + 1, child.sequence)
+                    if child.sequence != sequence:
+                        child.sequence = sequence
+                        reordered_count += 1
+                del matches[:match_count]
                 skipped.append(title)
                 continue
+            sequence += 1
             vals = {
                 'name': title,
+                'sequence': sequence,
                 'parent_ids': [(4, resource.id)],
                 'primary_parent_id': resource.id,
                 'subjects': [(6, 0, resource.subjects.ids)],
@@ -101,6 +134,11 @@ class CreateLinkedResourcesWizard(models.TransientModel):
             msg_parts.append(f'Created {len(created)} linked resource(s).')
         if skipped:
             msg_parts.append(f'Skipped {len(skipped)} already existing: {", ".join(skipped)}.')
+        if reordered_count:
+            msg_parts.append(
+                f'Reordered {reordered_count} existing resource(s) to match heading order. '
+                'If shared, their sequences also affect their other parents.'
+            )
 
         return {
             'type': 'ir.actions.act_window_close',

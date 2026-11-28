@@ -70,12 +70,14 @@ export class TeacherDashboard extends Component {
             expandedSubmissionGroups: gs.expandedSubmissionGroups ?? {},
             hiddenSubmissionTypes: gs.hiddenSubmissionTypes ?? {},
             hiddenSubmissionStates: gs.hiddenSubmissionStates ?? {},
+            submissionNameFilter: gs.submissionNameFilter ?? "",
+            minSubmissions: gs.minSubmissions ?? 0,
             selectedResourceId: restoredResourceId,
             selectedResourceName: gs.selectedResourceName ?? "",
             submissions: [],
             submissionsLoading: false,
         });
-        for (const handler of ["onChangeCategory", "onChangeDays", "onChangeStudent", "onChangeClass", "openAllSubmissions"]) {
+        for (const handler of ["onChangeCategory", "onChangeDays", "onChangeStudent", "onChangeClass", "openAllSubmissions", "onChangeSubmissionNameFilter", "onChangeMinSubmissions"]) {
             this[handler] = this[handler].bind(this);
         }
 
@@ -120,6 +122,8 @@ export class TeacherDashboard extends Component {
             hiddenSubmissionStates: Object.fromEntries(
                 Object.entries(this.state.hiddenSubmissionStates)
             ),
+            submissionNameFilter: this.state.submissionNameFilter,
+            minSubmissions: this.state.minSubmissions,
         };
         try {
             localStorage.setItem(this._storageKey, JSON.stringify(snapshot));
@@ -411,10 +415,35 @@ export class TeacherDashboard extends Component {
         this._saveState();
     }
 
+    onChangeSubmissionNameFilter(ev) {
+        this.state.submissionNameFilter = ev.target.value;
+        this._saveState();
+    }
+
+    onChangeMinSubmissions(ev) {
+        const value = parseInt(ev.target.value, 10);
+        this.state.minSubmissions = Number.isFinite(value) && value > 0 ? value : 0;
+        this._saveState();
+    }
+
+    clearSubmissionSearchFilters() {
+        this.state.submissionNameFilter = "";
+        this.state.minSubmissions = 0;
+        this._saveState();
+    }
+
     get visibleSubmissionGroups() {
+        const hiddenPaperKeys = new Set(
+            this.state.submissionGroups
+                .filter((group) => this.isHiddenPastPaperGroup(group))
+                .map((group) => group.key)
+        );
         const childrenByParent = new Map();
         for (const group of this.state.submissionGroups) {
-            const key = group.parent_key || "";
+            if (hiddenPaperKeys.has(group.key)) {
+                continue;
+            }
+            const key = hiddenPaperKeys.has(group.parent_key) ? "" : group.parent_key || "";
             if (!childrenByParent.has(key)) {
                 childrenByParent.set(key, []);
             }
@@ -433,6 +462,19 @@ export class TeacherDashboard extends Component {
         const visibleStates = this.submissionStates.filter(
             (status) => !this.state.hiddenSubmissionStates[status.id]
         );
+        const nameFilter = (this.state.submissionNameFilter || "").trim().toLowerCase();
+        const minSubmissions = this.state.isStudent ? 0 : this.state.minSubmissions || 0;
+        const searchActive = Boolean(nameFilter) || minSubmissions > 0;
+        // A group whose name matches makes its whole subtree match the name filter.
+        const matchesName = (group, inheritedNameMatch) =>
+            inheritedNameMatch ||
+            !nameFilter ||
+            [group.title, group.resource_name, group.label].some((value) =>
+                (value || "").toLowerCase().includes(nameFilter)
+            );
+        const passesSearch = (group, inheritedNameMatch) =>
+            matchesName(group, inheritedNameMatch) &&
+            (group.total || 0) + (group.child_count || 0) >= minSubmissions;
         const includesAllChildTypes = (group, inheritedTypeOverride = false) => {
             if (inheritedTypeOverride) {
                 return true;
@@ -448,7 +490,8 @@ export class TeacherDashboard extends Component {
         const hasVisibleGroupInSubtree = (
             group,
             ancestors = new Set(),
-            inheritedTypeOverride = false
+            inheritedTypeOverride = false,
+            inheritedNameMatch = false
         ) => {
             if (ancestors.has(group.key)) {
                 return false;
@@ -462,29 +505,57 @@ export class TeacherDashboard extends Component {
             const stateVisible =
                 visibleStates.length === this.submissionStates.length ||
                 visibleStates.some((status) => this.submissionGroupHasState(group, status.id));
-            const ownGroupVisible = typeVisible && stateVisible;
+            const nameMatch = matchesName(group, inheritedNameMatch);
+            const ownGroupVisible =
+                typeVisible && stateVisible && passesSearch(group, inheritedNameMatch);
             const childTypeOverride = includesAllChildTypes(group, inheritedTypeOverride);
             const childVisible = (childrenByParent.get(group.key) || []).some(
-                (child) => hasVisibleGroupInSubtree(child, ancestors, childTypeOverride)
+                (child) =>
+                    hasVisibleGroupInSubtree(
+                        child,
+                        ancestors,
+                        childTypeOverride,
+                        Boolean(nameFilter) && nameMatch
+                    )
             );
             ancestors.delete(group.key);
             return ownGroupVisible || childVisible;
         };
         const visible = [];
-        const appendChildren = (parentKey, depth, inheritedTypeOverride = false) => {
+        const appendChildren = (
+            parentKey,
+            depth,
+            inheritedTypeOverride = false,
+            inheritedNameMatch = false
+        ) => {
             for (const group of childrenByParent.get(parentKey) || []) {
-                if (!hasVisibleGroupInSubtree(group, new Set(), inheritedTypeOverride)) {
+                if (
+                    !hasVisibleGroupInSubtree(
+                        group,
+                        new Set(),
+                        inheritedTypeOverride,
+                        inheritedNameMatch
+                    )
+                ) {
                     continue;
                 }
+                // Groups shown only because a descendant matches the search are auto-expanded.
+                const autoExpanded = searchActive && !passesSearch(group, inheritedNameMatch);
+                const isExpanded =
+                    autoExpanded || Boolean(this.state.expandedSubmissionGroups[group.key]);
                 visible.push({
                     ...group,
+                    parent_key: parentKey || false,
                     depth,
+                    is_expanded: isExpanded,
+                    auto_expanded: autoExpanded,
                 });
-                if (this.state.expandedSubmissionGroups[group.key]) {
+                if (isExpanded) {
                     appendChildren(
                         group.key,
                         depth + 1,
-                        includesAllChildTypes(group, inheritedTypeOverride)
+                        includesAllChildTypes(group, inheritedTypeOverride),
+                        Boolean(nameFilter) && matchesName(group, inheritedNameMatch)
                     );
                 }
             }
@@ -513,11 +584,19 @@ export class TeacherDashboard extends Component {
         });
     }
 
+    isHiddenPastPaperGroup(group) {
+        return (
+            group.type_id &&
+            group.type_id[1] === "Past Paper" &&
+            Boolean(this.state.hiddenSubmissionTypes[group.type_id[0]])
+        );
+    }
+
     submissionGroupAncestors(group) {
         const ancestors = [];
         const visited = new Set([group.key]);
         let current = this._submissionGroupIndex.get(group.parent_key);
-        while (current && !visited.has(current.key)) {
+        while (current && !visited.has(current.key) && !this.isHiddenPastPaperGroup(current)) {
             visited.add(current.key);
             ancestors.push(current);
             current = this._submissionGroupIndex.get(current.parent_key);

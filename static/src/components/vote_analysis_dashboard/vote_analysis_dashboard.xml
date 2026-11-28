@@ -18,6 +18,7 @@
                     <input id="vote_analysis_filter_name" type="text"
                            class="form-control form-control-sm"
                            placeholder="Filter name..."
+                           t-ref="presetName"
                            t-att-value="state.activePresetName"
                            t-on-input="onPresetNameInput"
                            style="min-width: 140px;"/>
@@ -47,6 +48,12 @@
                         </t>
                         <option class="fst-italic" value="new_filter">New Filter</option>
                     </select>
+                    <button type="button" class="btn btn-secondary btn-sm ms-1"
+                            t-on-click="onPresetUpdate"
+                            t-att-disabled="!state.activePresetId || state.savingPreset"
+                            title="Save filter" aria-label="Save filter">
+                        <i t-att-class="state.savingPreset ? 'fa fa-spinner fa-spin' : 'fa fa-floppy-o'"/>
+                    </button>
                     <button t-if="state.activePresetId" type="button"
                             class="btn btn-secondary btn-sm ms-1"
                             t-on-click="onPresetDelete"
@@ -314,6 +321,13 @@
                                 <tr>
                                     <td class="o_vote_analysis_td_name">
                                         <span class="o_vote_analysis_recipient_name" t-esc="rec.name"/>
+                                        <span t-if="rec.certificate_ids.length" class="ms-2 text-success"
+                                              t-att-title="rec.certificate_ids.length + ' linked certificate(s)'"
+                                              t-att-aria-label="rec.certificate_ids.length + ' linked certificate(s)'">
+                                            <i class="fa fa-certificate" aria-hidden="true"/>
+                                            <sup t-if="rec.certificate_ids.length > 1"
+                                                 t-esc="rec.certificate_ids.length"/>
+                                        </span>
                                     </td>
                                     <td t-if="state.showVoter" t-esc="rec.voter_name || '—'"/>
                                     <td t-if="state.showDate" t-esc="rec.submitted_date || '—'"/>

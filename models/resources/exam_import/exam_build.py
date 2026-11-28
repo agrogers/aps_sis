@@ -670,6 +670,7 @@ class APSExamPaperImportBuild(models.Model):
                     reused_resource_count += 1
                 else:
                     created_resource_count += 1
+                root.write({'sequence': section.sequence})
                 roots[root_key] = root
 
         sections_by_root = {}
@@ -749,6 +750,7 @@ class APSExamPaperImportBuild(models.Model):
                 self._append_section_content(root, section, headings, answers)
                 child_has_children = bool(child.child_ids)
                 child_values = {
+                    'sequence': section.sequence,
                     'has_question': 'hidden' if child_has_children else 'use_parent',
                     'has_answer': 'hidden' if child_has_children else 'use_parent',
                     'marks': section.maximum_mark,

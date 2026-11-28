@@ -89,22 +89,13 @@ class AwardsVotingController(http.Controller):
         # 3. Open categories (voting_active=True)
         open_categories = Category.search([('voting_active', '=', True)])
 
-        # 4. Categories that have closed since open_date where this voter never voted
-        expired_count = 0
-        if voter_partner:
-            closed_categories = Category.search([
-                ('voting_active', '=', False),
-                ('open_date', '!=', False),
-            ])
-            for cat in closed_categories:
-                voted = Vote.search_count([
-                    ('award_category_id', '=', cat.id),
-                    ('voter_partner_id', '=', voter_partner.id),
-                    ('state', '=', 'submitted'),
-                    ('submitted_date', '>=', cat.open_date.isoformat()),
-                ])
-                if not voted:
-                    expired_count += 1
+        # 4. Closed ballots assigned to this voter that were never submitted.
+        expired_count = Vote.search_count([
+            ('voter_partner_id', '=', voter_partner.id),
+            ('state', '=', 'closed'),
+            ('submitted_date', '=', False),
+            ('recipient_partner_id', '=', False),
+        ])
 
         # 5. Individual open votes for this voter, plus history
         voter_open_votes = []

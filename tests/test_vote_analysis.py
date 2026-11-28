@@ -1,8 +1,53 @@
+from types import SimpleNamespace
+from unittest.mock import patch
+
 from odoo import fields
+from odoo.addons.aps_sis.controllers import awards_voting
 from odoo.tests.common import TransactionCase
 
 
 class TestVoteAnalysis(TransactionCase):
+
+    def test_dashboard_missed_counts_unsubmitted_closed_ballots_for_this_voter(self):
+        voters = self.env['res.partner'].create([
+            {'name': 'Missed Ballot Voter'},
+            {'name': 'Other Ballot Voter'},
+        ])
+        category = self.env['aps.award.category'].create({
+            'name': 'Still Active Award Category',
+            'voting_active': True,
+        })
+        rounds = self.env['aps.award.vote.round'].create([
+            {
+                'name': name,
+                'datetime_start': '2026-01-01 00:00:00',
+                'datetime_end': '2026-01-02 00:00:00',
+                'status': 'closed',
+            }
+            for name in ('First Missed Round', 'Second Missed Round')
+        ])
+        base = {'voter_partner_id': voters[0].id, 'state': 'closed'}
+        self.env['aps.award.vote'].create([
+            dict(base, vote_round_id=rounds[0].id, award_category_id=category.id),
+            dict(base, vote_round_id=rounds[1].id, award_category_id=category.id),
+            dict(base),
+            dict(base, recipient_partner_id=voters[1].id),
+            dict(base, submitted_date=fields.Date.today()),
+            dict(base, state='submitted', submitted_date=fields.Date.today()),
+            dict(base, state='open'),
+            dict(base, state='pending'),
+            dict(base, voter_partner_id=voters[1].id),
+        ])
+        controller = awards_voting.AwardsVotingController()
+        request = SimpleNamespace(
+            env=self.env,
+            render=lambda template, values: values,
+        )
+        with patch.object(awards_voting, 'request', request), patch.object(
+            controller, '_get_partner_by_token', return_value=voters[0],
+        ):
+            values = controller.voting_dashboard.__wrapped__(controller, 'test-token')
+        self.assertEqual(values['expired_count'], 3)
 
     def test_detail_rows_group_recipient_voter_and_date_with_matching_vote_ids(self):
         Vote = self.env['aps.award.vote']

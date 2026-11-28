@@ -1475,6 +1475,83 @@ class TestExamPaperImport(TransactionCase):
         self.assertEqual(q1.question.count('data-embedded="tableOfContent"'), 1)
         self.assertEqual(q1.answer.count('data-embedded="tableOfContent"'), 1)
 
+    def test_resource_builder_preserves_root_section_order_on_build_and_rebuild(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Ordered exam paper', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('ordered-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('ordered-rms.pdf').id,
+        })
+        sections = self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': sequence, 'source_key': name,
+                'display_label': name, 'root_key': name,
+            }
+            for name, sequence in [('Q11', 30), ('Q2', 20), ('Q1', 10)]
+        ])
+
+        with patch.object(type(job), '_build_section_image_html', return_value=''):
+            job._build_resources()
+
+        roots = self.resource.child_ids
+        ordered_roots = self.env['aps.resources'].search(
+            [('id', 'in', roots.ids)], order='sequence, name',
+        )
+        self.assertEqual(ordered_roots.mapped('name'), ['Q1', 'Q2', 'Q11'])
+        self.assertEqual(ordered_roots.mapped('sequence'), [10, 20, 30])
+
+        sections.filtered(lambda section: section.source_key == 'Q11').sequence = 5
+        with patch.object(type(job), '_build_section_image_html', return_value=''):
+            job._build_resources()
+
+        self.assertEqual(set(self.resource.child_ids.ids), set(roots.ids))
+        ordered_roots = self.env['aps.resources'].search(
+            [('id', 'in', roots.ids)], order='sequence, name',
+        )
+        self.assertEqual(ordered_roots.mapped('name'), ['Q11', 'Q1', 'Q2'])
+        self.assertEqual(ordered_roots.mapped('sequence'), [5, 10, 20])
+
+    def test_resource_builder_orders_parts_when_root_section_is_excluded(self):
+        job = self.env['aps.exam.paper.import'].create({
+            'name': 'Ordered question parts', 'resource_id': self.resource.id,
+            'question_attachment_id': self._attachment('parts-que.pdf').id,
+            'mark_scheme_attachment_id': self._attachment('parts-rms.pdf').id,
+        })
+        self.env['aps.exam.paper.section'].create({
+            'import_id': job.id, 'sequence': 1, 'source_key': 'Q2',
+            'display_label': 'Q2', 'root_key': 'Q2', 'include_resource': False,
+        })
+        sections = self.env['aps.exam.paper.section'].create([
+            {
+                'import_id': job.id, 'sequence': sequence, 'source_key': name,
+                'display_label': name, 'root_key': 'Q2',
+            }
+            for name, sequence in [('Q2a.ix', 50), ('Q2a.ii', 20), ('Q2a.v', 30)]
+        ])
+
+        with patch.object(type(job), '_build_section_image_html', return_value=''):
+            job._build_resources()
+
+        root = self.resource.child_ids
+        self.assertEqual(root.sequence, 20)
+        children = root.child_ids
+        ordered_children = self.env['aps.resources'].search(
+            [('id', 'in', children.ids)], order='sequence, name',
+        )
+        self.assertEqual(ordered_children.mapped('name'), ['Q2a.ii', 'Q2a.v', 'Q2a.ix'])
+        self.assertEqual(ordered_children.mapped('sequence'), [20, 30, 50])
+
+        sections.filtered(lambda section: section.source_key == 'Q2a.ix').sequence = 10
+        with patch.object(type(job), '_build_section_image_html', return_value=''):
+            job._build_resources()
+
+        self.assertEqual(set(root.child_ids.ids), set(children.ids))
+        self.assertEqual(root.sequence, 10)
+        ordered_children = self.env['aps.resources'].search(
+            [('id', 'in', children.ids)], order='sequence, name',
+        )
+        self.assertEqual(ordered_children.mapped('name'), ['Q2a.ix', 'Q2a.ii', 'Q2a.v'])
+        self.assertEqual(ordered_children.mapped('sequence'), [10, 20, 30])
+
     def test_resource_builder_applies_section_tags_with_child_precedence(self):
         root_tag = self.env['aps.resource.tags'].create({'name': 'Exam root tag'})
         child_tag = self.env['aps.resource.tags'].create({'name': 'Exam child tag'})

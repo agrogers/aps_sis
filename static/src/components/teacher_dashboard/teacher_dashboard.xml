@@ -200,6 +200,39 @@
                                     </t>
                                 </div>
                             </div>
+                            <div class="aps-submission-filter-section">
+                                <div class="fw-bold mb-2">
+                                    <i class="fa fa-search me-2 text-primary"/>
+                                    Search
+                                </div>
+                                <div class="aps-submission-search-filters">
+                                    <input type="search"
+                                           class="form-control form-control-sm aps-submission-name-filter"
+                                           placeholder="Resource name..."
+                                           aria-label="Filter cards by resource name"
+                                           t-att-value="state.submissionNameFilter"
+                                           t-on-input="onChangeSubmissionNameFilter"/>
+                                    <div t-if="!state.isStudent" class="input-group input-group-sm aps-submission-min-filter">
+                                        <span class="input-group-text" title="Minimum number of submissions">Min</span>
+                                        <input type="number"
+                                               min="0"
+                                               step="1"
+                                               class="form-control"
+                                               placeholder="0"
+                                               aria-label="Minimum number of submissions"
+                                               t-att-value="state.minSubmissions || ''"
+                                               t-on-input="onChangeMinSubmissions"/>
+                                    </div>
+                                    <button t-if="state.submissionNameFilter or state.minSubmissions"
+                                            type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            title="Clear search filters"
+                                            aria-label="Clear search filters"
+                                            t-on-click="() => this.clearSubmissionSearchFilters()">
+                                        <i class="fa fa-times"/>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <t t-if="state.submissionGroups.length === 0">
@@ -207,7 +240,7 @@
                     </t>
                     <t t-else="">
                         <t t-if="visibleSubmissionGroups.length === 0">
-                            <div class="card-body text-muted">No cards match the selected resource type and state filters.</div>
+                            <div class="card-body text-muted">No cards match the selected filters.</div>
                         </t>
                         <div t-else="" class="row g-2 p-3">
                             <t t-foreach="visibleSubmissionGroupRows" t-as="groupRow" t-key="groupRow.depth + '-' + groupRow.groups[0].key">
@@ -224,7 +257,7 @@
                                              </span>
                                         </t>
                                     </div>
-                                    <div t-att-class="'card aps-submission-group-card ' + (state.expandedSubmissionGroups[group.key] ? 'aps-expanded' : '')">
+                                    <div t-att-class="'card aps-submission-group-card ' + (group.is_expanded ? 'aps-expanded' : '')">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center gap-2 mb-0 aps-submission-group-heading">
                                                                 <a t-att-href="state.isStudent ? getSubmissionUrl(group.student_submission_id) : getResourceUrl(group.resource_id)"
@@ -343,10 +376,11 @@
                                                 <button type="button"
                                                         class="btn btn-sm btn-outline-secondary aps-group-toggle"
                                                         t-on-click="() => this.toggleSubmissionGroup(group.key)"
-                                                        t-att-aria-expanded="!!state.expandedSubmissionGroups[group.key]"
-                                                        t-att-aria-label="state.expandedSubmissionGroups[group.key] ? 'Collapse child resources' : 'Expand child resources'"
-                                                        t-att-title="state.expandedSubmissionGroups[group.key] ? 'Collapse child resources' : 'Expand child resources'">
-                                                    <i t-att-class="state.expandedSubmissionGroups[group.key] ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                                                        t-att-disabled="group.auto_expanded"
+                                                        t-att-aria-expanded="group.is_expanded"
+                                                        t-att-aria-label="group.auto_expanded ? 'Expanded to show matching child resources' : group.is_expanded ? 'Collapse child resources' : 'Expand child resources'"
+                                                        t-att-title="group.auto_expanded ? 'Expanded to show matching child resources' : group.is_expanded ? 'Collapse child resources' : 'Expand child resources'">
+                                                    <i t-att-class="group.is_expanded ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
                                                 </button>
                                             </div>
                                         </div>
